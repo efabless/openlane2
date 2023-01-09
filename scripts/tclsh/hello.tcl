@@ -1,0 +1,1 @@
+puts stdout "Hello, $::env(USER)!"

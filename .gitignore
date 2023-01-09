@@ -1,0 +1,47 @@
+# vim swaps
+**/*.swp
+tags
+.vim
+
+# emacs backup files
+*~
+
+# Flow Artifacts
+dummy.guide
+lefRWarning.log
+run.param
+macrocell.list
+default.cvcrc
+*.log
+*.tar.gz
+
+# Python cache
+**/__pycache__
+/*.lef
+/*.def
+
+# Mac
+.DS_Store
+
+# VScode
+**/.vscode/
+
+# Local docs Build
+**/_build/
+
+# Regression artifacts
+*.config
+
+# PDK
+pdks/
+
+# Misc
+/resolved_version
+
+/docker_build/
+
+# Local Install
+/install
+
+# Venv
+/venv
