@@ -2,22 +2,22 @@ import os
 from decimal import Decimal
 from dataclasses import dataclass
 from typing import get_origin, get_args
-from typing import Union, Type, List, Optional, Tuple
+from typing import Union, Type, List, Optional, Tuple, Any
 
 from .config import Config, Path
 
 import pathvalidate
 
-Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
-VType = Union[Scalar, List[Scalar]]
+# Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
+# VType = Union[Scalar, List[Scalar]]
 
 
 @dataclass
 class Variable:
     name: str
-    type: Union[VType, Type[Optional[VType]]]
+    type: Any
     description: str
-    default: type = None
+    default: Any = None
     deprecated_names: Optional[List[str]] = None
 
     doc_example: Optional[str] = None
@@ -31,7 +31,7 @@ class Variable:
             and type(None) in type_args
         )
 
-    def some(self) -> VType:
+    def some(self) -> Any:
         if not self.is_optional():
             return self.type
         else:

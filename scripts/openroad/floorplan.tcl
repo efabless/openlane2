@@ -65,13 +65,8 @@ if {$::env(FP_SIZING) == "absolute"} {
 
 initialize_floorplan {*}$arg_list
 
-set tielo_cell [lindex $::env(SYNTH_TIELO_PORT) 0]
-set tielo_port [lindex $::env(SYNTH_TIELO_PORT) 1]
-set tiehi_cell [lindex $::env(SYNTH_TIEHI_PORT) 0]
-set tiehi_port [lindex $::env(SYNTH_TIEHI_PORT) 1]
-
-insert_tiecells "$tielo_cell/$tielo_port" -prefix "TIE_ZERO_"
-insert_tiecells "$tiehi_cell/$tiehi_port" -prefix "TIE_ONE_"
+insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
+insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
 
 set ::chip [[::ord::get_db] getChip]
 set ::tech [[::ord::get_db] getTech]

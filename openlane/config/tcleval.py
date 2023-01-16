@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from .config import Config
 
 
-def env_from_tcl(env_in: dict, tcl_in_path: str) -> Config:
+def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
     tcl_in = open(tcl_in_path).read()
     interpreter = tkinter.Tcl()
 

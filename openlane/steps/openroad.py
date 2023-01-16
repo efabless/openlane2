@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 
 from .step import TclStep, get_script_dir
 from .state import State, DesignFormat, Output
@@ -27,7 +27,7 @@ def old_to_new_tracks(old_tracks: str) -> str:
     >>> old_to_new_tracks(EXAMPLE_INPUT)
     'make_tracks li1 -x_offset 0.23 -x_pitch 0.46 -y_offset 0.17 -y_pitch 0.34\\nmake_tracks met1 -x_offset 0.17 -x_pitch 0.34 -y_offset 0.17 -y_pitch 0.34\\nmake_tracks met2 -x_offset 0.23 -x_pitch 0.46 -y_offset 0.23 -y_pitch 0.46\\nmake_tracks met3 -x_offset 0.34 -x_pitch 0.68 -y_offset 0.34 -y_pitch 0.68\\nmake_tracks met4 -x_offset 0.46 -x_pitch 0.92 -y_offset 0.46 -y_pitch 0.92\\nmake_tracks met5 -x_offset 1.70 -x_pitch 3.40 -y_offset 1.70 -y_pitch 3.40\\n'
     """
-    layers = {}
+    layers: Dict[str, Dict[str, Tuple[str, str]]] = {}
 
     for line in old_tracks.splitlines():
         if line.strip() == "":
@@ -49,23 +49,15 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OpenROADStep(TclStep):
-    def get_command(self, step_dir: str) -> List[str]:
-        metrics_path = os.path.join(step_dir, "metrics.json")
-        return ["openroad", "-exit", "-metrics", metrics_path]
-
-    @classmethod
-    def get_script_path(Self) -> List[str]:
-        raise Exception("Abstract class")
+    def get_script_path(self):
+        raise Exception("Subclass the OpenROAD Step class before using it.")
 
     def run(
         self,
-        state_in: State,
-        step_dir: str,
-        env: Optional[dict] = None,
         **kwargs,
     ) -> State:
-        state_out = super().run(state_in, step_dir, env, **kwargs)
-        metrics_path = os.path.join(step_dir, "metrics.json")
+        state_out = super().run(**kwargs)
+        metrics_path = os.path.join(self.step_dir, "metrics.json")
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
@@ -75,38 +67,44 @@ class OpenROADStep(TclStep):
                 f.write(json.dumps(state_out.metrics, indent=2))
         return state_out
 
+    def get_command(self) -> List[str]:
+        metrics_path = os.path.join(self.step_dir, "metrics.json")
+        return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
+
 
 class NetlistSTA(OpenROADStep):
+    name = "Netlist STA"
+    long_name = "Netlist Static Timing Analysis"
     inputs = [DesignFormat.NETLIST]
     outputs = []
 
-    @classmethod
-    def get_script_path(Self) -> List[str]:
+    def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
 
-    def run(self, state_in: State, step_dir: str, **kwargs) -> State:
+    def run(self, **kwargs) -> State:
         env = os.environ.copy()
         env["RUN_STANDALONE"] = "1"
         env["STA_PRE_CTS"] = "1"
         env["STA_REPORT_POWER"] = "1"
-        return super().run(state_in, step_dir, env=env, **kwargs)
+        return super().run(env=env, **kwargs)
 
 
 class Floorplan(OpenROADStep):
+    long_name = "Floorplan Initialization"
     inputs = [DesignFormat.NETLIST]
     outputs = [Output(DesignFormat.ODB), Output(DesignFormat.DEF)]
 
-    @classmethod
-    def get_script_path(Self) -> List[str]:
+    def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
-    def run(self, state_in: State, step_dir: str, **kwargs) -> State:
-        tracks_info_str = open(self.config["TRACKS_INFO_FILE"]).read()
+    def run(self, **kwargs) -> State:
+        path = self.config["FP_TRACKS_INFO"]
+        tracks_info_str = open(str(path)).read()
         tracks_commands = old_to_new_tracks(tracks_info_str)
-        new_tracks_info = os.path.join(step_dir, "config.tracks")
+        new_tracks_info = os.path.join(self.step_dir, "config.tracks")
         with open(new_tracks_info, "w") as f:
             f.write(tracks_commands)
 
         env = os.environ.copy()
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
-        return super().run(state_in, step_dir, env=env, **kwargs)
+        return super().run(env=env, **kwargs)

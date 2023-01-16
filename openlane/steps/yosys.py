@@ -8,9 +8,8 @@ from .state import DesignFormat, Output
 class Synthesis(TclStep):
     outputs = [Output(DesignFormat.NETLIST)]
 
-    def get_command(self, step_dir: str) -> List[str]:
-        return ["yosys", "-c"]
+    def get_command(self) -> List[str]:
+        return ["yosys", "-c", self.get_script_path()]
 
-    @classmethod
-    def get_script_path(Self) -> List[str]:
+    def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")

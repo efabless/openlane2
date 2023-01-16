@@ -69,7 +69,7 @@ class Expr(object):
             elif self.value in ["+", "-"]:
                 return (0, True)
             else:
-                return (None, None)
+                raise ValueError("Not supported for non-tokens")
 
     @staticmethod
     def tokenize(expr: str) -> List["Expr.Token"]:
@@ -105,13 +105,13 @@ class Expr(object):
         return tokens
 
     @staticmethod
-    def evaluate(expression: str, vars: Dict[str, float]) -> float:
+    def evaluate(expression: str, vars: Dict[str, str]) -> float:
         tokens: List["Expr.Token"] = Expr.tokenize(expression)
         ETT = Expr.Token.Type
 
         # Infix to Postfix
-        postfix = []
-        opstack = []
+        postfix: List["Expr.Token"] = []
+        opstack: List["Expr.Token"] = []
         for token in tokens:
             if token.type == ETT.OP:
                 prec, assoc = token.prec_assoc()
@@ -318,9 +318,9 @@ def process_config_dict(config_in: dict, exposed_variables: Dict[str, str]):
 
 def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:
     return {
-        key: config_in.get(key)
+        key: config_in[key]
         for key in PROCESS_INFO_ALLOWLIST
-        if config_in.get(key) != ""
+        if config_in.get(key) is not None and config_in.get(key) != ""
     }
 
 
@@ -379,7 +379,8 @@ def resolve(
 
     exposed = list(exposing) + implicitly_exposed
     for key in exposed:
-        exposed_dict[key] = env_copy.get(key)
+        if value := env_copy.get(key):
+            exposed_dict[key] = value
 
     for key in implicitly_exposed:
         if exposed_dict.get(key) is None:

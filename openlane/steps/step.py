@@ -1,7 +1,9 @@
 import os
+import re
 import time
 import subprocess
-from typing import List, Callable, Optional
+from io import TextIOWrapper
+from typing import List, Callable, Optional, Dict, final
 
 from .state import State, DesignFormat, Output
 from ..config import Config
@@ -24,6 +26,8 @@ class MissingInputError(ValueError):
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 
+invalid_for_path = re.compile(r"[^\w_-]+")
+
 
 class Step(object):
     """
@@ -32,49 +36,74 @@ class Step(object):
     Does nothing.
     """
 
-    def __init__(self, config: Config, ordinal: Optional[int] = None):
-        self.ordinal = ordinal
-        self.start_time = None
-        self.end_time = None
-        self.config = config.copy()
+    inputs: List[DesignFormat] = []
+    outputs: List[Output] = []
+    name: Optional[str] = None
+    long_name: Optional[str] = None
 
-    def __call__(
+    def get_name(self):
+        return self.name or self.__class__.__name__
+
+    def get_name_escaped(self):
+        return invalid_for_path.sub("_", self.get_name())
+
+    def get_long_name(self):
+        return self.long_name or self.get_name()
+
+    def __init__(
         self,
+        config: Config,
         state_in: State,
         run_dir: str,
         prefix: Optional[str] = None,
+        ordinal: Optional[int] = None,
+    ):
+        self.ordinal = ordinal
+        self.start_time: Optional[float] = None
+        self.end_time: Optional[float] = None
+        self.step_dir = os.path.join(
+            run_dir, f"{prefix or ''}{self.get_name_escaped()}"
+        )
+        self.config = config.copy()
+        self.state_in = state_in
+
+    @final
+    def start(
+        self,
         **kwargs,
     ) -> State:
-        step_dir = os.path.join(
-            run_dir, f"{prefix or ''}{self.__class__.__name__.lower()}"
-        )
-        mkdirp(step_dir)
         self.start_time = time.time()
-        altered_state = self.run(state_in, step_dir=step_dir, **kwargs)
+        if self.ordinal is not None:
+            console.rule(f"{self.ordinal} - {self.get_long_name()}")
+        else:
+            console.rule(f"{self.get_name()}")
+        mkdirp(self.step_dir)
+        self.state_out = self.run(**kwargs)
         self.end_time = time.time()
-        return altered_state
+        return self.state_out
 
-    def run(self, state_in: State, step_dir: str, **kwargs) -> State:
+    def run(self, **kwargs) -> State:
+        """
+        When subclassing, override this function, then call it first thing
+        via super().run(**kwargs). This lets you use the input verification and
+        the copying code.
+        """
         for input in self.inputs:
-            value = state_in.get(input.name)
+            value = self.state_in.get(input.name)
             if value is None:
                 raise MissingInputError(
                     f"{type(self).__name__}: missing required input '{input.name}'"
                 )
 
-        return state_in.copy()
+        return self.state_in.copy()
 
-    def execute(
-        self,
+    @staticmethod
+    def run_subprocess(
         cmd,
         log_to: Optional[str] = None,
         step_dir: Optional[str] = None,
         **kwargs,
     ):
-        if self.ordinal is not None:
-            console.rule(f"{self.ordinal} - {self.__class__.__name__}")
-        else:
-            console.rule(f"{self.__class__.__name__}")
         log_file = open(os.devnull, "w")
         if log_to is not None:
             log_file.close()
@@ -88,14 +117,16 @@ class Step(object):
             stderr=subprocess.STDOUT,
             **kwargs,
         )
+        process_stdout: TextIOWrapper = process.stdout  # type: ignore
         current_rpt = None
-        while line := process.stdout.readline():
+        while line := process_stdout.readline():
             if step_dir is not None and line.startswith(REPORT_START_LOCUS):
                 report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                 report_path = os.path.join(step_dir, report_name)
                 current_rpt = open(report_path, "w")
             elif line.startswith(REPORT_END_LOCUS):
-                current_rpt.close()
+                if current_rpt is not None:
+                    current_rpt.close()
                 current_rpt = None
             elif current_rpt is not None:
                 current_rpt.write(line)
@@ -109,32 +140,23 @@ class Step(object):
 
 
 class TclStep(Step):
-    def get_command(self, step_dir: str) -> List[str]:
-        return ["tclsh"]
-
-    @classmethod
-    def get_script_path(Self) -> List[str]:
-        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
-
-    inputs: List[DesignFormat] = []
-    outputs: List[Output] = []
-
     def run(
         self,
-        state_in: State,
-        step_dir: str,
-        env: Optional[dict] = None,
         **kwargs,
     ) -> State:
-        state = super().run(state_in, step_dir)
-        command = self.get_command(step_dir)
+        state = super().run()
+        command = self.get_command()
         script = self.get_script_path()
 
+        env = kwargs.get("env")
         if env is None:
             env = os.environ.copy()
+        else:
+            kwargs = kwargs.copy()
+            del kwargs["env"]
 
         env["SCRIPTS_DIR"] = get_script_dir()
-        env["STEP_DIR"] = step_dir
+        env["STEP_DIR"] = self.step_dir
         for element in self.config.keys():
             value = self.config[element]
             if value is None:
@@ -150,16 +172,16 @@ class TclStep(Step):
 
         for output in self.outputs:
             filename = f"{self.config['DESIGN_NAME']}.{output.format.value[0]}"
-            env[f"SAVE_{output.format.name}"] = os.path.join(step_dir, filename)
+            env[f"SAVE_{output.format.name}"] = os.path.join(self.step_dir, filename)
 
         log_filename = os.path.splitext(os.path.basename(script))[0]
-        log_path = os.path.join(step_dir, f"{log_filename}.log")
+        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
 
-        self.execute(
-            command + [script],
+        self.run_subprocess(
+            command,
             env=env,
             log_to=log_path,
-            step_dir=step_dir,
+            step_dir=self.step_dir,
             **kwargs,
         )
 
@@ -169,3 +191,9 @@ class TclStep(Step):
             state[output.format.name] = env[f"SAVE_{output.format.name}"]
 
         return state
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
+
+    def get_command(self) -> List[str]:
+        return ["tclsh", self.get_script_path()]

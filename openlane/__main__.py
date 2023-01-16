@@ -65,8 +65,8 @@ def run_default_flow(pdk_root: str, pdk: str, scl: str, config_file: str):
 
     config_in.update(design_config)
 
-    flow = Prototype(config_in)
-    flow.run(design_dir)
+    flow = Prototype(config_in, design_dir)
+    flow.run()
 
 
 @click.command()
