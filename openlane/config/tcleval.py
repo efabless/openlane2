@@ -33,6 +33,8 @@ def env_from_tcl(env_in: dict, tcl_in_path: str) -> Config:
         env_strings = f.read()
 
         for line in env_strings.splitlines():
+            if line.strip() == "":
+                continue
             key, value = line.split(" ", 1)
             try:
                 value = Decimal(value)

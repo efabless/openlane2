@@ -4,7 +4,7 @@ import rich.console
 
 console = rich.console.Console()
 
-log = functools.partial(console.log, console)
+log = console.log
 
 
 def success(printable, *args, **kwargs):

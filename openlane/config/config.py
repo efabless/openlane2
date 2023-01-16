@@ -1,20 +1,25 @@
 import json
 from decimal import Decimal
+from typing import Any, Tuple
+from collections import UserDict, UserString
 
-from marshmallow.fields import String, List
-
-from .base import Deserializable, DeserializableSchema
 from .resolve import resolve
 
 
-class DecimalEncoder(json.JSONEncoder):
+class Path(UserString):
+    pass
+
+
+class ConfigEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Decimal):
             if o.as_integer_ratio()[1] == 1:
                 return int(o)
             else:
                 return float(o)
-        return super(DecimalEncoder, self).default(o)
+        elif isinstance(o, Path):
+            return str(o)
+        return super(ConfigEncoder, self).default(o)
 
 
 class DecimalDecoder(json.JSONDecoder):
@@ -24,7 +29,7 @@ class DecimalDecoder(json.JSONDecoder):
         return super(DecimalDecoder, self).default(o)
 
 
-class Config(Deserializable):
+class Config(UserDict):
     @classmethod
     def from_json(Self, json_in: str, **kwargs) -> "Config":
         resolved = resolve(
@@ -37,11 +42,13 @@ class Config(Deserializable):
         return config
 
     def to_json(self) -> str:
-        return json.dumps(self.data, indent=2, cls=DecimalEncoder, sort_keys=True)
+        return json.dumps(self.data, indent=2, cls=ConfigEncoder, sort_keys=True)
 
+    def check(self, key: str) -> Tuple[bool, Any]:
+        return (key in self.keys(), self.get(key))
 
-class ConfigSchema(DeserializableSchema):
-    object_class = Config
-    DESIGN_NAME = String()
-    VERILOG_FILES = List(String())
-    # To be continued
+    def extract(self, key: str) -> Tuple[bool, Any]:
+        found, value = self.check(key)
+        if found:
+            del self[key]
+        return (found, value)

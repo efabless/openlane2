@@ -32,17 +32,11 @@ class Step(object):
     Does nothing.
     """
 
-    def __init__(
-        self,
-        config: Config,
-        ordinal: Optional[int] = None,
-        condition: Optional[StepConditionLambda] = None,
-    ):
+    def __init__(self, config: Config, ordinal: Optional[int] = None):
         self.ordinal = ordinal
         self.start_time = None
         self.end_time = None
-        self.config = config
-        self.condition = condition
+        self.config = config.copy()
 
     def __call__(
         self,
@@ -51,8 +45,6 @@ class Step(object):
         prefix: Optional[str] = None,
         **kwargs,
     ) -> State:
-        if self.condition is not None and not self.condition(self.config):
-            return  # skip
         step_dir = os.path.join(
             run_dir, f"{prefix or ''}{self.__class__.__name__.lower()}"
         )
@@ -144,7 +136,14 @@ class TclStep(Step):
         env["SCRIPTS_DIR"] = get_script_dir()
         env["STEP_DIR"] = step_dir
         for element in self.config.keys():
-            env[element] = str(self.config[element])
+            value = self.config[element]
+            if value is None:
+                continue
+            if isinstance(value, list):
+                value = " ".join(list(map(lambda x: str(x), value)))
+            else:
+                value = str(value)
+            env[element] = value
 
         for input in self.inputs:
             env[f"CURRENT_{input.name}"] = state[input.name]

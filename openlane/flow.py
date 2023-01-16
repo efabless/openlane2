@@ -37,13 +37,7 @@ class Flow(object):
         self.state_list: Optional[List[State]] = None
         for _i, step in enumerate(self.Steps):
             i = _i + 1
-            cls = None
-            condition = None
-            if isinstance(step, tuple):
-                cls, condition = step
-            else:
-                cls = step
-            self.steps.append(cls(config_in, i, condition))
+            self.steps.append(step(config_in, i))
 
     def run(
         self,

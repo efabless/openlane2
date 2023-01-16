@@ -75,6 +75,7 @@ puts "%OL_CREATE_REPORT slew.rpt"
 puts "==========================================================================="
 puts " report_check_types -max_slew -max_cap -max_fanout -violators"
 puts "============================================================================"
+report_check_types -max_slew -max_cap -max_fanout -violators
 puts "%OL_END_REPORT"
 
 sta::report_tns_metric -setup

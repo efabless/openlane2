@@ -1,0 +1,11 @@
+*/runs/
+*/lef/
+*/gds/
+*/mag/
+*/config*.tcl
+*/base_config.tcl
+!*/config.tcl
+!*/script.tcl
+*/run_*.json
+*/run_*.tcl
+*/matrix_*.json
