@@ -1,3 +1,16 @@
+# Copyright 2023 Efabless Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import datetime
 import subprocess
@@ -54,7 +67,9 @@ class Flow(object):
 
         step_count = len(self.Steps)
         max_digits = len(str())
-        prefix = lambda ordinal: f"%0{max_digits}d-" % ordinal
+
+        def prefix(ordinal):
+            return f"%0{max_digits}d-" % ordinal
 
         initial_state = with_initial_state or State()
         state_list = [initial_state]
@@ -67,12 +82,12 @@ class Flow(object):
         ) as p:
             p.log("Starting…")
             id = p.add_task(f"{flow_name}", total=step_count)
-            for _i, Step in enumerate(self.Steps):
+            for _i, cls in enumerate(self.Steps):
                 i = _i + 1
 
                 prev_state = state_list[-1]
 
-                step = Step(
+                step = cls(
                     self.config_in,
                     prev_state,
                     run_dir,
@@ -86,14 +101,14 @@ class Flow(object):
                     new_state = step.start()
                 except MissingInputError as e:
                     error(f"Misconfigured flow: {e}")
-                    return False
+                    return (False, state_list)
                 except subprocess.CalledProcessError:
                     error("An error has been encountered. The flow will stop.")
-                    return False
+                    return (False, state_list)
                 state_list.append(new_state)
                 p.update(id, completed=float(i))
         success("Flow complete.")
-        return True
+        return (True, state_list)
 
 
 class Prototype(Flow):

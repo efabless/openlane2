@@ -1,18 +1,22 @@
-# Mac
+# Nonsense
 .DS_Store
+Thumbs.db
 
-# VScode
-**/.vscode/
+# IDEs
+.vscode/
+.idea/
 
-# Python cache
-**/__pycache__
-.mypy_cache
+# Python
+__pycache__
+.mypy_cache/
+build/
+/venv
+*.egg-info/
+dist/
 
 # Flow artefacts
 *.log
 *.tar.gz
 /*.lef
 /*.def
-
-# Venv
-/venv
+logs/
