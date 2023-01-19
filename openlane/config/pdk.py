@@ -19,6 +19,16 @@ from .config import Config
 pdk_variables = [
     # Core/Common
     Variable(
+        "STD_CELL_LIBRARY",
+        str,
+        "Specifies the standard cell library to be used under the specified PDK.",
+    ),
+    Variable(
+        "STD_CELL_LIBRARY_OPT",
+        str,
+        "Specifies the standard cell library to be used during resizer optimizations.",
+    ),
+    Variable(
         "VDD_PIN",
         str,
         "The power pin for the cells.",
@@ -253,13 +263,13 @@ scl_variables = [
     ),
     Variable(
         "FILL_CELL",
-        str,
-        "Defines a cell name or a wildcard of fill cells to be used in fill insertion.",
+        List[str],
+        "A list of cell names or wildcards of fill cells to be used in fill insertion.",
     ),
     Variable(
         "DECAP_CELL",
-        str,
-        "Defines a cell name or a wildcard of decap cells to be used in fill insertion.",
+        List[str],
+        "A list of cell names or wildcards of decap cells to be used in fill insertion.",
     ),
     # Synthesis
     Variable(
@@ -513,8 +523,15 @@ def migrate_old_config(config: Config) -> Config:
     return new
 
 
-def validate_pdk_config(config: Config, ignore_keys: List[str]):
+def validate_pdk_config(
+    config: Config,
+    ignore_keys: List[str],
+    processed_so_far: Optional[Config] = None,
+):
     migrated = migrate_old_config(config)
     return Variable.validate_config(
-        migrated, ignore_keys, pdk_variables + scl_variables
+        migrated,
+        ignore_keys,
+        pdk_variables + scl_variables,
+        processed_so_far=processed_so_far,
     )

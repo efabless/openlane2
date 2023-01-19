@@ -17,7 +17,13 @@ import click
 import volare
 
 from .flow import Prototype
-from .config import Config, Keys, env_from_tcl, validate_pdk_config
+from .config import (
+    Config,
+    Keys,
+    env_from_tcl,
+    validate_pdk_config,
+    validate_user_config,
+)
 from .common import error, warn, log
 
 
@@ -75,10 +81,24 @@ def run_default_flow(pdk_root: str, pdk: str, scl: str, config_file: str):
         design_dir=design_dir,
     )
 
-    config_in.update(design_config)
+    config_in, warnings, errors = validate_user_config(design_config, [], config_in)
+    if len(warnings) > 0:
+        log("Loading the design configuration has generated the following warnings:")
+    for warning in warnings:
+        warn(warning)
+
+    if len(errors) > 0:
+        error(
+            "The following errors were encountered while loading the design configuration file:"
+        )
+    for err in errors:
+        error(err)
+    if len(errors) > 0:
+        log("OpenLane will now quit.")
+        exit(-1)
 
     flow = Prototype(config_in, design_dir)
-    flow.run()
+    flow.start()
 
 
 @click.command()

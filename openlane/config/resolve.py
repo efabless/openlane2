@@ -42,13 +42,7 @@ class InvalidConfig(Exception):
     pass
 
 
-class State(object):
-    pdk: str
-    scl: str
-    vars: Dict[str, str]
-
-    def __init__(self, exposed_variables: Dict[str, str]) -> None:
-        self.vars = exposed_variables.copy()
+State = dict
 
 
 class Expr(object):
@@ -232,7 +226,7 @@ def process_string(value: str, state: State) -> str:
 
     if value.startswith(EXPR_PREFIX):
         try:
-            value = f"{Expr.evaluate(value[len(EXPR_PREFIX):], state.vars)}"
+            value = f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
     elif value.startswith(REF_PREFIX):
@@ -242,7 +236,10 @@ def process_string(value: str, state: State) -> str:
             raise InvalidConfig(f"Invalid reference string '{reference}'")
         reference_variable = match[1]
         try:
-            found = state.vars[reference_variable]
+            found = state[reference_variable]
+            if found is None:
+                return None
+
             if type(found) != str:
                 if type(found) in [int, float]:
                     raise InvalidConfig(
@@ -250,16 +247,20 @@ def process_string(value: str, state: State) -> str:
                     )
                 else:
                     raise InvalidConfig(
-                        f"Referenced variable {reference_variable} is not a string."
+                        f"Referenced variable {reference_variable} is not a string: {type(found)}."
                     )
+
             value = reference.replace(match[0], found)
+
+            found_abs = os.path.abspath(found)
             full_abspath = os.path.abspath(value)
 
             # Resolve globs for paths that are inside the exposed directory
-            if value.startswith("/") and full_abspath.startswith(found):
+            if full_abspath.startswith(found_abs):
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
-                value = " ".join(files_escaped)
+                if len(files_escaped) != 0:
+                    value = " ".join(files_escaped)
         except KeyError:
             raise InvalidConfig(
                 f"Referenced variable '{reference_variable}' not found."
@@ -292,12 +293,12 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
             withhold = True
             if key.startswith(PDK_PREFIX):
                 pdk_match = key[len(PDK_PREFIX) :]
-                if fnmatch.fnmatch(state.vars[Keys.pdk], pdk_match):
+                if fnmatch.fnmatch(state[Keys.pdk], pdk_match):
                     process_config_dict_recursive(value, state)
             elif key.startswith(SCL_PREFIX):
                 scl_match = key[len(SCL_PREFIX) :]
-                if state.vars[Keys.scl] is not None and fnmatch.fnmatch(
-                    state.vars[Keys.scl], scl_match
+                if state[Keys.scl] is not None and fnmatch.fnmatch(
+                    state[Keys.scl], scl_match
                 ):
                     process_config_dict_recursive(value, state)
             else:
@@ -320,13 +321,13 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
             value = process_scalar(key, value, state)
 
         if not withhold:
-            state.vars[key] = value
+            state[key] = value
 
 
 def process_config_dict(config_in: dict, exposed_variables: Dict[str, str]):
     state = State(exposed_variables)
     process_config_dict_recursive(config_in, state)
-    return state.vars
+    return state
 
 
 def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:

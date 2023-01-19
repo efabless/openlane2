@@ -14,7 +14,7 @@
 import os
 import datetime
 import subprocess
-from typing import List, Tuple, Type, ClassVar, Optional
+from typing import List, Tuple, Type, ClassVar, Optional, final
 
 from rich.progress import (
     Progress,
@@ -38,22 +38,27 @@ from .common import mkdirp, console, error, success
 
 
 class Flow(object):
-    Steps: ClassVar[List[Type[Step]]] = [
-        TclStep,
-        Step,
-    ]
+    name: Optional[str] = None
 
     def __init__(self, config_in: Config, design_dir: str):
         self.config_in: Config = config_in
         self.steps: List[Step] = []
         self.design_dir = design_dir
 
-    def run(
+    @classmethod
+    def prefix(Self, ordinal: int) -> str:
+        return f"%0{3}d-" % ordinal
+
+    @classmethod
+    def get_name(Self) -> str:
+        return Self.name or Self.__name__
+
+    @final
+    def start(
         self,
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
     ) -> Tuple[bool, List[State]]:
-        flow_name = self.__class__.__name__
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
@@ -65,11 +70,39 @@ class Flow(object):
         with open(config_res_path, "w") as f:
             f.write(self.config_in.to_json())
 
-        step_count = len(self.Steps)
-        max_digits = len(str())
+        return self.run(
+            run_dir,
+            with_initial_state=with_initial_state,
+            tag=tag,
+        )
 
-        def prefix(ordinal):
-            return f"%0{max_digits}d-" % ordinal
+    def run(
+        self,
+        run_dir: str,
+        with_initial_state: Optional[State] = None,
+        tag: Optional[str] = None,
+    ) -> Tuple[bool, List[State]]:
+        raise NotImplementedError()
+
+
+class SequentialFlow(Flow):
+    Steps: ClassVar[List[Type[Step]]] = [
+        TclStep,
+        Step,
+    ]
+
+    @classmethod
+    def prefix(Self, ordinal: int) -> str:
+        return f"%0{len(Self.Steps)}d-" % ordinal
+
+    def run(
+        self,
+        run_dir: str,
+        with_initial_state: Optional[State] = None,
+        tag: Optional[str] = None,
+    ) -> Tuple[bool, List[State]]:
+        flow_name = self.get_name()
+        step_count = len(self.Steps)
 
         initial_state = with_initial_state or State()
         state_list = [initial_state]
@@ -91,7 +124,7 @@ class Flow(object):
                     self.config_in,
                     prev_state,
                     run_dir,
-                    prefix=prefix(i),
+                    prefix=self.prefix(i),
                     ordinal=i,
                 )
                 self.steps.append(step)
@@ -111,10 +144,35 @@ class Flow(object):
         return (True, state_list)
 
 
-class Prototype(Flow):
+class Prototype(SequentialFlow):
     Steps: ClassVar[List[Type[Step]]] = [
-        TclStep,
         Synthesis,
         NetlistSTA,
         Floorplan,
     ]
+
+
+class OptimizingFlow(Flow):
+    def run(
+        self,
+        run_dir: str,
+        with_initial_state: Optional[State] = None,
+        tag: Optional[str] = None,
+    ) -> Tuple[bool, List[State]]:
+        flow_name = self.get_name()
+        step_count = 8
+
+        initial_state = with_initial_state or State()
+        state_list = [initial_state]
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+        ) as p:
+            p.log("Starting…")
+            id = p.add_task(f"{flow_name}", total=step_count)
+
+        success("Flow complete.")
+        return (True, state_list)

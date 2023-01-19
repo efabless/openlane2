@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+from enum import Enum
 from decimal import Decimal
 from typing import Any, Tuple
 from collections import UserDict, UserString
@@ -31,6 +32,8 @@ class ConfigEncoder(json.JSONEncoder):
             else:
                 return float(o)
         elif isinstance(o, Path):
+            return str(o)
+        elif isinstance(o, Enum):
             return str(o)
         return super(ConfigEncoder, self).default(o)
 

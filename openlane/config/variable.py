@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from enum import Enum
 from dataclasses import dataclass
 from typing import get_origin, get_args
-from typing import Union, Type, List, Optional, Tuple, Any
+from typing import Union, Type, List, Optional, Tuple, Any, Dict
 
 from .config import Config, Path
+from .resolve import process_string
 
 import pathvalidate
 
@@ -58,17 +60,30 @@ class Variable:
     def required(self) -> bool:
         return self.default is None and not self.is_optional()
 
-    def process(self, value, validating_type=None):
+    def process(
+        self,
+        value,
+        validating_type: Optional[Type] = None,
+        values_so_far: Optional[Dict[str, Any]] = None,
+    ):
         if validating_type is None:
-            if value is None:
-                if not self.is_optional():
-                    raise ValueError(f"Required variable {self.name} given null value.")
-                else:
-                    return value
-
             validating_type = self.type
             if self.is_optional():
                 validating_type = self.some()
+
+        assert validating_type is not None
+
+        if value is None:
+            if not self.is_optional():
+                if self.default is not None:
+                    value = self.default
+                else:
+                    raise ValueError(f"Required variable {self.name} given null value.")
+            else:
+                return value
+
+        if type(value) == str:
+            value = process_string(value, values_so_far)
 
         if get_origin(validating_type) == list:
             return_value = list()
@@ -100,14 +115,16 @@ class Variable:
                 )
             return Path(value)
         elif validating_type == bool:
-            if value in ["1", "true"]:
+            if value in ["1", "true", True]:
                 return True
-            elif value in ["0", "false"]:
+            elif value in ["0", "false", False]:
                 return False
             else:
                 raise ValueError(
                     f"Value provided for boolean variable {self.name} invalid: {value}"
                 )
+        elif issubclass(validating_type, Enum):
+            return validating_type[value]
         else:
             return validating_type(value)
 
@@ -117,19 +134,26 @@ class Variable:
         config: Config,
         ignore_keys: List[str],
         variables: List["Variable"],
+        processed_so_far: Optional[Config] = None,
     ) -> Tuple[Config, List[str], List[str]]:
         processed = Config()
+        if processed_so_far is not None:
+            processed = processed_so_far.copy()
         warnings = []
         errors = []
         mutable = config.copy()
         for variable in variables:
             exists, value = mutable.extract(variable.name)
             i = 0
-            while not exists and variable.deprecated_names is not None:
+            while (
+                not exists
+                and variable.deprecated_names is not None
+                and i < len(variable.deprecated_names)
+            ):
                 exists, value = mutable.extract(variable.deprecated_names[i])
                 i = i + 1
             try:
-                value_processed = variable.process(value)
+                value_processed = variable.process(value, values_so_far=processed)
             except ValueError as e:
                 errors.append(str(e))
             processed[variable.name] = value_processed

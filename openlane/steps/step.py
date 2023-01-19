@@ -15,6 +15,7 @@ import os
 import re
 import time
 import subprocess
+from enum import Enum
 from io import TextIOWrapper
 from typing import List, Callable, Optional, final
 
@@ -82,6 +83,21 @@ class Step(object):
 
     @final
     def start(
+        self,
+        **kwargs,
+    ) -> State:
+        self.start_time = time.time()
+        if self.ordinal is not None:
+            console.rule(f"{self.ordinal} - {self.get_long_name()}")
+        else:
+            console.rule(f"{self.get_name()}")
+        mkdirp(self.step_dir)
+        self.state_out = self.run(**kwargs)
+        self.end_time = time.time()
+        return self.state_out
+
+    @final
+    async def start_async(
         self,
         **kwargs,
     ) -> State:
@@ -176,6 +192,8 @@ class TclStep(Step):
                 continue
             if isinstance(value, list):
                 value = " ".join(list(map(lambda x: str(x), value)))
+            elif isinstance(value, Enum):
+                value = value._name_
             else:
                 value = str(value)
             env[element] = value
