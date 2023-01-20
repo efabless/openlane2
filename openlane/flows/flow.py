@@ -14,6 +14,7 @@
 import os
 import datetime
 import subprocess
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import List, Tuple, Type, ClassVar, Optional, Dict, final
 
 from rich.progress import (
@@ -22,6 +23,7 @@ from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
     TimeElapsedColumn,
+    TaskID,
 )
 
 from ..config import Config
@@ -31,24 +33,61 @@ from ..steps import (
     State,
     TclStep,
 )
-from ..common import mkdirp, console, error, success
+from ..common import mkdirp, console, log, error, success
 
 
 class Flow(object):
     name: Optional[str] = None
+    Steps: ClassVar[List[Type[Step]]] = [
+        TclStep,
+        Step,
+    ]
 
     def __init__(self, config_in: Config, design_dir: str):
         self.config_in: Config = config_in
         self.steps: List[Step] = []
         self.design_dir = design_dir
 
-    @classmethod
-    def prefix(Self, ordinal: int) -> str:
-        return f"%0{3}d-" % ordinal
+        self.ordinal: int = 0
+        self.max_stage: int = 0
+        self.task_id: Optional[TaskID] = None
+        self.progress: Optional[Progress] = None
+        self.run_dir: Optional[str] = None
+        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
 
     @classmethod
     def get_name(Self) -> str:
         return Self.name or Self.__name__
+
+    def set_stage_count(self, count: int):
+        if self.progress is None or self.task_id is None:
+            return
+        self.max_stage = count
+        self.progress.update(self.task_id, total=count)
+
+    def start_stage(self, name: str):
+        if self.progress is None or self.task_id is None:
+            return
+        self.ordinal += 1
+        self.progress.update(
+            self.task_id,
+            description=f"{self.get_name()} - Stage {self.ordinal} - {name}",
+        )
+
+    def end_stage(self):
+        self.progress.update(self.task_id, completed=float(self.ordinal))
+
+    def current_stage_prefix(self) -> str:
+        max_stage_digits = len(str(self.max_stage))
+        return f"%0{max_stage_digits}d-" % self.ordinal
+
+    def dir_for_step(self, step: Step):
+        if self.run_dir is None:
+            raise Exception("")
+        return os.path.join(
+            self.run_dir,
+            f"{self.current_stage_prefix()}{step.get_name_escaped()}",
+        )
 
     @final
     def start(
@@ -59,75 +98,67 @@ class Flow(object):
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
-        run_dir = os.path.join(self.design_dir, "runs", tag)
+        self.run_dir = os.path.join(self.design_dir, "runs", tag)
 
-        mkdirp(run_dir)
+        mkdirp(self.run_dir)
 
-        config_res_path = os.path.join(run_dir, "resolved.json")
+        config_res_path = os.path.join(self.run_dir, "resolved.json")
         with open(config_res_path, "w") as f:
             f.write(self.config_in.to_json())
 
-        with Progress(
+        self.progress = Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             console=console,
-        ) as p:
-            return self.run(
-                run_dir=run_dir,
-                p=p,
-                with_initial_state=with_initial_state,
-            )
+        )
+        self.progress.start()
+        self.task_id = self.progress.add_task(
+            f"{self.get_name()}",
+        )
+        result = self.run(
+            with_initial_state=with_initial_state,
+        )
+        self.progress.stop()
+
+        # Reset stateful objects
+        self.progress = None
+        self.task_id = None
+        self.ordinal = 0
+        self.max_stage = 0
+
+        return result
 
     def run(
         self,
-        run_dir: str,
-        p: Progress,
         with_initial_state: Optional[State] = None,
-        tag: Optional[str] = None,
     ) -> Tuple[bool, List[State]]:
         raise NotImplementedError()
 
+    def run_step_async(self, step: Step, *args, **kwargs) -> Future[State]:
+        return self.tpe.submit(step.start, *args, **kwargs)
+
 
 class SequentialFlow(Flow):
-    Steps: ClassVar[List[Type[Step]]] = [
-        TclStep,
-        Step,
-    ]
-
     @classmethod
     def prefix(Self, ordinal: int) -> str:
         return f"%0{len(Self.Steps)}d-" % ordinal
 
     def run(
         self,
-        p: Progress,
-        run_dir: str,
         with_initial_state: Optional[State] = None,
-        tag: Optional[str] = None,
     ) -> Tuple[bool, List[State]]:
-        flow_name = self.get_name()
         step_count = len(self.Steps)
+        self.set_stage_count(step_count)
 
         initial_state = with_initial_state or State()
         state_list = [initial_state]
-        p.log("Starting…")
-        id = p.add_task(f"{flow_name}", total=step_count)
-        for _i, cls in enumerate(self.Steps):
-            i = _i + 1
-
-            prev_state = state_list[-1]
-
-            step = cls(
-                self.config_in,
-                prev_state,
-                run_dir,
-                prefix=self.prefix(i),
-            )
+        log("Starting…")
+        for cls in self.Steps:
+            step = cls()
             self.steps.append(step)
-
-            p.update(id, description=f"{flow_name} - Step {i} - {step.get_name()}")
+            self.start_stage(step.get_name())
             try:
                 new_state = step.start()
             except MissingInputError as e:
@@ -137,7 +168,7 @@ class SequentialFlow(Flow):
                 error("An error has been encountered. The flow will stop.")
                 return (False, state_list)
             state_list.append(new_state)
-            p.update(id, completed=float(i))
+            self.end_stage()
         success("Flow complete.")
         return (True, state_list)
 

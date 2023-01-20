@@ -14,10 +14,12 @@
 import os
 import re
 import time
+import inspect
 import subprocess
 from enum import Enum
 from io import TextIOWrapper
-from typing import List, Callable, Optional, final
+from concurrent.futures import Future
+from typing import final, List, Callable, Optional, Union, Type
 
 from .state import State, DesignFormat, Output
 from ..config import Config
@@ -66,21 +68,61 @@ class Step(object):
 
     def __init__(
         self,
-        config: Config,
-        state_in: State,
-        run_dir: str,
-        prefix: Optional[str] = None,
+        config: Optional[Config] = None,
+        state_in: Union[Optional[State], Future[State]] = None,
+        step_dir: Optional[str] = None,
         name: Optional[str] = None,
         silent: bool = False,
     ):
         if name is not None:
             self.name = name
 
+        if config is None:
+            try:
+                frame = inspect.currentframe()
+                if frame is not None:
+                    current = frame
+                    while current := current.f_back:
+                        locals = current.f_locals
+                        if "self" in locals and hasattr(locals["self"], "config_in"):
+                            config = locals["self"].config_in.copy()
+                if config is None:
+                    raise Exception("")
+            finally:
+                del frame
+
+        if state_in is None:
+            try:
+                frame = inspect.currentframe()
+                if frame is not None:
+                    current = frame
+                    while current := current.f_back:
+                        locals = current.f_locals
+                        if "state_list" in locals:
+                            state_list = locals["state_list"]
+                            state_in = state_list[-1]
+                if state_in is None:
+                    raise Exception("")
+            finally:
+                del frame
+
+        if step_dir is None:
+            try:
+                frame = inspect.currentframe()
+                if frame is not None:
+                    current = frame
+                    while current := current.f_back:
+                        locals = current.f_locals
+                        if "self" in locals and hasattr(locals["self"], "dir_for_step"):
+                            step_dir = locals["self"].dir_for_step(self)
+                if step_dir is None:
+                    raise Exception("")
+            finally:
+                del frame
+
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
-        self.step_dir = os.path.join(
-            run_dir, f"{prefix or ''}{self.get_name_escaped()}"
-        )
+        self.step_dir = step_dir
         self.config = config.copy()
         self.state_in = state_in
         self.silent = silent
@@ -104,6 +146,8 @@ class Step(object):
         via super().run(**kwargs). This lets you use the input verification and
         the copying code.
         """
+        if isinstance(self.state_in, Future):
+            self.state_in = self.state_in.result()
         for input in self.inputs:
             value = self.state_in.get(input.name)
             if value is None:
@@ -118,7 +162,6 @@ class Step(object):
         self,
         cmd,
         log_to: Optional[str] = None,
-        step_dir: Optional[str] = None,
         **kwargs,
     ):
         log_file = open(os.devnull, "w")
@@ -137,9 +180,9 @@ class Step(object):
         process_stdout: TextIOWrapper = process.stdout  # type: ignore
         current_rpt = None
         while line := process_stdout.readline():
-            if step_dir is not None and line.startswith(REPORT_START_LOCUS):
+            if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
                 report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                report_path = os.path.join(step_dir, report_name)
+                report_path = os.path.join(self.step_dir, report_name)
                 current_rpt = open(report_path, "w")
             elif line.startswith(REPORT_END_LOCUS):
                 if current_rpt is not None:
@@ -201,7 +244,6 @@ class TclStep(Step):
             command,
             env=env,
             log_to=log_path,
-            step_dir=self.step_dir,
             **kwargs,
         )
 

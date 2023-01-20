@@ -107,18 +107,21 @@ def run_flow(flow_name: str, pdk_root: str, pdk: str, scl: str, config_file: str
 @click.command()
 # @click.option("--verbose", type=click.choice('BASIC', 'INFO', 'DEBUG', 'SILLY'), default="INFO", )
 @click.option(
+    "-p",
     "--pdk",
     type=str,
     default="sky130A",
     help="The process design kit to use. [default: sky130A]",
 )
 @click.option(
+    "-s",
     "--scl",
     type=str,
     default=None,
     help="The standard cell library to use. [default: varies by PDK]",
 )
 @click.option(
+    "-f",
     "--flow",
     type=click.Choice(FlowFactory.list(), case_sensitive=False),
     default="prototype",
