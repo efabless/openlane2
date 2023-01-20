@@ -47,4 +47,14 @@ class State(UserDict):
         super().__init__()
         for format in DesignFormat:
             self[format] = None
-        self.metrics = {}
+        self.metrics = dict()
+
+    def __copy__(self: "State") -> "State":
+        new = super().__copy__()
+        new.metrics = self.metrics.copy()
+        return new
+
+    def __repr__(self) -> str:
+        representable = dict(self)
+        representable["metrics"] = self.metrics
+        return representable.__repr__()

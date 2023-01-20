@@ -11,7 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .step import Step, TclStep, StepConditionLambda, MissingInputError
-from .state import State
-from . import yosys as Yosys
-from . import openroad as OpenROAD
+from typing import List, Type, ClassVar
+from ..steps import (
+    Step,
+    Yosys,
+    OpenROAD,
+)
+from .flow import SequentialFlow, FlowFactory
+
+
+class Prototype(SequentialFlow):
+    Steps: ClassVar[List[Type[Step]]] = [
+        Yosys.Synthesis,
+        OpenROAD.NetlistSTA,
+        OpenROAD.Floorplan,
+    ]
+
+
+FlowFactory.register(Prototype)

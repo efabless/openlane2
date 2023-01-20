@@ -286,9 +286,8 @@ opt_clean -purge
 
 set report_dir $::env(STEP_DIR)/reports
 file mkdir $report_dir
-set ::env(synth_report_prefix) $report_dir/$::env(DESIGN_NAME)
 
-tee -o "$::env(synth_report_prefix)_pre.stat" stat
+tee -o "$report_dir/pre_techmap.json" stat -json
 
 # Map tri-state buffers
 if { $tbuf_map } {
@@ -309,12 +308,13 @@ if { [info exists ::env(SYNTH_LATCH_MAP)] && [file exists $::env(SYNTH_LATCH_MAP
 }
 
 dfflibmap -liberty $dfflib
-tee -o "$::env(synth_report_prefix)_dff.stat" stat
+tee -o "$report_dir/post_dff.json" stat -json
 
 proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     upvar clock_period clock_period
     upvar sdc_file sdc
     upvar sclib lib
+    upvar report_dir report_dir
 
     log "\[INFO\]: USING STRATEGY $strategy_name"
 
@@ -330,14 +330,14 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
 
     setundef -zero
 
-    hilomap -hicell {*}$::env(SYNTH_TIEHI_CELL) -locell {*}$::env(SYNTH_TIELO_CELL)
+    hilomap -hicell $::env(SYNTH_TIEHI_CELL) -locell $::env(SYNTH_TIELO_CELL)
 
     splitnets
     opt_clean -purge
     insbuf -buf {*}[split $::env(SYNTH_BUFFER_CELL) "/"]
 
-    tee -o "$::env(synth_report_prefix).$strategy_escaped.chk.rpt" check
-    tee -o "$::env(synth_report_prefix).$strategy_escaped.stat.rpt" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(LIB_SYNTH) 0]
+    tee -o "$report_dir/chk.rpt" check
+    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(LIB_SYNTH) 0] -json
 
     if { [info exists ::env(SYNTH_AUTONAME)] && $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include
@@ -349,76 +349,50 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
         #     sc_mcu7t5v0__and3_1_A3_Z_gf180mcu_fd_sc_mcu7t5v0__buf_1_I_Z
         autoname
     }
-
-    if { $postfix_with_strategy } {
-        set output "$output.$strategy_escaped.nl.v"
-    }
-
     write_verilog -noattr -noexpr -nohex -nodec -defparam $output
     design -reset
 }
 design -save checkpoint
 
-# Explore/Finalize
-if { [info exists ::env(SYNTH_EXPLORE)] && $::env(SYNTH_EXPLORE) } {
-    for { set index 0 }  { $index < [llength $delay_scripts] }  { incr index } {
-        set name "DELAY $index"
-        run_strategy\
-            "$::env(synthesis_results)/$::env(DESIGN_NAME)"\
-            [lindex $delay_scripts $index]\
-            "$name"\
-            1
+run_strategy\
+    "$::env(SAVE_NETLIST)"\
+    "$strategy_script"\
+    "$strategy_name"
+
+if { $::env(SYNTH_NO_FLAT) } {
+    design -reset
+
+    if { [info exists ::env(SYNTH_DEFINES) ] } {
+        foreach define $::env(SYNTH_DEFINES) {
+            log "Defining $define"
+            verilog_defines -D$define
+        }
     }
 
-    for { set index 0 }  { $index < [llength $area_scripts] }  { incr index } {
-        set name "AREA $index"
-        run_strategy\
-            "$::env(synthesis_results)/$::env(DESIGN_NAME)"\
-            [lindex $area_scripts $index]\
-            "$name"\
-            1
+    foreach lib $::env(LIB_SYNTH_COMPLETE_NO_PG) {
+        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
-} else {
+
+    if { [info exists ::env(EXTRA_LIBS) ] } {
+        foreach lib $::env(EXTRA_LIBS) {
+            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+        }
+    }
+
+    if { [info exists ::env(VERILOG_FILES_BLACKBOX)] } {
+        foreach verilog_file $::env(VERILOG_FILES_BLACKBOX) {
+            read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
+        }
+    }
+
+    file copy -force $::env(SAVE_NETLIST) $::env(synthesis_results)/$::env(DESIGN_NAME).hierarchy.nl.v
+    read_verilog -sv $::env(SAVE_NETLIST)
+    synth -top $vtop -flatten
+
+    design -save checkpoint
     run_strategy\
         "$::env(SAVE_NETLIST)"\
         "$strategy_script"\
         "$strategy_name"
-
-    if { $::env(SYNTH_NO_FLAT) } {
-        design -reset
-
-        if { [info exists ::env(SYNTH_DEFINES) ] } {
-            foreach define $::env(SYNTH_DEFINES) {
-                log "Defining $define"
-                verilog_defines -D$define
-            }
-        }
-
-        foreach lib $::env(LIB_SYNTH_COMPLETE_NO_PG) {
-            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-        }
-
-        if { [info exists ::env(EXTRA_LIBS) ] } {
-            foreach lib $::env(EXTRA_LIBS) {
-                read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-            }
-        }
-
-        if { [info exists ::env(VERILOG_FILES_BLACKBOX)] } {
-            foreach verilog_file $::env(VERILOG_FILES_BLACKBOX) {
-                read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
-            }
-        }
-
-        file copy -force $::env(SAVE_NETLIST) $::env(synthesis_results)/$::env(DESIGN_NAME).hierarchy.nl.v
-        read_verilog -sv $::env(SAVE_NETLIST)
-        synth -top $vtop -flatten
-
-        design -save checkpoint
-        run_strategy\
-            "$::env(SAVE_NETLIST)"\
-            "$strategy_script"\
-            "$strategy_name"
-    }
-
 }
+

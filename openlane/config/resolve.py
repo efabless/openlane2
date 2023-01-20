@@ -208,7 +208,7 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def process_string(value: str, state: State) -> str:
+def process_string(value: str, state: State) -> Optional[str]:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"

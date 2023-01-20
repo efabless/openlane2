@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import json
 from typing import List
 
 from .step import TclStep, get_script_dir
-from .state import DesignFormat, Output
+from .state import DesignFormat, Output, State
 
 
 class Synthesis(TclStep):
@@ -26,3 +27,19 @@ class Synthesis(TclStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
+
+    def run(
+        self,
+        **kwargs,
+    ) -> State:
+        state_out = super().run(**kwargs)
+
+        stats_file = os.path.join(self.step_dir, "reports", "stat.json")
+        stats_str = open(stats_file).read()
+        stats = json.loads(stats_str)
+
+        state_out.metrics["design__instance__count"] = stats["design"]["num_cells"]
+        if chip_area := stats["design"].get("area"):  # needs nonzero area
+            state_out.metrics["design__instance__area"] = chip_area
+
+        return state_out

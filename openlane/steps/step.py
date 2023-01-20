@@ -59,7 +59,7 @@ class Step(object):
         return self.name or self.__class__.__name__
 
     def get_name_escaped(self):
-        return invalid_for_path.sub("_", self.get_name())
+        return invalid_for_path.sub("_", self.get_name()).lower()
 
     def get_long_name(self):
         return self.long_name or self.get_name()
@@ -70,9 +70,12 @@ class Step(object):
         state_in: State,
         run_dir: str,
         prefix: Optional[str] = None,
-        ordinal: Optional[int] = None,
+        name: Optional[str] = None,
+        silent: bool = False,
     ):
-        self.ordinal = ordinal
+        if name is not None:
+            self.name = name
+
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
         self.step_dir = os.path.join(
@@ -80,6 +83,7 @@ class Step(object):
         )
         self.config = config.copy()
         self.state_in = state_in
+        self.silent = silent
 
     @final
     def start(
@@ -87,25 +91,8 @@ class Step(object):
         **kwargs,
     ) -> State:
         self.start_time = time.time()
-        if self.ordinal is not None:
-            console.rule(f"{self.ordinal} - {self.get_long_name()}")
-        else:
-            console.rule(f"{self.get_name()}")
-        mkdirp(self.step_dir)
-        self.state_out = self.run(**kwargs)
-        self.end_time = time.time()
-        return self.state_out
-
-    @final
-    async def start_async(
-        self,
-        **kwargs,
-    ) -> State:
-        self.start_time = time.time()
-        if self.ordinal is not None:
-            console.rule(f"{self.ordinal} - {self.get_long_name()}")
-        else:
-            console.rule(f"{self.get_name()}")
+        if not self.silent:
+            console.rule(f"{self.get_long_name()}")
         mkdirp(self.step_dir)
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
@@ -126,8 +113,9 @@ class Step(object):
 
         return self.state_in.copy()
 
-    @staticmethod
+    @final
     def run_subprocess(
+        self,
         cmd,
         log_to: Optional[str] = None,
         step_dir: Optional[str] = None,
@@ -160,7 +148,8 @@ class Step(object):
             elif current_rpt is not None:
                 current_rpt.write(line)
             else:
-                console.print(line.strip())
+                if not self.silent:
+                    console.print(line.strip())
                 log_file.write(line)
         returncode = process.wait()
         if returncode != 0:

@@ -62,6 +62,9 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OpenROADStep(TclStep):
+    inputs = [DesignFormat.ODB]
+    outputs = [Output(DesignFormat.ODB), Output(DesignFormat.DEF)]
+
     def get_script_path(self):
         raise Exception("Subclass the OpenROAD Step class before using it.")
 
@@ -76,8 +79,6 @@ class OpenROADStep(TclStep):
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
             new_metrics = json.loads(metrics_str)
             state_out.metrics.update(new_metrics)
-            with open(metrics_path, "w") as f:
-                f.write(json.dumps(state_out.metrics, indent=2))
         return state_out
 
     def get_command(self) -> List[str]:
@@ -103,9 +104,9 @@ class NetlistSTA(OpenROADStep):
 
 
 class Floorplan(OpenROADStep):
+    name = "Floorplan Init"
     long_name = "Floorplan Initialization"
     inputs = [DesignFormat.NETLIST]
-    outputs = [Output(DesignFormat.ODB), Output(DesignFormat.DEF)]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
@@ -120,4 +121,28 @@ class Floorplan(OpenROADStep):
 
         env = os.environ.copy()
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
+        return super().run(env=env, **kwargs)
+
+
+class IOPlacement(OpenROADStep):
+    name = "I/O Placement"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
+
+    def run(self, **kwargs) -> State:
+
+        env = os.environ.copy()
+        return super().run(env=env, **kwargs)
+
+
+class GlobalPlacement(OpenROADStep):
+    name = "Global Placement"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "gpl.tcl")
+
+    def run(self, **kwargs) -> State:
+        env = os.environ.copy()
+        env["PL_TARGET_DENSITY"] = f"{self.config['FP_CORE_UTIL'] + 5}"
         return super().run(env=env, **kwargs)

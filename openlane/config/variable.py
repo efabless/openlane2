@@ -66,6 +66,9 @@ class Variable:
         validating_type: Optional[Type] = None,
         values_so_far: Optional[Dict[str, Any]] = None,
     ):
+        if values_so_far is None:
+            values_so_far = {}
+
         if validating_type is None:
             validating_type = self.type
             if self.is_optional():
@@ -153,7 +156,7 @@ class Variable:
                 exists, value = mutable.extract(variable.deprecated_names[i])
                 i = i + 1
             try:
-                value_processed = variable.process(value, values_so_far=processed)
+                value_processed = variable.process(value, values_so_far=processed.data)
             except ValueError as e:
                 errors.append(str(e))
             processed[variable.name] = value_processed

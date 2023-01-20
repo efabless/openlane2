@@ -16,7 +16,7 @@ import os
 import click
 import volare
 
-from .flow import Prototype
+from .flows import FlowFactory
 from .config import (
     Config,
     Keys,
@@ -27,7 +27,10 @@ from .config import (
 from .common import error, warn, log
 
 
-def run_default_flow(pdk_root: str, pdk: str, scl: str, config_file: str):
+def run_flow(flow_name: str, pdk_root: str, pdk: str, scl: str, config_file: str):
+    Flow = FlowFactory.get(flow_name)
+    assert Flow is not None
+
     design_dir = os.path.dirname(config_file)
     config_str = open(config_file).read()
 
@@ -97,7 +100,7 @@ def run_default_flow(pdk_root: str, pdk: str, scl: str, config_file: str):
         log("OpenLane will now quit.")
         exit(-1)
 
-    flow = Prototype(config_in, design_dir)
+    flow = Flow(config_in, design_dir)
     flow.start()
 
 
@@ -115,10 +118,16 @@ def run_default_flow(pdk_root: str, pdk: str, scl: str, config_file: str):
     default=None,
     help="The standard cell library to use. [default: varies by PDK]",
 )
+@click.option(
+    "--flow",
+    type=click.Choice(FlowFactory.list(), case_sensitive=False),
+    default="prototype",
+    help="The built-in OpenLane flow to use",
+)
 @click.option("--pdk-root", default=None, help="Override volare PDK root folder")
 @click.argument("config_file")
-def cli(pdk_root, pdk, scl, config_file):
-    run_default_flow(pdk_root, pdk, scl, config_file)
+def cli(flow, pdk_root, pdk, scl, config_file):
+    run_flow(flow, pdk_root, pdk, scl, config_file)
 
 
 if __name__ == "__main__":
