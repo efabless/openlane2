@@ -19,7 +19,7 @@ import subprocess
 from enum import Enum
 from io import TextIOWrapper
 from concurrent.futures import Future
-from typing import final, List, Callable, Optional, Union, Type
+from typing import final, List, Callable, Optional, Union
 
 from .state import State, DesignFormat, Output
 from ..config import Config

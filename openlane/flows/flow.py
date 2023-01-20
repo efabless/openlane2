@@ -104,7 +104,7 @@ class Flow(object):
 
         config_res_path = os.path.join(self.run_dir, "resolved.json")
         with open(config_res_path, "w") as f:
-            f.write(self.config_in.to_json())
+            f.write(self.config_in.dumps())
 
         self.progress = Progress(
             TextColumn("[progress.description]{task.description}"),

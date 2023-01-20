@@ -81,7 +81,7 @@ class Optimizing(Flow):
         self.start_stage("Floorplanning and Placement")
 
         fp_config = min_config.copy()
-        fp_config["FP_CORE_UTIL"] = 80
+        fp_config["FP_CORE_UTIL"] = 99
         fp = OpenROAD.Floorplan(
             fp_config,
             name="Floorplanning (High Util)",

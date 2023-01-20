@@ -12,96 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-
 import click
-import volare
 
 from .flows import FlowFactory
-from .config import (
-    Config,
-    Keys,
-    env_from_tcl,
-    validate_pdk_config,
-    validate_user_config,
-)
+from .config import ConfigBuilder, InvalidConfig
 from .common import error, warn, log
-
-
-def run_flow(flow_name: str, pdk_root: str, pdk: str, scl: str, config_file: str):
-    Flow = FlowFactory.get(flow_name)
-    assert Flow is not None
-
-    design_dir = os.path.dirname(config_file)
-    config_str = open(config_file).read()
-
-    process_info = Config.from_json(
-        config_str,
-        only_extract_process_info=True,
-        design_dir=design_dir,
-    )
-    pdk_root = volare.get_volare_home(pdk_root)
-    pdk = process_info.get(Keys.pdk) or pdk
-    config_in = Config(
-        {
-            "PDK_ROOT": pdk_root,
-            Keys.pdk: pdk,
-        }
-    )
-
-    pdkpath = os.path.join(pdk_root, pdk)
-    pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
-    config_in = env_from_tcl(config_in, pdk_config_path)
-
-    scl = config_in["STD_CELL_LIBRARY"]
-    sclpath = os.path.join(pdkpath, "libs.ref", scl)
-    scl_config_path = os.path.join(pdkpath, "libs.tech", "openlane", scl, "config.tcl")
-    config_in = env_from_tcl(config_in, scl_config_path)
-
-    config_in, warnings, errors = validate_pdk_config(
-        config_in, ["PDK_ROOT", "PDK", "STD_CELL_LIBRARY"]
-    )
-    if len(warnings) > 0:
-        log("Loading the PDK configuration has generated the following warnings:")
-    for warning in warnings:
-        warn(warning)
-
-    if len(errors) > 0:
-        error(
-            "The following errors were encountered while loading the PDK configuration files:"
-        )
-    for err in errors:
-        error(err)
-    if len(errors) > 0:
-        log("OpenLane will now quit.")
-        exit(-1)
-
-    design_config = Config.from_json(
-        config_str,
-        pdk=pdk,
-        pdkpath=pdkpath,
-        scl=scl,
-        sclpath=sclpath,
-        design_dir=design_dir,
-    )
-
-    config_in, warnings, errors = validate_user_config(design_config, [], config_in)
-    if len(warnings) > 0:
-        log("Loading the design configuration has generated the following warnings:")
-    for warning in warnings:
-        warn(warning)
-
-    if len(errors) > 0:
-        error(
-            "The following errors were encountered while loading the design configuration file:"
-        )
-    for err in errors:
-        error(err)
-    if len(errors) > 0:
-        log("OpenLane will now quit.")
-        exit(-1)
-
-    flow = Flow(config_in, design_dir)
-    flow.start()
 
 
 @click.command()
@@ -123,14 +38,36 @@ def run_flow(flow_name: str, pdk_root: str, pdk: str, scl: str, config_file: str
 @click.option(
     "-f",
     "--flow",
+    "flow_name",
     type=click.Choice(FlowFactory.list(), case_sensitive=False),
     default="prototype",
     help="The built-in OpenLane flow to use",
 )
 @click.option("--pdk-root", default=None, help="Override volare PDK root folder")
 @click.argument("config_file")
-def cli(flow, pdk_root, pdk, scl, config_file):
-    run_flow(flow, pdk_root, pdk, scl, config_file)
+def cli(flow_name, pdk_root, pdk, scl, config_file):
+    Flow = FlowFactory.get(flow_name)
+    assert Flow is not None
+
+    try:
+        config_in, design_dir = ConfigBuilder.load(
+            config_file,
+            pdk_root=pdk_root,
+            pdk=pdk,
+            scl=scl,
+        )
+    except InvalidConfig as e:
+        error(f"Errors have occurred while loading the {e.config}:")
+        for err in e.errors:
+            error(err)
+        log("The following warnings have also been generated:")
+        for warning in e.warnings:
+            warn(warning)
+        log("OpenLane will now quit. Please check your configuration.")
+        exit(os.EX_DATAERR)
+
+    flow = Flow(config_in, design_dir)
+    flow.start()
 
 
 if __name__ == "__main__":

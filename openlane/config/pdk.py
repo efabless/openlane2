@@ -274,7 +274,7 @@ scl_variables = [
     # Synthesis
     Variable(
         "LIB_SYNTH",
-        Path,
+        List[Path],
         "Path to the lib file to be used during synthesis.",
     ),
     Variable(
@@ -291,19 +291,19 @@ scl_variables = [
     # Static Timing Analysis
     Variable(
         "LIB_TYPICAL",
-        Path,
+        List[Path],
         "Path to the lib file to be used during typical timing corner static timing analysis.",
         deprecated_names=["LIB_SYNTH_TYPICAL"],
     ),
     Variable(
         "LIB_SLOWEST",
-        Path,
+        List[Path],
         "Path to the lib file to be used during slowest timing corner static timing analysis.",
         deprecated_names=["LIB_SYNTH_SLOWEST"],
     ),
     Variable(
         "LIB_FASTEST",
-        Path,
+        List[Path],
         "Path to the lib file to be used during fastest timing corner static timing analysis.",
         deprecated_names=["LIB_SYNTH_FASTEST"],
     ),
