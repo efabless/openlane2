@@ -1,3 +1,16 @@
+# Copyright 2023 Efabless Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
 import json
 from decimal import Decimal
@@ -81,6 +94,10 @@ class ConfigBuilder(object):
         config_in = env_from_tcl(config_in, pdk_config_path)
 
         scl = config_in["STD_CELL_LIBRARY"]
+        assert (
+            scl is not None
+        ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
+
         sclpath = os.path.join(pdkpath, "libs.ref", scl)
         scl_config_path = os.path.join(
             pdkpath, "libs.tech", "openlane", scl, "config.tcl"
@@ -129,5 +146,7 @@ class ConfigBuilder(object):
             )
         for warning in design_warnings:
             warn(warning)
+
+        config_in["PDK_ROOT"] = pdk_root
 
         return config_in

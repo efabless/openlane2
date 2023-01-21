@@ -861,6 +861,12 @@ flow_variables = [
         default=0,
     ),
     Variable(
+        "GRT_ALLOW_CONGESTION",
+        bool,
+        "Allow congestion during global routing",
+        default=False,
+    ),
+    Variable(
         "DRT_MIN_LAYER",
         Optional[str],
         "An optional override to the lowest layer used in detailed routing. For example, in sky130, you may want global routing to avoid li1, but let detailed routing use li1 if it has to.",

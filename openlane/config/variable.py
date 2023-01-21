@@ -39,22 +39,22 @@ class Variable:
 
     def is_optional(self) -> bool:
         type_args = get_args(self.type)
-        return (
-            get_origin(self.type) is Union
-            and len(type_args) == 2
-            and type(None) in type_args
-        )
+        return get_origin(self.type) is Union and type(None) in type_args
 
     def some(self) -> Any:
         if not self.is_optional():
             return self.type
         else:
             type_args = get_args(self.type)
-            assert len(type_args) == 2
-            if type_args[0] != Type[None]:
-                return type_args[0]
+            if len(type_args) == 2:
+                if type_args[0] != Type[None]:
+                    return type_args[0]
+                else:
+                    return type_args[1]
             else:
-                return type_args[1]
+                some_type_args = list(type_args)
+                some_type_args.remove(Type[None])
+                return tuple(some_type_args)
 
     @property
     def required(self) -> bool:

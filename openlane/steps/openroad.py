@@ -63,7 +63,13 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 
 class OpenROADStep(TclStep):
     inputs = [DesignFormat.ODB]
-    outputs = [Output(DesignFormat.ODB), Output(DesignFormat.DEF)]
+    outputs = [
+        Output(DesignFormat.ODB),
+        Output(DesignFormat.DEF),
+        Output(DesignFormat.SDF),
+        Output(DesignFormat.NETLIST),
+        Output(DesignFormat.POWERED_NETLIST),
+    ]
 
     def get_script_path(self):
         raise Exception("Subclass the OpenROAD Step class before using it.")
@@ -90,7 +96,7 @@ class NetlistSTA(OpenROADStep):
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
     inputs = [DesignFormat.NETLIST]
-    outputs = []
+    outputs = [Output(DesignFormat.LIB)]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
@@ -106,6 +112,7 @@ class NetlistSTA(OpenROADStep):
 class Floorplan(OpenROADStep):
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
+
     inputs = [DesignFormat.NETLIST]
 
     def get_script_path(self):
@@ -145,4 +152,55 @@ class GlobalPlacement(OpenROADStep):
     def run(self, **kwargs) -> State:
         env = os.environ.copy()
         env["PL_TARGET_DENSITY"] = f"{self.config['FP_CORE_UTIL'] + 5}"
+        return super().run(env=env, **kwargs)
+
+
+class DetailedPlacement(OpenROADStep):
+    name = "Detailed Placement"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "dpl.tcl")
+
+
+class GlobalRouting(OpenROADStep):
+    name = "Global Routing"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "grt.tcl")
+
+
+class DetailedRouting(OpenROADStep):
+    name = "Detailed Routing"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "drt.tcl")
+
+
+class ParasiticsExtraction(OpenROADStep):
+    name = "Parasitics Extraction"
+
+    # default inputs
+    outputs = [Output(DesignFormat.SPEF)]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
+
+    def run(self, **kwargs) -> State:
+        env = os.environ.copy()
+        env["RCX_RULESET"] = f"{self.config['RCX_RULES']}"
+        return super().run(env=env, **kwargs)
+
+
+class ParasiticsSTA(OpenROADStep):
+    name = "Parasitics STA"
+
+    inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
+    outputs = [Output(DesignFormat.LIB)]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "sta.tcl")
+
+    def run(self, **kwargs) -> State:
+        env = os.environ.copy()
+        env["RUN_STANDALONE"] = "1"
         return super().run(env=env, **kwargs)

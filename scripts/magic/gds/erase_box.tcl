@@ -11,28 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-if { [info exists ::env(RCX_LEF)] } {
-    read_lef $::env(RCX_LEF)
-    read_def $::env(RCX_DEF)
-    read_libs -override "$::env(RCX_LIB)"
-} else {
-    read
+
+tech unlock *
+
+gds read $::env(CURRENT_GDS)
+
+set box_coordinates [list]
+lappend box_coordinates {*}$::env(_tmp_mag_box_coordinates)
+
+box [lindex box_coordinates 2]um [lindex box_coordinates 3]um [lindex box_coordinates 4]um [lindex box_coordinates 5]um
+
+erase
+select area
+delete
+
+select top cell
+erase labels
+
+if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } { 
+    gds abstract allow
 }
 
-set_propagated_clock [all_clocks]
-
-set rcx_flags ""
-if { !$::env(RCX_MERGE_VIA_WIRE_RES) } {
-    set rcx_flags "-no_merge_via_res"
-}
-
-# RCX
-puts "Using RCX ruleset '$::env(RCX_RULESET)'…"
-define_process_corner -ext_model_index 0 X
-extract_parasitics $rcx_flags\
-    -ext_model_file $::env(RCX_RULESET)\
-    -lef_res
-
-puts "Writing result to $::env(SAVE_SPEF)…"
-write
+gds write $::env(SAVE_GDS)

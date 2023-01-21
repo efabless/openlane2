@@ -40,14 +40,16 @@ from .common import error, warn, log
     "--flow",
     "flow_name",
     type=click.Choice(FlowFactory.list(), case_sensitive=False),
-    default="prototype",
+    default="basic",
     help="The built-in OpenLane flow to use",
 )
 @click.option("--pdk-root", default=None, help="Override volare PDK root folder")
 @click.argument("config_file")
 def cli(flow_name, pdk_root, pdk, scl, config_file):
     Flow = FlowFactory.get(flow_name)
-    assert Flow is not None
+    assert (
+        Flow is not None
+    ), "OpenLane CLI choices are misconfigured- flow names are not getting pulled from the factory properly"
 
     try:
         config_in, design_dir = ConfigBuilder.load(

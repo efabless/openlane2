@@ -26,13 +26,10 @@ if { [info exists ::env(DRT_MAX_LAYER)] } {
     set max_layer $::env(DRT_MAX_LAYER)
 }
 
-read_guides $::env(CURRENT_GUIDE)
-
 detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
-    -output_maze $::env(_tmp_drt_file_prefix)_maze.log\
-    -output_drc $::env(_tmp_drt_rpt_prefix).drc\
+    -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\
     -droute_end_iter $::env(DRT_OPT_ITERS)\
     -or_seed 42\
     -verbose 1

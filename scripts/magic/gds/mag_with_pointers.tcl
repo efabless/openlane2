@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2020 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.0.0-dev"
+drc off
 
-# flake8: noqa
+gds readonly true
+gds rescale false
 
-from .flows import Flow, FlowFactory
-from . import steps as Steps
-from .config import ConfigBuilder, InvalidConfig
-from .common import error, warn, log
+# This comes afterwards, so that it would contain GDS pointers
+# And yes, we need to re-read the GDS we just generated...
+gds read $::env(MAGIC_GDS)
+
+cellname filepath $::env(DESIGN_NAME) $::env(signoff_tmpfiles)
+save
+
+set final_filepath $::env(signoff_tmpfiles)/gds_ptrs.mag
+
+file rename -force $::env(signoff_tmpfiles)/$::env(DESIGN_NAME).mag $final_filepath
+
+puts "\[INFO\]: Wrote $final_filepath including GDS pointers."
+exit 0

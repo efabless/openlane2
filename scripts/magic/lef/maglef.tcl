@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2020 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "2.0.0-dev"
+drc off
 
-# flake8: noqa
+lef read $::env(signoff_results)/$::env(DESIGN_NAME).lef
 
-from .flows import Flow, FlowFactory
-from . import steps as Steps
-from .config import ConfigBuilder, InvalidConfig
-from .common import error, warn, log
+load $::env(DESIGN_NAME)
+
+cellname rename $::env(DESIGN_NAME) $::env(DESIGN_NAME).lef
+
+cellname filepath $::env(DESIGN_NAME).lef $::env(signoff_results)
+save
+
+puts "\[INFO\]: DONE GENERATING MAGLEF VIEW"
+exit 0

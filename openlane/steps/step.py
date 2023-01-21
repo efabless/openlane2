@@ -81,11 +81,12 @@ class Step(object):
             try:
                 frame = inspect.currentframe()
                 if frame is not None:
-                    current = frame
-                    while current := current.f_back:
+                    current = frame.f_back
+                    while current is not None:
                         locals = current.f_locals
                         if "self" in locals and hasattr(locals["self"], "config_in"):
                             config = locals["self"].config_in.copy()
+                        current = current.f_back
                 if config is None:
                     raise Exception("")
             finally:
@@ -95,12 +96,13 @@ class Step(object):
             try:
                 frame = inspect.currentframe()
                 if frame is not None:
-                    current = frame
-                    while current := current.f_back:
+                    current = frame.f_back
+                    while current is not None:
                         locals = current.f_locals
                         if "state_list" in locals:
                             state_list = locals["state_list"]
                             state_in = state_list[-1]
+                        current = current.f_back
                 if state_in is None:
                     raise Exception("")
             finally:
@@ -110,11 +112,12 @@ class Step(object):
             try:
                 frame = inspect.currentframe()
                 if frame is not None:
-                    current = frame
-                    while current := current.f_back:
+                    current = frame.f_back
+                    while current is not None:
                         locals = current.f_locals
                         if "self" in locals and hasattr(locals["self"], "dir_for_step"):
                             step_dir = locals["self"].dir_for_step(self)
+                        current = current.f_back
                 if step_dir is None:
                     raise Exception("")
             finally:
@@ -170,11 +173,15 @@ class Step(object):
             log_file = open(log_to, "w")
 
         kwargs = kwargs.copy()
+        if "stdin" not in kwargs:
+            kwargs["stdin"] = open(os.devnull, "r")
+        if "stdout" not in kwargs:
+            kwargs["stdout"] = subprocess.PIPE
+        if "stderr" not in kwargs:
+            kwargs["stderr"] = subprocess.STDOUT
         process = subprocess.Popen(
             cmd,
             encoding="utf8",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
             **kwargs,
         )
         process_stdout: TextIOWrapper = process.stdout  # type: ignore

@@ -11,6 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+if { ![info exists ::env(STA_PRE_CTS)] } {
+    set ::env(STA_PRE_CTS) {0}
+}
+
 if { $::env(RUN_STANDALONE) == 1 } {
     source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
     if { [info exists ::env(CURRENT_ODB)] } {

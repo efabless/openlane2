@@ -16,8 +16,10 @@ read
 
 set_propagated_clock [all_clocks]
 
+set diode_split [split $::env(DIODE_CELL) "/"]
+
 if { ($::env(DIODE_INSERTION_STRATEGY) == 3) || ($::env(DIODE_INSERTION_STRATEGY) == 6) } {
-    set_placement_padding -masters $::env(DIODE_CELL) -left $::env(DIODE_PADDING)
+    set_placement_padding -masters [lindex $diode_split 0] -left $::env(DIODE_PADDING)
 }
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_routing_layers.tcl
@@ -36,7 +38,7 @@ puts $arg_list
 global_route {*}$arg_list
 
 if { ($::env(DIODE_INSERTION_STRATEGY) == 3) || ($::env(DIODE_INSERTION_STRATEGY) == 6) } {
-    repair_antennas "$::env(DIODE_CELL)" -iterations $::env(GRT_ANT_ITERS)
+    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANT_ITERS)
     check_placement
 }
 

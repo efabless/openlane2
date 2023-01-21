@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2022 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,21 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Type, ClassVar
-from ..steps import (
-    Step,
-    Yosys,
-    OpenROAD,
-)
-from .flow import SequentialFlow, FlowFactory
+lef read $::env(TECH_LEF)
+if {  [info exist ::env(EXTRA_LEFS)] } {
+    foreach lef_file $::env(EXTRA_LEFS) {
+        lef read $lef_file
+    }
+}
+
+set def_read_args [list]
+lappend def_read_args $::env(CURRENT_DEF)
+if { $::env(MAGIC_DEF_NO_BLOCKAGES) } {
+    lappend def_read_args -noblockage
+}
+if { $::env(MAGIC_DEF_LABELS) } {
+    lappend def_read_args -labels
+}
 
 
-class Prototype(SequentialFlow):
-    Steps: ClassVar[List[Type[Step]]] = [
-        Yosys.Synthesis,
-        OpenROAD.NetlistSTA,
-        OpenROAD.Floorplan,
-    ]
-
-
-FlowFactory.register(Prototype)
+def read {*}$def_read_args
