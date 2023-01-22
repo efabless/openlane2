@@ -35,7 +35,7 @@ def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
         {tcl_in}
         set f [open {f.name} WRONLY]
         foreach key [array names ::env] {{
-            puts $f "$key $::env($key)"
+            puts $f "$key $::env($key)\\0"
         }}
         close $f
         """
@@ -45,7 +45,7 @@ def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
         f.seek(0)
         env_strings = f.read()
 
-        for line in env_strings.splitlines():
+        for line in env_strings.split("\0\n"):
             if line.strip() == "":
                 continue
             key, value = line.split(" ", 1)

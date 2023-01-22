@@ -88,7 +88,6 @@ class ConfigBuilder(object):
         if scl is not None:
             config_in[Keys.scl] = scl
 
-        print(pdk_root, pdk)
         pdkpath = os.path.join(pdk_root, pdk)
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
         config_in = env_from_tcl(config_in, pdk_config_path)
