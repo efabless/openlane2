@@ -19,6 +19,7 @@ import time
 import inspect
 import subprocess
 from enum import Enum
+from decimal import Decimal
 from io import TextIOWrapper
 from concurrent.futures import Future
 from typing import final, List, Callable, Optional, Union
@@ -235,8 +236,11 @@ class TclStep(Step):
                 value = " ".join(list(map(lambda x: str(x), value)))
             elif isinstance(value, Enum):
                 value = value._name_
-            else:
+            elif isinstance(value, Decimal) or isinstance(value, int):
                 value = str(value)
+            elif isinstance(value, bool):
+                value = "1" if value else "0"
+
             env[element] = value
 
         for input in self.inputs:

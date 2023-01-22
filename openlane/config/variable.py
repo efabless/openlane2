@@ -114,7 +114,7 @@ class Variable:
                 )
             if not os.path.exists(value):
                 raise ValueError(
-                    f"Path provided for variable {self.name}, {value}, does not exist."
+                    f"Path provided for variable {self.name} does not exist: '{value}'"
                 )
             return Path(value)
         elif validating_type == bool:
@@ -123,13 +123,18 @@ class Variable:
             elif value in ["0", "false", False]:
                 return False
             else:
-                raise ValueError(
-                    f"Value provided for boolean variable {self.name} invalid: {value}"
+                raise TypeError(
+                    f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
             return validating_type[value]
         else:
-            return validating_type(value)
+            try:
+                return validating_type(value)
+            except:
+                raise TypeError(
+                    f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
+                )
 
     @classmethod
     def validate_config(

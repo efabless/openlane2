@@ -125,39 +125,39 @@ proc write {args} {
     }
 
     if { [info exists ::env(SAVE_ODB)] } {
-        puts "Writing OpenROAD database to $::env(SAVE_ODB)…"
+        puts "Writing OpenROAD database to '$::env(SAVE_ODB)'…"
         write_db $::env(SAVE_ODB)
     } else {
         puts "\[WARNING\] Did not save OpenROAD database!"
     }
 
     if { [info exists ::env(SAVE_NETLIST)] } {
-        puts "Writing netlist to $::env(SAVE_NETLIST)…"
+        puts "Writing netlist to '$::env(SAVE_NETLIST)'…"
         write_verilog $::env(SAVE_NETLIST)
     }
 
     if { [info exists ::env(SAVE_POWERED_NETLIST)] } {
-        puts "Writing powered netlist to $::env(SAVE_POWERED_NETLIST)…"
+        puts "Writing powered netlist to '$::env(SAVE_POWERED_NETLIST)'…"
         write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
     }
 
     if { [info exists ::env(SAVE_DEF)] } {
-        puts "Writing layout to $::env(SAVE_DEF)…"
+        puts "Writing layout to '$::env(SAVE_DEF)'…"
         write_def $::env(SAVE_DEF)
     }
 
     if { [info exists ::env(SAVE_SDC)] } {
-        puts "Writing timing constraints to $::env(SAVE_SDC)…"
+        puts "Writing timing constraints to '$::env(SAVE_SDC)'…"
         write_sdc $::env(SAVE_SDC)
     }
 
     if { [info exists ::env(SAVE_SPEF)] } {
-        puts "Writing extracted parasitics to $::env(SAVE_SPEF)…"
+        puts "Writing extracted parasitics to '$::env(SAVE_SPEF)'…"
         write_spef $::env(SAVE_SPEF)
     }
 
     if { [info exists ::env(SAVE_GUIDE)] } {
-        puts "Writing routing guides to $::env(SAVE_GUIDE)…"
+        puts "Writing routing guides to '$::env(SAVE_GUIDE)'…"
         write_guides $::env(SAVE_GUIDE)
     }
 
@@ -173,7 +173,7 @@ proc write {args} {
                 write_sdf -include_typ -divider . -corner $corner_name $target
             }
         } else {
-            puts "Writing SDF to $::env(SAVE_SDF)…"
+            puts "Writing SDF to '$::env(SAVE_SDF)'…"
             write_sdf -include_typ -divider . $::env(SAVE_SDF)
         }
     }
@@ -190,7 +190,7 @@ proc write {args} {
                 write_timing_model -corner $corner_name $target
             }
         } else {
-            puts "Writing timing model to $::env(SAVE_LIB)…"
+            puts "Writing timing model to '$::env(SAVE_LIB)'…"
             write_timing_model $::env(SAVE_LIB)
         }
     }

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import json
 from enum import Enum
 from decimal import Decimal
@@ -18,8 +19,9 @@ from typing import Any, Tuple
 from collections import UserDict, UserString
 
 
-class Path(UserString):
-    pass
+class Path(UserString, os.PathLike):
+    def __fspath__(self) -> str:
+        return str(self)
 
 
 class ConfigEncoder(json.JSONEncoder):

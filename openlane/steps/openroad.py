@@ -120,7 +120,7 @@ class Floorplan(OpenROADStep):
 
     def run(self, **kwargs) -> State:
         path = self.config["FP_TRACKS_INFO"]
-        tracks_info_str = open(str(path)).read()
+        tracks_info_str = open(path).read()
         tracks_commands = old_to_new_tracks(tracks_info_str)
         new_tracks_info = os.path.join(self.step_dir, "config.tracks")
         with open(new_tracks_info, "w") as f:
