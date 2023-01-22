@@ -15,7 +15,7 @@ import os
 from typing import List
 
 from .step import TclStep, get_script_dir
-from .state import DesignFormat, Output, State
+from .state import DesignFormat, State
 
 
 class MagicStep(TclStep):
@@ -41,7 +41,7 @@ class StreamOut(MagicStep):
 
     inputs = [DesignFormat.DEF]
     outputs = [
-        Output(DesignFormat.GDSII),
+        DesignFormat.GDSII,
     ]
 
     def get_script_path(self):

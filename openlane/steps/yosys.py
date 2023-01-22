@@ -16,11 +16,11 @@ import json
 from typing import List
 
 from .step import TclStep, get_script_dir
-from .state import DesignFormat, Output, State
+from .state import DesignFormat, State
 
 
 class Synthesis(TclStep):
-    outputs = [Output(DesignFormat.NETLIST)]
+    outputs = [DesignFormat.NETLIST]
 
     def get_command(self) -> List[str]:
         return ["yosys", "-c", self.get_script_path()]
@@ -36,7 +36,7 @@ class Synthesis(TclStep):
 
         kwargs, env = self.extract_env(kwargs)
 
-        lib_synth = self.toolbox.libtools.remove_cells(
+        lib_synth = self.toolbox.remove_cells_from_lib(
             frozenset(self.config["LIB"]),
             excluded_cells=frozenset(
                 [

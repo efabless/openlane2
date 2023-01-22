@@ -12,6 +12,10 @@ lint: venv/created
 	./venv/bin/flake8 .
 	./venv/bin/mypy .
 
+.PHONY: test
+test: venv/created
+	./venv/bin/python3 -m openlane ./designs/spm/config.json
+
 venv: venv/created
 venv/created: $(FILE)
 	rm -rf venv

@@ -17,7 +17,7 @@ import json
 from typing import List, Dict, Tuple
 
 from .step import TclStep, get_script_dir
-from .state import State, DesignFormat, Output
+from .state import State, DesignFormat
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -64,23 +64,33 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 class OpenROADStep(TclStep):
     inputs = [DesignFormat.ODB]
     outputs = [
-        Output(DesignFormat.ODB),
-        Output(DesignFormat.DEF),
-        Output(DesignFormat.SDF),
-        Output(DesignFormat.NETLIST),
-        Output(DesignFormat.POWERED_NETLIST),
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+        DesignFormat.SDF,
+        DesignFormat.NETLIST,
+        DesignFormat.POWERED_NETLIST,
     ]
 
     def get_script_path(self):
-        raise Exception("Subclass the OpenROAD Step class before using it.")
+        raise NotImplementedError("Subclass the OpenROAD Step class before using it.")
 
     def run(
         self,
         **kwargs,
     ) -> State:
+        """
+        The `run()` override for the OpenROADStep class handles two things:
+
+        1. Before the `super()` call: It creates a version of the liberty file
+        minus cells that are known bad (i.e. those that fail DRC) and pass it on
+        in the environment variable `LIB_PNR`.
+
+        2. After the `super()` call: Processes the `metrics.json` file and
+        updates the State's `metrics` property with any new metrics in that object.
+        """
         kwargs, env = self.extract_env(kwargs)
 
-        lib_pnr = self.toolbox.libtools.remove_cells(
+        lib_pnr = self.toolbox.remove_cells_from_lib(
             frozenset(self.config["LIB"]),
             frozenset([self.config["BAD_CELL_LIST"]]),
             as_cell_lists=True,
@@ -107,16 +117,15 @@ class NetlistSTA(OpenROADStep):
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
     inputs = [DesignFormat.NETLIST]
-    outputs = [Output(DesignFormat.LIB)]
+    outputs = [DesignFormat.LIB]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
 
     def run(self, **kwargs) -> State:
-        env = os.environ.copy()
+        kwargs, env = self.extract_env(kwargs)
         env["RUN_STANDALONE"] = "1"
         env["STA_PRE_CTS"] = "1"
-        env["STA_REPORT_POWER"] = "1"
         return super().run(env=env, **kwargs)
 
 
@@ -137,7 +146,7 @@ class Floorplan(OpenROADStep):
         with open(new_tracks_info, "w") as f:
             f.write(tracks_commands)
 
-        env = os.environ.copy()
+        kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
         return super().run(env=env, **kwargs)
 
@@ -171,7 +180,7 @@ class GlobalPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "gpl.tcl")
 
     def run(self, **kwargs) -> State:
-        env = os.environ.copy()
+        kwargs, env = self.extract_env(kwargs)
         env["PL_TARGET_DENSITY"] = f"{self.config['FP_CORE_UTIL'] + 5}"
         return super().run(env=env, **kwargs)
 
@@ -204,6 +213,21 @@ class DetailedRouting(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
 
 
+class LayoutSTA(OpenROADStep):
+    name = "Layout STA"
+    long_name = "Layout Static Timing Analysis"
+
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "sta.tcl")
+
+    def run(self, **kwargs) -> State:
+        kwargs, env = self.extract_env(kwargs)
+        env["RUN_STANDALONE"] = "1"
+        return super().run(env=env, **kwargs)
+
+
 class FillInsertion(OpenROADStep):
     name = "Fill Insertion"
 
@@ -215,13 +239,13 @@ class ParasiticsExtraction(OpenROADStep):
     name = "Parasitics Extraction"
 
     # default inputs
-    outputs = [Output(DesignFormat.SPEF)]
+    outputs = [DesignFormat.SPEF]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
 
     def run(self, **kwargs) -> State:
-        env = os.environ.copy()
+        kwargs, env = self.extract_env(kwargs)
         env["RCX_RULESET"] = f"{self.config['RCX_RULES']}"
         return super().run(env=env, **kwargs)
 
@@ -230,12 +254,12 @@ class ParasiticsSTA(OpenROADStep):
     name = "Parasitics STA"
 
     inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
-    outputs = [Output(DesignFormat.LIB)]
+    outputs = [DesignFormat.LIB]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
 
     def run(self, **kwargs) -> State:
-        env = os.environ.copy()
+        kwargs, env = self.extract_env(kwargs)
         env["RUN_STANDALONE"] = "1"
         return super().run(env=env, **kwargs)

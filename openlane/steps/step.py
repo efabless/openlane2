@@ -20,7 +20,6 @@ import inspect
 import subprocess
 from enum import Enum
 from decimal import Decimal
-from io import TextIOWrapper
 from concurrent.futures import Future
 from typing import final, List, Callable, Optional, Union, Tuple
 
@@ -33,6 +32,11 @@ StepConditionLambda = Callable[[Config], bool]
 
 
 def get_script_dir():
+    """
+    Gets the OpenLane tool `scripts` directory.
+
+    This implementation is jank and should be redone.
+    """
     return os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
         "scripts",
@@ -51,13 +55,14 @@ invalid_for_path = re.compile(r"[^\w_-]+")
 
 class Step(object):
     """
-    Default Step Object
+    The base Step class from which all other Step class inherit.
 
-    Does nothing.
+    If used in a flow, this particular Step does... absolutely nothing.
     """
 
     inputs: List[DesignFormat] = []
-    outputs: List[Output] = []
+    outputs: List[Union[DesignFormat, Output]] = []
+
     name: Optional[str] = None
     long_name: Optional[str] = None
 
@@ -78,6 +83,37 @@ class Step(object):
         name: Optional[str] = None,
         silent: bool = False,
     ):
+        """
+        :param config: A configuration object.
+            If not provided, as a convenience, the call stack will be
+            examined for a `self.config_in`, and the first one encountered
+            will be used.
+
+        :param state_in: The state object this step will use as an input.
+
+            If not provided, the call stack will be examined for a
+            `state_list`, and the latest one will be used as an input state.
+
+            The state may also be a `Future[State]`, in which case,
+            the `run()` call will block until that Future is realized.
+            This allows you to chain a number of asynchronous steps.
+
+            See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
+
+        :param step_dir: A "scratch directory" for the step.
+
+            If not provided, the call stack will be examined for a
+            `self.dir_for_step` function, which will then be called to
+            get a directory for said step.
+
+        :param name: An optional string name for the step. Useful in custom flows.
+
+        :param silent: A variable stating whether a step should output to the
+        terminal.
+
+            If set to false, Step implementations are expected to
+            output nothing to the terminal.
+        """
         if name is not None:
             self.name = name
 
@@ -142,6 +178,32 @@ class Step(object):
         toolbox: Optional[Toolbox] = None,
         **kwargs,
     ) -> State:
+        """
+        Begins execution on a step. This is the function that should be used
+        by flows- `run()` is considered private and may only be called by `Step`
+        and its subclasses.
+
+        `start()` is final and should not be subclassed.
+
+        :param toolbox: A `Toolbox` object initialized with a temporary directory
+            fit for the flow in question.
+
+            If not provided, as a convenience, the call stack will be
+            examined for a `self.toolbox`, which will be used instead.
+            What this means is that when inside of a Flow: you can just call
+            `step.start()` and not worry about this.
+
+            If said toolbox doesn't exist, the step will begrudingly create
+            one that uses its own step directory, however this will cause
+            cached functions inside the toolbox, i.e., those that perform
+            common file processing functions in the flow (trimming
+            liberty files, etc.) to not cache their results across steps.
+
+        :param **kwargs: Passed on to subprocess execution: useful if you want to
+            redirect stdin, stdout, etc.
+
+        :returns: An altered State object.
+        """
         if toolbox is None:
             try:
                 frame = inspect.currentframe()
@@ -166,12 +228,20 @@ class Step(object):
 
     def run(self, **kwargs) -> State:
         """
+        The "core" of a step. **You should not be calling this function outside
+        of `Step` or its subclasses.**
+
         When subclassing, override this function, then call it first thing
         via super().run(**kwargs). This lets you use the input verification and
-        the copying code.
+        the State copying code, as well as resolving the `state_in` if `state_in`
+        is a future.
+
+        :param **kwargs: Passed on to subprocess execution: useful if you want to
+            redirect stdin, stdout, etc.
         """
         if isinstance(self.state_in, Future):
             self.state_in = self.state_in.result()
+
         for input in self.inputs:
             value = self.state_in.get(input.name)
             if value is None:
@@ -184,10 +254,23 @@ class Step(object):
     @final
     def run_subprocess(
         self,
-        cmd,
+        cmd: List[str],
         log_to: Optional[str] = None,
         **kwargs,
     ):
+        """
+        A helper function for `Step` objects to run subprocesses.
+
+        The output from the subprocess is processed line-by-line.
+
+        :param cmd: A list of variables, representing a program and its arguments,
+            similar to how you would use it in a shell.
+        :param log_to: An optional path to log all output from the subprocess to.
+        :param **kwargs: Passed on to subprocess execution: useful if you want to
+            redirect stdin, stdout, etc.
+        :raises subprocess.CalledProcessError: If the process has a non-zero exit,
+            this exception will be raised.
+        """
         log_file = open(os.devnull, "w")
         if log_to is not None:
             log_file.close()
@@ -205,23 +288,23 @@ class Step(object):
             encoding="utf8",
             **kwargs,
         )
-        process_stdout: TextIOWrapper = process.stdout  # type: ignore
-        current_rpt = None
-        while line := process_stdout.readline():
-            if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
-                report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                report_path = os.path.join(self.step_dir, report_name)
-                current_rpt = open(report_path, "w")
-            elif line.startswith(REPORT_END_LOCUS):
-                if current_rpt is not None:
-                    current_rpt.close()
-                current_rpt = None
-            elif current_rpt is not None:
-                current_rpt.write(line)
-            else:
-                if not self.silent:
-                    console.print(line.strip())
-                log_file.write(line)
+        if process_stdout := process.stdout:
+            current_rpt = None
+            while line := process_stdout.readline():
+                if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
+                    report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
+                    report_path = os.path.join(self.step_dir, report_name)
+                    current_rpt = open(report_path, "w")
+                elif line.startswith(REPORT_END_LOCUS):
+                    if current_rpt is not None:
+                        current_rpt.close()
+                    current_rpt = None
+                elif current_rpt is not None:
+                    current_rpt.write(line)
+                else:
+                    if not self.silent:
+                        console.print(line.strip())
+                    log_file.write(line)
         returncode = process.wait()
         if returncode != 0:
             err(f"Command '{' '.join(cmd)}' failed.", _stack_offset=3)
@@ -229,7 +312,15 @@ class Step(object):
 
     def extract_env(self, kwargs) -> Tuple[dict, dict]:
         """
-        Returns (kwargs, env)
+        An assisting function: Given a `kwargs` object, it does the following:
+
+            * If the kwargs object has an "env" variable, it separates it into
+                its own variable.
+            * If the kwargs object has no "env" variable, a new "env" dictionary
+                is created based on the current environment.
+
+        :param kwargs: A Python keyword arguments object.
+        :returns (kwargs, env): A kwargs without an `env` object, and an isolated `env` object.
         """
         env = kwargs.get("env")
         if env is None:
@@ -241,10 +332,51 @@ class Step(object):
 
 
 class TclStep(Step):
+    """
+    A subclass of `Step` that primarily deals with running Tcl-based utilities,
+    such as Yosys, OpenROAD and Magic.
+
+    A TclStep script corresponds to running one Tcl script with such a utility.
+    """
+
+    def get_script_path(self):
+        """
+        :returns: A Tcl script to be run by this step.
+        """
+        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
+
+    def get_command(self) -> List[str]:
+        """
+        :returns: The command used to run the script.
+        """
+        return ["tclsh", self.get_script_path()]
+
     def run(
         self,
         **kwargs,
     ) -> State:
+        """
+        This overriden `run()` function prepares configuration variables and
+        inputs for use with Tcl: specifically, it converts them all to
+        environment variables so they may be used by the Tcl scripts being called.
+
+        Additionally, it logs the output to a `.log` file named after the script.
+
+        When overriding in a subclass, you may find it useful to use this pattern:
+
+        ```
+            kwargs, env = self.extract_env(kwargs)
+            env["CUSTOM_ENV_VARIABLE"] = "1"
+            return super().run(env=env, **kwargs)
+        ```
+
+        This will allow you to add further custom environment variables to a call
+        while still respecting an `env` argument further up the call-stack.
+
+
+        :param **kwargs: Passed on to subprocess execution: useful if you want to
+            redirect stdin, stdout, etc.
+        """
         state = super().run()
         command = self.get_command()
         script = self.get_script_path()
@@ -274,8 +406,8 @@ class TclStep(Step):
             env[f"CURRENT_{input.name}"] = state[input.name]
 
         for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.format.value[0]}"
-            env[f"SAVE_{output.format.name}"] = os.path.join(self.step_dir, filename)
+            filename = f"{self.config['DESIGN_NAME']}.{output.value[0]}"
+            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
         log_filename = os.path.splitext(os.path.basename(script))[0]
         log_path = os.path.join(self.step_dir, f"{log_filename}.log")
@@ -288,14 +420,8 @@ class TclStep(Step):
         )
 
         for output in self.outputs:
-            if not output.update:
+            if isinstance(output, Output) and not output.update:
                 continue
-            state[output.format.name] = env[f"SAVE_{output.format.name}"]
+            state[output.name] = env[f"SAVE_{output.name}"]
 
         return state
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
-
-    def get_command(self) -> List[str]:
-        return ["tclsh", self.get_script_path()]

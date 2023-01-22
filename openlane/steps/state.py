@@ -31,14 +31,17 @@ class DesignFormat(Enum):
     GDSII = ("gds",)
 
 
-class Objects(Enum):
-    MERGED_LEF = (".lef",)
-    MERGED_LIB = (".lib",)
-
-
 class Output(NamedTuple):
     format: DesignFormat
     update: bool = True
+
+    @property
+    def name(self):
+        return self.format.name
+
+    @property
+    def value(self):
+        return self.format.value
 
 
 class State(UserDict):
