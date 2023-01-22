@@ -16,7 +16,7 @@ import click
 
 from .flows import FlowFactory
 from .config import ConfigBuilder, InvalidConfig
-from .common import err, warn, log, rule
+from .common import err, warn, log
 
 
 @click.command()

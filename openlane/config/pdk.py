@@ -273,9 +273,10 @@ scl_variables = [
     ),
     # Synthesis
     Variable(
-        "LIB_SYNTH",
+        "LIB",
         List[Path],
         "Path to the lib file to be used during synthesis.",
+        deprecated_names=["LIB_SYNTH"],
     ),
     Variable(
         "NO_SYNTH_CELL_LIST",

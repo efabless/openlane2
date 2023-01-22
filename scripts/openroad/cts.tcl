@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read -override_libs "$::env(LIB_CTS)"
-
+read
+if {![info exist ::env(SYNTH_MAX_TRAN)]} {
+    set ::env(SYNTH_MAX_TRAN) [expr {0.1 * $::env(CLOCK_PERIOD)}]
+} else {
+    set ::env(SYNTH_MAX_TRAN) [expr {$::env(SYNTH_MAX_TRAN) * 1000}]
+}
 set max_slew [expr {$::env(SYNTH_MAX_TRAN) * 1e-9}]; # must convert to seconds
 set max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # must convert to farad
 # set rc values
@@ -35,7 +39,7 @@ puts "\[INFO]: Running Clock Tree Synthesis…"
 
 set arg_list [list]
 
-lappend arg_list -buf_list $::env(CTS_CLK_BUFFER_LIST)
+lappend arg_list -buf_list $::env(CTS_CLK_BUFFERS)
 lappend arg_list -root_buf $::env(CTS_ROOT_BUFFER)
 lappend arg_list -sink_clustering_size $::env(CTS_SINK_CLUSTERING_SIZE)
 lappend arg_list -sink_clustering_max_diameter $::env(CTS_SINK_CLUSTERING_MAX_DIAMETER)

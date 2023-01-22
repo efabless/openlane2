@@ -13,7 +13,7 @@
 # limitations under the License.
 
 if { [info exist ::env(MAGIC_EXT_USE_GDS)] && $::env(MAGIC_EXT_USE_GDS) } {
-    gds read $::env(CURRENT_GDS)
+    gds read $::env(CURRENT_GDSII)
 } else {
     source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 }

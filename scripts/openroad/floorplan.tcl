@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read_libs -override "$::env(LIB_SYNTH)"
+read_libs
 read_lef $::env(TECH_LEF)
 foreach lef $::env(CELLS_LEF) {
     read_lef $lef

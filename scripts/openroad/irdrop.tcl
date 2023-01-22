@@ -22,7 +22,7 @@ if {[catch {read_def $::env(CURRENT_DEF)} errmsg]} {
     exit 1
 }
 
-foreach lib $::env(LIB_SYNTH_COMPLETE) {
+foreach lib $::env(LIB) {
     read_liberty $lib
 }
 

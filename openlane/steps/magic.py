@@ -15,7 +15,7 @@ import os
 from typing import List
 
 from .step import TclStep, get_script_dir
-from .state import DesignFormat, Output
+from .state import DesignFormat, Output, State
 
 
 class MagicStep(TclStep):
@@ -46,3 +46,19 @@ class StreamOut(MagicStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
+
+
+class DRC(MagicStep):
+    name = "DRC"
+    long_name = "Design Rule Checks"
+
+    inputs = [DesignFormat.GDSII]
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "drc.tcl")
+
+    def run(self, **kwargs) -> State:
+        kwargs, env = self.extract_env(kwargs)
+        env["MAGIC_DRC_USE_GDS"] = "1"
+        return super().run(**kwargs)

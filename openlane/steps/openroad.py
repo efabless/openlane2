@@ -78,7 +78,18 @@ class OpenROADStep(TclStep):
         self,
         **kwargs,
     ) -> State:
-        state_out = super().run(**kwargs)
+        kwargs, env = self.extract_env(kwargs)
+
+        lib_pnr = self.toolbox.libtools.remove_cells(
+            frozenset(self.config["LIB"]),
+            frozenset([self.config["BAD_CELL_LIST"]]),
+            as_cell_lists=True,
+        )
+
+        env["LIB_PNR"] = lib_pnr
+
+        state_out = super().run(env=env, **kwargs)
+
         metrics_path = os.path.join(self.step_dir, "metrics.json")
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
@@ -137,10 +148,20 @@ class IOPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
-    def run(self, **kwargs) -> State:
 
-        env = os.environ.copy()
-        return super().run(env=env, **kwargs)
+class TapDecapInsertion(OpenROADStep):
+    name = "Tap/Decap Insertion"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
+
+
+class GeneratePDN(OpenROADStep):
+    name = "Generate PDN"
+    long_name = "Power Distribution Network Generation"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
 
 
 class GlobalPlacement(OpenROADStep):
@@ -162,6 +183,13 @@ class DetailedPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "dpl.tcl")
 
 
+class CTS(OpenROADStep):
+    long_name = "Clock Tree Synthesis"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cts.tcl")
+
+
 class GlobalRouting(OpenROADStep):
     name = "Global Routing"
 
@@ -174,6 +202,13 @@ class DetailedRouting(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
+
+
+class FillInsertion(OpenROADStep):
+    name = "Fill Insertion"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "fill.tcl")
 
 
 class ParasiticsExtraction(OpenROADStep):

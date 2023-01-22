@@ -409,6 +409,12 @@ flow_variables = [
         default=True,
     ),
     Variable(
+        "FP_PDN_ENABLE_GLOBAL_CONNECTIONS",
+        bool,
+        "Enables the creation of global connections in PDN generation.",
+        default=True,
+    ),
+    Variable(
         "FP_TAP_HORIZONTAL_HALO",
         Decimal,
         "Specify the horizontal halo size around macros during tap insertion.",

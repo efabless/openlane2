@@ -13,12 +13,16 @@
 # limitations under the License.
 
 if { [info exist ::env(MAGIC_DRC_USE_GDS)] && $::env(MAGIC_DRC_USE_GDS) } {
-	gds read $::env(CURRENT_GDS)
+	gds read $::env(CURRENT_GDSII)
 } else {
 	source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 }
 
-set drc_rpt_path $::env(drc_prefix).rpt
+set report_dir $::env(STEP_DIR)/reports
+file mkdir $report_dir
+set drc_prefix $report_dir/drc
+
+set drc_rpt_path $drc_prefix.rpt
 set fout [open $drc_rpt_path w]
 set oscale [cif scale out]
 set cell_name $::env(DESIGN_NAME)
@@ -62,7 +66,10 @@ puts stdout "\[INFO\]: Should be divided by 3 or 4"
 puts stdout "\[INFO\]: DRC Checking DONE ($drc_rpt_path)"
 flush stdout
 
-set mag_view $::env(signoff_results)/$::env(DESIGN_NAME).drc.mag
+set views_dir $::env(STEP_DIR)/views
+file mkdir $views_dir
+
+set mag_view $views_dir/$::env(DESIGN_NAME).drc.mag
 puts stdout "\[INFO\]: Saving mag view with DRC errors ($mag_view)"
 # WARNING: changes the name of the cell; keep as last step
 save $mag_view

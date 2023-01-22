@@ -26,14 +26,19 @@ class Basic(SequentialFlow):
         Yosys.Synthesis,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
+        OpenROAD.TapDecapInsertion,
+        OpenROAD.GeneratePDN,
         OpenROAD.IOPlacement,
         OpenROAD.GlobalPlacement,
         OpenROAD.DetailedPlacement,
+        OpenROAD.CTS,
         OpenROAD.GlobalRouting,
         OpenROAD.DetailedRouting,
+        OpenROAD.FillInsertion,
         OpenROAD.ParasiticsExtraction,
         OpenROAD.ParasiticsSTA,
         Magic.StreamOut,
+        Magic.DRC,
     ]
 
 

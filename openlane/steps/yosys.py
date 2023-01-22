@@ -32,7 +32,23 @@ class Synthesis(TclStep):
         self,
         **kwargs,
     ) -> State:
-        state_out = super().run(**kwargs)
+        assert isinstance(self.config["LIB"], list)
+
+        kwargs, env = self.extract_env(kwargs)
+
+        lib_synth = self.toolbox.libtools.remove_cells(
+            frozenset(self.config["LIB"]),
+            excluded_cells=frozenset(
+                [
+                    self.config["BAD_CELL_LIST"],
+                    self.config["NO_SYNTH_CELL_LIST"],
+                ]
+            ),
+            as_cell_lists=True,
+        )
+
+        env["LIB_SYNTH"] = lib_synth
+        state_out = super().run(env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()

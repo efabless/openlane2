@@ -43,7 +43,7 @@ proc run_eco {args} {
 }
 
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read -override_libs "$::env(LIB_CTS)"
+read
 
 set_propagated_clock [all_clocks]
 

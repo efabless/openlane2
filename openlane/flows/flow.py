@@ -35,6 +35,7 @@ from ..steps import (
     State,
     TclStep,
 )
+from ..utils import Toolbox
 from ..common import mkdirp, console, log, err, success
 
 
@@ -50,12 +51,15 @@ class Flow(object):
         self.steps: List[Step] = []
         self.design_dir = design_dir
 
+        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
+
         self.ordinal: int = 0
         self.max_stage: int = 0
         self.task_id: Optional[TaskID] = None
         self.progress: Optional[Progress] = None
         self.run_dir: Optional[str] = None
-        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
+        self.tmp_dir: Optional[str] = None
+        self.toolbox: Optional[Toolbox] = None
 
     @classmethod
     def get_name(Self) -> str:
@@ -101,6 +105,8 @@ class Flow(object):
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
         self.run_dir = os.path.join(self.design_dir, "runs", tag)
+        self.tmp_dir = os.path.join(self.run_dir, "tmp")
+        self.toolbox = Toolbox(self.tmp_dir)
 
         mkdirp(self.run_dir)
 
@@ -127,6 +133,8 @@ class Flow(object):
         # Reset stateful objects
         self.progress = None
         self.task_id = None
+        self.tmp_dir = None
+        self.toolbox = None
         self.ordinal = 0
         self.max_stage = 0
 

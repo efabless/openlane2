@@ -14,7 +14,7 @@
 
 tech unlock *
 
-gds read $::env(CURRENT_GDS)
+gds read $::env(CURRENT_GDSII)
 
 set box_coordinates [list]
 lappend box_coordinates {*}$::env(_tmp_mag_box_coordinates)
@@ -28,7 +28,7 @@ delete
 select top cell
 erase labels
 
-if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } { 
+if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } {
     gds abstract allow
 }
 

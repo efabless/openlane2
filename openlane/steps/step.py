@@ -22,11 +22,12 @@ from enum import Enum
 from decimal import Decimal
 from io import TextIOWrapper
 from concurrent.futures import Future
-from typing import final, List, Callable, Optional, Union
+from typing import final, List, Callable, Optional, Union, Tuple
 
 from .state import State, DesignFormat, Output
 from ..config import Config
 from ..common import mkdirp, console, err, rule
+from ..utils import Toolbox
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -126,6 +127,8 @@ class Step(object):
             finally:
                 del frame
 
+        self.toolbox = Toolbox(os.path.join(step_dir, "tmp"))
+
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
         self.step_dir = step_dir
@@ -136,8 +139,23 @@ class Step(object):
     @final
     def start(
         self,
+        toolbox: Optional[Toolbox] = None,
         **kwargs,
     ) -> State:
+        if toolbox is None:
+            try:
+                frame = inspect.currentframe()
+                if frame is not None:
+                    current = frame.f_back
+                    while current is not None:
+                        locals = current.f_locals
+                        if "self" in locals and hasattr(locals["self"], "toolbox"):
+                            assert isinstance(locals["self"].toolbox, Toolbox)
+                            self.toolbox = locals["self"].toolbox
+                        current = current.f_back
+            finally:
+                del frame
+
         self.start_time = time.time()
         if not self.silent:
             rule(f"{self.get_long_name()}")
@@ -209,6 +227,18 @@ class Step(object):
             err(f"Command '{' '.join(cmd)}' failed.", _stack_offset=3)
             raise subprocess.CalledProcessError(returncode, process.args)
 
+    def extract_env(self, kwargs) -> Tuple[dict, dict]:
+        """
+        Returns (kwargs, env)
+        """
+        env = kwargs.get("env")
+        if env is None:
+            env = os.environ.copy()
+        else:
+            kwargs = kwargs.copy()
+            del kwargs["env"]
+        return (kwargs, env)
+
 
 class TclStep(Step):
     def run(
@@ -219,27 +249,24 @@ class TclStep(Step):
         command = self.get_command()
         script = self.get_script_path()
 
-        env = kwargs.get("env")
-        if env is None:
-            env = os.environ.copy()
-        else:
-            kwargs = kwargs.copy()
-            del kwargs["env"]
+        kwargs, env = self.extract_env(kwargs)
 
         env["SCRIPTS_DIR"] = get_script_dir()
         env["STEP_DIR"] = self.step_dir
+
         for element in self.config.keys():
             value = self.config[element]
             if value is None:
                 continue
+
             if isinstance(value, list):
                 value = " ".join(list(map(lambda x: str(x), value)))
             elif isinstance(value, Enum):
                 value = value._name_
-            elif isinstance(value, Decimal) or isinstance(value, int):
-                value = str(value)
             elif isinstance(value, bool):
                 value = "1" if value else "0"
+            elif isinstance(value, Decimal) or isinstance(value, int):
+                value = str(value)
 
             env[element] = value
 
