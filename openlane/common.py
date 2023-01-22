@@ -18,23 +18,27 @@ console = rich.console.Console()
 
 log = console.log
 
+rule = console.rule
+
+print = console.print
+
 
 def success(printable, *args, **kwargs):
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    console.log(f"⭕ [green][bold] {printable}", *args, **kwargs)
+    log(f"⭕ [green][bold] {printable}", *args, **kwargs)
 
 
 def warn(printable, *args, **kwargs):
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    console.log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
+    log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
 
 
-def error(printable, *args, **kwargs):
+def err(printable, *args, **kwargs):
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    console.log(f"❌ [red][bold] {printable}", *args, **kwargs)
+    log(f"❌ [red][bold] {printable}", *args, **kwargs)
 
 
 def mkdirp(path):

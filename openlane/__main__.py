@@ -16,7 +16,7 @@ import click
 
 from .flows import FlowFactory
 from .config import ConfigBuilder, InvalidConfig
-from .common import error, warn, log
+from .common import err, warn, log, rule
 
 
 @click.command()
@@ -59,12 +59,13 @@ def cli(flow_name, pdk_root, pdk, scl, config_file):
             scl=scl,
         )
     except InvalidConfig as e:
-        error(f"Errors have occurred while loading the {e.config}:")
-        for err in e.errors:
-            error(err)
-        log("The following warnings have also been generated:")
-        for warning in e.warnings:
-            warn(warning)
+        log(f"[green]Errors have occurred while loading the {e.config}:")
+        for error in e.errors:
+            err(error)
+        if len(e.warnings) > 0:
+            log("The following warnings have also been generated:")
+            for warning in e.warnings:
+                warn(warning)
         log("OpenLane will now quit. Please check your configuration.")
         exit(os.EX_DATAERR)
 

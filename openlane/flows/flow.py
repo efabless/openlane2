@@ -35,7 +35,7 @@ from ..steps import (
     State,
     TclStep,
 )
-from ..common import mkdirp, console, log, error, success
+from ..common import mkdirp, console, log, err, success
 
 
 class Flow(object):
@@ -164,10 +164,10 @@ class SequentialFlow(Flow):
             try:
                 new_state = step.start()
             except MissingInputError as e:
-                error(f"Misconfigured flow: {e}")
+                err(f"Misconfigured flow: {e}")
                 return (False, state_list)
             except subprocess.CalledProcessError:
-                error("An error has been encountered. The flow will stop.")
+                err("An error has been encountered. The flow will stop.")
                 return (False, state_list)
             state_list.append(new_state)
             self.end_stage()

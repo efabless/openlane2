@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 from enum import Enum
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from typing import get_origin, get_args
 from typing import Union, Type, List, Optional, Tuple, Any, Dict
@@ -123,17 +124,24 @@ class Variable:
             elif value in ["0", "false", False]:
                 return False
             else:
-                raise TypeError(
+                raise ValueError(
                     f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
             return validating_type[value]
+        elif issubclass(validating_type, Decimal):
+            try:
+                return Decimal(value)
+            except InvalidOperation:
+                raise ValueError(
+                    f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
+                )
         else:
             try:
                 return validating_type(value)
-            except:
-                raise TypeError(
-                    f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
+            except ValueError as e:
+                raise ValueError(
+                    f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}' {e}"
                 )
 
     @classmethod

@@ -26,7 +26,7 @@ from typing import final, List, Callable, Optional, Union
 
 from .state import State, DesignFormat, Output
 from ..config import Config
-from ..common import mkdirp, console, error
+from ..common import mkdirp, console, err, rule
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -140,7 +140,7 @@ class Step(object):
     ) -> State:
         self.start_time = time.time()
         if not self.silent:
-            console.rule(f"{self.get_long_name()}")
+            rule(f"{self.get_long_name()}")
         mkdirp(self.step_dir)
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
@@ -206,7 +206,7 @@ class Step(object):
                 log_file.write(line)
         returncode = process.wait()
         if returncode != 0:
-            error(f"Command '{' '.join(cmd)}' failed.", _stack_offset=3)
+            err(f"Command '{' '.join(cmd)}' failed.", _stack_offset=3)
             raise subprocess.CalledProcessError(returncode, process.args)
 
 
