@@ -29,14 +29,14 @@ Python dependencies installed. To activate the virtual environment, type
 `source ./venv/bin/activate` in your terminal.
 
 ## Usage
-In the root folder of the repository, you may invoke:
+In the root folder of the repository with the VENV activated, you may invoke:
 
 ```sh
-python3 -m openlane --pdk-root <path/to/pdk> </path/to/config.json>
+openlane --pdk-root <path/to/pdk> </path/to/config.json>
 ```
 
 To start with, you can try:
 
 ```sh
-python3 -m openlane --pdk-root $HOME/.volare ./designs/spm/config.json
+openlane --pdk-root $HOME/.volare ./designs/spm/config.json
 ```

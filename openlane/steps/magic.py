@@ -15,8 +15,9 @@ import os
 from typing import List
 from abc import abstractmethod
 
-from .step import TclStep, get_script_dir
+from .step import TclStep
 from .state import DesignFormat, State
+from ..common import get_script_dir
 
 
 class MagicStep(TclStep):

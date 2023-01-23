@@ -17,8 +17,9 @@ import json
 from abc import abstractmethod
 from typing import List, Dict, Tuple
 
-from .step import TclStep, get_script_dir
+from .step import TclStep
 from .state import State, DesignFormat
+from ..common import get_script_dir
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46

@@ -29,20 +29,9 @@ from .state import State, DesignFormat
 from ..config import Config
 from ..common import mkdirp, console, err, rule
 from ..utils import Toolbox
+from ..common import get_script_dir
 
 StepConditionLambda = Callable[[Config], bool]
-
-
-def get_script_dir():
-    """
-    Gets the OpenLane tool `scripts` directory.
-
-    This implementation is jank and should be redone.
-    """
-    return os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-        "scripts",
-    )
 
 
 class MissingInputError(ValueError):

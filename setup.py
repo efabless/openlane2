@@ -8,7 +8,12 @@ requirements = open("requirements.txt").read().strip().split("\n")
 setup(
     name="openlane",
     packages=find_packages(),
-    package_data={"openlane": ["py.typed"]},
+    package_data={
+        "openlane": [
+            "py.typed",
+            "scripts/**/*",
+        ]
+    },
     version=__version__,
     description="A full open source RTL to GDSII flow",
     long_description=open("Readme.md").read(),

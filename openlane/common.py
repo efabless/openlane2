@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import pathlib
 import rich.console
 
@@ -43,3 +44,13 @@ def err(printable, *args, **kwargs):
 
 def mkdirp(path):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def get_script_dir():
+    """
+    Gets the OpenLane tool `scripts` directory.
+    """
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "scripts",
+    )

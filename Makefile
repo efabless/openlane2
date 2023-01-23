@@ -28,6 +28,7 @@ venv/created: $(FILE) requirements_lint.txt requirements.txt
 	./venv/bin/python3 -m pip install --upgrade pip
 	./venv/bin/python3 -m pip install --upgrade wheel
 	./venv/bin/python3 -m pip install --upgrade -r $(FILE)
+	./venv/bin/python3 -m pip install .
 	touch venv/created
 
 .PHONY: veryclean
