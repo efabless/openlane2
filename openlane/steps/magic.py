@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 from typing import List
+from abc import abstractmethod
 
 from .step import TclStep, get_script_dir
 from .state import DesignFormat, State
@@ -22,8 +23,9 @@ class MagicStep(TclStep):
     inputs = [DesignFormat.GDSII]
     outputs = []
 
+    @abstractmethod
     def get_script_path(self):
-        raise Exception("Subclass the MagicStep class before using it.")
+        pass
 
     def get_command(self) -> List[str]:
         return [

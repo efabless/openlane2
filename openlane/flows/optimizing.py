@@ -17,6 +17,8 @@ import subprocess
 from typing import List, Tuple, Optional
 from concurrent.futures import Future
 
+import slugify
+
 from .flow import Flow, FlowFactory
 from ..common import success, log
 from ..steps import State, Yosys, OpenROAD
@@ -24,25 +26,37 @@ from ..config import Config
 
 
 class Optimizing(Flow):
+    """
+    A customized flow composed of two stages:
+
+    * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
+
+    The best-performing strategy in terms of minimizing the area makes it to the next stage.
+
+    * Floorplanning and Placement - tries FP and placement with a high utilization.
+
+    If the high utilization fails, a lower is fallen back to as a suggestion.
+    """
+
     def run(
         self,
         with_initial_state: Optional[State] = None,
     ) -> Tuple[bool, List[State]]:
         initial_state = with_initial_state or State()
         state_list = [initial_state]
-        self.set_stage_count(2)
+        self.set_max_stage_count(2)
 
         synthesis_futures: List[Tuple[Config, Future[State]]] = []
         log
         self.start_stage("Synthesis Exploration")
 
         for strategy in ["AREA 0", "AREA 2", "DELAY 1"]:
-            config = self.config_in.copy()
+            config = self.config.copy()
             config["SYNTH_STRATEGY"] = strategy
 
             synth_step = Yosys.Synthesis(
                 config,
-                name=f"Synthesis {strategy}",
+                id=slugify.slugify(f"Synthesis {strategy}"),
                 silent=True,
             )
             synth_future = self.run_step_async(synth_step)
@@ -50,7 +64,7 @@ class Optimizing(Flow):
             sta_step = OpenROAD.NetlistSTA(
                 config,
                 state_in=synth_future,
-                name=f"STA {strategy}",
+                id=slugify.slugify(f"STA {strategy}"),
                 silent=True,
             )
             sta_future = self.run_step_async(sta_step)
@@ -86,18 +100,21 @@ class Optimizing(Flow):
         fp_config["FP_CORE_UTIL"] = 99
         fp = OpenROAD.Floorplan(
             fp_config,
-            name="Floorplanning (High Util)",
+            id="fp_highutl",
+            long_name="Floorplanning (High Util)",
         )
         state_list.append(fp.start())
         try:
             io = OpenROAD.IOPlacement(
                 fp_config,
-                name="I/O Placement (High Util)",
+                id="io-highutl",
+                long_name="I/O Placement (High Util)",
             )
             state_list.append(io.start())
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
-                name="Global Placement (High Util)",
+                id="gpl-highutil",
+                long_name="Global Placement (High Util)",
             )
             state_list.append(gpl.start())
         except subprocess.CalledProcessError:
@@ -107,17 +124,20 @@ class Optimizing(Flow):
             fp_config["FP_CORE_UTIL"] = 40
             fp = OpenROAD.Floorplan(
                 fp_config,
-                name="Floorplanning (Low Util)",
+                id="fp-lowutl",
+                long_name="Floorplanning (Low Util)",
             )
             state_list.append(fp.start())
             io = OpenROAD.IOPlacement(
                 fp_config,
-                name="I/O Placement (Low Util)",
+                id="io-lowutl",
+                long_name="I/O Placement (Low Util)",
             )
             state_list.append(io.start())
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
-                name="Global Placement (Low Util)",
+                id="gpl-lowutl",
+                long_name="Global Placement (Low Util)",
             )
             state_list.append(gpl.start())
 

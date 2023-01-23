@@ -14,16 +14,18 @@
 from __future__ import annotations
 
 import os
-import re
 import time
 import inspect
 import subprocess
 from enum import Enum
 from decimal import Decimal
+from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import final, List, Callable, Optional, Union, Tuple
 
-from .state import State, DesignFormat, Output
+import slugify
+
+from .state import State, DesignFormat
 from ..config import Config
 from ..common import mkdirp, console, err, rule
 from ..utils import Toolbox
@@ -50,43 +52,61 @@ class MissingInputError(ValueError):
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 
-invalid_for_path = re.compile(r"[^\w_-]+")
 
-
-class Step(object):
+class Step(ABC):
     """
-    The base Step class from which all other Step class inherit.
+    An abstract base class for Step objects.
 
-    If used in a flow, this particular Step does... absolutely nothing.
+    Steps encapsulate a subroutine that acts upon certain classes of formats
+    in an input state and returns a new output state with updated design format
+    paths and/or metrics.
+
+    Properties:
+
+        `inputs`: A list of design formats used by the step as an input.
+        `outputs`: A list of design formats that are output by this step.
+
+        `name`: A short name for the step, used primarily in the progress bar
+            of sequential flows.
+
+            If not set by a subclass, the Python name of the Step class is used.
+        `id`: A valid filesystem name for the step, user primarily in step
+            directories.
+
+            If not set by a subclass, `.name` is passed through `slugify` and
+            used as an ID.
+
+        `long_name`:  A verbose and descriptive name for the step,
+            used to separate logs in the terminal.
+
+            If not set by a subclass, `.name` is used.
     """
 
     inputs: List[DesignFormat] = []
-    outputs: List[Union[DesignFormat, Output]] = []
+    outputs: List[DesignFormat] = []
 
-    name: Optional[str] = None
-    long_name: Optional[str] = None
-
-    def get_name(self):
-        return self.name or self.__class__.__name__
-
-    def get_name_escaped(self):
-        return invalid_for_path.sub("_", self.get_name()).lower()
-
-    def get_long_name(self):
-        return self.long_name or self.get_name()
+    id: str
+    name: str
+    long_name: str
 
     def __init__(
         self,
         config: Optional[Config] = None,
         state_in: Union[Optional[State], Future[State]] = None,
         step_dir: Optional[str] = None,
+        id: Optional[str] = None,
         name: Optional[str] = None,
+        long_name: Optional[str] = None,
         silent: bool = False,
     ):
         """
+        Warning: This initializer is not thread-safe. Please use it on the main
+        thread and then, if you're using a Flow object, use `run_step_async`, or
+        if you're not, you may use `start` in another thread. That part's fine.
+
         :param config: A configuration object.
             If not provided, as a convenience, the call stack will be
-            examined for a `self.config_in`, and the first one encountered
+            examined for a `self.config`, and the first one encountered
             will be used.
 
         :param state_in: The state object this step will use as an input.
@@ -106,7 +126,9 @@ class Step(object):
             `self.dir_for_step` function, which will then be called to
             get a directory for said step.
 
-        :param name: An optional string name for the step. Useful in custom flows.
+        :param name: An optional override name for the step. Useful in custom flows.
+        :param id: An optional override name for the ID. Useful in custom flows.
+        :param long_name: An optional override name for the long name. Useful in custom flows.
 
         :param silent: A variable stating whether a step should output to the
         terminal.
@@ -116,6 +138,18 @@ class Step(object):
         """
         if name is not None:
             self.name = name
+        elif not hasattr(self, "name"):
+            self.name = self.__class__.__name__
+
+        if id is not None:
+            self.id = id
+        elif not hasattr(self, "id"):
+            self.id = slugify.slugify(self.name)
+
+        if long_name is not None:
+            self.long_name = long_name
+        elif not hasattr(self, "long_name"):
+            self.long_name = self.name
 
         if config is None:
             try:
@@ -124,8 +158,8 @@ class Step(object):
                     current = frame.f_back
                     while current is not None:
                         locals = current.f_locals
-                        if "self" in locals and hasattr(locals["self"], "config_in"):
-                            config = locals["self"].config_in.copy()
+                        if "self" in locals and hasattr(locals["self"], "config"):
+                            config = locals["self"].config.copy()
                         current = current.f_back
                 if config is None:
                     raise Exception("")
@@ -220,12 +254,13 @@ class Step(object):
 
         self.start_time = time.time()
         if not self.silent:
-            rule(f"{self.get_long_name()}")
+            rule(f"{self.long_name}")
         mkdirp(self.step_dir)
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
         return self.state_out
 
+    @abstractmethod
     def run(self, **kwargs) -> State:
         """
         The "core" of a step. **You should not be calling this function outside
@@ -420,8 +455,6 @@ class TclStep(Step):
         )
 
         for output in self.outputs:
-            if isinstance(output, Output) and not output.update:
-                continue
             state[output.name] = env[f"SAVE_{output.name}"]
 
         return state

@@ -14,6 +14,7 @@
 import os
 import re
 import json
+from abc import abstractmethod
 from typing import List, Dict, Tuple
 
 from .step import TclStep, get_script_dir
@@ -71,8 +72,9 @@ class OpenROADStep(TclStep):
         DesignFormat.POWERED_NETLIST,
     ]
 
+    @abstractmethod
     def get_script_path(self):
-        raise NotImplementedError("Subclass the OpenROAD Step class before using it.")
+        pass
 
     def run(
         self,
@@ -152,6 +154,7 @@ class Floorplan(OpenROADStep):
 
 
 class IOPlacement(OpenROADStep):
+    id = "io-placement"
     name = "I/O Placement"
 
     def get_script_path(self):
@@ -252,6 +255,7 @@ class ParasiticsExtraction(OpenROADStep):
 
 class ParasiticsSTA(OpenROADStep):
     name = "Parasitics STA"
+    long_name = "Parasitics-based Static Timing Analysis"
 
     inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
     outputs = [DesignFormat.LIB]

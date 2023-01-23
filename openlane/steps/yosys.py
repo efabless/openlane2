@@ -14,16 +14,24 @@
 import os
 import json
 from typing import List
+from abc import abstractmethod
 
 from .step import TclStep, get_script_dir
 from .state import DesignFormat, State
 
 
-class Synthesis(TclStep):
-    outputs = [DesignFormat.NETLIST]
-
+class Yosys(TclStep):
     def get_command(self) -> List[str]:
         return ["yosys", "-c", self.get_script_path()]
+
+    @abstractmethod
+    def get_script_path(self):
+        pass
+
+
+class Synthesis(Yosys):
+    inputs = []  # The input RTL is part of the configuration
+    outputs = [DesignFormat.NETLIST]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")

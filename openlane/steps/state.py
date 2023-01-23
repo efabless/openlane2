@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import NamedTuple
 from collections import UserDict
 
 
 class DesignFormat(Enum):
+    """
+    A list of design formats that may be kept in the state object.
+
+    The value of the enum is a tuple. Currently, the tuple is of sized 1 and only
+    has the extension of the files in question.
+    """
+
     NETLIST = ("nl.v",)
     POWERED_NETLIST = ("pnl.v",)
 
@@ -31,20 +37,18 @@ class DesignFormat(Enum):
     GDSII = ("gds",)
 
 
-class Output(NamedTuple):
-    format: DesignFormat
-    update: bool = True
-
-    @property
-    def name(self):
-        return self.format.name
-
-    @property
-    def value(self):
-        return self.format.value
-
-
 class State(UserDict):
+    """
+    Basically, a dictionary with keys of type DesignFormat and string values,
+    the string values being filesystem paths.
+
+    The state is the only thing that can be altered by steps other than the
+    filesystem.
+
+    This dictionary has a property named `metrics` that also carries statistics
+    about the design: area, wire length, et cetera.
+    """
+
     metrics: dict
 
     def __init__(self) -> None:

@@ -16,8 +16,13 @@ lint: venv/created
 test: venv/created
 	./venv/bin/python3 -m openlane ./designs/spm/config.json
 
+.PHONY: test-opt
+test-opt: venv/created
+	./venv/bin/python3 -m openlane -f optimizing ./designs/spm/config.json
+
+
 venv: venv/created
-venv/created: $(FILE)
+venv/created: $(FILE) requirements_lint.txt requirements.txt
 	rm -rf venv
 	python3 -m venv ./venv
 	./venv/bin/python3 -m pip install --upgrade pip
