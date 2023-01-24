@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
+import glob
 from setuptools import setup, find_packages
 
 from openlane import __version__
 
 requirements = open("requirements.txt").read().strip().split("\n")
-
 setup(
     name="openlane",
     packages=find_packages(),
     package_data={
         "openlane": [
             "py.typed",
-            "scripts/**/*",
         ]
+        + glob.glob("./scripts/**/*")
     },
     version=__version__,
     description="A full open source RTL to GDSII flow",

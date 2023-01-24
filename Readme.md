@@ -13,15 +13,13 @@ OpenLane is an automated RTL to GDSII flow based on several components including
 ## Installation
 ### Binary Dependencies
 You'll need the following:
-* The **absolute latest** (HEAD of master) Yosys from https://github.com/YosysHQ/Yosys
+* Yosys 0.25+ (preferably 0.26+) from https://github.com/YosysHQ/Yosys
 * A reasonably modern version of OpenROAD from https://github.com/The-OpenROAD-Project/OpenROAD
 * A reasonably modern version of Magic from https://github.com/RTimothyEdwards/Magic
 * Python **3.8** or higher with PIP, Venv and Python-Tk
 
-### Installing on Ubuntu
-```sh
-sudo apt-get install python3 python3-pip python3-venv python3-tk libxz
-```
+### Installing Dependencies
+* Get [Nix](https://nixos.org/download.html), then invoke `nix-shell`.
 
 ### Python Dependencies
 For now, simply type `make venv` to create a virtual environment with all the
