@@ -17,6 +17,7 @@ import sys
 import glob
 import fnmatch
 from enum import Enum
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple, Union, Optional
 
@@ -274,7 +275,10 @@ def process_scalar(key: str, value: Scalar, state: State) -> Scalar:
     elif value is None:
         value = ""
     elif not (
-        isinstance(value, bool) or isinstance(value, int) or isinstance(value, float)
+        isinstance(value, bool)
+        or isinstance(value, int)
+        or isinstance(value, float)
+        or isinstance(value, Decimal)
     ):
         raise InvalidConfig(f"Invalid value type {type(value)} for key '{key}'.")
 

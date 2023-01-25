@@ -2,9 +2,9 @@
   name: fastest_test_set
   designs:
     - inverter
-      - Clockless
+      - Y
     - gcd
-      - Clockless
+      - Y
     - wbqspiflash
       - Y
     - APU
@@ -14,11 +14,13 @@
     - zipdiv
       - Y
     - usb
+      - Y
     - usb_cdc_core
+      - Y
     - spm
       - Y
     - xtea
-      - Tcl
+      - Y
     - caravel_upw
     - manual_macro_placement_test
 - pdk: sky130A

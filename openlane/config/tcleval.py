@@ -19,17 +19,19 @@ from decimal import Decimal, InvalidOperation
 from .config import Config
 
 
-def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
-    tcl_in = open(tcl_in_path).read()
+def env_from_tcl(env_in: Config, tcl_in: str) -> Config:
     interpreter = tkinter.Tcl()
 
     initial_env = os.environ.copy()
-    env_out = Config(env_in)
+    env_out = env_in.copy()
 
     with tempfile.NamedTemporaryFile("r+") as f:
         env_str = ""
+        unset_env_str = ""
         for key, value in env_in.items():
             env_str += f"set ::env({key}) {{{value}}}\n"
+            unset_env_str += f"unset ::env({key})\n"
+
         tcl_script = f"""
         {env_str}
         {tcl_in}
@@ -38,8 +40,8 @@ def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
             puts $f "$key $::env($key)\\0"
         }}
         close $f
+        {unset_env_str}
         """
-
         interpreter.eval(tcl_script)
 
         f.seek(0)
@@ -53,7 +55,7 @@ def env_from_tcl(env_in: Config, tcl_in_path: str) -> Config:
                 value = Decimal(value)
             except InvalidOperation:
                 pass
-            if initial_env.get(key) is None:
+            if initial_env.get(key) is None and env_in.get(key) != value:
                 env_out[key] = value
 
     return env_out

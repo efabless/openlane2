@@ -201,7 +201,8 @@ flow_variables = [
     Variable(
         "BASE_SDC_FILE",
         Optional[Path],
-        "Specifies the base sdc file to source before running Static Timing Analysis.",
+        "Specifies the base SDC file to source before running Static Timing Analysis.",
+        deprecated_names=["SDC_FILE"],
     ),
     Variable(
         "VERILOG_INCLUDE_DIRS",
@@ -522,7 +523,7 @@ flow_variables = [
         Optional[Decimal],
         "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
         doc_units="%",
-        deprecated_names=[("PL_TARGET_DENSITY", lambda d: d * 100.0)],
+        deprecated_names=[("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))],
     ),
     Variable(
         "PL_TIME_DRIVEN",

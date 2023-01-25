@@ -17,6 +17,7 @@ from ..steps import (
     Yosys,
     OpenROAD,
     Magic,
+    Misc,
 )
 from .flow import SequentialFlow, FlowFactory
 
@@ -24,6 +25,7 @@ from .flow import SequentialFlow, FlowFactory
 class Basic(SequentialFlow):
     Steps: ClassVar[List[Type[Step]]] = [
         Yosys.Synthesis,
+        Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
         OpenROAD.TapDecapInsertion,

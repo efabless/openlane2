@@ -21,7 +21,7 @@ from .state import DesignFormat, State
 from ..common import get_script_dir
 
 
-class Yosys(TclStep):
+class YosysStep(TclStep):
     def get_command(self) -> List[str]:
         return ["yosys", "-c", self.get_script_path()]
 
@@ -30,7 +30,7 @@ class Yosys(TclStep):
         pass
 
 
-class Synthesis(Yosys):
+class Synthesis(YosysStep):
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]
 

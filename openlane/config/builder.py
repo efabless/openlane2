@@ -51,15 +51,29 @@ class ConfigBuilder(object):
     @classmethod
     def load(Self, file_path: str, *args, **kwargs) -> Tuple["Config", str]:
         design_dir = os.path.dirname(file_path)
-        return (
-            Self.loads(
-                open(file_path, encoding="utf8").read(),
+        if file_path.endswith(".json"):
+            return (
+                Self.loads(
+                    open(file_path, encoding="utf8").read(),
+                    design_dir,
+                    *args,
+                    **kwargs,
+                ),
                 design_dir,
-                *args,
-                **kwargs,
-            ),
-            design_dir,
-        )
+            )
+        elif file_path.endswith(".tcl"):
+            return (
+                Self.loads_tcl(
+                    open(file_path, encoding="utf8").read(),
+                    design_dir,
+                    *args,
+                    **kwargs,
+                ),
+                design_dir,
+            )
+        else:
+            _, ext = os.path.splitext(file_path)
+            raise ValueError(f"Unsupported configuration file extension '{file_path}'.")
 
     @classmethod
     def loads(
@@ -90,7 +104,10 @@ class ConfigBuilder(object):
 
         pdkpath = os.path.join(pdk_root, pdk)
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
-        config_in = env_from_tcl(config_in, pdk_config_path)
+        config_in = env_from_tcl(
+            config_in,
+            open(pdk_config_path, encoding="utf8").read(),
+        )
 
         scl = config_in["STD_CELL_LIBRARY"]
         assert (
@@ -101,7 +118,10 @@ class ConfigBuilder(object):
         scl_config_path = os.path.join(
             pdkpath, "libs.tech", "openlane", scl, "config.tcl"
         )
-        config_in = env_from_tcl(config_in, scl_config_path)
+        config_in = env_from_tcl(
+            config_in,
+            open(scl_config_path, encoding="utf8").read(),
+        )
 
         config_in, pdk_warnings, pdk_errors = validate_pdk_config(
             config_in, ["PDK_ROOT", "PDK", "STD_CELL_LIBRARY"]
@@ -127,6 +147,106 @@ class ConfigBuilder(object):
                 design_dir=design_dir,
             )
         )
+
+        config_in, design_warnings, design_errors = validate_user_config(
+            design_config,
+            ["DESIGN_DIR", "PDK_ROOT", "PDK", "PDKPATH", "SCLPATH", "STD_CELL_LIBRARY"],
+            config_in,
+        )
+
+        if len(design_errors) != 0:
+            raise InvalidConfig(
+                "design configuration file", design_warnings, design_errors
+            )
+
+        if len(design_warnings) > 0:
+            log(
+                "Loading the design configuration file has generated the following warnings:"
+            )
+        for warning in design_warnings:
+            warn(warning)
+
+        config_in["PDK_ROOT"] = pdk_root
+
+        return config_in
+
+    @classmethod
+    def loads_tcl(
+        Self,
+        config: str,
+        design_dir: str,
+        pdk: str,
+        pdk_root: Optional[str] = None,
+        scl: Optional[str] = None,
+    ) -> "Config":
+        warn(
+            "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
+        )
+
+        pdk_root = volare.get_volare_home(pdk_root)
+        config_in = Config(
+            {
+                "PDK_ROOT": pdk_root,
+                Keys.pdk: pdk,
+            }
+        )
+
+        tcl_vars_in = config_in.copy()
+        tcl_vars_in[Keys.scl] = ""
+        tcl_vars_in[Keys.design_dir] = design_dir
+        tcl_config = env_from_tcl(tcl_vars_in, config)
+
+        process_info = resolve(
+            tcl_config.data,
+            only_extract_process_info=True,
+            design_dir=design_dir,
+        )
+
+        pdk = process_info.get(Keys.pdk) or pdk
+        if scl is not None:
+            config_in[Keys.scl] = scl
+
+        pdkpath = os.path.join(pdk_root, pdk)
+        pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
+
+        config_in = env_from_tcl(
+            config_in,
+            open(pdk_config_path, encoding="utf8").read(),
+        )
+
+        scl = config_in["STD_CELL_LIBRARY"]
+        assert (
+            scl is not None
+        ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
+
+        scl_config_path = os.path.join(
+            pdkpath, "libs.tech", "openlane", scl, "config.tcl"
+        )
+        config_in = env_from_tcl(
+            config_in,
+            open(scl_config_path, encoding="utf8").read(),
+        )
+
+        config_in, pdk_warnings, pdk_errors = validate_pdk_config(
+            config_in,
+            ["PDK_ROOT", "PDK", "STD_CELL_LIBRARY", "DESIGN_DIR", "DESIGN_NAME"],
+        )
+
+        if len(pdk_errors) != 0:
+            raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
+
+        if len(pdk_warnings) > 0:
+            log(
+                "Loading the PDK configuration files has generated the following warnings:"
+            )
+        for warning in pdk_warnings:
+            warn(warning)
+
+        tcl_vars_in[Keys.pdk] = pdk
+        tcl_vars_in[Keys.scl] = scl
+        tcl_vars_in[Keys.design_dir] = design_dir
+
+        design_config = env_from_tcl(tcl_vars_in, config)
 
         config_in, design_warnings, design_errors = validate_user_config(
             design_config,

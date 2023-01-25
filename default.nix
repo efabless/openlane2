@@ -24,19 +24,18 @@ pkgs.mkShell {
         patchShebangs ./scripts/*
       '';
 
-    }); openroad = stdenv.mkDerivation {
+    }); openroad = let revision = "c295b08a99aacb6147b9c51104627e78ac3859e3"; in stdenv.mkDerivation {
       
       name = "openroad";
-
       src = fetchgit {
         url = "https://github.com/The-OpenROAD-Project/OpenROAD";
-        rev = "c295b08a99aacb6147b9c51104627e78ac3859e3";
-        sha256 = "sha256-mfU9SW91CpZ6+FkT57nsHLcTuJmi9gyVll6sH0LptLg=";
+        rev = "${revision}";
+        sha256 = "sha256-7TaIz12WX6wvZN+Z+IFZh55zWtMV7ER7G5yGefR5n6I=";
         fetchSubmodules = true;
-        leaveDotGit = true;
       };
 
       preConfigure = ''
+        sed -i "s/GITDIR-NOTFOUND/${revision}/" ./cmake/GetGitRevisionDescription.cmake
         patchShebangs ./etc/find_messages.py
       '';
 

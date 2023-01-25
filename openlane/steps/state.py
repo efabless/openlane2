@@ -30,6 +30,7 @@ class DesignFormat(Enum):
     LEF = ("lef",)
     ODB = ("odb",)
 
+    SDC = ("sdc",)
     SDF = ("sdf",)
     SPEF = ("spef",)
     LIB = ("lib",)

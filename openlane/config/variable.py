@@ -176,6 +176,10 @@ class Variable:
                 if not isinstance(deprecated_name, str):
                     deprecated_name, deprecated_callable = deprecated_name
                 exists, value = mutable.extract(deprecated_name)
+                if exists:
+                    warnings.append(
+                        f"The variable '{deprecated_name}' is deprecated. Please check the docs for the usage on the replacement variable '{variable.name}'."
+                    )
                 if value is not None:
                     value = deprecated_callable(value)
                 i = i + 1

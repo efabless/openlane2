@@ -69,6 +69,7 @@ class OpenROADStep(TclStep):
         DesignFormat.ODB,
         DesignFormat.DEF,
         DesignFormat.SDF,
+        DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
     ]
