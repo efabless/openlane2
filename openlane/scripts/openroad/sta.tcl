@@ -93,7 +93,7 @@ sta::report_design_area_metrics
 
 # report clock skew if the clock port is defined
 # OR hangs if this command is run on clockless designs
-if { $::env(CLOCK_PORT) != "__VIRTUAL_CLK__" && $::env(CLOCK_PORT) != "" } {
+if { [info exists ::env(CLOCK_PORT)] } {
     sta::report_clock_skew_metric -setup
     sta::report_clock_skew_metric -hold
 }

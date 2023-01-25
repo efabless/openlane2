@@ -135,7 +135,7 @@ puts "worst_slack_end"
 
 # report clock skew if the clock port is defined
 # OR hangs if this command is run on clockless designs
-if { $::env(CLOCK_PORT) != "__VIRTUAL_CLK__" && $::env(CLOCK_PORT) != "" } {
+if { [info exists ::env(CLOCK_PORT)] } {
     puts "clock_skew"
     puts "\n==========================================================================="
     puts " report_clock_skew"

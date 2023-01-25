@@ -48,6 +48,7 @@ pkgs.mkShell {
         python3Full
         readline
         libffi
+        qt6.full
         
         # ortools
         re2

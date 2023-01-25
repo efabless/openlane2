@@ -13,6 +13,13 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read
+
+if { ![info exists ::env(CLOCK_NET)] } {
+    puts "\[INFO]: ::env(CLOCK_NET) doesn't exist. Assuming clockless design and exiting…"
+    write
+    exit 0
+}
+
 if {![info exist ::env(SYNTH_MAX_TRAN)]} {
     set ::env(SYNTH_MAX_TRAN) [expr {0.1 * $::env(CLOCK_PERIOD)}]
 } else {

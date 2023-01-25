@@ -30,19 +30,21 @@ flow_variables = [
     ),
     Variable(
         "CLOCK_PERIOD",
-        str,
+        Decimal,
         "The clock period for the design.",
         doc_units="ns",
-    ),
-    Variable(
-        "CLOCK_NET",
-        str,
-        "The name of the net input to root clock buffer used in Clock Tree Synthesis.",
+        default="10.0",
     ),
     Variable(
         "CLOCK_PORT",
-        str,
+        Optional[str],
         "The name of the design's clock port used in Static Timing Analysis.",
+    ),
+    Variable(
+        "CLOCK_NET",
+        Optional[str],
+        "The name of the net input to root clock buffer used in Clock Tree Synthesis.",
+        default="ref::$CLOCK_PORT",
     ),
     Variable(
         "PDK",
@@ -132,6 +134,7 @@ flow_variables = [
                 "DELAY 1",
                 "DELAY 2",
                 "DELAY 3",
+                "DELAY 4",
             ],
         ),
         "Strategies for abc logic synthesis and technology mapping. AREA strategies usually result in a more compact design, while DELAY strategies usually result in a design that runs at a higher frequency. Please note that there is no way to know which strategy is the best before trying them.",
@@ -515,10 +518,11 @@ flow_variables = [
         deprecated_names=["UNBUFFER_NETS"],
     ),
     Variable(
-        "PL_TARGET_DENSITY",
+        "PL_TARGET_DENSITY_PCT",
         Optional[Decimal],
         "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
         doc_units="%",
+        deprecated_names=[("PL_TARGET_DENSITY", lambda d: d * 100.0)],
     ),
     Variable(
         "PL_TIME_DRIVEN",

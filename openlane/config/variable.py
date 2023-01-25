@@ -16,7 +16,7 @@ from enum import Enum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass
 from typing import get_origin, get_args
-from typing import Union, Type, List, Optional, Tuple, Any, Dict
+from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable
 
 from .config import Config, Path
 from .resolve import process_string
@@ -33,7 +33,7 @@ class Variable:
     type: Any
     description: str
     default: Any = None
-    deprecated_names: Optional[List[str]] = None
+    deprecated_names: Optional[List[Union[str, Tuple[str, Callable]]]] = None
 
     doc_example: Optional[str] = None
     doc_units: Optional[str] = None
@@ -128,7 +128,12 @@ class Variable:
                     f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
-            return validating_type[value]
+            try:
+                return validating_type[value]
+            except KeyError:
+                raise ValueError(
+                    f"Variable provided for variable {self.name} of enumerated type {validating_type} is invalid: 'value'"
+                )
         elif issubclass(validating_type, Decimal):
             try:
                 return Decimal(value)
@@ -166,7 +171,13 @@ class Variable:
                 and variable.deprecated_names is not None
                 and i < len(variable.deprecated_names)
             ):
-                exists, value = mutable.extract(variable.deprecated_names[i])
+                deprecated_name = variable.deprecated_names[i]
+                deprecated_callable = lambda x: x
+                if not isinstance(deprecated_name, str):
+                    deprecated_name, deprecated_callable = deprecated_name
+                exists, value = mutable.extract(deprecated_name)
+                if value is not None:
+                    value = deprecated_callable(value)
                 i = i + 1
             try:
                 value_processed = variable.process(value, values_so_far=processed.data)
