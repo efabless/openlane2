@@ -21,11 +21,12 @@ from enum import Enum
 from decimal import Decimal
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
-from typing import final, List, Callable, Optional, Union, Tuple
+from typing import final, List, Callable, Optional, Union, Tuple, Sequence
 
 import slugify
 
-from .state import State, DesignFormat
+from .state import State
+from .design_format import DesignFormat
 from ..config import Config
 from ..common import mkdirp, console, err, rule
 from ..utils import Toolbox
@@ -267,7 +268,7 @@ class Step(ABC):
             self.state_in = self.state_in.result()
 
         for input in self.inputs:
-            value = self.state_in.get(input.name)
+            value = self.state_in.get(input)
             if value is None:
                 raise MissingInputError(
                     f"{type(self).__name__}: missing required input '{input.name}'"
@@ -278,7 +279,7 @@ class Step(ABC):
     @final
     def run_subprocess(
         self,
-        cmd: List[str],
+        cmd: Sequence[Union[str, os.PathLike]],
         log_to: Optional[str] = None,
         **kwargs,
     ):
@@ -299,6 +300,8 @@ class Step(ABC):
         if log_to is not None:
             log_file.close()
             log_file = open(log_to, "w")
+
+        cmd_str = [str(arg) for arg in cmd]
 
         kwargs = kwargs.copy()
         if "stdin" not in kwargs:
@@ -331,7 +334,8 @@ class Step(ABC):
                     log_file.write(line)
         returncode = process.wait()
         if returncode != 0:
-            err(f"Command '{' '.join(cmd)}' failed.", _stack_offset=3)
+            err("Command failed: ", _stack_offset=4)
+            console.print("\t", " ".join(cmd_str))
             raise subprocess.CalledProcessError(returncode, process.args)
 
     def extract_env(self, kwargs) -> Tuple[dict, dict]:
@@ -427,10 +431,10 @@ class TclStep(Step):
             env[element] = value
 
         for input in self.inputs:
-            env[f"CURRENT_{input.name}"] = state[input.name]
+            env[f"CURRENT_{input.name}"] = state[input]
 
         for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value[0]}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
             env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
         log_filename = os.path.splitext(os.path.basename(script))[0]
@@ -444,6 +448,6 @@ class TclStep(Step):
         )
 
         for output in self.outputs:
-            state[output.name] = env[f"SAVE_{output.name}"]
+            state[output] = env[f"SAVE_{output.name}"]
 
         return state

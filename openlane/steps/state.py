@@ -11,31 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from enum import Enum
 from collections import UserDict
-
-
-class DesignFormat(Enum):
-    """
-    A list of design formats that may be kept in the state object.
-
-    The value of the enum is a tuple. Currently, the tuple is of sized 1 and only
-    has the extension of the files in question.
-    """
-
-    NETLIST = ("nl.v",)
-    POWERED_NETLIST = ("pnl.v",)
-
-    DEF = ("def",)
-    LEF = ("lef",)
-    ODB = ("odb",)
-
-    SDC = ("sdc",)
-    SDF = ("sdf",)
-    SPEF = ("spef",)
-    LIB = ("lib",)
-
-    GDSII = ("gds",)
+from .design_format import DesignFormat
 
 
 class State(UserDict):

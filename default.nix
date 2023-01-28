@@ -72,6 +72,8 @@ pkgs.mkShell {
       ];
     }; in [
       neovim
+      zsh
+      
       git
       clang
       clang-tools

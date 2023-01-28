@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import json
-from typing import List
-from abc import abstractmethod
 
 from .step import Step
-from .state import DesignFormat, State
+from .state import State
+from .design_format import DesignFormat
 from ..common import get_script_dir, log
 
 
@@ -34,9 +32,9 @@ class LoadBaseSDC(Step):
             "base.sdc",
         )
         if self.config.get("BASE_SDC_PATH") is not None:
-            log(f"Loaded SDC file at '{config['BASE_SDC_PATH']}'.")
-            new_state[DesignFormat.SDC] = config["BASE_SDC_PATH"]
+            log(f"Loaded SDC file at '{self.config['BASE_SDC_PATH']}'.")
+            new_state[DesignFormat.SDC] = self.config["BASE_SDC_PATH"]
         else:
-            log(f"Loaded default SDC file.")
+            log("Loaded default SDC file.")
 
         return new_state

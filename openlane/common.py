@@ -46,11 +46,18 @@ def mkdirp(path):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
+openlane_root = os.path.dirname(os.path.abspath(__file__))
+
+
+def get_openlane_root():
+    return openlane_root
+
+
 def get_script_dir():
     """
     Gets the OpenLane tool `scripts` directory.
     """
     return os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
+        openlane_root,
         "scripts",
     )

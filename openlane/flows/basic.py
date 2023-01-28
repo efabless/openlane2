@@ -18,6 +18,7 @@ from ..steps import (
     OpenROAD,
     Magic,
     Misc,
+    Odb,
 )
 from .flow import SequentialFlow, FlowFactory
 
@@ -28,6 +29,7 @@ class Basic(SequentialFlow):
         Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
+        Odb.ManualMacroPlacement,
         OpenROAD.TapDecapInsertion,
         OpenROAD.GeneratePDN,
         OpenROAD.IOPlacement,
