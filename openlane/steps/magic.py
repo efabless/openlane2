@@ -65,3 +65,14 @@ class DRC(MagicStep):
         kwargs, env = self.extract_env(kwargs)
         env["MAGIC_DRC_USE_GDS"] = "1"
         return super().run(**kwargs)
+
+
+class SpiceExtraction(MagicStep):
+    name = "SPICE Extraction"
+    long_name = "SPICE Model Extraction"
+
+    inputs = [DesignFormat.GDSII]
+    outputs = [DesignFormat.SPICE]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")

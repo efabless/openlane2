@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if { [info exist ::env(MAGIC_EXT_USE_GDS)] && $::env(MAGIC_EXT_USE_GDS) } {
-    gds read $::env(CURRENT_GDSII)
-} else {
-    source $::env(SCRIPTS_DIR)/magic/def/read.tcl
-}
+gds read $::env(CURRENT_GDSII)
 load $::env(DESIGN_NAME) -dereference
 
-set extdir $::env(signoff_tmpfiles)/magic_spice_ext
+set extdir $::env(STEP_DIR)/extraction
+set feedback_file $::env(STEP_DIR)/feedback.txt
+set netlist $::env(STEP_DIR)/$::env(DESIGN_NAME).spice
+
 file mkdir $extdir
 cd $extdir
 
@@ -35,6 +34,6 @@ if { ! $::env(LVS_CONNECT_BY_LABEL) } {
 extract
 
 ext2spice lvs
-ext2spice -o $::env(EXT_NETLIST) $::env(DESIGN_NAME).ext
-feedback save $::env(signoff_reports)/$::env(_tmp_magic_extract_type).feedback.txt
+ext2spice -o $netlist $::env(DESIGN_NAME).ext
+feedback save $feedback_file
 # exec cp $::env(DESIGN_NAME).spice $::env(signoff_results)/$::env(DESIGN_NAME).spice

@@ -19,6 +19,7 @@ from ..steps import (
     Magic,
     Misc,
     Odb,
+    Netgen,
 )
 from .flow import SequentialFlow, FlowFactory
 
@@ -43,6 +44,8 @@ class Basic(SequentialFlow):
         OpenROAD.ParasiticsSTA,
         Magic.StreamOut,
         Magic.DRC,
+        Magic.SpiceExtraction,
+        Netgen.LVS,
     ]
 
 

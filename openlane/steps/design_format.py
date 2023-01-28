@@ -72,6 +72,11 @@ class DesignFormat(Enum):
         "lib",
         "Lib",
     )
+    SPICE = (
+        "spice",
+        "spice",
+        "Simulation Program with Integrated Circuit Emphasis",
+    )
 
     GDSII = (
         "gds",

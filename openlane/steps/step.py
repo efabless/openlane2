@@ -412,7 +412,7 @@ class TclStep(Step):
         kwargs, env = self.extract_env(kwargs)
 
         env["SCRIPTS_DIR"] = get_script_dir()
-        env["STEP_DIR"] = self.step_dir
+        env["STEP_DIR"] = os.path.abspath(self.step_dir)
 
         for element in self.config.keys():
             value = self.config[element]

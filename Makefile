@@ -42,3 +42,4 @@ clean:
 	rm -rf logs/
 	rm -rf dist/
 	rm -rf *.egg-info
+	rm -rf designs/*/runs

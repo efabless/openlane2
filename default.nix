@@ -24,7 +24,33 @@ pkgs.mkShell {
         patchShebangs ./scripts/*
       '';
 
-    }); openroad = let revision = "c295b08a99aacb6147b9c51104627e78ac3859e3"; in stdenv.mkDerivation {
+    }); netgen = stdenv.mkDerivation {
+    
+      name = "netgen";
+      src = fetchgit {
+        url = "https://github.com/donn/netgen";
+        rev = "c10f8efd7dc1a5a1c1330784765d5a38cc22cd2d";
+        sha256 = "sha256-WGWnIWL//q7z5HmJ1JpSK6QhNM+X7iWNcDzQpL5CbYc=";
+      };
+
+      configureFlags = [
+        "--with-tk=${tk}"
+        "--with-tcl=${tcl}"
+      ];
+
+      buildInputs = [
+        tcl
+        tk
+        m4
+        python3Full
+      ];
+
+      nativeBuildInputs = [
+        clang
+        clang-tools
+      ];
+
+    }; openroad = let revision = "c295b08a99aacb6147b9c51104627e78ac3859e3"; in stdenv.mkDerivation {
       
       name = "openroad";
       src = fetchgit {
@@ -81,9 +107,10 @@ pkgs.mkShell {
       python3Full
       xz
 
+      yosys
       openroad
       magic-vlsi
-      yosys
+      netgen
     ];
 
 }
