@@ -78,10 +78,10 @@ class DesignFormat(Enum):
         "Simulation Program with Integrated Circuit Emphasis",
     )
 
-    GDSII = (
+    GDS = (
         "gds",
         "gds",
-        "GDS-II Stream",
+        "GDSII Stream",
     )
 
 

@@ -22,10 +22,7 @@ if { $::env(RUN_STANDALONE) == 1 } {
         read
     } else {
         read_libs
-        read_lef $::env(TECH_LEF)
-        foreach lef $::env(CELLS_LEF) {
-            read_lef $lef
-        }
+        read_lefs
         read_netlist
     }
 
@@ -87,9 +84,9 @@ sta::report_tns_metric -setup
 sta::report_tns_metric -hold
 sta::report_worst_slack_metric -setup
 sta::report_worst_slack_metric -hold
-sta::report_erc_metrics
 sta::report_power_metric
 sta::report_design_area_metrics
+[catch {sta::report_erc_metrics}]
 
 # report clock skew if the clock port is defined
 # OR hangs if this command is run on clockless designs

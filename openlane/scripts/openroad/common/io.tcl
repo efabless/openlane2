@@ -81,6 +81,18 @@ proc read_libs {args} {
     }
 }
 
+proc read_lefs {args} {
+    read_lef $::env(TECH_LEF)
+    foreach lef $::env(CELLS_LEF) {
+        read_lef $lef
+    }
+    if { [info exist ::env(EXTRA_LEFS)] } {
+        foreach lef $::env(EXTRA_LEFS) {
+            read_lef $lef
+        }
+    }
+}
+
 proc read {args} {
     sta::parse_key_args "read" args \
         keys {-override_libs}\
@@ -119,16 +131,14 @@ proc write {args} {
         keys {}\
         flags {}
 
-    if { [info exists ::env(VDD_NET)] } {
-        puts "Setting global connections for newly added cells…"
-        set_global_connections
-    }
+
+    source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
+    puts "Setting global connections for newly added cells…"
+    set_global_connections
 
     if { [info exists ::env(SAVE_ODB)] } {
         puts "Writing OpenROAD database to '$::env(SAVE_ODB)'…"
         write_db $::env(SAVE_ODB)
-    } else {
-        puts "\[WARNING\] Did not save OpenROAD database!"
     }
 
     if { [info exists ::env(SAVE_NETLIST)] } {

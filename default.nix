@@ -97,9 +97,7 @@ pkgs.mkShell {
         bison
       ];
     }; in [
-      neovim
-      zsh
-      
+      # Requirements
       git
       clang
       clang-tools
@@ -107,6 +105,14 @@ pkgs.mkShell {
       python3Full
       xz
 
+      # Conveniences
+      neovim
+      zsh
+
+      # Tools
+      klayout
+
+      ## Customized
       yosys
       openroad
       magic-vlsi

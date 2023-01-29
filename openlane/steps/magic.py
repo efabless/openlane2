@@ -21,7 +21,7 @@ from ..common import get_script_dir
 
 
 class MagicStep(TclStep):
-    inputs = [DesignFormat.GDSII]
+    inputs = [DesignFormat.GDS]
     outputs = []
 
     @abstractmethod
@@ -44,7 +44,7 @@ class StreamOut(MagicStep):
 
     inputs = [DesignFormat.DEF]
     outputs = [
-        DesignFormat.GDSII,
+        DesignFormat.GDS,
     ]
 
     def get_script_path(self):
@@ -55,7 +55,7 @@ class DRC(MagicStep):
     name = "DRC"
     long_name = "Design Rule Checks"
 
-    inputs = [DesignFormat.GDSII]
+    inputs = [DesignFormat.DEF, DesignFormat.GDS]
     outputs = []
 
     def get_script_path(self):
@@ -63,7 +63,7 @@ class DRC(MagicStep):
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["MAGIC_DRC_USE_GDS"] = "1"
+        # env["MAGIC_DRC_USE_GDS"] = "1"
         return super().run(**kwargs)
 
 
@@ -71,8 +71,8 @@ class SpiceExtraction(MagicStep):
     name = "SPICE Extraction"
     long_name = "SPICE Model Extraction"
 
-    inputs = [DesignFormat.GDSII]
+    inputs = [DesignFormat.GDS]
     outputs = [DesignFormat.SPICE]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")
+        return os.path.join(get_script_dir(), "magic", "gds", "extract_spice.tcl")

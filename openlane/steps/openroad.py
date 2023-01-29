@@ -218,6 +218,12 @@ class DetailedRouting(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
 
+    def run(self, **kwargs) -> State:
+        kwargs, env = self.extract_env(kwargs)
+        if self.config.get("ROUTING_CORES") is None:
+            env["ROUTING_CORES"] = str(os.cpu_count())
+        return super().run(env=env, **kwargs)
+
 
 class LayoutSTA(OpenROADStep):
     name = "Layout STA"

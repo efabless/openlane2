@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import glob
 from typing import List
 from abc import abstractmethod
 
@@ -41,26 +42,34 @@ class LVS(NetgenStep):
         return os.path.join(self.step_dir, "script.lvs")
 
     def run(self, **kwargs) -> State:
-        spice_lib = os.path.join(
+        spice_glob = os.path.join(
             self.config["PDK_ROOT"],
             self.config["PDK"],
             "libs.ref",
             self.config["STD_CELL_LIBRARY"],
             "spice",
-            f"{self.config['STD_CELL_LIBRARY']}.spice",
+            f"*.spice",
         )
+        spice_files: List[str] = glob.glob(spice_glob)
+
+        if pdk_spice_files := self.config.get("SPICE_MODELS"):
+            spice_files = pdk_spice_files.copy()
+
+        if extra_spice_files := self.config.get("EXTRA_SPICE_MODELS"):
+            spice_files += extra_spice_files
 
         design_name = self.config["DESIGN_NAME"]
 
         with open(self.get_script_path(), "w") as f:
-            print(
-                f"puts \"Reading SPICE netlist file '{spice_lib}'...\"",
-                file=f,
-            )
-            print(
-                f"readnet spice {spice_lib} 1",
-                file=f,
-            )
+            for lib in spice_files:
+                print(
+                    f"puts \"Reading SPICE netlist file '{lib}'...\"",
+                    file=f,
+                )
+                print(
+                    f"readnet spice {lib} 1",
+                    file=f,
+                )
 
             print(
                 f"lvs {{ {self.state_in[DesignFormat.SPICE]} {design_name} }} {{ {self.state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {os.path.abspath(self.step_dir)}/lvs.rpt -json",

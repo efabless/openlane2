@@ -52,8 +52,8 @@ if { [info exists ::env(EXTRA_LIBS) ] } {
     }
 }
 
-if { [info exists ::env(VERILOG_FILES_BLACKBOX)] } {
-    foreach verilog_file $::env(VERILOG_FILES_BLACKBOX) {
+if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+    foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
         read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
     }
 }
@@ -379,8 +379,8 @@ if { $::env(SYNTH_NO_FLAT) } {
         }
     }
 
-    if { [info exists ::env(VERILOG_FILES_BLACKBOX)] } {
-        foreach verilog_file $::env(VERILOG_FILES_BLACKBOX) {
+    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+        foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
             read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
         }
     }

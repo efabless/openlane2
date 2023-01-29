@@ -18,19 +18,8 @@ read
 if {![info exists ::env(PDN_CFG)]} {
     set ::env(PDN_CFG) $::env(SCRIPTS_DIR)/openroad/common/pdn_cfg.tcl
 }
-if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
-    # they both must exist and be equal in length
-    # current assumption: they cannot have a common ground
-    if { ! [info exists ::env(VDD_NETS)] || ! [info exists ::env(GND_NETS)] } {
-        puts_err "VDD_NETS and GND_NETS must *both* either be defined or undefined"
-        exit -1
-    }
-} else {
-    set ::env(VDD_NET) $::env(VDD_PIN)
-    set ::env(GND_NET) $::env(GND_PIN)
-    set ::env(VDD_NETS) $::env(VDD_PIN)
-    set ::env(GND_NETS) $::env(GND_PIN)
-}
+
+source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 
 # load the grid definitions
 if {[catch {source $::env(PDN_CFG)} errmsg]} {

@@ -13,15 +13,7 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_libs
-read_lef $::env(TECH_LEF)
-foreach lef $::env(CELLS_LEF) {
-    read_lef $lef
-}
-if { [info exist ::env(EXTRA_LEFS)] } {
-    foreach lef $::env(EXTRA_LEFS) {
-        read_lef $lef
-    }
-}
+read_lefs
 read_netlist
 
 unset_propagated_clock [all_clocks]

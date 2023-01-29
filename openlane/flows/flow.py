@@ -74,7 +74,8 @@ class Flow(ABC):
 
         self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
 
-        self.ordinal: int = 0
+        self.ordinal: int = 1
+        self.completed: int = 0
         self.max_stage: int = 0
         self.task_id: Optional[TaskID] = None
         self.progress: Optional[Progress] = None
@@ -109,7 +110,6 @@ class Flow(ABC):
         """
         if self.progress is None or self.task_id is None:
             return
-        self.ordinal += 1
         self.progress.update(
             self.task_id,
             description=f"{self.get_name()} - Stage {self.ordinal} - {name}",
@@ -119,7 +119,9 @@ class Flow(ABC):
         """
         Ends the current stage, updating the progress bar appropriately.
         """
-        self.progress.update(self.task_id, completed=float(self.ordinal))
+        self.completed += 1
+        self.ordinal += 1
+        self.progress.update(self.task_id, completed=float(self.completed))
 
     def current_stage_prefix(self) -> str:
         """
@@ -191,7 +193,8 @@ class Flow(ABC):
         self.task_id = None
         self.tmp_dir = None
         self.toolbox = None
-        self.ordinal = 0
+        self.ordinal = 1
+        self.completed = 0
         self.max_stage = 0
 
         return result

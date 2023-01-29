@@ -69,8 +69,8 @@ if { $::env(MAGIC_GENERATE_GDS) } {
 		gds polygon subcells true
 	}
 
-	if {  [info exist ::env(EXTRA_GDS)] } {
-		set gds_files_in $::env(EXTRA_GDS)
+	if {  [info exist ::env(EXTRA_GDS_FILES)] } {
+		set gds_files_in $::env(EXTRA_GDS_FILES)
 		foreach gds_file $gds_files_in {
 			gds read $gds_file
 		}
@@ -92,7 +92,7 @@ if { $::env(MAGIC_GENERATE_GDS) } {
 		gds abstract allow
 	}
 
-	gds write $::env(SAVE_GDSII)
+	gds write $::env(SAVE_GDS)
 	puts "\[INFO\]: GDS Write Complete"
 }
 

@@ -72,8 +72,14 @@ class ConfigBuilder(object):
                 design_dir,
             )
         else:
+            if os.path.isdir(file_path):
+                raise ValueError(
+                    "Passing design folders as arguments is unsupported in OpenLane 2.0+: please pass the JSON configuration file directly."
+                )
             _, ext = os.path.splitext(file_path)
-            raise ValueError(f"Unsupported configuration file extension '{file_path}'.")
+            raise ValueError(
+                f"Unsupported configuration file extension '{ext}' for '{file_path}'."
+            )
 
     @classmethod
     def loads(

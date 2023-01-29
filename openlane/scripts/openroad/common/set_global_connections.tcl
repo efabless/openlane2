@@ -14,7 +14,6 @@
 
 # Power nets
 proc set_global_connections {} {
-    puts $::env(FP_PDN_ENABLE_GLOBAL_CONNECTIONS)
     if { [info exists ::env(FP_PDN_ENABLE_GLOBAL_CONNECTIONS) ] } {
         if { $::env(FP_PDN_ENABLE_GLOBAL_CONNECTIONS) == 1 } {
             foreach power_pin $::env(SCL_POWER_PINS) {

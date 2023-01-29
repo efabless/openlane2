@@ -21,7 +21,7 @@ from enum import Enum
 from decimal import Decimal
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
-from typing import final, List, Callable, Optional, Union, Tuple, Sequence
+from typing import final, List, Callable, Optional, Union, Tuple, Sequence, Dict
 
 import slugify
 
@@ -338,7 +338,7 @@ class Step(ABC):
             console.print("\t", " ".join(cmd_str))
             raise subprocess.CalledProcessError(returncode, process.args)
 
-    def extract_env(self, kwargs) -> Tuple[dict, dict]:
+    def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
         An assisting function: Given a `kwargs` object, it does the following:
 

@@ -60,10 +60,15 @@ flow_variables = [
         doc_units="sites",
     ),
     Variable(
-        "EXTRA_MODELS",
+        "EXTRA_VERILOG_MODELS",
         Optional[List[Path]],
         "Black-boxed Verilog models of pre-hardened macros used in the current design, used in synthesis.",
         deprecated_names=["VERILOG_FILES_BLACKBOX"],
+    ),
+    Variable(
+        "EXTRA_SPICE_MODELS",
+        Optional[List[Path]],
+        "Black-boxed SPICE models of pre-hardened macros used in the current design, used in LVS.",
     ),
     Variable(
         "EXTRA_LEFS",
@@ -392,13 +397,13 @@ flow_variables = [
     Variable(
         "FP_PDN_ENABLE_RAILS",
         bool,
-        "Enables the creation of rails in the power grid. 0=Disable 1=Enable.",
+        "Enables the creation of rails in the power grid.",
         default=True,
     ),
     Variable(
         "FP_PDN_ENABLE_MACROS_GRID",
         bool,
-        "Enables the connection of macros to the top level power grid. 0=Disable 1=Enable.",
+        "Enables the connection of macros to the top level power grid.",
         default=True,
     ),
     Variable(
@@ -755,9 +760,8 @@ flow_variables = [
     ),
     Variable(
         "ROUTING_CORES",
-        int,
-        "Specifies the number of threads to be used in TritonRoute. Can be overriden via environment variable.",
-        default=1,
+        Optional[int],
+        "Specifies the number of threads to be used in OpenROAD Detailed Routing. If unset, this will be equal to your thread count.",
     ),
     Variable(
         "RT_CLOCK_MIN_LAYER",
@@ -946,13 +950,7 @@ flow_variables = [
     Variable(
         "MAGIC_DRC_USE_GDS",
         bool,
-        "A flag to choose whether to run the magic DRC checks on GDS or not. If not, then the checks will be done on the DEF/LEF. 1 = GDS, 0 = DEF/LEF.",
-        default=True,
-    ),
-    Variable(
-        "MAGIC_EXT_USE_GDS",
-        bool,
-        "A flag to choose whether to run the magic extractions on GDS or DEF/LEF. If GDS was used Device Level LVS will be run. Otherwise, blackbox LVS will be run.",
+        "A flag to choose whether to run the magic DRC checks on GDS or not. If not, then the checks will be done on the DEF/LEF, which is faster.",
         default=False,
     ),
     Variable(
@@ -970,7 +968,7 @@ flow_variables = [
     Variable(
         "MAGIC_DEF_NO_BLOCKAGES",
         bool,
-        "A flag to choose whether blockages are read with DEF files or not (they are read as a sheet of metal by Magic).",
+        "If set to true, blockages in DEF files are ignored. Otherwise, they are read as sheets of metal by Magic.",
         default=True,
     ),
     Variable(
@@ -1024,13 +1022,13 @@ flow_variables = [
     Variable(
         "RUN_MAGIC",
         bool,
-        "Enables running magic and GDSII streaming.",
+        "Enables running GDSII streaming out using Magic.",
         default=True,
     ),
     Variable(
         "RUN_MAGIC_DRC",
         bool,
-        "Enables running magic DRC on GDSII produced by magic.",
+        "Enables running magic DRC on GDSII produced by Magic.",
         default=True,
     ),
     Variable(

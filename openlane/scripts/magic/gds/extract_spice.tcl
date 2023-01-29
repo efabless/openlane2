@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-gds read $::env(CURRENT_GDSII)
+source $::env(SCRIPTS_DIR)/magic/gds/read.tcl
+
 load $::env(DESIGN_NAME) -dereference
 
 set extdir $::env(STEP_DIR)/extraction
