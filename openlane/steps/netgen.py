@@ -16,7 +16,7 @@ import glob
 from typing import List
 from abc import abstractmethod
 
-from .step import TclStep
+from .tclstep import TclStep
 from .state import DesignFormat, State
 
 
@@ -42,13 +42,14 @@ class LVS(NetgenStep):
         return os.path.join(self.step_dir, "script.lvs")
 
     def run(self, **kwargs) -> State:
+        assert isinstance(self.state_in, State)
         spice_glob = os.path.join(
             self.config["PDK_ROOT"],
             self.config["PDK"],
             "libs.ref",
             self.config["STD_CELL_LIBRARY"],
             "spice",
-            f"*.spice",
+            "*.spice",
         )
         spice_files: List[str] = glob.glob(spice_glob)
 

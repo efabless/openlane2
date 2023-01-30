@@ -13,9 +13,9 @@
 # limitations under the License.
 import os
 from enum import Enum
-from decimal import Decimal, InvalidOperation
-from dataclasses import dataclass
 from typing import get_origin, get_args
+from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
 from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable
 
 from .config import Config, Path
@@ -33,7 +33,9 @@ class Variable:
     type: Any
     description: str
     default: Any = None
-    deprecated_names: Optional[List[Union[str, Tuple[str, Callable]]]] = None
+    deprecated_names: List[Union[str, Tuple[str, Callable]]] = field(
+        default_factory=list
+    )
 
     doc_example: Optional[str] = None
     doc_units: Optional[str] = None

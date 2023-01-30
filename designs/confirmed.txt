@@ -22,7 +22,9 @@
     - xtea
       - Y
     - caravel_upw
+      - Y
     - manual_macro_placement_test
+      - Y
 - pdk: sky130A
   name: extended_test_set
   designs:

@@ -15,9 +15,10 @@ import os
 from typing import List
 from abc import abstractmethod
 
-from .step import TclStep
+from .tclstep import TclStep
 from .state import DesignFormat, State
 from ..common import get_script_dir
+from ..utils import DRC as DRCObject
 
 
 class MagicStep(TclStep):
@@ -62,9 +63,18 @@ class DRC(MagicStep):
         return os.path.join(get_script_dir(), "magic", "drc.tcl")
 
     def run(self, **kwargs) -> State:
-        kwargs, env = self.extract_env(kwargs)
-        # env["MAGIC_DRC_USE_GDS"] = "1"
-        return super().run(**kwargs)
+        state_out = super().run(**kwargs)
+
+        reports_dir = os.path.join(self.step_dir, "reports")
+        report_path = os.path.join(reports_dir, "drc.rpt")
+        report_str = open(report_path, encoding="utf8").read()
+
+        drc = DRCObject.from_magic(report_str)
+
+        with open(os.path.join(reports_dir, "drc.klayout.xml"), "w") as f:
+            f.write(drc.to_klayout_xml())
+
+        return state_out
 
 
 class SpiceExtraction(MagicStep):

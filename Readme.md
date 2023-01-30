@@ -16,6 +16,7 @@ You'll need the following:
 * Yosys 0.25+ (preferably 0.26+) from https://github.com/YosysHQ/Yosys
 * A reasonably modern version of OpenROAD from https://github.com/The-OpenROAD-Project/OpenROAD
 * A reasonably modern version of Magic from https://github.com/RTimothyEdwards/Magic
+* A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
 * Python **3.8** or higher with PIP, Venv and Python-Tk
 
 ### Installing Dependencies

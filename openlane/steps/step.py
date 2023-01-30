@@ -17,8 +17,6 @@ import os
 import time
 import inspect
 import subprocess
-from enum import Enum
-from decimal import Decimal
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import final, List, Callable, Optional, Union, Tuple, Sequence, Dict
@@ -26,11 +24,10 @@ from typing import final, List, Callable, Optional, Union, Tuple, Sequence, Dict
 import slugify
 
 from .state import State
-from .design_format import DesignFormat
-from ..config import Config
-from ..common import mkdirp, console, err, rule
 from ..utils import Toolbox
-from ..common import get_script_dir
+from ..config import Config
+from .design_format import DesignFormat
+from ..common import mkdirp, console, err, rule
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -276,7 +273,6 @@ class Step(ABC):
 
         return self.state_in.copy()
 
-    @final
     def run_subprocess(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
@@ -357,97 +353,3 @@ class Step(ABC):
             kwargs = kwargs.copy()
             del kwargs["env"]
         return (kwargs, env)
-
-
-class TclStep(Step):
-    """
-    A subclass of `Step` that primarily deals with running Tcl-based utilities,
-    such as Yosys, OpenROAD and Magic.
-
-    A TclStep script corresponds to running one Tcl script with such a utility.
-    """
-
-    def get_script_path(self):
-        """
-        :returns: A Tcl script to be run by this step.
-        """
-        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
-
-    def get_command(self) -> List[str]:
-        """
-        :returns: The command used to run the script.
-        """
-        return ["tclsh", self.get_script_path()]
-
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        """
-        This overriden `run()` function prepares configuration variables and
-        inputs for use with Tcl: specifically, it converts them all to
-        environment variables so they may be used by the Tcl scripts being called.
-
-        Additionally, it logs the output to a `.log` file named after the script.
-
-        When overriding in a subclass, you may find it useful to use this pattern:
-
-        ```
-            kwargs, env = self.extract_env(kwargs)
-            env["CUSTOM_ENV_VARIABLE"] = "1"
-            return super().run(env=env, **kwargs)
-        ```
-
-        This will allow you to add further custom environment variables to a call
-        while still respecting an `env` argument further up the call-stack.
-
-
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
-            redirect stdin, stdout, etc.
-        """
-        state = super().run()
-        command = self.get_command()
-        script = self.get_script_path()
-
-        kwargs, env = self.extract_env(kwargs)
-
-        env["SCRIPTS_DIR"] = get_script_dir()
-        env["STEP_DIR"] = os.path.abspath(self.step_dir)
-
-        for element in self.config.keys():
-            value = self.config[element]
-            if value is None:
-                continue
-
-            if isinstance(value, list):
-                value = " ".join(list(map(lambda x: str(x), value)))
-            elif isinstance(value, Enum):
-                value = value._name_
-            elif isinstance(value, bool):
-                value = "1" if value else "0"
-            elif isinstance(value, Decimal) or isinstance(value, int):
-                value = str(value)
-
-            env[element] = value
-
-        for input in self.inputs:
-            env[f"CURRENT_{input.name}"] = state[input]
-
-        for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
-            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
-
-        log_filename = os.path.splitext(os.path.basename(script))[0]
-        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
-
-        self.run_subprocess(
-            command,
-            env=env,
-            log_to=log_path,
-            **kwargs,
-        )
-
-        for output in self.outputs:
-            state[output] = env[f"SAVE_{output.name}"]
-
-        return state

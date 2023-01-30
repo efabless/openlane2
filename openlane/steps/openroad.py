@@ -17,7 +17,7 @@ import json
 from abc import abstractmethod
 from typing import List, Dict, Tuple
 
-from .step import TclStep
+from .tclstep import TclStep
 from .state import State
 from .design_format import DesignFormat
 from ..common import get_script_dir
