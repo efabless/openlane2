@@ -22,10 +22,14 @@ You'll need the following:
 ### Installing Dependencies
 * Get [Nix](https://nixos.org/download.html), then invoke `nix-shell`.
 
-### Python Dependencies
-For now, simply type `make venv` to create a virtual environment with all the
-Python dependencies installed. To activate the virtual environment, type
-`source ./venv/bin/activate` in your terminal.
+That's literally it.
+
+### Other Methods
+You'll need to compile the above tools. We're planning to support Conda soon.
+
+To set up the Python deps, simply type `make venv` to create a virtual environment 
+with all the Python dependencies installed. To activate the virtual environment,
+type `source ./venv/bin/activate` in your terminal.
 
 ## Usage
 In the root folder of the repository with the VENV activated, you may invoke:

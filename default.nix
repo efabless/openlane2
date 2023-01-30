@@ -1,8 +1,36 @@
 { pkgs ? import <nixpkgs> {} }:
 
-pkgs.mkShell {
-  packages = with pkgs; let
-    boost-static = pkgs.boost.override {
+with pkgs;
+let
+  mach-nix = import (pkgs.fetchgit {
+    url = "https://github.com/DavHau/mach-nix";
+    rev = "70daee1b200c9a24a0f742f605edadacdcb5c998";
+    sha256 = "sha256-mia90VYv/YTdWNhKpvwvFW9RfbXZJSWhJ+yva6EnLE8=";
+  }) {
+    pypiDataRev = "8ac6d2d5521525132c552d4552ba28fe7996b58e";
+    pypiDataSha256 = "sha256:1gvxcr8p0bvlb9z19i52kb9m7vjdvj64h05sy7jg0ii99cyfgvxq";
+  }; in pkgs.mkShell {
+  packages = let
+    volare = mach-nix.buildPythonPackage {
+      python="python38Full";
+      pname="volare";
+      version="0.6.2";
+      src="https://github.com/efabless/volare/tarball/c9b1f82c18f9af9b3d211287cdf8b36c531a8fc0";
+      requirements = ''
+      click>=8.0.0,<9
+      pyyaml~=5.4.0
+      rich>=12,<13
+      requests>=2.27.0,<3
+      pcpp~=1.30
+      '';
+    };
+    python38-ol = mach-nix.mkPython {
+      python = "python38Full";
+      requirements = builtins.readFile ./requirements_dev.txt + builtins.readFile ./requirements_lint.txt + builtins.readFile ./requirements.txt;
+      packagesExtra = [
+        volare
+      ];
+    }; boost-static = pkgs.boost.override {
       enableShared = false;
       enabledStatic = true;
     }; magic-vlsi = pkgs.magic-vlsi.overrideAttrs (finalAttrs: previousAttrs: {
@@ -102,11 +130,13 @@ pkgs.mkShell {
       clang
       clang-tools
       gnumake
-      python3Full
       xz
+
+      python38-ol
 
       # Conveniences
       neovim
+      delta
       zsh
 
       # Tools

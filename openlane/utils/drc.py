@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import annotations
-
 import re
 import json
 from enum import IntEnum
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 
-BoundingBox = tuple[Decimal, Decimal, Decimal, Decimal]  # microns
+BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
 
 @dataclass
@@ -28,7 +26,7 @@ class Violation:
     layer: str
     rule: str
     description: str
-    bounding_boxes: list[BoundingBox] = field(default_factory=list)
+    bounding_boxes: List[BoundingBox] = field(default_factory=list)
 
 
 @dataclass
