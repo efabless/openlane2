@@ -14,6 +14,9 @@ build/
 *.egg-info/
 dist/
 
+# Nix
+result
+
 # Flow artefacts
 *.log
 *.tar.gz

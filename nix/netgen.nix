@@ -11,11 +11,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+{
+  pkgs ? import ./pkgs.nix {},
+  rev,
+  sha256,
 
-# flake8: noqa
+  python-pname ? "python38Full",
+}:
 
-from .flows import Flow, FlowFactory
-from . import steps as Steps
-from .config import ConfigBuilder, InvalidConfig
-from .common import err, warn, log
-from .__version__ import __version__
+with pkgs; stdenv.mkDerivation {
+  name = "netgen";
+  src = fetchgit {
+    url = "https://github.com/donn/netgen";
+    rev = "${rev}";
+    sha256 = "${sha256}";
+  };
+
+  configureFlags = [
+    "--with-tk=${tk}"
+    "--with-tcl=${tcl}"
+  ];
+
+  buildInputs = [
+    tcl
+    tk
+    m4
+    pkgs."${python-pname}"
+  ];
+
+  nativeBuildInputs = [
+    clang
+    clang-tools
+  ];
+}

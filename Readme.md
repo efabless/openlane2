@@ -19,13 +19,13 @@ You'll need the following:
 * A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
 * Python **3.8** or higher with PIP, Venv and Python-Tk
 
-### Installing Dependencies
+### Nix
 * Get [Nix](https://nixos.org/download.html), then invoke `nix-shell`.
 
 That's literally it.
 
 ### Other Methods
-You'll need to compile the above tools. We're planning to support Conda soon.
+You'll need to compile the above tools. We're planning to support Conda down the line.
 
 To set up the Python deps, simply type `make venv` to create a virtual environment 
 with all the Python dependencies installed. To activate the virtual environment,

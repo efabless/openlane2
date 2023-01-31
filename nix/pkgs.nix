@@ -11,11 +11,4 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# flake8: noqa
-
-from .flows import Flow, FlowFactory
-from . import steps as Steps
-from .config import ConfigBuilder, InvalidConfig
-from .common import err, warn, log
-from .__version__ import __version__
+import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz")

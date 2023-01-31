@@ -20,12 +20,12 @@ test-opt: venv/created
 
 
 venv: venv/created
-venv/created: ./requirements_dev.txt requirements_lint.txt requirements.txt
+venv/created: ./requirements_dev.txt requirements.txt
 	rm -rf venv
 	python3 -m venv ./venv
 	./venv/bin/python3 -m pip install --upgrade pip
 	./venv/bin/python3 -m pip install --upgrade wheel
-	./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements_lint.txt ./requirements.txt
+	./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements.txt
 	./venv/bin/python3 -m pip install .
 	touch venv/created
 
