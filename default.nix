@@ -15,66 +15,90 @@
   pkgs ? import ./nix/pkgs.nix {},
   python-pname ? "python38Full",
   mach-nix ? import ./nix/mach.nix {
-    python-pname = python-pname;
+    inherit pkgs;
+    inherit python-pname;
   },
 
   magic-rev ? "8d08cb2f2f33c79bea478a79543721d476554c78",
   magic-sha256 ? "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=",
-  magic ? import ./nix/magic.nix { rev = magic-rev; sha256 = magic-sha256; },
+  magic ? import ./nix/magic.nix {
+    inherit pkgs;
+    rev = magic-rev;
+    sha256 = magic-sha256;
+  },
 
   netgen-rev ? "c10f8efd7dc1a5a1c1330784765d5a38cc22cd2d",
   netgen-sha256 ? "sha256-WGWnIWL//q7z5HmJ1JpSK6QhNM+X7iWNcDzQpL5CbYc=",
-  netgen ? import ./nix/netgen.nix { rev = netgen-rev; sha256 = netgen-sha256; },
+  netgen ? import ./nix/netgen.nix {
+    inherit pkgs;
+    rev = netgen-rev;
+    sha256 = netgen-sha256;
+  },
 
   openroad-rev ? "c295b08a99aacb6147b9c51104627e78ac3859e3",
   openroad-sha256 ? "sha256-HwnGuUPxUbRRq1my/5B5hGWtSrCWPVblkdvychnk/HM=",
   openroad ? import ./nix/openroad.nix {
+    inherit pkgs;
+    inherit python-pname;
+    
     rev = openroad-rev;
     sha256 = openroad-sha256;
-    python-pname = python-pname;
   },
+  
+  ol-python ? (import ./nix/ol-python.nix {
+    inherit pkgs;
+    inherit mach-nix;
+  }).withPackages (p: with p; [volare]),
 }:
-with pkgs; let openlane-app = mach-nix.buildPythonApplication rec {
-  pname = "openlane-app";
-  name = "openlane-app";
 
-  python = python-pname;
-
-  version_file = builtins.readFile ./openlane/__version__.py;
-  version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
-  version = builtins.head version_list;
-
-  requirements =
-    builtins.readFile ./requirements_dev.txt +
-    builtins.readFile ./requirements.txt;
-
-  src = ./.;
-
-  packagesExtra = [
-    "https://github.com/efabless/volare/tarball/8bd8284d4ccd230da5d994570c981f0ef822259d"
-  ];
-}; in mkShell {
-  name = "openlane";
-
-  buildInputs = [
-    # Requirements
-    git
-    clang
-    clang-tools
-    gnumake
-    xz
-
-    # Conveniences
-    neovim
-    delta
-    zsh
-
+with pkgs; mkShell {
+  packages = [
     # Tools
-    openlane-app
     openroad
     klayout
     yosys
     magic
     netgen
+    gnumake
+    pkgs."${python-pname}"
+
+    # Conveniences
+    git
+    neovim
+    delta
+    zsh
   ];
+
+  shellHook = ''
+  make venv 2>&1 > /dev/null
+  source ./venv/bin/activate
+  '';
 }
+
+# with pkgs; mach-nix.buildPythonPackage rec {
+#   pname = "openlane-app";
+#   name = "openlane-app";
+
+#   python = python-pname;
+
+#   version_file = builtins.readFile ./openlane/__version__.py;
+#   version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
+#   version = builtins.head version_list;
+
+#   src = ./.;
+
+#   providers = {
+#     _default = "wheel,sdist";
+#     volare = "wheel,sdist";
+#     click-default-group = "sdist";
+#   };
+
+#   propagatedBuildInputs = [
+#     # Tools
+#     openroad
+#     klayout
+#     yosys
+#     magic
+#     netgen
+#   ];
+# }
