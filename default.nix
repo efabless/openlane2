@@ -51,54 +51,48 @@
   }).withPackages (p: with p; [volare]),
 }:
 
-with pkgs; mkShell {
-  packages = [
-    # Tools
-    openroad
-    klayout
-    yosys
-    magic
-    netgen
-    gnumake
-    pkgs."${python-pname}"
-
-    # Conveniences
-    git
-    neovim
-    delta
-    zsh
-  ];
-
-  shellHook = ''
-  make venv 2>&1 > /dev/null
-  source ./venv/bin/activate
-  '';
-}
-
-# with pkgs; mach-nix.buildPythonPackage rec {
-#   pname = "openlane-app";
-#   name = "openlane-app";
-
-#   python = python-pname;
-
-#   version_file = builtins.readFile ./openlane/__version__.py;
-#   version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
-#   version = builtins.head version_list;
-
-#   src = ./.;
-
-#   providers = {
-#     _default = "wheel,sdist";
-#     volare = "wheel,sdist";
-#     click-default-group = "sdist";
-#   };
-
-#   propagatedBuildInputs = [
+# with pkgs; mkShell {
+#   packages = [
 #     # Tools
 #     openroad
 #     klayout
 #     yosys
 #     magic
 #     netgen
+#     gnumake
+#     pkgs."${python-pname}"
+
+#     # Conveniences
+#     git
+#     neovim
+#     delta
+#     zsh
 #   ];
+
+#   shellHook = ''
+#   make venv 2>&1 > /dev/null
+#   source ./venv/bin/activate
+#   '';
 # }
+
+with pkgs; mach-nix.buildPythonPackage rec {
+  pname = "openlane-app";
+  name = "openlane-app";
+
+  python = python-pname;
+
+  version_file = builtins.readFile ./openlane/__version__.py;
+  version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
+  version = builtins.head version_list;
+
+  src = ./.;
+
+  propagatedBuildInputs = [
+    # Tools
+    openroad
+    klayout
+    yosys
+    magic
+    netgen
+  ];
+}

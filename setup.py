@@ -5,6 +5,8 @@ import glob
 from setuptools import setup, find_packages
 
 
+__dir__ = os.path.dirname(__file__)
+
 version_rx = re.compile(r"__version__ = \"([^\"]+)\"\n")
 version_file_str = open(os.path.join("openlane", "__version__.py")).read()
 version = version_rx.match(version_file_str)[1]
@@ -16,8 +18,10 @@ setup(
     package_data={
         "openlane": [
             "py.typed",
+            "scripts/*",
+            "scripts/**/*",
+            "scripts/**/**/*",
         ]
-        + glob.glob("./scripts/**/*")
     },
     version=version,
     description="A full open source RTL to GDSII flow",
