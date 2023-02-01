@@ -24,6 +24,9 @@ You'll need the following:
 
 That's literally it.
 
+If you don't want to build the tools from scratch, use **cachix** by following these instructions:
+* https://app.cachix.org/cache/openlane#pull
+
 ### Other Methods
 You'll need to compile the above tools. We're planning to support Conda down the line.
 
