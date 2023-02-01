@@ -51,7 +51,7 @@
   }).withPackages (p: with p; [volare]),
 }:
 
-nix.buildPythonPackage rec {
+with pkgs; mach-nix.buildPythonPackage rec {
   pname = "openlane-app";
   name = "openlane-app";
 
