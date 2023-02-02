@@ -95,6 +95,7 @@ class OdbpyStep(Step):
         pass
 
 
+@Step.factory.register("Odb.ManualMacro")
 class ManualMacroPlacement(OdbpyStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "manual_macro_place.py")

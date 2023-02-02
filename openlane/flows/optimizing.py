@@ -19,12 +19,13 @@ from concurrent.futures import Future
 
 import slugify
 
-from .flow import Flow, FlowFactory
+from .flow import Flow
 from ..common import success, log
 from ..steps import State, Yosys, OpenROAD
 from ..config import Config
 
 
+@Flow.factory.register()
 class Optimizing(Flow):
     """
     A customized flow composed of two stages:
@@ -145,6 +146,3 @@ class Optimizing(Flow):
 
         success("Flow complete.")
         return (True, state_list)
-
-
-FlowFactory.register(Optimizing)

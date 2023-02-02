@@ -19,6 +19,7 @@ from .design_format import DesignFormat
 from ..common import get_script_dir, log
 
 
+@Step.factory.register("Misc.LoadBaseSDC")
 class LoadBaseSDC(Step):
     name = "Load Base SDC"
     long_name = "Load Base Design Constraints File"

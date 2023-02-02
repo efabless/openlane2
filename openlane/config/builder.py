@@ -20,7 +20,7 @@ import volare
 
 from .resolve import resolve, Keys
 from .tcleval import env_from_tcl
-from .config import Config
+from .config import Config, Meta
 from .pdk import validate_pdk_config
 from .flow import validate_user_config
 from ..common import log, warn
@@ -92,6 +92,11 @@ class ConfigBuilder(object):
     ) -> "Config":
         raw = json.loads(json_str, cls=DecimalDecoder)
 
+        meta_raw: Optional[dict] = None
+        if raw.get("meta") is not None:
+            meta_raw = raw["meta"]
+            del raw["meta"]
+
         process_info = resolve(
             raw,
             only_extract_process_info=True,
@@ -160,6 +165,12 @@ class ConfigBuilder(object):
             config_in,
         )
 
+        if meta_raw is not None:
+            try:
+                config_in.meta = Meta(**meta_raw)
+            except TypeError as e:
+                design_errors.append(f"'meta' object is invalid: {e}")
+
         if len(design_errors) != 0:
             raise InvalidConfig(
                 "design configuration file", design_warnings, design_errors
@@ -173,7 +184,6 @@ class ConfigBuilder(object):
             warn(warning)
 
         config_in["PDK_ROOT"] = pdk_root
-
         return config_in
 
     @classmethod

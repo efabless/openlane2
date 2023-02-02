@@ -19,7 +19,18 @@ import inspect
 import subprocess
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
-from typing import final, List, Callable, Optional, Union, Tuple, Sequence, Dict
+from typing import (
+    final,
+    List,
+    Callable,
+    Optional,
+    Union,
+    Tuple,
+    Sequence,
+    Dict,
+    ClassVar,
+    Type,
+)
 
 import slugify
 
@@ -27,7 +38,7 @@ from .state import State
 from ..utils import Toolbox
 from ..config import Config
 from .design_format import DesignFormat
-from ..common import mkdirp, console, err, rule
+from ..common import mkdirp, console, err, rule, log
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -67,6 +78,11 @@ class Step(ABC):
             used to separate logs in the terminal.
 
             If not set by a subclass, `.name` is used.
+
+        `flow_control_variable`: An optional key for a boolean configuration variable.
+
+            If it exists, if this variable is configured to be false,
+            the Step is skipped.
     """
 
     inputs: List[DesignFormat] = []
@@ -75,6 +91,8 @@ class Step(ABC):
     id: str
     name: str
     long_name: str
+
+    flow_control_variable: ClassVar[Optional[str]] = None
 
     def __init__(
         self,
@@ -239,6 +257,15 @@ class Step(ABC):
             finally:
                 del frame
 
+        if isinstance(self.state_in, Future):
+            self.state_in = self.state_in.result()
+
+        if self.flow_control_variable is not None:
+            flow_control_value = self.config[self.flow_control_variable]
+            if not flow_control_value:
+                log(f"`{self.flow_control_variable}` is set to false: skipping...")
+                return self.state_in.copy()
+
         self.start_time = time.time()
         if not self.silent:
             rule(f"{self.long_name}")
@@ -261,8 +288,8 @@ class Step(ABC):
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-        if isinstance(self.state_in, Future):
-            self.state_in = self.state_in.result()
+
+        assert isinstance(self.state_in, State)
 
         for input in self.inputs:
             value = self.state_in.get(input)
@@ -353,3 +380,47 @@ class Step(ABC):
             kwargs = kwargs.copy()
             del kwargs["env"]
         return (kwargs, env)
+
+    class StepFactory(object):
+        """
+        A factory singleton for Steps, allowing steps types to be registered and then
+        retrieved by name.
+
+        See https://en.wikipedia.org/wiki/Factory_(object-oriented_programming) for
+        a primer.
+        """
+
+        _registry: ClassVar[Dict[str, Type[Step]]] = {}
+
+        @classmethod
+        def register(Self, registered_name: str) -> Callable[[Type[Step]], Type[Step]]:
+            """
+            Adds a step type to the registry.
+
+            :param flow: A Step **type** (not object)
+            """
+
+            def decorator(cls: Type[Step]) -> Type[Step]:
+                Self._registry[registered_name] = cls
+                return cls
+
+            return decorator
+
+        @classmethod
+        def get(Self, name: str) -> Optional[Type[Step]]:
+            """
+            Retrieves a Step type from the registry using a lookup string.
+
+            :param name: The registered name of the Step. Case-sensitive.
+            """
+            return Self._registry.get(name)
+
+        @classmethod
+        def list(Self) -> List[str]:
+            """
+            :returns: A list of strings representing Python names of all registered
+            steps.
+            """
+            return list(Self._registry.keys())
+
+    factory = StepFactory

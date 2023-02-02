@@ -14,7 +14,7 @@
 
 # flake8: noqa
 
-from .flows import Flow, FlowFactory
+from .flows import Flow
 from . import steps as Steps
 from .config import ConfigBuilder, InvalidConfig
 from .common import err, warn, log

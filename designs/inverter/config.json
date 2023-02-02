@@ -1,7 +1,26 @@
 {
+    "meta": {
+        "version": 2,
+        "flow": [
+            "Yosys.Synthesis",
+            "Misc.LoadBaseSDC",
+            "OpenROAD.Floorplan",
+            "OpenROAD.TapDecapInsertion",
+            "OpenROAD.GeneratePDN",
+            "OpenROAD.IOPlacement",
+            "OpenROAD.GlobalPlacement",
+            "OpenROAD.DetailedPlacement",
+            "OpenROAD.GlobalRouting",
+            "OpenROAD.DetailedRouting",
+            "OpenROAD.FillInsertion",
+            "Magic.StreamOut",
+            "Magic.DRC",
+            "Magic.SpiceExtraction",
+            "Netgen.LVS"
+        ]
+    },
     "DESIGN_NAME": "inverter",
     "VERILOG_FILES": "dir::src/*.v",
-    "CLOCK_TREE_SYNTH": false,
     "CLOCK_PORT": null,
     "PL_RANDOM_GLB_PLACEMENT": true,
     "FP_SIZING": "absolute",

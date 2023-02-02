@@ -38,13 +38,6 @@ set arg_list [list]
 
 lappend arg_list -density [expr $::env(PL_TARGET_DENSITY) / 100.0]
 
-if { $::env(PL_BASIC_PLACEMENT) } {
-	lappend arg_list -overflow 0.9
-	lappend arg_list -init_density_penalty 0.0001
-	lappend arg_list -initial_place_max_iter 20
-	lappend arg_list -bin_grid_count 64
-}
-
 if { $::env(PL_TIME_DRIVEN) } {
 	source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 	lappend arg_list -timing_driven
@@ -57,7 +50,7 @@ if { $::env(PL_ROUTABILITY_DRIVEN) } {
 	lappend arg_list -routability_driven
 }
 
-if { $::env(PL_SKIP_INITIAL_PLACEMENT) && !$::env(PL_BASIC_PLACEMENT) } {
+if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
 	lappend arg_list -skip_initial_place
 }
 

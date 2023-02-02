@@ -11,8 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from . import optimizing
-from . import classic
+{
+  pkgs ? import ./pkgs.nix {},
+  rev,
+  sha256
+}:
 
-from .flow import Flow
-from .sequential import SequentialFlow
+with pkgs; klayout.overrideAttrs (finalAttrs: previousAttrs: {
+  version = "${rev}";
+
+  src = fetchFromGitHub {
+    owner = "KLayout";
+    repo = "klayout";
+    rev = "${rev}";
+    hash = "${sha256}";
+  };
+})
+# 
+pkgs.klayout

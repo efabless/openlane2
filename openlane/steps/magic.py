@@ -15,6 +15,7 @@ import os
 from typing import List
 from abc import abstractmethod
 
+from .step import Step
 from .tclstep import TclStep
 from .state import DesignFormat, State
 from ..common import get_script_dir
@@ -40,8 +41,10 @@ class MagicStep(TclStep):
         ]
 
 
+@Step.factory.register("Magic.StreamOut")
 class StreamOut(MagicStep):
     name = "GDS-II Stream Out"
+    flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
     inputs = [DesignFormat.DEF]
     outputs = [
@@ -52,9 +55,12 @@ class StreamOut(MagicStep):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
 
 
+@Step.factory.register("Magic.DRC")
 class DRC(MagicStep):
     name = "DRC"
     long_name = "Design Rule Checks"
+
+    flow_control_variable = "RUN_MAGIC_DRC"
 
     inputs = [DesignFormat.DEF, DesignFormat.GDS]
     outputs = []
@@ -77,6 +83,7 @@ class DRC(MagicStep):
         return state_out
 
 
+@Step.factory.register("Magic.SpiceExtraction")
 class SpiceExtraction(MagicStep):
     name = "SPICE Extraction"
     long_name = "SPICE Model Extraction"

@@ -16,6 +16,7 @@ import json
 from typing import List
 from abc import abstractmethod
 
+from .step import Step
 from .tclstep import TclStep
 from .state import State
 from .design_format import DesignFormat
@@ -31,6 +32,7 @@ class YosysStep(TclStep):
         pass
 
 
+@Step.factory.register("Yosys.Synthesis")
 class Synthesis(YosysStep):
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]

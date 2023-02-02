@@ -15,8 +15,16 @@ import os
 import json
 from enum import Enum
 from decimal import Decimal
-from typing import Any, Tuple
 from collections import UserDict, UserString
+from typing import Any, Tuple, Union, List
+
+from dataclasses import dataclass, asdict
+
+
+@dataclass
+class Meta:
+    version: int
+    flow: Union[str, List[str]] = "Classic"
 
 
 class Path(UserString, os.PathLike):
@@ -26,7 +34,9 @@ class Path(UserString, os.PathLike):
 
 class ConfigEncoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, Decimal):
+        if isinstance(o, Meta):
+            return asdict(o)
+        elif isinstance(o, Decimal):
             if o.as_integer_ratio()[1] == 1:
                 return int(o)
             else:
@@ -39,8 +49,12 @@ class ConfigEncoder(json.JSONEncoder):
 
 
 class Config(UserDict):
+    meta = Meta(version=1)
+
     def dumps(self) -> str:
-        return json.dumps(self.data, indent=2, cls=ConfigEncoder, sort_keys=True)
+        data = self.data.copy()
+        data["meta"] = self.meta
+        return json.dumps(data, indent=2, cls=ConfigEncoder, sort_keys=True)
 
     def check(self, key: str) -> Tuple[bool, Any]:
         return (key in self.keys(), self.get(key))

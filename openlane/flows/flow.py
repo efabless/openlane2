@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import os
 import datetime
-import subprocess
 from abc import abstractmethod, ABC
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import List, Tuple, Type, ClassVar, Optional, Dict, final
+from typing import List, Tuple, Type, ClassVar, Optional, Dict, final, Callable
 
 from rich.progress import (
     Progress,
@@ -31,13 +30,12 @@ from rich.progress import (
 
 from ..config import Config
 from ..steps import (
-    MissingInputError,
     Step,
     TclStep,
     State,
 )
 from ..utils import Toolbox
-from ..common import mkdirp, console, log, err, success
+from ..common import mkdirp, console
 
 
 class Flow(ABC):
@@ -58,7 +56,7 @@ class Flow(ABC):
     """
 
     name: Optional[str] = None
-    Steps: ClassVar[List[Type[Step]]] = [
+    Steps: List[Type[Step]] = [
         TclStep,
     ]
 
@@ -232,80 +230,54 @@ class Flow(ABC):
         """
         return self.tpe.submit(step.start, *args, **kwargs)
 
-
-class SequentialFlow(Flow):
-    """
-    The simplest Flow, running each Step as a stage, serially,
-    with nothing happening in parallel and no significant inter-step
-    processing.
-
-    All subclasses of this flow have to do is override the `Steps` property
-    and it would automatically handle the rest. See `Basic` for an example.
-    """
-
-    def run(
-        self,
-        with_initial_state: Optional[State] = None,
-    ) -> Tuple[bool, List[State]]:
-        step_count = len(self.Steps)
-        self.set_max_stage_count(step_count)
-
-        initial_state = with_initial_state or State()
-        state_list = [initial_state]
-        log("Starting…")
-        for cls in self.Steps:
-            step = cls()
-            self.steps.append(step)
-            self.start_stage(step.name)
-            try:
-                new_state = step.start()
-            except MissingInputError as e:
-                err(f"Misconfigured flow: {e}")
-                return (False, state_list)
-            except subprocess.CalledProcessError:
-                err("An error has been encountered. The flow will stop.")
-                return (False, state_list)
-            state_list.append(new_state)
-            self.end_stage()
-        success("Flow complete.")
-        return (True, state_list)
-
-
-class FlowFactory(object):
-    """
-    A factory singleton for Flows, allowing Flow types to be registered and then
-    retrieved by name.
-
-    See https://en.wikipedia.org/wiki/Factory_(object-oriented_programming) for
-    a primer.
-    """
-
-    _registry: ClassVar[Dict[str, Type[Flow]]] = {}
-
-    @classmethod
-    def register(Self, flow: Type[Flow]):
+    class FlowFactory(object):
         """
-        Adds a flow type to the registry with its Python name as a lookup string.
+        A factory singleton for Flows, allowing Flow types to be registered and then
+        retrieved by name.
 
-        :param flow: A Flow **type** (not object)
+        See https://en.wikipedia.org/wiki/Factory_(object-oriented_programming) for
+        a primer.
         """
-        name = flow.__name__
-        Self._registry[name] = flow
 
-    @classmethod
-    def get(Self, name: str) -> Optional[Type[Flow]]:
-        """
-        Retrieves a Flow type from the registry using its Python name as a lookup
-        string.
+        _registry: ClassVar[Dict[str, Type[Flow]]] = {}
 
-        :param name: The Python name of the Flow. Case-sensitive.
-        """
-        return Self._registry.get(name)
+        @classmethod
+        def register(
+            Self, registered_name: Optional[str] = None
+        ) -> Callable[[Type[Flow]], Type[Flow]]:
+            """
+            Adds a flow type to the registry.
 
-    @classmethod
-    def list(Self) -> List[str]:
-        """
-        :returns: A list of strings representing Python names of all registered
-        flows.
-        """
-        return list(Self._registry.keys())
+            :param registered_name: An optional registered name for the flow.
+
+                If not specified, the flow will be referred to by its Python
+                class name.
+            """
+
+            def decorator(cls: Type[Flow]) -> Type[Flow]:
+                name = cls.__name__
+                if registered_name is not None:
+                    name = registered_name
+                Self._registry[name] = cls
+                return cls
+
+            return decorator
+
+        @classmethod
+        def get(Self, name: str) -> Optional[Type[Flow]]:
+            """
+            Retrieves a Flow type from the registry using a lookup string.
+
+            :param name: The registered name of the Flow. Case-sensitive.
+            """
+            return Self._registry.get(name)
+
+        @classmethod
+        def list(Self) -> List[str]:
+            """
+            :returns: A list of strings representing all registered
+            flows.
+            """
+            return list(Self._registry.keys())
+
+    factory = FlowFactory

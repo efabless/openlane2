@@ -537,12 +537,6 @@ flow_variables = [
         default=True,
     ),
     Variable(
-        "PL_BASIC_PLACEMENT",
-        bool,
-        "Specifies whether the placer should run basic placement. Basic placement is used for extremely simple, low-density designs of only a few dozens of gates, and should be disabled for most designs.",
-        default=False,
-    ),
-    Variable(
         "PL_SKIP_INITIAL_PLACEMENT",
         bool,
         "Specifies whether the placer should run initial placement or not.",
@@ -706,12 +700,6 @@ flow_variables = [
         "The target clock skew in picoseconds.",
         default=200,
         doc_units="ps",
-    ),
-    Variable(
-        "CLOCK_TREE_SYNTH",
-        bool,
-        "Enable clock tree synthesis.",
-        default=True,
     ),
     Variable(
         "CTS_TOLERANCE",
@@ -1008,6 +996,13 @@ flow_variables = [
         default=False,
     ),
     Variable(
+        "RUN_CTS",
+        bool,
+        "Enable clock tree synthesis.",
+        default=True,
+        deprecated_names=["CLOCK_TREE_SYNTH"],
+    ),
+    Variable(
         "RUN_DRT",
         bool,
         "Enables detailed routing.",
@@ -1020,10 +1015,11 @@ flow_variables = [
         default=True,
     ),
     Variable(
-        "RUN_MAGIC",
+        "RUN_MAGIC_STREAMOUT",
         bool,
         "Enables running GDSII streaming out using Magic.",
         default=True,
+        deprecated_names=["RUN_MAGIC"],
     ),
     Variable(
         "RUN_MAGIC_DRC",

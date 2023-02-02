@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Type, ClassVar
+from typing import List, Type
 from ..steps import (
     Step,
     Yosys,
@@ -21,11 +21,17 @@ from ..steps import (
     Odb,
     Netgen,
 )
-from .flow import SequentialFlow, FlowFactory
+from .flow import Flow
+from .sequential import SequentialFlow
 
 
-class Basic(SequentialFlow):
-    Steps: ClassVar[List[Type[Step]]] = [
+@Flow.factory.register()
+class Classic(SequentialFlow):
+    """
+    The flow most similar to the original Tcl-based OpenLane.
+    """
+
+    Steps: List[Type[Step]] = [
         Yosys.Synthesis,
         Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
@@ -47,6 +53,3 @@ class Basic(SequentialFlow):
         Magic.SpiceExtraction,
         Netgen.LVS,
     ]
-
-
-FlowFactory.register(Basic)

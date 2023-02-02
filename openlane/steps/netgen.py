@@ -16,6 +16,7 @@ import glob
 from typing import List
 from abc import abstractmethod
 
+from .step import Step
 from .tclstep import TclStep
 from .state import DesignFormat, State
 
@@ -32,8 +33,10 @@ class NetgenStep(TclStep):
         return ["netgen", "-batch", "source"]
 
 
+@Step.factory.register("Netgen.LVS")
 class LVS(NetgenStep):
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
+    flow_control_variable = "RUN_LVS"
 
     def get_command(self) -> List[str]:
         return super().get_command() + [self.get_script_path()]

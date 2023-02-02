@@ -11,8 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from . import optimizing
-from . import classic
+{
+  pkgs ? import ./pkgs.nix {},
+  rev,
+  sha256,
+}:
 
-from .flow import Flow
-from .sequential import SequentialFlow
+with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: {
+  version = "${rev}";
+
+  src = fetchFromGitHub {
+    owner = "YosysHQ";
+    repo = "yosys";
+    rev = "${rev}";
+    hash = "${sha256}";
+  };
+
+  nativeBuildInputs = [ pkg-config bison flex ];
+
+  doCheck = false;
+  preBuild = ''
+  chmod -R u+w .
+  make config-${if stdenv.cc.isClang or false then "clang" else "gcc"}
+  echo 'ABCEXTERNAL = ${abc-verifier}/bin/abc' >> Makefile.conf
+  '';
+})

@@ -17,6 +17,7 @@ import json
 from abc import abstractmethod
 from typing import List, Dict, Tuple
 
+from .step import Step
 from .tclstep import TclStep
 from .state import State
 from .design_format import DesignFormat
@@ -118,6 +119,7 @@ class OpenROADStep(TclStep):
         return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
 
 
+@Step.factory.register("OpenROAD.NetlistSTA")
 class NetlistSTA(OpenROADStep):
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
@@ -134,6 +136,7 @@ class NetlistSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.Floorplan")
 class Floorplan(OpenROADStep):
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
@@ -156,6 +159,7 @@ class Floorplan(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.IOPlacement")
 class IOPlacement(OpenROADStep):
     id = "io-placement"
     name = "I/O Placement"
@@ -164,13 +168,16 @@ class IOPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
 
+@Step.factory.register("OpenROAD.TapDecapInsertion")
 class TapDecapInsertion(OpenROADStep):
     name = "Tap/Decap Insertion"
+    flow_control_variable = "RUN_TAP_DECAP_INSERTION"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
 
 
+@Step.factory.register("OpenROAD.GeneratePDN")
 class GeneratePDN(OpenROADStep):
     name = "Generate PDN"
     long_name = "Power Distribution Network Generation"
@@ -179,6 +186,7 @@ class GeneratePDN(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
 
 
+@Step.factory.register("OpenROAD.GlobalPlacement")
 class GlobalPlacement(OpenROADStep):
     name = "Global Placement"
 
@@ -191,6 +199,7 @@ class GlobalPlacement(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.DetailedPlacement")
 class DetailedPlacement(OpenROADStep):
     name = "Detailed Placement"
 
@@ -198,13 +207,16 @@ class DetailedPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "dpl.tcl")
 
 
+@Step.factory.register("OpenROAD.CTS")
 class CTS(OpenROADStep):
     long_name = "Clock Tree Synthesis"
+    flow_control_variable = "RUN_CTS"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
 
+@Step.factory.register("OpenROAD.GlobalRouting")
 class GlobalRouting(OpenROADStep):
     name = "Global Routing"
 
@@ -212,8 +224,10 @@ class GlobalRouting(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
 
+@Step.factory.register("OpenROAD.DetailedRouting")
 class DetailedRouting(OpenROADStep):
     name = "Detailed Routing"
+    flow_control_variable = "RUN_DRT"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
@@ -225,6 +239,7 @@ class DetailedRouting(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.LayoutSTA")
 class LayoutSTA(OpenROADStep):
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
@@ -240,13 +255,16 @@ class LayoutSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.FillInsertion")
 class FillInsertion(OpenROADStep):
     name = "Fill Insertion"
+    flow_control_variable = "RUN_FILL_INSERTION"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "fill.tcl")
 
 
+@Step.factory.register("OpenROAD.ParasiticsExtraction")
 class ParasiticsExtraction(OpenROADStep):
     name = "Parasitics Extraction"
 
@@ -262,6 +280,7 @@ class ParasiticsExtraction(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
+@Step.factory.register("OpenROAD.ParasiticsSTA")
 class ParasiticsSTA(OpenROADStep):
     name = "Parasitics STA"
     long_name = "Parasitics-based Static Timing Analysis"

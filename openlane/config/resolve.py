@@ -77,7 +77,9 @@ class Expr(object):
             elif self.value in ["+", "-"]:
                 return (0, True)
             else:
-                raise ValueError("Not supported for non-tokens")
+                raise TypeError(
+                    f"pre-assoc not supported for non-token operators: '{self.value}'"
+                )
 
     @staticmethod
     def tokenize(expr: str) -> List["Expr.Token"]:
@@ -127,6 +129,8 @@ class Expr(object):
                 top_prec = None
                 try:
                     top_prec, _ = opstack[-1].prec_assoc()
+                except TypeError:
+                    pass
                 except IndexError:
                     pass
 
