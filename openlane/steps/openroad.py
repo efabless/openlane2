@@ -21,7 +21,7 @@ from .step import Step
 from .tclstep import TclStep
 from .state import State
 from .design_format import DesignFormat
-from ..common import get_script_dir
+from ..common import get_script_dir, log
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -295,3 +295,93 @@ class ParasiticsSTA(OpenROADStep):
         kwargs, env = self.extract_env(kwargs)
         env["RUN_STANDALONE"] = "1"
         return super().run(env=env, **kwargs)
+
+
+# Antennae
+def parse_antenna_report(report: str) -> List[str]:
+    pattern = re.compile(r"Net:\s*(\w+)")
+    antenna_nets = []
+
+    for line in report.splitlines():
+        m = pattern.match(line)
+        if m is None:
+            continue
+        net = m[1]
+        antenna_nets.append(net)
+
+    return antenna_nets
+
+
+@Step.factory.register("OpenROAD.CheckAntennae")
+class CheckAntennae(OpenROADStep):
+    name = "Check Antennae"
+
+    # default inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "check_antennae.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        antennae_rpt = open(os.path.join(self.step_dir, "antennae.rpt")).read()
+
+        state_out.metrics["antenna_nets"] = parse_antenna_report(antennae_rpt)
+
+        return state_out
+
+
+@Step.factory.register("OpenROAD.FixAntennae")
+class FixAntennae(OpenROADStep):
+    name = "Fix Antennae"
+
+    # default inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "fix_antennae.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        antennae_rpt = open(os.path.join(self.step_dir, "antennae.rpt")).read()
+
+        before = state_out.metrics["antenna_nets"]
+
+        after = parse_antenna_report(antennae_rpt)
+
+        log(f"Reduced antenna violations from {len(before)} -> {len(after)}.")
+
+        return state_out
+
+
+# Resizer Steps
+@Step.factory.register("OpenROAD.ResizerDesignPostGPL")
+class ResizerDesignPostGPL(OpenROADStep):
+    id = "rsz_design_postgpl"
+    name = "Resizer Design Optimizations (Post-Global Placement)"
+    flow_control_variable = "RUN_POST_GPL_RESIZER_DESIGN"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "rsz_design_postgpl.tcl")
+
+
+@Step.factory.register("OpenROAD.ResizerTimingPostDPL")
+class ResizerTimingPostDPL(OpenROADStep):
+    id = "rsz_timing_postdpl"
+    name = "Resizer Timing Optimizations (Post-Detailed Placement)"
+    flow_control_variable = "RUN_POST_DPL_RESIZER_TIMING"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "rsz_timing_postdpl.tcl")
+
+
+@Step.factory.register("OpenROAD.ResizerTimingPostGRT")
+class ResizerTimingPostGRT(OpenROADStep):
+    id = "rsz_timing_postgrt"
+    name = "Resizer Timing Optimizations (Post-Global Routing)"
+    flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")

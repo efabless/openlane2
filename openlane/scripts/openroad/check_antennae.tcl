@@ -14,5 +14,7 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read
 
-# start checking antennas and generate a detail report
+# start checking antennas and generate a detailed report
+puts "%OL_CREATE_REPORT antennae.rpt"
 check_antennas -verbose
+puts "%OL_END_REPORT"

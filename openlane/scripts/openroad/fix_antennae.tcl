@@ -14,22 +14,19 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read
 
-set_propagated_clock [all_clocks]
 
-source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/set_routing_layers.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/set_layer_adjustments.tcl
+set_macro_extension $::env(GRT_MACRO_EXTENSION)
+
+set diode_split [split $::env(DIODE_CELL) "/"]
+set_placement_padding -masters [lindex $diode_split 0] -left $::env(DIODE_PADDING)
+repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANT_ITERS)
+check_placement
+
+# start checking antennas and generate a detailed report
+puts "%OL_CREATE_REPORT antennae.rpt"
+check_antennas -verbose
+puts "%OL_END_REPORT"
 
 write
-
-if {[info exists ::env(CLOCK_PORT)]} {
-    if { $::env(GRT_ESTIMATE_PARASITICS) == 1 } {
-        # set rc values
-        source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-        # estimate wire rc parasitics
-        estimate_parasitics -global_routing
-
-        set ::env(RUN_STANDALONE) 0
-        source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-    }
-} else {
-    puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}

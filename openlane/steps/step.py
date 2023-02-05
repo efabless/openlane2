@@ -266,10 +266,13 @@ class Step(ABC):
                 log(f"`{self.flow_control_variable}` is set to false: skipping...")
                 return self.state_in.copy()
 
+        mkdirp(self.step_dir)
+        with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
+            f.write(self.state_in.dumps())
+
         self.start_time = time.time()
         if not self.silent:
             rule(f"{self.long_name}")
-        mkdirp(self.step_dir)
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
         return self.state_out

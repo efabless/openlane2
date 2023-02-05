@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Efabless Corporation
+# Copyright 2020-2023 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read -override_libs "$::env(RSZ_LIB)"
+read
 
 set_propagated_clock [all_clocks]
 
@@ -28,21 +28,20 @@ if { [info exists ::env(DONT_USE_CELLS)] } {
 # set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
-# CTS and detailed placement move instances, so update parastic estimates.
 # estimate wire rc parasitics
-estimate_parasitics -placement
+estimate_parasitics -global_routing
 
 # Resize
 repair_timing -setup \
-    -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN) \
-    -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PERCENT)
+    -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN) \
+    -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
 
 set arg_list [list]
 lappend arg_list -hold
-lappend arg_list -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
-lappend arg_list -hold_margin $::env(PL_RESIZER_HOLD_SLACK_MARGIN)
-lappend arg_list -max_buffer_percent $::env(PL_RESIZER_HOLD_MAX_BUFFER_PERCENT)
-if { $::env(PL_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
+lappend arg_list -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
+lappend arg_list -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
+lappend arg_list -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
+if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
     lappend arg_list -allow_setup_violations
 }
 repair_timing {*}$arg_list
@@ -50,7 +49,8 @@ repair_timing {*}$arg_list
 source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
 detailed_placement
-if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
+
+if { $::env(GRT_OPTIMIZE_MIRRORING) } {
     optimize_mirroring
 }
 
@@ -61,9 +61,12 @@ if { [catch {check_placement -verbose} errmsg] } {
 
 unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 
+# Re-GRT
+source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+
 write
 
 # Run post timing optimizations STA
-estimate_parasitics -placement
+estimate_parasitics -global_routing
 set ::env(RUN_STANDALONE) 0
 source $::env(SCRIPTS_DIR)/openroad/sta.tcl

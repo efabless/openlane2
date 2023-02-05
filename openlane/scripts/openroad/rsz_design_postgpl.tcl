@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Efabless Corporation
+# Copyright 2020-2023 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read -override_libs "$::env(RSZ_LIB)"
+read
 
 unset_propagated_clock [all_clocks]
-
-# set rc values
-source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-
-# estimate wire rc parasitics
-estimate_parasitics -placement
 
 # set don't touch nets
 source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
@@ -31,24 +25,30 @@ if { [info exists ::env(DONT_USE_CELLS)] } {
     set_dont_use $::env(DONT_USE_CELLS)
 }
 
-if { [info exists ::env(PL_RESIZER_BUFFER_INPUT_PORTS)] && $::env(PL_RESIZER_BUFFER_INPUT_PORTS) } {
+# set rc values
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
+
+# CTS and detailed placement move instances, so update parastic estimates.
+# estimate wire rc parasitics
+estimate_parasitics -placement
+
+
+# Buffer I/O
+if { $::env(PL_RESIZER_BUFFER_INPUT_PORTS) } {
     buffer_ports -inputs
 }
 
-if { [info exists ::env(PL_RESIZER_BUFFER_OUTPUT_PORTS)] && $::env(PL_RESIZER_BUFFER_OUTPUT_PORTS) } {
+if { $::env(PL_RESIZER_BUFFER_OUTPUT_PORTS) } {
     buffer_ports -outputs
 }
-# Resize
-if { [info exists ::env(PL_RESIZER_MAX_WIRE_LENGTH)] && $::env(PL_RESIZER_MAX_WIRE_LENGTH) } {
-    repair_design -max_wire_length $::env(PL_RESIZER_MAX_WIRE_LENGTH) \
-        -slew_margin $::env(PL_RESIZER_MAX_SLEW_MARGIN) \
-        -cap_margin $::env(PL_RESIZER_MAX_CAP_MARGIN)
-} else {
-    repair_design -slew_margin $::env(PL_RESIZER_MAX_SLEW_MARGIN) \
-        -cap_margin $::env(PL_RESIZER_MAX_CAP_MARGIN)
-}
 
-if { $::env(PL_RESIZER_REPAIR_TIE_FANOUT) == 1} {
+# Repair Design
+repair_design\
+    -max_wire_length $::env(PL_RESIZER_MAX_WIRE_LENGTH) \
+    -slew_margin $::env(PL_RESIZER_MAX_SLEW_MARGIN) \
+    -cap_margin $::env(PL_RESIZER_MAX_CAP_MARGIN)
+
+if { $::env(PL_RESIZER_REPAIR_TIE_FANOUT) } {
     # repair tie lo fanout
     repair_tie_fanout -separation $::env(PL_RESIZER_TIE_SEPERATION) $::env(SYNTH_TIELO_CELL)
     # repair tie hi fanout
@@ -57,6 +57,7 @@ if { $::env(PL_RESIZER_REPAIR_TIE_FANOUT) == 1} {
 
 report_floating_nets -verbose
 
+# Legalize
 source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
 detailed_placement
@@ -74,7 +75,9 @@ unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 
 write
 
-# Run post design optimizations STA
+# Run post-design optimization STA
+# set rc values
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 set ::env(RUN_STANDALONE) 0
 source $::env(SCRIPTS_DIR)/openroad/sta.tcl
