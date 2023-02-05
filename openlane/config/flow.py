@@ -869,6 +869,12 @@ flow_variables = [
         default=False,
     ),
     Variable(
+        "GRT_REPAIR_ANTENNAE",
+        bool,
+        "Attempt to repair antenna violations after global routing.",
+        default=False,
+    ),
+    Variable(
         "DRT_MIN_LAYER",
         Optional[str],
         "An optional override to the lowest layer used in detailed routing. For example, in sky130, you may want global routing to avoid li1, but let detailed routing use li1 if it has to.",

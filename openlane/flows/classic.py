@@ -47,7 +47,7 @@ class Classic(SequentialFlow):
         OpenROAD.CTS,
         OpenROAD.GlobalRouting,
         OpenROAD.ResizerTimingPostGRT,
-        OpenROAD.CheckAntennae,
+        # OpenROAD.CheckAntennae,
         OpenROAD.DetailedRouting,
         OpenROAD.FillInsertion,
         OpenROAD.ParasiticsExtraction,

@@ -32,9 +32,9 @@ class LoadBaseSDC(Step):
             get_script_dir(),
             "base.sdc",
         )
-        if self.config.get("BASE_SDC_PATH") is not None:
-            log(f"Loaded SDC file at '{self.config['BASE_SDC_PATH']}'.")
-            new_state[DesignFormat.SDC] = self.config["BASE_SDC_PATH"]
+        if self.config.get("BASE_SDC_FILE") is not None:
+            log(f"Loaded SDC file at '{self.config['BASE_SDC_FILE']}'.")
+            new_state[DesignFormat.SDC] = self.config["BASE_SDC_FILE"]
         else:
             log("Loaded default SDC file.")
 
