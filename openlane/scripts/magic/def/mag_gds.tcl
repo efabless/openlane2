@@ -20,7 +20,7 @@ select top cell
 
 # padding
 if { $::env(MAGIC_PAD) } {
-	puts "\[INFO\]: Padding LEFs"
+	puts "\[INFO\] Padding LEFs"
 	# assuming scalegrid 1 2
 	# use um
 	select top cell
@@ -36,12 +36,12 @@ if { $::env(MAGIC_ZEROIZE_ORIGIN) } {
 	# makes origin zero based on the minimum enclosing box
 	# all shapes will be within the block boundary
 	# lower left corner will become (0, 0)
-	puts "\[INFO\]: Zeroizing Origin"
+	puts "\[INFO\] Zeroizing Origin"
 	set bbox [box values]
 	set offset_x [lindex $bbox 0]
 	set offset_y [lindex $bbox 1]
 	move origin [expr {$offset_x/2}] [expr {$offset_y/2}]
-	puts "\[INFO\]: Current Box Values: [box values]"
+	puts "\[INFO\] Current Box Values: [box values]"
 	property FIXED_BBOX [box values]
 } else {
 	# makes origin zero based on the DIEAREA as defined in the DEF
@@ -93,7 +93,7 @@ if { $::env(MAGIC_GENERATE_GDS) } {
 	}
 
 	gds write $::env(SAVE_GDS)
-	puts "\[INFO\]: GDS Write Complete"
+	puts "\[INFO\] GDS Write Complete"
 }
 
 exit 0

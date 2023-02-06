@@ -32,7 +32,7 @@ proc custom_drc_save_report {{cellname ""} {outfile ""}} {
         set origname ""
     } else {
         set origname [cellname list self]
-        puts stdout "\[INFO\]: Loading $cellname\n"
+        puts stdout "\[INFO\] Loading $cellname\n"
         flush stdout
 
         load $cellname
@@ -67,7 +67,7 @@ proc custom_drc_save_report {{cellname ""} {outfile ""}} {
     # magic::resumeall
 
     close $fout
-    puts "\[INFO\]: DONE with $outfile\n"
+    puts "\[INFO\] DONE with $outfile\n"
     #flush stdout
 }
 

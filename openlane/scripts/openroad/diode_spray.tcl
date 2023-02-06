@@ -60,12 +60,12 @@ proc add_antenna_cell { iterm } {
 	$antenna_iterm connect $iterm_net
 
 	if { $::VERBOSE } {
-		puts "\[INFO\]: Adding $antenna_inst_name on subnet $antenna_subnet for cell $iterm_inst_name pin $iterm_pin_name"
+		puts "\[INFO\] Adding $antenna_inst_name on subnet $antenna_subnet for cell $iterm_inst_name pin $iterm_pin_name"
 	}
 }
 
 set count 0
-puts "\[INFO\]: Inserting $::antenna_cell_name…"
+puts "\[INFO\] Inserting $::antenna_cell_name…"
 foreach net $::nets {
 	set net_name [$net getName]
 	if { [expr {$net_name eq $::env(VDD_PIN)} || {$net_name eq $::env(GND_PIN)}] } {
@@ -80,9 +80,9 @@ foreach net $::nets {
 		}
 	}
 }
-puts "\n\[INFO\]: $count of $::antenna_cell_name inserted!"
+puts "\n\[INFO\] $count of $::antenna_cell_name inserted!"
 set_placement_padding -masters $::env(DIODE_CELL) -left $::env(DIODE_PADDING)
-puts "\[INFO\]: Legalizing…"
+puts "\[INFO\] Legalizing…"
 detailed_placement
 if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
 	optimize_mirroring

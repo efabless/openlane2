@@ -88,8 +88,8 @@ class SpiceExtraction(MagicStep):
     name = "SPICE Extraction"
     long_name = "SPICE Model Extraction"
 
-    inputs = [DesignFormat.GDS]
+    inputs = [DesignFormat.GDS, DesignFormat.DEF]
     outputs = [DesignFormat.SPICE]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "magic", "gds", "extract_spice.tcl")
+        return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")

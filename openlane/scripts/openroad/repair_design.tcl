@@ -34,37 +34,31 @@ estimate_parasitics -placement
 
 
 # Buffer I/O
-if { $::env(PL_RESIZER_BUFFER_INPUT_PORTS) } {
+if { $::env(DESIGN_REPAIR_BUFFER_INPUT_PORTS) } {
     buffer_ports -inputs
 }
 
-if { $::env(PL_RESIZER_BUFFER_OUTPUT_PORTS) } {
+if { $::env(DESIGN_REPAIR_BUFFER_OUTPUT_PORTS) } {
     buffer_ports -outputs
 }
 
 # Repair Design
 repair_design\
-    -max_wire_length $::env(PL_RESIZER_MAX_WIRE_LENGTH) \
-    -slew_margin $::env(PL_RESIZER_MAX_SLEW_MARGIN) \
-    -cap_margin $::env(PL_RESIZER_MAX_CAP_MARGIN)
+    -max_wire_length $::env(DESIGN_REPAIR_MAX_WIRE_LENGTH) \
+    -slew_margin $::env(DESIGN_REPAIR_MAX_SLEW_PCT) \
+    -cap_margin $::env(DESIGN_REPAIR_MAX_CAP_PCT)
 
-if { $::env(PL_RESIZER_REPAIR_TIE_FANOUT) } {
+if { $::env(DESIGN_REPAIR_TIE_FANOUT) } {
     # repair tie lo fanout
-    repair_tie_fanout -separation $::env(PL_RESIZER_TIE_SEPERATION) $::env(SYNTH_TIELO_CELL)
+    repair_tie_fanout -separation $::env(DESIGN_REPAIR_TIE_SEPARATION) $::env(SYNTH_TIELO_CELL)
     # repair tie hi fanout
-    repair_tie_fanout -separation $::env(PL_RESIZER_TIE_SEPERATION) $::env(SYNTH_TIEHI_CELL)
+    repair_tie_fanout -separation $::env(DESIGN_REPAIR_TIE_SEPARATION) $::env(SYNTH_TIEHI_CELL)
 }
 
 report_floating_nets -verbose
 
 # Legalize
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
-
-detailed_placement
-
-if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
-    optimize_mirroring
-}
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg

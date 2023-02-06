@@ -36,7 +36,7 @@ estimate_parasitics -placement
 # so cts does not try to buffer the inverted clocks.
 repair_clock_inverters
 
-puts "\[INFO\]: Configuring cts characterization…"
+puts "\[INFO\] Configuring cts characterization…"
 configure_cts_characterization\
     -max_slew $max_slew\
     -max_cap $max_cap
@@ -73,17 +73,13 @@ repair_clock_nets -max_wire_length $::env(CTS_CLK_MAX_WIRE_LENGTH)
 estimate_parasitics -placement
 write
 
-puts "\[INFO\]: Legalizing…"
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
+puts "\[INFO\] Legalizing…"
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
-detailed_placement
-
-if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
-    optimize_mirroring
-}
 estimate_parasitics -placement
 
 write
+
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg
     exit 1

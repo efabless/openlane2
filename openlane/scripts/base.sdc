@@ -6,8 +6,8 @@ if {[info exists ::env(CLOCK_PORT)] && $::env(CLOCK_PORT) != ""} {
 }
 set input_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_PCT)]
 set output_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_PCT)]
-puts "\[INFO\]: Setting output delay to: $output_delay_value"
-puts "\[INFO\]: Setting input delay to: $input_delay_value"
+puts "\[INFO\] Setting output delay to: $output_delay_value"
+puts "\[INFO\] Setting input delay to: $input_delay_value"
 
 set_max_fanout $::env(SYNTH_MAX_FANOUT) [current_design]
 
@@ -38,15 +38,15 @@ set_driving_cell -lib_cell $::env(SYNTH_DRIVING_CELL) -pin $::env(SYNTH_DRIVING_
 set_driving_cell -lib_cell $::env(SYNTH_CLK_DRIVING_CELL) -pin $::env(SYNTH_CLK_DRIVING_CELL_PIN) $clk_input
 
 set cap_load [expr $::env(SYNTH_CAP_LOAD) / 1000.0]
-puts "\[INFO\]: Setting load to: $cap_load"
+puts "\[INFO\] Setting load to: $cap_load"
 set_load  $cap_load [all_outputs]
 
-puts "\[INFO\]: Setting clock uncertainty to: $::env(SYNTH_CLOCK_UNCERTAINTY)"
+puts "\[INFO\] Setting clock uncertainty to: $::env(SYNTH_CLOCK_UNCERTAINTY)"
 set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [get_clocks $::env(CLOCK_PORT)]
 
-puts "\[INFO\]: Setting clock transition to: $::env(SYNTH_CLOCK_TRANSITION)"
+puts "\[INFO\] Setting clock transition to: $::env(SYNTH_CLOCK_TRANSITION)"
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [get_clocks $::env(CLOCK_PORT)]
 
-puts "\[INFO\]: Setting timing derate to: [expr {$::env(SYNTH_TIMING_DERATE) * 10}] %"
+puts "\[INFO\] Setting timing derate to: [expr {$::env(SYNTH_TIMING_DERATE) * 10}] %"
 set_timing_derate -early [expr {1-$::env(SYNTH_TIMING_DERATE)}]
 set_timing_derate -late [expr {1+$::env(SYNTH_TIMING_DERATE)}]

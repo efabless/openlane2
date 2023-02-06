@@ -316,7 +316,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     upvar sclib lib
     upvar report_dir report_dir
 
-    log "\[INFO\]: USING STRATEGY $strategy_name"
+    log "\[INFO\] USING STRATEGY $strategy_name"
 
     set strategy_escaped [string map {" " _} $strategy_name]
 

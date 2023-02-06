@@ -107,7 +107,11 @@ def create_reproducible(
     tcls = set()
     env = env_in.copy()
     current = shift(tcls_to_process)
+    loop_guard = 1024
     while current is not None:
+        loop_guard -= 1
+        if loop_guard == 0:
+            raise Exception("An infinite loop has been detected. Please file an issue.")
         env_key = get_script_key()
         env_keys_used.add(env_key)
         env[env_key] = current
@@ -179,23 +183,26 @@ def create_reproducible(
     if verbose:
         log("\nProcessing environment variables…\n---")
 
-    run_path = os.path.dirname(step_dir)
     ol_root = get_openlane_root()
+    loop_guard = 1024
     for key in env_keys_used:
+        loop_guard -= 1
+        if loop_guard == 0:
+            raise Exception("An infinite loop has been detected. Please file an issue.")
         full_value = env[key]
         final_env[key] = ""
         if verbose:
             log(f"Processing {key}: {full_value}")
         for potential_file in full_value.split():
             potential_file_abspath = os.path.abspath(potential_file)
-
             if potential_file_abspath.startswith(run_path):
                 final_env[key] = ""
                 relative = relpath(potential_file, run_path)
                 final_value = join(".", relative)
                 final_path = join(destination_folder, final_value)
                 from_path = potential_file
-                copy(from_path, final_path)
+                if potential_file_abspath != step_dir:  # Otherwise, infinite recursion
+                    copy(from_path, final_path)
                 final_env[key] += f"{final_value} "
             elif potential_file_abspath.startswith(pdk_root):
                 relative = relpath(potential_file, pdk_root)
@@ -209,7 +216,7 @@ def create_reproducible(
                 final_path = join(destination_folder, final_value)
 
                 from_path = potential_file
-                if os.path.abspath(potential_file) != os.path.abspath(
+                if potential_file_abspath != os.path.abspath(
                     get_script_dir()
                 ):  # Too many files to copy otherwise
                     copy(from_path, final_path)
@@ -359,7 +366,7 @@ class TclStep(Step):
         except subprocess.CalledProcessError:
             reproducible_folder = create_reproducible(self.step_dir, command, env)
             log(
-                f"Reproducible created: please tarball and upload '{reproducible_folder}' if you're going to file an issue."
+                f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
             )
             raise
 

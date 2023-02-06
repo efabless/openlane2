@@ -14,6 +14,7 @@
 {
   pkgs ? import ./nix/pkgs.nix {},
   python-pname ? "python38Full",
+  
   mach-nix ? import ./nix/mach.nix {
     inherit pkgs;
     inherit python-pname;
@@ -35,8 +36,8 @@
     sha256 = netgen-sha256;
   },
 
-  openroad-rev ? "c295b08a99aacb6147b9c51104627e78ac3859e3",
-  openroad-sha256 ? "sha256-HwnGuUPxUbRRq1my/5B5hGWtSrCWPVblkdvychnk/HM=",
+  openroad-rev ? "2f330b3bf473a81f751d6388e1c26e6aa831a9c4",
+  openroad-sha256 ? "sha256-UhVyK4k+bAxUSf+OnHZMEqXcxGYk9tXZKf+A2zTGFHE=",
   openroad ? import ./nix/openroad.nix {
     inherit pkgs;
     inherit python-pname;
@@ -49,6 +50,8 @@
     inherit pkgs;
     inherit mach-nix;
   }).withPackages (p: with p; [volare]),
+  
+  ...
 }:
 
 with pkgs; mach-nix.buildPythonPackage rec {

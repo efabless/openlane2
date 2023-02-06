@@ -356,25 +356,77 @@ class FixAntennae(OpenROADStep):
         return state_out
 
 
+@Step.factory.register("OpenROAD.IRDropReport")
+class IRDropReport(OpenROADStep):
+    name = "IR Drop Report"
+    long_name = "Generate IR Drop Report"
+
+    inputs = [DesignFormat.ODB, DesignFormat.SPEF]
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
+
+    def run(self, **kwargs) -> State:
+        from decimal import Decimal
+
+        state_out = super().run(**kwargs)
+
+        report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
+
+        voltage_rx = re.compile(r"Worstcase voltage\s*:\s*([\d\.\+\-e]+)\s*V")
+        avg_drop_rx = re.compile(r"Average IR drop\s*:\s*([\d\.\+\-e]+)\s*V")
+        worst_drop_rx = re.compile(r"Worstcase IR drop\s*:\s*([\d\.\+\-e]+)\s*V")
+
+        if m := voltage_rx.search(report):
+            value_float = float(m[1])
+            value_dec = Decimal(value_float)
+            state_out.metrics["ir__voltage__worst"] = value_dec
+        else:
+            raise Exception(
+                "OpenROAD IR Drop Log format has changed- please file an issue."
+            )
+
+        if m := avg_drop_rx.search(report):
+            value_float = float(m[1])
+            value_dec = Decimal(value_float)
+            state_out.metrics["ir__drop__avg"] = value_dec
+        else:
+            raise Exception(
+                "OpenROAD IR Drop Log format has changed- please file an issue."
+            )
+
+        if m := worst_drop_rx.search(report):
+            value_float = float(m[1])
+            value_dec = Decimal(value_float)
+            state_out.metrics["ir__drop__worst"] = value_dec
+        else:
+            raise Exception(
+                "OpenROAD IR Drop Log format has changed- please file an issue."
+            )
+
+        return state_out
+
+
 # Resizer Steps
-@Step.factory.register("OpenROAD.ResizerDesignPostGPL")
-class ResizerDesignPostGPL(OpenROADStep):
-    id = "rsz_design_postgpl"
-    name = "Resizer Design Optimizations (Post-Global Placement)"
-    flow_control_variable = "RUN_POST_GPL_RESIZER_DESIGN"
+@Step.factory.register("OpenROAD.RepairDesign")
+class RepairDesign(OpenROADStep):
+    id = "repair_design"
+    name = "Repair Design (Post-Global Placement)"
+    flow_control_variable = "RUN_POST_GPL_REPAIR_DESIGN"
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "rsz_design_postgpl.tcl")
+        return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
 
 
-@Step.factory.register("OpenROAD.ResizerTimingPostDPL")
-class ResizerTimingPostDPL(OpenROADStep):
-    id = "rsz_timing_postdpl"
-    name = "Resizer Timing Optimizations (Post-Detailed Placement)"
-    flow_control_variable = "RUN_POST_DPL_RESIZER_TIMING"
+@Step.factory.register("OpenROAD.ResizerTimingPostCTS")
+class ResizerTimingPostCTS(OpenROADStep):
+    id = "rsz_timing_postcts"
+    name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
+    flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "rsz_timing_postdpl.tcl")
+        return os.path.join(get_script_dir(), "openroad", "rsz_timing_postcts.tcl")
 
 
 @Step.factory.register("OpenROAD.ResizerTimingPostGRT")

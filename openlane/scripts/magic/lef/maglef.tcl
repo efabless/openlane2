@@ -23,5 +23,5 @@ cellname rename $::env(DESIGN_NAME) $::env(DESIGN_NAME).lef
 cellname filepath $::env(DESIGN_NAME).lef $::env(signoff_results)
 save
 
-puts "\[INFO\]: DONE GENERATING MAGLEF VIEW"
+puts "\[INFO\] DONE GENERATING MAGLEF VIEW"
 exit 0

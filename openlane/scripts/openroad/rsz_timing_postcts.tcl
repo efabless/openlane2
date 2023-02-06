@@ -48,13 +48,7 @@ if { $::env(PL_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
 repair_timing {*}$arg_list
 
 # Legalize
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
-
-detailed_placement
-
-if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
-    optimize_mirroring
-}
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg

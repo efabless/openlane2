@@ -275,6 +275,10 @@ class Step(ABC):
             rule(f"{self.long_name}")
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
+
+        with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
+            f.write(self.state_out.dumps())
+
         return self.state_out
 
     @abstractmethod

@@ -45,6 +45,7 @@ with pkgs; let boost-static = boost.override {
     readline
     libffi
     qt6.full
+    qt6.qt5compat
     llvmPackages.openmp
     
     # ortools
@@ -65,5 +66,6 @@ with pkgs; let boost-static = boost.override {
     gnumake
     flex
     bison
+    qt6.wrapQtAppsHook
   ];
 }

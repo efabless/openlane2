@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if { [info exist ::env(MAGIC_DRC_USE_GDS)] && $::env(MAGIC_DRC_USE_GDS) } {
+if { $::env(MAGIC_DRC_USE_GDS) } {
 	source $::env(SCRIPTS_DIR)/magic/gds/read.tcl
 } else {
 	source $::env(SCRIPTS_DIR)/magic/def/read.tcl
@@ -27,7 +27,7 @@ set fout [open $drc_rpt_path w]
 set oscale [cif scale out]
 set cell_name $::env(DESIGN_NAME)
 magic::suspendall
-puts stdout "\[INFO\]: Loading $cell_name\n"
+puts stdout "\[INFO\] Loading $cell_name\n"
 flush stdout
 load $cell_name
 select top cell
@@ -55,24 +55,24 @@ foreach {errtype coordlist} $drcresult {
 	puts $fout "----------------------------------------"
 }
 
-puts $fout "\[INFO\]: COUNT: $count"
-puts $fout "\[INFO\]: Should be divided by 3 or 4"
+puts $fout "\[INFO\] COUNT: $count"
+puts $fout "\[INFO\] Should be divided by 3 or 4"
 
 puts $fout ""
 close $fout
 
-puts stdout "\[INFO\]: COUNT: $count"
-puts stdout "\[INFO\]: Should be divided by 3 or 4"
-puts stdout "\[INFO\]: DRC Checking DONE ($drc_rpt_path)"
+puts stdout "\[INFO\] COUNT: $count"
+puts stdout "\[INFO\] Should be divided by 3 or 4"
+puts stdout "\[INFO\] DRC Checking DONE ($drc_rpt_path)"
 flush stdout
 
 set views_dir $::env(STEP_DIR)/views
 file mkdir $views_dir
 
 set mag_view $views_dir/$::env(DESIGN_NAME).drc.mag
-puts stdout "\[INFO\]: Saving mag view with DRC errors ($mag_view)"
+puts stdout "\[INFO\] Saving mag view with DRC errors ($mag_view)"
 # WARNING: changes the name of the cell; keep as last step
 save $mag_view
-puts stdout "\[INFO\]: Saved"
+puts stdout "\[INFO\] Saved"
 
 exit 0

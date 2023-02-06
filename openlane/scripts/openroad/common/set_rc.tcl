@@ -14,7 +14,7 @@
 
 # Resistance/Capacitance Overrides
 # Via resistance
-puts "\[INFO\]: Setting RC values…"
+puts "\[INFO\] Setting RC values…"
 if { [info exist ::env(VIAS_RC)] } {
     set vias_rc [split $::env(VIAS_RC) ","]
     foreach via_rc $vias_rc {

@@ -1,4 +1,4 @@
-# Copyright 2020 Efabless Corporation
+# Copyright 2022 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,22 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
-drc off
-
-gds readonly true
-gds rescale false
-
-# This comes afterwards, so that it would contain GDS pointers
-# And yes, we need to re-read the GDS we just generated...
-gds read $::env(MAGIC_GDS)
-
-cellname filepath $::env(DESIGN_NAME) $::env(signoff_tmpfiles)
-save
-
-set final_filepath $::env(signoff_tmpfiles)/gds_ptrs.mag
-
-file rename -force $::env(signoff_tmpfiles)/$::env(DESIGN_NAME).mag $final_filepath
-
-puts "\[INFO\] Wrote $final_filepath including GDS pointers."
-exit 0
+detailed_placement
+if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
+    optimize_mirroring
+}
