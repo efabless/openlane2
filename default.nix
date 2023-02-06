@@ -13,12 +13,6 @@
 # limitations under the License.
 {
   pkgs ? import ./nix/pkgs.nix {},
-  python-pname ? "python38Full",
-  
-  mach-nix ? import ./nix/mach.nix {
-    inherit pkgs;
-    inherit python-pname;
-  },
 
   magic-rev ? "8d08cb2f2f33c79bea478a79543721d476554c78",
   magic-sha256 ? "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=",
@@ -38,27 +32,31 @@
 
   openroad-rev ? "2f330b3bf473a81f751d6388e1c26e6aa831a9c4",
   openroad-sha256 ? "sha256-UhVyK4k+bAxUSf+OnHZMEqXcxGYk9tXZKf+A2zTGFHE=",
-  openroad ? import ./nix/openroad.nix {
+  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
-    inherit python-pname;
-    
     rev = openroad-rev;
     sha256 = openroad-sha256;
   },
   
-  ol-python ? (import ./nix/ol-python.nix {
+  volare-rev ? "852e565f30f3445c6fa59f15cea85c461e3bdddd",
+  volare-sha256 ? "sha256-U8pyGJjEYlSU2oaofZIaUUNbkn9uHv5LQ5074ZUqZjA=",
+  volare ? let src = pkgs.fetchFromGitHub {
+    owner = "efabless";
+    repo = "volare";
+    rev = volare-rev;
+    sha256 = volare-sha256;
+  }; in import "${src}" {
     inherit pkgs;
-    inherit mach-nix;
-  }).withPackages (p: with p; [volare]),
+  },
   
   ...
 }:
 
-with pkgs; mach-nix.buildPythonPackage rec {
-  pname = "openlane-app";
-  name = "openlane-app";
-
-  python = python-pname;
+with pkgs; with python3.pkgs; let slugify = import ./nix/slugify.nix {
+  inherit pkgs;
+}; in buildPythonPackage rec {
+  pname = "openlane";
+  name = pname;
 
   version_file = builtins.readFile ./openlane/__version__.py;
   version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
@@ -73,7 +71,8 @@ with pkgs; mach-nix.buildPythonPackage rec {
     builtins.readFile ./requirements_dev.txt +
     builtins.readFile ./requirements.txt
     ;
-
+  
+  doCheck = false;
   propagatedBuildInputs = [
     # Tools
     openroad
@@ -81,5 +80,15 @@ with pkgs; mach-nix.buildPythonPackage rec {
     yosys
     magic
     netgen
+
+    # Python
+    click
+    pyyaml
+    rich
+    requests
+    pcpp
+    slugify
+    volare
+    tkinter
   ];
 }

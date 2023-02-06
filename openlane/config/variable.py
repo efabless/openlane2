@@ -21,8 +21,6 @@ from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable
 from .config import Config, Path
 from .resolve import process_string
 
-import pathvalidate
-
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
 
@@ -111,10 +109,6 @@ class Variable:
                 return_value.append(self.process(item, subtype))
             return return_value
         elif validating_type == Path:
-            if not pathvalidate.is_valid_filepath(value, platform="auto"):
-                raise ValueError(
-                    f"Invalid path provided for variable {self.name}: {value}"
-                )
             if not os.path.exists(value):
                 raise ValueError(
                     f"Path provided for variable {self.name} does not exist: '{value}'"

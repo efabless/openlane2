@@ -1,6 +1,5 @@
-pathvalidate
 click>=8.0.0,<9
-rich>=12.0.0
-pyyaml~=5.4.0
+pyyaml>=5,<7
+rich>=12,<13
 python-slugify>=7.0.0
 volare>=0.6.2

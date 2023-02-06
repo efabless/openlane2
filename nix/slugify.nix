@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs,
-  python-pname
+  pkgs ? import ./nix/pkgs.nix {},
+  ...
 }:
 
-import (pkgs.fetchgit {
-  url = "https://github.com/DavHau/mach-nix";
-  rev = "70daee1b200c9a24a0f742f605edadacdcb5c998";
-  sha256 = "sha256-mia90VYv/YTdWNhKpvwvFW9RfbXZJSWhJ+yva6EnLE8=";
-}) {
-  python = python-pname;
-  pypiDataRev = "b6825a54053b58bf92f7d301a2891729c66c04f4";
-  pypiDataSha256 = "sha256:0amjl58ykqrkxdf1yynclm70zlr60j53wg2byvjzll75kvxvkx9p";
+with pkgs; with python3.pkgs; buildPythonPackage rec {
+  pname = "python-slugify";
+  name = pname;
+  version = "v8.0.0";
+  
+  src = fetchFromGitHub {
+    owner = "un33k";
+    repo = pname;
+    rev = version;
+    sha256 = "sha256-8qiG6P+tx9aovPNqZJSBW1d1DcHhsRMr9dZFPMDe2Aw=";
+  };
+
+  doCheck = false;
+  propagatedBuildInputs = [
+    text-unidecode
+  ];
 }
