@@ -14,15 +14,15 @@
 import os
 import json
 from decimal import Decimal
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable
 
 import volare
 
 from .resolve import resolve, Keys
 from .tcleval import env_from_tcl
 from .config import Config, Meta
-from .pdk import validate_pdk_config
-from .flow import validate_user_config
+from .pdk import validate_pdk_config, PDKVariablesByID
+from .flow import validate_user_config, FlowVariablesByID
 from ..common import log, warn
 
 
@@ -49,28 +49,20 @@ class DecimalDecoder(json.JSONDecoder):
 
 class ConfigBuilder(object):
     @classmethod
-    def load(Self, file_path: str, *args, **kwargs) -> Tuple["Config", str]:
+    def load(
+        Self,
+        file_path: str,
+        config_override_strings: List[str],
+        *args,
+        **kwargs,
+    ) -> Tuple["Config", str]:
         design_dir = os.path.dirname(file_path)
+
+        loader: Callable = Self.loads
         if file_path.endswith(".json"):
-            return (
-                Self.loads(
-                    open(file_path, encoding="utf8").read(),
-                    design_dir,
-                    *args,
-                    **kwargs,
-                ),
-                design_dir,
-            )
+            pass
         elif file_path.endswith(".tcl"):
-            return (
-                Self.loads_tcl(
-                    open(file_path, encoding="utf8").read(),
-                    design_dir,
-                    *args,
-                    **kwargs,
-                ),
-                design_dir,
-            )
+            loader = Self.loads_tcl
         else:
             if os.path.isdir(file_path):
                 raise ValueError(
@@ -80,6 +72,30 @@ class ConfigBuilder(object):
             raise ValueError(
                 f"Unsupported configuration file extension '{ext}' for '{file_path}'."
             )
+
+        loaded = loader(
+            open(file_path, encoding="utf8").read(),
+            design_dir,
+            *args,
+            **kwargs,
+        )
+
+        for string in config_override_strings:
+            components = string.split("=", 2)
+            if len(components) != 2:
+                raise TypeError(
+                    f"Config override string '{components}' is invalid: no = found."
+                )
+            name, value_raw = components
+            variable = PDKVariablesByID.get(name) or FlowVariablesByID.get(name)
+            if variable is None:
+                warn(f"Unknown configuration override variable '{name}'.")
+                continue
+            value = json.loads(value_raw)
+            value_verified = variable.process(value)
+            loaded[name] = value_verified
+
+        return (loaded, design_dir)
 
     @classmethod
     def loads(

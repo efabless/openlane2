@@ -37,8 +37,12 @@ class MagicStep(TclStep):
             "-noconsole",
             "-rcfile",
             str(self.config["MAGICRC"]),
-            self.get_script_path(),
         ]
+
+    def run(self, **kwargs) -> State:
+        # https://github.com/RTimothyEdwards/magic/issues/218
+        kwargs["stdin"] = open(self.get_script_path(), encoding="utf8")
+        return super().run(**kwargs)
 
 
 @Step.factory.register("Magic.StreamOut")

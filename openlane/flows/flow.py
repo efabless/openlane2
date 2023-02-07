@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import glob
 import datetime
 from abc import abstractmethod, ABC
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -35,7 +36,19 @@ from ..steps import (
     State,
 )
 from ..utils import Toolbox
-from ..common import mkdirp, console
+from ..common import mkdirp, console, log
+
+
+class FlowException(RuntimeError):
+    pass
+
+
+class FlowError(RuntimeError):
+    pass
+
+
+class FlowImplementationError(RuntimeError):
+    pass
 
 
 class Flow(ABC):
@@ -67,7 +80,6 @@ class Flow(ABC):
             of the `config.json` file from which it was generated.
         """
         self.config: Config = config
-        self.steps: List[Step] = []
         self.design_dir = design_dir
 
         self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
@@ -113,12 +125,14 @@ class Flow(ABC):
             description=f"{self.get_name()} - Stage {self.ordinal} - {name}",
         )
 
-    def end_stage(self):
+    def end_stage(self, no_increment_ordinal: bool = False):
         """
         Ends the current stage, updating the progress bar appropriately.
         """
         self.completed += 1
-        self.ordinal += 1
+        if not no_increment_ordinal:
+            self.ordinal += 1
+        assert self.progress is not None and self.task_id is not None
         self.progress.update(self.task_id, completed=float(self.completed))
 
     def current_stage_prefix(self) -> str:
@@ -135,7 +149,9 @@ class Flow(ABC):
         prefixed with the current progress bar stage number.
         """
         if self.run_dir is None:
-            raise Exception("")
+            raise FlowImplementationError(
+                "Attempted to call dir_for_step before starting flow."
+            )
         return os.path.join(
             self.run_dir,
             f"{self.current_stage_prefix()}{step.id}",
@@ -146,12 +162,15 @@ class Flow(ABC):
         self,
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
-    ) -> Tuple[bool, List[State]]:
+        **kwargs,
+    ) -> Tuple[List[State], List[Step]]:
         """
         The entry point for a flow.
 
         :param with_initial_state: An optional initial state object to use.
-            If not provided, a default empty state is created.
+            If not provided:
+            * If resuming a previous run, the latest `state_out.json` (by filesystem modification date)
+            * If not, an empty state object is created.
         :param tag: A name for this invocation of the flow. If not provided,
             one based on a date string will be created.
 
@@ -164,7 +183,50 @@ class Flow(ABC):
         self.tmp_dir = os.path.join(self.run_dir, "tmp")
         self.toolbox = Toolbox(self.tmp_dir)
 
-        mkdirp(self.run_dir)
+        try:
+            entries = os.listdir(self.run_dir)
+            if len(entries) == 0:
+                raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
+            log(f"Using existing run at '{tag}' with the '{self.get_name()}.'")
+
+            # Extract maximum step ordinal
+            for entry in entries:
+                components = entry.split("-")
+                if len(components) < 2:
+                    continue
+                try:
+                    current_ordinal = int(components[0])
+                except ValueError:
+                    continue
+                self.ordinal = max(self.ordinal, current_ordinal + 1)
+
+            # Extract Maximum State
+            if with_initial_state is None:
+                latest_time: float = 0
+                latest_json: Optional[str] = None
+                state_out_jsons = glob.glob(
+                    os.path.join(self.run_dir, "**", "state_out.json"), recursive=True
+                )
+                for state_out_json in state_out_jsons:
+                    time = os.path.getmtime(state_out_json)
+                    if time > latest_time:
+                        latest_time = time
+                        latest_json = state_out_json
+
+                if latest_json is not None:
+                    with_initial_state = State.loads(
+                        open(latest_json, encoding="utf8").read()
+                    )
+
+        except NotADirectoryError:
+            raise FlowException(
+                f"Run directory for '{tag}' already exists as a file and not a directory."
+            )
+        except FileNotFoundError:
+            log(
+                f"Starting a new run of the '{self.get_name()}' flow with the tag '{tag}'."
+            )
+            mkdirp(self.run_dir)
 
         config_res_path = os.path.join(self.run_dir, "resolved.json")
         with open(config_res_path, "w") as f:
@@ -183,6 +245,7 @@ class Flow(ABC):
         )
         result = self.run(
             with_initial_state=with_initial_state,
+            **kwargs,
         )
         self.progress.stop()
 
@@ -201,7 +264,8 @@ class Flow(ABC):
     def run(
         self,
         with_initial_state: Optional[State] = None,
-    ) -> Tuple[bool, List[State]]:
+        **kwargs,
+    ) -> Tuple[List[State], List[Step]]:
         """
         The core of the Flow. Subclasses of flow are expected to override this
         method.

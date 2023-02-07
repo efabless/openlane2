@@ -21,6 +21,7 @@ from .step import Step
 from .state import State
 from .design_format import DesignFormat
 from ..common import get_openlane_root, get_script_dir, log
+from ..config import Path
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -53,10 +54,10 @@ class OdbpyStep(Step):
             file_path = os.path.join(self.step_dir, filename)
             command.append(f"--output-{id}")
             command.append(file_path)
-            out_paths[output] = file_path
+            out_paths[output] = Path(file_path)
 
         command += [
-            state_out[DesignFormat.ODB],
+            str(state_out[DesignFormat.ODB]),
         ]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
@@ -109,6 +110,6 @@ class ManualMacroPlacement(OdbpyStep):
 
     def run(self, **kwargs) -> State:
         if self.config.get("MACRO_PLACEMENT_CFG") is None:
-            log("No macros found, skipping...")
+            log("No macros found, skipping…")
             return Step.run(self, **kwargs)
         return super().run(**kwargs)

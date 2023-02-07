@@ -13,7 +13,8 @@
 # limitations under the License.
 from enum import Enum
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Dict
+
 from .variable import Path, Variable
 from .config import Config
 
@@ -1218,6 +1219,10 @@ flow_variables = [
         default=True,
     ),
 ]
+
+FlowVariablesByID: Dict[str, Variable] = {
+    variable.name: variable for variable in flow_variables
+}
 
 
 def validate_user_config(

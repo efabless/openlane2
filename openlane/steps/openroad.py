@@ -124,7 +124,7 @@ class NetlistSTA(OpenROADStep):
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
     inputs = [DesignFormat.NETLIST]
-    outputs = [DesignFormat.LIB]
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
@@ -170,6 +170,7 @@ class IOPlacement(OpenROADStep):
 
 @Step.factory.register("OpenROAD.TapDecapInsertion")
 class TapDecapInsertion(OpenROADStep):
+    id = "tap-decap-insertion"
     name = "Tap/Decap Insertion"
     flow_control_variable = "RUN_TAP_DECAP_INSERTION"
 
@@ -411,7 +412,7 @@ class IRDropReport(OpenROADStep):
 # Resizer Steps
 @Step.factory.register("OpenROAD.RepairDesign")
 class RepairDesign(OpenROADStep):
-    id = "repair_design"
+    id = "repair-design"
     name = "Repair Design (Post-Global Placement)"
     flow_control_variable = "RUN_POST_GPL_REPAIR_DESIGN"
 
@@ -421,7 +422,7 @@ class RepairDesign(OpenROADStep):
 
 @Step.factory.register("OpenROAD.ResizerTimingPostCTS")
 class ResizerTimingPostCTS(OpenROADStep):
-    id = "rsz_timing_postcts"
+    id = "rsz-timing-postcts"
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
     flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
@@ -431,7 +432,7 @@ class ResizerTimingPostCTS(OpenROADStep):
 
 @Step.factory.register("OpenROAD.ResizerTimingPostGRT")
 class ResizerTimingPostGRT(OpenROADStep):
-    id = "rsz_timing_postgrt"
+    id = "rsz-timing-postgrt"
     name = "Resizer Timing Optimizations (Post-Global Routing)"
     flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
 

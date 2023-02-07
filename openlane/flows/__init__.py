@@ -14,5 +14,5 @@
 from . import optimizing
 from . import classic
 
-from .flow import Flow
+from .flow import Flow, FlowException, FlowError
 from .sequential import SequentialFlow

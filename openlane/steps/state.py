@@ -11,14 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import json
 from decimal import Decimal
 from collections import UserDict
-from typing import Union, Optional
+from typing import Union, Optional, Dict, Any
 
-from .design_format import DesignFormat
+from .design_format import DesignFormat, DesignFormatByID
 
 from ..config import Path
+from ..common import warn
 
 
 class StateEncoder(json.JSONEncoder):
@@ -30,6 +32,13 @@ class StateEncoder(json.JSONEncoder):
                 return float(o)
         elif isinstance(o, Path):
             return str(o)
+        return super(StateEncoder, self).default(o)
+
+
+class StateDecoder(json.JSONDecoder):
+    def default(self, o):
+        if isinstance(o, float) or isinstance(o, int):
+            return Decimal(o)
         return super(StateEncoder, self).default(o)
 
 
@@ -47,24 +56,27 @@ class State(UserDict):
 
     metrics: dict
 
-    def __init__(self) -> None:
+    def __init__(self, metrics: Optional[dict] = None) -> None:
         super().__init__()
         for format in DesignFormat:
-            self[format.name] = None
-        self.metrics = dict()
+            id: str = format.value[0]
+            self[id] = None
+        self.metrics = metrics or {}
 
     def __getitem__(self, key: Union[DesignFormat, str]) -> Optional[Path]:
         if isinstance(key, DesignFormat):
-            key = key.name
+            id: str = key.value[0]
+            key = id
         return super().__getitem__(key)
 
-    def __setitem__(self, key: Union[DesignFormat, str], item: Path):
+    def __setitem__(self, key: Union[DesignFormat, str], item: Optional[Path]):
         if isinstance(key, DesignFormat):
-            key = key.name
+            id: str = key.value[0]
+            key = id
         return super().__setitem__(key, item)
 
     def as_dict(self) -> dict:
-        final = dict(self)
+        final: Dict[Any, Any] = dict(self)
         final["metrics"] = self.metrics
         return final
 
@@ -80,3 +92,31 @@ class State(UserDict):
         if "indent" not in kwargs:
             kwargs["indent"] = 4
         return json.dumps(self.as_dict(), cls=StateEncoder, **kwargs)
+
+    @classmethod
+    def loads(Self, json_in: str, validate_path: bool = True) -> "State":
+        raw = json.loads(json_in, cls=StateDecoder)
+
+        metrics = raw.get("metrics")
+        if metrics is not None:
+            del raw["metrics"]
+
+        state = Self(metrics=metrics)
+
+        for key, value in raw.items():
+            df = DesignFormatByID.get(key)
+            if df is None:
+                warn(f"Unknown design format ID '{key}' in loaded state.")
+                continue
+
+            if value is None:
+                state[df] = value
+                continue
+
+            if validate_path and not os.path.exists(value):
+                raise ValueError(
+                    f"Provided path '{value}' to design format '{key}' does not exist."
+                )
+            state[df] = Path(value)
+
+        return state

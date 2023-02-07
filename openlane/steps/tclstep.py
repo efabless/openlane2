@@ -22,11 +22,12 @@ import subprocess
 from enum import Enum
 from decimal import Decimal
 from collections import deque
+from typing import List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
-from typing import List, Dict, Sequence, Union, Optional
 
 from .step import Step
 from .state import State
+from ..config import Path
 from ..common import mkdirp, log, warn
 from ..common import get_script_dir, get_openlane_root
 
@@ -35,6 +36,7 @@ def create_reproducible(
     step_dir: str,
     cmd: Sequence[Union[str, os.PathLike]],
     env_in: Dict[str, str],
+    tcl_script: str,
     verbose: bool = False,
 ) -> str:
     step_dir = os.path.abspath(step_dir)
@@ -70,30 +72,7 @@ def create_reproducible(
     mkdirp(destination_folder)
 
     # Phase 2: Process TCL Scripts To Find Full List Of Files
-    tcl_script: Optional[str] = None
-    new_cmd = []
-    for element in cmd:
-        element = str(element)
-        element_basename = os.path.basename(element)
-        element_abspath = os.path.abspath(element)
-        if os.path.exists(element):
-            if element.endswith(".tcl"):
-                tcl_script = element
-                new_cmd.append("$PACKAGED_SCRIPT_0")
-            else:
-                new_cmd.append(element_abspath)
-        elif element.startswith(run_path_rel) or element_abspath.startswith(run_path):
-            new_cmd.append(element_basename)
-        else:
-            new_cmd.append(element)
-
-    tcls_to_process = deque([tcl_script])
-
-    def shift(deque):
-        try:
-            return deque.popleft()
-        except Exception:
-            return None
+    tcl_script_abspath = os.path.abspath(tcl_script)
 
     script_counter = 0
 
@@ -103,32 +82,69 @@ def create_reproducible(
         script_counter += 1
         return value
 
-    env_keys_used = set()
+    tcls_to_process = deque([(tcl_script, get_script_key())])
+
+    new_cmd = []
+    for element in cmd:
+        element = str(element)
+        element_basename = os.path.basename(element)
+        element_abspath = os.path.abspath(element)
+        if os.path.exists(element):
+            if element_abspath == tcl_script_abspath:
+                new_cmd.append("$PACKAGED_SCRIPT_0")
+            elif element_abspath.endswith(".tcl") or element_abspath.endswith(
+                ".magicrc"
+            ):
+                env_key = get_script_key()
+                tcls_to_process.append((element_abspath, env_key))
+                new_cmd.append(f"${env_key}")
+            else:
+                new_cmd.append(element)
+        elif element.startswith(run_path_rel) or element_abspath.startswith(run_path):
+            new_cmd.append(element_basename)
+        else:
+            new_cmd.append(element)
+
+    def shift(deque):
+        try:
+            return deque.popleft()
+        except Exception:
+            return None
+
+    env_keys_used = set(["PDK_ROOT"])
     tcls = set()
     env = env_in.copy()
     current = shift(tcls_to_process)
     loop_guard = 1024
     while current is not None:
+        env_key = None
+        if isinstance(current, tuple):
+            current, env_key = current
+
         loop_guard -= 1
         if loop_guard == 0:
             raise Exception("An infinite loop has been detected. Please file an issue.")
-        env_key = get_script_key()
+
+        if env_key is None:
+            env_key = get_script_key()
+
         env_keys_used.add(env_key)
         env[env_key] = current
 
         try:
             script = open(current).read()
             if verbose:
-                log(f"Processing {current}...")
+                log(f"Processing {current}…")
 
             for key, value in env.items():
                 value = str(value)
 
                 key_accessor = re.compile(
-                    rf"((\$::env\({re.escape(key)}\))([/\-\w\.]*))"
+                    rf"((\$(?:\:\:)?env\({re.escape(key)}\))([/\-\w\.]*)|(\${re.escape(key)}))"
                 )
                 for use in key_accessor.findall(script):
-                    full, accessor, _ = use
+                    full = use[0]
+                    accessor = use[1] or use[3]
                     env_keys_used.add(key)
                     if verbose:
                         log(f"Found {accessor}…")
@@ -141,7 +157,7 @@ def create_reproducible(
                             tcls.add(value_substituted)
                             tcls_to_process.append(value_substituted)
         except FileNotFoundError:
-            warn(f"{current} was not found, might be a product. Skipping...")
+            warn(f"{current} was not found, might be a product. Skipping…")
 
         current = shift(tcls_to_process)
 
@@ -347,7 +363,9 @@ class TclStep(Step):
             env[element] = value
 
         for input in self.inputs:
-            env[f"CURRENT_{input.name}"] = state[input]
+            if input is None:
+                continue
+            env[f"CURRENT_{input.name}"] = str(state[input])
 
         for output in self.outputs:
             filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
@@ -364,13 +382,18 @@ class TclStep(Step):
                 **kwargs,
             )
         except subprocess.CalledProcessError:
-            reproducible_folder = create_reproducible(self.step_dir, command, env)
+            reproducible_folder = create_reproducible(
+                self.step_dir,
+                command,
+                env,
+                self.get_script_path(),
+            )
             log(
                 f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
             )
             raise
 
         for output in self.outputs:
-            state[output] = env[f"SAVE_{output.name}"]
+            state[output] = Path(env[f"SAVE_{output.name}"])
 
         return state

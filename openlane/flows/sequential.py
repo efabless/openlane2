@@ -16,13 +16,13 @@ from __future__ import annotations
 import subprocess
 from typing import List, Tuple, Optional, Type
 
-from .flow import Flow
+from .flow import Flow, FlowException, FlowError
 from ..steps import (
     MissingInputError,
     State,
     Step,
 )
-from ..common import err, log, success
+from ..common import log, success
 
 
 class SequentialFlow(Flow):
@@ -53,26 +53,44 @@ class SequentialFlow(Flow):
     def run(
         self,
         with_initial_state: Optional[State] = None,
-    ) -> Tuple[bool, List[State]]:
+        frm: Optional[str] = None,
+        to: Optional[str] = None,
+        **kwargs,
+    ) -> Tuple[List[State], List[Step]]:
         step_count = len(self.Steps)
         self.set_max_stage_count(step_count)
 
         initial_state = with_initial_state or State()
         state_list = [initial_state]
+        step_list = []
+
         log("Starting…")
+
+        executing = frm is None
+
         for cls in self.Steps:
             step = cls()
-            self.steps.append(step)
+            if frm is not None and frm == step.id:
+                executing = True
+
             self.start_stage(step.name)
+            if not executing:
+                log(f"Skipping step '{step.name}'…")
+                self.end_stage(no_increment_ordinal=True)
+                continue
+
+            step_list.append(step)
             try:
                 new_state = step.start()
             except MissingInputError as e:
-                err(f"Misconfigured flow: {e}")
-                return (False, state_list)
-            except subprocess.CalledProcessError:
-                err("An error has been encountered. The flow will stop.")
-                return (False, state_list)
+                raise FlowException(str(e))
+            except subprocess.CalledProcessError as e:
+                raise FlowError(str(e))
+
             state_list.append(new_state)
             self.end_stage()
+
+            if to is not None and to == step.id:
+                executing = False
         success("Flow complete.")
-        return (True, state_list)
+        return (state_list, step_list)

@@ -167,7 +167,7 @@ class Step(ABC):
                             config = locals["self"].config.copy()
                         current = current.f_back
                 if config is None:
-                    raise Exception("")
+                    raise TypeError("Missing required argument 'config'")
             finally:
                 del frame
 
@@ -183,7 +183,7 @@ class Step(ABC):
                             state_in = state_list[-1]
                         current = current.f_back
                 if state_in is None:
-                    raise Exception("")
+                    raise TypeError("Missing required argument 'state_in'")
             finally:
                 del frame
 
@@ -198,7 +198,7 @@ class Step(ABC):
                             step_dir = locals["self"].dir_for_step(self)
                         current = current.f_back
                 if step_dir is None:
-                    raise Exception("")
+                    raise TypeError("Missing required argument 'step_dir'")
             finally:
                 del frame
 
@@ -263,7 +263,7 @@ class Step(ABC):
         if self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if not flow_control_value:
-                log(f"`{self.flow_control_variable}` is set to false: skipping...")
+                log(f"`{self.flow_control_variable}` is set to false: skipping…")
                 return self.state_in.copy()
 
         mkdirp(self.step_dir)

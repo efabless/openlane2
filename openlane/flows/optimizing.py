@@ -21,7 +21,7 @@ import slugify
 
 from .flow import Flow
 from ..common import success, log
-from ..steps import State, Yosys, OpenROAD
+from ..steps import State, Yosys, OpenROAD, Step
 from ..config import Config
 
 
@@ -42,13 +42,16 @@ class Optimizing(Flow):
     def run(
         self,
         with_initial_state: Optional[State] = None,
-    ) -> Tuple[bool, List[State]]:
+        **kwargs,
+    ) -> Tuple[List[State], List[Step]]:
         initial_state = with_initial_state or State()
+
         state_list = [initial_state]
+        step_list: List[Step] = []
+
         self.set_max_stage_count(2)
 
         synthesis_futures: List[Tuple[Config, Future[State]]] = []
-        log
         self.start_stage("Synthesis Exploration")
 
         for strategy in ["AREA 0", "AREA 2", "DELAY 1"]:
@@ -61,6 +64,7 @@ class Optimizing(Flow):
                 silent=True,
             )
             synth_future = self.run_step_async(synth_step)
+            step_list.append(synth_step)
 
             sta_step = OpenROAD.NetlistSTA(
                 config,
@@ -68,6 +72,7 @@ class Optimizing(Flow):
                 id=slugify.slugify(f"STA {strategy}"),
                 silent=True,
             )
+            step_list.append(sta_step)
             sta_future = self.run_step_async(sta_step)
 
             synthesis_futures.append((config, sta_future))
@@ -90,7 +95,7 @@ class Optimizing(Flow):
                 min_strat = strategy
                 min_config = config
 
-        log(f"Using result from '{min_strat}'...")
+        log(f"Using result from '{min_strat}…")
         state_list.append(min_area_state)
 
         state_list_rewind = state_list.copy()
@@ -104,6 +109,7 @@ class Optimizing(Flow):
             id="fp_highutl",
             long_name="Floorplanning (High Util)",
         )
+        step_list.append(fp)
         state_list.append(fp.start())
         try:
             io = OpenROAD.IOPlacement(
@@ -111,15 +117,17 @@ class Optimizing(Flow):
                 id="io-highutl",
                 long_name="I/O Placement (High Util)",
             )
+            step_list.append(io)
             state_list.append(io.start())
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
                 id="gpl-highutil",
                 long_name="Global Placement (High Util)",
             )
+            step_list.append(gpl)
             state_list.append(gpl.start())
         except subprocess.CalledProcessError:
-            log("High utilization failed- attempting low utilization...")
+            log("High utilization failed- attempting low utilization…")
             state_list = state_list_rewind
             fp_config = min_config.copy()
             fp_config["FP_CORE_UTIL"] = 40
@@ -128,21 +136,24 @@ class Optimizing(Flow):
                 id="fp-lowutl",
                 long_name="Floorplanning (Low Util)",
             )
+            step_list.append(fp)
             state_list.append(fp.start())
             io = OpenROAD.IOPlacement(
                 fp_config,
                 id="io-lowutl",
                 long_name="I/O Placement (Low Util)",
             )
+            step_list.append(io)
             state_list.append(io.start())
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
                 id="gpl-lowutl",
                 long_name="Global Placement (Low Util)",
             )
+            step_list.append(gpl)
             state_list.append(gpl.start())
 
         self.end_stage()
 
         success("Flow complete.")
-        return (True, state_list)
+        return (state_list, step_list)

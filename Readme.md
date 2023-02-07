@@ -8,12 +8,12 @@
     <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg" alt="Checked with mypy"/></a>
 </p>
 
-OpenLane is an automated RTL to GDSII flow based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, SPEF-Extractor, KLayout and a number of custom scripts for design exploration and optimization. The flow performs all ASIC implementation steps from RTL all the way down to GDSII.
+OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, SPEF-Extractor, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
 
 ## Installation
 ### Binary Dependencies
 You'll need the following:
-* Yosys 0.25+ (preferably 0.26+) from https://github.com/YosysHQ/Yosys
+* Yosys 0.23+ (preferably 0.26+) from https://github.com/YosysHQ/Yosys
 * A reasonably modern version of OpenROAD from https://github.com/The-OpenROAD-Project/OpenROAD
 * A reasonably modern version of Magic from https://github.com/RTimothyEdwards/Magic
 * A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen

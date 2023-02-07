@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Dict
+
 from .variable import Path, Variable
 from .config import Config
 
@@ -494,6 +495,10 @@ scl_variables = [
         "Path to a directory of Circuit Validity Checker (CVC) scripts for the relevant PDK. Must contain the following set of files: `cvcrc`, an initialization file, `cdl.awk`, an awk script to remove black box definitions from SPICE files, `models`, cell models, and finally `power.awk`, an awk script that adds power information to the verilog netlists.\nIf this path is not defined, this PDK will be marked incompatible with CVC.",
     ),
 ]
+
+PDKVariablesByID: Dict[str, Variable] = {
+    variable.name: variable for variable in pdk_variables
+}
 
 
 def migrate_old_config(config: Config) -> Config:

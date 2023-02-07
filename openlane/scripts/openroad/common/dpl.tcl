@@ -13,7 +13,10 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
+remove_fillers
+
 detailed_placement
+
 if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
     optimize_mirroring
 }
