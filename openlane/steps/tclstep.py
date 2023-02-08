@@ -37,7 +37,7 @@ def create_reproducible(
     cmd: Sequence[Union[str, os.PathLike]],
     env_in: Dict[str, str],
     tcl_script: str,
-    verbose: bool = False,
+    verbose: bool = True,
 ) -> str:
     step_dir = os.path.abspath(step_dir)
     run_path = os.path.dirname(step_dir)
@@ -237,11 +237,12 @@ def create_reproducible(
                 ):  # Too many files to copy otherwise
                     copy(from_path, final_path)
                 final_env[key] += f"{final_value} "
-            elif potential_file.startswith("/") and not potential_file.startswith(
+            elif os.path.exists(potential_file) and not potential_file.startswith(
                 "/dev"
             ):  # /dev/null, /dev/stdout, /dev/stderr, etc should still work
-                final_value = potential_file[1:]
-                final_path = join(destination_folder, final_value)
+                final_path = join(destination_folder, potential_file)
+                final_value = os.path.relpath(final_path, destination_folder)
+                print(potential_file_abspath, final_path)
                 copy(potential_file, final_path)
                 final_env[key] += f"{final_value} "
             else:

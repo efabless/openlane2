@@ -90,7 +90,8 @@ class StreamOut(Step):
                 "--top",
                 self.config["DESIGN_NAME"],
             ]
-            + layout_args
+            + layout_args,
+            log_to=os.path.join(self.step_dir, "stream-out.log"),
         )
 
         state_out[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
