@@ -13,6 +13,7 @@
 # limitations under the License.
 from . import optimizing
 from . import classic
+from . import misc
 
 from .flow import Flow, FlowException, FlowError
 from .sequential import SequentialFlow

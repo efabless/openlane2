@@ -1,0 +1,106 @@
+#!/usr/bin/env ruby
+# A general XOR script from: https://www.klayout.de/forum/discussion/100/xor-vs-diff-tool
+
+# This script uses KLayout's Ruby-based DRC language to implement a generic
+# XOR between two layouts. The names of the layouts are given in global variables
+# $a and $b.
+
+if !defined?(RBA)
+  require 'optparse'
+
+  options = {
+    :rpt_out => "/dev/null"
+  }
+  optparse = OptionParser.new do |opts|
+    opts.banner = "Usage: #{File.basename($0)} [options] <GDS A> <GDS B>"
+
+    opts.on("-o", "--output OUTPUT", "Klayout RDB (.xml) output file (required)") do |rdb_out|
+      options[:rdb_out] = rdb_out
+    end
+    opts.on("-i", "--ignore SEMICOLON_DELIMITED_LIST", "Ignore layer(s)") do |ignore|
+      options[:ignore] = ignore
+    end
+    # opts.on("-O", "--gds-out OUTPUT", "GDS output file (required)") do |gds_out|
+    #   options[:gds_out] = gds_out
+    # end
+    opts.on("-t", "--top TOP_CELL", "Top cell name (required)") do |top_cell|
+      options[:top_cell] = top_cell
+    end
+  end
+  optparse.parse!
+
+  if [options[:rdb_out], options[:top_cell]].include?(nil)
+    puts optparse.help
+    exit 64
+  end
+
+  args = [
+    "klayout", "-b",
+    "-r", $0,
+    "-rd", "top_cell=#{options[:top_cell]}",
+    "-rd", "a=#{ARGV[0]}",
+    "-rd", "b=#{ARGV[1]}",
+    "-rd", "jobs=1",
+    "-rd", "rdb_out=#{File.absolute_path(options[:rdb_out])}",
+    "-rd", "ignore=#{options[:ignore]}",
+    # "-rd", "gds_out=#{options[:gds_out]}",
+  ]
+  puts "Running: '#{args.join(" ")}'…"
+  exec *args
+
+end
+
+verbose
+
+# Set up inputs
+puts $a, $b
+a = source($a, $top_cell)
+b = source($b, $top_cell)
+
+# Set up output
+# target($gds_out, "XOR")
+report("XOR #{$a} vs. #{$b}", $rdb_out)
+
+def write_data(xor_data, layer_info)
+  # xor_data.output(layer_info.layer, layer_info.datatype, layer_info.name)
+  xor_data.output(layer_info.to_s, "XOR data for layer #{layer_info.to_s}")
+end
+
+# Run XOR
+$jobs = $jobs.to_i
+threads($jobs) unless $jobs <= 1
+
+## Collect all common layers
+layers = {}
+[ a.layout, b.layout ].each do |ly|
+  ly.layer_indices.each do |li|
+    i = ly.get_info(li)
+    layers[i.to_s] = i
+  end
+end
+
+ignore_list = $ignore.split(";")
+
+## Perform per-layer XOR
+total_xor_differences = 0
+layers.keys.sort.each do |layer_name|
+  if ignore_list.include? layer_name
+    warn "Skipping #{layer_name}"
+  else
+    info "--- Running XOR for layer #{layer_name} ---"
+
+    layer_info = layers[layer_name]
+    xor_data = a.input(layer_name) ^ b.input(layer_name)
+    total_xor_differences += xor_data.data.size
+    info "XOR differences: #{xor_data.data.size}"
+
+    write_data xor_data, layer_info
+   end
+end
+
+info "---"
+info "Total XOR differences: #{total_xor_differences}"
+
+puts "%OL_CREATE_REPORT difference_count.rpt"
+puts total_xor_differences
+puts "%OL_END_REPORT"

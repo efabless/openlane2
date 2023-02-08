@@ -83,6 +83,16 @@ class DesignFormat(Enum):
         "gds",
         "GDSII Stream",
     )
+    MAG_GDS = (
+        "mag_gds",
+        "magic.gds",
+        "GDSII Stream (Magic)",
+    )
+    KLAYOUT_GDS = (
+        "klayout_gds",
+        "klayout.gds",
+        "GDSII Stream (KLayout)",
+    )
 
 
 DesignFormatByID: Dict[str, DesignFormat] = {

@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from enum import Enum
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable
+from .variable import Path, Variable, StringEnum
 from .config import Config
 
 flow_variables = [
@@ -128,7 +127,7 @@ flow_variables = [
     ),
     Variable(
         "SYNTH_STRATEGY",
-        Enum(
+        StringEnum(
             "SYNTH_STRATEGY",
             [
                 "AREA 0",
@@ -249,7 +248,7 @@ flow_variables = [
     ),
     Variable(
         "FP_SIZING",
-        Enum("FP_SIZING", ["relative", "absolute"]),
+        StringEnum("FP_SIZING", ["relative", "absolute"]),
         "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
         default="relative",
     ),
@@ -267,7 +266,7 @@ flow_variables = [
     ),
     Variable(
         "FP_IO_MODE",
-        Enum("FP_IO_MODE", ["matching", "random_equidistant"]),
+        StringEnum("FP_IO_MODE", ["matching", "random_equidistant"]),
         "Decides the mode of the random IO placement option.",
         default="random_equidistant",
     ),
@@ -1068,10 +1067,11 @@ flow_variables = [
         default=True,
     ),
     Variable(
-        "RUN_KLAYOUT",
+        "RUN_KLAYOUT_STREAMOUT",
         bool,
-        "Enables running KLayout and GDSII streaming.",
+        "Enables streaming GDS-II using KLayout.",
         default=True,
+        deprecated_names=["RUN_KLAYOUT"],
     ),
     Variable(
         "RUN_KLAYOUT_DRC",
@@ -1142,7 +1142,7 @@ flow_variables = [
     ),
     Variable(
         "PRIMARY_SIGNOFF_TOOL",
-        Enum("PRIMARY_SIGNOFF_TOOL", ["magic", "klayout"]),
+        StringEnum("PRIMARY_SIGNOFF_TOOL", ["magic", "klayout"]),
         "Specify the primary signoff tool for taping out.",
         default="magic",
     ),

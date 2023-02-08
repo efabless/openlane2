@@ -31,6 +31,9 @@ class Path(UserString, os.PathLike):
     def __fspath__(self) -> str:
         return str(self)
 
+    def exists(self) -> bool:
+        return os.path.exists(self)
+
 
 class ConfigEncoder(json.JSONEncoder):
     def default(self, o):

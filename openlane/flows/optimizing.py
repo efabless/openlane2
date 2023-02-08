@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import subprocess
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from concurrent.futures import Future
 
 import slugify
@@ -41,11 +41,9 @@ class Optimizing(Flow):
 
     def run(
         self,
-        with_initial_state: Optional[State] = None,
+        initial_state: State,
         **kwargs,
     ) -> Tuple[List[State], List[Step]]:
-        initial_state = with_initial_state or State()
-
         state_list = [initial_state]
         step_list: List[Step] = []
 

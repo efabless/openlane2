@@ -183,11 +183,13 @@ class Flow(ABC):
         self.tmp_dir = os.path.join(self.run_dir, "tmp")
         self.toolbox = Toolbox(self.tmp_dir)
 
+        initial_state = State()
+
         try:
             entries = os.listdir(self.run_dir)
             if len(entries) == 0:
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
-            log(f"Using existing run at '{tag}' with the '{self.get_name()}.'")
+            log(f"Using existing run at '{tag}' with the '{self.get_name()}' flow.")
 
             # Extract maximum step ordinal
             for entry in entries:
@@ -214,7 +216,7 @@ class Flow(ABC):
                         latest_json = state_out_json
 
                 if latest_json is not None:
-                    with_initial_state = State.loads(
+                    initial_state = State.loads(
                         open(latest_json, encoding="utf8").read()
                     )
 
@@ -244,7 +246,7 @@ class Flow(ABC):
             f"{self.get_name()}",
         )
         result = self.run(
-            with_initial_state=with_initial_state,
+            initial_state=initial_state,
             **kwargs,
         )
         self.progress.stop()
@@ -263,7 +265,7 @@ class Flow(ABC):
     @abstractmethod
     def run(
         self,
-        with_initial_state: Optional[State] = None,
+        initial_state: State,
         **kwargs,
     ) -> Tuple[List[State], List[Step]]:
         """
@@ -273,8 +275,7 @@ class Flow(ABC):
         This method is considered private and should only be called by Flow or
         its subclasses.
 
-        :param with_initial_state: An optional initial state object to use.
-            If not provided, a default empty state is created.
+        :param initial_state: An initial state object to use.
         :returns: `(success, state_list)`
         """
         pass

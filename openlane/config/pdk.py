@@ -116,17 +116,27 @@ pdk_variables = [
     Variable(
         "KLAYOUT_TECH",
         Optional[Path],
-        "A path to the KLayout layer technology file.",
+        "A path to the KLayout layer technology (.lyt) file.",
     ),
     Variable(
         "KLAYOUT_PROPERTIES",
         Optional[Path],
-        "A path to the KLayout layer properties file.",
+        "A path to the KLayout layer properties (.lyp) file.",
     ),
     Variable(
         "KLAYOUT_DRC_TECH_SCRIPT",
         Optional[Path],
         "A path to a KLayout DRC tech script.",
+    ),
+    Variable(
+        "KLAYOUT_DEF_LAYER_MAP",
+        Optional[Path],
+        "A path to the KLayout LEF/DEF layer mapping (.map) file.",
+    ),
+    Variable(
+        "KLAYOUT_XOR_IGNORE_LAYERS",
+        Optional[List[str]],
+        "KLayout layers to ignore during XOR operations.",
     ),
     # Timing and Power
     Variable(

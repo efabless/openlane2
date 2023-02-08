@@ -394,6 +394,9 @@ class TclStep(Step):
             raise
 
         for output in self.outputs:
-            state[output] = Path(env[f"SAVE_{output.name}"])
+            path = Path(env[f"SAVE_{output.name}"])
+            if not path.exists():
+                continue
+            state[output] = path
 
         return state

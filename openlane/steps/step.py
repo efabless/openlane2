@@ -47,6 +47,10 @@ class MissingInputError(ValueError):
     pass
 
 
+class StepError(ValueError):
+    pass
+
+
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 
@@ -332,6 +336,10 @@ class Step(ABC):
             log_file = open(log_to, "w")
 
         cmd_str = [str(arg) for arg in cmd]
+
+        with open(os.path.join(self.step_dir, "COMMANDS"), "a+") as f:
+            f.write(" ".join(cmd_str))
+            f.write("\n")
 
         kwargs = kwargs.copy()
         if "stdin" not in kwargs:

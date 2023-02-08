@@ -52,7 +52,7 @@ class SequentialFlow(Flow):
 
     def run(
         self,
-        with_initial_state: Optional[State] = None,
+        initial_state: State,
         frm: Optional[str] = None,
         to: Optional[str] = None,
         **kwargs,
@@ -60,7 +60,6 @@ class SequentialFlow(Flow):
         step_count = len(self.Steps)
         self.set_max_stage_count(step_count)
 
-        initial_state = with_initial_state or State()
         state_list = [initial_state]
         step_list = []
 

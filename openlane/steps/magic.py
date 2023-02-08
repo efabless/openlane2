@@ -47,16 +47,21 @@ class MagicStep(TclStep):
 
 @Step.factory.register("Magic.StreamOut")
 class StreamOut(MagicStep):
-    name = "GDS-II Stream Out"
+    id = "magic-streamout"
+    name = "GDS-II Stream Out (Magic)"
     flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
     inputs = [DesignFormat.DEF]
-    outputs = [
-        DesignFormat.GDS,
-    ]
+    outputs = [DesignFormat.GDS, DesignFormat.MAG_GDS]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+        if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
+            state_out[DesignFormat.GDS] = state_out[DesignFormat.MAG_GDS]
+        return state_out
 
 
 @Step.factory.register("Magic.DRC")

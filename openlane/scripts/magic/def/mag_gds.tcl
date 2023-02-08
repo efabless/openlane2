@@ -92,7 +92,7 @@ if { $::env(MAGIC_GENERATE_GDS) } {
 		gds abstract allow
 	}
 
-	gds write $::env(SAVE_GDS)
+	gds write $::env(SAVE_MAG_GDS)
 	puts "\[INFO\] GDS Write Complete"
 }
 

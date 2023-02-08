@@ -19,4 +19,5 @@ from . import openroad as OpenROAD
 from . import magic as Magic
 from . import odb as Odb
 from . import netgen as Netgen
+from . import klayout as KLayout
 from . import misc as Misc

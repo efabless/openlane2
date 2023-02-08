@@ -16,13 +16,17 @@ from enum import Enum
 from typing import get_origin, get_args
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable
+from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable, Sequence
 
 from .config import Config, Path
 from .resolve import process_string
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
+
+
+def StringEnum(name: str, values: Sequence[str]):
+    return Enum(name, [(value, value) for value in values])
 
 
 @dataclass

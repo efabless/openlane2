@@ -18,6 +18,7 @@ from ..steps import (
     OpenROAD,
     Magic,
     Misc,
+    KLayout,
     Odb,
     Netgen,
 )
@@ -54,6 +55,8 @@ class Classic(SequentialFlow):
         OpenROAD.ParasiticsSTA,
         OpenROAD.IRDropReport,
         Magic.StreamOut,
+        KLayout.StreamOut,
+        KLayout.XOR,
         Magic.DRC,
         Magic.SpiceExtraction,
         Netgen.LVS,
