@@ -108,7 +108,7 @@ def cli(
     # Enforce Mutual Exclusion
     if run_tag is not None and last_run:
         err("--run-tag and --last-run are mutually exclusive.")
-        exit(-1)
+        exit(1)
 
     try:
         config_in, design_dir = ConfigBuilder.load(
@@ -127,7 +127,11 @@ def cli(
             for warning in e.warnings:
                 warn(warning)
         log("OpenLane will now quit. Please check your configuration.")
-        exit(-1)
+        exit(1)
+    except ValueError as e:
+        err(e)
+        log("OpenLane will now quit.")
+        exit(1)
 
     flow_description = flow_name or config_in.meta.flow
 
@@ -142,7 +146,7 @@ def cli(
             err(
                 f"Unknown flow '{flow_description}' specified in configuration's 'meta' object."
             )
-            exit(-1)
+            exit(1)
 
     flow = TargetFlow(config_in, design_dir)
     initial_state: Optional[State] = None
@@ -162,7 +166,7 @@ def cli(
 
         if latest_run is None:
             err("--last-run specified, but no runs found.")
-            exit(-1)
+            exit(1)
 
         run_tag = os.path.basename(latest_run)
 
@@ -176,7 +180,7 @@ def cli(
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
         err("OpenLane will now quit.")
-        exit(-1)
+        exit(1)
     except FlowError as e:
         err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")

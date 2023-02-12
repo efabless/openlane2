@@ -357,7 +357,7 @@ def padringer(
             working_cfg,
             f"Modify it and re-run this program with the '-cfg {working_cfg}' option",
         )
-        sys.exit()
+        exit(0)
 
     print("Applying pad placements to the design DEF")
 

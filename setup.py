@@ -32,6 +32,7 @@ setup(
     author_email="donn@efabless.com",
     install_requires=requirements,
     classifiers=[
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Intended Audience :: Developers",
         "Operating System :: POSIX :: Linux",

@@ -55,7 +55,7 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
         print(
             f"There are more pins/virtual_pins: {total_pin_count}, than places to put them: {tracks}. Try making your floorplan area larger."
         )
-        sys.exit(1)
+        exit(1)
     elif total_pin_count == tracks:
         return possible_locations, side_pin_placement  # All positions.
     elif total_pin_count == 0:
@@ -147,9 +147,8 @@ def bus_keys(enum):
 
 @click.command()
 @click.option(
-    "-u",
-    "--unmatched-error",
-    is_flag=True,
+    "-u/-U",
+    "--unmatched-error/--ignore-unmatched",
     default=False,
     help="Treat unmatched pins as error",
 )
@@ -264,7 +263,7 @@ def io_place(
 
                 if len(line) > 1:
                     print("Only one entry allowed per line.")
-                    sys.exit(1)
+                    exit(1)
 
                 token = line[0]
 
@@ -286,7 +285,7 @@ def io_place(
                         "Use #BUS_SORT to group 'bus bits' by index.",
                         "Please make sure you have set a valid side first before listing pins",
                     )
-                    sys.exit(1)
+                    exit(1)
                 elif token == "#BUS_SORT":
                     bus_sort_flag = True
                 else:
@@ -326,7 +325,7 @@ def io_place(
                     pin_placement[side].append(virtual_pins_count)
                 except ValueError:
                     print("You provided invalid values for virtual pins")
-                    sys.exit(1)
+                    exit(1)
             else:
                 regex += "$"  # anchor
                 for bterm in bterms:
@@ -339,7 +338,7 @@ def io_place(
                             print(
                                 f"Error: Multiple regexes matched {pin_name}. Those are {bterm_regex_map[bterm]} and {regex}"
                             )
-                            sys.exit(os.EX_DATAERR)
+                            exit(1)
                         bterm_regex_map[bterm] = regex
                         pin_placement[side].append(bterm)  # to maintain the order
 
@@ -350,7 +349,7 @@ def io_place(
         print("Those are:", [bterm.getName() for bterm in unmatched_bterms])
         if unmatched_error_flag:
             print("Treating unmatched pins as errors. Exiting..")
-            sys.exit(1)
+            exit(1)
         else:
             print("Assigning random sides to the above pins")
             for bterm in unmatched_bterms:
@@ -399,8 +398,10 @@ def io_place(
             pin_name = bterm.getName()
             pins = bterm.getBPins()
             if len(pins) > 0:
-                print(f"Warning: {pin_name} already has shapes. Modifying them")
-                assert len(pins) == 1
+                # print(f"Warning: {pin_name} already has shapes. Modifying them")
+                assert (
+                    len(pins) == 1
+                ), f"{pin_name} has multiple pins already placed. This is a fatal error."
                 pin_bpin = pins[0]
             else:
                 pin_bpin = odb.dbBPin_create(bterm)

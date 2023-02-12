@@ -15,6 +15,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict
 
 from .variable import Path, Variable, StringEnum
+from .pdk import PDKVariablesByID
 from .config import Config
 
 flow_variables = [
@@ -446,7 +447,7 @@ flow_variables = [
     ),
     Variable(
         "FP_PDN_VERTICAL_HALO",
-        str,
+        Decimal,
         "Sets the vertical halo around the macros during power grid insertion.",
         default="expr::$FP_PDN_HORIZONTAL_HALO",
         doc_units="µm",
@@ -750,15 +751,13 @@ flow_variables = [
     ),
     Variable(
         "RT_CLOCK_MIN_LAYER",
-        str,
+        Optional[str],
         "The name of lowest layer to be used in routing the clock net.",
-        default="ref::$RT_MIN_LAYER",
     ),
     Variable(
         "RT_CLOCK_MAX_LAYER",
-        str,
+        Optional[str],
         "The name of highest layer to be used in routing the clock net.",
-        default="ref::$RT_MAX_LAYER",
     ),
     Variable(
         "GRT_RESIZER_MAX_WIRE_LENGTH",
@@ -878,20 +877,19 @@ flow_variables = [
     Variable(
         "GRT_REPAIR_ANTENNAE",
         bool,
-        "Attempt to repair antenna violations after global routing.",
-        default=False,
+        "Specifies the insertion strategy of diodes to be used in the flow.",
+        default=True,
+        deprecated_names=[("DIODE_INSERTION_STRATEGY", lambda x: x in [3, 6])],
     ),
     Variable(
         "DRT_MIN_LAYER",
         Optional[str],
         "An optional override to the lowest layer used in detailed routing. For example, in sky130, you may want global routing to avoid li1, but let detailed routing use li1 if it has to.",
-        default="ref::$RT_MIN_LAYER",
     ),
     Variable(
         "DRT_MAX_LAYER",
         Optional[str],
         "An optional override to the highest layer used in detailed routing.",
-        default="ref::$RT_MAX_LAYER",
     ),
     Variable(
         "DRT_OPT_ITERS",
@@ -909,7 +907,6 @@ flow_variables = [
         "RCX_SDC_FILE",
         Optional[Path],
         "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
-        default="ref::$BASE_SDC_FILE",
     ),
     Variable(
         "MAGIC_PAD",
@@ -1171,12 +1168,6 @@ flow_variables = [
         default=1,
     ),
     Variable(
-        "DIODE_INSERTION_STRATEGY",
-        int,
-        "Specifies the insertion strategy of diodes to be used in the flow.",
-        default=3,
-    ),
-    Variable(
         "CHECK_UNMAPPED_CELLS",
         bool,
         "Checks if there are unmapped cells after synthesis and aborts if any was found.",
@@ -1224,6 +1215,10 @@ FlowVariablesByID: Dict[str, Variable] = {
     variable.name: variable for variable in flow_variables
 }
 
+removed_flow_variables: Dict[str, str] = {
+    "PL_RANDOM_GLB_PLACEMENT": "PL_RANDOM_GLB_PLACEMENT has been removed: the random global placer no longer yields a tangible benefit with newer versions of OpenROAD."
+}
+
 
 def validate_user_config(
     config: Config,
@@ -1234,5 +1229,7 @@ def validate_user_config(
         config,
         ignore_keys,
         flow_variables,
+        alt=PDKVariablesByID,
+        removed=removed_flow_variables,
         processed_so_far=processed_so_far,
     )

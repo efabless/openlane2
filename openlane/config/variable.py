@@ -155,6 +155,8 @@ class Variable:
         config: Config,
         ignore_keys: List[str],
         variables: List["Variable"],
+        removed: Dict[str, str],
+        alt: Dict[str, "Variable"] = {},
         processed_so_far: Optional[Config] = None,
     ) -> Tuple[Config, List[str], List[str]]:
         processed = Config()
@@ -189,7 +191,23 @@ class Variable:
                 errors.append(str(e))
             processed[variable.name] = value_processed
         for key in sorted(mutable.keys()):
-            if key not in ignore_keys and "_OPT" not in key:
-                warnings.append(f"Unknown key {key} provided.")
+            if key in ignore_keys:
+                continue
+            if variable_alt := alt.get(key):
+                # Handle PDK variables being overridden by config files
+                exists, value = mutable.extract(variable_alt.name)
+                try:
+                    value_processed = variable_alt.process(
+                        value,
+                        values_so_far=processed.data,
+                    )
+                except ValueError as e:
+                    errors.append(str(e))
+                processed[variable_alt.name] = value_processed
+            else:
+                if key in removed:
+                    warnings.append(removed[key])
+                elif "_OPT" not in key:
+                    warnings.append(f"Unknown key {key} provided.")
 
         return (processed, warnings, errors)

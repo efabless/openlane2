@@ -62,9 +62,13 @@ class OdbpyStep(Step):
 
         env["OPENLANE_ROOT"] = get_openlane_root()
 
+        log_filename = os.path.splitext(os.path.basename(self.get_script_path()))[0]
+        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
+
         self.run_subprocess(
             command,
             env=env,
+            log_to=log_path,
             **kwargs,
         )
 
@@ -98,6 +102,11 @@ class OdbpyStep(Step):
 
 @Step.factory.register("Odb.ManualMacro")
 class ManualMacroPlacement(OdbpyStep):
+    name = "Manual Macro Placement"
+
+    flow_control_variable = "MACRO_PLACEMENT_CFG"
+    flow_control_msg = "No macros configured, skipping…"
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "manual_macro_place.py")
 
@@ -108,8 +117,46 @@ class ManualMacroPlacement(OdbpyStep):
             "--fixed",
         ]
 
-    def run(self, **kwargs) -> State:
-        if self.config.get("MACRO_PLACEMENT_CFG") is None:
-            log("No macros found, skipping…")
-            return Step.run(self, **kwargs)
-        return super().run(**kwargs)
+
+@Step.factory.register("Odb.CustomIOPlacement")
+class CustomIOPlacement(OdbpyStep):
+    id = "custom_io_placement"
+    name = "Custom I/O Placement"
+    long_name = "Custom I/O Pin Placement Script"
+
+    flow_control_variable = "FP_PIN_ORDER_CFG"
+    flow_control_msg = "No custom floorplan file configured, skipping…"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "io_place.py")
+
+    def get_command(self) -> List[str]:
+
+        length = max(
+            self.config["FP_IO_VLENGTH"],
+            self.config["FP_IO_HLENGTH"],
+        )
+
+        return super().get_command() + [
+            "--config",
+            self.config["FP_PIN_ORDER_CFG"],
+            "--hor-layer",
+            self.config["FP_IO_HLAYER"],
+            "--ver-layer",
+            self.config["FP_IO_VLAYER"],
+            "--hor-width-mult",
+            str(self.config["FP_IO_VTHICKNESS_MULT"]),
+            "--ver-width-mult",
+            str(self.config["FP_IO_HTHICKNESS_MULT"]),
+            "--hor-extension",
+            str(self.config["FP_IO_HEXTEND"]),
+            "--ver-extension",
+            str(self.config["FP_IO_VEXTEND"]),
+            "--length",
+            str(length),
+            (
+                "--unmatched-error"
+                if self.config["QUIT_ON_UNMATCHED_IO"]
+                else "--ignore-unmatched"
+            ),
+        ]

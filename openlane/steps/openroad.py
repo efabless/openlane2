@@ -21,7 +21,7 @@ from .step import Step
 from .tclstep import TclStep
 from .state import State
 from .design_format import DesignFormat
-from ..common import get_script_dir, log
+from ..common import get_script_dir, log, warn
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -70,7 +70,6 @@ class OpenROADStep(TclStep):
     outputs = [
         DesignFormat.ODB,
         DesignFormat.DEF,
-        DesignFormat.SDF,
         DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
@@ -167,6 +166,13 @@ class IOPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
+    def run(self, **kwargs) -> State:
+        if self.config["FP_PIN_ORDER_CFG"] is not None:
+            # Skip - Step just checks and copies
+            return Step.run(self, **kwargs)
+
+        return super().run(**kwargs)
+
 
 @Step.factory.register("OpenROAD.TapDecapInsertion")
 class TapDecapInsertion(OpenROADStep):
@@ -223,6 +229,38 @@ class GlobalRouting(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        antennae_rpt_path = os.path.join(self.step_dir, "antennae.rpt")
+        antennae_rpt = open(antennae_rpt_path).read()
+        nets = get_antenna_nets(antennae_rpt)
+
+        antennae_report_post_fix_path = os.path.join(
+            self.step_dir, "antennae_post_fix.rpt"
+        )
+        if os.path.exists(antennae_report_post_fix_path):
+            net_count_before = len(nets)
+
+            antennae_rpt = open(antennae_rpt_path).read()
+            nets = get_antenna_nets(antennae_rpt)
+            net_count_after = len(nets)
+
+            if net_count_before == net_count_after:
+                log("Antenna count unchanged after OpenROAD antenna fixer.")
+            elif net_count_after > net_count_before:
+                warn(
+                    "Inexplicably, the OpenROAD antenna fixer has generated more antennae. The flow may continue, but you may want to report a bug."
+                )
+            else:
+                log(
+                    f"Antenna count reduced using OpenROAD antenna fixer: {net_count_before} -> {net_count_after}"
+                )
+
+        state_out.metrics["antenna_nets"] = nets
+
+        return state_out
 
 
 @Step.factory.register("OpenROAD.DetailedRouting")
@@ -287,7 +325,7 @@ class ParasiticsSTA(OpenROADStep):
     long_name = "Parasitics-based Static Timing Analysis"
 
     inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
-    outputs = [DesignFormat.LIB]
+    outputs = [DesignFormat.LIB, DesignFormat.SDF]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
@@ -299,7 +337,7 @@ class ParasiticsSTA(OpenROADStep):
 
 
 # Antennae
-def parse_antenna_report(report: str) -> List[str]:
+def get_antenna_nets(report: str) -> List[str]:
     pattern = re.compile(r"Net:\s*(\w+)")
     antenna_nets = []
 
@@ -328,7 +366,7 @@ class CheckAntennae(OpenROADStep):
 
         antennae_rpt = open(os.path.join(self.step_dir, "antennae.rpt")).read()
 
-        state_out.metrics["antenna_nets"] = parse_antenna_report(antennae_rpt)
+        state_out.metrics["antenna_nets"] = get_antenna_nets(antennae_rpt)
 
         return state_out
 
@@ -350,7 +388,7 @@ class FixAntennae(OpenROADStep):
 
         before = state_out.metrics["antenna_nets"]
 
-        after = parse_antenna_report(antennae_rpt)
+        after = get_antenna_nets(antennae_rpt)
 
         log(f"Reduced antenna violations from {len(before)} -> {len(after)}.")
 

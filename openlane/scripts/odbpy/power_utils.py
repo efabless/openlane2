@@ -89,7 +89,7 @@ def write_powered_def(
             "No power ports found at the top-level. Make sure that they exist and have the USE POWER|GROUND property or they match the arguments specified with --power-port and --ground-port.",
             file=sys.stderr,
         )
-        exit(os.EX_DATAERR)
+        exit(1)
 
     vdd_net = None
     gnd_net = None
@@ -107,7 +107,7 @@ def write_powered_def(
         print(f"Ground port {ground_port} not found in design.", file=sys.stderr)
         nets_not_found = True
     if nets_not_found:
-        exit(os.EX_DATAERR)
+        exit(1)
 
     print(f"Found default power net '{vdd_net.getName()}'")
     print(f"Found default ground net '{gnd_net.getName()}'")
@@ -170,7 +170,7 @@ def write_powered_def(
                     err_msg,
                     file=sys.stderr,
                 )
-                exit(os.EX_DATAERR)
+                exit(1)
 
         if len(VDD_ITERMS) > 2:
             print(f"[WARN] {cell_name} has {len(VDD_ITERMS)} power pins.")
@@ -242,19 +242,19 @@ def write_powered_def(
                         f"Instance {inst_name} was not found in the original netlist.",
                         file=sys.stderr,
                     )
-                    exit(os.EX_DATAERR)
+                    exit(1)
 
                 original_iterm = original_inst.findITerm(pin_name)
                 if original_iterm is None:
                     print(
                         f"Pin {inst_name}/{pin_name} not found in the original netlist."
                     )
-                    exit(os.EX_DATAERR)
+                    exit(1)
 
                 original_port = find_power_ground_port(port_name, VDD_PORTS + GND_PORTS)
                 if original_port is None:
                     print(f"Port {original_port} not found in the original netlist.")
-                    exit(os.EX_DATAERR)
+                    exit(1)
 
                 original_iterm.connect(original_port.getNet())
                 print(f"Connected {port_name} to {inst_name}/{pin_name}.")
@@ -596,7 +596,7 @@ def power_route(
             point_forward = odb.Point(x - distance, y)
         else:
             print("Unknown orientation")
-            sys.exit(1)
+            exit(1)
         return point_forward
 
     def transformRect(rect, orient):
@@ -1136,7 +1136,7 @@ def power_route(
         print("No routes created on the following nets:")
         print(uncovered_nets)
         print("Make sure the pads to be connected are facing the core rings")
-        sys.exit(1)
+        exit(1)
 
     # OUTPUT
     odb.write_lef(odb.dbLib_getLib(reader.db, 1), f"{output}.lef")

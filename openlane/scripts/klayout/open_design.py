@@ -105,4 +105,4 @@ try:
     exit(0)
 except Exception as e:
     print(e, file=sys.stderr)
-    exit(-1)
+    exit(1)

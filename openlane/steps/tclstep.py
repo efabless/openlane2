@@ -37,7 +37,7 @@ def create_reproducible(
     cmd: Sequence[Union[str, os.PathLike]],
     env_in: Dict[str, str],
     tcl_script: str,
-    verbose: bool = True,
+    verbose: bool = False,
 ) -> str:
     step_dir = os.path.abspath(step_dir)
     run_path = os.path.dirname(step_dir)

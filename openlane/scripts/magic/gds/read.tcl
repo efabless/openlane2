@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 gds read $::env(CURRENT_GDS)
+
 foreach file $::env(CELLS_GDS) {
     gds read $file
 }
+
 if { [info exist ::env(EXTRA_GDS_FILES)] } {
     foreach file $::env(EXTRA_GDS_FILES) {
         gds read $file

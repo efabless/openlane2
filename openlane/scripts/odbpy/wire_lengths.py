@@ -91,7 +91,7 @@ def main(report_out, threshold, fail, human_readable, input_db, reader: OdbReade
     if len(above_threshold) == 0:
         print(f"No wire length surpasses the threshold ({threshold} μm).")
     elif fail:
-        exit(os.EX_DATAERR)
+        exit(1)
 
 
 if __name__ == "__main__":

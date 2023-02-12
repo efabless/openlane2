@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# LEF
 lef read $::env(TECH_LEF)
-if {  [info exist ::env(EXTRA_LEFS)] } {
+if { [info exist ::env(EXTRA_LEFS)] } {
     foreach lef_file $::env(EXTRA_LEFS) {
         lef read $lef_file
     }
 }
 
+# DEF
 set def_read_args [list]
 lappend def_read_args $::env(CURRENT_DEF)
 if { $::env(MAGIC_DEF_NO_BLOCKAGES) } {
@@ -26,6 +29,5 @@ if { $::env(MAGIC_DEF_NO_BLOCKAGES) } {
 if { $::env(MAGIC_DEF_LABELS) } {
     lappend def_read_args -labels
 }
-
 
 def read {*}$def_read_args

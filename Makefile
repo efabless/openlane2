@@ -1,5 +1,4 @@
 all: dist
-
 .PHONY: dist
 dist: venv/created
 	./venv/bin/python3 setup.py sdist bdist_wheel
@@ -18,6 +17,14 @@ test: venv/created
 test-opt: venv/created
 	./venv/bin/python3 -m openlane -f optimizing ./designs/spm/config.json
 
+
+.PHONY: check-license
+check-license: venv/created
+	./venv/bin/python3 -m pip freeze > ./requirements.frz.txt
+	docker run -v `pwd`:/volume \
+		-it --rm pilosus/pip-license-checker \
+		java -jar app.jar \
+		--requirements '/volume/requirements.frz.txt'
 
 venv: venv/created
 venv/created: ./requirements_dev.txt requirements.txt

@@ -406,11 +406,10 @@ def resolve(
 
     for key in implicitly_exposed:
         if exposed_dict.get(key) is None:
-            print(
+            raise ValueError(
                 f"{key} environment variable must be set.",
                 file=sys.stderr,
             )
-            exit(os.EX_USAGE)
 
     resolved = process_config_dict(config_dict, exposed_dict)
     if only_extract_process_info:

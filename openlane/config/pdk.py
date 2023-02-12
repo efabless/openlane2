@@ -539,6 +539,9 @@ def migrate_old_config(config: Config) -> Config:
     return new
 
 
+pdk_removed_variables: Dict[str, str] = {}
+
+
 def validate_pdk_config(
     config: Config,
     ignore_keys: List[str],
@@ -549,5 +552,6 @@ def validate_pdk_config(
         migrated,
         ignore_keys,
         pdk_variables + scl_variables,
+        removed=pdk_removed_variables,
         processed_so_far=processed_so_far,
     )

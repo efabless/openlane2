@@ -112,10 +112,10 @@ def remove_buffers(reader, rx_str):
 
             if len(drivers) > 1:
                 print(f"Net {net_name} is driven by multiple cells.")
-                exit(os.EX_DATAERR)
+                exit(1)
             elif len(drivers) == 0:
                 print(f"Net {net_name} is not driven by any cell..")
-                exit(os.EX_DATAERR)
+                exit(1)
 
             buffer = drivers[0]
             buffer_name = drivers[0].getName()

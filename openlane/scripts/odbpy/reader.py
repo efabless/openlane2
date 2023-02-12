@@ -95,7 +95,7 @@ def click_odb(function):
             print(
                 "Error: Invocation was not updated to use an odb file.", file=sys.stderr
             )
-            exit(os.EX_USAGE)
+            exit(1)
 
         function(**kwargs)
 

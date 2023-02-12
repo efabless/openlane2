@@ -13,6 +13,7 @@ build/
 /venv
 *.egg-info/
 dist/
+requirements.frz.txt
 
 # Nix
 result

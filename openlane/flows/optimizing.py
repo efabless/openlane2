@@ -17,10 +17,8 @@ import subprocess
 from typing import List, Tuple
 from concurrent.futures import Future
 
-import slugify
-
 from .flow import Flow
-from ..common import success, log
+from ..common import success, log, slugify
 from ..steps import State, Yosys, OpenROAD, Step
 from ..config import Config
 
@@ -58,7 +56,7 @@ class Optimizing(Flow):
 
             synth_step = Yosys.Synthesis(
                 config,
-                id=slugify.slugify(f"Synthesis {strategy}"),
+                id=slugify(f"Synthesis {strategy}"),
                 silent=True,
             )
             synth_future = self.run_step_async(synth_step)
@@ -67,7 +65,7 @@ class Optimizing(Flow):
             sta_step = OpenROAD.NetlistSTA(
                 config,
                 state_in=synth_future,
-                id=slugify.slugify(f"STA {strategy}"),
+                id=slugify(f"STA {strategy}"),
                 silent=True,
             )
             step_list.append(sta_step)

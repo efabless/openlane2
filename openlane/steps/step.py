@@ -32,13 +32,11 @@ from typing import (
     Type,
 )
 
-import slugify
-
 from .state import State
+from .design_format import DesignFormat
 from ..utils import Toolbox
 from ..config import Config
-from .design_format import DesignFormat
-from ..common import mkdirp, console, err, rule, log
+from ..common import mkdirp, console, err, rule, log, slugify
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -72,6 +70,7 @@ class Step(ABC):
             of sequential flows.
 
             If not set by a subclass, the Python name of the Step class is used.
+
         `id`: A valid filesystem name for the step, user primarily in step
             directories.
 
@@ -83,10 +82,13 @@ class Step(ABC):
 
             If not set by a subclass, `.name` is used.
 
-        `flow_control_variable`: An optional key for a boolean configuration variable.
+        `flow_control_variable`: An optional key for a configuration variable.
 
-            If it exists, if this variable is configured to be false,
-            the Step is skipped.
+            If it exists, if this variable is "False" or "None", the step is skipped.
+
+        `flow_control_msg`: If `flow_control_variable` causes the step to be
+            skipped and this variable is set, the value of this variable is
+            printed.
     """
 
     inputs: List[DesignFormat] = []
@@ -97,6 +99,7 @@ class Step(ABC):
     long_name: str
 
     flow_control_variable: ClassVar[Optional[str]] = None
+    flow_control_msg: ClassVar[Optional[str]] = None
 
     def __init__(
         self,
@@ -153,7 +156,7 @@ class Step(ABC):
         if id is not None:
             self.id = id
         elif not hasattr(self, "id"):
-            self.id = slugify.slugify(self.name)
+            self.id = slugify(self.name)
 
         if long_name is not None:
             self.long_name = long_name
@@ -266,8 +269,22 @@ class Step(ABC):
 
         if self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
-            if not flow_control_value:
-                log(f"`{self.flow_control_variable}` is set to false: skipping…")
+            if isinstance(flow_control_value, bool):
+                if not flow_control_value:
+                    if self.flow_control_msg is not None:
+                        log(self.flow_control_msg)
+                    else:
+                        log(
+                            f"`{self.flow_control_variable}` is set to False: skipping…"
+                        )
+                        return self.state_in.copy()
+            elif flow_control_value is None:
+                if self.flow_control_msg is not None:
+                    log(self.flow_control_msg)
+                else:
+                    log(
+                        f"Required variable `{self.flow_control_variable}` is set to null: skipping…"
+                    )
                 return self.state_in.copy()
 
         mkdirp(self.step_dir)

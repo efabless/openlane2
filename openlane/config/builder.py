@@ -105,6 +105,7 @@ class ConfigBuilder(object):
         pdk: str,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
+        full_pdk_warnings: bool = False,
     ) -> "Config":
         raw = json.loads(json_str, cls=DecimalDecoder)
 
@@ -158,11 +159,12 @@ class ConfigBuilder(object):
             raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
 
         if len(pdk_warnings) > 0:
-            log(
-                "Loading the PDK configuration files has generated the following warnings:"
-            )
-        for warning in pdk_warnings:
-            warn(warning)
+            if full_pdk_warnings:
+                log(
+                    "Loading the PDK configuration files has generated the following warnings:"
+                )
+                for warning in pdk_warnings:
+                    warn(warning)
 
         design_config = Config(
             **resolve(
@@ -210,6 +212,7 @@ class ConfigBuilder(object):
         pdk: str,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
+        full_pdk_warnings: bool = False,
     ) -> "Config":
         warn(
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
@@ -268,11 +271,12 @@ class ConfigBuilder(object):
             raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
 
         if len(pdk_warnings) > 0:
-            log(
-                "Loading the PDK configuration files has generated the following warnings:"
-            )
-        for warning in pdk_warnings:
-            warn(warning)
+            if full_pdk_warnings:
+                log(
+                    "Loading the PDK configuration files has generated the following warnings:"
+                )
+                for warning in pdk_warnings:
+                    warn(warning)
 
         tcl_vars_in[Keys.pdk] = pdk
         tcl_vars_in[Keys.scl] = scl

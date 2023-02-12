@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import subprocess
 from typing import List, Tuple
 
@@ -69,6 +70,42 @@ class OpenInKLayout(Flow):
             ]
             + lefs
         )
+        self.end_stage()
+
+        return ([], [])
+
+
+@Flow.factory.register()
+class OpenInOpenROAD(Flow):
+    """
+    This 'flow' actually just opens the ODB from the initial state object
+    in the OpenROAD GUI.
+
+    Intended for use with run tags that have already been run with
+    another flow.
+    """
+
+    name = "Opening in OpenROAD"
+
+    def run(
+        self,
+        initial_state: State,
+        **kwargs,
+    ) -> Tuple[List[State], List[Step]]:
+        self.set_max_stage_count(1)
+
+        with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
+            f.write(f"read_db \"{initial_state['odb']}\"")
+            f.flush()
+
+            subprocess.check_call(
+                [
+                    "openroad",
+                    "-no_splash",
+                    "-gui",
+                    f.name,
+                ]
+            )
         self.end_stage()
 
         return ([], [])

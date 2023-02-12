@@ -8,4 +8,3 @@ types-requests
 types-PyYAML
 types-setuptools
 types-attrs
-types-python-slugify
