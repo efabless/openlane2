@@ -39,14 +39,14 @@ if { [info exists ::env(CURRENT_SPEF)] } {
     read_spef $::env(CURRENT_SPEF)
 }
 
-puts "%OL_CREATE_REPORT min.rpt"
+puts "%OL_CREATE_REPORT sta_min.rpt"
 puts "==========================================================================="
 puts "report_checks -path_delay min (Hold)"
 puts "============================================================================"
 report_checks -path_delay min -fields {slew cap input nets fanout} -format full_clock_expanded -group_count 5
 puts "%OL_END_REPORT"
 
-puts "%OL_CREATE_REPORT max.rpt"
+puts "%OL_CREATE_REPORT sta_max.rpt"
 puts "==========================================================================="
 puts "report_checks -path_delay max (Setup)"
 puts "============================================================================"
@@ -54,7 +54,7 @@ report_checks -path_delay max -fields {slew cap input nets fanout} -format full_
 puts "%OL_END_REPORT"
 
 
-puts "%OL_CREATE_REPORT checks.rpt"
+puts "%OL_CREATE_REPORT sta_checks.rpt"
 puts "==========================================================================="
 puts "report_checks -unconstrained"
 puts "============================================================================"
@@ -66,14 +66,14 @@ puts "==========================================================================
 report_checks -slack_max -0.01 -fields {slew cap input nets fanout} -format full_clock_expanded
 puts "%OL_END_REPORT"
 
-puts "%OL_CREATE_REPORT parasitics_annotation.rpt"
+puts "%OL_CREATE_REPORT sta_parasitics_annotation.rpt"
 puts "==========================================================================="
 puts "report_parasitic_annotation -report_unannotated"
 puts "============================================================================"
 report_parasitic_annotation -report_unannotated
 puts "%OL_END_REPORT"
 
-puts "%OL_CREATE_REPORT slew.rpt"
+puts "%OL_CREATE_REPORT sta_slew.rpt"
 puts "==========================================================================="
 puts " report_check_types -max_slew -max_cap -max_fanout -violators"
 puts "============================================================================"

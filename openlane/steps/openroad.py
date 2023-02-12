@@ -90,7 +90,7 @@ class OpenROADStep(TclStep):
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
         in the environment variable `LIB_PNR`.
 
-        2. After the `super()` call: Processes the `metrics.json` file and
+        2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
         """
         kwargs, env = self.extract_env(kwargs)
@@ -105,7 +105,7 @@ class OpenROADStep(TclStep):
 
         state_out = super().run(env=env, **kwargs)
 
-        metrics_path = os.path.join(self.step_dir, "metrics.json")
+        metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
@@ -114,7 +114,7 @@ class OpenROADStep(TclStep):
         return state_out
 
     def get_command(self) -> List[str]:
-        metrics_path = os.path.join(self.step_dir, "metrics.json")
+        metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
 
 
@@ -233,25 +233,25 @@ class GlobalRouting(OpenROADStep):
     def run(self, **kwargs) -> State:
         state_out = super().run(**kwargs)
 
-        antennae_rpt_path = os.path.join(self.step_dir, "antennae.rpt")
-        antennae_rpt = open(antennae_rpt_path).read()
-        nets = get_antenna_nets(antennae_rpt)
+        antenna_rpt_path = os.path.join(self.step_dir, "antenna.rpt")
+        antenna_rpt = open(antenna_rpt_path).read()
+        nets = get_antenna_nets(antenna_rpt)
 
-        antennae_report_post_fix_path = os.path.join(
-            self.step_dir, "antennae_post_fix.rpt"
+        antenna_report_post_fix_path = os.path.join(
+            self.step_dir, "antenna_post_fix.rpt"
         )
-        if os.path.exists(antennae_report_post_fix_path):
+        if os.path.exists(antenna_report_post_fix_path):
             net_count_before = len(nets)
 
-            antennae_rpt = open(antennae_rpt_path).read()
-            nets = get_antenna_nets(antennae_rpt)
+            antenna_rpt = open(antenna_report_post_fix_path).read()
+            nets = get_antenna_nets(antenna_rpt)
             net_count_after = len(nets)
 
             if net_count_before == net_count_after:
                 log("Antenna count unchanged after OpenROAD antenna fixer.")
             elif net_count_after > net_count_before:
                 warn(
-                    "Inexplicably, the OpenROAD antenna fixer has generated more antennae. The flow may continue, but you may want to report a bug."
+                    "Inexplicably, the OpenROAD antenna fixer has generated more antenna. The flow may continue, but you may want to report a bug."
                 )
             else:
                 log(
@@ -351,46 +351,22 @@ def get_antenna_nets(report: str) -> List[str]:
     return antenna_nets
 
 
-@Step.factory.register("OpenROAD.CheckAntennae")
-class CheckAntennae(OpenROADStep):
-    name = "Check Antennae"
+@Step.factory.register("OpenROAD.CheckAntennas")
+class CheckAntennas(OpenROADStep):
+    name = "Check Antennas"
 
     # default inputs
     outputs = []
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "check_antennae.tcl")
+        return os.path.join(get_script_dir(), "openroad", "check_antennas.tcl")
 
     def run(self, **kwargs) -> State:
         state_out = super().run(**kwargs)
 
-        antennae_rpt = open(os.path.join(self.step_dir, "antennae.rpt")).read()
+        antenna_rpt = open(os.path.join(self.step_dir, "antenna.rpt")).read()
 
-        state_out.metrics["antenna_nets"] = get_antenna_nets(antennae_rpt)
-
-        return state_out
-
-
-@Step.factory.register("OpenROAD.FixAntennae")
-class FixAntennae(OpenROADStep):
-    name = "Fix Antennae"
-
-    # default inputs
-    outputs = []
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "fix_antennae.tcl")
-
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
-
-        antennae_rpt = open(os.path.join(self.step_dir, "antennae.rpt")).read()
-
-        before = state_out.metrics["antenna_nets"]
-
-        after = get_antenna_nets(antennae_rpt)
-
-        log(f"Reduced antenna violations from {len(before)} -> {len(after)}.")
+        state_out.metrics["antenna_nets"] = get_antenna_nets(antenna_rpt)
 
         return state_out
 

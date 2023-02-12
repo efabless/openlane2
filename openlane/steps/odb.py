@@ -72,7 +72,7 @@ class OdbpyStep(Step):
             **kwargs,
         )
 
-        metrics_path = os.path.join(self.step_dir, "metrics.json")
+        metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
@@ -85,7 +85,7 @@ class OdbpyStep(Step):
         return state_out
 
     def get_command(self) -> List[str]:
-        metrics_path = os.path.join(self.step_dir, "metrics.json")
+        metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         return [
             "openroad",
             "-exit",

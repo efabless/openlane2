@@ -24,7 +24,7 @@ if { $::env(GRT_REPAIR_ANTENNAE) } {
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
 # Check Antennae (Pre-Repair)
-puts "%OL_CREATE_REPORT antennae.rpt"
+puts "%OL_CREATE_REPORT antenna.rpt"
 check_antennas -verbose
 puts "%OL_END_REPORT"
 
@@ -33,7 +33,7 @@ if { $::env(GRT_REPAIR_ANTENNAE) } {
     check_placement
 
     # Check Antennae (Post-Repair)
-    puts "%OL_CREATE_REPORT antennae_after.rpt"
+    puts "%OL_CREATE_REPORT antenna_after.rpt"
     check_antennas -verbose
     puts "%OL_END_REPORT"
 }
