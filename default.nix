@@ -52,9 +52,7 @@
   ...
 }:
 
-with pkgs; with python3.pkgs; let slugify = import ./nix/slugify.nix {
-  inherit pkgs;
-}; in buildPythonPackage rec {
+with pkgs; with python3.pkgs; buildPythonPackage rec {
   pname = "openlane";
   name = pname;
 
@@ -87,8 +85,12 @@ with pkgs; with python3.pkgs; let slugify = import ./nix/slugify.nix {
     rich
     requests
     pcpp
-    slugify
     volare
     tkinter
+    furo
+    docutils
+    sphinx
+    sphinx-autobuild
+    myst-parser
   ];
 }

@@ -1,10 +1,22 @@
+# build
 wheel
+
+# ide
+pylance
+
+# lint
 black>=22.3.0,<23
 flake8>=4.0.1
 flake8-no-implicit-concat==0.3.3
 mypy
-pylance
 types-requests
 types-PyYAML
 types-setuptools
 types-attrs
+
+# docs
+furo
+docutils>=0.17
+sphinx>=4
+sphinx-autobuild>=2021.3.14
+myst-parser>=0.18.0
