@@ -27,6 +27,14 @@ from ..common import log, warn
 
 
 class InvalidConfig(ValueError):
+    """
+    An error raised when a configuration under resolution is invalid.
+
+    :param config: A human-readable name for the particular configuration file
+        causing this exception, i.e. whether it's a PDK configuration file or a
+        user configuration file.
+    """
+
     def __init__(
         self,
         config: str,
