@@ -14,6 +14,6 @@
 from . import optimizing
 from . import classic
 from . import misc
-
+from . import nomagic
 from .flow import Flow, FlowException, FlowError
 from .sequential import SequentialFlow

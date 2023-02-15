@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./nix/pkgs.nix {},
+  pkgs ? import ./nix/pkgs.nix,
 
   magic-rev ? "8d08cb2f2f33c79bea478a79543721d476554c78",
   magic-sha256 ? "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=",
@@ -30,12 +30,21 @@
     sha256 = netgen-sha256;
   },
 
+  or-abc-rev ? "95b3543e928640dfa25f9e882e72a090a8883a9c",
+  or-abc-sha256 ? "sha256-U1E9wvEK5G4zo5Pepvsb5q885qSYyixIViweLacO5+U=",
+  or-abc ? import ./nix/or-abc.nix {
+    inherit pkgs;
+    rev = or-abc-rev;
+    sha256 = or-abc-sha256;
+  },
+
   openroad-rev ? "2f330b3bf473a81f751d6388e1c26e6aa831a9c4",
   openroad-sha256 ? "sha256-UhVyK4k+bAxUSf+OnHZMEqXcxGYk9tXZKf+A2zTGFHE=",
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
     rev = openroad-rev;
     sha256 = openroad-sha256;
+    abc-derivation = or-abc;
   },
   
   volare-rev ? "852e565f30f3445c6fa59f15cea85c461e3bdddd",
@@ -47,6 +56,14 @@
     sha256 = volare-sha256;
   }; in import "${src}" {
     inherit pkgs;
+  },
+
+  klayout-rev ? "8bed8bcc3ca19f7e1a810815541977fd16bc1db5",
+  klayout-sha256 ? "sha256-w3ag+TPUrjPbPIy6N4HPsfraOyoHqBbvjwB1M6+qh60=",
+  klayout ? import ./nix/klayout.nix {
+    inherit pkgs;
+    rev = klayout-rev;
+    sha256 = klayout-sha256;
   },
   
   ...
@@ -76,7 +93,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     openroad
     klayout
     yosys
-    magic
     netgen
 
     # Python
@@ -92,5 +108,5 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     sphinx
     sphinx-autobuild
     myst-parser
-  ];
+  ] ++ (lib.optionals stdenv.isLinux [ magic ]);
 }

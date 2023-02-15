@@ -91,7 +91,12 @@ class ConfigBuilder(object):
             if variable is None:
                 warn(f"Unknown configuration override variable '{name}'.")
                 continue
-            value = json.loads(value_raw)
+            try:
+                value = json.loads(value_raw)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"Invalid JSON value '{value_raw}': {e}"
+                )
             value_verified = variable.process(value)
             loaded[name] = value_verified
 

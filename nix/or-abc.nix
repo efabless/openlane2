@@ -17,26 +17,30 @@
   sha256
 }:
 
-with pkgs; klayout.overrideAttrs (finalAttrs: previousAttrs: {
+with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
+  pname = "or-abc";
   version = "${rev}";
 
   src = fetchFromGitHub {
-    owner = "KLayout";
-    repo = "klayout";
+    owner = "The-OpenROAD-Project";
+    repo = "abc";
     rev = "${rev}";
     hash = "${sha256}";
   };
 
-  meta = {
-    platforms = lib.platforms.all;
-  };
+  installPhase = ''
+  mkdir -p $out/bin
+  mv abc $out/bin
 
-  propagatedBuildInputs = [
-    ruby
-  ];
+  mkdir -p $out/lib
+  mv libabc.a $out/lib
 
-  postBuild = if stdenv.isDarwin then ''
-  mkdir $out/bin
-  mv $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
-  '' else previousAttrs.postBuild;
+  mkdir -p $out/include
+  for header in $(find  ../src | grep "\\.h$" | sed "s@../src/@@"); do
+    header_tgt=$out/include/$header
+    header_dir=$(dirname $header_tgt) 
+    mkdir -p $header_dir
+    cp ../src/$header $header_tgt
+  done
+  '';
 })
