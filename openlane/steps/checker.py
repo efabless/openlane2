@@ -73,7 +73,9 @@ class IllegalOverlap(Step):
         ) is None:
             warn("No illegal overlaps reported. Magic.SpiceExtraction didn't run")
         elif illegal_overlaps > 0:
-            error_msg = f"{illegal_overlaps} illegal overlaps found during spice extraction."
+            error_msg = (
+                f"{illegal_overlaps} illegal overlaps found during spice extraction."
+            )
             err(f"{error_msg} - deferred")
             raise DeferredStepError(error_msg)
         return state_out

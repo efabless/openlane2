@@ -90,7 +90,10 @@ class DRC(MagicStep):
         report_str = open(report_path, encoding="utf8").read()
 
         drc = DRCObject.from_magic(report_str)
-        state_out.metrics["magic__drc_errors"] = len(drc.violations)
+        drc_bbox = [
+            bbox for violation in drc.violations for bbox in violation.bounding_boxes
+        ]
+        state_out.metrics["magic__drc_errors"] = len(drc_bbox)
 
         with open(os.path.join(reports_dir, "drc.klayout.xml"), "w") as f:
             f.write(drc.to_klayout_xml())
@@ -114,7 +117,7 @@ class SpiceExtraction(MagicStep):
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()
-        state_out.metrics["magic__illegal__overlaps"] = "Illegal overlap".count(
-            feedback_string
+        state_out.metrics["magic__illegal__overlaps"] = feedback_string.count(
+            "Illegal overlap"
         )
         return state_out
