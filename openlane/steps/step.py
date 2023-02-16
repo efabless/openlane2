@@ -49,6 +49,10 @@ class StepError(ValueError):
     pass
 
 
+class DeferredStepError(ValueError):
+    pass
+
+
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 

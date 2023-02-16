@@ -64,6 +64,7 @@ class Classic(SequentialFlow):
         Magic.DRC,
         Checker.MagicDRC,
         Magic.SpiceExtraction,
+        Checker.IllegalOverlap,
         Netgen.LVS,
         Checker.LVS,
     ]

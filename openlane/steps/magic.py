@@ -114,7 +114,7 @@ class SpiceExtraction(MagicStep):
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()
-        state_out.metrics["magic__illegal__overlaps"] = (
-            True if "Illegal overlap" in feedback_string else False
+        state_out.metrics["magic__illegal__overlaps"] = "Illegal overlap".count(
+            feedback_string
         )
         return state_out
