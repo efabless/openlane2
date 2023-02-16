@@ -10,7 +10,7 @@ If you need other libraries, you will have to resort to manual builds using [Vol
 
 Note that this will take a while, from 20 minutes to an hour depending on your internet speed and compute power.
 
-Start a venv shell using `make start-build-env`. You should see a prompt looking kind of like this:
+Start a venv shell using `make venv` then `source ./venv/bin/activate`. You should see a prompt looking kind of like this:
 
 ```bash
 (venv) [user@host openlane]$ 

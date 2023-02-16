@@ -1,9 +1,8 @@
 Reference Manual
 --------------------------------------------------------------------------------
 .. toctree::
-   :glob:
-
-   cli
-   configuration_files
-   api
+   api/index.md
+   configuration.md
+   pdk_config_vars.md
+   flow_config_vars.md
 

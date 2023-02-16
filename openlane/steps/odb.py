@@ -20,7 +20,7 @@ from typing import List
 from .step import Step
 from .state import State
 from .design_format import DesignFormat
-from ..common import get_openlane_root, get_script_dir, log
+from ..common import get_openlane_root, get_script_dir
 from ..config import Path
 
 inf_rx = re.compile(r"\b(-?)inf\b")

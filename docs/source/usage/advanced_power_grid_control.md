@@ -12,7 +12,7 @@ An example utilizing the controls and logic provided in this documentation is [c
 
 ## Chip Level
 
-According to the current methodology of [OpenLane Chip Integration][0], the process goes as follows:
+According to the current methodology of [OpenLane Chip Integration](./chip_integration.md), the process goes as follows:
 1. Hardening the hard/internal macros.
 2. Hardening the core with the hard macros inside it.
 3. Hardening the full chip with the padframe and the chip core.
@@ -264,6 +264,3 @@ These should match the names used in your core level. You do not need to use all
 
 
 At this stage, hardening the macros first, followed by the core, and finally connecting the core rings to the power pads, your power grids and connections should be complete.
-
-
-[0]: ./chip_integration.md

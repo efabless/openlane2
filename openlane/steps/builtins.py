@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The Flow Module
+Built-in Steps
 
-An API for implementing new flows using the OpenLane infrastructure, as well
-as a number of built-in flows.
+A list of steps that are included with the OpenLane infrastructure. They are
+used by the included flows and can be used in custom flows.
 """
-from . import builtins
-from .flow import Flow, FlowException, FlowError
-from .sequential import SequentialFlow
+
+# flake8: noqa
+from . import yosys as Yosys
+from . import openroad as OpenROAD
+from . import magic as Magic
+from . import odb as Odb
+from . import netgen as Netgen
+from . import klayout as KLayout
+from . import misc as Misc

@@ -28,10 +28,19 @@ class Meta:
 
 
 class Path(UserString, os.PathLike):
+    """
+    A Path type for OpenLane configuration variables.
+
+    Basically just a string.
+    """
+
     def __fspath__(self) -> str:
         return str(self)
 
     def exists(self) -> bool:
+        """
+        A convenience method calling :py:attr:`os.path.exists`
+        """
         return os.path.exists(self)
 
 
@@ -52,17 +61,46 @@ class ConfigEncoder(json.JSONEncoder):
 
 
 class Config(UserDict):
+    """
+    A map from OpenLane configuration variable keys to their values.
+
+    It is recommended that you construct these using the :class:`ConfigBuilder`
+    singleton class.
+    """
+
     meta = Meta(version=1)
 
     def dumps(self) -> str:
+        """
+        :returns: A JSON string representing the configuration object.
+        """
         data = self.data.copy()
         data["meta"] = self.meta
         return json.dumps(data, indent=2, cls=ConfigEncoder, sort_keys=True)
 
     def check(self, key: str) -> Tuple[bool, Any]:
+        """
+        :param key: A string key representing an OpenLane configuration variable.
+        :returns: A tuple of whether that key exists, and if so, its value.
+
+            Do note :code:`None` is a valid value, so simply checking if the
+            second element :code:`is not None` is invalid to check whether
+            a key exists.
+        """
         return (key in self.keys(), self.get(key))
 
     def extract(self, key: str) -> Tuple[bool, Any]:
+        """
+        A mutating method that attempts to find a key, and, if it exists,
+        deletes it from the configuration object and returns its value.
+
+        :param key: A string key representing an OpenLane configuration variable.
+        :returns: A tuple of whether that key existed, and if so its value.
+
+            Do note :code:`None` is a valid value, so simply checking if the
+            second element :code:`is not None` is invalid to check whether
+            a key exists.
+        """
         found, value = self.check(key)
         if found:
             del self[key]

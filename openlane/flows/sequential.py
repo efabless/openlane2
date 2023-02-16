@@ -31,7 +31,7 @@ class SequentialFlow(Flow):
     with nothing happening in parallel and no significant inter-step
     processing.
 
-    All subclasses of this flow have to do is override the `Steps` property
+    All subclasses of this flow have to do is override the :py:attr:`.Steps` property
     and it would automatically handle the rest. See `Classic` for an example.
     """
 

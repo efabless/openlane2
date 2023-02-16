@@ -5,6 +5,7 @@
 Documentation plays an important role in OpenLane.
 Good documentation should cover as much information as possible,
 while staying readable, up-to-date and clean.
+
 This page covers installation of required tools
 and outlines simple principles to be followed when writing documentation.
 
@@ -32,24 +33,17 @@ For more complex documentation, it is recommended to follow these steps:
 11. Once changes are approved they will be merged and then you can delete your branch or repository.
 
 ## Building documentation locally
-
-Assuming you have OpenLane installed, a Python virtual environment will be created in `<OPENLANE_ROOT>/venv`. You can the
+A Python virtual environment will need to be created in `<OPENLANE_ROOT>/venv` as follows:
 
 ```sh
-# Assuming you are inside the OpenLane folder
-## If you didn't 'make openlane' already…
 make venv
-
-# Install required modules
-make -C docs/ install
 ```
 
 After installation, every time you want to build the documentation proceed to enter the venv and run `sphinx-build` following commands:
 
 ```sh
 cd OpenLane/
-
-# assuming you are inside the OpenLane folder
+source ./venv/bin/activate
 make -C docs/ html
 ```
 
@@ -60,10 +54,10 @@ View the generated html files using your favorite web browser. Open this documen
 cd OpenLane/
 
 # macOS
-open docs/_build/html/docs/source/contributing_to_docs.html
+open docs/build/html/docs/source/contributing_to_docs.html
 
 # Most GNU/Linux Distributions
-xdg-open docs/_build/html/docs/source/contributing_to_docs.html
+xdg-open docs/build/html/docs/source/contributing_to_docs.html
 ```
 
 Documentation [regarding reStructuredText can be found here:](https://sublime-and-sphinx-guide.readthedocs.io/en/latest/index.html).
@@ -125,7 +119,7 @@ The screenshots in documentation should use following prompt:
 export PS1="\W> "
 ```
 
-You can add it to your `.bashrc` or just run it before you run the command.
+You can add it to your `.bashrc` (or your shell's RC file) or just run it before you run the command.
 
 :::{note}
 Please note that taking screenshots for terminal output is not recommended. You may want to use a `code-block` object.

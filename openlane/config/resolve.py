@@ -13,7 +13,6 @@
 # limitations under the License.
 import re
 import os
-import sys
 import glob
 import fnmatch
 from enum import Enum
@@ -408,7 +407,6 @@ def resolve(
         if exposed_dict.get(key) is None:
             raise ValueError(
                 f"{key} environment variable must be set.",
-                file=sys.stderr,
             )
 
     resolved = process_config_dict(config_dict, exposed_dict)

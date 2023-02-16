@@ -22,22 +22,21 @@ from .state import DesignFormat, State
 from ..config import Path
 from ..common import get_script_dir, warn
 
+
 def patch_klayout_mac(env: Dict[str, str]) -> Dict[str, str]:
     """
     Hack until KLayout is rebuilt: with the reasoning is redoing the
     KLayout derivation takes about 8 years
     """
-    klayout_path = subprocess.check_output([
-        "which",
-        "klayout"
-    ]).decode('utf8')
+    klayout_path = subprocess.check_output(["which", "klayout"]).decode("utf8")
     klayout_lib_path = os.path.join(
-        os.path.dirname(os.path.dirname(klayout_path)),
-        "lib"
+        os.path.dirname(os.path.dirname(klayout_path)), "lib"
     )
 
     env_out = env.copy()
-    env_out["DYLD_LIBRARY_PATH"] = f"{klayout_lib_path}:{env_out.get('DYLD_LIBRARY_PATH', '')}"
+    env_out[
+        "DYLD_LIBRARY_PATH"
+    ] = f"{klayout_lib_path}:{env_out.get('DYLD_LIBRARY_PATH', '')}"
     return env_out
 
 

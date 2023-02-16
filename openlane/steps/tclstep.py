@@ -294,7 +294,7 @@ def create_reproducible(
 
 class TclStep(Step):
     """
-    A subclass of `Step` that primarily deals with running Tcl-based utilities,
+    A subclass of :class:`Step` that primarily deals with running Tcl-based utilities,
     such as Yosys, OpenROAD and Magic.
 
     A TclStep Step corresponds to running one Tcl script with such a utility.
@@ -317,19 +317,17 @@ class TclStep(Step):
         **kwargs,
     ) -> State:
         """
-        This overriden `run()` function prepares configuration variables and
+        This overriden :py:meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
 
-        Additionally, it logs the output to a `.log` file named after the script.
+        Additionally, it logs the output to a :code:`.log` file named after the script.
 
         When overriding in a subclass, you may find it useful to use this pattern:
 
-        ```
             kwargs, env = self.extract_env(kwargs)
             env["CUSTOM_ENV_VARIABLE"] = "1"
             return super().run(env=env, **kwargs)
-        ```
 
         This will allow you to add further custom environment variables to a call
         while still respecting an `env` argument further up the call-stack.

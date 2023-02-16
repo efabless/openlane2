@@ -13,9 +13,19 @@
 # limitations under the License.
 
 # flake8: noqa
+"""
+The OpenLane API
+
+These modules serve as the infrastructure for OpenLane-based flows.
+Using these functions, users may either utilize built-in flows, or build custom
+Flows and/or custom Steps for the design of more sophisticated chips.
+
+..
+    no-imported-members
+"""
 
 from .flows import Flow
 from .steps import Step
 from .config import ConfigBuilder, InvalidConfig
-from .common import err, warn, log
+from .common import *
 from .__version__ import __version__

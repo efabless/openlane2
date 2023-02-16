@@ -6,7 +6,6 @@ In this document we will go through the hardening steps and discuss in some deta
 > **NOTE:** For all the configurations mentioned in this documentation and any other OpenLane configurations, you can use the exploration script `run_designs.py` to find the optimal value for each configuration for your design. Read more [here][6].
 
 ## Base Requirements
-
 You should start by setting the basic configuration file for your design. Check [this][5] for how to add your new design.
 
 The basic configuration `config.json` or `config.tcl` file should at least contain these variables:
@@ -52,9 +51,6 @@ set ::env(DESIGN_IS_CORE) {0}
 These configurations should get you through the flow with the all other configurations using OpenLane default values, read about those [here][0]. However, in the coming sections we will take a closer look on how to determine the best values for most of the other configurations.
 
 ## Synthesis
-
-The first decision in synthesis is determining the optimal synthesis strategy `SYNTH_STRATEGY` for your design. For that purpose there is a flag in the `flow.tcl` script, `-synth_explore` that runs a synthesis strategy exploration and reports the results in a table under `<run_path>/reports/`.
-
 Then you need to consider the best values for the `SYNTH_MAX_FANOUT`.
 
 If your macro is huge (200k+ cells), then you might want to try setting `SYNTH_NO_FLAT` to `1` (Tcl)/`true` (JSON), which will postpone the flattening of the design during synthesis until the very end.
@@ -133,17 +129,6 @@ For Global Placement, the most important value would be `PL_TARGET_DENSITY` whic
 - If your design is a tiny design, then you may need to set `PL_RANDOM_GLB_PLACEMENT` to `1` or `PL_RANDOM_INITIAL_PLACEMENT` to 1. Also, `PL_TARGET_DENSITY` should have high value, while `FP_CORE_UTIL` should have a low value. (i.e `PL_TARGET_DENSITY` set to 0.5 and `FP_CORE_UTIL` set to 5). In very tiny designs (i.e. 1 std cell designs), the approximated DIE AREA in the floorplan stage may not leave enough room to insert tap cells in the design. Thus, it is recommended to use `FP_SIZING` as `absolute` and manually setting an appropriate `DIE_AREA`, check [the floorplan section](#floorplan) for more details. You may also want to reduce the values for `FP_PDN_HORIZONTAL_HALO` and `FP_PDN_VERTICAL_HALO`. You can read more about those [here][0].
 
 Other values to be considered are `PL_BASIC_PLACEMENT` and `PL_SKIP_INITIAL_PLACEMENT`, you can read more about those [here][0].
-
-### Optimizations
-
-For this step we rely on Resizer and OpenPhySyn.
-
-#### Resizer optimizations
-
-The only optimization we use from resizer is the wire length optimization which is used to reduce the antenna violations. This is disabled by default since the diode insertion strategies should cover that purpose.
-
-However, you can enable that by setting `PL_RESIZER_OVERBUFFER` to `1` and then determine the maximum wire length by setting this value `MAX_WIRE_LENGTH`.
-
 ### Detailed Placement
 
 The only value to consider here is the `DPL_CELL_PADDING` which is usually selected for each (PDK,STD_CELL_LIBRARY) and should mostly be left as is. However, typically for the skywater libraries the value should be 4~6.

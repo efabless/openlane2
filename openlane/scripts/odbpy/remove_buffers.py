@@ -13,7 +13,6 @@
 # limitations under the License.
 import odb
 
-import os
 import re
 from typing import List
 

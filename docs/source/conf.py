@@ -23,6 +23,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../_ext"))
+sys.path.insert(0, os.path.abspath("../../"))
 
 # -- Project information -----------------------------------------------------
 project = "OpenLane"
@@ -40,12 +41,13 @@ branch = "master"
 extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx.ext.autosectionlabel",
     "myst_parser",
     "markdown_code_links",  # CUSTOM
     "markdown_cross_doc_section_links",  # CUSTOM
     "image_links",  # CUSTOM
+    "generate_module_autodocs",  # CUSTOM
+    "generate_configvar_docs",  # CUSTOM
 ]
 
 source_suffix = {
@@ -55,7 +57,7 @@ source_suffix = {
 
 
 # Add any paths that contain templates here, relative to this directory.
-# templates_path = ["_templates"]
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -107,7 +109,6 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["../_static"]
 
-autosummary_generate = True
 todo_include_todos = True
 numfig = True
 
@@ -129,10 +130,11 @@ suppress_warnings = ["misc.highlighting_failure"]  # supress json highlight warn
 
 myst_heading_anchors = 3
 
-
 myst_enable_extensions = [
     "colon_fence",
 ]
 
-
 root_doc = "index"
+
+generate_module_autodocs = [("openlane", "reference/api")]
+autodoc_typehints = "both"

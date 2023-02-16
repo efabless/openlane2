@@ -20,7 +20,6 @@ import subprocess
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import (
-    final,
     List,
     Callable,
     Optional,
@@ -36,7 +35,7 @@ from .state import State
 from .design_format import DesignFormat
 from ..utils import Toolbox
 from ..config import Config
-from ..common import mkdirp, console, err, rule, log, slugify
+from ..common import mkdirp, console, err, rule, log, slugify, final, internal
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -61,34 +60,45 @@ class Step(ABC):
     in an input state and returns a new output state with updated design format
     paths and/or metrics.
 
-    Properties:
+    Warning: The initializer for Step is not thread-safe. Please use it on the main
+    thread and then, if you're using a Flow object, use `run_step_async`, or
+    if you're not, you may use `start` in another thread. That part's fine.
 
-        `inputs`: A list of design formats used by the step as an input.
-        `outputs`: A list of design formats that are output by this step.
+    :param config: A configuration object.
+        If not provided, as a convenience, the call stack will be
+        examined for a `self.config`, and the first one encountered
+        will be used.
 
-        `name`: A short name for the step, used primarily in the progress bar
-            of sequential flows.
+    :param state_in: The state object this step will use as an input.
 
-            If not set by a subclass, the Python name of the Step class is used.
+        If not provided, the call stack will be examined for a
+        `state_list`, and the latest one will be used as an input state.
 
-        `id`: A valid filesystem name for the step, user primarily in step
-            directories.
+        The state may also be a `Future[State]`, in which case,
+        the `run()` call will block until that Future is realized.
+        This allows you to chain a number of asynchronous steps.
 
-            If not set by a subclass, `.name` is passed through `slugify` and
-            used as an ID.
+        See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
 
-        `long_name`:  A verbose and descriptive name for the step,
-            used to separate logs in the terminal.
+    :param step_dir: A "scratch directory" for the step.
 
-            If not set by a subclass, `.name` is used.
+        If not provided, the call stack will be examined for a
+        `self.dir_for_step` function, which will then be called to
+        get a directory for said step.
 
-        `flow_control_variable`: An optional key for a configuration variable.
+    :param name: An optional override name for the step. Useful in custom flows.
+    :param id: An optional override name for the ID. Useful in custom flows.
+    :param long_name: An optional override name for the long name. Useful in custom flows.
+    :param silent: A variable stating whether a step should output to the
+    terminal.
+        If set to false, Step implementations are expected to
+        output nothing to the terminal.
 
-            If it exists, if this variable is "False" or "None", the step is skipped.
-
-        `flow_control_msg`: If `flow_control_variable` causes the step to be
-            skipped and this variable is set, the value of this variable is
-            printed.
+    :attr flow_control_variable: An optional key for a configuration variable.
+        If it exists, if this variable is "False" or "None", the step is skipped.
+    :attr flow_control_msg: If `flow_control_variable` causes the step to be
+        skipped and this variable is set, the value of this variable is
+        printed.
     """
 
     inputs: List[DesignFormat] = []
@@ -111,43 +121,6 @@ class Step(ABC):
         long_name: Optional[str] = None,
         silent: bool = False,
     ):
-        """
-        Warning: This initializer is not thread-safe. Please use it on the main
-        thread and then, if you're using a Flow object, use `run_step_async`, or
-        if you're not, you may use `start` in another thread. That part's fine.
-
-        :param config: A configuration object.
-            If not provided, as a convenience, the call stack will be
-            examined for a `self.config`, and the first one encountered
-            will be used.
-
-        :param state_in: The state object this step will use as an input.
-
-            If not provided, the call stack will be examined for a
-            `state_list`, and the latest one will be used as an input state.
-
-            The state may also be a `Future[State]`, in which case,
-            the `run()` call will block until that Future is realized.
-            This allows you to chain a number of asynchronous steps.
-
-            See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
-
-        :param step_dir: A "scratch directory" for the step.
-
-            If not provided, the call stack will be examined for a
-            `self.dir_for_step` function, which will then be called to
-            get a directory for said step.
-
-        :param name: An optional override name for the step. Useful in custom flows.
-        :param id: An optional override name for the ID. Useful in custom flows.
-        :param long_name: An optional override name for the long name. Useful in custom flows.
-
-        :param silent: A variable stating whether a step should output to the
-        terminal.
-
-            If set to false, Step implementations are expected to
-            output nothing to the terminal.
-        """
         if name is not None:
             self.name = name
         elif not hasattr(self, "name"):
@@ -225,19 +198,17 @@ class Step(ABC):
         **kwargs,
     ) -> State:
         """
-        Begins execution on a step. This is the function that should be used
-        by flows- `run()` is considered private and may only be called by `Step`
-        and its subclasses.
+        Begins execution on a step.
 
-        `start()` is final and should not be subclassed.
+        This method is final and should not be subclassed.
 
-        :param toolbox: A `Toolbox` object initialized with a temporary directory
+        :param toolbox: A :class:`Toolbox` object initialized with a temporary directory
             fit for the flow in question.
 
             If not provided, as a convenience, the call stack will be
-            examined for a `self.toolbox`, which will be used instead.
+            examined for a :py:attr:`self.toolbox`, which will be used instead.
             What this means is that when inside of a Flow: you can just call
-            `step.start()` and not worry about this.
+            :py:meth:`step.start` and not worry about this.
 
             If said toolbox doesn't exist, the step will begrudingly create
             one that uses its own step directory, however this will cause
@@ -302,11 +273,11 @@ class Step(ABC):
 
         return self.state_out
 
+    @internal
     @abstractmethod
     def run(self, **kwargs) -> State:
         """
-        The "core" of a step. **You should not be calling this function outside
-        of `Step` or its subclasses.**
+        The "core" of a step.
 
         When subclassing, override this function, then call it first thing
         via super().run(**kwargs). This lets you use the input verification and
@@ -328,6 +299,7 @@ class Step(ABC):
 
         return self.state_in.copy()
 
+    @internal
     def run_subprocess(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
@@ -393,6 +365,7 @@ class Step(ABC):
             console.print("\t", " ".join(cmd_str))
             raise subprocess.CalledProcessError(returncode, process.args)
 
+    @internal
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
         An assisting function: Given a `kwargs` object, it does the following:

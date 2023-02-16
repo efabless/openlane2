@@ -14,13 +14,13 @@
 from typing import List, Type
 from ..steps import (
     Step,
+)
+from ..steps.builtins import (
     Yosys,
     OpenROAD,
-    Magic,
     Misc,
     KLayout,
     Odb,
-    Netgen,
 )
 from .flow import Flow
 from .sequential import SequentialFlow
@@ -29,7 +29,8 @@ from .sequential import SequentialFlow
 @Flow.factory.register()
 class NoMagic(SequentialFlow):
     """
-    No KLayout.
+    A variant of the :class:`Classic` flow without Magic steps. Useful on macOS,
+    where compiling Magic is a veritable nightmare.
     """
 
     Steps: List[Type[Step]] = [

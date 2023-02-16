@@ -18,8 +18,10 @@
 import re
 from util import debug
 
+from sphinx.application import Sphinx
 
-def setup(app):
+
+def setup(app: Sphinx):
     app.connect("source-read", process_markdown_crosslinks)
     return {"version": "1.0", "parallel_read_safe": True}
 
