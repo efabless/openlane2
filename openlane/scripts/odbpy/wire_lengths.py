@@ -48,13 +48,6 @@ def to_si(microns: Decimal) -> str:
     help="Threshold above which to print the wire (Default: ∞)",
 )
 @click.option(
-    "-F",
-    "--fail",
-    default=False,
-    is_flag=True,
-    help="Exit with a non-zero code if any wire surpasses the threshold.",
-)
-@click.option(
     "-R",
     "--report-out",
     default=None,
@@ -64,7 +57,6 @@ def to_si(microns: Decimal) -> str:
 def main(
     report_out,
     threshold,
-    fail,
     human_readable,
     input_db,
     reader: OdbReader,
