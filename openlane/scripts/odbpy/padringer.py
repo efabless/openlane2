@@ -15,7 +15,6 @@
 import odb
 
 import os
-import sys
 import click
 from subprocess import Popen, PIPE
 

@@ -33,7 +33,6 @@ venv/created: ./requirements_dev.txt requirements.txt
 	./venv/bin/python3 -m pip install --upgrade pip
 	./venv/bin/python3 -m pip install --upgrade wheel
 	./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements.txt
-	./venv/bin/python3 -m pip install .
 	touch venv/created
 
 .PHONY: veryclean

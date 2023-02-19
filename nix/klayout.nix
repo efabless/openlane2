@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
+  pkgs ? import ./pkgs.nix,
   rev,
   sha256
 }:
@@ -26,6 +26,17 @@ with pkgs; klayout.overrideAttrs (finalAttrs: previousAttrs: {
     rev = "${rev}";
     hash = "${sha256}";
   };
+
+  meta = {
+    platforms = lib.platforms.all;
+  };
+
+  propagatedBuildInputs = [
+    ruby
+  ];
+
+  postBuild = if stdenv.isDarwin then ''
+  mkdir $out/bin
+  mv $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
+  '' else previousAttrs.postBuild;
 })
-# 
-pkgs.klayout

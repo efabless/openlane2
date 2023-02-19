@@ -25,11 +25,6 @@ pdk_variables = [
         "Specifies the standard cell library to be used under the specified PDK.",
     ),
     Variable(
-        "STD_CELL_LIBRARY_OPT",
-        str,
-        "Specifies the standard cell library to be used during resizer optimizations.",
-    ),
-    Variable(
         "VDD_PIN",
         str,
         "The power pin for the cells.",

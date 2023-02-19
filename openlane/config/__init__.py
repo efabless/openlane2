@@ -11,9 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+The Configuration Module
+
+This modules includes various functions for importing and/or generating OpenLane
+configuration objects. Configuration objects are the primary input to a flow.
+"""
 from .config import Config, Path
 from .resolve import Keys
 from .tcleval import env_from_tcl
 from .pdk import validate_pdk_config
 from .flow import validate_user_config
 from .builder import ConfigBuilder, InvalidConfig
+from .variable import Variable

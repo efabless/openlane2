@@ -12,12 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import platform
+import subprocess
+from typing import Dict
 
 from .step import Step, StepError
 from .state import DesignFormat, State
 
 from ..config import Path
 from ..common import get_script_dir, warn
+
+
+def patch_klayout_mac(env: Dict[str, str]) -> Dict[str, str]:
+    """
+    Hack until KLayout is rebuilt: with the reasoning is redoing the
+    KLayout derivation takes about 8 years
+    """
+    klayout_path = subprocess.check_output(["which", "klayout"]).decode("utf8")
+    klayout_lib_path = os.path.join(
+        os.path.dirname(os.path.dirname(klayout_path)), "lib"
+    )
+
+    env_out = env.copy()
+    env_out[
+        "DYLD_LIBRARY_PATH"
+    ] = f"{klayout_lib_path}:{env_out.get('DYLD_LIBRARY_PATH', '')}"
+    return env_out
 
 
 @Step.factory.register("KLayout.StreamOut")
@@ -68,6 +88,10 @@ class StreamOut(Step):
                 layout_args.append("--with-gds-file")
                 layout_args.append(gds)
 
+        kwargs, env = self.extract_env(kwargs)
+        if platform.system() == "Darwin":
+            env = patch_klayout_mac(env)
+
         self.run_subprocess(
             [
                 "python3",
@@ -92,6 +116,7 @@ class StreamOut(Step):
             ]
             + layout_args,
             log_to=os.path.join(self.step_dir, "stream-out.log"),
+            env=env,
         )
 
         state_out[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
@@ -129,6 +154,10 @@ class XOR(Step):
             warn("No KLayout stream-out has been performed. Skipping XOR…")
             return state_out
 
+        kwargs, env = self.extract_env(kwargs)
+        if platform.system() == "Darwin":
+            env = patch_klayout_mac(env)
+
         self.run_subprocess(
             [
                 "ruby",
@@ -147,6 +176,7 @@ class XOR(Step):
                 layout_b,
             ],
             log_to=os.path.join(self.step_dir, "xor.log"),
+            env=env,
         )
 
         return state_out

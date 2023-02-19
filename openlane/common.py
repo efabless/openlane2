@@ -11,51 +11,105 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Common Utilities
+
+A number of common utility functions used throughout the codebase.
+"""
 import os
 import re
+import typing
 import pathlib
 import unicodedata
+
 import rich.console
 
 console = rich.console.Console()
 
-log = console.log
 
-rule = console.rule
+def print(*args, **kwargs):
+    """
+    Prints to the terminal without formatting.
 
-print = console.print
+    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
+    """
+    console.print(*args, **kwargs)
+
+
+def log(*args, **kwargs):
+    """
+    Prints to the terminal with automatic rich formatting.
+
+    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.log
+    """
+    if kwargs.get("_stack_offset") is None:
+        kwargs["_stack_offset"] = 2
+    console.log(*args, **kwargs)
+
+
+def rule(*args, **kwargs):
+    """
+    Prints a horizontal line on the terminal.
+
+    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.rule
+    """
+    console.rule(*args, **kwargs)
 
 
 def success(printable, *args, **kwargs):
+    """
+    Logs an item to the terminal with a success unicode character and
+    green/bold formatting.
+    """
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
     log(f"⭕ [green][bold] {printable}", *args, **kwargs)
 
 
 def warn(printable, *args, **kwargs):
+    """
+    Logs an item to the terminal with a warning unicode character and
+    gold/bold formatting.
+    """
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
     log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
 
 
 def err(printable, *args, **kwargs):
+    """
+    Logs an item to the terminal with a warning unicode character and
+    gold/bold formatting.
+    """
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
     log(f"❌ [red][bold] {printable}", *args, **kwargs)
 
 
-def mkdirp(path):
+def mkdirp(path: typing.Union[str, os.PathLike]):
+    """
+    Attempts to create a directory and all of its parents.
+
+    Does not fail if the directory already exists, however, it does fail
+    if it is unable to create any of the components and/or if
+
+    :param path: A filesystem path for the directory
+    """
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
 openlane_root = os.path.dirname(os.path.abspath(__file__))
 
 
-def get_openlane_root():
+def get_openlane_root() -> str:
+    """
+    Returns the root OpenLane folder, i.e., the folder containing the
+    ``__init__.py``.
+    """
     return openlane_root
 
 
-def get_script_dir():
+def get_script_dir() -> str:
     """
     Gets the OpenLane tool `scripts` directory.
     """
@@ -96,12 +150,33 @@ def get_script_dir():
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 def slugify(value: str) -> str:
     """
-    Converts to lowercase, removes non-word characters (alphanumerics and
-    underscores) and converts spaces to hyphens. Also strips leading and
-    trailing whitespace.
+    :param value: Input string
+    :returns: The input string converted to lower case, with non-word
+        (alphanumeric/underscore) characters removed, and spaces converted
+        into hyphens.
+
+        Leading and trailing whitespace is stripped.
     """
     value = (
         unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     )
-    value = re.sub("[^\w\s-]", "", value).strip().lower()
-    return re.sub("[-\s]+", "-", value)
+    value = re.sub(r"[^\w\s-]", "", value).strip().lower()
+    return re.sub(r"[-\s]+", "-", value)
+
+
+final = typing.final
+
+
+def internal(method):
+    """A decorator to indicate internal methods.
+
+    It dynamically adds a statement to the effect in the docstring, but has no
+    other runtime effects.
+
+    :param f: Method to mark as internal
+    """
+    method.__doc__ = (
+        "**This method is considered internal and should only be called by this class or its subclass hierarchy.**\n"
+        + method.__doc__
+    )
+    return method

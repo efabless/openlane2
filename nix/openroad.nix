@@ -12,18 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
+  pkgs ? import ./pkgs.nix,
   rev,
   sha256,
-  qtbase,
-  wrapQtAppsHook,
+  abc-derivation, 
+  qtbase ? pkgs.libsForQt5.qtbase,
+  wrapQtAppsHook ? pkgs.libsForQt5.wrapQtAppsHook,
 }:
 
 with pkgs; let boost-static = boost.override {
   enableShared = false;
   enabledStatic = true;
-}; in clangStdenv.mkDerivation {
-  name = "openroad";
+}; lemon-graph-crossplat = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
+  meta = {
+    broken = false;
+  };
+  doCheck = !stdenv.isDarwin; # Some tests fail to compile on Darwin
+}); in clangStdenv.mkDerivation {
+  pname = "openroad";
+  version = "${rev}";
+
   src = fetchgit {
     url = "https://github.com/The-OpenROAD-Project/OpenROAD";
     rev = "${rev}";
@@ -31,18 +39,34 @@ with pkgs; let boost-static = boost.override {
     fetchSubmodules = true;
   };
 
+  cmakeFlags = [
+    "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "-DTCL_HEADER=${tcl}/include/tcl.h"
+    "-DUSE_SYSTEM_ABC:BOOL=ON"
+    "-DABC_LIBRARY=${abc-derivation}/lib/libabc.a"
+    "-DCMAKE_CXX_FLAGS=-I${abc-derivation}/include"
+    "-DVERBOSE=1"
+  ];
+
   preConfigure = ''
     sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake
     patchShebangs ./etc/find_messages.py
-  '';
+    
+    sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
+    sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
+    sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
+  '' + (lib.optionalString (!stdenv.isLinux) ''
+    sed -i "s/add_subdirectory(mpl2)//" ./src/CMakeLists.txt
+  '');
 
   buildInputs = [
+    abc-derivation
     eigen
     spdlog
     tcl
-    tk
     python3
     readline
+    tclreadline
     libffi
     qtbase
     llvmPackages.openmp
@@ -53,9 +77,9 @@ with pkgs; let boost-static = boost.override {
     zlib
     clp
     cbc
-    lemon-graph
-    or-tools
-  ];
+    
+    lemon-graph-crossplat
+  ] ++ lib.optionals stdenv.isLinux [or-tools];
 
   nativeBuildInputs = [
     boost-static

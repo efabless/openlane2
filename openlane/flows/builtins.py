@@ -11,25 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./nix/pkgs.nix {},
-  ...
-}:
+"""
+Built-in Flows
 
-with pkgs; with python3.pkgs; buildPythonPackage rec {
-  pname = "python-slugify";
-  name = pname;
-  version = "v8.0.0";
-  
-  src = fetchFromGitHub {
-    owner = "un33k";
-    repo = pname;
-    rev = version;
-    sha256 = "sha256-8qiG6P+tx9aovPNqZJSBW1d1DcHhsRMr9dZFPMDe2Aw=";
-  };
+A list of flows that are included with the OpenLane infrastructure, serving as
+defaults and examples.
+"""
 
-  doCheck = false;
-  propagatedBuildInputs = [
-    text-unidecode
-  ];
-}
+# flake8: noqa
+from .optimizing import Optimizing
+from .classic import Classic
+from .misc import OpenInKLayout, OpenInOpenROAD
+from .nomagic import NoMagic

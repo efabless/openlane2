@@ -20,12 +20,16 @@ You'll need the following:
 * Python **3.8** or higher with PIP, Venv and Python-Tk
 
 ### Nix
-* Get [Nix](https://nixos.org/download.html), then invoke `nix-shell`.
+* Install [Nix](https://nixos.org/download.html). \[Package manager. Takes around 3 minutes.\]
+    * On Linux, invoke `sh <(curl -L https://nixos.org/nix/install) --daemon` and follow the instructions.
+    * On Mac, invoke `sh <(curl -L https://nixos.org/nix/install) --daemon` and follow the instructions.
+* Install [Cachix](https://cachix.org). \[Binary caching tool. Takes around a minute.\]
+    * `nix-env -iA cachix -f https://cachix.org/api/v1/install`
+* Set up the [OpenLane Cachix](https://app.cachix.org/cache/openlane) \[Package manager. Takes around a minute.\]
+    * `cachix use openlane`
+    * You may see a message about your user not being trusted. In that case, it will print out a command. Please run that command then **re-run** `cachix use openlane`.
 
-That's literally it.
-
-If you don't want to build the tools from scratch, use **cachix** by following these instructions:
-* https://app.cachix.org/cache/openlane#pull
+That's it. Whenever you want to use OpenLane, `nix-shell` in the repository root directory and you'll have a full OpenLane environment. The first time might take around 10 minutes while binaries are pulled from the cache.
 
 ### Other Methods
 You'll need to compile the above tools. We're planning to support Conda down the line.

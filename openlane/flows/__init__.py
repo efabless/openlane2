@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from . import optimizing
-from . import classic
-from . import misc
+"""
+The Flow Module
 
+An API for implementing new flows using the OpenLane infrastructure, as well
+as a number of built-in flows.
+"""
+from . import builtins
 from .flow import Flow, FlowException, FlowError
 from .sequential import SequentialFlow

@@ -34,7 +34,7 @@ flow_variables = [
         Decimal,
         "The clock period for the design.",
         doc_units="ns",
-        default="10.0",
+        default=10.0,
     ),
     Variable(
         "CLOCK_PORT",
@@ -854,7 +854,7 @@ flow_variables = [
     Variable(
         "GRT_OBS",
         Optional[str],
-        'Specifies custom obstruction to be added prior to global routing. Comma-delimited ([warning](#on-comma-delimited-variables)) list of layer and coordinates: `layer llx lly urx ury`, where `ll` and `ur` stand for "lower left" and "upper right" respectively. (Example: `li1 0 100 1000 300, met5 0 0 1000 500`).',
+        'Specifies custom obstruction to be added prior to global routing. Comma-delimited list of layer and coordinates: `layer llx lly urx ury`, where `ll` and `ur` stand for "lower left" and "upper right" respectively. (Example: `li1 0 100 1000 300, met5 0 0 1000 500`).',
     ),
     Variable(
         "GRT_ADJUSTMENT",

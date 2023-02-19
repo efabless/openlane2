@@ -14,9 +14,7 @@
 import os
 import json
 from decimal import Decimal
-from typing import List, Tuple, Optional, Callable
-
-import volare
+from typing import List, Tuple, Optional, Callable, Union, Dict
 
 from .resolve import resolve, Keys
 from .tcleval import env_from_tcl
@@ -27,17 +25,34 @@ from ..common import log, warn
 
 
 class InvalidConfig(ValueError):
+    """
+    An error raised when a configuration under resolution is invalid.
+
+    :param config: A human-readable name for the particular configuration file
+        causing this exception, i.e. whether it's a PDK configuration file or a
+        user configuration file.
+    :param warnings: A list of warnings generated during the loading of this
+        configuration file.
+    :param errors: A list of errors generated during the loading of this
+        configuration file.
+    :param args: Further arguments to be passed onto the constructor of
+        :class:`ValueError`.
+    :param kwargs: Further keyword arguments to be passed onto the constructor of
+        :class:`ValueError`.
+    """
+
     def __init__(
         self,
         config: str,
         warnings: List[str],
         errors: List[str],
-        *args: object,
+        *args,
+        **kwargs,
     ) -> None:
         self.config = config
         self.warnings = warnings
         self.errors = errors
-        super().__init__(*args)
+        super().__init__(*args, **kwargs)
 
 
 class DecimalDecoder(json.JSONDecoder):
@@ -48,36 +63,89 @@ class DecimalDecoder(json.JSONDecoder):
 
 
 class ConfigBuilder(object):
+    """
+    Construct a full, validated and resolved OpenLane configuration object
+    from a user configuration + the various associated default values.
+    """
+
     @classmethod
     def load(
         Self,
-        file_path: str,
+        config_in: Union[str, os.PathLike, Dict],
         config_override_strings: List[str],
-        *args,
-        **kwargs,
+        pdk: Optional[str] = None,
+        pdk_root: Optional[str] = None,
+        scl: Optional[str] = None,
+        design_dir: Optional[str] = None,
     ) -> Tuple["Config", str]:
-        design_dir = os.path.dirname(file_path)
+        """
+        :param config_in: Either a file path to a JSON file or a Python
+            dictionary representing an unprocessed OpenLane configuration
+            object.
+
+            Tcl files are also supported, but are deprecated and will be removed
+            in the future.
+
+        :param config_override_strings: A list of "overrides" in the form of
+            NAME=VALUE strings. These are primarily for running OpenLane from
+            the commandline and strictly speaking should not be used in the API.
+
+        :param design_dir: The design directory for said configuration.
+            Supported and required *if and only if* config_in is a dictionary.
+
+        :param pdk: A process design kit to use. Could also be specified via the
+            "PDK" key in a configuration object, in which case this parameter is
+            optional.
+
+        :param pdk_root: Required if Volare is not installed.
+
+            If Volare is installed, this value can be used to optionally override
+            Volare's default.
+
+        :param scl: A standard cell library to use. If not specified, the PDK's
+            default standard cell library will be used instead.
+
+        :returns: A tuple containing a ConfigBuilder and the design directory.
+        """
 
         loader: Callable = Self.loads
-        if file_path.endswith(".json"):
-            pass
-        elif file_path.endswith(".tcl"):
-            loader = Self.loads_tcl
-        else:
-            if os.path.isdir(file_path):
-                raise ValueError(
-                    "Passing design folders as arguments is unsupported in OpenLane 2.0+: please pass the JSON configuration file directly."
+        raw: Union[str, dict] = ""
+        if not isinstance(config_in, dict):
+            if design_dir is not None:
+                raise TypeError(
+                    "The argument design_dir is not supported when config_in is not a dictionary."
                 )
-            _, ext = os.path.splitext(file_path)
-            raise ValueError(
-                f"Unsupported configuration file extension '{ext}' for '{file_path}'."
-            )
+
+            design_dir = str(os.path.dirname(config_in))
+            config_in = str(config_in)
+            if config_in.endswith(".json"):
+                raw = open(config_in, encoding="utf8").read()
+            elif config_in.endswith(".tcl"):
+                raw = open(config_in, encoding="utf8").read()
+                loader = Self.loads_tcl
+            else:
+                if os.path.isdir(config_in):
+                    raise ValueError(
+                        "Passing design folders as arguments is unsupported in OpenLane 2.0+: please pass the JSON configuration file directly."
+                    )
+                _, ext = os.path.splitext(config_in)
+                raise ValueError(
+                    f"Unsupported configuration file extension '{ext}' for '{config_in}'."
+                )
+        else:
+            if design_dir is None:
+                raise TypeError(
+                    "The argument design_dir is required when using ConfigBuilder with a dictionary."
+                )
+            raw = config_in
+            loader = Self.load_dict
 
         loaded = loader(
-            open(file_path, encoding="utf8").read(),
+            raw,
             design_dir,
-            *args,
-            **kwargs,
+            pdk=pdk,
+            pdk_root=pdk_root,
+            scl=scl,
         )
 
         for string in config_override_strings:
@@ -91,7 +159,10 @@ class ConfigBuilder(object):
             if variable is None:
                 warn(f"Unknown configuration override variable '{name}'.")
                 continue
-            value = json.loads(value_raw)
+            try:
+                value = json.loads(value_raw)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON value '{value_raw}': {e}")
             value_verified = variable.process(value)
             loaded[name] = value_verified
 
@@ -101,13 +172,28 @@ class ConfigBuilder(object):
     def loads(
         Self,
         json_str: str,
+        *args,
+        **kwargs,
+    ):
+        raw = json.loads(json_str, cls=DecimalDecoder)
+        kwargs["resolve_json"] = True
+        return Self.load_dict(
+            raw,
+            *args,
+            **kwargs,
+        )
+
+    @classmethod
+    def load_dict(
+        Self,
+        raw: dict,
         design_dir: str,
-        pdk: str,
+        pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
+        resolve_json: bool = False,
     ) -> "Config":
-        raw = json.loads(json_str, cls=DecimalDecoder)
 
         meta_raw: Optional[dict] = None
         if raw.get("meta") is not None:
@@ -119,8 +205,23 @@ class ConfigBuilder(object):
             only_extract_process_info=True,
             design_dir=design_dir,
         )
-        pdk_root = volare.get_volare_home(pdk_root)
+
+        try:
+            import volare
+
+            pdk_root = volare.get_volare_home(pdk_root)
+        except ImportError:
+            if pdk_root is None:
+                raise ValueError(
+                    "The pdk_root argument is required as Volare is not installed."
+                )
+
         pdk = process_info.get(Keys.pdk) or pdk
+        if pdk is None:
+            raise ValueError(
+                "The pdk argument is required as the configuration object lacks a 'PDK' key."
+            )
+
         config_in = Config(
             {
                 "PDK_ROOT": pdk_root,
@@ -166,8 +267,10 @@ class ConfigBuilder(object):
                 for warning in pdk_warnings:
                     warn(warning)
 
+        process_input = resolve if resolve_json else lambda x, *args, **kwargs: x
+
         design_config = Config(
-            **resolve(
+            **process_input(
                 raw,
                 pdk=pdk,
                 pdkpath=pdkpath,
@@ -209,7 +312,7 @@ class ConfigBuilder(object):
         Self,
         config: str,
         design_dir: str,
-        pdk: str,
+        pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
@@ -218,7 +321,16 @@ class ConfigBuilder(object):
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
         )
 
-        pdk_root = volare.get_volare_home(pdk_root)
+        try:
+            import volare
+
+            pdk_root = volare.get_volare_home(pdk_root)
+        except ImportError:
+            if pdk_root is None:
+                raise ValueError(
+                    "The pdk_root argument is required as Volare is not installed."
+                )
+
         config_in = Config(
             {
                 "PDK_ROOT": pdk_root,
@@ -238,6 +350,12 @@ class ConfigBuilder(object):
         )
 
         pdk = process_info.get(Keys.pdk) or pdk
+
+        if pdk is None:
+            raise ValueError(
+                "The pdk argument is required as the configuration object lacks a 'PDK' key."
+            )
+
         if scl is not None:
             config_in[Keys.scl] = scl
 
