@@ -26,3 +26,4 @@ from . import odb as Odb
 from . import netgen as Netgen
 from . import klayout as KLayout
 from . import misc as Misc
+from . import checker as Checker
