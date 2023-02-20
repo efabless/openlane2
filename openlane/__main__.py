@@ -13,91 +13,26 @@
 # limitations under the License.
 import os
 import glob
+import subprocess
+from textwrap import dedent
 from typing import Type, Optional, List
 
 import click
 
 from .steps import State
+from .__version__ import __version__
+from .common import err, warn, log
+from .container import run_in_container
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import ConfigBuilder, InvalidConfig
-from .common import err, warn, log
 
 
-@click.command()
-# @click.option("--verbose", type=click.choice('BASIC', 'INFO', 'DEBUG', 'SILLY'), default="INFO", )
-@click.option(
-    "-p",
-    "--pdk",
-    type=str,
-    default="sky130A",
-    help="The process design kit to use. [default: sky130A]",
-)
-@click.option(
-    "-s",
-    "--scl",
-    type=str,
-    default=None,
-    help="The standard cell library to use. [default: varies by PDK]",
-)
-@click.option(
-    "-f",
-    "--flow",
-    "flow_name",
-    type=click.Choice(Flow.factory.list(), case_sensitive=False),
-    default=None,
-    help="The built-in OpenLane flow to use",
-)
-@click.option("--pdk-root", default=None, help="Override volare PDK root folder")
-@click.option(
-    "--run-tag",
-    default=None,
-    type=str,
-    help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
-)
-@click.option(
-    "--last-run",
-    is_flag=True,
-    default=False,
-    help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
-)
-@click.option(
-    "-F",
-    "--from",
-    "frm",
-    type=str,
-    default=None,
-    help="Start from a step with this id. Supported by sequential flows.",
-)
-@click.option(
-    "-T",
-    "--to",
-    type=str,
-    default=None,
-    help="Stop at a step with this id. Supported by sequential flows.",
-)
-@click.option(
-    "-I",
-    "--with-initial-state",
-    "initial_state_json",
-    type=str,
-    default=None,
-    help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
-)
-@click.option(
-    "-c",
-    "--override-config",
-    "config_override_strings",
-    type=str,
-    multiple=True,
-    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
-)
-@click.argument("config_file")
-def cli(
+def run(
     flow_name: str,
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
-    config_file: str,
+    config_files: str,
     run_tag: Optional[str],
     last_run: bool,
     frm: Optional[str],
@@ -105,6 +40,12 @@ def cli(
     initial_state_json: Optional[str],
     config_override_strings: List[str],
 ):
+    if len(config_files) != 1:
+        print(f"Invalid argument count for config_files: ({len(config_files)}/1).")
+        exit(-1)
+
+    config_file = config_files[0]
+
     # Enforce Mutual Exclusion
     if run_tag is not None and last_run:
         err("--run-tag and --last-run are mutually exclusive.")
@@ -185,6 +126,132 @@ def cli(
         err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")
         exit(2)
+
+
+def print_bare_version(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    if not value:
+        return
+    print(__version__, end="")
+    ctx.exit(0)
+
+
+@click.command()
+@click.version_option(
+    __version__,
+    prog_name="OpenLane",
+    message=dedent(
+        """
+        %(prog)s v%(version)s
+
+        Copyright ©2020-2023 Efabless Corporation and other contributors.
+
+        Available under the Apache License, version 2. Included with the source code,
+        but you can also get a copy at https://www.apache.org/licenses/LICENSE-2.0
+
+        Included tools and utilities may be distributed under stricter licenses.
+        """
+    ).strip(),
+)
+@click.option(
+    "--bare-version",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=print_bare_version,
+    hidden=True,
+)
+@click.option(
+    "--dockerized/--native",
+    default=False,
+    help="Run OpenLane primarily using a Docker container. Some caveats apply.",
+)
+@click.option(
+    "-p",
+    "--pdk",
+    type=str,
+    default="sky130A",
+    help="The process design kit to use. [default: sky130A]",
+)
+@click.option(
+    "-s",
+    "--scl",
+    type=str,
+    default=None,
+    help="The standard cell library to use. [default: varies by PDK]",
+)
+@click.option(
+    "-f",
+    "--flow",
+    "flow_name",
+    type=click.Choice(Flow.factory.list(), case_sensitive=False),
+    default=None,
+    help="The built-in OpenLane flow to use",
+)
+@click.option("--pdk-root", default=None, help="Override volare PDK root folder")
+@click.option(
+    "--run-tag",
+    default=None,
+    type=str,
+    help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
+)
+@click.option(
+    "--last-run",
+    is_flag=True,
+    default=False,
+    help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
+)
+@click.option(
+    "-F",
+    "--from",
+    "frm",
+    type=str,
+    default=None,
+    help="Start from a step with this id. Supported by sequential flows.",
+)
+@click.option(
+    "-T",
+    "--to",
+    type=str,
+    default=None,
+    help="Stop at a step with this id. Supported by sequential flows.",
+)
+@click.option(
+    "-I",
+    "--with-initial-state",
+    "initial_state_json",
+    type=str,
+    default=None,
+    help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
+)
+@click.option(
+    "-c",
+    "--override-config",
+    "config_override_strings",
+    type=str,
+    multiple=True,
+    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
+)
+@click.argument("config_files", nargs=-1)
+def cli(dockerized: bool, **kwargs):
+    if dockerized:
+        import sys
+
+        argv = sys.argv.copy()[1:]
+        argv.remove("--dockerized")
+
+        try:
+            run_in_container(
+                f"docker.io/donnio/openlane:{__version__}", ["openlane"] + argv
+            )
+        except subprocess.CalledProcessError as e:
+            exit(e.returncode)
+
+    else:
+        run(**kwargs)
 
 
 if __name__ == "__main__":

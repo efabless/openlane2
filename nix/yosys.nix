@@ -15,9 +15,11 @@
   pkgs ? import ./pkgs.nix,
   rev,
   sha256,
+  abc-rev,
+  abc-sha256,
 }:
 
-with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: {
+with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
   version = "${rev}";
 
   src = fetchFromGitHub {
@@ -27,12 +29,38 @@ with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: {
     hash = "${sha256}";
   };
 
+  abc = fetchFromGitHub {
+    owner = "YosysHQ";
+    repo = "abc";
+    rev = "${abc-rev}";
+    sha256 = "${abc-sha256}";
+  };
+
   nativeBuildInputs = [ pkg-config bison flex ];
+  propagatedBuildInputs = [
+    tcl
+  ];
 
   doCheck = false;
   preBuild = ''
-  chmod -R u+w .
-  make config-${if stdenv.cc.isClang or false then "clang" else "gcc"}
-  echo 'ABCEXTERNAL = ${abc-verifier}/bin/abc' >> Makefile.conf
+  cp -r ${abc} abc/
+  chmod -R 777 .
+  # Verbose
+  sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
+  # Don't compare ABC revisions
+  sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
+  # Compile ABC First (Common Build Point of Failure)
+  sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
+  # ls before copy
+  sed -Ei '822i\\tls -lah' ./Makefile
+  cat ./Makefile | grep -C5 lah
+  # List Files (And Permissions)
+  echo "--File List--"
+  ls -lah
+  echo "-------------"
+  make config-${if stdenv.cc.isClang or false then "clang" else "gcc"} VERBOSE=1
   '';
+
+  postBuild = "";
+  postInstall = "";
 })

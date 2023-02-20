@@ -1,0 +1,29 @@
+# Nonsense
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Python
+__pycache__
+.mypy_cache/
+build/
+/venv
+*.egg-info/
+dist/
+requirements.frz.txt
+
+# Nix
+result
+
+# Flow artefacts
+*.log
+*.tar.gz
+/*.lef
+/*.def
+logs/
+
+# Docker-specific
+Dockerfile

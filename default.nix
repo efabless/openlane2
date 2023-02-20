@@ -65,6 +65,19 @@
     rev = klayout-rev;
     sha256 = klayout-sha256;
   },
+
+  yosys-abc-rev ? "a8f0ef2368aa56b3ad20a52298a02e63b2a93e2d",
+  yosys-abc-sha256 ? "sha256-48i6AKQhMG5hcnkS0vejOy1PqFbeb6FpU7Yx0rEvHDI=",
+  yosys-rev ? "7e588664e7efa36ff473f0497feacaad57f5e90c",
+  yosys-sha256 ? "sha256-0xV+323YTK+VhnD05SmvGv8uT4TzqA9IZ/iKl1as1Kc=",
+  yosys ? import ./nix/yosys.nix {
+    inherit pkgs;
+    rev = yosys-rev;
+    sha256 = yosys-sha256;
+    abc-rev = yosys-abc-rev;
+    abc-sha256 = yosys-abc-sha256;
+  },
+
   
   ...
 }:
@@ -94,6 +107,9 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     klayout
     yosys
     netgen
+    python3
+    ruby
+    tcl
 
     # Python
     click
@@ -103,10 +119,5 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     pcpp
     volare
     tkinter
-    furo
-    docutils
-    sphinx
-    sphinx-autobuild
-    myst-parser
   ] ++ (lib.optionals stdenv.isLinux [ magic ]);
 }

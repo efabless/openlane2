@@ -3,6 +3,16 @@ all: dist
 dist: venv/created
 	./venv/bin/python3 setup.py sdist bdist_wheel
 
+.PHONY: openlane
+openlane:
+	@echo "make openlane is deprecated. Please use make docker-image."
+	@echo "----"
+	@$(MAKE) docker-image
+
+.PHONY: docker-image
+docker-image: venv
+	$(shell nix-build docker.nix) | docker load
+
 .PHONY: lint
 lint: venv/created
 	./venv/bin/black --check .

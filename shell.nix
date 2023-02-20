@@ -19,7 +19,7 @@
 with pkgs; mkShell {
   name = "openlane";
 
-  buildInputs = [
+  propagatedBuildInputs = [
     openlane-app
 
     # Conveniences

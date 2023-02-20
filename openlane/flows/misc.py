@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 import subprocess
 from typing import List, Tuple
@@ -54,7 +55,7 @@ class OpenInKLayout(Flow):
 
         subprocess.check_call(
             [
-                "python3",
+                sys.executable,
                 os.path.join(
                     get_script_dir(),
                     "klayout",

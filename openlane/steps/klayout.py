@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import sys
 import platform
 import subprocess
 from typing import Dict
@@ -94,7 +95,7 @@ class StreamOut(Step):
 
         self.run_subprocess(
             [
-                "python3",
+                sys.executable,
                 os.path.join(
                     get_script_dir(),
                     "klayout",
