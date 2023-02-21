@@ -36,7 +36,7 @@ if { !$placement_needed } {
 
 set arg_list [list]
 
-lappend arg_list -density [expr $::env(PL_TARGET_DENSITY) / 100.0]
+lappend arg_list -density [expr $::env(PL_TARGET_DENSITY_PCT) / 100.0]
 
 if { $::env(PL_TIME_DRIVEN) } {
 	source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl

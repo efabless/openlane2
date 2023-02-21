@@ -14,13 +14,24 @@
 import os
 import re
 import json
+from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from .step import Step
-from .tclstep import TclStep
 from .state import State
+from .tclstep import TclStep
 from .design_format import DesignFormat
+from .common_variables import (
+    io_layer_variables,
+    pdn_variables,
+    rsz_variables,
+    dpl_variables,
+    routing_layer_variables,
+    constraint_variables,
+)
+
+from ..config import Variable, Path, StringEnum
 from ..common import get_script_dir, log, warn
 
 EXAMPLE_INPUT = """
@@ -73,6 +84,35 @@ class OpenROADStep(TclStep):
         DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
+    ]
+
+    config_vars = constraint_variables + [
+        Variable(
+            "STA_WRITE_LIB",
+            bool,
+            "Controls whether a timing model is written using OpenROAD OpenSTA after static timing analysis. This is an option as it in its current state, the timing model generation (and the model itself) can be quite buggy.",
+            default=False,
+        ),
+        Variable(
+            "PDN_CONNECT_MACROS_TO_GRID",
+            bool,
+            "Enables the connection of macros to the top level power grid.",
+            default=True,
+            deprecated_names=["FP_PDN_ENABLE_MACROS_GRID"],
+        ),
+        Variable(
+            "PDN_MACRO_CONNECTIONS",
+            Optional[List[str]],
+            "Specifies explicit power connections of internal macros to the top level power grid, in the format: macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
+            deprecated_names=["FP_PDN_MACRO_HOOKS"],
+        ),
+        Variable(
+            "PDN_ENABLE_GLOBAL_CONNECTIONS",
+            bool,
+            "Enables the creation of global connections in PDN generation.",
+            default=True,
+            deprecated_names=["FP_PDN_ENABLE_GLOBAL_CONNECTIONS"],
+        ),
     ]
 
     @abstractmethod
@@ -142,6 +182,58 @@ class Floorplan(OpenROADStep):
 
     inputs = [DesignFormat.NETLIST]
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_SIZING",
+            StringEnum("FP_SIZING", ["relative", "absolute"]),
+            "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
+            default="relative",
+        ),
+        Variable(
+            "FP_ASPECT_RATIO",
+            Decimal,
+            "The core's aspect ratio (height / width).",
+            default=1,
+        ),
+        Variable(
+            "FP_CORE_UTIL",
+            Decimal,
+            "The core utilization percentage.",
+            default=50,
+            doc_units="%",
+        ),
+        Variable(
+            "CORE_AREA",
+            Optional[str],
+            'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
+            doc_units="μm",
+        ),
+        Variable(
+            "BOTTOM_MARGIN_MULT",
+            Decimal,
+            "The core margin, in multiples of site heights, from the bottom boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            default=4,
+        ),
+        Variable(
+            "TOP_MARGIN_MULT",
+            Decimal,
+            "The core margin, in multiples of site heights, from the top boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            default=4,
+        ),
+        Variable(
+            "LEFT_MARGIN_MULT",
+            Decimal,
+            "The core margin, in multiples of site widths, from the left boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            default=12,
+        ),
+        Variable(
+            "RIGHT_MARGIN_MULT",
+            Decimal,
+            "The core margin, in multiples of site widths, from the right boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            default=12,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
@@ -163,6 +255,26 @@ class IOPlacement(OpenROADStep):
     id = "io-placement"
     name = "I/O Placement"
 
+    config_vars = (
+        OpenROADStep.config_vars
+        + io_layer_variables
+        + [
+            Variable(
+                "FP_IO_MODE",
+                StringEnum("FP_IO_MODE", ["matching", "random_equidistant"]),
+                "Decides the mode of the random IO placement option.",
+                default="random_equidistant",
+            ),
+            Variable(
+                "FP_IO_MIN_DISTANCE",
+                Decimal,
+                "The minimum distance between the IOs.",
+                default=3,
+                doc_units="µm",
+            ),
+        ]
+    )
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
@@ -180,6 +292,30 @@ class TapDecapInsertion(OpenROADStep):
     name = "Tap/Decap Insertion"
     flow_control_variable = "RUN_TAP_DECAP_INSERTION"
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_TAP_DECAP_INSERTION",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+            deprecated_names=["TAP_DECAP_INSERTION"],
+        ),
+        Variable(
+            "FP_TAP_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros during tap insertion.",
+            default=10,
+            doc_units="µm",
+        ),
+        Variable(
+            "FP_TAP_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros during tap insertion.",
+            default="expr::$FP_TAP_HORIZONTAL_HALO",
+            doc_units="µm",
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
 
@@ -189,6 +325,8 @@ class GeneratePDN(OpenROADStep):
     name = "Generate PDN"
     long_name = "Power Distribution Network Generation"
 
+    config_vars = OpenROADStep.config_vars + pdn_variables
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
 
@@ -197,18 +335,85 @@ class GeneratePDN(OpenROADStep):
 class GlobalPlacement(OpenROADStep):
     name = "Global Placement"
 
+    config_vars = (
+        OpenROADStep.config_vars
+        + routing_layer_variables
+        + [
+            Variable(
+                "PL_TARGET_DENSITY_PCT",
+                Optional[Decimal],
+                "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
+                doc_units="%",
+                deprecated_names=[
+                    ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
+                ],
+            ),
+            Variable(
+                "PL_TIME_DRIVEN",
+                bool,
+                "Specifies whether the placer should use time driven placement.",
+                default=True,
+            ),
+            Variable(
+                "PL_SKIP_INITIAL_PLACEMENT",
+                bool,
+                "Specifies whether the placer should run initial placement or not.",
+                default=False,
+            ),
+            Variable(
+                "PL_ROUTABILITY_DRIVEN",
+                bool,
+                "Specifies whether the placer should use routability driven placement.",
+                default=True,
+            ),
+            Variable(
+                "PL_ESTIMATE_PARASITICS",
+                bool,
+                "Specifies whether or not to run STA after global placement using OpenROAD's estimate_parasitics -placement and generate reports.",
+                default=True,
+            ),
+        ]
+    )
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "gpl.tcl")
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["PL_TARGET_DENSITY"] = f"{self.config['FP_CORE_UTIL'] + 5}"
+        env["PL_TARGET_DENSITY_PCT"] = f"{self.config['FP_CORE_UTIL'] + 5}"
         return super().run(env=env, **kwargs)
+
+
+@Step.factory.register("OpenROAD.BasicMacroPlacement")
+class BasicMacroPlacement(OpenROADStep):
+    name = "Basic Macro Placement"
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "PL_MACRO_HALO",
+            str,
+            "Macro placement halo. Format: `{Horizontal} {Vertical}`.",
+            default="0 0",
+            doc_units="μm",
+        ),
+        Variable(
+            "PL_MACRO_CHANNEL",
+            str,
+            "Channel widths between macros. Format: `{Horizontal} {Vertical}`.",
+            default="0 0",
+            doc_units="μm",
+        ),
+    ]
+
+    def get_script_path(self):
+        raise NotImplementedError()
 
 
 @Step.factory.register("OpenROAD.DetailedPlacement")
 class DetailedPlacement(OpenROADStep):
     name = "Detailed Placement"
+
+    config_vars = OpenROADStep.config_vars + dpl_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "dpl.tcl")
@@ -219,6 +424,68 @@ class CTS(OpenROADStep):
     long_name = "Clock Tree Synthesis"
     flow_control_variable = "RUN_CTS"
 
+    config_vars = dpl_variables + [
+        Variable(
+            "RUN_CTS",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+            deprecated_names=["CLOCK_TREE_SYNTH"],
+        ),
+        Variable(
+            "CTS_TARGET_SKEW",
+            Decimal,
+            "The target clock skew in picoseconds.",
+            default=200,
+            doc_units="ps",
+        ),
+        Variable(
+            "CTS_TOLERANCE",
+            int,
+            "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
+            default=100,
+        ),
+        Variable(
+            "CTS_SINK_CLUSTERING_SIZE",
+            int,
+            "Specifies the maximum number of sinks per cluster.",
+            default=25,
+        ),
+        Variable(
+            "CTS_SINK_CLUSTERING_MAX_DIAMETER",
+            Decimal,
+            "Specifies maximum diameter of the sink cluster.",
+            default=50,
+            doc_units="μm",
+        ),
+        Variable(
+            "CTS_REPORT_TIMING",
+            bool,
+            "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
+            default=True,
+        ),
+        Variable(
+            "CTS_CLK_MAX_WIRE_LENGTH",
+            Decimal,
+            "Specifies the maximum wire length on the clock net.",
+            default=0,
+            doc_units="µm",
+        ),
+        Variable(
+            "CTS_DISABLE_POST_PROCESSING",
+            bool,
+            "Specifies whether or not to disable post cts processing for outlier sinks.",
+            default=False,
+        ),
+        Variable(
+            "CTS_DISTANCE_BETWEEN_BUFFERS",
+            Decimal,
+            "Specifies the distance between buffers when creating the clock tree.",
+            default=0,
+            doc_units="µm",
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
@@ -226,6 +493,52 @@ class CTS(OpenROADStep):
 @Step.factory.register("OpenROAD.GlobalRouting")
 class GlobalRouting(OpenROADStep):
     name = "Global Routing"
+
+    config_vars = (
+        OpenROADStep.config_vars
+        + routing_layer_variables
+        + [
+            Variable(
+                "DIODE_PADDING",
+                int,
+                "Diode cell padding; increases the width of diode cells during placement checks..",
+                default=2,
+                doc_units="sites",
+            ),
+            Variable(
+                "GRT_ALLOW_CONGESTION",
+                bool,
+                "Allow congestion during global routing",
+                default=False,
+            ),
+            Variable(
+                "GRT_REPAIR_ANTENNAE",
+                bool,
+                "Specifies the insertion strategy of diodes to be used in the flow.",
+                default=True,
+                deprecated_names=[("DIODE_INSERTION_STRATEGY", lambda x: x in [3, 6])],
+            ),
+            Variable(
+                "GRT_ANTENNA_ITERS",
+                int,
+                "The maximum number of iterations for global antenna repairs.",
+                default=3,
+                deprecated_names=["GRT_ANT_ITERS"],
+            ),
+            Variable(
+                "GRT_ESTIMATE_PARASITICS",
+                bool,
+                "Specifies whether or not to run STA after global routing using OpenROAD's `estimate_parasitics -global_routing`.",
+                default=True,
+            ),
+            Variable(
+                "GRT_OVERFLOW_ITERS",
+                int,
+                "The maximum number of iterations waiting for the overflow to reach the desired value.",
+                default=50,
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
@@ -268,13 +581,43 @@ class DetailedRouting(OpenROADStep):
     name = "Detailed Routing"
     flow_control_variable = "RUN_DRT"
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_DRT",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+        Variable(
+            "ROUTING_CORES",
+            Optional[int],
+            "Specifies the number of threads to be used in OpenROAD Detailed Routing. If unset, this will be equal to your thread count.",
+        ),
+        Variable(
+            "DRT_MIN_LAYER",
+            Optional[str],
+            "An optional override to the lowest layer used in detailed routing. For example, in sky130, you may want global routing to avoid li1, but let detailed routing use li1 if it has to.",
+        ),
+        Variable(
+            "DRT_MAX_LAYER",
+            Optional[str],
+            "An optional override to the highest layer used in detailed routing.",
+        ),
+        Variable(
+            "DRT_OPT_ITERS",
+            int,
+            "Specifies the maximum number of optimization iterations during Detailed Routing in TritonRoute.",
+            default=64,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("ROUTING_CORES") is None:
-            env["ROUTING_CORES"] = str(os.cpu_count())
+            env["ROUTING_CORES"] = str(1)
         return super().run(env=env, **kwargs)
 
 
@@ -299,6 +642,15 @@ class FillInsertion(OpenROADStep):
     name = "Fill Insertion"
     flow_control_variable = "RUN_FILL_INSERTION"
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_FILL_INSERTION",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "fill.tcl")
 
@@ -306,6 +658,27 @@ class FillInsertion(OpenROADStep):
 @Step.factory.register("OpenROAD.ParasiticsExtraction")
 class ParasiticsExtraction(OpenROADStep):
     name = "Parasitics Extraction"
+    flow_control_variable = "RUN_SPEF_EXTRACTION"
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_SPEF_EXTRACTION",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+        Variable(
+            "RCX_MERGE_VIA_WIRE_RES",
+            bool,
+            "If enabled, the via and wire resistances will be merged.",
+            default=True,
+        ),
+        Variable(
+            "RCX_SDC_FILE",
+            Optional[Path],
+            "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
+        ),
+    ]
 
     # default inputs
     outputs = [DesignFormat.SPEF]
@@ -323,6 +696,16 @@ class ParasiticsExtraction(OpenROADStep):
 class ParasiticsSTA(OpenROADStep):
     name = "Parasitics STA"
     long_name = "Parasitics-based Static Timing Analysis"
+    flow_control_variable = "RUN_SPEF_STA"
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_SPEF_STA",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+    ]
 
     inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
     outputs = [DesignFormat.LIB, DesignFormat.SDF]
@@ -379,6 +762,15 @@ class IRDropReport(OpenROADStep):
     inputs = [DesignFormat.ODB, DesignFormat.SPEF]
     outputs = []
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RUN_IRDROP_REPORT",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
 
@@ -424,11 +816,79 @@ class IRDropReport(OpenROADStep):
 
 
 # Resizer Steps
+
+
 @Step.factory.register("OpenROAD.RepairDesign")
 class RepairDesign(OpenROADStep):
     id = "repair-design"
     name = "Repair Design (Post-Global Placement)"
-    flow_control_variable = "RUN_POST_GPL_REPAIR_DESIGN"
+    flow_control_variable = "RUN_REPAIR_DESIGN"
+
+    config_vars = (
+        OpenROADStep.config_vars
+        + rsz_variables
+        + [
+            Variable(
+                "RUN_REPAIR_DESIGN",
+                bool,
+                "Enables/disables this step.",
+                default=True,
+                deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_BUFFER_INPUT_PORTS",
+                bool,
+                "Specifies whether or not to insert buffers on input ports when design repairs are run.",
+                default=True,
+                deprecated_names=["PL_RESIZER_BUFFER_INPUT_PORTS"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS",
+                bool,
+                "Specifies whether or not to insert buffers on input ports when design repairs are run.",
+                default=True,
+                deprecated_names=["PL_RESIZER_BUFFER_OUTPUT_PORTS"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_TIE_FANOUT",
+                bool,
+                "Specifies whether or not to repair tie cells fanout when design repairs are run.",
+                default=True,
+                deprecated_names=["PL_RESIZER_REPAIR_TIE_FANOUT"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_TIE_SEPARATION",
+                bool,
+                "Allows tie separation when performing design repairs.",
+                default=False,
+                deprecated_names=["PL_RESIZER_TIE_SEPERATION"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_MAX_WIRE_LENGTH",
+                Decimal,
+                "Specifies the maximum wire length cap used by resizer to insert buffers. If set to 0, no buffers will be inserted.",
+                default=0,
+                doc_units="µm",
+                deprecated_names=["PL_RESIZER_MAX_WIRE_LENGTH"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_MAX_SLEW_PCT",
+                Decimal,
+                "Specifies a margin for the slews during design repair.",
+                default=20,
+                doc_units="%",
+                deprecated_names=["PL_RESIZER_MAX_SLEW_MARGIN"],
+            ),
+            Variable(
+                "DESIGN_REPAIR_MAX_CAP_PCT",
+                Decimal,
+                "Specifies a margin for the capacitances during design repair.",
+                default=20,
+                doc_units="%",
+                deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
@@ -440,6 +900,55 @@ class ResizerTimingPostCTS(OpenROADStep):
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
     flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
+    config_vars = (
+        OpenROADStep.config_vars
+        + rsz_variables
+        + [
+            Variable(
+                "RUN_POST_CTS_RESIZER_TIMING",
+                bool,
+                "Enables/disables this step.",
+                default=True,
+                deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
+            ),
+            Variable(
+                "PL_RESIZER_HOLD_SLACK_MARGIN",
+                Decimal,
+                "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
+                default=0.1,
+                doc_units="ns",
+            ),
+            Variable(
+                "PL_RESIZER_SETUP_SLACK_MARGIN",
+                Decimal,
+                "Specifies a time margin for the slack when fixing setup violations.",
+                default=0.05,
+                doc_units="ns",
+            ),
+            Variable(
+                "PL_RESIZER_HOLD_MAX_BUFFER_PCT",
+                Decimal,
+                "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
+                default=50,
+                deprecated_names=["PL_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
+            ),
+            Variable(
+                "PL_RESIZER_SETUP_MAX_BUFFER_PCT",
+                Decimal,
+                "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
+                default=50,
+                doc_units="%",
+                deprecated_names=["PL_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
+            ),
+            Variable(
+                "PL_RESIZER_ALLOW_SETUP_VIOS",
+                bool,
+                "Allows the creation of setup violations when fixing hold violations.",
+                default=False,
+            ),
+        ]
+    )
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postcts.tcl")
 
@@ -449,6 +958,59 @@ class ResizerTimingPostGRT(OpenROADStep):
     id = "rsz-timing-postgrt"
     name = "Resizer Timing Optimizations (Post-Global Routing)"
     flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
+
+    config_vars = (
+        OpenROADStep.config_vars
+        + rsz_variables
+        + [
+            Variable(
+                "RUN_POST_GRT_RESIZER_TIMING",
+                bool,
+                "Enables/disables this step.",
+                default=True,
+                deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
+            ),
+            Variable(
+                "GRT_RESIZER_HOLD_SLACK_MARGIN",
+                str,
+                "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
+                default=0.05,
+                doc_units="ns",
+                deprecated_names=["GLB_RESIZER_HOLD_SLACK_MARGIN"],
+            ),
+            Variable(
+                "GRT_RESIZER_SETUP_SLACK_MARGIN",
+                str,
+                "Specifies a time margin for the slack when fixing setup violations.",
+                default=0.025,
+                doc_units="ns",
+                deprecated_names=["GLB_RESIZER_SETUP_SLACK_MARGIN"],
+            ),
+            Variable(
+                "GRT_RESIZER_HOLD_MAX_BUFFER_PCT",
+                Decimal,
+                "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
+                default=50,
+                doc_units="%",
+                deprecated_names=["GLB_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
+            ),
+            Variable(
+                "GRT_RESIZER_SETUP_MAX_BUFFER_PCT",
+                Decimal,
+                "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
+                default=50,
+                doc_units="%",
+                deprecated_names=["GLB_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
+            ),
+            Variable(
+                "GRT_RESIZER_ALLOW_SETUP_VIOS",
+                bool,
+                "Allows setup violations when fixing hold.",
+                default=False,
+                deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")

@@ -175,6 +175,8 @@ def internal(method):
 
     :param f: Method to mark as internal
     """
+    if method.__doc__ is None:
+        method.__doc__ = ""
     method.__doc__ = (
         "**This method is considered internal and should only be called by this class or its subclass hierarchy.**\n"
         + method.__doc__

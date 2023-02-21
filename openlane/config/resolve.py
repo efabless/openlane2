@@ -21,10 +21,10 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple, Union, Optional
 
 Keys = SimpleNamespace(
+    pdk_root="PDK_ROOT",
     pdk="PDK",
     pdkpath="PDKPATH",
     scl="STD_CELL_LIBRARY",
-    sclpath="SCLPATH",
     design_dir="DESIGN_DIR",
 )
 
@@ -219,14 +219,11 @@ def process_string(value: str, state: State) -> Optional[str]:
 
     DIR_PREFIX = "dir::"
     PDK_DIR_PREFIX = "pdk_dir::"
-    SCL_DIR_PREFIX = "scl_dir::"
 
     if value.startswith(DIR_PREFIX):
         value = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
     elif value.startswith(PDK_DIR_PREFIX):
         value = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
-    elif value.startswith(SCL_DIR_PREFIX):
-        value = value.replace(SCL_DIR_PREFIX, f"ref::${Keys.sclpath}/")
 
     if value.startswith(EXPR_PREFIX):
         try:
@@ -353,7 +350,6 @@ def resolve(
     pdk: Optional[str] = None,
     pdkpath: Optional[str] = None,
     scl: Optional[str] = None,
-    sclpath: Optional[str] = None,
 ):
     if exposing is None:
         exposing = []
@@ -364,7 +360,6 @@ def resolve(
         Keys.pdk,
         Keys.pdkpath,
         Keys.scl,
-        Keys.sclpath,
         Keys.design_dir,
     ]
     if only_extract_process_info:
@@ -382,7 +377,6 @@ def resolve(
             Keys.pdk,
             Keys.pdkpath,
             Keys.scl,
-            Keys.sclpath,
         ]:
             coalesce(variable)
 
@@ -390,7 +384,6 @@ def resolve(
         Keys.pdk: pdk,
         Keys.pdkpath: pdkpath,
         Keys.scl: scl,
-        Keys.sclpath: sclpath,
         Keys.design_dir: design_dir,
     }
     base_vars_clean = {k: v for k, v in base_vars.items() if v is not None}

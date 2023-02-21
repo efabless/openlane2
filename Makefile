@@ -13,6 +13,10 @@ openlane:
 docker-image: venv
 	$(shell nix-build docker.nix) | docker load
 
+.PHONY: docs
+docs: venv
+	$(MAKE) -C docs html
+
 .PHONY: lint
 lint: venv/created
 	./venv/bin/black --check .

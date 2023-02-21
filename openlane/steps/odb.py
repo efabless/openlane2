@@ -15,22 +15,21 @@ import os
 import re
 import json
 from abc import abstractmethod
-from typing import List
+from typing import List, Optional
+
 
 from .step import Step
 from .state import State
 from .design_format import DesignFormat
+from .common_variables import io_layer_variables
+
+from ..config import Path, Variable
 from ..common import get_openlane_root, get_script_dir
-from ..config import Path
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OdbpyStep(Step):
-    """
-    TODO
-    """
-
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
@@ -107,6 +106,14 @@ class ManualMacroPlacement(OdbpyStep):
     flow_control_variable = "MACRO_PLACEMENT_CFG"
     flow_control_msg = "No macros configured, skipping…"
 
+    config_vars = [
+        Variable(
+            "MACRO_PLACEMENT_CFG",
+            Optional[Path],
+            "Specifies the path a file specifying how OpenLane should place certain macros.",
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "manual_macro_place.py")
 
@@ -126,6 +133,21 @@ class CustomIOPlacement(OdbpyStep):
 
     flow_control_variable = "FP_PIN_ORDER_CFG"
     flow_control_msg = "No custom floorplan file configured, skipping…"
+
+    config_vars = io_layer_variables + [
+        Variable(
+            "FP_PIN_ORDER_CFG",
+            Optional[Path],
+            "Points to the pin order configuration file to set the pins in specific directions (S, W, E, N). If not set, then the IO pins will be placed using OpenROAD's basic pin placer.",
+        ),
+        Variable(
+            "QUIT_ON_UNMATCHED_IO",
+            bool,
+            "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
+            default=True,
+            deprecated_names=["FP_IO_UNMATCHED_ERROR"],
+        ),
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")

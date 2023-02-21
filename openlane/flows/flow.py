@@ -18,7 +18,17 @@ import glob
 import datetime
 from abc import abstractmethod, ABC
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import List, Tuple, Type, ClassVar, Optional, Dict, Callable
+from typing import (
+    List,
+    Sequence,
+    Tuple,
+    Type,
+    ClassVar,
+    Optional,
+    Dict,
+    Callable,
+    Union,
+)
 
 from rich.progress import (
     Progress,
@@ -29,7 +39,12 @@ from rich.progress import (
     TaskID,
 )
 
-from ..config import Config
+from ..config import (
+    Config,
+    ConfigBuilder,
+    Variable,
+    universal_flow_config_variables,
+)
 from ..steps import (
     Step,
     State,
@@ -101,6 +116,67 @@ class Flow(ABC):
         self.run_dir: Optional[str] = None
         self.tmp_dir: Optional[str] = None
         self.toolbox: Optional[Toolbox] = None
+
+    @classmethod
+    def get_config_variables(Self) -> List[Variable]:
+        flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
+            variable.name: (variable, "Universal")
+            for variable in universal_flow_config_variables
+        }
+        for step_cls in Self.Steps:
+            for variable in step_cls.config_vars:
+                if flow_variables_by_name.get(variable.name) is not None:
+                    existing_variable, existing_step = flow_variables_by_name[
+                        variable.name
+                    ]
+                    if variable != existing_variable:
+                        raise FlowException(
+                            f"Misconfigured flow: Unrelated variables in {existing_step} and {step_cls.__name__} share a name: {variable.name}"
+                        )
+                flow_variables_by_name[variable.name] = (variable, step_cls.__name__)
+
+        return [variable for variable, _ in flow_variables_by_name.values()]
+
+    @classmethod
+    def init_with_config(
+        Self,
+        config_in: Union[str, os.PathLike, Dict],
+        pdk: Optional[str] = None,
+        pdk_root: Optional[str] = None,
+        scl: Optional[str] = None,
+        design_dir: Optional[str] = None,
+        config_override_strings: Optional[Sequence[str]] = None,
+        **kwargs,
+    ):
+        """
+        Create a new instance of the :class:`Flow` object with a given
+        configuration file or object.
+
+        :param config_in: See :meth:`ConfigBuilder.load`
+        :param config_override_strings: See :meth:`ConfigBuilder.load`
+        :param pdk: See :meth:`ConfigBuilder.load`
+        :param pdk_root: See :meth:`ConfigBuilder.load`
+        :param scl: See :meth:`ConfigBuilder.load`
+        :param design_dir: See :meth:`ConfigBuilder.load`
+        """
+
+        flow_config_vars = Self.get_config_variables()
+
+        config_resolved, design_dir_resolved = ConfigBuilder.load(
+            config_in=config_in,
+            flow_config_vars=flow_config_vars,
+            config_override_strings=config_override_strings,
+            pdk=pdk,
+            pdk_root=pdk_root,
+            scl=scl,
+            design_dir=design_dir,
+        )
+
+        return Self(
+            config=config_resolved,
+            design_dir=design_dir_resolved,
+            **kwargs,
+        )
 
     @final
     def start(
@@ -315,7 +391,7 @@ class Flow(ABC):
             Self, registered_name: Optional[str] = None
         ) -> Callable[[Type[Flow]], Type[Flow]]:
             """
-            Adds a flow type to the registry.
+            A decorator that adds a flow type to the registry.
 
             :param registered_name: An optional registered name for the flow.
 

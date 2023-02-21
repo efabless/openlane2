@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from typing import Optional
 
 from .step import Step
 from .state import State
 from .design_format import DesignFormat
+
+from ..config import Path, Variable
 from ..common import get_script_dir, log
-from ..config import Path
 
 
 @Step.factory.register("Misc.LoadBaseSDC")
@@ -26,6 +28,15 @@ class LoadBaseSDC(Step):
     long_name = "Load Base Design Constraints File"
 
     outputs = [DesignFormat.SDC]
+
+    config_vars = [
+        Variable(
+            "BASE_SDC_FILE",
+            Optional[Path],
+            "Specifies the base SDC file to source before running Static Timing Analysis.",
+            deprecated_names=["SDC_FILE"],
+        ),
+    ]
 
     def run(self, **kwargs) -> State:
         new_state = super().run(**kwargs)

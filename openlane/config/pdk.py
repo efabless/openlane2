@@ -90,8 +90,8 @@ pdk_variables = [
     ## Netgen
     Variable(
         "NETGEN_SETUP",
-        Path,
-        "A path to the setup file for Netgen used to configure LVS.",
+        Optional[Path],
+        "A path to the setup file for Netgen used to configure LVS. If set to None, this PDK will not support Netgen-based steps.",
         deprecated_names=["NETGEN_SETUP_FILE"],
     ),
     ## Magic
@@ -501,10 +501,6 @@ scl_variables = [
     ),
 ]
 
-PDKVariablesByID: Dict[str, Variable] = {
-    variable.name: variable for variable in pdk_variables
-}
-
 
 def migrate_old_config(config: Config) -> Config:
     new = config.copy()
@@ -534,19 +530,5 @@ def migrate_old_config(config: Config) -> Config:
     return new
 
 
-pdk_removed_variables: Dict[str, str] = {}
-
-
-def validate_pdk_config(
-    config: Config,
-    ignore_keys: List[str],
-    processed_so_far: Optional[Config] = None,
-):
-    migrated = migrate_old_config(config)
-    return Variable.validate_config(
-        migrated,
-        ignore_keys,
-        pdk_variables + scl_variables,
-        removed=pdk_removed_variables,
-        processed_so_far=processed_so_far,
-    )
+all_variables: List[Variable] = pdk_variables + scl_variables
+removed_variables: Dict[str, str] = {}

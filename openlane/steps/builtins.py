@@ -11,12 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Built-in Steps
-
-A list of steps that are included with the OpenLane infrastructure. They are
-used by the included flows and can be used in custom flows.
-"""
 
 # flake8: noqa
 from . import yosys as Yosys

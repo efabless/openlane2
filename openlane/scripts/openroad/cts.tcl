@@ -20,12 +20,12 @@ if { ![info exists ::env(CLOCK_NET)] } {
     exit 0
 }
 
-if {![info exist ::env(SYNTH_MAX_TRAN)]} {
-    set ::env(SYNTH_MAX_TRAN) [expr {0.1 * $::env(CLOCK_PERIOD)}]
+if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
+    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1 * $::env(CLOCK_PERIOD)}]
 } else {
-    set ::env(SYNTH_MAX_TRAN) [expr {$::env(SYNTH_MAX_TRAN) * 1000}]
+    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
 }
-set max_slew [expr {$::env(SYNTH_MAX_TRAN) * 1e-9}]; # must convert to seconds
+set max_slew [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1e-9}]; # must convert to seconds
 set max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # must convert to farad
 
 # set rc values

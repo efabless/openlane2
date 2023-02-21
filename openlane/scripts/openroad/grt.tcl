@@ -29,7 +29,7 @@ check_antennas -verbose
 puts "%OL_END_REPORT"
 
 if { $::env(GRT_REPAIR_ANTENNAE) } {
-    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANT_ITERS)
+    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS)
     check_placement
 
     # Check Antennae (Post-Repair)

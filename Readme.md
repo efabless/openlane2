@@ -11,6 +11,26 @@
 
 OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, SPEF-Extractor, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
 
+```python
+import openlane
+
+Classic = openlane.Flow.factory.get("Classic")
+
+flow = Classic.init_with_config(
+    {
+        "PDK": "sky130A",
+        "DESIGN_NAME": "spm",
+        "VERILOG_FILES": ["./src/spm.v"],
+        "CLOCK_PORT": "clk",
+        "CLOCK_PERIOD": 10,
+    },
+    design_dir=".",
+)
+
+flow.start()
+```
+
+
 ## Installation
 ### Binary Dependencies
 You'll need the following:

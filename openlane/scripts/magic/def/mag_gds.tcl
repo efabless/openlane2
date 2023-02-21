@@ -59,41 +59,39 @@ cellname filepath $::env(DESIGN_NAME) $::env(STEP_DIR)
 save
 
 # Write GDS
-if { $::env(MAGIC_GENERATE_GDS) } {
-	# mark the incoming cell defs as readonly so that their
-	# GDS data gets copied verbatim
-	gds readonly true
-	gds rescale false
+# mark the incoming cell defs as readonly so that their
+# GDS data gets copied verbatim
+gds readonly true
+gds rescale false
 
-	if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
-		gds polygon subcells true
-	}
-
-	if {  [info exist ::env(EXTRA_GDS_FILES)] } {
-		set gds_files_in $::env(EXTRA_GDS_FILES)
-		foreach gds_file $gds_files_in {
-			gds read $gds_file
-		}
-	}
-
-	load $::env(DESIGN_NAME)
-
-	select top cell
-
-	if {  [info exist ::env(MAGIC_DISABLE_HIER_GDS)]\
-		&& $::env(MAGIC_DISABLE_HIER_GDS) } {
-		cif *hier write disable
-		cif *array write disable
-	}
-
-	gds nodatestamp yes
-
-	if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } {
-		gds abstract allow
-	}
-
-	gds write $::env(SAVE_MAG_GDS)
-	puts "\[INFO\] GDS Write Complete"
+if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
+	gds polygon subcells true
 }
+
+if {  [info exist ::env(EXTRA_GDS_FILES)] } {
+	set gds_files_in $::env(EXTRA_GDS_FILES)
+	foreach gds_file $gds_files_in {
+		gds read $gds_file
+	}
+}
+
+load $::env(DESIGN_NAME)
+
+select top cell
+
+if {  [info exist ::env(MAGIC_DISABLE_HIER_GDS)]\
+	&& $::env(MAGIC_DISABLE_HIER_GDS) } {
+	cif *hier write disable
+	cif *array write disable
+}
+
+gds nodatestamp yes
+
+if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } {
+	gds abstract allow
+}
+
+gds write $::env(SAVE_MAG_GDS)
+puts "\[INFO\] GDS Write Complete"
 
 exit 0

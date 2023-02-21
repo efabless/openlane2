@@ -19,6 +19,8 @@ from abc import abstractmethod
 from .step import Step
 from .tclstep import TclStep
 from .state import DesignFormat, State
+from ..config import Variable
+from ..common import log
 
 
 class NetgenStep(TclStep):
@@ -38,14 +40,28 @@ class LVS(NetgenStep):
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
     flow_control_variable = "RUN_LVS"
 
+    config_vars = [
+        Variable(
+            "RUN_LVS",
+            bool,
+            "Enables running LVS.",
+            default=True,
+        ),
+    ]
+
     def get_command(self) -> List[str]:
         return super().get_command() + [self.get_script_path()]
 
     def get_script_path(self):
-        return os.path.join(self.step_dir, "script.lvs")
+        return os.path.join(self.step_dir, "lvs_script.lvs")
 
     def run(self, **kwargs) -> State:
         assert isinstance(self.state_in, State)
+
+        if self.config["NETGEN_SETUP"] is None:
+            log(f"Skipping {self.name}: Netgen is not supported for this PDK.")
+            return Step.run(self, **kwargs)
+
         spice_glob = os.path.join(
             self.config["PDK_ROOT"],
             self.config["PDK"],

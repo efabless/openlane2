@@ -15,7 +15,7 @@ import os
 import glob
 import subprocess
 from textwrap import dedent
-from typing import Type, Optional, List
+from typing import Type, Optional, List, Union
 
 import click
 
@@ -24,11 +24,11 @@ from .__version__ import __version__
 from .common import err, warn, log
 from .container import run_in_container
 from .flows import Flow, SequentialFlow, FlowException, FlowError
-from .config import ConfigBuilder, InvalidConfig
+from .config import Config, InvalidConfig
 
 
 def run(
-    flow_name: str,
+    flow_name: Optional[str],
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
@@ -51,9 +51,28 @@ def run(
         err("--run-tag and --last-run are mutually exclusive.")
         exit(1)
 
+    flow_description: Union[str, List[str]] = flow_name or "Classic"
+
+    if meta := Config.get_meta(config_file):
+        if flow_ids := meta.flow:
+            flow_description = flow_ids
+
+    TargetFlow: Type[Flow]
+
+    if not isinstance(flow_description, str):
+        TargetFlow = SequentialFlow.make(flow_description)
+    else:
+        if FlowClass := Flow.factory.get(flow_description):
+            TargetFlow = FlowClass
+        else:
+            err(
+                f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
+            )
+            exit(1)
+
     try:
-        config_in, design_dir = ConfigBuilder.load(
-            config_file,
+        flow = TargetFlow.init_with_config(
+            config_in=config_file,
             pdk_root=pdk_root,
             pdk=pdk,
             scl=scl,
@@ -74,28 +93,12 @@ def run(
         log("OpenLane will now quit.")
         exit(1)
 
-    flow_description = flow_name or config_in.meta.flow
-
-    TargetFlow: Type[Flow]
-
-    if not isinstance(flow_description, str):
-        TargetFlow = SequentialFlow.make(flow_description)
-    else:
-        if FlowClass := Flow.factory.get(flow_description):
-            TargetFlow = FlowClass
-        else:
-            err(
-                f"Unknown flow '{flow_description}' specified in configuration's 'meta' object."
-            )
-            exit(1)
-
-    flow = TargetFlow(config_in, design_dir)
     initial_state: Optional[State] = None
     if initial_state_json is not None:
         initial_state = State.loads(open(initial_state_json).read())
 
     if last_run:
-        runs = glob.glob(os.path.join(design_dir, "runs", "*"))
+        runs = glob.glob(os.path.join(flow.design_dir, "runs", "*"))
 
         latest_time: float = 0
         latest_run: Optional[str] = None

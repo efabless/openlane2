@@ -16,15 +16,21 @@ import json
 from enum import Enum
 from decimal import Decimal
 from collections import UserDict, UserString
-from typing import Any, Tuple, Union, List
+from typing import (
+    Any,
+    Tuple,
+    Union,
+    List,
+    Optional,
+)
 
 from dataclasses import dataclass, asdict
 
 
 @dataclass
 class Meta:
-    version: int
-    flow: Union[str, List[str]] = "Classic"
+    version: int = 1
+    flow: Union[None, str, List[str]] = "Classic"
 
 
 class Path(UserString, os.PathLike):
@@ -39,7 +45,7 @@ class Path(UserString, os.PathLike):
 
     def exists(self) -> bool:
         """
-        A convenience method calling :py:attr:`os.path.exists`
+        A convenience method calling :meth:`os.path.exists`
         """
         return os.path.exists(self)
 
@@ -69,6 +75,28 @@ class Config(UserDict):
     """
 
     meta = Meta(version=1)
+
+    @classmethod
+    def get_meta(
+        Self,
+        json_config_in: Union[str, os.PathLike],
+    ) -> Optional[Meta]:
+        """
+        Returns the Meta object of a JSON configuration file
+
+        :param config_in: A configuration file.
+        :returns: Either a Meta object, or if the file is not a JSON file, None.
+        """
+        try:
+            obj = json.load(open(json_config_in, encoding="utf8"))
+        except (json.JSONDecodeError, IsADirectoryError):
+            return None
+
+        meta = Meta()
+        if meta_raw := obj.get("meta"):
+            meta = Meta(**meta_raw)
+
+        return meta
 
     def dumps(self) -> str:
         """

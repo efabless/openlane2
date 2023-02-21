@@ -14,14 +14,20 @@
 import os
 import json
 from decimal import Decimal
-from typing import List, Tuple, Optional, Callable, Union, Dict
+from pprint import pprint
+from typing import List, Sequence, Tuple, Optional, Callable, Union, Dict
 
 from .resolve import resolve, Keys
+from .pdk import (
+    all_variables as pdk_variables,
+    removed_variables as pdk_removed_variables,
+    migrate_old_config,
+)
+from .flow import removed_variables
 from .tcleval import env_from_tcl
 from .config import Config, Meta
-from .pdk import validate_pdk_config, PDKVariablesByID
-from .flow import validate_user_config, FlowVariablesByID
-from ..common import log, warn
+from .variable import Variable
+from ..common import internal, log, warn
 
 
 class InvalidConfig(ValueError):
@@ -72,7 +78,8 @@ class ConfigBuilder(object):
     def load(
         Self,
         config_in: Union[str, os.PathLike, Dict],
-        config_override_strings: List[str],
+        flow_config_vars: Sequence[Variable],
+        config_override_strings: Optional[Sequence[str]] = None,
         pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
@@ -123,6 +130,10 @@ class ConfigBuilder(object):
             elif config_in.endswith(".tcl"):
                 raw = open(config_in, encoding="utf8").read()
                 loader = Self.loads_tcl
+                if config_override_strings is None:
+                    raise ValueError(
+                        "CLI override strings are not supported with .Tcl configuration files."
+                    )
             else:
                 if os.path.isdir(config_in):
                     raise ValueError(
@@ -143,28 +154,12 @@ class ConfigBuilder(object):
         loaded = loader(
             raw,
             design_dir,
+            flow_config_vars=flow_config_vars,
             pdk=pdk,
             pdk_root=pdk_root,
             scl=scl,
+            config_override_strings=(config_override_strings or []),
         )
-
-        for string in config_override_strings:
-            components = string.split("=", 2)
-            if len(components) != 2:
-                raise TypeError(
-                    f"Config override string '{components}' is invalid: no = found."
-                )
-            name, value_raw = components
-            variable = PDKVariablesByID.get(name) or FlowVariablesByID.get(name)
-            if variable is None:
-                warn(f"Unknown configuration override variable '{name}'.")
-                continue
-            try:
-                value = json.loads(value_raw)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON value '{value_raw}': {e}")
-            value_verified = variable.process(value)
-            loaded[name] = value_verified
 
         return (loaded, design_dir)
 
@@ -183,11 +178,14 @@ class ConfigBuilder(object):
             **kwargs,
         )
 
+    @internal
     @classmethod
     def load_dict(
         Self,
         raw: dict,
         design_dir: str,
+        flow_config_vars: Sequence[Variable],
+        config_override_strings: Sequence[str],
         pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
@@ -199,6 +197,10 @@ class ConfigBuilder(object):
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
             del raw["meta"]
+
+        for string in config_override_strings:
+            key, value = string.split("=", 1)
+            raw[key] = value
 
         process_info = resolve(
             raw,
@@ -233,6 +235,7 @@ class ConfigBuilder(object):
 
         pdkpath = os.path.join(pdk_root, pdk)
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
+
         config_in = env_from_tcl(
             config_in,
             open(pdk_config_path, encoding="utf8").read(),
@@ -243,17 +246,20 @@ class ConfigBuilder(object):
             scl is not None
         ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
 
-        sclpath = os.path.join(pdkpath, "libs.ref", scl)
         scl_config_path = os.path.join(
             pdkpath, "libs.tech", "openlane", scl, "config.tcl"
         )
-        config_in = env_from_tcl(
-            config_in,
-            open(scl_config_path, encoding="utf8").read(),
+        config_in = migrate_old_config(
+            env_from_tcl(
+                config_in,
+                open(scl_config_path, encoding="utf8").read(),
+            )
         )
 
-        config_in, pdk_warnings, pdk_errors = validate_pdk_config(
-            config_in, ["PDK_ROOT", "PDK", "STD_CELL_LIBRARY"]
+        config_in, pdk_warnings, pdk_errors = Variable.process_config(
+            config_in,
+            pdk_variables,
+            pdk_removed_variables,
         )
 
         if len(pdk_errors) != 0:
@@ -267,23 +273,22 @@ class ConfigBuilder(object):
                 for warning in pdk_warnings:
                     warn(warning)
 
-        process_input = resolve if resolve_json else lambda x, *args, **kwargs: x
+        resolve_maybe = resolve if resolve_json else lambda x, *args, **kwargs: x
 
-        design_config = Config(
-            **process_input(
-                raw,
-                pdk=pdk,
-                pdkpath=pdkpath,
-                scl=scl,
-                sclpath=sclpath,
-                design_dir=design_dir,
-            )
+        resolved = resolve_maybe(
+            raw,
+            pdk=pdk,
+            pdkpath=pdkpath,
+            scl=scl,
+            design_dir=design_dir,
         )
 
-        config_in, design_warnings, design_errors = validate_user_config(
-            design_config,
-            ["DESIGN_DIR", "PDK_ROOT", "PDK", "PDKPATH", "SCLPATH", "STD_CELL_LIBRARY"],
+        config_in.update(**resolved)
+
+        config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
+            pdk_variables + list(flow_config_vars),
+            removed_variables,
         )
 
         if meta_raw is not None:
@@ -307,11 +312,14 @@ class ConfigBuilder(object):
         config_in["PDK_ROOT"] = pdk_root
         return config_in
 
+    @internal
     @classmethod
     def loads_tcl(
         Self,
         config: str,
         design_dir: str,
+        flow_config_vars: Sequence[Variable],
+        config_override_strings: Sequence[str],  # Unused, kept for API consistency
         pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
@@ -380,9 +388,17 @@ class ConfigBuilder(object):
             open(scl_config_path, encoding="utf8").read(),
         )
 
-        config_in, pdk_warnings, pdk_errors = validate_pdk_config(
+        config_in = migrate_old_config(
+            env_from_tcl(
+                config_in,
+                open(scl_config_path, encoding="utf8").read(),
+            )
+        )
+
+        config_in, pdk_warnings, pdk_errors = Variable.process_config(
             config_in,
-            ["PDK_ROOT", "PDK", "STD_CELL_LIBRARY", "DESIGN_DIR", "DESIGN_NAME"],
+            pdk_variables,
+            pdk_removed_variables,
         )
 
         if len(pdk_errors) != 0:
@@ -402,10 +418,12 @@ class ConfigBuilder(object):
 
         design_config = env_from_tcl(tcl_vars_in, config)
 
-        config_in, design_warnings, design_errors = validate_user_config(
-            design_config,
-            ["DESIGN_DIR", "PDK_ROOT", "PDK", "PDKPATH", "SCLPATH", "STD_CELL_LIBRARY"],
+        config_in.update(**design_config)
+
+        config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
+            pdk_variables + list(flow_config_vars),
+            removed_variables,
         )
 
         if len(design_errors) != 0:

@@ -21,8 +21,8 @@ source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
 set_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 
 # set don't use cells
-if { [info exists ::env(DONT_USE_CELLS)] } {
-    set_dont_use $::env(DONT_USE_CELLS)
+if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
+    set_dont_use $::env(RSZ_DONT_USE_CELLS)
 }
 
 # set rc values
@@ -46,13 +46,7 @@ if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
 }
 repair_timing {*}$arg_list
 
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
-
-detailed_placement
-
-if { $::env(GRT_OPTIMIZE_MIRRORING) } {
-    optimize_mirroring
-}
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg

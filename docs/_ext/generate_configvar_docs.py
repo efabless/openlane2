@@ -107,6 +107,20 @@ def generate_module_docs(app: Sphinx, conf: Config):
                     )
                 )
 
+            # 3. Steps
+            template = lookup.get_template("steps.md")
+            factory = openlane.Step.factory
+            with open(
+                os.path.join(doc_root_dir, "reference", "step_config_vars.md"), "w"
+            ) as f:
+                f.write(
+                    template.render(
+                        factory=factory,
+                        type_pretty=type_pretty,
+                        desc_clean=desc_clean,
+                    )
+                )
+
     except Exception:
         print(traceback.format_exc())
         exit(-1)

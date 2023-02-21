@@ -9,7 +9,7 @@ set output_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_PCT)]
 puts "\[INFO\] Setting output delay to: $output_delay_value"
 puts "\[INFO\] Setting input delay to: $input_delay_value"
 
-set_max_fanout $::env(SYNTH_MAX_FANOUT) [current_design]
+set_max_fanout $::env(MAX_FANOUT_CONSTRAINT) [current_design]
 
 set clk_input [get_port $::env(CLOCK_PORT)]
 set clk_indx [lsearch [all_inputs] $clk_input]
@@ -41,12 +41,12 @@ set cap_load [expr $::env(SYNTH_CAP_LOAD) / 1000.0]
 puts "\[INFO\] Setting load to: $cap_load"
 set_load  $cap_load [all_outputs]
 
-puts "\[INFO\] Setting clock uncertainty to: $::env(SYNTH_CLOCK_UNCERTAINTY)"
-set_clock_uncertainty $::env(SYNTH_CLOCK_UNCERTAINTY) [get_clocks $::env(CLOCK_PORT)]
+puts "\[INFO\] Setting clock uncertainty to: $::env(CLOCK_UNCERTAINTY_CONSTRAINT)"
+set_clock_uncertainty $::env(CLOCK_UNCERTAINTY_CONSTRAINT) [get_clocks $::env(CLOCK_PORT)]
 
-puts "\[INFO\] Setting clock transition to: $::env(SYNTH_CLOCK_TRANSITION)"
-set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [get_clocks $::env(CLOCK_PORT)]
+puts "\[INFO\] Setting clock transition to: $::env(CLOCK_TRANSITION_CONSTRAINT)"
+set_clock_transition $::env(CLOCK_TRANSITION_CONSTRAINT) [get_clocks $::env(CLOCK_PORT)]
 
-puts "\[INFO\] Setting timing derate to: [expr {$::env(SYNTH_TIMING_DERATE) * 10}] %"
-set_timing_derate -early [expr {1-$::env(SYNTH_TIMING_DERATE)}]
-set_timing_derate -late [expr {1+$::env(SYNTH_TIMING_DERATE)}]
+puts "\[INFO\] Setting timing derate to: [expr {$::env(TIME_DERATING_CONSTRAINT) * 10}] %"
+set_timing_derate -early [expr {1-$::env(TIME_DERATING_CONSTRAINT)}]
+set_timing_derate -late [expr {1+$::env(TIME_DERATING_CONSTRAINT)}]

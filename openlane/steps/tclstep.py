@@ -317,7 +317,7 @@ class TclStep(Step):
         **kwargs,
     ) -> State:
         """
-        This overriden :py:meth:`run` function prepares configuration variables and
+        This overriden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
 

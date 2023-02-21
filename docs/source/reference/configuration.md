@@ -29,9 +29,9 @@ An minimal demonstrative configuration file would look as follows:
     "CLOCK_PORT": "clk",
     "CLOCK_PERIOD": 100,
     "pdk::sky130A": {
-        "SYNTH_MAX_FANOUT": 6,
+        "MAX_FANOUT_CONSTRAINT": 6,
         "FP_CORE_UTIL": 40,
-        "PL_TARGET_DENSITY": "expr::($FP_CORE_UTIL + 5.0) / 100.0",
+        "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 5.0)",
         "scl::sky130_fd_sc_hd": {
             "CLOCK_PERIOD": 15
         }
@@ -88,7 +88,7 @@ Like conditional execution, the order of declarations matter: i.e., you cannot r
 ```
 > In this example, the first configuration is invalid, as B is referenced before it is declared, but the latter is OK, where the value will be "vdd gnd" as well.
 
-Unlike Tcl config files, environment variables (other than `DESIGN_DIR`, `PDK`, `PDKPATH`, `STD_CELL_LIBRARY` and `SCLPATH`) are not exposed to `config.json` by default.
+Unlike Tcl config files, environment variables (other than `DESIGN_DIR`, `PDK`, `PDKPATH`, `STD_CELL_LIBRARY`) are not exposed to `config.json` by default.
 
 Which you can then use as follows:
 
@@ -111,7 +111,6 @@ Another feature this has is if the files you choose lie **inside** an exposed di
 There are some shorthands for the exposed default variables:
 * `dir::` is equivalent to `ref::$DESIGN_DIR/`
 * `pdk_dir::` is equivalent to `ref::$PDKPATH/`
-* `scl_dir::` is equivalent to `ref::$SCLPATH/`
 
 
 #### Expression Engine

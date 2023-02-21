@@ -14,8 +14,8 @@
 
 # Power nets
 proc set_global_connections {} {
-    if { [info exists ::env(FP_PDN_ENABLE_GLOBAL_CONNECTIONS) ] } {
-        if { $::env(FP_PDN_ENABLE_GLOBAL_CONNECTIONS) == 1 } {
+    if { [info exists ::env(PDN_ENABLE_GLOBAL_CONNECTIONS) ] } {
+        if { $::env(PDN_ENABLE_GLOBAL_CONNECTIONS) == 1 } {
             foreach power_pin $::env(SCL_POWER_PINS) {
                 add_global_connection \
                     -net $::env(VDD_NET) \
@@ -33,9 +33,9 @@ proc set_global_connections {} {
         }
     }
 
-    if { $::env(FP_PDN_ENABLE_MACROS_GRID) == 1 &&
-        [info exists ::env(FP_PDN_MACRO_HOOKS)]} {
-        set pdn_hooks [split $::env(FP_PDN_MACRO_HOOKS) ","]
+    if { $::env(PDN_CONNECT_MACROS_TO_GRID) &&
+        [info exists ::env(PDN_MACRO_CONNECTIONS)]} {
+        set pdn_hooks [split $::env(PDN_MACRO_CONNECTIONS) ","]
         foreach pdn_hook $pdn_hooks {
             set instance_name [lindex $pdn_hook 0]
             set power_net [lindex $pdn_hook 1]
@@ -44,7 +44,7 @@ proc set_global_connections {} {
             set ground_pin [lindex $pdn_hook 4]
 
             if { $power_pin == "" || $ground_pin == "" } {
-                puts "FP_PDN_MACRO_HOOKS missing power and ground pin names"
+                puts "PDN_MACRO_CONNECTIONS missing power and ground pin names"
                 exit -1
             }
 

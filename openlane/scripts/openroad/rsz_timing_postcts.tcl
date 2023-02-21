@@ -21,8 +21,8 @@ source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
 set_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 
 # set don't use cells
-if { [info exists ::env(DONT_USE_CELLS)] } {
-    set_dont_use $::env(DONT_USE_CELLS)
+if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
+    set_dont_use $::env(RSZ_DONT_USE_CELLS)
 }
 
 # set rc values

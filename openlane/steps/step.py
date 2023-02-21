@@ -34,7 +34,7 @@ from typing import (
 from .state import State
 from .design_format import DesignFormat
 from ..utils import Toolbox
-from ..config import Config
+from ..config import Config, Variable
 from ..common import mkdirp, console, err, rule, log, slugify, final, internal
 
 StepConditionLambda = Callable[[Config], bool]
@@ -110,6 +110,15 @@ class Step(ABC):
 
     flow_control_variable: ClassVar[Optional[str]] = None
     flow_control_msg: ClassVar[Optional[str]] = None
+    config_vars: ClassVar[List[Variable]] = []
+
+    @classmethod
+    def _get_desc(Self) -> str:
+        if hasattr(Self, "long_name"):
+            return Self.long_name
+        elif hasattr(Self, "name"):
+            return Self.name
+        return Self.__name__
 
     def __init__(
         self,
@@ -206,9 +215,9 @@ class Step(ABC):
             fit for the flow in question.
 
             If not provided, as a convenience, the call stack will be
-            examined for a :py:attr:`self.toolbox`, which will be used instead.
+            examined for a :attr:`self.toolbox`, which will be used instead.
             What this means is that when inside of a Flow: you can just call
-            :py:meth:`step.start` and not worry about this.
+            :meth:`step.start` and not worry about this.
 
             If said toolbox doesn't exist, the step will begrudingly create
             one that uses its own step directory, however this will cause
@@ -429,3 +438,6 @@ class Step(ABC):
             return list(Self._registry.keys())
 
     factory = StepFactory
+
+
+sorted

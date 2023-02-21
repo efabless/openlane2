@@ -51,7 +51,7 @@ set ::env(DESIGN_IS_CORE) {0}
 These configurations should get you through the flow with the all other configurations using OpenLane default values, read about those [here][0]. However, in the coming sections we will take a closer look on how to determine the best values for most of the other configurations.
 
 ## Synthesis
-Then you need to consider the best values for the `SYNTH_MAX_FANOUT`.
+Then you need to consider the best values for the `MAX_FANOUT_CONSTRAINT`.
 
 If your macro is huge (200k+ cells), then you might want to try setting `SYNTH_NO_FLAT` to `1` (Tcl)/`true` (JSON), which will postpone the flattening of the design during synthesis until the very end.
 
@@ -65,7 +65,7 @@ Static Timing Analysis happens multiple times during the flow. However, they all
 
 2. The clock period that you prefer the design to run with. This could be set using `CLOCK_PERIOD` and the unit is ns. It is important to note that the flow will use this value to calculate the worst and total negative slack, also if timing optimizations are enabled, it will try to optimize for it and give suggested clock period at the end of the run in `<run-path>/reports/metrics.csv` This value should be used in the future to speed up the optimization process and it will be the estimated value at which the design should run.
 
-3. The IO delay percentage from the clock period `IO_PCT`. More about that [here][0].
+3. The IO delay percentage from the clock period `IO_PCT_CONSTRAINT`. More about that [here][0].
 
 4. You may want to write a custom SDC file to be used in STA and CTS. The default SDC file in the flow is [this file][11]. However, you can change that by pointing to a new file with the environment variable `BASE_SDC_FILE`. More about that [here][0].
 
@@ -122,13 +122,14 @@ Placement is done in three steps: Global Placement, Optimizations, and Detailed 
 
 ### Global Placement
 
-For Global Placement, the most important value would be `PL_TARGET_DENSITY` which should be easy to set.
+For Global Placement, the most important value would be `PL_TARGET_DENSITY_PCT` which should be easy to set.
 
-- If your design is not a tiny design, then `PL_TARGET_DENSITY` should have a value that is `FP_CORE_UTIL` + 1~5%. Note that `FP_CORE_UTIL` has a value from 0 to 100, while `PL_TARGET_DENSITY` has a value from 0 to 1.0.
+- If your design is not a tiny design, then `PL_TARGET_DENSITY_PCT` should have a value that is `FP_CORE_UTIL` + 1~5%.
 
-- If your design is a tiny design, then you may need to set `PL_RANDOM_GLB_PLACEMENT` to `1` or `PL_RANDOM_INITIAL_PLACEMENT` to 1. Also, `PL_TARGET_DENSITY` should have high value, while `FP_CORE_UTIL` should have a low value. (i.e `PL_TARGET_DENSITY` set to 0.5 and `FP_CORE_UTIL` set to 5). In very tiny designs (i.e. 1 std cell designs), the approximated DIE AREA in the floorplan stage may not leave enough room to insert tap cells in the design. Thus, it is recommended to use `FP_SIZING` as `absolute` and manually setting an appropriate `DIE_AREA`, check [the floorplan section](#floorplan) for more details. You may also want to reduce the values for `FP_PDN_HORIZONTAL_HALO` and `FP_PDN_VERTICAL_HALO`. You can read more about those [here][0].
+- If your design is a tiny design, `PL_TARGET_DENSITY_PCT` should have high value, while `FP_CORE_UTIL` should have a low value. (i.e `PL_TARGET_DENSITY_PCT` set to 50 and `FP_CORE_UTIL` set to 5). In very tiny designs (i.e. 1 std cell designs), the approximated DIE AREA in the floorplan stage may not leave enough room to insert tap cells in the design. Thus, it is recommended to use `FP_SIZING` as `absolute` and manually setting an appropriate `DIE_AREA`, check [the floorplan section](#floorplan) for more details. You may also want to reduce the values for `FP_PDN_HORIZONTAL_HALO` and `FP_PDN_VERTICAL_HALO`. You can read more about those [here][0].
 
-Other values to be considered are `PL_BASIC_PLACEMENT` and `PL_SKIP_INITIAL_PLACEMENT`, you can read more about those [here][0].
+Other values to be considered include `PL_SKIP_INITIAL_PLACEMENT`, you can read more about those [here][0].
+
 ### Detailed Placement
 
 The only value to consider here is the `DPL_CELL_PADDING` which is usually selected for each (PDK,STD_CELL_LIBRARY) and should mostly be left as is. However, typically for the skywater libraries the value should be 4~6.

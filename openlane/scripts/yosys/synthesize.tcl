@@ -65,13 +65,13 @@ set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
 set driver  $::env(SYNTH_DRIVING_CELL)
 set cload   $::env(SYNTH_CAP_LOAD)
 # input pin cap of IN_3VX8
-set max_FO $::env(SYNTH_MAX_FANOUT)
-if {![info exist ::env(SYNTH_MAX_TRAN)]} {
-    set ::env(SYNTH_MAX_TRAN) [expr {0.1*$clock_period}]
+set max_FO $::env(MAX_FANOUT_CONSTRAINT)
+if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
+    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1*$clock_period}]
 } else {
-    set ::env(SYNTH_MAX_TRAN) [expr {$::env(SYNTH_MAX_TRAN) * 1000}]
+    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
 }
-set max_Tran $::env(SYNTH_MAX_TRAN)
+set max_Tran $::env(MAX_TRANSITION_CONSTRAINT)
 
 
 # Mapping parameters

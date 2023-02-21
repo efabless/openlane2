@@ -19,7 +19,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable, Sequence
 
 from .config import Config, Path
-from .resolve import process_string
+from .resolve import process_string, Keys as SpecialKeys
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -149,21 +149,44 @@ class Variable:
                     f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}' {e}"
                 )
 
+    def __hash__(self) -> int:
+        return hash((self.name, self.description))
+
+    def __eq__(self, rhs: object) -> bool:
+        if not isinstance(rhs, Variable):
+            raise NotImplementedError()
+        return (
+            self.name == rhs.name
+            and self.description == rhs.description
+            and self.type == rhs.type
+            and self.default == rhs.default
+        )
+
     @classmethod
-    def validate_config(
+    def process_config(
         Self,
         config: Config,
-        ignore_keys: List[str],
-        variables: List["Variable"],
+        variables: Sequence["Variable"],
         removed: Dict[str, str],
-        alt: Dict[str, "Variable"] = {},
-        processed_so_far: Optional[Config] = None,
     ) -> Tuple[Config, List[str], List[str]]:
-        processed = Config()
-        if processed_so_far is not None:
-            processed = processed_so_far.copy()
+        """
+        Verifies a configuration object against a list of variables, returning
+        an object with the variables normalized according to their types.
+
+        :param config: The input, raw configuration file.
+        :param variables: A sequence or some other iterable of variables.
+        :param removed: A dictionary of variables that may have existed at a point in
+            time, but then have gotten removed. Useful to give feedback to the user.
+        :returns: A tuple of:
+            [0] A final, processed configuration.
+            [1] A list of warnings.
+            [2] A list of errors.
+
+            If the third element is non-empty, the first object is invalid.
+        """
         warnings = []
         errors = []
+        final = Config()
         mutable = config.copy()
         for variable in variables:
             exists, value = mutable.extract(variable.name)
@@ -186,28 +209,17 @@ class Variable:
                     value = deprecated_callable(value)
                 i = i + 1
             try:
-                value_processed = variable.process(value, values_so_far=processed.data)
+                value_processed = variable.process(value, values_so_far=final.data)
             except ValueError as e:
                 errors.append(str(e))
-            processed[variable.name] = value_processed
-        for key in sorted(mutable.keys()):
-            if key in ignore_keys:
-                continue
-            if variable_alt := alt.get(key):
-                # Handle PDK variables being overridden by config files
-                exists, value = mutable.extract(variable_alt.name)
-                try:
-                    value_processed = variable_alt.process(
-                        value,
-                        values_so_far=processed.data,
-                    )
-                except ValueError as e:
-                    errors.append(str(e))
-                processed[variable_alt.name] = value_processed
-            else:
-                if key in removed:
-                    warnings.append(removed[key])
-                elif "_OPT" not in key:
-                    warnings.append(f"Unknown key {key} provided.")
+            final[variable.name] = value_processed
 
-        return (processed, warnings, errors)
+        for key in sorted(mutable.keys()):
+            if key in vars(SpecialKeys).values():
+                continue
+            if key in removed:
+                warnings.append(f"'{key}' has been removed: {removed[key]}")
+            elif "_OPT" not in key:
+                warnings.append(f"Unknown key {key} provided.")
+
+        return (final, warnings, errors)
