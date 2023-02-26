@@ -125,6 +125,21 @@ class ManualMacroPlacement(OdbpyStep):
         ]
 
 
+@Step.factory.register("Odb.ReportWireLength")
+class ReportWireLength(OdbpyStep):
+    name = "Report Wire Length"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "wire_lengths.py")
+
+    def get_command(self) -> List[str]:
+        return super().get_command() + [
+            "--human-readable",
+            "--report-out",
+            os.path.join(self.step_dir, "wire_lengths.csv"),
+        ]
+
+
 @Step.factory.register("Odb.CustomIOPlacement")
 class CustomIOPlacement(OdbpyStep):
     id = "custom_io_placement"

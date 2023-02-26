@@ -23,6 +23,7 @@ from ..steps.builtins import (
     KLayout,
     Odb,
     Netgen,
+    Checker,
 )
 from .flow import Flow
 from .sequential import SequentialFlow
@@ -52,6 +53,9 @@ class Classic(SequentialFlow):
         OpenROAD.GlobalRouting,
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.DetailedRouting,
+        Checker.TrDRC,
+        Odb.ReportWireLength,
+        Checker.WireLength,
         OpenROAD.FillInsertion,
         OpenROAD.ParasiticsExtraction,
         OpenROAD.ParasiticsSTA,
@@ -60,6 +64,9 @@ class Classic(SequentialFlow):
         KLayout.StreamOut,
         KLayout.XOR,
         Magic.DRC,
+        Checker.MagicDRC,
         Magic.SpiceExtraction,
+        Checker.IllegalOverlap,
         Netgen.LVS,
+        Checker.LVS,
     ]

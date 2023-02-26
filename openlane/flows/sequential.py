@@ -21,8 +21,10 @@ from ..steps import (
     MissingInputError,
     State,
     Step,
+    StepError,
+    DeferredStepError,
 )
-from ..common import log, success
+from ..common import log, success, err
 
 
 class SequentialFlow(Flow):
@@ -66,6 +68,7 @@ class SequentialFlow(Flow):
         log("Starting…")
 
         executing = frm is None
+        deferred_errors = []
 
         for cls in self.Steps:
             step = cls()
@@ -81,15 +84,22 @@ class SequentialFlow(Flow):
             step_list.append(step)
             try:
                 new_state = step.start()
+                state_list.append(new_state)
             except MissingInputError as e:
                 raise FlowException(str(e))
-            except subprocess.CalledProcessError as e:
+            except DeferredStepError as e:
+                deferred_errors.append(str(e))
+            except (StepError, subprocess.CalledProcessError) as e:
                 raise FlowError(str(e))
 
-            state_list.append(new_state)
             self.end_stage()
 
             if to is not None and to == step.id:
                 executing = False
+        if len(deferred_errors) != 0:
+            err("The following deferred step errors have been encountered:")
+            for error in deferred_errors:
+                err(error)
+            raise FlowError("A number of deferred errors were encountered.")
         success("Flow complete.")
         return (state_list, step_list)

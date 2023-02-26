@@ -17,6 +17,8 @@
 import click
 from decimal import Decimal
 
+import utl
+
 from reader import click_odb, OdbReader
 
 
@@ -46,20 +48,19 @@ def to_si(microns: Decimal) -> str:
     help="Threshold above which to print the wire (Default: ∞)",
 )
 @click.option(
-    "-F",
-    "--fail",
-    default=False,
-    is_flag=True,
-    help="Exit with a non-zero code if any wire surpasses the threshold.",
-)
-@click.option(
     "-R",
     "--report-out",
     default=None,
     help="Output to print CSV file to. (Default: input + .wire_lengths.csv)",
 )
 @click_odb
-def main(report_out, threshold, fail, human_readable, input_db, reader: OdbReader):
+def main(
+    report_out,
+    threshold,
+    human_readable,
+    input_db,
+    reader: OdbReader,
+):
     db = reader.db
     if report_out is None:
         report_out = f"{input_db}.wire_length.csv"
@@ -69,12 +70,14 @@ def main(report_out, threshold, fail, human_readable, input_db, reader: OdbReade
     nets = list(filter(lambda net: net.getWire() is not None, block.getNets()))
     nets.sort(key=lambda net: net.getWire().getLength(), reverse=True)
 
+    max_wire_length = 0
     above_threshold = []
     with open(report_out, "w") as f:
         print("net,length_um", file=f)
         for net in nets:
             length = net.getWire().getLength()
             length_microns = Decimal(length) / Decimal(dbunits)
+            max_wire_length = max(length_microns, max_wire_length)
             if length_microns >= threshold:
                 above_threshold.append((net, length_microns))
             length_printable: str = str(length_microns)
@@ -87,10 +90,7 @@ def main(report_out, threshold, fail, human_readable, input_db, reader: OdbReade
             f"Net {net.getName()} is above the length threshold ({length_microns}/{threshold} μm)."
         )
 
-    if len(above_threshold) == 0:
-        print(f"No wire length surpasses the threshold ({threshold} μm).")
-    elif fail:
-        exit(1)
+    utl.metric_float("route__max__wirelength", float(max_wire_length))
 
 
 if __name__ == "__main__":
