@@ -32,10 +32,15 @@ proc set_global_connections {} {
             }
         }
     }
-
-    if { $::env(PDN_CONNECT_MACROS_TO_GRID) &&
+    if { $::env(PDN_CONNECT_MACROS_TO_GRID) == 1 &&
         [info exists ::env(PDN_MACRO_CONNECTIONS)]} {
-        set pdn_hooks [split $::env(PDN_MACRO_CONNECTIONS) ","]
+        set pdn_hooks \
+            [lmap \
+                {a b c d e} \
+                $::env(PDN_MACRO_CONNECTIONS) \
+                {list $a $b $c $d $e} \
+            ]
+
         foreach pdn_hook $pdn_hooks {
             set instance_name [lindex $pdn_hook 0]
             set power_net [lindex $pdn_hook 1]

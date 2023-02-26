@@ -168,7 +168,12 @@ class StreamOut(MagicStep):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
 
     def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+        kwargs, env = self.extract_env(kwargs)
+        assert isinstance(self.state_in, State)
+        if die_area := self.state_in.metrics.get("die__area"):
+            env["DIE_AREA"] = die_area
+
+        state_out = super().run(env=env, **kwargs)
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
             state_out[DesignFormat.GDS] = state_out[DesignFormat.MAG_GDS]
         return state_out
@@ -210,6 +215,10 @@ class DRC(MagicStep):
         report_str = open(report_path, encoding="utf8").read()
 
         drc = DRCObject.from_magic(report_str)
+        drc_bbox = [
+            bbox for violation in drc.violations for bbox in violation.bounding_boxes
+        ]
+        state_out.metrics["magic__drc_errors"] = len(drc_bbox)
 
         with open(os.path.join(reports_dir, "drc.klayout.xml"), "w") as f:
             f.write(drc.to_klayout_xml())
@@ -243,3 +252,13 @@ class SpiceExtraction(MagicStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        feedback_path = os.path.join(self.step_dir, "feedback.txt")
+        feedback_string = open(feedback_path, encoding="utf8").read()
+        state_out.metrics["magic__illegal__overlaps"] = feedback_string.count(
+            "Illegal overlap"
+        )
+        return state_out
