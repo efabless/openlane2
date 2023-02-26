@@ -1,5 +1,5 @@
 # Design Configuration Files
-Each OpenLane-compatible design must come with a configuration file. These configuration files can be written in one of two grammars: JSON or Tcl.
+Unless the design uses the API directly, each OpenLane-compatible design must come with a configuration file. These configuration files can be written in one of two grammars: JSON or Tcl.
 
 Tcl offers more flexibility at the detriment of security, while JSON is more straightforward at the cost of flexbility. While Tcl allows you to do all manners of computation on your variables, JSON has a limited expression engine that will be detailed later in this document. Nevertheless, for security (and future-proofing), we recommend you use the JSON format.
 

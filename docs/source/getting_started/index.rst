@@ -4,6 +4,6 @@ Getting Started
 .. toctree::
    :glob:
    
-   installation/index
-   updating
+   installation/index.md
    quickstart
+   updating

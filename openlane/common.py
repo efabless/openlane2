@@ -119,6 +119,13 @@ def get_script_dir() -> str:
     )
 
 
+def get_opdks_rev() -> str:
+    """
+    Gets the Open_PDKs revision.
+    """
+    return open(os.path.join(openlane_root, "open_pdks_rev"), encoding="utf8").read()
+
+
 # The following code snippet has been adapted under the following license:
 #
 # Copyright (c) Django Software Foundation and individual contributors.

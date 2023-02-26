@@ -15,10 +15,9 @@
 import odb
 
 import os
-import click
 from subprocess import Popen, PIPE
 
-from reader import OdbReader
+from reader import OdbReader, click
 
 
 def invoke_padring(config_file_name, output_file_name, lefs):

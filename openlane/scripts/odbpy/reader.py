@@ -16,22 +16,24 @@ import odb
 
 import os
 import sys
-import glob
-
-if venv := os.getenv("VIRTUAL_ENV"):
-    site_packages = glob.glob(os.path.join(venv, "lib", "**", "site-packages"))
-    if len(site_packages) >= 1:
-        sys.path.insert(0, site_packages[0])
-
-sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))
-
+import locale
 import inspect
 import functools
 from typing import Callable, Dict
 
-import click
+# -- START: Environment Fixes
+locale.setlocale(locale.LC_ALL, "C.UTF-8")
 
+if python_path := os.getenv("ODB_PYTHONPATH"):
+    sys.path = python_path.split(":") + sys.path
+
+sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))
+# -- END
+
+import click
 from openlane.steps.design_format import DesignFormat, DesignFormatByID
+
+click  # Re-export now that the environment actually works properly
 
 write_fn: Dict[DesignFormat, Callable] = {
     DesignFormat.DEF: lambda reader, file: odb.write_def(reader.block, file),

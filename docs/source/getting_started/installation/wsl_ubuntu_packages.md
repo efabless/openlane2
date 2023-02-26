@@ -1,6 +1,5 @@
 ## Installation of required packages
-
-Update packages database and upgrade the packages to avoid version mismatches then install required packages.
+Update the package database and upgrade the packages to avoid version mismatches then install required packages as follows:
 
 ```bash
 sudo apt-get update

@@ -1,9 +1,6 @@
 # macOS 11+
 
-```{include} installation_overview.md
-```
-
-## Installation of required packages
+## Installing Dependencies
 
 First install [Homebrew](https://brew.sh/) then run script below to install the required packages:
 

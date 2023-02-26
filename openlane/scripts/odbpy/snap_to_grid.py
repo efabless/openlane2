@@ -14,9 +14,7 @@
 import math
 from decimal import Decimal
 
-import click
-
-from reader import OdbReader
+from reader import OdbReader, click
 
 
 def snap_value(value: Decimal, manufacturing_grid: Decimal) -> Decimal:

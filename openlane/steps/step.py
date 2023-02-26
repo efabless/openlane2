@@ -35,7 +35,7 @@ from .state import State
 from .design_format import DesignFormat
 from ..utils import Toolbox
 from ..config import Config, Variable
-from ..common import mkdirp, console, err, rule, log, slugify, final, internal
+from ..common import mkdirp, console, rule, log, slugify, final, internal
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -374,8 +374,6 @@ class Step(ABC):
                     log_file.write(line)
         returncode = process.wait()
         if returncode != 0:
-            err("Command failed: ", _stack_offset=4)
-            console.print("\t", " ".join(cmd_str))
             raise subprocess.CalledProcessError(returncode, process.args)
 
     @internal

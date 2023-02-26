@@ -19,6 +19,7 @@ setup(
     package_data={
         "openlane": [
             "py.typed",
+            "open_pdks_rev",
             "scripts/*",
             "scripts/**/*",
             "scripts/**/**/*",

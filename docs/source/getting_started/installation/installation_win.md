@@ -1,7 +1,4 @@
 # Windows 10+
-```{include} installation_overview.md
-```
-
 OpenLane in Windows uses WSL 2 and Docker Destop on Windows.
 
 A recent version of Windows 10 or Windows 11 is required, for more information consult Microsoft's documentation.

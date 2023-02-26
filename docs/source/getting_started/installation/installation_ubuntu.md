@@ -1,14 +1,11 @@
 # Ubuntu 20.04+
 
-```{include} installation_overview.md
-```
-
 Only Ubuntu 20.04 and above are supported.
 
 ```{include} wsl_ubuntu_packages.md
 ```
 
-## Docker Installation
+### Installing Docker
 
 Next, install Docker.
 Follow [the instructions provided in the Docker documentation here](https://docs.docker.com/engine/install/ubuntu/) as the steps provided below might be outdated.

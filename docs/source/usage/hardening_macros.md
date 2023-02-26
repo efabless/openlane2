@@ -1,12 +1,11 @@
+> Note: Information in this document is still being ported from OpenLane 1 to OpenLane 2 and may be partially inaccurate.
 # Hardening Macros
 Using OpenLane, you can produce a GDSII from an RTL for macros, and then use these macros to create your chip. Check [this][4] for more details about chip integration.
 
 In this document we will go through the hardening steps and discuss in some detail what considerations should be made when hardening your macro.
 
-> **NOTE:** For all the configurations mentioned in this documentation and any other OpenLane configurations, you can use the exploration script `run_designs.py` to find the optimal value for each configuration for your design. Read more [here][6].
-
 ## Base Requirements
-You should start by setting the basic configuration file for your design. Check [this][5] for how to add your new design.
+You should start by setting the basic configuration file for your design.
 
 The basic configuration `config.json` or `config.tcl` file should at least contain these variables:
 
@@ -138,7 +137,7 @@ You can read more about that [here][0].
 
 ## Clock Tree Synthesis
 
-Most of the values for clock tree synthesis are (PDK,STD_CELL_LIBRARY) specific and you can read more about those [here][8].
+Most of the values for clock tree synthesis are (PDK, STD_CELL_LIBRARY) specific and you can read more about those [here](../reference/pdk_config_vars.md).
 
 You can disable it by setting `CLOCK_TREE_SYNTH` to `0`.
 
@@ -187,19 +186,12 @@ You can control whether LVS should be run down to the device level or the cell l
 
 You can enable LEC on the different netlists by setting `LEC_ENABLE` to one, which should run logic verification after writing each intermediate netlist.
 
-A final summary report is produced by default as `<run-path>/reports/metrics.csv`, for more details about the contents of the report check [this documentation][10].
-
-A final manufacturability report is produced by default as `<run-path>/reports/manufacturability_report.csv`, this report contains the magic DRC, the LVS, and the antenna violations summaries.
-
-The final GDSII file can be found under `<run-path>/results/final/gds`.
+The final GDSII file can be found under `<run-path>/final/gds`.
 
 To integrate that macro into a core or a chip, check this [documentation on chip integration][4].
 
-If you want to create further tweaks in the flow that the abundant configurations do not allow, make sure to check [this][2] for more details about the interactive mode of the OpenLane flow.
-
 [0]: ../reference/configuration.md
 [1]: ../reference/openlane_commands.md
-[2]: ../reference/interactive_mode.md
 [3]: https://github.com/The-OpenROAD-Project/OpenROAD/blob/master/src/pdn/doc/PDN.md
 [4]: ./chip_integration.md
 [5]: ./designs.md

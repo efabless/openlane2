@@ -16,7 +16,7 @@ import pathlib
 import getpass
 import requests
 import subprocess
-from typing import List, Sequence, Set
+from typing import List, Sequence, Set, Optional
 
 from .common import err, log, print, warn
 from .env_info import ContainerInfo, OSInfo
@@ -120,6 +120,7 @@ docker_ids: Set[str] = set()
 def run_in_container(
     image: str,
     args: Sequence[str],
+    other_mounts: Optional[Sequence[str]] = None,
 ):
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
@@ -155,6 +156,10 @@ def run_in_container(
     cwd = os.path.abspath(os.getcwd())
     if not cwd.startswith(home):
         mount_args += ["-v", f"{cwd}:{cwd}"]
+
+    if other_mounts is not None:
+        for mount in other_mounts:
+            mount_args += ["-v", f"{mount}:{mount}"]
 
     mount_args += ["-w", cwd]
 

@@ -18,10 +18,9 @@ import odb
 
 import re
 import sys
-import click
 import random
 
-from reader import click_odb
+from reader import click_odb, click
 
 
 @click.group()

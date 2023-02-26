@@ -16,10 +16,9 @@ import odb
 
 import os
 import sys
-import click
 import subprocess
 
-from reader import OdbReader, click_odb
+from reader import OdbReader, click_odb, click
 
 
 @click.group()

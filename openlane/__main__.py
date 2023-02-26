@@ -12,16 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import shutil
+import sys
 import glob
+import tempfile
 import subprocess
 from textwrap import dedent
-from typing import Type, Optional, List, Union
+from typing import Tuple, Type, Optional, List, Union
 
 import click
 
 from .steps import State
 from .__version__ import __version__
-from .common import err, warn, log
+from .common import err, warn, log, get_opdks_rev, get_openlane_root
 from .container import run_in_container
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
@@ -29,6 +32,7 @@ from .config import Config, InvalidConfig
 
 def run(
     flow_name: Optional[str],
+    use_volare: bool,
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
@@ -43,6 +47,13 @@ def run(
     if len(config_files) != 1:
         print(f"Invalid argument count for config_files: ({len(config_files)}/1).")
         exit(-1)
+
+    if use_volare:
+        import volare
+
+        pdk_root = volare.get_volare_home(pdk_root)
+
+        volare.enable(pdk_root, pdk[:-1], get_opdks_rev())
 
     config_file = config_files[0]
 
@@ -142,6 +153,37 @@ def print_bare_version(
     ctx.exit(0)
 
 
+def run_smoke_test(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    if not value:
+        return
+    dockerized = ctx.params["dockerized"]
+
+    with tempfile.TemporaryDirectory("_ol2design") as d:
+        final_path = os.path.join(d, "spm")
+        shutil.copytree(
+            os.path.join(get_openlane_root(), "smoke_test_design"),
+            final_path,
+        )
+
+        cmd = (
+            [
+                (sys.executable if not dockerized else "python3"),
+                "-m",
+                "openlane",
+            ]
+            + (["--dockerized", "--docker-mount", d] if dockerized else [])
+            + [os.path.join(final_path, "config.json")]
+        )
+
+        subprocess.check_call(cmd)
+
+    ctx.exit(0)
+
+
 @click.command()
 @click.version_option(
     __version__,
@@ -169,9 +211,11 @@ def print_bare_version(
 )
 @click.option(
     "--dockerized/--native",
+    is_eager=True,
     default=False,
     help="Run OpenLane primarily using a Docker container. Some caveats apply.",
 )
+@click.option("--docker-mount", "docker_mounts", multiple=True, default=[], help="")
 @click.option(
     "-p",
     "--pdk",
@@ -194,7 +238,17 @@ def print_bare_version(
     default=None,
     help="The built-in OpenLane flow to use",
 )
-@click.option("--pdk-root", default=None, help="Override volare PDK root folder")
+@click.option(
+    "--pdk-root",
+    default=None,
+    help="Override volare PDK root folder. Required if Volare is not installed.",
+)
+@click.option(
+    "--volare-auto/--manual",
+    "use_volare",
+    default=True,
+    help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
+)
 @click.option(
     "--run-tag",
     default=None,
@@ -238,17 +292,24 @@ def print_bare_version(
     multiple=True,
     help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
 )
+@click.option(
+    "--smoke-test",
+    is_flag=True,
+    help="Runs a basic OpenLane smoke test.",
+    expose_value=False,
+    callback=run_smoke_test,
+)
 @click.argument("config_files", nargs=-1)
-def cli(dockerized: bool, **kwargs):
+def cli(dockerized: bool, docker_mounts: Tuple[str], **kwargs):
     if dockerized:
-        import sys
-
         argv = sys.argv.copy()[1:]
         argv.remove("--dockerized")
 
         try:
             run_in_container(
-                f"docker.io/donnio/openlane:{__version__}", ["openlane"] + argv
+                f"docker.io/donnio/openlane:{__version__}",
+                ["openlane"] + argv,
+                docker_mounts,
             )
         except subprocess.CalledProcessError as e:
             exit(e.returncode)

@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+import sys
 import json
 from abc import abstractmethod
 from typing import List, Optional
@@ -60,6 +61,7 @@ class OdbpyStep(Step):
         ]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
+        env["ODB_PYTHONPATH"] = ":".join(sys.path)
 
         log_filename = os.path.splitext(os.path.basename(self.get_script_path()))[0]
         log_path = os.path.join(self.step_dir, f"{log_filename}.log")

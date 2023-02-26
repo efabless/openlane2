@@ -16,9 +16,7 @@ import odb
 import re
 from typing import List
 
-import click
-
-from reader import click_odb
+from reader import click_odb, click
 
 
 def get_pin_name(pin: odb.dbITerm):

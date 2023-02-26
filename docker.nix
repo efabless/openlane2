@@ -32,7 +32,14 @@ with pkgs; let olenv = python3.withPackages(ps:
     ];
 
     created = "now";
-    config.Cmd = [ "/usr/bin/env" "zsh" ];
+    config = {
+        Cmd = [ "/bin/env" "zsh" ];
+        Env = [
+            "LANG=C.UTF-8"
+            "LC_ALL=C.UTF-8"
+            "LC_CTYPE=C.UTF-8"
+        ];
+    };
 }
 
 # {

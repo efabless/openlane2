@@ -18,9 +18,7 @@ import os
 import re
 import sys
 
-import click
-
-from reader import OdbReader, click_odb
+from reader import OdbReader, click_odb, click
 
 
 @click.group()

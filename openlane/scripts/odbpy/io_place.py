@@ -15,10 +15,9 @@ import odb
 
 import re
 import math
-import click
 import random
 
-from reader import click_odb
+from reader import click_odb, click
 
 
 def grid_to_tracks(origin, count, step):

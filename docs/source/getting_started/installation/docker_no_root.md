@@ -1,4 +1,4 @@
-## Making Docker available without root (Linux)
+## Making Docker available without root (Linux only)
 
 :::{warning}
 The steps below might become outdated. It is recommended to follow the link to the official Docker documentation here: [instructions here](https://docs.docker.com/engine/install/linux-postinstall/).
