@@ -1,3 +1,7 @@
+# 2.0.0-dev4
+
+* Fix `Optimizing` flow.
+
 # 2.0.0-dev3
 
 * Remove Mako as requirement, migrate relevant code.

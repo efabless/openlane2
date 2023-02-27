@@ -38,6 +38,14 @@ class Optimizing(Flow):
     If the high utilization fails, a lower is fallen back to as a suggestion.
     """
 
+    Steps = [
+        Yosys.Synthesis,
+        OpenROAD.NetlistSTA,
+        OpenROAD.Floorplan,
+        OpenROAD.IOPlacement,
+        OpenROAD.GlobalPlacement,
+    ]
+
     def run(
         self,
         initial_state: State,
@@ -77,6 +85,7 @@ class Optimizing(Flow):
         synthesis_states: List[Tuple[Config, State]] = [
             (config, future.result()) for config, future in synthesis_futures
         ]
+
         self.end_stage()
 
         min_strat = synthesis_states[0][0]["SYNTH_STRATEGY"]

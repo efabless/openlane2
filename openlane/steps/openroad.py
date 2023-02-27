@@ -272,6 +272,11 @@ class IOPlacement(OpenROADStep):
                 default=3,
                 doc_units="µm",
             ),
+            Variable(
+                "FP_PIN_ORDER_CFG",
+                Optional[Path],
+                "Points to the pin order configuration file to set the pins in specific directions (S, W, E, N). If not set, then the IO pins will be placed using OpenROAD's basic pin placer.",
+            ),
         ]
     )
 

@@ -80,6 +80,7 @@ class Config(UserDict):
     def get_meta(
         Self,
         json_config_in: Union[str, os.PathLike],
+        flow_override: Optional[str] = None
     ) -> Optional[Meta]:
         """
         Returns the Meta object of a JSON configuration file
@@ -91,9 +92,14 @@ class Config(UserDict):
             obj = json.load(open(json_config_in, encoding="utf8"))
         except (json.JSONDecodeError, IsADirectoryError):
             return None
+        
+        overrides = {}
+        if flow_override is not None:
+            overrides["flow"] = flow_override
 
-        meta = Meta()
+        meta = Meta(**overrides)
         if meta_raw := obj.get("meta"):
+            meta_raw.update(**overrides)
             meta = Meta(**meta_raw)
 
         return meta
