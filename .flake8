@@ -1,10 +1,19 @@
 [flake8]
-ignore = E203,E266,E302,E501,W503,E731
+extend-ignore =
+    E1
+    W1
+    E2
+    W2
+    E3
+    W3
+    E5
+    W5
+    E731
 exclude =
     .git,
     __pycache__,
     build/,
-    pdk/
+    pdk/,
     venv/,
     openlane/**/__init__.py,
     examples
