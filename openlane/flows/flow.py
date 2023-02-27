@@ -425,3 +425,4 @@ class Flow(ABC):
             return list(Self._registry.keys())
 
     factory = FlowFactory
+    get = FlowFactory.get

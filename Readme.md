@@ -12,9 +12,9 @@
 OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, SPEF-Extractor, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
 
 ```python
-import openlane
+from openlane import Flow
 
-Classic = openlane.Flow.factory.get("Classic")
+Classic = Flow.get("Classic")
 
 flow = Classic.init_with_config(
     {

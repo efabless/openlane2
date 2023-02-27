@@ -28,7 +28,7 @@ del by_category["Misc"]
 ${"##"} ${category}
 %for key, step in sorted(steps, key=lambda t: t[0]):
 ${"###"} ${step._get_desc()}
-* Get via `openlane.Step.factory.get("${key}")`.
+* Get via `Step.get("${key}")`.
 
 ${step.__doc__ or ""}
 

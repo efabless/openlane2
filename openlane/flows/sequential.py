@@ -41,7 +41,7 @@ class SequentialFlow(Flow):
     def make(Self, step_ids: List[str]) -> Type["SequentialFlow"]:
         step_list = []
         for name in step_ids:
-            step = Step.factory.get(name)
+            step = Step.get(name)
             if step is None:
                 raise TypeError(f"No step found with id '{name}'")
             step_list.append(step)

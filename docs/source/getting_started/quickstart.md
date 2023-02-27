@@ -39,9 +39,9 @@ The API cannot be used in dockerized mode, and is intended for native installati
 You may simply elect to write a Python script to configure and harden your design. For an SPM module with one file `./src/spm.v`, for example, you can use this script to place and route it.
 
 ```python
-import openlane
+from openlane import Flow
 
-Classic = openlane.Flow.factory.get("Classic")
+Classic = Flow.get("Classic")
 
 flow = Classic.init_with_config(
     {

@@ -166,7 +166,7 @@ all_variables = [
     Variable(
         "CHECK_ASSIGN_STATEMENTS",
         bool,
-        "Checks for assign statement in the generated gate level netlist and aborts of any was found.1 = Enabled, 0 = Disabled.",
+        "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
         default=False,
     ),
 ]

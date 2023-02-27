@@ -440,6 +440,7 @@ class Step(ABC):
             return list(Self._registry.keys())
 
     factory = StepFactory
+    get = StepFactory.get
 
 
 sorted
