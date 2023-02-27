@@ -61,7 +61,7 @@ def run(
     if run_tag is not None and last_run:
         err("--run-tag and --last-run are mutually exclusive.")
         exit(1)
-        
+
     flow_description: Union[str, List[str]] = flow_name or "Classic"
 
     if meta := Config.get_meta(config_file, flow_override=flow_name):
@@ -69,7 +69,7 @@ def run(
             flow_description = flow_ids
 
     TargetFlow: Type[Flow]
-    
+
     if not isinstance(flow_description, str):
         TargetFlow = SequentialFlow.make(flow_description)
     else:

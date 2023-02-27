@@ -80,9 +80,9 @@ class MagicStep(TclStep):
         return super().run(**kwargs)
 
 
-@Step.factory.register("Magic.WriteLEF")
+@Step.factory.register()
 class WriteLEF(MagicStep):
-    id = "magic-writelef"
+    id = "Magic.WriteLEF"
     name = "Write LEF (Magic)"
     flow_control_variable = "RUN_MAGIC_WRITE_LEF"
 
@@ -115,9 +115,9 @@ class WriteLEF(MagicStep):
         raise NotImplementedError()
 
 
-@Step.factory.register("Magic.StreamOut")
+@Step.factory.register()
 class StreamOut(MagicStep):
-    id = "magic-streamout"
+    id = "Magic.StreamOut"
     name = "GDS-II Stream Out (Magic)"
     flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
@@ -179,8 +179,9 @@ class StreamOut(MagicStep):
         return state_out
 
 
-@Step.factory.register("Magic.DRC")
+@Step.factory.register()
 class DRC(MagicStep):
+    id = "Magic.DRC"
     name = "DRC"
     long_name = "Design Rule Checks"
 
@@ -226,8 +227,9 @@ class DRC(MagicStep):
         return state_out
 
 
-@Step.factory.register("Magic.SpiceExtraction")
+@Step.factory.register()
 class SpiceExtraction(MagicStep):
+    id = "Magic.SpiceExtraction"
     name = "SPICE Extraction"
     long_name = "SPICE Model Extraction"
 

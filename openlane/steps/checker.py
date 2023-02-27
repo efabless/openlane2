@@ -62,8 +62,9 @@ class MetricChecker(Step):
         return state_out
 
 
-@Step.factory.register("Checker.TrDRC")
+@Step.factory.register()
 class TrDRC(MetricChecker):
+    id = "Checker.TrDRC"
     flow_control_variable = "QUIT_ON_TR_DRC"
     name = "Routing DRC Checker"
     long_name = "Routing Design Rule Check"
@@ -84,8 +85,9 @@ class TrDRC(MetricChecker):
         return "Routing DRC errors"
 
 
-@Step.factory.register("Checker.MagicDRC")
+@Step.factory.register()
 class MagicDRC(MetricChecker):
+    id = "Checker.MagicDRC"
     flow_control_variable = "QUIT_ON_MAGIC_DRC"
     name = "Magic DRC Checker"
     long_name = "Magic Design Rule Check"
@@ -106,8 +108,9 @@ class MagicDRC(MetricChecker):
         return "Magic DRC errors"
 
 
-@Step.factory.register("Checker.IllegalOverlap")
+@Step.factory.register()
 class IllegalOverlap(MetricChecker):
+    id = "Checker.IllegalOverlap"
     flow_control_variable = "QUIT_ON_ILLEGAL_OVERLAPS"
     name = "Illegal Overlap Checker"
     long_name = "Spice Extraction-based Illegal Overlap Check"
@@ -128,8 +131,9 @@ class IllegalOverlap(MetricChecker):
         return "Magic Illegal Overlap errors"
 
 
-@Step.factory.register("Checker.WireLength")
+@Step.factory.register()
 class WireLength(MetricChecker):
+    id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
 
@@ -157,8 +161,9 @@ class WireLength(MetricChecker):
         return threshold
 
 
-@Step.factory.register("Checker.LVS")
+@Step.factory.register()
 class LVS(MetricChecker):
+    id = "Checker.LVS"
     flow_control_variable = "QUIT_ON_LVS_ERROR"
     name = "LVS Error Checker"
     long_name = "Layout vs. Schematic Error Checker"

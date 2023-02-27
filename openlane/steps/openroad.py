@@ -158,8 +158,9 @@ class OpenROADStep(TclStep):
         return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
 
 
-@Step.factory.register("OpenROAD.NetlistSTA")
+@Step.factory.register()
 class NetlistSTA(OpenROADStep):
+    id = "OpenROAD.NetlistSTA"
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
     inputs = [DesignFormat.NETLIST]
@@ -175,8 +176,9 @@ class NetlistSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.Floorplan")
+@Step.factory.register()
 class Floorplan(OpenROADStep):
+    id = "OpenROAD.Floorplan"
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
 
@@ -250,9 +252,9 @@ class Floorplan(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.IOPlacement")
+@Step.factory.register()
 class IOPlacement(OpenROADStep):
-    id = "io-placement"
+    id = "OpenROAD.IOPlacement"
     name = "I/O Placement"
 
     config_vars = (
@@ -291,9 +293,9 @@ class IOPlacement(OpenROADStep):
         return super().run(**kwargs)
 
 
-@Step.factory.register("OpenROAD.TapDecapInsertion")
+@Step.factory.register()
 class TapDecapInsertion(OpenROADStep):
-    id = "tap-decap-insertion"
+    id = "OpenROAD.TapDecapInsertion"
     name = "Tap/Decap Insertion"
     flow_control_variable = "RUN_TAP_DECAP_INSERTION"
 
@@ -325,8 +327,9 @@ class TapDecapInsertion(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
 
 
-@Step.factory.register("OpenROAD.GeneratePDN")
+@Step.factory.register()
 class GeneratePDN(OpenROADStep):
+    id = "OpenROAD.GeneratePDN"
     name = "Generate PDN"
     long_name = "Power Distribution Network Generation"
 
@@ -336,8 +339,9 @@ class GeneratePDN(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
 
 
-@Step.factory.register("OpenROAD.GlobalPlacement")
+@Step.factory.register()
 class GlobalPlacement(OpenROADStep):
+    id = "OpenROAD.GlobalPlacement"
     name = "Global Placement"
 
     config_vars = (
@@ -389,8 +393,9 @@ class GlobalPlacement(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.BasicMacroPlacement")
+@Step.factory.register()
 class BasicMacroPlacement(OpenROADStep):
+    id = "OpenROAD.BasicMacroPlacement"
     name = "Basic Macro Placement"
 
     config_vars = OpenROADStep.config_vars + [
@@ -414,8 +419,9 @@ class BasicMacroPlacement(OpenROADStep):
         raise NotImplementedError()
 
 
-@Step.factory.register("OpenROAD.DetailedPlacement")
+@Step.factory.register()
 class DetailedPlacement(OpenROADStep):
+    id = "OpenROAD.DetailedPlacement"
     name = "Detailed Placement"
 
     config_vars = OpenROADStep.config_vars + dpl_variables
@@ -424,8 +430,9 @@ class DetailedPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "dpl.tcl")
 
 
-@Step.factory.register("OpenROAD.CTS")
+@Step.factory.register()
 class CTS(OpenROADStep):
+    id = "OpenROAD.CTS"
     long_name = "Clock Tree Synthesis"
     flow_control_variable = "RUN_CTS"
 
@@ -495,8 +502,9 @@ class CTS(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
 
-@Step.factory.register("OpenROAD.GlobalRouting")
+@Step.factory.register()
 class GlobalRouting(OpenROADStep):
+    id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
     config_vars = (
@@ -581,8 +589,9 @@ class GlobalRouting(OpenROADStep):
         return state_out
 
 
-@Step.factory.register("OpenROAD.DetailedRouting")
+@Step.factory.register()
 class DetailedRouting(OpenROADStep):
+    id = "OpenROAD.DetailedRouting"
     name = "Detailed Routing"
     flow_control_variable = "RUN_DRT"
 
@@ -626,8 +635,9 @@ class DetailedRouting(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.LayoutSTA")
+@Step.factory.register()
 class LayoutSTA(OpenROADStep):
+    id = "OpenROAD.LayoutSTA"
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
 
@@ -642,8 +652,9 @@ class LayoutSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.FillInsertion")
+@Step.factory.register()
 class FillInsertion(OpenROADStep):
+    id = "OpenROAD.FillInsertion"
     name = "Fill Insertion"
     flow_control_variable = "RUN_FILL_INSERTION"
 
@@ -660,8 +671,9 @@ class FillInsertion(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "fill.tcl")
 
 
-@Step.factory.register("OpenROAD.ParasiticsExtraction")
+@Step.factory.register()
 class ParasiticsExtraction(OpenROADStep):
+    id = "OpenROAD.ParasiticsExtraction"
     name = "Parasitics Extraction"
     flow_control_variable = "RUN_SPEF_EXTRACTION"
 
@@ -697,8 +709,9 @@ class ParasiticsExtraction(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-@Step.factory.register("OpenROAD.ParasiticsSTA")
+@Step.factory.register()
 class ParasiticsSTA(OpenROADStep):
+    id = "OpenROAD.ParasiticsSTA"
     name = "Parasitics STA"
     long_name = "Parasitics-based Static Timing Analysis"
     flow_control_variable = "RUN_SPEF_STA"
@@ -739,8 +752,9 @@ def get_antenna_nets(report: str) -> List[str]:
     return antenna_nets
 
 
-@Step.factory.register("OpenROAD.CheckAntennas")
+@Step.factory.register()
 class CheckAntennas(OpenROADStep):
+    id = "OpenROAD.CheckAntennas"
     name = "Check Antennas"
 
     # default inputs
@@ -759,8 +773,9 @@ class CheckAntennas(OpenROADStep):
         return state_out
 
 
-@Step.factory.register("OpenROAD.IRDropReport")
+@Step.factory.register()
 class IRDropReport(OpenROADStep):
+    id = "OpenROAD.IRDropReport"
     name = "IR Drop Report"
     long_name = "Generate IR Drop Report"
 
@@ -823,9 +838,9 @@ class IRDropReport(OpenROADStep):
 # Resizer Steps
 
 
-@Step.factory.register("OpenROAD.RepairDesign")
+@Step.factory.register()
 class RepairDesign(OpenROADStep):
-    id = "repair-design"
+    id = "OpenROAD.RepairDesign"
     name = "Repair Design (Post-Global Placement)"
     flow_control_variable = "RUN_REPAIR_DESIGN"
 
@@ -899,9 +914,9 @@ class RepairDesign(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
 
 
-@Step.factory.register("OpenROAD.ResizerTimingPostCTS")
+@Step.factory.register()
 class ResizerTimingPostCTS(OpenROADStep):
-    id = "rsz-timing-postcts"
+    id = "OpenROAD.ResizerTimingPostCTS"
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
     flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
@@ -958,9 +973,9 @@ class ResizerTimingPostCTS(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postcts.tcl")
 
 
-@Step.factory.register("OpenROAD.ResizerTimingPostGRT")
+@Step.factory.register()
 class ResizerTimingPostGRT(OpenROADStep):
-    id = "rsz-timing-postgrt"
+    id = "OpenROAD.ResizerTimingPostGRT"
     name = "Resizer Timing Optimizations (Post-Global Routing)"
     flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
 

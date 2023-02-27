@@ -41,9 +41,9 @@ def patch_klayout_mac(env: Dict[str, str]) -> Dict[str, str]:
     return env_out
 
 
-@Step.factory.register("KLayout.StreamOut")
+@Step.factory.register()
 class StreamOut(Step):
-    id = "klayout-streamout"
+    id = "KLayout.StreamOut"
     name = "GDS-II Stream Out (KLayout)"
     flow_control_variable = "RUN_KLAYOUT_STREAMOUT"
 
@@ -138,9 +138,9 @@ class StreamOut(Step):
         return state_out
 
 
-@Step.factory.register("KLayout.XOR")
+@Step.factory.register()
 class XOR(Step):
-    id = "klayout-xor"
+    id = "KLayout.XOR"
     name = "KLayout vs. Magic XOR"
     flow_control_variable = "RUN_KLAYOUT_XOR"
 

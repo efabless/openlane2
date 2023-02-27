@@ -33,7 +33,7 @@ class SequentialFlow(Flow):
     with nothing happening in parallel and no significant inter-step
     processing.
 
-    All subclasses of this flow have to do is override the :attr:`.Steps` property
+    All subclasses of this flow have to do is override the :attr:`.Steps` abstract property
     and it would automatically handle the rest. See `Classic` for an example.
     """
 
@@ -58,11 +58,23 @@ class SequentialFlow(Flow):
         frm: Optional[str] = None,
         to: Optional[str] = None,
         **kwargs,
-    ) -> Tuple[List[State], List[Step]]:
+    ) -> Tuple[State, List[Step]]:
+        frm_resolved = None
+        to_resolved = None
+        for cls in self.Steps:
+            if frm is not None and frm.lower() == cls.id.lower():
+                frm_resolved = cls.id
+            if to is not None and to.lower() == cls.id.lower():
+                to_resolved = cls.id
+
+        if frm is not None and frm_resolved is None:
+            raise FlowException(f"Failed to process end step '{frm}': step not found")
+        if to is not None and to_resolved is None:
+            raise FlowException(f"Failed to process end step '{to}': step not found")
+
         step_count = len(self.Steps)
         self.set_max_stage_count(step_count)
 
-        state_list = [initial_state]
         step_list = []
 
         log("Starting…")
@@ -70,9 +82,10 @@ class SequentialFlow(Flow):
         executing = frm is None
         deferred_errors = []
 
+        current_state = initial_state
         for cls in self.Steps:
-            step = cls()
-            if frm is not None and frm == step.id:
+            step = cls(state_in=current_state)
+            if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
             self.start_stage(step.name)
@@ -83,8 +96,7 @@ class SequentialFlow(Flow):
 
             step_list.append(step)
             try:
-                new_state = step.start()
-                state_list.append(new_state)
+                current_state = step.start()
             except MissingInputError as e:
                 raise FlowException(str(e))
             except DeferredStepError as e:
@@ -94,7 +106,7 @@ class SequentialFlow(Flow):
 
             self.end_stage()
 
-            if to is not None and to == step.id:
+            if to_resolved and to_resolved == step.id:
                 executing = False
         if len(deferred_errors) != 0:
             err("The following deferred step errors have been encountered:")
@@ -102,4 +114,4 @@ class SequentialFlow(Flow):
                 err(error)
             raise FlowError("A number of deferred errors were encountered.")
         success("Flow complete.")
-        return (state_list, step_list)
+        return (current_state, step_list)

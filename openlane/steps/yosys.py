@@ -35,8 +35,9 @@ class YosysStep(TclStep):
         pass
 
 
-@Step.factory.register("Yosys.Synthesis")
+@Step.factory.register()
 class Synthesis(YosysStep):
+    id = "Yosys.Synthesis"
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]
 

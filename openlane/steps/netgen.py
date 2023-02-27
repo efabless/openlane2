@@ -105,8 +105,9 @@ class NetgenStep(TclStep):
         return ["netgen", "-batch", "source"]
 
 
-@Step.factory.register("Netgen.LVS")
+@Step.factory.register()
 class LVS(NetgenStep):
+    id = "Netgen.LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
     flow_control_variable = "RUN_LVS"
 

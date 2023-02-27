@@ -131,6 +131,8 @@ def create_reproducible(
         env_keys_used.add(env_key)
         env[env_key] = current
 
+        warnings = []
+
         try:
             script = open(current).read()
             if verbose:
@@ -157,14 +159,12 @@ def create_reproducible(
                             tcls.add(value_substituted)
                             tcls_to_process.append(value_substituted)
         except FileNotFoundError:
-            warn(f"{current} was not found, might be a product. Skipping…")
+            warnings.append(f"{current} was not found, might be a product. Skipping…")
 
         current = shift(tcls_to_process)
 
     # Phase 4: Copy The Files
     final_env = {}
-
-    warnings = []
 
     def copy(frm, to):
         parents = dirname(to)
@@ -180,7 +180,7 @@ def create_reproducible(
             incomplete_matches = glob.glob(frm + "*")
 
             if len(incomplete_matches) == 0:
-                raise Exception()
+                raise FileNotFoundError()
             elif len(incomplete_matches) != 1 or incomplete_matches[0] != frm:
                 # Prefix For Other Files
                 for match in incomplete_matches:
@@ -193,6 +193,8 @@ def create_reproducible(
                         copy(new_frm, new_to)
             else:
                 do_copy()
+        except FileNotFoundError as e:
+            warnings.append(f"{frm} was not found, might be a product. Skipping…")
         except Exception as e:
             warnings.append(f"Couldn't copy {frm}: {e}. Skipped.")
 
@@ -221,6 +223,8 @@ def create_reproducible(
                     copy(from_path, final_path)
                 final_env[key] += f"{final_value} "
             elif potential_file_abspath.startswith(pdk_root):
+                if potential_file_abspath == pdk_root:  # Too many files to copy
+                    continue
                 relative = relpath(potential_file, pdk_root)
                 final_value = join("pdk", relative)
                 final_path = join(destination_folder, final_value)

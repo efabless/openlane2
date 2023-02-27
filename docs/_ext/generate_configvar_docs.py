@@ -71,11 +71,20 @@ def generate_module_docs(app: Sphinx, conf: Config):
         all_templates_path = os.path.abspath(template_relpath)
         template_path = os.path.join(all_templates_path, "generate_configvar_docs")
 
-
         lookup = jinja2.FileSystemLoader(searchpath=template_path)
 
         # Mako-like environment
-        env = jinja2.Environment("<%", "%>", "${", "}", "<%doc>", "</%doc>", "%", "##", loader=lookup)
+        env = jinja2.Environment(
+            "<%",
+            "%>",
+            "${",
+            "}",
+            "<%doc>",
+            "</%doc>",
+            "%",
+            "##",
+            loader=lookup,
+        )
 
         # 1. PDK
         template = env.get_template("pdk.md")
@@ -121,8 +130,10 @@ def generate_module_docs(app: Sphinx, conf: Config):
         del by_category["Misc"]
 
         ## Sort Categories
-        categories_sorted = list(sorted(by_category.items(), key=lambda c: c[0])) + [misc]
-        
+        categories_sorted = list(sorted(by_category.items(), key=lambda c: c[0])) + [
+            misc
+        ]
+
         ## Sort Steps
         for i in range(0, len(categories_sorted)):
             category, step_list = categories_sorted[i]

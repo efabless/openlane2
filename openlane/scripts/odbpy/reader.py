@@ -22,7 +22,11 @@ import functools
 from typing import Callable, Dict
 
 # -- START: Environment Fixes
-locale.setlocale(locale.LC_ALL, "C.UTF-8")
+try:
+    locale.setlocale(locale.LC_ALL, "C.UTF-8")
+except locale.Error:
+    # We tried. :)
+    pass
 
 if python_path := os.getenv("ODB_PYTHONPATH"):
     sys.path = python_path.split(":") + sys.path

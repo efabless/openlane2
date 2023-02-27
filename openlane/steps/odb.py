@@ -101,8 +101,9 @@ class OdbpyStep(Step):
         pass
 
 
-@Step.factory.register("Odb.ManualMacro")
+@Step.factory.register()
 class ManualMacroPlacement(OdbpyStep):
+    id = "Odb.ManualMacro"
     name = "Manual Macro Placement"
 
     flow_control_variable = "MACRO_PLACEMENT_CFG"
@@ -127,8 +128,9 @@ class ManualMacroPlacement(OdbpyStep):
         ]
 
 
-@Step.factory.register("Odb.ReportWireLength")
+@Step.factory.register()
 class ReportWireLength(OdbpyStep):
+    id = "Odb.ReportWireLength"
     name = "Report Wire Length"
 
     def get_script_path(self):
@@ -142,9 +144,9 @@ class ReportWireLength(OdbpyStep):
         ]
 
 
-@Step.factory.register("Odb.CustomIOPlacement")
+@Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
-    id = "custom_io_placement"
+    id = "Odb.CustomIOPlacement"
     name = "Custom I/O Placement"
     long_name = "Custom I/O Pin Placement Script"
 

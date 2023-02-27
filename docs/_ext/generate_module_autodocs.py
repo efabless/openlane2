@@ -172,7 +172,17 @@ def generate_module_docs(app: Sphinx, conf: Config):
         lookup = jinja2.FileSystemLoader(searchpath=template_path)
 
         # Mako-like environment
-        env = jinja2.Environment("<%", "%>", "${", "}", "<%doc>", "</%doc>", "%", "##", loader=lookup)
+        env = jinja2.Environment(
+            "<%",
+            "%>",
+            "${",
+            "}",
+            "<%doc>",
+            "</%doc>",
+            "%",
+            "##",
+            loader=lookup,
+        )
 
         templates = {k: env.get_template(f"{k}.md") for k in ["module"]}
         for module_name, build_path in generate_module_autodocs_conf:

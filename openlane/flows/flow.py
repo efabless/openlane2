@@ -50,7 +50,7 @@ from ..steps import (
     State,
 )
 from ..utils import Toolbox
-from ..common import mkdirp, console, log, internal, final
+from ..common import mkdirp, console, log, internal, final, slugify
 
 
 class FlowException(RuntimeError):
@@ -90,7 +90,11 @@ class Flow(ABC):
     """
 
     name: str
-    Steps: List[Type[Step]]
+
+    @property
+    @abstractmethod
+    def Steps() -> List[Type[Step]]:
+        pass
 
     def __init__(
         self,
@@ -184,7 +188,7 @@ class Flow(ABC):
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
         **kwargs,
-    ) -> Tuple[List[State], List[Step]]:
+    ) -> Tuple[State, List[Step]]:
         """
         The entry point for a flow.
 
@@ -204,7 +208,7 @@ class Flow(ABC):
         self.tmp_dir = os.path.join(self.run_dir, "tmp")
         self.toolbox = Toolbox(self.tmp_dir)
 
-        initial_state = State()
+        initial_state = with_initial_state or State()
 
         try:
             entries = os.listdir(self.run_dir)
@@ -287,7 +291,7 @@ class Flow(ABC):
         self,
         initial_state: State,
         **kwargs,
-    ) -> Tuple[List[State], List[Step]]:
+    ) -> Tuple[State, List[Step]]:
         """
         The core of the Flow. Subclasses of flow are expected to override this
         method.
@@ -372,7 +376,7 @@ class Flow(ABC):
             )
         return os.path.join(
             self.run_dir,
-            f"{self.current_stage_prefix()}{step.id}",
+            f"{self.current_stage_prefix()}{slugify(step.id)}",
         )
 
     class FlowFactory(object):

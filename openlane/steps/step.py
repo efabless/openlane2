@@ -75,12 +75,11 @@ class Step(ABC):
 
     :param state_in: The state object this step will use as an input.
 
-        If not provided, the call stack will be examined for a
-        `state_list`, and the latest one will be used as an input state.
-
         The state may also be a `Future[State]`, in which case,
         the `run()` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
+
+        If not provided, an initial state is created.
 
         See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
 
@@ -108,7 +107,6 @@ class Step(ABC):
     inputs: List[DesignFormat] = []
     outputs: List[DesignFormat] = []
 
-    id: str
     name: str
     long_name: str
 
@@ -124,6 +122,11 @@ class Step(ABC):
             return Self.name
         return Self.__name__
 
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        pass
+
     def __init__(
         self,
         config: Optional[Config] = None,
@@ -134,15 +137,13 @@ class Step(ABC):
         long_name: Optional[str] = None,
         silent: bool = False,
     ):
+        if id is not None:
+            self.id = id
+
         if name is not None:
             self.name = name
         elif not hasattr(self, "name"):
             self.name = self.__class__.__name__
-
-        if id is not None:
-            self.id = id
-        elif not hasattr(self, "id"):
-            self.id = slugify(self.name)
 
         if long_name is not None:
             self.long_name = long_name
@@ -165,20 +166,7 @@ class Step(ABC):
                 del frame
 
         if state_in is None:
-            try:
-                frame = inspect.currentframe()
-                if frame is not None:
-                    current = frame.f_back
-                    while current is not None:
-                        locals = current.f_locals
-                        if "state_list" in locals:
-                            state_list = locals["state_list"]
-                            state_in = state_list[-1]
-                        current = current.f_back
-                if state_in is None:
-                    raise TypeError("Missing required argument 'state_in'")
-            finally:
-                del frame
+            state_in = State()
 
         if step_dir is None:
             try:
@@ -409,15 +397,13 @@ class Step(ABC):
         _registry: ClassVar[Dict[str, Type[Step]]] = {}
 
         @classmethod
-        def register(Self, registered_name: str) -> Callable[[Type[Step]], Type[Step]]:
+        def register(Self) -> Callable[[Type[Step]], Type[Step]]:
             """
-            Adds a step type to the registry.
-
-            :param flow: A Step **type** (not object)
+            Adds a step type to the registry using its :mem:`Step.id` attribute.
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
-                Self._registry[registered_name] = cls
+                Self._registry[cls.id] = cls
                 return cls
 
             return decorator

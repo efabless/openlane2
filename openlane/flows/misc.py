@@ -21,7 +21,7 @@ from typing import List, Tuple
 
 from .flow import Flow
 from ..common import get_script_dir
-from ..steps import Step, State
+from ..steps import Step, State, KLayout
 
 
 @Flow.factory.register()
@@ -34,13 +34,17 @@ class OpenInKLayout(Flow):
     another flow.
     """
 
+    Steps = [
+        KLayout.StreamOut
+    ]
+
     name = "Opening in KLayout"
 
     def run(
         self,
         initial_state: State,
         **kwargs,
-    ) -> Tuple[List[State], List[Step]]:
+    ) -> Tuple[State, List[Step]]:
         self.set_max_stage_count(1)
         self.start_stage("Opening in KLayout")
 
@@ -73,7 +77,7 @@ class OpenInKLayout(Flow):
         )
         self.end_stage()
 
-        return ([], [])
+        return (initial_state, [])
 
 
 @Flow.factory.register()
@@ -88,11 +92,13 @@ class OpenInOpenROAD(Flow):
 
     name = "Opening in OpenROAD"
 
+    Steps = []
+
     def run(
         self,
         initial_state: State,
         **kwargs,
-    ) -> Tuple[List[State], List[Step]]:
+    ) -> Tuple[State, List[Step]]:
         self.set_max_stage_count(1)
 
         with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
@@ -109,4 +115,4 @@ class OpenInOpenROAD(Flow):
             )
         self.end_stage()
 
-        return ([], [])
+        return (initial_state, [])
