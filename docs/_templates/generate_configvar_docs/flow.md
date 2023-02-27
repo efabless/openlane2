@@ -7,8 +7,8 @@ Configuration objects, be they JSON, Tcl or directly passed to the Python API, c
 `?` indicates an optional variable, i.e., a value that may hold a value of `None`.  OpenLane steps are expected to understand that these values are optional and behave accordingly.
 ```
 
-| Variable Name | Type | Default | Description | Units |
+| Variable Name | Type | Description | Default | Units |
 | - | - | - | - | - |
 %for var in module.all_variables:
-| `${var.name}` | ${type_pretty(var)} | `${var.default}` | ${desc_clean(var.description)} | ${var.doc_units or ""} |
+| `${var.name}` | ${type_pretty(var)} | ${desc_clean(var.description)} | `${var.default}` | ${var.doc_units or ""} |
 %endfor

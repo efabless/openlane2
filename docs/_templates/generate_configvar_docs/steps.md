@@ -13,29 +13,18 @@ This page documents these steps, how to get them and their configuration variabl
 `?` indicates an optional variable, i.e., a value that may hold a value of `None`.  OpenLane steps are expected to understand that these values are optional and behave accordingly.
 ```
 
-<%
-by_category = {}
-for step in factory.list():
-    category, name = step.split(".")
-    if by_category.get(category) is None:
-        by_category[category] = []
-    by_category[category].append((step, factory.get(step)))
-
-misc = ("Misc", by_category["Misc"])
-del by_category["Misc"]
-%>
-%for category, steps in list(sorted(by_category.items(), key=lambda c: c[0])) + [misc]:
+%for category, steps in categories_sorted:
 ${"##"} ${category}
-%for key, step in sorted(steps, key=lambda t: t[0]):
+%for key, step in steps:
 ${"###"} ${step._get_desc()}
 * Get via `Step.get("${key}")`.
 
 ${step.__doc__ or ""}
 
-| Variable Name | Type | Default | Description | Units |
+| Variable Name | Type | Description | Default | Units |
 | - | - | - | - | - |
 %for var in step.config_vars:
-| `${var.name}` | ${type_pretty(var)} | `${var.default}` | ${desc_clean(var.description)} | ${var.doc_units or ""} |
+| `${var.name}` | ${type_pretty(var)} | ${desc_clean(var.description)} | `${var.default}` | ${var.doc_units or ""} |
 %endfor
 
 

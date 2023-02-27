@@ -1,6 +1,6 @@
 ${"#"} ${short_desc}
 
-%if len(submodules) != 0:
+%if submodules:
 | Submodule | Short Description |
 | - | - |
 %for name, desc, path in submodules:
@@ -15,7 +15,7 @@ ${"#"} ${short_desc}
    :show-inheritance:
 ```
 
-%if len(submodules) != 0:
+%if submodules:
 ```{toctree}
 :hidden:
 %for name, desc, path in submodules:

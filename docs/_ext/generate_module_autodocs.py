@@ -17,16 +17,14 @@
 
 import os
 import inspect
-import tempfile
 import traceback
 import importlib
 from types import ModuleType
 from typing import List, Tuple, Dict, Optional, Set
 
+import jinja2
 from sphinx.config import Config
 from sphinx.application import Sphinx
-from mako.template import Template
-from mako.lookup import TemplateLookup
 from docstring_parser import parse, Docstring
 
 from util import debug, rimraf, mkdirp
@@ -41,7 +39,7 @@ def setup(app: Sphinx):
 def generate_docs_for_module(
     processed: Set[ModuleType],
     build_path: str,
-    templates: Dict[str, Template],
+    templates: Dict[str, jinja2.Template],
     top_level_name: Optional[str],
     top_level_dir: Optional[str],
     module: ModuleType,
@@ -108,6 +106,8 @@ def generate_docs_for_module(
 
         if inspect.ismodule(attr):
             submodule = attr
+            if submodule.__doc__ is None:
+                continue
 
             submodule_doc_path = generate_docs_for_module(
                 processed=processed,
@@ -169,35 +169,34 @@ def generate_module_docs(app: Sphinx, conf: Config):
         all_templates_path = os.path.abspath(template_relpath)
         template_path = os.path.join(all_templates_path, "generate_module_autodocs")
 
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            lookup = TemplateLookup(
-                directories=[template_path],
-                module_directory=tmpdirname,
-                strict_undefined=True,
+        lookup = jinja2.FileSystemLoader(searchpath=template_path)
+
+        # Mako-like environment
+        env = jinja2.Environment("<%", "%>", "${", "}", "<%doc>", "</%doc>", "%", "##", loader=lookup)
+
+        templates = {k: env.get_template(f"{k}.md") for k in ["module"]}
+        for module_name, build_path in generate_module_autodocs_conf:
+            rimraf(build_path)
+
+            build_path_resolved = os.path.join(doc_root_dir, build_path)
+            top_level_module = importlib.import_module(module_name)
+
+            try:
+                docstring_raw = getattr(top_level_module, "__doc__")
+            except AttributeError:
+                raise ValueError("Top level module lacks a docstring.")
+
+            docstring = parse(docstring_raw)
+
+            generate_docs_for_module(
+                processed=set(),
+                module=top_level_module,
+                docstring=docstring,
+                build_path=build_path_resolved,
+                templates=templates,
+                top_level_name=None,
+                top_level_dir=None,
             )
-            templates = {k: lookup.get_template(f"{k}.md") for k in ["module"]}
-            for module_name, build_path in generate_module_autodocs_conf:
-                rimraf(build_path)
-
-                build_path_resolved = os.path.join(doc_root_dir, build_path)
-                top_level_module = importlib.import_module(module_name)
-
-                try:
-                    docstring_raw = getattr(top_level_module, "__doc__")
-                except AttributeError:
-                    raise ValueError("Top level module lacks a docstring.")
-
-                docstring = parse(docstring_raw)
-
-                generate_docs_for_module(
-                    processed=set(),
-                    module=top_level_module,
-                    docstring=docstring,
-                    build_path=build_path_resolved,
-                    templates=templates,
-                    top_level_name=None,
-                    top_level_dir=None,
-                )
     except Exception:
         print(traceback.format_exc())
         exit(-1)
