@@ -40,7 +40,7 @@
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; clangStdenv.mkDerivation {
+with pkgs; (if stdenv.isDarwin then clangStdenv else stdenv).mkDerivation {
   pname = "klayout";
   version = "${rev}";
 
