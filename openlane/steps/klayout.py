@@ -23,24 +23,6 @@ from .state import DesignFormat, State
 from ..config import Path, Variable
 from ..common import get_script_dir, warn
 
-
-def patch_klayout_mac(env: Dict[str, str]) -> Dict[str, str]:
-    """
-    Hack until KLayout is rebuilt: with the reasoning is redoing the
-    KLayout derivation takes about 8 years
-    """
-    klayout_path = subprocess.check_output(["which", "klayout"]).decode("utf8")
-    klayout_lib_path = os.path.join(
-        os.path.dirname(os.path.dirname(klayout_path)), "lib"
-    )
-
-    env_out = env.copy()
-    env_out[
-        "DYLD_LIBRARY_PATH"
-    ] = f"{klayout_lib_path}:{env_out.get('DYLD_LIBRARY_PATH', '')}"
-    return env_out
-
-
 @Step.factory.register()
 class StreamOut(Step):
     id = "KLayout.StreamOut"
@@ -100,8 +82,6 @@ class StreamOut(Step):
                 layout_args.append(gds)
 
         kwargs, env = self.extract_env(kwargs)
-        if platform.system() == "Darwin":
-            env = patch_klayout_mac(env)
 
         self.run_subprocess(
             [
@@ -181,8 +161,6 @@ class XOR(Step):
             return state_out
 
         kwargs, env = self.extract_env(kwargs)
-        if platform.system() == "Darwin":
-            env = patch_klayout_mac(env)
 
         self.run_subprocess(
             [

@@ -22,4 +22,3 @@ defaults and examples.
 from .optimizing import Optimizing
 from .classic import Classic
 from .misc import OpenInKLayout, OpenInOpenROAD
-from .nomagic import NoMagic

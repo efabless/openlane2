@@ -1,3 +1,11 @@
+# 2.0.0-dev6
+
+* Added magic builds to macOS
+* Fixed KLayout builds on macOS
+* Tweaks to Nix build scripts
+* Removed hack to make KLayout work on macOS
+* Removed NoMagic flow
+
 # 2.0.0-dev5
 
 * Fixed commandline `--flow` override.

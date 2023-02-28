@@ -15,9 +15,9 @@
   pkgs ? import ./pkgs.nix,
   rev,
   sha256,
-  abc-derivation, 
-  qtbase ? pkgs.libsForQt5.qtbase,
-  wrapQtAppsHook ? pkgs.libsForQt5.wrapQtAppsHook,
+  abc-rev,
+  abc-sha256,
+  libsForQt5 ? pkgs.libsForQt5,
 }:
 
 with pkgs; let boost-static = boost.override {
@@ -28,6 +28,32 @@ with pkgs; let boost-static = boost.override {
     broken = false;
   };
   doCheck = !stdenv.isDarwin; # Some tests fail to compile on Darwin
+}); abc-derivation = abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
+  pname = "or-abc";
+  version = "${abc-rev}";
+
+  src = fetchFromGitHub {
+    owner = "The-OpenROAD-Project";
+    repo = "abc";
+    rev = "${abc-rev}";
+    hash = "${abc-sha256}";
+  };
+
+  installPhase = ''
+  mkdir -p $out/bin
+  mv abc $out/bin
+
+  mkdir -p $out/lib
+  mv libabc.a $out/lib
+
+  mkdir -p $out/include
+  for header in $(find  ../src | grep "\\.h$" | sed "s@../src/@@"); do
+    header_tgt=$out/include/$header
+    header_dir=$(dirname $header_tgt) 
+    mkdir -p $header_dir
+    cp ../src/$header $header_tgt
+  done
+  '';
 }); in clangStdenv.mkDerivation {
   pname = "openroad";
   version = "${rev}";
@@ -68,7 +94,7 @@ with pkgs; let boost-static = boost.override {
     readline
     tclreadline
     libffi
-    qtbase
+    libsForQt5.qtbase
     llvmPackages.openmp
     
     # ortools
@@ -89,6 +115,6 @@ with pkgs; let boost-static = boost.override {
     gnumake
     flex
     bison
-    wrapQtAppsHook
+    libsForQt5.wrapQtAppsHook
   ];
 }
