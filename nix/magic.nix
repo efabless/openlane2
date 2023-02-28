@@ -75,19 +75,21 @@ with pkgs; stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-  # Replace csh invocations with tcsh
+  # csh -> tcsh
+  set -x
   for file in ./scripts/*; do
-      sed -i 's@/bin/csh/@/usr/bin/env tcsh@g' $file
+      sed -Ei 's@/bin/csh/?@/usr/bin/env tcsh@g' $file
   done
+  set +x
+
+  # nix shebang fix
+  patchShebangs ./scripts
 
   # Remove manual csh test
   sed -i '5386,5388d' ./scripts/configure
 
   # "Precompute" git rev-parse HEAD
   sed -i 's@`git rev-parse HEAD`@${rev}@' ./scripts/defs.mak.in
-
-  # Patch all shebangs to meet Nix standards
-  patchShebangs ./scripts/*
   '';
 
   NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined";
