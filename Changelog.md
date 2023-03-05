@@ -1,3 +1,13 @@
+# 2.0.0-dev10
+
+* Added `QUIT_ON_SYNTH_CHECKS`
+* Added  `QUIT_ON_UNMAPPED_CELLS`
+* Added metric `design__instance_unmapped__count`
+* Allow `MetricChecker` to raise `StepError`
+
+* Moved `State` to its own submodule.
+* Fixed bug with loading default SCL.
+
 # 2.0.0-dev9
 
 * Moved `State` to its own submodule.
