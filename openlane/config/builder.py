@@ -22,11 +22,11 @@ from .pdk import (
     removed_variables as pdk_removed_variables,
     migrate_old_config,
 )
-from .flow import removed_variables
+from .flow import removed_variables, all_variables as flow_common_variables
 from .tcleval import env_from_tcl
 from .config import Config, Meta
 from .variable import Variable
-from ..common import internal, log, warn
+from ..common import log, warn
 
 
 class InvalidConfig(ValueError):
@@ -69,9 +69,68 @@ class DecimalDecoder(json.JSONDecoder):
 
 class ConfigBuilder(object):
     """
-    Construct a full, validated and resolved OpenLane configuration object
-    from a user configuration + the various associated default values.
+    Various constructors for OpenLane configuration objects.
     """
+
+    @classmethod
+    def per_step(
+        Self,
+        DESIGN_NAME: str,
+        PDK: str,
+        STD_CELL_LIBRARY: Optional[str] = None,
+        PDK_ROOT: Optional[str] = None,
+        **kwargs,
+    ) -> Config:
+        """
+        This constructs a partial configuration object that may be incrementally
+        adjusted per-step.
+
+        :param DESIGN_NAME: The name of the design to be used.
+        :param PDK: The name of the PDK.
+        :param STD_CELL_LIBRARY: The name of the standard cell library.
+
+            If not specified, the PDK's default SCL will be used.
+        :param PDK_ROOT: Required if Volare is not installed.
+
+            If Volare is installed, this value can be used to optionally override
+            Volare's default.
+
+        :param kwargs: Any overrides to PDK values and/or common flow default variables
+            can be passed as keyword arguments to this function.
+
+            Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
+            not bound to a specific :class:`Step`, affects most Steps' behavior.
+        """
+        config_in, _ = Self._get_pdk_config(
+            PDK,
+            STD_CELL_LIBRARY,
+            PDK_ROOT,
+        )
+
+        config_in["PDK_ROOT"] = PDK_ROOT
+        config_in["DESIGN_NAME"] = DESIGN_NAME
+
+        config_in.update(kwargs)
+
+        config_in, design_warnings, design_errors = Variable.process_config(
+            config_in,
+            pdk_variables + list(flow_common_variables),
+            removed_variables,
+        )
+
+        if len(design_errors) != 0:
+            raise InvalidConfig("default configuration", design_warnings, design_errors)
+
+        if len(design_warnings) > 0:
+            log(
+                "Loading the default configuration has generated the following warnings:"
+            )
+        for warning in design_warnings:
+            warn(warning)
+
+        config_in.per_step = True
+
+        return config_in
 
     @classmethod
     def load(
@@ -99,9 +158,8 @@ class ConfigBuilder(object):
         :param design_dir: The design directory for said configuration.
             Supported and required *if and only if* config_in is a dictionary.
 
-        :param pdk: A process design kit to use. Could also be specified via the
-            "PDK" key in a configuration object, in which case this parameter is
-            optional.
+        :param pdk: A process design kit to use. Required unless specified via the
+            "PDK" key in a configuration object.
 
         :param pdk_root: Required if Volare is not installed.
 
@@ -114,7 +172,7 @@ class ConfigBuilder(object):
         :returns: A tuple containing a ConfigBuilder and the design directory.
         """
 
-        loader: Callable = Self.loads
+        loader: Callable = Self._loads
         raw: Union[str, dict] = ""
         if not isinstance(config_in, dict):
             if design_dir is not None:
@@ -128,7 +186,7 @@ class ConfigBuilder(object):
                 raw = open(config_in, encoding="utf8").read()
             elif config_in.endswith(".tcl"):
                 raw = open(config_in, encoding="utf8").read()
-                loader = Self.loads_tcl
+                loader = Self._loads_tcl
                 if config_override_strings is None:
                     raise ValueError(
                         "CLI override strings are not supported with .Tcl configuration files."
@@ -148,7 +206,7 @@ class ConfigBuilder(object):
                     "The argument design_dir is required when using ConfigBuilder with a dictionary."
                 )
             raw = config_in
-            loader = Self.load_dict
+            loader = Self._load_dict
 
         loaded = loader(
             raw,
@@ -163,7 +221,7 @@ class ConfigBuilder(object):
         return (loaded, design_dir)
 
     @classmethod
-    def loads(
+    def _loads(
         Self,
         json_str: str,
         *args,
@@ -171,15 +229,14 @@ class ConfigBuilder(object):
     ):
         raw = json.loads(json_str, cls=DecimalDecoder)
         kwargs["resolve_json"] = True
-        return Self.load_dict(
+        return Self._load_dict(
             raw,
             *args,
             **kwargs,
         )
 
-    @internal
     @classmethod
-    def load_dict(
+    def _load_dict(
         Self,
         raw: dict,
         design_dir: str,
@@ -207,70 +264,18 @@ class ConfigBuilder(object):
             design_dir=design_dir,
         )
 
-        try:
-            import volare
-
-            pdk_root = volare.get_volare_home(pdk_root)
-        except ImportError:
-            if pdk_root is None:
-                raise ValueError(
-                    "The pdk_root argument is required as Volare is not installed."
-                )
-
         pdk = process_info.get(Keys.pdk) or pdk
         if pdk is None:
             raise ValueError(
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in = Config(
-            {
-                "PDK_ROOT": pdk_root,
-                Keys.pdk: pdk,
-            }
+        config_in, pdkpath = Self._get_pdk_config(
+            pdk=pdk,
+            scl=scl,
+            pdk_root=pdk_root,
+            full_pdk_warnings=full_pdk_warnings,
         )
-        if scl is not None:
-            config_in[Keys.scl] = scl
-
-        pdkpath = os.path.join(pdk_root, pdk)
-        pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
-
-        config_in = env_from_tcl(
-            config_in,
-            open(pdk_config_path, encoding="utf8").read(),
-        )
-
-        scl = config_in["STD_CELL_LIBRARY"]
-        assert (
-            scl is not None
-        ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
-
-        scl_config_path = os.path.join(
-            pdkpath, "libs.tech", "openlane", scl, "config.tcl"
-        )
-        config_in = migrate_old_config(
-            env_from_tcl(
-                config_in,
-                open(scl_config_path, encoding="utf8").read(),
-            )
-        )
-
-        config_in, pdk_warnings, pdk_errors = Variable.process_config(
-            config_in,
-            pdk_variables,
-            pdk_removed_variables,
-        )
-
-        if len(pdk_errors) != 0:
-            raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
-
-        if len(pdk_warnings) > 0:
-            if full_pdk_warnings:
-                log(
-                    "Loading the PDK configuration files has generated the following warnings:"
-                )
-                for warning in pdk_warnings:
-                    warn(warning)
 
         resolve_maybe = resolve if resolve_json else lambda x, *args, **kwargs: x
 
@@ -311,9 +316,8 @@ class ConfigBuilder(object):
         config_in["PDK_ROOT"] = pdk_root
         return config_in
 
-    @internal
     @classmethod
-    def loads_tcl(
+    def _loads_tcl(
         Self,
         config: str,
         design_dir: str,
@@ -363,53 +367,12 @@ class ConfigBuilder(object):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        if scl is not None:
-            config_in[Keys.scl] = scl
-
-        pdkpath = os.path.join(pdk_root, pdk)
-        pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
-
-        config_in = env_from_tcl(
-            config_in,
-            open(pdk_config_path, encoding="utf8").read(),
+        config_in, _ = Self._get_pdk_config(
+            pdk=pdk,
+            scl=scl,
+            pdk_root=pdk_root,
+            full_pdk_warnings=full_pdk_warnings,
         )
-
-        scl = config_in["STD_CELL_LIBRARY"]
-        assert (
-            scl is not None
-        ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
-
-        scl_config_path = os.path.join(
-            pdkpath, "libs.tech", "openlane", scl, "config.tcl"
-        )
-        config_in = env_from_tcl(
-            config_in,
-            open(scl_config_path, encoding="utf8").read(),
-        )
-
-        config_in = migrate_old_config(
-            env_from_tcl(
-                config_in,
-                open(scl_config_path, encoding="utf8").read(),
-            )
-        )
-
-        config_in, pdk_warnings, pdk_errors = Variable.process_config(
-            config_in,
-            pdk_variables,
-            pdk_removed_variables,
-        )
-
-        if len(pdk_errors) != 0:
-            raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
-
-        if len(pdk_warnings) > 0:
-            if full_pdk_warnings:
-                log(
-                    "Loading the PDK configuration files has generated the following warnings:"
-                )
-                for warning in pdk_warnings:
-                    warn(warning)
 
         tcl_vars_in[Keys.pdk] = pdk
         tcl_vars_in[Keys.scl] = scl
@@ -440,3 +403,75 @@ class ConfigBuilder(object):
         config_in["PDK_ROOT"] = pdk_root
 
         return config_in
+
+    @classmethod
+    def _get_pdk_config(
+        Self,
+        pdk: str,
+        scl: Optional[str] = None,
+        pdk_root: Optional[str] = None,
+        full_pdk_warnings: Optional[bool] = False,
+    ) -> Tuple[Config, str]:
+        """
+        :returns: A tuple of the PDK configuration and the PDK path.
+        """
+        try:
+            import volare
+
+            pdk_root = volare.get_volare_home(pdk_root)
+        except ImportError:
+            if pdk_root is None:
+                raise ValueError(
+                    "The pdk_root argument is required as Volare is not installed."
+                )
+
+        config_in = Config(
+            {
+                "PDK_ROOT": pdk_root,
+                Keys.pdk: pdk,
+            }
+        )
+        if scl is not None:
+            config_in[Keys.scl] = scl
+
+        pdkpath = os.path.join(pdk_root, pdk)
+        pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
+
+        config_in = env_from_tcl(
+            config_in,
+            open(pdk_config_path, encoding="utf8").read(),
+        )
+
+        scl = config_in["STD_CELL_LIBRARY"]
+        assert (
+            scl is not None
+        ), "Fatal error: STD_CELL_LIBRARY default value not set by PDK."
+
+        scl_config_path = os.path.join(
+            pdkpath, "libs.tech", "openlane", scl, "config.tcl"
+        )
+        config_in = migrate_old_config(
+            env_from_tcl(
+                config_in,
+                open(scl_config_path, encoding="utf8").read(),
+            )
+        )
+
+        config_in, pdk_warnings, pdk_errors = Variable.process_config(
+            config_in,
+            pdk_variables,
+            pdk_removed_variables,
+        )
+
+        if len(pdk_errors) != 0:
+            raise InvalidConfig("PDK configuration files", pdk_warnings, pdk_errors)
+
+        if len(pdk_warnings) > 0:
+            if full_pdk_warnings:
+                log(
+                    "Loading the PDK configuration files has generated the following warnings:"
+                )
+                for warning in pdk_warnings:
+                    warn(warning)
+
+        return (config_in, pdkpath)

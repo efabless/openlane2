@@ -193,7 +193,7 @@ def create_reproducible(
                         copy(new_frm, new_to)
             else:
                 do_copy()
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             warnings.append(f"{frm} was not found, might be a product. Skipping…")
         except Exception as e:
             warnings.append(f"Couldn't copy {frm}: {e}. Skipped.")

@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import time
 import inspect
+import textwrap
 import subprocess
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
@@ -35,7 +36,7 @@ from .state import State
 from .design_format import DesignFormat
 from ..utils import Toolbox
 from ..config import Config, Variable
-from ..common import mkdirp, console, rule, log, slugify, final, internal
+from ..common import mkdirp, console, rule, log, slugify, warn, err, final, internal
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -45,6 +46,10 @@ class MissingInputError(ValueError):
 
 
 class StepError(ValueError):
+    pass
+
+
+class StepException(StepError):
     pass
 
 
@@ -87,15 +92,17 @@ class Step(ABC):
 
         If not provided, the call stack will be examined for a
         `self.dir_for_step` function, which will then be called to
-        get a directory for said step.
+        get a directory for said step. If not found, a new folder will be
+        created in the current working directory.
 
     :param name: An optional override name for the step. Useful in custom flows.
     :param id: An optional override name for the ID. Useful in custom flows.
     :param long_name: An optional override name for the long name. Useful in custom flows.
-    :param silent: A variable stating whether a step should output to the
-    terminal.
+    :param silent: A variable stating whether a step should output to the terminal.
+
         If set to false, Step implementations are expected to
         output nothing to the terminal.
+    :param
 
     :attr flow_control_variable: An optional key for a configuration variable.
         If it exists, if this variable is "False" or "None", the step is skipped.
@@ -114,18 +121,13 @@ class Step(ABC):
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
 
-    @classmethod
-    def _get_desc(Self) -> str:
-        if hasattr(Self, "long_name"):
-            return Self.long_name
-        elif hasattr(Self, "name"):
-            return Self.name
-        return Self.__name__
+    toolbox: Toolbox = Toolbox(os.path.join(os.getcwd(), "run", "tmp"))
 
-    @property
-    @abstractmethod
-    def id(self) -> str:
-        pass
+    # These are mutable global variables. However, they will only be used
+    # when steps are run outside of a Flow, pretty much.
+    counter: ClassVar[int] = 1
+
+    id: str = NotImplemented
 
     def __init__(
         self,
@@ -136,7 +138,13 @@ class Step(ABC):
         name: Optional[str] = None,
         long_name: Optional[str] = None,
         silent: bool = False,
+        **kwargs,
     ):
+        if self.id == NotImplemented:
+            raise NotImplementedError(
+                "All subclasses of Step must override the value of id."
+            )
+
         if id is not None:
             self.id = id
 
@@ -165,6 +173,24 @@ class Step(ABC):
             finally:
                 del frame
 
+        if config.per_step:
+            mutable = Config(**kwargs.copy())
+            overrides, warnings, errors = Variable.process_config(
+                mutable,
+                variables=self.config_vars,
+            )
+            config.update(**overrides)
+            for warning in warnings:
+                warn(warning)
+            if len(errors) != 0:
+                for error in errors:
+                    err(error)
+                raise StepException("Failed to handle one or more kwarg variables.")
+        elif len(kwargs) != 0:
+            raise StepException(
+                "Variables may not be passed as keyword arguments unless the Config object is per-step."
+            )
+
         if state_in is None:
             state_in = State()
 
@@ -179,11 +205,12 @@ class Step(ABC):
                             step_dir = locals["self"].dir_for_step(self)
                         current = current.f_back
                 if step_dir is None:
-                    raise TypeError("Missing required argument 'step_dir'")
+                    step_dir = os.path.join(
+                        os.getcwd(), "run", f"{Step.counter}-{slugify(self.id)}"
+                    )
+                    Step.counter += 1
             finally:
                 del frame
-
-        self.toolbox = Toolbox(os.path.join(step_dir, "tmp"))
 
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
@@ -191,6 +218,64 @@ class Step(ABC):
         self.config = config.copy()
         self.state_in = state_in
         self.silent = silent
+
+    @classmethod
+    def _get_desc(Self) -> str:
+        """
+        Used for documentation. Use externally at your own peril.
+        """
+        if hasattr(Self, "long_name"):
+            return Self.long_name
+        elif hasattr(Self, "name"):
+            return Self.name
+        return Self.__name__
+
+    @classmethod
+    def get_help_md(Self):
+        """
+        Renders Markdown help for this step to a string.
+        """
+
+        result = textwrap.dedent(
+            f"""
+        ### {Self._get_desc()}
+
+        {Self.__doc__ or ""}
+
+        #### Usage
+
+        <br />
+
+        ```python
+        from {Self.__module__} import {Self.__name__}
+
+        # or
+        
+        from openlane.steps import Step
+
+        Synthesis = Step.get("{Self.id}")
+        ``` 
+
+        #### Configuration Variables
+
+        | Variable Name | Type | Description | Default | Units |
+        | - | - | - | - | - |
+        """
+        )
+        for var in Self.config_vars:
+            units = var.units or ""
+            result += f"| `{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+
+        return result
+
+    @classmethod
+    def display_help(Self):
+        """
+        IPython-only. Displays Markdown help for a given step.
+        """
+        import IPython.display
+
+        IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
 
     @final
     def start(
@@ -211,11 +296,7 @@ class Step(ABC):
             What this means is that when inside of a Flow: you can just call
             :meth:`step.start` and not worry about this.
 
-            If said toolbox doesn't exist, the step will begrudingly create
-            one that uses its own step directory, however this will cause
-            cached functions inside the toolbox, i.e., those that perform
-            common file processing functions in the flow (trimming
-            liberty files, etc.) to not cache their results across steps.
+            If said toolbox was not found, a "global" toolbox will be used.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.

@@ -21,7 +21,7 @@ all_variables = [
     Variable(
         "DESIGN_NAME",
         str,
-        "The name of the top level module of the design.",
+        "The name of the top level module of the design. This is the only required variable for all steps and all flows.",
     ),
     Variable(
         "PDK",
@@ -39,7 +39,7 @@ all_variables = [
         "CLOCK_PERIOD",
         Decimal,
         "The clock period for the design.",
-        doc_units="ns",
+        units="ns",
         default=10.0,
     ),
     Variable(
@@ -67,7 +67,7 @@ all_variables = [
         "DIE_AREA",
         Optional[str],
         'Specific die area to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
-        doc_units="μm",
+        units="μm",
     ),
     # Macros
     Variable(

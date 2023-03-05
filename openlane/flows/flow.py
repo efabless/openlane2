@@ -90,11 +90,7 @@ class Flow(ABC):
     """
 
     name: str
-
-    @property
-    @abstractmethod
-    def Steps() -> List[Type[Step]]:
-        pass
+    Steps: List[Type[Step]] = []  # Override
 
     def __init__(
         self,

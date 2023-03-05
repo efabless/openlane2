@@ -27,5 +27,8 @@ with pkgs; mkShell {
     neovim
     delta
     zsh
+
+    # Testing
+    jupyter
   ];
 }

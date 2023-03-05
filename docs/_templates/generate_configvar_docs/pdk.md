@@ -14,7 +14,7 @@ These are variables that affect the entire PDK.
 | Variable Name | Type | Description | Units |
 | - | - | - | - |
 %for var in module.pdk_variables:
-| `${var.name}` | ${type_pretty(var)} | ${desc_clean(var.description)} | ${var.doc_units or ""} |
+| `${var.name}` | ${var.type_repr_md()} | ${var.desc_repr_md()} | ${var.units or ""} |
 %endfor
 
 ${"##"} SCL-Level
@@ -24,5 +24,5 @@ These are variables that affect a specific standard-cell library.
 | Variable Name | Type | Description | Units |
 | - | - | - | - |
 %for var in module.scl_variables:
-| `${var.name}` | ${type_pretty(var)} | ${desc_clean(var.description)} | ${var.doc_units or ""} |
+| `${var.name}` | ${var.type_repr_md()}  | ${var.desc_repr_md()} | ${var.units or ""} |
 %endfor

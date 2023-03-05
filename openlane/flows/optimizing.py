@@ -19,8 +19,7 @@ from concurrent.futures import Future
 
 from .flow import Flow
 from ..common import success, log
-from ..steps import State, Step
-from ..steps.builtins import Yosys, OpenROAD
+from ..steps import State, Step, Yosys, OpenROAD
 from ..config import Config
 
 

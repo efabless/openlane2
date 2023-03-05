@@ -17,10 +17,7 @@
 
 import os
 import re
-import inspect
 import traceback
-from enum import Enum
-from typing import get_origin, get_args, Union
 
 import jinja2
 from sphinx.config import Config
@@ -34,32 +31,7 @@ def setup(app: Sphinx):
     return {"version": "1.0"}
 
 
-def type_pretty(var: openlane.config.Variable):
-    some = var.some()
-    optional = var.is_optional()
-
-    type_string = some.__name__
-    if inspect.isclass(some) and issubclass(some, Enum):
-        type_string = " \\| ".join([repr(e.value) for e in some])
-        type_string = f"`{type_string}`"
-
-    origin, args = get_origin(some), get_args(some)
-    if origin is not None:
-        arg_strings = [arg.__name__ for arg in args]
-        if origin == Union:
-            type_string = " \\| ".join(arg_strings)
-            type_string = f"({type_string})"
-        else:
-            type_string = f"{type_string}[{','.join(arg_strings)}]"
-
-    return type_string + ("?" if optional else "")
-
-
 newline_rx = re.compile("\n")
-
-
-def desc_clean(input: str) -> str:
-    return newline_rx.sub("<br />", input)
 
 
 def generate_module_docs(app: Sphinx, conf: Config):
@@ -95,8 +67,6 @@ def generate_module_docs(app: Sphinx, conf: Config):
             f.write(
                 template.render(
                     module=module,
-                    type_pretty=type_pretty,
-                    desc_clean=desc_clean,
                 )
             )
 
@@ -109,8 +79,6 @@ def generate_module_docs(app: Sphinx, conf: Config):
             f.write(
                 template.render(
                     module=module,
-                    type_pretty=type_pretty,
-                    desc_clean=desc_clean,
                 )
             )
 
@@ -148,8 +116,6 @@ def generate_module_docs(app: Sphinx, conf: Config):
             f.write(
                 template.render(
                     factory=factory,
-                    type_pretty=type_pretty,
-                    desc_clean=desc_clean,
                     categories_sorted=categories_sorted,
                 )
             )

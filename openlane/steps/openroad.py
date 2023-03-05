@@ -202,13 +202,13 @@ class Floorplan(OpenROADStep):
             Decimal,
             "The core utilization percentage.",
             default=50,
-            doc_units="%",
+            units="%",
         ),
         Variable(
             "CORE_AREA",
             Optional[str],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
-            doc_units="μm",
+            units="μm",
         ),
         Variable(
             "BOTTOM_MARGIN_MULT",
@@ -272,7 +272,7 @@ class IOPlacement(OpenROADStep):
                 Decimal,
                 "The minimum distance between the IOs.",
                 default=3,
-                doc_units="µm",
+                units="µm",
             ),
             Variable(
                 "FP_PIN_ORDER_CFG",
@@ -312,14 +312,14 @@ class TapDecapInsertion(OpenROADStep):
             Decimal,
             "Specify the horizontal halo size around macros during tap insertion.",
             default=10,
-            doc_units="µm",
+            units="µm",
         ),
         Variable(
             "FP_TAP_VERTICAL_HALO",
             Decimal,
             "Specify the vertical halo size around macros during tap insertion.",
             default="expr::$FP_TAP_HORIZONTAL_HALO",
-            doc_units="µm",
+            units="µm",
         ),
     ]
 
@@ -352,7 +352,7 @@ class GlobalPlacement(OpenROADStep):
                 "PL_TARGET_DENSITY_PCT",
                 Optional[Decimal],
                 "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
-                doc_units="%",
+                units="%",
                 deprecated_names=[
                     ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
                 ],
@@ -404,14 +404,14 @@ class BasicMacroPlacement(OpenROADStep):
             str,
             "Macro placement halo. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            doc_units="μm",
+            units="μm",
         ),
         Variable(
             "PL_MACRO_CHANNEL",
             str,
             "Channel widths between macros. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            doc_units="μm",
+            units="μm",
         ),
     ]
 
@@ -449,7 +449,7 @@ class CTS(OpenROADStep):
             Decimal,
             "The target clock skew in picoseconds.",
             default=200,
-            doc_units="ps",
+            units="ps",
         ),
         Variable(
             "CTS_TOLERANCE",
@@ -468,7 +468,7 @@ class CTS(OpenROADStep):
             Decimal,
             "Specifies maximum diameter of the sink cluster.",
             default=50,
-            doc_units="μm",
+            units="μm",
         ),
         Variable(
             "CTS_REPORT_TIMING",
@@ -481,7 +481,7 @@ class CTS(OpenROADStep):
             Decimal,
             "Specifies the maximum wire length on the clock net.",
             default=0,
-            doc_units="µm",
+            units="µm",
         ),
         Variable(
             "CTS_DISABLE_POST_PROCESSING",
@@ -494,7 +494,7 @@ class CTS(OpenROADStep):
             Decimal,
             "Specifies the distance between buffers when creating the clock tree.",
             default=0,
-            doc_units="µm",
+            units="µm",
         ),
     ]
 
@@ -516,7 +516,7 @@ class GlobalRouting(OpenROADStep):
                 int,
                 "Diode cell padding; increases the width of diode cells during placement checks..",
                 default=2,
-                doc_units="sites",
+                units="sites",
             ),
             Variable(
                 "GRT_ALLOW_CONGESTION",
@@ -888,7 +888,7 @@ class RepairDesign(OpenROADStep):
                 Decimal,
                 "Specifies the maximum wire length cap used by resizer to insert buffers. If set to 0, no buffers will be inserted.",
                 default=0,
-                doc_units="µm",
+                units="µm",
                 deprecated_names=["PL_RESIZER_MAX_WIRE_LENGTH"],
             ),
             Variable(
@@ -896,7 +896,7 @@ class RepairDesign(OpenROADStep):
                 Decimal,
                 "Specifies a margin for the slews during design repair.",
                 default=20,
-                doc_units="%",
+                units="%",
                 deprecated_names=["PL_RESIZER_MAX_SLEW_MARGIN"],
             ),
             Variable(
@@ -904,7 +904,7 @@ class RepairDesign(OpenROADStep):
                 Decimal,
                 "Specifies a margin for the capacitances during design repair.",
                 default=20,
-                doc_units="%",
+                units="%",
                 deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
             ),
         ]
@@ -936,14 +936,14 @@ class ResizerTimingPostCTS(OpenROADStep):
                 Decimal,
                 "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
                 default=0.1,
-                doc_units="ns",
+                units="ns",
             ),
             Variable(
                 "PL_RESIZER_SETUP_SLACK_MARGIN",
                 Decimal,
                 "Specifies a time margin for the slack when fixing setup violations.",
                 default=0.05,
-                doc_units="ns",
+                units="ns",
             ),
             Variable(
                 "PL_RESIZER_HOLD_MAX_BUFFER_PCT",
@@ -957,7 +957,7 @@ class ResizerTimingPostCTS(OpenROADStep):
                 Decimal,
                 "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
                 default=50,
-                doc_units="%",
+                units="%",
                 deprecated_names=["PL_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
             ),
             Variable(
@@ -995,7 +995,7 @@ class ResizerTimingPostGRT(OpenROADStep):
                 str,
                 "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
                 default=0.05,
-                doc_units="ns",
+                units="ns",
                 deprecated_names=["GLB_RESIZER_HOLD_SLACK_MARGIN"],
             ),
             Variable(
@@ -1003,7 +1003,7 @@ class ResizerTimingPostGRT(OpenROADStep):
                 str,
                 "Specifies a time margin for the slack when fixing setup violations.",
                 default=0.025,
-                doc_units="ns",
+                units="ns",
                 deprecated_names=["GLB_RESIZER_SETUP_SLACK_MARGIN"],
             ),
             Variable(
@@ -1011,7 +1011,7 @@ class ResizerTimingPostGRT(OpenROADStep):
                 Decimal,
                 "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
                 default=50,
-                doc_units="%",
+                units="%",
                 deprecated_names=["GLB_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
             ),
             Variable(
@@ -1019,7 +1019,7 @@ class ResizerTimingPostGRT(OpenROADStep):
                 Decimal,
                 "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
                 default=50,
-                doc_units="%",
+                units="%",
                 deprecated_names=["GLB_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
             ),
             Variable(

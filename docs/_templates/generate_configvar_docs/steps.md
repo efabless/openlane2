@@ -16,17 +16,6 @@ This page documents these steps, how to get them and their configuration variabl
 %for category, steps in categories_sorted:
 ${"##"} ${category}
 %for key, step in steps:
-${"###"} ${step._get_desc()}
-* Get via `Step.get("${key}")`.
-
-${step.__doc__ or ""}
-
-| Variable Name | Type | Description | Default | Units |
-| - | - | - | - | - |
-%for var in step.config_vars:
-| `${var.name}` | ${type_pretty(var)} | ${desc_clean(var.description)} | `${var.default}` | ${var.doc_units or ""} |
-%endfor
-
-
+${step.get_help_md()}
 %endfor
 %endfor

@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import re
 import os
+import inspect
 from enum import Enum
 from typing import get_origin, get_args
 from dataclasses import dataclass, field
@@ -26,11 +28,58 @@ from .resolve import process_string, Keys as SpecialKeys
 
 
 def StringEnum(name: str, values: Sequence[str]):
+    """
+    Creates a string enumeration where the keys and values are the same.
+    """
     return Enum(name, [(value, value) for value in values])
+
+
+newline_rx = re.compile(r"\n")
 
 
 @dataclass
 class Variable:
+    """
+    An object representing a configuration variable for a PDK, a Flow or a Step.
+
+    :param name: A string name for the Variable. Because of backwards compatility
+        with OpenLane 1, the convention is ``UPPER_SNAKE_CASE``.
+
+    :param type: A Python type object representing the variable.
+
+        Supported scalars:
+
+        - ``int``
+        - ``decimal.Decimal``
+        - ``bool``
+        - ``str``
+        - :class:`Path`
+        - Enums
+
+        Supported "generics":
+
+        - ``Union`` (incl. ``Optional``)
+        - ``List``
+        - ``Tuple``
+
+    :param description: A human-readable description of the variable. Used to
+        generate help strings and documentation.
+
+    :param default: A default value for the variable.
+
+        Optional variablews 
+
+    :param deprecated_names: A list of deprecated names for said variable.
+
+        An element of the list can alternative be a tuple of a name and a Callable
+        used to perform a translation for when a renamed variable is also slightly
+        modified.
+
+    :param units: Used only in documentation: the unit corresponding to this
+        object, i.e., μm, pF, etc. Can be any string, but for consistency, SI units
+        must be represented in terms of their official symbols.
+    """
+
     name: str
     type: Any
     description: str
@@ -39,14 +88,22 @@ class Variable:
         default_factory=list
     )
 
-    doc_example: Optional[str] = None
-    doc_units: Optional[str] = None
+    units: Optional[str] = None
 
     def is_optional(self) -> bool:
+        """
+        Returns whether a variable's type is an `Option type <https://en.wikipedia.org/wiki/Option_type>`_.
+        """
         type_args = get_args(self.type)
         return get_origin(self.type) is Union and type(None) in type_args
 
     def some(self) -> Any:
+        """
+        Returns the type of a variable presuming it is not None.
+
+        If a variable is not Optional, that is simply the type specified in the
+        :attr:`type` field.
+        """
         if not self.is_optional():
             return self.type
         else:
@@ -63,7 +120,43 @@ class Variable:
 
     @property
     def required(self) -> bool:
+        """
+        Whether this variable is required to be specified by a user configuration
+        or not.
+
+        What it boils down to is: Variables without defaults that are not optional
+        are required.
+        """
         return self.default is None and not self.is_optional()
+
+    def type_repr_md(self) -> str:
+        """
+        Prints a pretty Markdown string representation of the Variable's type.
+        """
+        some = self.some()
+        optional = self.is_optional()
+
+        type_string = some.__name__
+        if inspect.isclass(some) and issubclass(some, Enum):
+            type_string = "	\\| ".join([repr(e.value) for e in some])
+            type_string = f"`{type_string}`"
+
+        origin, args = get_origin(some), get_args(some)
+        if origin is not None:
+            arg_strings = [arg.__name__ for arg in args]
+            if origin == Union:
+                type_string = "	\\| ".join(arg_strings)
+                type_string = f"({type_string})"
+            else:
+                type_string = f"{type_string}[{','.join(arg_strings)}]"
+
+        return type_string + ("?" if optional else "")
+
+    def desc_repr_md(self) -> str:
+        """
+        Prints the description, but with newlines escaped for Markdown.
+        """
+        return newline_rx.sub("<br />", self.description)
 
     def process(
         self,
@@ -149,6 +242,35 @@ class Variable:
                     f"Value provided for variable {self.name} of type {validating_type} is invalid: '{value}' {e}"
                 )
 
+    def _compile(
+        self,
+        mutable_config: Config,
+        warning_list_ref: List[str],
+        values_so_far: Config,
+    ) -> Any:
+        exists, value = mutable_config.extract(self.name)
+
+        i = 0
+        while (
+            not exists
+            and self.deprecated_names is not None
+            and i < len(self.deprecated_names)
+        ):
+            deprecated_name = self.deprecated_names[i]
+            deprecated_callable = lambda x: x
+            if not isinstance(deprecated_name, str):
+                deprecated_name, deprecated_callable = deprecated_name
+            exists, value = mutable_config.extract(deprecated_name)
+            if exists:
+                warning_list_ref.append(
+                    f"The configuration variable '{deprecated_name}' is deprecated. Please check the docs for the usage on the replacement variable '{self.name}'."
+                )
+            if value is not None:
+                value = deprecated_callable(value)
+            i = i + 1
+
+        return self.process(value, values_so_far=values_so_far.data)
+
     def __hash__(self) -> int:
         return hash((self.name, self.description))
 
@@ -167,13 +289,13 @@ class Variable:
         Self,
         config: Config,
         variables: Sequence["Variable"],
-        removed: Dict[str, str],
+        removed: Optional[Dict[str, str]] = None,
     ) -> Tuple[Config, List[str], List[str]]:
         """
         Verifies a configuration object against a list of variables, returning
         an object with the variables normalized according to their types.
 
-        :param config: The input, raw configuration file.
+        :param config: The input, raw configuration object.
         :param variables: A sequence or some other iterable of variables.
         :param removed: A dictionary of variables that may have existed at a point in
             time, but then have gotten removed. Useful to give feedback to the user.
@@ -184,35 +306,23 @@ class Variable:
 
             If the third element is non-empty, the first object is invalid.
         """
-        warnings = []
+        if removed is None:
+            removed = {}
+
+        warnings: List[str] = []
         errors = []
         final = Config()
         mutable = config.copy()
         for variable in variables:
-            exists, value = mutable.extract(variable.name)
-            i = 0
-            while (
-                not exists
-                and variable.deprecated_names is not None
-                and i < len(variable.deprecated_names)
-            ):
-                deprecated_name = variable.deprecated_names[i]
-                deprecated_callable = lambda x: x
-                if not isinstance(deprecated_name, str):
-                    deprecated_name, deprecated_callable = deprecated_name
-                exists, value = mutable.extract(deprecated_name)
-                if exists:
-                    warnings.append(
-                        f"The variable '{deprecated_name}' is deprecated. Please check the docs for the usage on the replacement variable '{variable.name}'."
-                    )
-                if value is not None:
-                    value = deprecated_callable(value)
-                i = i + 1
             try:
-                value_processed = variable.process(value, values_so_far=final.data)
+                value_processed = variable._compile(
+                    mutable_config=mutable,
+                    warning_list_ref=warnings,
+                    values_so_far=final,
+                )
+                final[variable.name] = value_processed
             except ValueError as e:
                 errors.append(str(e))
-            final[variable.name] = value_processed
 
         for key in sorted(mutable.keys()):
             if key in vars(SpecialKeys).values():

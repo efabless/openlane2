@@ -15,7 +15,7 @@ from typing import List, Type
 from ..steps import (
     Step,
 )
-from ..steps.builtins import (
+from ..steps import (
     Yosys,
     OpenROAD,
     Magic,

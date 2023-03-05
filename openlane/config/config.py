@@ -74,7 +74,8 @@ class Config(UserDict):
     singleton class.
     """
 
-    meta = Meta(version=1)
+    meta: Meta = Meta(version=1)
+    per_step: bool = False
 
     @classmethod
     def get_meta(

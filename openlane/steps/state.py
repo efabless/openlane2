@@ -120,3 +120,31 @@ class State(UserDict):
             state[df] = Path(value)
 
         return state
+
+    def _repr_html_(self) -> str:
+        result = """
+        <table>
+            <tr>
+                <th>Format</th>
+                <th>Path</th>
+            </tr>
+        """
+        for id, value in dict(self).items():
+            assert isinstance(id, str)
+            if value is None:
+                continue
+
+            format = DesignFormatByID[id]
+
+            value_rel = os.path.relpath(value, ".")
+
+            result += f"""
+                <tr>
+                    <td>{format.value[2]}</td>
+                    <td><a href="{value_rel}">{value_rel}</a></td>
+                </tr>
+            """
+
+        result += "</table>"
+
+        return result
