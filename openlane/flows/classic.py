@@ -37,6 +37,7 @@ class Classic(SequentialFlow):
 
     Steps: List[Type[Step]] = [
         Yosys.Synthesis,
+        Checker.YosysUnmappedCells,
         Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
