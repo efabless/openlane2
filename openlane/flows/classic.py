@@ -57,6 +57,8 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.DetailedRouting,
         Checker.TrDRC,
+        Odb.ReportDisconnectedPins,
+        Checker.DisconnectedPins,
         Odb.ReportWireLength,
         Checker.WireLength,
         OpenROAD.FillInsertion,

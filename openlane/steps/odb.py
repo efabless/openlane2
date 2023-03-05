@@ -195,6 +195,13 @@ class ReportWireLength(OdbpyStep):
             os.path.join(self.step_dir, "wire_lengths.csv"),
         ]
 
+@Step.factory.register("Odb.ReportDisconnectedPins")
+class ReportDisconnectedPins(OdbpyStep):
+    name = "Report disconnected instance pins"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
+
 
 @Step.factory.register()
 class CustomIOPlacement(OdbpyStep):

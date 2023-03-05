@@ -82,13 +82,13 @@ def get_metrics(stats: Dict) -> Dict:
         + pin_fails
     )
     metrics = {}
-    metrics["lvs__device_count_difference"] = device_differences
-    metrics["lvs__net_count_differences"] = net_differences
-    metrics["lvs__property_fails"] = property_fails
-    metrics["lvs__total__errors"] = total_errors
-    metrics["lvs__unmatched_devices"] = device_fails
-    metrics["lvs__unmatched_nets"] = net_fails
-    metrics["lvs__unmatched_pins"] = pin_fails
+    metrics["netgen__device_count_difference"] = device_differences
+    metrics["netgen__net_count_differences"] = net_differences
+    metrics["netgen__property_fails"] = property_fails
+    metrics["netgen__total__errors"] = total_errors
+    metrics["netgen__unmatched_devices"] = device_fails
+    metrics["netgen__unmatched_nets"] = net_fails
+    metrics["netgen__unmatched_pins"] = pin_fails
 
     return metrics
 

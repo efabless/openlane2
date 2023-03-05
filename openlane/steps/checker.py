@@ -162,7 +162,35 @@ class IllegalOverlap(MetricChecker):
 
 
 @Step.factory.register()
-class WireLength(MetricChecker):
+class DisconnectedPins(Step):
+    id = "Checker.DisconnectedPins"
+    flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
+    name = "Disconnected pins check"
+
+    def run(
+        self,
+        **kwargs,
+    ) -> State:
+        state_out = super().run()
+        if (
+            disconnected_pins_count := state_out.metrics.get(
+                "design__instance__count__disconnected_pins"
+            )
+        ) is None:
+            warn(
+                "Disconnected pins not reported. Odb.ReportDisconnectedPins didn't run"
+            )
+        elif disconnected_pins_count > 0:
+            error_msg = (
+                f"{disconnected_pins_count} disconnected pins found. Likely there are lvs errors. "
+                f"Check disconnected pins logs."
+            )
+            raise StepError(error_msg)
+        return state_out
+
+
+@Step.factory.register()
+class WireLength(Step):
     id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
@@ -212,3 +240,16 @@ class LVS(MetricChecker):
 
     def get_metric_description(self) -> str:
         return "LVS errors"
+    def run(
+        self,
+        **kwargs,
+    ) -> State:
+        state_out = super().run()
+        lvs_errors_count = state_out.metrics.get("netgen__total__errors")
+        if lvs_errors_count is None:
+            warn("No LVS errors reported. Netgen.LVS didn't run")
+        elif lvs_errors_count > 0:
+            error_msg = f"{lvs_errors_count} LVS errors found."
+            err(f"{error_msg} - deferred")
+            raise DeferredStepError(error_msg)
+        return state_out
