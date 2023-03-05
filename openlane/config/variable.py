@@ -67,7 +67,7 @@ class Variable:
 
     :param default: A default value for the variable.
 
-        Optional variablews 
+        Optional variables have an implicit default value of ``None``.
 
     :param deprecated_names: A list of deprecated names for said variable.
 

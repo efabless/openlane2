@@ -104,5 +104,3 @@ class Toolbox(object):
         output_file_handle.close()
 
         return out_path
-
-    
