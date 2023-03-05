@@ -91,6 +91,7 @@ class YosysUnmappedCells(MetricChecker):
     def get_metric_description(self) -> str:
         return "Unmapped Yosys instances"
 
+
 @Step.factory.register()
 class TrDRC(MetricChecker):
     id = "Checker.TrDRC"
