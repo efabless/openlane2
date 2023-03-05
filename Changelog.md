@@ -3,7 +3,7 @@
 * Added `QUIT_ON_SYNTH_CHECKS`
 * Added  `QUIT_ON_UNMAPPED_CELLS`
 * Added metric `design__instance_unmapped__count`
-* Allow `MetricChecker` to raise `StepError`
+* Allowed `MetricChecker` to raise `StepError`
 
 # 2.0.0-dev9
 
