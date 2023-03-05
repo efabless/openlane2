@@ -13,24 +13,8 @@
 # limitations under the License.
 
 """
-The Step Module
+The State Module
 
-This modules includes various functions for importing and/or generating OpenLane
-configuration objects. Configuration objects are the primary input to a flow.
 """
-from .step import (
-    Step,
-    StepConditionLambda,
-    MissingInputError,
-    DeferredStepError,
-    StepError,
-)
-from .tclstep import TclStep
-from . import checker as Checker
-from . import yosys as Yosys
-from . import openroad as OpenROAD
-from . import magic as Magic
-from . import odb as Odb
-from . import netgen as Netgen
-from . import klayout as KLayout
-from . import misc as Misc
+from .design_format import DesignFormat
+from .state import State

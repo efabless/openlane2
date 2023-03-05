@@ -17,9 +17,9 @@ import subprocess
 from typing import List, Tuple, Optional, Type
 
 from .flow import Flow, FlowException, FlowError
+from ..state import State
 from ..steps import (
     MissingInputError,
-    State,
     Step,
     StepError,
     DeferredStepError,

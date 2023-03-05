@@ -35,7 +35,7 @@ sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))
 # -- END
 
 import click
-from openlane.steps.design_format import DesignFormat, DesignFormatByID
+from openlane.state.design_format import DesignFormat, DesignFormatByID
 
 click  # Re-export now that the environment actually works properly
 

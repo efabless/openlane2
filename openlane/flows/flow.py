@@ -45,10 +45,8 @@ from ..config import (
     Variable,
     universal_flow_config_variables,
 )
-from ..steps import (
-    Step,
-    State,
-)
+from ..state import State
+from ..steps import Step
 from ..utils import Toolbox
 from ..common import mkdirp, console, log, internal, final, slugify
 

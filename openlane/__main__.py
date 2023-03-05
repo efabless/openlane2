@@ -22,7 +22,7 @@ from typing import Tuple, Type, Optional, List, Union
 
 import click
 
-from .steps import State
+from .state import State
 from .__version__ import __version__
 from .common import err, warn, log, get_opdks_rev, get_openlane_root
 from .container import run_in_container

@@ -20,7 +20,7 @@ from abc import abstractmethod
 
 from .step import Step
 from .tclstep import TclStep
-from .state import DesignFormat, State
+from ..state import DesignFormat, State
 from ..config import Variable
 from ..common import log
 

@@ -21,7 +21,8 @@ from typing import List, Tuple
 
 from .flow import Flow
 from ..common import get_script_dir
-from ..steps import Step, State, KLayout
+from ..state import State
+from ..steps import Step, KLayout
 
 
 @Flow.factory.register()

@@ -15,7 +15,7 @@ import os
 import sys
 
 from .step import Step, StepError
-from .state import DesignFormat, State
+from ..state import DesignFormat, State
 
 from ..config import Path, Variable
 from ..common import get_script_dir, warn

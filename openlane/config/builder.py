@@ -101,7 +101,7 @@ class ConfigBuilder(object):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
-        config_in, _ = Self._get_pdk_config(
+        config_in, _, _ = Self._get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
             PDK_ROOT,
@@ -270,7 +270,7 @@ class ConfigBuilder(object):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in, pdkpath = Self._get_pdk_config(
+        config_in, pdkpath, scl = Self._get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
@@ -283,7 +283,7 @@ class ConfigBuilder(object):
             raw,
             pdk=pdk,
             pdkpath=pdkpath,
-            scl=scl,
+            scl=config_in["STD_CELL_LIBRARY"],
             design_dir=design_dir,
         )
 
@@ -367,7 +367,7 @@ class ConfigBuilder(object):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in, _ = Self._get_pdk_config(
+        config_in, _, scl = Self._get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
@@ -411,9 +411,9 @@ class ConfigBuilder(object):
         scl: Optional[str] = None,
         pdk_root: Optional[str] = None,
         full_pdk_warnings: Optional[bool] = False,
-    ) -> Tuple[Config, str]:
+    ) -> Tuple[Config, str, str]:
         """
-        :returns: A tuple of the PDK configuration and the PDK path.
+        :returns: A tuple of the PDK configuration, the PDK path and the SCL.
         """
         try:
             import volare
@@ -474,4 +474,4 @@ class ConfigBuilder(object):
                 for warning in pdk_warnings:
                     warn(warning)
 
-        return (config_in, pdkpath)
+        return (config_in, pdkpath, scl)

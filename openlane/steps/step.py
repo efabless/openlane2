@@ -32,8 +32,8 @@ from typing import (
     Type,
 )
 
-from .state import State
-from .design_format import DesignFormat
+from ..state import State
+from ..state import DesignFormat
 from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import mkdirp, console, rule, log, slugify, warn, err, final, internal

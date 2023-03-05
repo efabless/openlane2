@@ -26,7 +26,7 @@ from typing import List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
 
 from .step import Step
-from .state import State
+from ..state import State
 from ..config import Path
 from ..common import mkdirp, log, warn
 from ..common import get_script_dir, get_openlane_root

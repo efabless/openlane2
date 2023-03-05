@@ -1,3 +1,8 @@
+# 2.0.0-dev9
+
+* Moved `State` to its own submodule.
+* Fixed bug with loading default SCL.
+
 # 2.0.0-dev8
 
 * Added a step-by-step API for OpenLane.
