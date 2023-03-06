@@ -73,7 +73,7 @@ class ConfigBuilder(object):
     """
 
     @classmethod
-    def per_step(
+    def interactive(
         Self,
         DESIGN_NAME: str,
         PDK: str,
@@ -83,7 +83,12 @@ class ConfigBuilder(object):
     ) -> Config:
         """
         This constructs a partial configuration object that may be incrementally
-        adjusted per-step.
+        adjusted per-step, and activates OpenLane's **interactive mode**.
+
+        The interactive mode is overall less rigid than the pure mode, adding various
+        references to global objects to make the REPL or Notebook experience more
+        pleasant, however, it is not as resilient as the pure mode and should not
+        be used in production code.
 
         :param DESIGN_NAME: The name of the design to be used.
         :param PDK: The name of the PDK.
@@ -128,7 +133,9 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
-        config_in.per_step = True
+        config_in.interactive = True
+
+        Config.current_interactive = config_in
 
         return config_in
 

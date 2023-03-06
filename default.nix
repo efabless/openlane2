@@ -32,8 +32,8 @@
 
   or-abc-rev ? "95b3543e928640dfa25f9e882e72a090a8883a9c",
   or-abc-sha256 ? "sha256-U1E9wvEK5G4zo5Pepvsb5q885qSYyixIViweLacO5+U=",
-  openroad-rev ? "2f330b3bf473a81f751d6388e1c26e6aa831a9c4",
-  openroad-sha256 ? "sha256-UhVyK4k+bAxUSf+OnHZMEqXcxGYk9tXZKf+A2zTGFHE=",
+  openroad-rev ? "6de104daffe029fd717645b21f3e6ed6aad1042b",
+  openroad-sha256 ? "sha256-1Y/2oHpBlw1+7Wi0sCa3TD/AuRY0yJHC/wONVsJ2wwU=",
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
     rev = openroad-rev;
@@ -53,8 +53,8 @@
     inherit pkgs;
   },
 
-  klayout-rev ? "8bed8bcc3ca19f7e1a810815541977fd16bc1db5",
-  klayout-sha256 ? "sha256-w3ag+TPUrjPbPIy6N4HPsfraOyoHqBbvjwB1M6+qh60=",
+  klayout-rev ? "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7",
+  klayout-sha256 ? "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=",
   klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
     inherit pkgs;
     rev = klayout-rev;

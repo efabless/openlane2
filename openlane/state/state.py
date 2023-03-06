@@ -123,11 +123,12 @@ class State(UserDict):
 
     def _repr_html_(self) -> str:
         result = """
-        <table>
-            <tr>
-                <th>Format</th>
-                <th>Path</th>
-            </tr>
+        <div style="display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); grid-auto-flow: column;">
+            <table style="grid-column-start: 1; grid-column-end: 2;">
+                <tr>
+                    <th>Format</th>
+                    <th>Path</th>
+                </tr>
         """
         for id, value in dict(self).items():
             assert isinstance(id, str)
@@ -145,6 +146,9 @@ class State(UserDict):
                 </tr>
             """
 
-        result += "</table>"
+        result += """
+            </table>
+        </div>
+        """
 
         return result

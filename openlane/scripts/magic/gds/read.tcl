@@ -13,7 +13,7 @@
 # limitations under the License.
 gds read $::env(CURRENT_GDS)
 
-foreach file $::env(CELLS_GDS) {
+foreach file $::env(CELL_GDS) {
     gds read $file
 }
 

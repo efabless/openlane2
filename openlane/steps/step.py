@@ -33,10 +33,20 @@ from typing import (
 )
 
 from ..state import State
-from ..state import DesignFormat
+from ..state import DesignFormat, DesignFormatByID
 from ..utils import Toolbox
 from ..config import Config, Variable
-from ..common import mkdirp, console, rule, log, slugify, warn, err, final, internal
+from ..common import (
+    mkdirp,
+    console,
+    rule,
+    log,
+    slugify,
+    warn,
+    err,
+    final,
+    internal,
+)
 
 StepConditionLambda = Callable[[Config], bool]
 
@@ -60,6 +70,9 @@ class DeferredStepError(StepError):
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 
+GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "run", "tmp"))
+LastState: State = State()
+
 
 class Step(ABC):
     """
@@ -74,9 +87,10 @@ class Step(ABC):
     if you're not, you may use `start` in another thread. That part's fine.
 
     :param config: A configuration object.
-        If not provided, as a convenience, the call stack will be
-        examined for a `self.config`, and the first one encountered
-        will be used.
+
+        If running in interactive mode, you can set this to ``None``, where it
+        will automatically use :ref:`Config.current_interactive`, but it is
+        otherwise required.
 
     :param state_in: The state object this step will use as an input.
 
@@ -84,7 +98,8 @@ class Step(ABC):
         the `run()` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
 
-        If not provided, an initial state is created.
+        If running in interactive mode, you can set this to ``None``, where it
+        will use the last generated state, but it is otherwise required.
 
         See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
 
@@ -121,7 +136,9 @@ class Step(ABC):
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
 
-    toolbox: Toolbox = Toolbox(os.path.join(os.getcwd(), "run", "tmp"))
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
+    toolbox: Toolbox = GlobalToolbox
 
     # These are mutable global variables. However, they will only be used
     # when steps are run outside of a Flow, pretty much.
@@ -148,6 +165,18 @@ class Step(ABC):
         if id is not None:
             self.id = id
 
+        if config is None:
+            if current_interactive := Config.current_interactive:
+                config = current_interactive
+            else:
+                raise TypeError("Missing required argument 'config'")
+
+        if state_in is None:
+            if config.interactive is not None:
+                state_in = LastState
+            else:
+                raise TypeError("Missing required argument 'state_in'")
+
         if name is not None:
             self.name = name
         elif not hasattr(self, "name"):
@@ -158,22 +187,7 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if config is None:
-            try:
-                frame = inspect.currentframe()
-                if frame is not None:
-                    current = frame.f_back
-                    while current is not None:
-                        locals = current.f_locals
-                        if "self" in locals and hasattr(locals["self"], "config"):
-                            config = locals["self"].config.copy()
-                        current = current.f_back
-                if config is None:
-                    raise TypeError("Missing required argument 'config'")
-            finally:
-                del frame
-
-        if config.per_step:
+        if config.interactive:
             mutable = Config(**kwargs.copy())
             overrides, warnings, errors = Variable.process_config(
                 mutable,
@@ -190,9 +204,6 @@ class Step(ABC):
             raise StepException(
                 "Variables may not be passed as keyword arguments unless the Config object is per-step."
             )
-
-        if state_in is None:
-            state_in = State()
 
         if step_dir is None:
             try:
@@ -212,8 +223,6 @@ class Step(ABC):
             finally:
                 del frame
 
-        self.start_time: Optional[float] = None
-        self.end_time: Optional[float] = None
         self.step_dir = step_dir
         self.config = config.copy()
         self.state_in = state_in
@@ -288,21 +297,23 @@ class Step(ABC):
 
         This method is final and should not be subclassed.
 
-        :param toolbox: A :class:`Toolbox` object initialized with a temporary directory
-            fit for the flow in question.
+        :param toolbox: The flow's :class:`Toolbox` object, required.
 
-            If not provided, as a convenience, the call stack will be
-            examined for a :attr:`self.toolbox`, which will be used instead.
-            What this means is that when inside of a Flow: you can just call
-            :meth:`step.start` and not worry about this.
+            If not running in a flow, i.e., in interactive mode, you may leave
+            this argument as ``None``, where a global toolbox will be used
+            instead.
 
-            If said toolbox was not found, a "global" toolbox will be used.
+            If running inside a flow, you may also leave this argument as ``None``.
+            A s a convenience, the call stack will be examined for a :attr:`self.toolbox`,
+            which will be used instead.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
 
         :returns: An altered State object.
         """
+        global LastState
+
         if toolbox is None:
             try:
                 frame = inspect.currentframe()
@@ -312,8 +323,16 @@ class Step(ABC):
                         locals = current.f_locals
                         if "self" in locals and hasattr(locals["self"], "toolbox"):
                             assert isinstance(locals["self"].toolbox, Toolbox)
-                            self.toolbox = locals["self"].toolbox
+                            toolbox = locals["self"].toolbox
                         current = current.f_back
+                if toolbox is None:
+                    if not self.config.interactive:
+                        raise TypeError(
+                            "Missing argument 'toolbox' required when not running in a Flow"
+                        )
+                else:
+                    self.toolbox = toolbox
+
             finally:
                 del frame
 
@@ -353,6 +372,8 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
 
+        if self.config.interactive:
+            LastState = self.state_out
         return self.state_out
 
     @internal
@@ -508,6 +529,53 @@ class Step(ABC):
 
     factory = StepFactory
     get = StepFactory.get
+
+    def layout_preview(self) -> Optional[str]:
+        """
+        Returns an HTML tag that could act as a preview for a specific stage.
+        """
+        return None
+
+    def _repr_markdown_(self) -> str:
+        if self.state_out is None:
+            return """
+                ### Step not yet executed.
+            """
+        assert isinstance(self.state_in, State)
+        assert self.start_time is not None and self.end_time is not None
+
+        result = ""
+        time_elapsed = self.end_time - self.start_time
+
+        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
+
+        views_updated = []
+        for id, value in dict(self.state_out).items():
+            assert isinstance(id, str)
+            if value is None:
+                continue
+
+            if self.state_in.get(id) != value:
+                views_updated.append(DesignFormatByID[id].value[2])
+
+        if len(views_updated):
+            result += "#### Views updated:\n"
+            for view in views_updated:
+                result += f"* {view}\n"
+
+        if preview := self.layout_preview():
+            result += "#### Preview:\n"
+            result += preview
+
+        return result
+
+    def display_result(self):
+        """
+        IPython-only. Displays the results of a given step.
+        """
+        import IPython.display
+
+        IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
 
 sorted

@@ -40,7 +40,7 @@
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; (if stdenv.isDarwin then clangStdenv else stdenv).mkDerivation {
+with pkgs; clangStdenv.mkDerivation {
   pname = "klayout";
   version = "${rev}";
 
@@ -70,6 +70,8 @@ with pkgs; (if stdenv.isDarwin then clangStdenv else stdenv).mkDerivation {
     qtmultimedia
     qttools
     qtxmlpatterns
+    curl
+    gcc
   ];
 
   propagatedBuildInputs = [
@@ -79,7 +81,7 @@ with pkgs; (if stdenv.isDarwin then clangStdenv else stdenv).mkDerivation {
   buildPhase = ''
     runHook preBuild
     mkdir -p $out/lib
-    ./build.sh -qt5 -prefix $out/lib -option -j$NIX_BUILD_CORES -without-qtbinding
+    CC=clang CXX=clang++ ./build.sh -prefix $out/lib -option -j$NIX_BUILD_CORES -expert -verbose
     runHook postBuild
   '';
 
@@ -88,12 +90,12 @@ with pkgs; (if stdenv.isDarwin then clangStdenv else stdenv).mkDerivation {
     cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
   '' else ''
     mkdir $out/bin
-    mv $out/lib/klayout $out/bin/
+    cp $out/lib/klayout $out/bin/
   '';
 
   # Make libraries also accessible to standalone binary on macOS
   postFixup = if stdenv.isDarwin then ''
-  sed -Ei "2iexport DYLD_LIBRARY_PATH=$out/lib:\$DYLD_LIBRARY_PATH" $out/bin/klayout
+    sed -Ei "2iexport DYLD_LIBRARY_PATH=$out/lib:\$DYLD_LIBRARY_PATH" $out/bin/klayout
   '' else '''';
 
   dontInstall = true; # "Installation" already happens as part of "build.sh"

@@ -15,6 +15,7 @@ import os
 import re
 import json
 from decimal import Decimal
+from base64 import b64encode
 from abc import abstractmethod
 from typing import List, Dict, Tuple, Optional
 
@@ -156,6 +157,21 @@ class OpenROADStep(TclStep):
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
+
+    def layout_preview(self) -> Optional[str]:
+        if self.state_out is None:
+            return None
+
+        assert isinstance(self.state_in, State)
+
+        if self.state_out.get("def") == self.state_in.get("def"):
+            return None
+
+        if image := self.toolbox.render_png(self.config, str(self.state_out["def"])):
+            image_encoded = b64encode(image).decode("utf8")
+            return f'<img src="data:image/png;base64,{image_encoded}" />'
+
+        return None
 
 
 @Step.factory.register()

@@ -325,7 +325,7 @@ class TclStep(Step):
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
 
-        Additionally, it logs the output to a :code:`.log` file named after the script.
+        Additionally, it logs the output to a ``.log`` file named after the script.
 
         When overriding in a subclass, you may find it useful to use this pattern:
 

@@ -1,9 +1,21 @@
-# 2.0.0-dev10
+# 2.0.0-dev11
 
 * Added `QUIT_ON_SYNTH_CHECKS`
 * Added  `QUIT_ON_UNMAPPED_CELLS`
 * Added metric `design__instance_unmapped__count`
 * Allowed `MetricChecker` to raise `StepError`
+
+# 2.0.0-dev10
+* Updated OpenROAD to `6de104d` and KLayout to `0.28.5`.
+* OpenROAD builds now use system boost to cut on build times.
+* Added new dedicated interactive mode to replace "Step-by-step" API: activated by calling `ConfigBuilder.interactive`, which replaced `per_step`.
+    * State, Config and Toolbox for `Step`s all become implicit and rely on global variables.
+    * On the other hand, `config=` must now be passed explicitly to non-interactive flows.
+* Added Markdown-based IPython previews for `Step` and `Config` objects.
+    * Added an API to render `DEF` or `GDS` files to PNG files to help with that.
+* Changed API for KLayout Python scripts to be a bit more consistent.
+* Renamed a number of variables for consistency.
+* Tweaked documentation slightly for consistency.
 
 # 2.0.0-dev9
 

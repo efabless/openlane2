@@ -10,3 +10,4 @@
 */run_*.json
 */run_*.tcl
 */matrix_*.json
+.ipynb_checkpoints

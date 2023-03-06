@@ -47,7 +47,7 @@
 
 
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 try:
     import pya
@@ -82,17 +82,8 @@ except ImportError:
         required=True,
         help="KLayout .map (LEF/DEF layer map) file",
     )
-    @click.option("-w", "--with-gds-file", "input_gds_files", multiple=True, default=[])
-    @click.option("-s", "--seal-gds-file", "seal_gds", default=None)
-    @click.option(
-        "-t",
-        "--top",
-        "design_name",
-        required=True,
-        help="Name of the design/top module",
-    )
     @click.argument("input")
-    def stream_out(**kwargs):
+    def cli(**kwargs):
         args = [
             "klayout",
             "-b",
@@ -110,7 +101,7 @@ except ImportError:
         os.execlp("klayout", *args)
 
     if __name__ == "__main__":
-        stream_out()
+        cli()
 
 
 if TYPE_CHECKING:
@@ -121,78 +112,35 @@ if TYPE_CHECKING:
     lyp: str = ""
     lyt: str = ""
     lym: str = ""
-    design_name: str = ""
-    input_gds_files: str = ""
-    seal_gds: Optional[str] = ""
-
-if seal_gds == "None":
-    seal_gds = None
-
 
 try:
+    gds = input.endswith(".gds")
+
     # Load technology file
     tech = pya.Technology()
     tech.load(lyt)
-    layout_options = tech.load_layout_options
-    layout_options.lefdef_config.macro_resolution_mode = 1
-    layout_options.lefdef_config.read_lef_with_def = False
-    layout_options.lefdef_config.lef_files = input_lefs.split(";")
-    layout_options.lefdef_config.map_file = lym
 
-    # Load def file
-    main_layout = pya.Layout()
-    # main_layout.load_layer_props(props_file)
-    main_layout.read(input, layout_options)
+    layout_options = None
+    if not gds:
+        layout_options = tech.load_layout_options
+        layout_options.lefdef_config.map_file = lym
+        layout_options.lefdef_config.macro_resolution_mode = 1
+        layout_options.lefdef_config.read_lef_with_def = False
+        layout_options.lefdef_config.lef_files = input_lefs.split(";")
 
-    # Clear cells
-    top_cell_index = main_layout.cell(design_name).cell_index()
+    view = pya.LayoutView()
+    view.load_layer_props(lyp)
 
-    print("[INFO] Clearing cells…")
-    for i in main_layout.each_cell():
-        if i.cell_index() != top_cell_index:
-            if not i.name.startswith("VIA"):
-                i.clear()
-
-    # Load in the gds to merge
-    print("[INFO] Merging GDS files…")
-    for gds in input_gds_files.split(";"):
-        print(f"\t{gds}")
-        main_layout.read(gds)
-
-    # Copy the top level only to a new layout
-    print(f"[INFO] Copying top level cell '{design_name}'…")
-    top_only_layout = pya.Layout()
-    top_only_layout.dbu = main_layout.dbu
-    top = top_only_layout.create_cell(design_name)
-    top.copy_tree(main_layout.cell(design_name))
-
-    print("[INFO] Checking for missing GDS…")
-    missing_gds = False
-    for i in top_only_layout.each_cell():
-        if i.is_empty():
-            missing_gds = True
-            print(f"[ERROR] LEF Cell '{i.name}' has no matching GDS cell.")
-
-    if missing_gds:
-        raise Exception("One or more cell GDS files are missing.")
+    if gds:
+        view.load_layout(input)
     else:
-        print("[INFO] All LEF cells have matching GDS cells.")
+        view.load_layout(input, layout_options, lyt)
+    view.max_hier()
+    pixels = view.get_pixels_with_options(1000, 1000)
 
-    if seal_gds is not None:
-        top_cell = top_only_layout.top_cell()
+    with open(output, "wb") as f:
+        f.write(pixels.to_png_data())
 
-        print(f"[INFO] Reading seal GDS file '{seal_gds}'…")
-        top_only_layout.read(seal_gds)
-
-        for cell in top_only_layout.top_cells():
-            if cell != top_cell:
-                print(f"[INFO] Merging '{cell.name}' as child of '{top_cell.name}'…")
-                top.insert(pya.CellInstArray(cell.cell_index(), pya.Trans()))
-
-    # Write out the GDS
-    print(f"[INFO] Writing out GDS '{output}'…")
-    top_only_layout.write(output)
-    print("[INFO] Done.")
     exit(0)
 except Exception as e:
     print(e)

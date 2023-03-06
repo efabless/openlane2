@@ -13,6 +13,8 @@
 # limitations under the License.
 import os
 import sys
+from typing import Optional
+from base64 import b64encode
 
 from .step import Step, StepError
 from ..state import DesignFormat, State
@@ -63,15 +65,18 @@ class StreamOut(Step):
             f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value[1]}",
         )
 
-        layout_args = []
-        for lef in self.config["CELLS_LEF"]:
+        layout_args = [
+            "--input-lef",
+            self.config["TECH_LEF"],
+        ]
+        for lef in self.config["CELL_LEFS"]:
             layout_args.append("--input-lef")
             layout_args.append(lef)
         if extra_lefs := self.config["EXTRA_LEFS"]:
             for lef in extra_lefs:
                 layout_args.append("--input-lef")
                 layout_args.append(lef)
-        for gds in self.config["CELLS_GDS"]:
+        for gds in self.config["CELL_GDS"]:
             layout_args.append("--with-gds-file")
             layout_args.append(gds)
         if extra_gds := self.config["EXTRA_GDS_FILES"]:
@@ -92,14 +97,12 @@ class StreamOut(Step):
                 self.state_in[DesignFormat.DEF.value[0]],
                 "--output",
                 klayout_gds_out,
-                "--tech-file",
+                "--lyt",
                 lyt,
-                "--props-file",
+                "--lyp",
                 lyp,
-                "--def-layer-map-file",
+                "--lym",
                 lym,
-                "--input-tlef",
-                self.config["TECH_LEF"],
                 "--top",
                 self.config["DESIGN_NAME"],
             ]
@@ -114,6 +117,19 @@ class StreamOut(Step):
             state_out[DesignFormat.GDS] = state_out[DesignFormat.KLAYOUT_GDS]
 
         return state_out
+
+    def layout_preview(self) -> Optional[str]:
+        if self.state_out is None:
+            return None
+        assert self.toolbox is not None
+
+        if image := self.toolbox.render_png(
+            self.config, str(self.state_out["klayout_gds"])
+        ):
+            image_encoded = b64encode(image).decode("utf8")
+            return f'<img src="data:image/png;base64,{image_encoded}" />'
+
+        return None
 
 
 @Step.factory.register()

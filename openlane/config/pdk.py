@@ -56,15 +56,16 @@ pdk_variables = [
         "Path to the technology LEF file in the maximum extraction corner.",
     ),
     Variable(
-        "CELLS_LEF",
+        "CELL_LEFS",
         List[Path],
         "Path(s) to the cell LEF file(s).",
+        deprecated_names=["CELLS_LEF"],
     ),
     Variable(
-        "CELLS_GDS",
+        "CELL_GDS",
         List[Path],
         "Path(s) to the cell GDSII file(s).",
-        deprecated_names=["GDS_FILES"],
+        deprecated_names=["GDS_FILES", "CELLS_GDS"],
     ),
     Variable(
         "GPIO_PADS_LEF",
