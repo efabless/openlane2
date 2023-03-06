@@ -171,4 +171,11 @@ class Synthesis(YosysStep):
         if chip_area := stats["design"].get("area"):  # needs nonzero area
             state_out.metrics["design__instance__area"] = chip_area
 
+        cells = stats["design"]["num_cells_by_type"]
+        unmapped_keyword = "$"
+        unmapped_cells = [
+            cells[y] for y in cells.keys() if y.startswith(unmapped_keyword)
+        ]
+        state_out.metrics["design__instance_unmapped__count"] = sum(unmapped_cells)
+
         return state_out

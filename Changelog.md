@@ -1,3 +1,10 @@
+# 2.0.0-dev11
+
+* Added `QUIT_ON_SYNTH_CHECKS`
+* Added  `QUIT_ON_UNMAPPED_CELLS`
+* Added metric `design__instance_unmapped__count`
+* Allowed `MetricChecker` to raise `StepError`
+
 # 2.0.0-dev10
 * Updated OpenROAD to `6de104d` and KLayout to `0.28.5`.
 * OpenROAD builds now use system boost to cut on build times.

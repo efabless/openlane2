@@ -16,13 +16,15 @@ from decimal import Decimal
 from typing import Optional
 from abc import abstractmethod
 
-from .step import Step, DeferredStepError, State
+from .step import Step, StepError, DeferredStepError, State
 
 from ..config import Variable
 from ..common import err, warn, log
 
 
 class MetricChecker(Step):
+    deferred = True
+
     @abstractmethod
     def get_metric_name(self) -> str:
         raise NotImplementedError()
@@ -50,8 +52,13 @@ class MetricChecker(Step):
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {metric_description} found."
-                    err(f"{error_msg} - deferred")
-                    raise DeferredStepError(error_msg)
+                    if self.deferred:
+                        err(f"{error_msg} - deferred")
+                        raise DeferredStepError(error_msg)
+                    else:
+                        err(f"{error_msg}")
+                        raise StepError(error_msg)
+
                 else:
                     log(f"Check for {metric_description} clear.")
             else:
@@ -60,6 +67,29 @@ class MetricChecker(Step):
                 )
 
         return state_out
+
+
+@Step.factory.register()
+class YosysUnmappedCells(MetricChecker):
+    id = "Checker.YosysUnmappedCells"
+    flow_control_variable = "QUIT_ON_UNMAPPED_CELLS"
+    name = "Unmapped cells Checker"
+    deferred = False
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_UNMAPPED_CELLS",
+            bool,
+            "Checks for unmapped cells after sythesis",
+            default=True,
+        ),
+    ]
+
+    def get_metric_name(self) -> str:
+        return "design__instance_unmapped__count"
+
+    def get_metric_description(self) -> str:
+        return "Unmapped Yosys instances"
 
 
 @Step.factory.register()
