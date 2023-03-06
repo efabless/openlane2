@@ -23,7 +23,7 @@ from ..common import err, warn, log
 
 
 class MetricChecker(Step):
-    defered = True
+    deferred = True
 
     @abstractmethod
     def get_metric_name(self) -> str:
@@ -52,7 +52,7 @@ class MetricChecker(Step):
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {metric_description} found."
-                    if self.defered:
+                    if self.deferred:
                         err(f"{error_msg} - deferred")
                         raise DeferredStepError(error_msg)
                     else:
@@ -74,7 +74,7 @@ class YosysUnmappedCells(MetricChecker):
     id = "Checker.YosysUnmappedCells"
     flow_control_variable = "QUIT_ON_UNMAPPED_CELLS"
     name = "Unmapped cells Checker"
-    defered = False
+    deferred = False
 
     config_vars = [
         Variable(
