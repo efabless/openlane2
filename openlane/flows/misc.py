@@ -47,8 +47,8 @@ class OpenInKLayout(Flow):
         self.set_max_stage_count(1)
         self.start_stage("Opening in KLayout")
 
-        lefs = []
-        for lef in self.config["CELLS_LEF"]:
+        lefs = ["--input-lef", self.config["TECH_LEF"]]
+        for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)
         if extra_lefs := self.config["EXTRA_LEFS"]:
@@ -64,12 +64,12 @@ class OpenInKLayout(Flow):
                     "klayout",
                     "open_design.py",
                 ),
-                "--input-tlef",
-                self.config["TECH_LEF"],
-                "--tech-file",
+                "--lyt",
                 self.config["KLAYOUT_TECH"],
-                "--props-file",
+                "--lyp",
                 self.config["KLAYOUT_PROPERTIES"],
+                "--lym",
+                self.config["KLAYOUT_DEF_LAYER_MAP"],
                 initial_state["def"],
             ]
             + lefs

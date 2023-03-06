@@ -83,7 +83,7 @@ proc read_libs {args} {
 
 proc read_lefs {args} {
     read_lef $::env(TECH_LEF)
-    foreach lef $::env(CELLS_LEF) {
+    foreach lef $::env(CELL_LEFS) {
         read_lef $lef
     }
     if { [info exist ::env(EXTRA_LEFS)] } {

@@ -69,6 +69,7 @@ with pkgs; let boost-static = boost.override {
     "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
     "-DUSE_SYSTEM_ABC:BOOL=ON"
+    "-DUSE_SYSTEM_BOOST:BOOL=ON"
     "-DABC_LIBRARY=${abc-derivation}/lib/libabc.a"
     "-DCMAKE_CXX_FLAGS=-I${abc-derivation}/include"
     "-DVERBOSE=1"
@@ -87,6 +88,7 @@ with pkgs; let boost-static = boost.override {
 
   buildInputs = [
     abc-derivation
+    boost
     eigen
     spdlog
     tcl
@@ -108,7 +110,6 @@ with pkgs; let boost-static = boost.override {
   ] ++ lib.optionals stdenv.isLinux [or-tools];
 
   nativeBuildInputs = [
-    boost-static
     swig
     pkg-config
     cmake

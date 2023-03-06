@@ -13,11 +13,16 @@
 # limitations under the License.
 import os
 import re
+import sys
 import uuid
-from typing import FrozenSet, Optional
+import tempfile
+import subprocess
+from shutil import which
+from typing import FrozenSet, Optional, Tuple
 
 from .memoize import memoize
-from ..common import mkdirp
+from ..config import Config
+from ..common import mkdirp, warn, get_script_dir
 
 
 class Toolbox(object):
@@ -25,6 +30,59 @@ class Toolbox(object):
         if tmp_dir is None:
             tmp_dir = "./openlane_tmp"  # Temporary
         self.tmp_dir = os.path.abspath(tmp_dir)
+
+    def _render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
+        klayout_bin = which("klayout")
+        if klayout_bin is None:
+            warn("This PDK does not support KLayout; previews cannot be rendered.")
+            return None
+
+        lyp = config["KLAYOUT_PROPERTIES"]
+        lyt = config["KLAYOUT_TECH"]
+        lym = config["KLAYOUT_DEF_LAYER_MAP"]
+        if None in [lyp, lyt, lym]:
+            warn("This PDK does not support KLayout; previews cannot be rendered.")
+            return None
+        return (str(lyp), str(lyt), str(lym))
+
+    def render_png(self, config: Config, input: str) -> Optional[bytes]:
+        files = self._render_common(config)
+        if files is None:
+            return None
+        lyp, lyt, lym = files
+
+        lef_arguments = ["-l", str(config["TECH_LEF"])]
+        for file in config["CELL_LEFS"]:
+            lef_arguments += ["-l", str(file)]
+        if extra := config["EXTRA_LEFS"]:
+            for file in extra:
+                lef_arguments += ["-l", str(file)]
+
+        result = None
+        with tempfile.NamedTemporaryFile() as f:
+            try:
+                cmd = [
+                    sys.executable,
+                    os.path.join(get_script_dir(), "klayout", "render.py"),
+                    input,
+                    "--output",
+                    f.name,
+                    "--lyp",
+                    lyp,
+                    "--lyt",
+                    lyt,
+                    "--lym",
+                    lym,
+                ] + lef_arguments
+                subprocess.check_output(
+                    cmd,
+                    stderr=subprocess.STDOUT,
+                    encoding="utf8",
+                )
+                result = f.read()
+            except subprocess.CalledProcessError as e:
+                warn(f"Failed to render preview: {e.stdout}")
+        return result
 
     @memoize
     def remove_cells_from_lib(

@@ -84,7 +84,7 @@ class SequentialFlow(Flow):
 
         current_state = initial_state
         for cls in self.Steps:
-            step = cls(state_in=current_state)
+            step = cls(config=self.config, state_in=current_state)
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 

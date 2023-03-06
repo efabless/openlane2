@@ -13,11 +13,14 @@
 # limitations under the License.
 import os
 import json
+from textwrap import dedent
+import yaml
 from enum import Enum
 from decimal import Decimal
 from collections import UserDict, UserString
 from typing import (
     Any,
+    ClassVar,
     Tuple,
     Union,
     List,
@@ -74,8 +77,10 @@ class Config(UserDict):
     singleton class.
     """
 
+    current_interactive: ClassVar[Optional["Config"]] = None
+
     meta: Meta = Meta(version=1)
-    per_step: bool = False
+    interactive: bool = False
 
     @classmethod
     def get_meta(
@@ -116,8 +121,8 @@ class Config(UserDict):
         :param key: A string key representing an OpenLane configuration variable.
         :returns: A tuple of whether that key exists, and if so, its value.
 
-            Do note :code:`None` is a valid value, so simply checking if the
-            second element :code:`is not None` is invalid to check whether
+            Do note ``None`` is a valid value, so simply checking if the
+            second element ``is not None`` is invalid to check whether
             a key exists.
         """
         return (key in self.keys(), self.get(key))
@@ -130,11 +135,30 @@ class Config(UserDict):
         :param key: A string key representing an OpenLane configuration variable.
         :returns: A tuple of whether that key existed, and if so its value.
 
-            Do note :code:`None` is a valid value, so simply checking if the
-            second element :code:`is not None` is invalid to check whether
+            Do note ``None`` is a valid value, so simply checking if the
+            second element ``is not None`` is invalid to check whether
             a key exists.
         """
         found, value = self.check(key)
         if found:
             del self[key]
         return (found, value)
+
+    def _repr_markdown_(self) -> str:
+        title = "Interactive Configuration" if self.interactive else "Configuration"
+        values_title = "Initial Values" if self.interactive else "Values"
+        return (
+            dedent(
+                f"""
+        ### {title}
+        #### {values_title}
+
+        <br />
+
+        ```yml
+        %s
+        ```
+        """
+            )
+            % yaml.safe_dump(json.loads(self.dumps()))
+        )
