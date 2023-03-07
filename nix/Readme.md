@@ -6,4 +6,4 @@ There are some conventions in use here:
     * https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs
 * All packages must use `fetchFromGitHub` with a commit-based `rev` and `sha256`, in addition to using `name` instead of `pname`.
     * We don't keep track of versions, only commits, so it doesn't matter. In other words, `version` should (in most cases) be `null`.
-    * This will ultimately help us implement automatic update checks.
+    * This will ultimately help us implement automatic tool update checks.
