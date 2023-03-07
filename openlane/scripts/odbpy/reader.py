@@ -75,7 +75,7 @@ class OdbReader(object):
 
 def click_odb(function):
     @functools.wraps(function)
-    def wrapper(input_db, input_lef, **kwargs):
+    def wrapper(input_db, input_lefs, **kwargs):
         reader = OdbReader(input_db)
 
         signature = inspect.signature(function)
@@ -94,8 +94,8 @@ def click_odb(function):
 
         if "input_db" in parameter_keys:
             kwargs["input_db"] = input_db
-        if "input_lef" in parameter_keys:
-            kwargs["input_lef"] = input_lef
+        if "input_lefs" in parameter_keys:
+            kwargs["input_lefs"] = input_lefs
 
         if input_db.endswith(".def"):
             print(
@@ -122,8 +122,10 @@ def click_odb(function):
     wrapper = click.option(
         "-l",
         "--input-lef",
-        default=None,
+        "input_lefs",
+        default=(),
         help="LEF file needed to have a proper view of the DEF files",
+        multiple=True,
     )(wrapper)
     wrapper = click.argument("input_db")(wrapper)
 

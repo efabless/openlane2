@@ -68,13 +68,13 @@ cli.add_command(mark_component_fixed)
     help="A donor def file from which to extract components.",
 )
 @click_odb
-def merge_components(reader, donor_def, input_lef):
+def merge_components(reader, donor_def, input_lefs):
     """
     Adds all components in a donor DEF file that do not exist in the (recipient) INPUT_DEF.
 
     Existing components with the same name will *not* be overwritten.
     """
-    donor = OdbReader(input_lef, donor_def)
+    donor = OdbReader(input_lefs, donor_def)
     recipient = reader
 
     for instance in donor.instances:
@@ -84,10 +84,11 @@ def merge_components(reader, donor_def, input_lef):
 cli.add_command(merge_components)
 
 
-def move_diearea(target_db, input_lef, template_def):
+def move_diearea(target_db, input_lefs, template_def):
     source_db = odb.dbDatabase.create()
 
-    odb.read_lef(source_db, input_lef)
+    for lef in input_lefs:
+        odb.read_lef(source_db, lef)
     odb.read_def(source_db, template_def)
 
     assert (
@@ -107,11 +108,11 @@ def move_diearea(target_db, input_lef, template_def):
 @click.command("move_diearea")
 @click.option("-i", "--template-def", required=True, help="Input DEF")
 @click_odb
-def move_diearea_command(reader, input_lef, template_def):
+def move_diearea_command(reader, input_lefs, template_def):
     """
     Move die area from input def to output def
     """
-    move_diearea(reader.db, input_lef, template_def)
+    move_diearea(reader.db, input_lefs, template_def)
 
 
 def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate):
@@ -122,7 +123,7 @@ def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate
         return True
 
 
-def relocate_pins(db, input_lef, template_def):
+def relocate_pins(db, input_lefs, template_def):
     # --------------------------------
     # 1. Find list of all bterms in existing database
     # --------------------------------
@@ -163,7 +164,8 @@ def relocate_pins(db, input_lef, template_def):
     # 2. Read the donor def
     # --------------------------------
     template_db = odb.dbDatabase.create()
-    odb.read_lef(template_db, input_lef)
+    for lef in input_lefs:
+        odb.read_lef(template_db, lef)
     odb.read_def(template_db, template_def)
     template_bterms = template_db.getChip().getBlock().getBTerms()
 
@@ -302,7 +304,7 @@ def relocate_pins(db, input_lef, template_def):
     help="Template DEF to use the locations of pins from.",
 )
 @click_odb
-def relocate_pins_command(reader, input_lef, template_def):
+def relocate_pins_command(reader, input_lefs, template_def):
     """
     Moves pins that are common between a template_def and the database to the
     location specified in the template_def.
@@ -314,7 +316,7 @@ def relocate_pins_command(reader, input_lef, template_def):
         * All pins have unique names.
         * All pin names match the net names in the template DEF.
     """
-    relocate_pins(reader.db, input_lef, template_def)
+    relocate_pins(reader.db, input_lefs, template_def)
 
 
 cli.add_command(relocate_pins_command)

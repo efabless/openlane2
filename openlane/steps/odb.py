@@ -87,6 +87,14 @@ class OdbpyStep(Step):
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
+        lefs = ["--input-lef", self.config["TECH_LEF"]]
+        for lef in self.config["CELL_LEFS"]:
+            lefs.append("--input-lef")
+            lefs.append(lef)
+        if extra_lefs := self.config["EXTRA_LEFS"]:
+            for lef in extra_lefs:
+                lefs.append("--input-lef")
+                lefs.append(lef)
         return [
             "openroad",
             "-exit",
@@ -94,11 +102,41 @@ class OdbpyStep(Step):
             metrics_path,
             "-python",
             self.get_script_path(),
-        ]
+        ] + lefs
 
     @abstractmethod
     def get_script_path(self):
         pass
+
+
+@Step.factory.register()
+class ApplyDEFTemplate(OdbpyStep):
+    id = "Odb.ApplyDEFTemplate"
+    name = "Apply DEF Template"
+
+    flow_control_variable = "FP_DEF_TEMPLATE"
+    flow_control_msg = "No DEF template provided, skipping…"
+
+    config_vars = [
+        Variable(
+            "FP_DEF_TEMPLATE",
+            Optional[Path],
+            "Points to the DEF file to be used as a template when running `apply_def_template`. This will be used to exctract pin names, locations, shapes -excluding power and ground pins- as well as the die area and replicate all this information in the `CURRENT_DEF`.",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "apply_def_template.py",
+        )
+
+    def get_command(self) -> List[str]:
+        return super().get_command() + [
+            "--def-template",
+            self.config["FP_DEF_TEMPLATE"],
+        ]
 
 
 @Step.factory.register()

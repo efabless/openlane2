@@ -112,9 +112,10 @@ def generate_cfg(north, east, south, west, corner_pads, width, height):
 @click.option(
     "-l",
     "--input-lef",
+    "input_lefs",
     multiple=True,
     required=True,
-    help="LEF file needed to have a proper view of the DEF files",
+    help="LEF file(s) needed to have a proper view of the DEF files",
 )
 @click.option(
     "--odb-lef",
@@ -157,7 +158,7 @@ def padringer(
     output_def,
     verilog_netlist,
     def_netlist,
-    input_lef,
+    input_lefs,
     odb_lef,
     width,
     height,
@@ -178,7 +179,7 @@ def padringer(
     """
 
     config_file_name = padframe_config
-    lefs = input_lef
+    lefs = input_lefs
 
     working_def = f"{working_dir}/{design}.pf.def"
     working_cfg = f"{working_dir}/{design}.pf.cfg"

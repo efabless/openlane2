@@ -20,16 +20,16 @@ from reader import click_odb, click
 @click.command()
 @click.option("-t", "--def-template", required=True, help="Template DEF")
 @click_odb
-def cli(reader, input_lef, def_template):
+def cli(reader, input_lefs, def_template):
     defutil.relocate_pins(
         reader.db,
-        input_lef,
+        input_lefs,
         def_template,
     )
 
     defutil.move_diearea(
         reader.db,
-        input_lef,
+        input_lefs,
         def_template,
     )
 

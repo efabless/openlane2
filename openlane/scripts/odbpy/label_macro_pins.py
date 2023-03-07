@@ -45,7 +45,7 @@ def label_macro_pins(
     all_shapes,
     pad_pin_name,
     map,
-    input_lef,
+    input_lefs,
     reader,
 ):
     """
@@ -158,7 +158,7 @@ def label_macro_pins(
         pad_iterm.connect(net)
         pin_bterm.connect(net)
 
-    mapping = OdbReader(input_lef, netlist_def)
+    mapping = OdbReader(input_lefs, netlist_def)
 
     pad_pin_map = {}
     for net in mapping.block.getNets():
