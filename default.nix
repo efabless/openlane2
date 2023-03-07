@@ -13,6 +13,7 @@
 # limitations under the License.
 {
   pkgs ? import ./nix/pkgs.nix,
+  gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
   magic ? import ./nix/magic.nix { inherit pkgs; },
 
@@ -50,10 +51,10 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
   version = builtins.head version_list;
 
-  src = lib.cleanSource ./.;
+  src = gitignore-src.gitignoreSource ./.;
   
   doCheck = false;
-  
+
   propagatedBuildInputs = [
     # Tools
     openroad
