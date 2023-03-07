@@ -13,27 +13,19 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix,
-  rev,
-  sha256,
-  abc-rev,
-  abc-sha256,
 }:
 
-with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
-  version = "${rev}";
+with pkgs; let
+  abc = import ./yosys-abc.nix { inherit pkgs; };
+in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
+  name = "yosys";
+  version = null;
 
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "yosys";
-    rev = "${rev}";
-    hash = "${sha256}";
-  };
-
-  abc = fetchFromGitHub {
-    owner = "YosysHQ";
-    repo = "abc";
-    rev = "${abc-rev}";
-    sha256 = "${abc-sha256}";
+    rev = "7e588664e7efa36ff473f0497feacaad57f5e90c";
+    sha256 = "sha256-0xV+323YTK+VhnD05SmvGv8uT4TzqA9IZ/iKl1as1Kc=";
   };
 
   nativeBuildInputs = [ pkg-config bison flex ];
@@ -43,22 +35,15 @@ with pkgs; yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
 
   doCheck = false;
   preBuild = ''
-  cp -r ${abc} abc/
-  chmod -R 777 .
-  # Verbose
-  sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
-  # Don't compare ABC revisions
-  sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
-  # Compile ABC First (Common Build Point of Failure)
-  sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
-  # ls before copy
-  sed -Ei '822i\\tls -lah' ./Makefile
-  cat ./Makefile | grep -C5 lah
-  # List Files (And Permissions)
-  echo "--File List--"
-  ls -lah
-  echo "-------------"
-  make config-${if stdenv.cc.isClang or false then "clang" else "gcc"} VERBOSE=1
+    cp -r ${abc} abc/
+    chmod -R 777 .
+    # Verbose
+    sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
+    # Don't compare ABC revisions
+    sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
+    # Compile ABC First (Common Build Point of Failure)
+    sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
+    make config-${if stdenv.cc.isClang or false then "clang" else "gcc"} VERBOSE=1
   '';
 
   postBuild = "";
