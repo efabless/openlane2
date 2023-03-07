@@ -1,3 +1,8 @@
+# 2.0.0-dev12
+
+* Cleaned up build system.
+* Add support for OpenROAD with `or-tools` on macOS.
+
 # 2.0.0-dev11
 
 * Added `QUIT_ON_SYNTH_CHECKS`

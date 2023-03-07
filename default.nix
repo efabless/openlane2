@@ -13,34 +13,21 @@
 # limitations under the License.
 {
   pkgs ? import ./nix/pkgs.nix,
+  gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
+  
+  magic ? import ./nix/magic.nix { inherit pkgs; },
 
-  magic-rev ? "8d08cb2f2f33c79bea478a79543721d476554c78",
-  magic-sha256 ? "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=",
-  magic ? import ./nix/magic.nix {
-    inherit pkgs;
-    rev = magic-rev;
-    sha256 = magic-sha256;
-  },
+  netgen ? import ./nix/netgen.nix { inherit pkgs; },
 
-  netgen-rev ? "c10f8efd7dc1a5a1c1330784765d5a38cc22cd2d",
-  netgen-sha256 ? "sha256-WGWnIWL//q7z5HmJ1JpSK6QhNM+X7iWNcDzQpL5CbYc=",
-  netgen ? import ./nix/netgen.nix {
-    inherit pkgs;
-    rev = netgen-rev;
-    sha256 = netgen-sha256;
-  },
-
-  or-abc-rev ? "95b3543e928640dfa25f9e882e72a090a8883a9c",
-  or-abc-sha256 ? "sha256-U1E9wvEK5G4zo5Pepvsb5q885qSYyixIViweLacO5+U=",
-  openroad-rev ? "6de104daffe029fd717645b21f3e6ed6aad1042b",
-  openroad-sha256 ? "sha256-1Y/2oHpBlw1+7Wi0sCa3TD/AuRY0yJHC/wONVsJ2wwU=",
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
-    rev = openroad-rev;
-    sha256 = openroad-sha256;
-    abc-rev = or-abc-rev;
-    abc-sha256 = or-abc-sha256;
   },
+
+  klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
+    inherit pkgs;
+  },
+
+  yosys ? import ./nix/yosys.nix { inherit pkgs; },
   
   volare-rev ? "852e565f30f3445c6fa59f15cea85c461e3bdddd",
   volare-sha256 ? "sha256-U8pyGJjEYlSU2oaofZIaUUNbkn9uHv5LQ5074ZUqZjA=",
@@ -53,49 +40,21 @@
     inherit pkgs;
   },
 
-  klayout-rev ? "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7",
-  klayout-sha256 ? "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=",
-  klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
-    inherit pkgs;
-    rev = klayout-rev;
-    sha256 = klayout-sha256;
-  },
-
-  yosys-abc-rev ? "a8f0ef2368aa56b3ad20a52298a02e63b2a93e2d",
-  yosys-abc-sha256 ? "sha256-48i6AKQhMG5hcnkS0vejOy1PqFbeb6FpU7Yx0rEvHDI=",
-  yosys-rev ? "7e588664e7efa36ff473f0497feacaad57f5e90c",
-  yosys-sha256 ? "sha256-0xV+323YTK+VhnD05SmvGv8uT4TzqA9IZ/iKl1as1Kc=",
-  yosys ? import ./nix/yosys.nix {
-    inherit pkgs;
-    rev = yosys-rev;
-    sha256 = yosys-sha256;
-    abc-rev = yosys-abc-rev;
-    abc-sha256 = yosys-abc-sha256;
-  },
-
   
   ...
 }:
 
 with pkgs; with python3.pkgs; buildPythonPackage rec {
-  pname = "openlane";
-  name = pname;
+  name = "openlane";
 
   version_file = builtins.readFile ./openlane/__version__.py;
   version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
   version = builtins.head version_list;
 
-  src = builtins.filterSource (path: type:
-    (builtins.match ''${builtins.toString ./.}/(openlane(/.+)?|setup.py|requirements(_dev)?.txt|Readme.md)'' path) != null &&
-    (builtins.match ''.+__pycache__.*'' path == null)
-  ) ./.;
-
-  requirements = 
-    builtins.readFile ./requirements_dev.txt +
-    builtins.readFile ./requirements.txt
-    ;
+  src = gitignore-src.gitignoreSource ./.;
   
   doCheck = false;
+
   propagatedBuildInputs = [
     # Tools
     openroad

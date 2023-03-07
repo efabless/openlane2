@@ -13,18 +13,15 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix,
-  rev,
-  sha256,
-
-  python-pname ? "python38Full",
 }:
 
 with pkgs; stdenv.mkDerivation {
   name = "netgen";
-  src = fetchgit {
-    url = "https://github.com/donn/netgen";
-    rev = "${rev}";
-    sha256 = "${sha256}";
+  src = fetchFromGitHub {
+    owner = "RTimothyEdwards";
+    repo = "netgen";
+    rev = "e12883037c9844fb1bd61f861b264fc7e1028237";
+    sha256 = "sha256-uSOem6zNRTZkT2OFgP80PJuLmsewPuyzPAvJWmTPQ44=";
   };
 
   configureFlags = [
@@ -36,7 +33,7 @@ with pkgs; stdenv.mkDerivation {
     tcl
     tk
     m4
-    pkgs."${python-pname}"
+    python3
   ];
 
   nativeBuildInputs = [

@@ -35,20 +35,20 @@
 
 {
   pkgs ? import ./pkgs.nix,
-  rev,
-  sha256,
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; clangStdenv.mkDerivation {
+with pkgs; let
+  rev = "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7";
+in clangStdenv.mkDerivation {
   pname = "klayout";
-  version = "${rev}";
+  version = "${rev}"; # I'm going to avoid a KLayout rebuild like the goddamn plague
 
   src = fetchFromGitHub {
     owner = "KLayout";
     repo = "klayout";
     rev = "${rev}";
-    hash = "${sha256}";
+    sha256 = "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=";
   };
 
   postPatch = ''

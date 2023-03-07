@@ -34,23 +34,20 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 {
   pkgs ? import ./pkgs.nix,
-  rev,
-  sha256,
-
-  python-pname ? "python38Full",
 }:
 
 with pkgs; stdenv.mkDerivation rec {
-  pname = "magic-vlsi";
-  version = "${rev}";
+  name = "magic-vlsi";
+  rev = "8d08cb2f2f33c79bea478a79543721d476554c78";
 
-  src = fetchgit {
-    url = "https://github.com/RTimothyEdwards/magic";
-    rev = "${rev}";
-    sha256 = "${sha256}";
+  src = fetchFromGitHub {
+    owner = "RTimothyEdwards";
+    repo = "magic";
+    inherit rev;
+    sha256 = "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=";
   };
 
-  nativeBuildInputs = [ pkgs."${python-pname}" tcsh gnused ];
+  nativeBuildInputs = [ python3 tcsh gnused ];
 
   # So here's the situation:
   ## * Magic will not compile without X11 libraries, even for headless use.
@@ -75,21 +72,21 @@ with pkgs; stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-  # csh -> tcsh
-  set -x
-  for file in ./scripts/*; do
-      sed -Ei 's@/bin/csh/?@/usr/bin/env tcsh@g' $file
-  done
-  set +x
+    # csh -> tcsh
+    set -x
+    for file in ./scripts/*; do
+        sed -Ei 's@/bin/csh/?@/usr/bin/env tcsh@g' $file
+    done
+    set +x
 
-  # nix shebang fix
-  patchShebangs ./scripts
+    # nix shebang fix
+    patchShebangs ./scripts
 
-  # Remove manual csh test
-  sed -i '5386,5388d' ./scripts/configure
+    # Remove manual csh test
+    sed -i '5386,5388d' ./scripts/configure
 
-  # "Precompute" git rev-parse HEAD
-  sed -i 's@`git rev-parse HEAD`@${rev}@' ./scripts/defs.mak.in
+    # "Precompute" git rev-parse HEAD
+    sed -i 's@`git rev-parse HEAD`@${rev}@' ./scripts/defs.mak.in
   '';
 
   NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined";

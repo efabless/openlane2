@@ -13,55 +13,27 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix,
-  rev,
-  sha256,
-  abc-rev,
-  abc-sha256,
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; let boost-static = boost.override {
-  enableShared = false;
-  enabledStatic = true;
-}; lemon-graph-crossplat = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
-  meta = {
-    broken = false;
-  };
-  doCheck = !stdenv.isDarwin; # Some tests fail to compile on Darwin
-}); abc-derivation = abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
-  pname = "or-abc";
-  version = "${abc-rev}";
+with pkgs; let
+  abc = import ./openroad-abc.nix { inherit pkgs; };
+  or-tools = import ./or-tools.nix { inherit pkgs; };
+  lemon = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
+    meta = {
+      broken = false;
+    };
+    doCheck = !stdenv.isDarwin; # Some tests fail to compile on Darwin
+  });
+in clangStdenv.mkDerivation rec {
+  name = "openroad";
+  rev = "6de104daffe029fd717645b21f3e6ed6aad1042b";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
-    repo = "abc";
-    rev = "${abc-rev}";
-    hash = "${abc-sha256}";
-  };
-
-  installPhase = ''
-  mkdir -p $out/bin
-  mv abc $out/bin
-
-  mkdir -p $out/lib
-  mv libabc.a $out/lib
-
-  mkdir -p $out/include
-  for header in $(find  ../src | grep "\\.h$" | sed "s@../src/@@"); do
-    header_tgt=$out/include/$header
-    header_dir=$(dirname $header_tgt) 
-    mkdir -p $header_dir
-    cp ../src/$header $header_tgt
-  done
-  '';
-}); in clangStdenv.mkDerivation {
-  pname = "openroad";
-  version = "${rev}";
-
-  src = fetchgit {
-    url = "https://github.com/The-OpenROAD-Project/OpenROAD";
-    rev = "${rev}";
-    sha256 = "${sha256}";
+    repo = "OpenROAD";
+    inherit rev;
+    sha256 = "sha256-nXAHbfEIQlZrvYynL7uQDAl2JTCpqMcWVrJQP/3SK+w=";
     fetchSubmodules = true;
   };
 
@@ -70,8 +42,8 @@ with pkgs; let boost-static = boost.override {
     "-DTCL_HEADER=${tcl}/include/tcl.h"
     "-DUSE_SYSTEM_ABC:BOOL=ON"
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
-    "-DABC_LIBRARY=${abc-derivation}/lib/libabc.a"
-    "-DCMAKE_CXX_FLAGS=-I${abc-derivation}/include"
+    "-DABC_LIBRARY=${abc}/lib/libabc.a"
+    "-DCMAKE_CXX_FLAGS=-I${abc}/include"
     "-DVERBOSE=1"
   ];
 
@@ -82,12 +54,10 @@ with pkgs; let boost-static = boost.override {
     sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-  '' + (lib.optionalString (!stdenv.isLinux) ''
-    sed -i "s/add_subdirectory(mpl2)//" ./src/CMakeLists.txt
-  '');
+  '';
 
   buildInputs = [
-    abc-derivation
+    abc
     boost
     eigen
     spdlog
@@ -99,15 +69,15 @@ with pkgs; let boost-static = boost.override {
     libsForQt5.qtbase
     llvmPackages.openmp
     
-    # ortools
+    or-tools
     re2
     glpk
     zlib
     clp
     cbc
     
-    lemon-graph-crossplat
-  ] ++ lib.optionals stdenv.isLinux [or-tools];
+    lemon
+  ];
 
   nativeBuildInputs = [
     swig
