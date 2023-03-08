@@ -24,3 +24,4 @@ result
 /*.lef
 /*.def
 logs/
+/openlane_run

@@ -112,6 +112,6 @@ class SequentialFlow(Flow):
             err("The following deferred step errors have been encountered:")
             for error in deferred_errors:
                 err(error)
-            raise FlowError("A number of deferred errors were encountered.")
+            raise FlowError("One or more deferred errors were encountered.")
         success("Flow complete.")
         return (current_state, step_list)

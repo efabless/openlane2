@@ -107,7 +107,6 @@ class StreamOut(Step):
                 self.config["DESIGN_NAME"],
             ]
             + layout_args,
-            log_to=os.path.join(self.step_dir, "stream-out.log"),
             env=env,
         )
 
@@ -193,7 +192,6 @@ class XOR(Step):
                 layout_a,
                 layout_b,
             ],
-            log_to=os.path.join(self.step_dir, "xor.log"),
             env=env,
         )
 

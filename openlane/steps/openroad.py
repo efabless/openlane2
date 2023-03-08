@@ -647,7 +647,7 @@ class DetailedRouting(OpenROADStep):
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("ROUTING_CORES") is None:
-            env["ROUTING_CORES"] = str(1)
+            env["ROUTING_CORES"] = str(os.cpu_count() or 1)
         return super().run(env=env, **kwargs)
 
 

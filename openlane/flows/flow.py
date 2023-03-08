@@ -296,7 +296,13 @@ class Flow(ABC):
         pass
 
     @internal
-    def run_step_async(self, step: Step, *args, **kwargs) -> Future[State]:
+    def start_step_async(
+        self,
+        step: Step,
+        toolbox: Optional[Toolbox] = None,
+        *args,
+        **kwargs,
+    ) -> Future[State]:
         """
         A helper function that may run a step asynchronously.
 
@@ -306,9 +312,14 @@ class Flow(ABC):
         See the Step initializer for more info.
 
         :param step: The step object to run
+        :param toolbox: An optional override for the flow's :class:`Toolbox`.
+            If you don't know what this means, just leave this as ``None``.
         :param args: Arguments to `step.start`
         :param kwargs: Keyword arguments to `step.start`
         """
+
+        kwargs["toolbox"] = toolbox or self.toolbox
+
         return self.tpe.submit(step.start, *args, **kwargs)
 
     @internal

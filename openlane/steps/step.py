@@ -38,7 +38,7 @@ from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import (
     mkdirp,
-    console,
+    print,
     rule,
     log,
     slugify,
@@ -70,7 +70,7 @@ class DeferredStepError(StepError):
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 
-GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "run", "tmp"))
+GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "openlane_run", "tmp"))
 LastState: State = State()
 
 
@@ -83,7 +83,7 @@ class Step(ABC):
     paths and/or metrics.
 
     Warning: The initializer for Step is not thread-safe. Please use it on the main
-    thread and then, if you're using a Flow object, use `run_step_async`, or
+    thread and then, if you're using a Flow object, use `start_step_async`, or
     if you're not, you may use `start` in another thread. That part's fine.
 
     :param config: A configuration object.
@@ -113,7 +113,6 @@ class Step(ABC):
     :param name: An optional override name for the step. Useful in custom flows.
     :param id: An optional override name for the ID. Useful in custom flows.
     :param long_name: An optional override name for the long name. Useful in custom flows.
-    :param silent: A variable stating whether a step should output to the terminal.
 
         If set to false, Step implementations are expected to
         output nothing to the terminal.
@@ -129,6 +128,7 @@ class Step(ABC):
     inputs: List[DesignFormat] = []
     outputs: List[DesignFormat] = []
 
+    id: str = NotImplemented
     name: str
     long_name: str
 
@@ -140,11 +140,10 @@ class Step(ABC):
     end_time: Optional[float] = None
     toolbox: Toolbox = GlobalToolbox
 
-    # These are mutable global variables. However, they will only be used
+    # These are mutable class variables. However, they will only be used
     # when steps are run outside of a Flow, pretty much.
     counter: ClassVar[int] = 1
-
-    id: str = NotImplemented
+    # End Mutable Global Variables
 
     def __init__(
         self,
@@ -154,7 +153,6 @@ class Step(ABC):
         id: Optional[str] = None,
         name: Optional[str] = None,
         long_name: Optional[str] = None,
-        silent: bool = False,
         **kwargs,
     ):
         if self.id == NotImplemented:
@@ -197,6 +195,7 @@ class Step(ABC):
             for warning in warnings:
                 warn(warning)
             if len(errors) != 0:
+                err(f"Errors while processing inputs for {self.name}:")
                 for error in errors:
                     err(error)
                 raise StepException("Failed to handle one or more kwarg variables.")
@@ -217,7 +216,9 @@ class Step(ABC):
                         current = current.f_back
                 if step_dir is None:
                     step_dir = os.path.join(
-                        os.getcwd(), "run", f"{Step.counter}-{slugify(self.id)}"
+                        os.getcwd(),
+                        "openlane_run",
+                        f"{Step.counter}-{slugify(self.id)}",
                     )
                     Step.counter += 1
             finally:
@@ -226,7 +227,6 @@ class Step(ABC):
         self.step_dir = step_dir
         self.config = config.copy()
         self.state_in = state_in
-        self.silent = silent
 
     @classmethod
     def _get_desc(Self) -> str:
@@ -304,7 +304,7 @@ class Step(ABC):
             instead.
 
             If running inside a flow, you may also leave this argument as ``None``.
-            A s a convenience, the call stack will be examined for a :attr:`self.toolbox`,
+            As a convenience, the call stack will be examined for a :attr:`self.toolbox`,
             which will be used instead.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
@@ -332,9 +332,10 @@ class Step(ABC):
                         )
                 else:
                     self.toolbox = toolbox
-
             finally:
                 del frame
+        else:
+            self.toolbox = toolbox
 
         if isinstance(self.state_in, Future):
             self.state_in = self.state_in.result()
@@ -364,8 +365,7 @@ class Step(ABC):
             f.write(self.state_in.dumps())
 
         self.start_time = time.time()
-        if not self.silent:
-            rule(f"{self.long_name}")
+        rule(f"{self.long_name}")
         self.state_out = self.run(**kwargs)
         self.end_time = time.time()
 
@@ -402,6 +402,9 @@ class Step(ABC):
 
         return self.state_in.copy()
 
+    def get_log_path(self) -> str:
+        return os.path.join(self.step_dir, f"{slugify(self.id)}.log")
+
     @internal
     def run_subprocess(
         self,
@@ -416,17 +419,15 @@ class Step(ABC):
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional path to log all output from the subprocess to.
+        :param log_to: An optional override for the log path from `get_log_path`.
+            Useful for if you run multiple subprocesses within one step.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :raises subprocess.CalledProcessError: If the process has a non-zero exit,
             this exception will be raised.
         """
-        log_file = open(os.devnull, "w")
-        if log_to is not None:
-            log_file.close()
-            log_file = open(log_to, "w")
-
+        log_path = log_to or self.get_log_path()
+        log_file = open(log_path, "w")
         cmd_str = [str(arg) for arg in cmd]
 
         with open(os.path.join(self.step_dir, "COMMANDS"), "a+") as f:
@@ -459,8 +460,7 @@ class Step(ABC):
                 elif current_rpt is not None:
                     current_rpt.write(line)
                 else:
-                    if not self.silent:
-                        console.print(line.strip())
+                    print(line.strip())
                     log_file.write(line)
         returncode = process.wait()
         if returncode != 0:
@@ -576,6 +576,3 @@ class Step(ABC):
         import IPython.display
 
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
-
-
-sorted

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import shutil
 import sys
 import glob
+import shutil
 import tempfile
 import subprocess
 from textwrap import dedent
@@ -24,7 +24,7 @@ import click
 
 from .state import State
 from .__version__ import __version__
-from .common import err, warn, log, get_opdks_rev, get_openlane_root
+from .common import err, set_log_level, warn, log, get_opdks_rev, get_openlane_root
 from .container import run_in_container
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
@@ -43,10 +43,13 @@ def run(
     to: Optional[str],
     initial_state_json: Optional[str],
     config_override_strings: List[str],
+    log_level_name: str,
 ):
     if len(config_files) != 1:
-        print(f"Invalid argument count for config_files: ({len(config_files)}/1).")
+        err(f"Invalid argument count for config_files: ({len(config_files)}/1).")
         exit(-1)
+
+    set_log_level(log_level_name)
 
     if use_volare:
         import volare
@@ -60,7 +63,7 @@ def run(
     # Enforce Mutual Exclusion
     if run_tag is not None and last_run:
         err("--run-tag and --last-run are mutually exclusive.")
-        exit(1)
+        exit(-1)
 
     flow_description: Union[str, List[str]] = flow_name or "Classic"
 
@@ -79,7 +82,7 @@ def run(
             err(
                 f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
             )
-            exit(1)
+            exit(-1)
 
     try:
         flow = TargetFlow.init_with_config(
@@ -90,9 +93,10 @@ def run(
             config_override_strings=config_override_strings,
         )
     except InvalidConfig as e:
-        log(f"[green]Errors have occurred while loading the {e.config}:")
+        log(f"[green]Errors have occurred while loading the {e.config}.")
         for error in e.errors:
             err(error)
+
         if len(e.warnings) > 0:
             log("The following warnings have also been generated:")
             for warning in e.warnings:
@@ -256,27 +260,6 @@ def run_smoke_test(
     help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
 )
 @click.option(
-    "--last-run",
-    is_flag=True,
-    default=False,
-    help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
-)
-@click.option(
-    "-F",
-    "--from",
-    "frm",
-    type=str,
-    default=None,
-    help="Start from a step with this id. Supported by sequential flows.",
-)
-@click.option(
-    "-T",
-    "--to",
-    type=str,
-    default=None,
-    help="Stop at a step with this id. Supported by sequential flows.",
-)
-@click.option(
     "-I",
     "--with-initial-state",
     "initial_state_json",
@@ -298,6 +281,34 @@ def run_smoke_test(
     help="Runs a basic OpenLane smoke test.",
     expose_value=False,
     callback=run_smoke_test,
+)
+@click.option(
+    "--last-run",
+    is_flag=True,
+    default=False,
+    help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
+)
+@click.option(
+    "-F",
+    "--from",
+    "frm",
+    type=str,
+    default=None,
+    help="Start from a step with this id. Supported by sequential flows.",
+)
+@click.option(
+    "-T",
+    "--to",
+    type=str,
+    default=None,
+    help="Stop at a step with this id. Supported by sequential flows.",
+)
+@click.option(
+    "--log-level",
+    "log_level_name",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
+    default="INFO",
+    help="A logging level. Set to WARNING or higher to silence logs.",
 )
 @click.argument("config_files", nargs=-1)
 def cli(dockerized: bool, docker_mounts: Tuple[str], **kwargs):

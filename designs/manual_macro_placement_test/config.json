@@ -17,5 +17,6 @@
     "GLB_RESIZER_TIMING_OPTIMIZATIONS": false,
     "VERILOG_FILES": "dir::src/*.v",
     "EXTRA_LEFS": "dir::macros/lef/*.lef",
-    "EXTRA_GDS_FILES": "dir::macros/gds/*.gds"
+    "EXTRA_GDS_FILES": "dir::macros/gds/*.gds",
+    "QUIT_ON_SYNTH_CHECKS": false
 }

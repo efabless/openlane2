@@ -63,13 +63,9 @@ class OdbpyStep(Step):
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
 
-        log_filename = os.path.splitext(os.path.basename(self.get_script_path()))[0]
-        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
-
         self.run_subprocess(
             command,
             env=env,
-            log_to=log_path,
             **kwargs,
         )
 

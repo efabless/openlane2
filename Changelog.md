@@ -1,3 +1,10 @@
+# 2.0.0-dev14
+
+* Multiple logging levels specified via CLI. Can also be set via `set_log_level` in the API.
+* Updated all `run_subprocess` invocations to create a log, named after the `Step`'s `id` by default.
+* Fixed issue with `ROUTING_CORES` not using the computer's total core count by default.
+* Fixed an issue with Tcl config files where `DESIGN_DIR` was resolved relatively, which greatly confused KLayout.
+
 # 2.0.0-dev13
 
 * Add ApplyDEFTemplate step.

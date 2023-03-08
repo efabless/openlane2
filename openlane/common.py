@@ -18,13 +18,42 @@ A number of common utility functions used throughout the codebase.
 """
 import os
 import re
+import click
 import typing
 import pathlib
+import logging
 import unicodedata
 
 import rich.console
+from rich.logging import RichHandler
 
 console = rich.console.Console()
+
+
+FORMAT = "%(message)s"
+logging.basicConfig(
+    level="INFO",
+    format=FORMAT,
+    datefmt="",
+    handlers=[
+        RichHandler(
+            console=console,
+            rich_tracebacks=True,
+            markup=True,
+            tracebacks_suppress=[
+                click,
+            ],
+        )
+    ],
+)
+
+
+def set_log_level(lv: typing.Union[str, int]):
+    logging.getLogger().setLevel(lv)
+
+
+def get_log_level() -> int:
+    return logging.getLogger().getEffectiveLevel()
 
 
 def print(*args, **kwargs):
@@ -33,6 +62,8 @@ def print(*args, **kwargs):
 
     See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
     """
+    if get_log_level() > logging.INFO:
+        return
     console.print(*args, **kwargs)
 
 
@@ -42,9 +73,11 @@ def log(*args, **kwargs):
 
     See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.log
     """
+    if get_log_level() > logging.INFO:
+        return
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    console.log(*args, **kwargs)
+        console.log(*args, **kwargs)
 
 
 def rule(*args, **kwargs):
@@ -53,6 +86,8 @@ def rule(*args, **kwargs):
 
     See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.rule
     """
+    if get_log_level() > logging.INFO:
+        return
     console.rule(*args, **kwargs)
 
 
@@ -61,9 +96,11 @@ def success(printable, *args, **kwargs):
     Logs an item to the terminal with a success unicode character and
     green/bold formatting.
     """
+    if get_log_level() > logging.INFO:
+        return
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    log(f"⭕ [green][bold] {printable}", *args, **kwargs)
+    console.log(f"⭕ [green][bold] {printable}", *args, **kwargs)
 
 
 def warn(printable, *args, **kwargs):
@@ -71,9 +108,11 @@ def warn(printable, *args, **kwargs):
     Logs an item to the terminal with a warning unicode character and
     gold/bold formatting.
     """
+    if get_log_level() > logging.WARNING:
+        return
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
+    console.log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
 
 
 def err(printable, *args, **kwargs):
@@ -81,9 +120,11 @@ def err(printable, *args, **kwargs):
     Logs an item to the terminal with a warning unicode character and
     gold/bold formatting.
     """
+    if get_log_level() > logging.ERROR:
+        return
     if kwargs.get("_stack_offset") is None:
         kwargs["_stack_offset"] = 2
-    log(f"❌ [red][bold] {printable}", *args, **kwargs)
+    console.log(f"❌ [red][bold] {printable}", *args, **kwargs)
 
 
 def mkdirp(path: typing.Union[str, os.PathLike]):

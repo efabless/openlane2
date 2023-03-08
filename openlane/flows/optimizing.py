@@ -15,10 +15,11 @@ from __future__ import annotations
 
 import subprocess
 from typing import List, Tuple
+from logging import ERROR, INFO
 from concurrent.futures import Future
 
 from .flow import Flow
-from ..common import success, log
+from ..common import set_log_level, success, log
 from ..state import State
 from ..steps import Step, Yosys, OpenROAD
 from ..config import Config
@@ -58,6 +59,8 @@ class Optimizing(Flow):
         synthesis_futures: List[Tuple[Config, Future[State]]] = []
         self.start_stage("Synthesis Exploration")
 
+        set_log_level(ERROR)
+
         for strategy in ["AREA 0", "AREA 2", "DELAY 1"]:
             config = self.config.copy()
             config["SYNTH_STRATEGY"] = strategy
@@ -66,19 +69,18 @@ class Optimizing(Flow):
                 config,
                 id=f"synthesis-{strategy}",
                 state_in=initial_state,
-                silent=True,
             )
-            synth_future = self.run_step_async(synth_step)
+            synth_future = self.start_step_async(synth_step)
             step_list.append(synth_step)
 
             sta_step = OpenROAD.NetlistSTA(
                 config,
                 state_in=synth_future,
                 id=f"sta-{strategy}",
-                silent=True,
             )
+
             step_list.append(sta_step)
-            sta_future = self.run_step_async(sta_step)
+            sta_future = self.start_step_async(sta_step)
 
             synthesis_futures.append((config, sta_future))
 
@@ -87,6 +89,7 @@ class Optimizing(Flow):
         ]
 
         self.end_stage()
+        set_log_level(INFO)
 
         min_strat = synthesis_states[0][0]["SYNTH_STRATEGY"]
         min_config = synthesis_states[0][0]

@@ -342,7 +342,6 @@ class TclStep(Step):
         """
         state = super().run()
         command = self.get_command()
-        script = self.get_script_path()
 
         kwargs, env = self.extract_env(kwargs)
 
@@ -374,14 +373,10 @@ class TclStep(Step):
             filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
             env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
-        log_filename = os.path.splitext(os.path.basename(script))[0]
-        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
-
         try:
             self.run_subprocess(
                 command,
                 env=env,
-                log_to=log_path,
                 **kwargs,
             )
         except subprocess.CalledProcessError:
