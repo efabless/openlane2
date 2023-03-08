@@ -137,7 +137,9 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().get_command() + [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
-            ]
+        ]
+
+
 class TestStep(OdbpyStep):
     id = "Odb.TestStep"
     name = "test step"
@@ -147,7 +149,10 @@ class TestStep(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "test.py")
 
     def get_command(self) -> List[str]:
+        assert isinstance(self.state_in, State)
         return super().get_command() + [
+            "--input-json",
+            str(self.state_in[DesignFormat.JSON]),
             "--design-name",
             self.config["DESIGN_NAME"],
         ]
@@ -184,6 +189,7 @@ class ManualMacroPlacement(OdbpyStep):
 class ReportWireLength(OdbpyStep):
     id = "Odb.ReportWireLength"
     name = "Report Wire Length"
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "wire_lengths.py")
@@ -195,8 +201,10 @@ class ReportWireLength(OdbpyStep):
             os.path.join(self.step_dir, "wire_lengths.csv"),
         ]
 
-@Step.factory.register("Odb.ReportDisconnectedPins")
+
+@Step.factory.register()
 class ReportDisconnectedPins(OdbpyStep):
+    id = "Odb.ReportDisconnectedPins"
     name = "Report disconnected instance pins"
 
     def get_script_path(self):

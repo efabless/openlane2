@@ -190,7 +190,7 @@ class DisconnectedPins(Step):
 
 
 @Step.factory.register()
-class WireLength(Step):
+class WireLength(MetricChecker):
     id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"

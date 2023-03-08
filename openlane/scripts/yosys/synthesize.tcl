@@ -67,9 +67,11 @@ if { [info exists ::env(SYNTH_DEFINES) ] } {
     }
 }
 read_models
-foreach define $::env(SYNTH_USE_PG_PINS_DEFINES) {
-    log "Defining $define"
-    verilog_defines -D$define
+if { [info exists ::env(SYNTH_USE_PG_PINS_DEFINES)] } {
+    foreach define $::env(SYNTH_USE_PG_PINS_DEFINES) {
+        log "Defining $define"
+        verilog_defines -D$define
+    }
 }
 for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
     read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]

@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import json
+from glob import glob
 from decimal import Decimal
 from typing import List, Sequence, Tuple, Optional, Callable, Union, Dict
 
@@ -358,7 +359,7 @@ class ConfigBuilder(object):
 
         tcl_vars_in = config_in.copy()
         tcl_vars_in[Keys.scl] = ""
-        tcl_vars_in[Keys.design_dir] = design_dir
+        tcl_vars_in[Keys.design_dir] = os.path.abspath(design_dir)
         tcl_config = env_from_tcl(tcl_vars_in, config)
 
         process_info = resolve(
@@ -383,7 +384,7 @@ class ConfigBuilder(object):
 
         tcl_vars_in[Keys.pdk] = pdk
         tcl_vars_in[Keys.scl] = scl
-        tcl_vars_in[Keys.design_dir] = design_dir
+        tcl_vars_in[Keys.design_dir] = os.path.abspath(design_dir)
 
         design_config = env_from_tcl(tcl_vars_in, config)
 
@@ -407,7 +408,7 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
-        config_in["PDK_ROOT"] = pdk_root
+        config_in["PDK_ROOT"] = os.path.abspath(pdk_root)
 
         return config_in
 
@@ -442,6 +443,15 @@ class ConfigBuilder(object):
             config_in[Keys.scl] = scl
 
         pdkpath = os.path.join(pdk_root, pdk)
+        if not os.path.exists(pdkpath):
+            matches = glob(f"{pdkpath}*")
+            errors = [f"The PDK {pdk} was not found."]
+            warnings = []
+            for match in matches:
+                basename = os.path.basename(match)
+                warnings.append(f"A similarly-named PDK was found: {basename}")
+            raise InvalidConfig("PDK configuration", warnings, errors)
+
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
 
         config_in = env_from_tcl(
