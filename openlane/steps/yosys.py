@@ -48,6 +48,12 @@ class Synthesis(YosysStep):
             "The paths of the design's Verilog files.",
         ),
         Variable(
+            "QUIT_ON_SYNTH_CHECKS",
+            bool,
+            "Use yosys `check -assert` at the end of synthesis. This checks for combinational loops, conflicting drivers and wires with no drivers.",
+            default=True,
+        ),
+        Variable(
             "SYNTH_AUTONAME",
             bool,
             "Generates names for  netlistinstances. This results in instance names that can be very long, but are more human-readable.",
