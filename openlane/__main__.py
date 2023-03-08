@@ -24,13 +24,24 @@ import click
 
 from .state import State
 from .__version__ import __version__
-from .common import err, set_log_level, warn, log, get_opdks_rev, get_openlane_root
+from .logging import (
+    LogLevelsDict,
+    set_log_level,
+    err,
+    warn,
+    info,
+)
+from .common import (
+    get_opdks_rev,
+    get_openlane_root,
+)
 from .container import run_in_container
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
 
 
 def run(
+    ctx: click.Context,
     flow_name: Optional[str],
     use_volare: bool,
     pdk_root: Optional[str],
@@ -43,13 +54,14 @@ def run(
     to: Optional[str],
     initial_state_json: Optional[str],
     config_override_strings: List[str],
-    log_level_name: str,
+    log_level: str,
 ):
-    if len(config_files) != 1:
-        err(f"Invalid argument count for config_files: ({len(config_files)}/1).")
+    try:
+        set_log_level(log_level)
+    except ValueError:
+        err(f"Invalid logging level: {log_level}.")
+        click.echo(ctx.get_help())
         exit(-1)
-
-    set_log_level(log_level_name)
 
     if use_volare:
         import volare
@@ -93,19 +105,19 @@ def run(
             config_override_strings=config_override_strings,
         )
     except InvalidConfig as e:
-        log(f"[green]Errors have occurred while loading the {e.config}.")
+        info(f"[green]Errors have occurred while loading the {e.config}.")
         for error in e.errors:
             err(error)
 
         if len(e.warnings) > 0:
-            log("The following warnings have also been generated:")
+            info("The following warnings have also been generated:")
             for warning in e.warnings:
                 warn(warning)
-        log("OpenLane will now quit. Please check your configuration.")
+        info("OpenLane will now quit. Please check your configuration.")
         exit(1)
     except ValueError as e:
         err(e)
-        log("OpenLane will now quit.")
+        info("OpenLane will now quit.")
         exit(1)
 
     initial_state: Optional[State] = None
@@ -188,7 +200,7 @@ def run_smoke_test(
     ctx.exit(0)
 
 
-@click.command()
+@click.command(no_args_is_help=True)
 @click.version_option(
     __version__,
     prog_name="OpenLane",
@@ -248,7 +260,7 @@ def run_smoke_test(
     help="Override volare PDK root folder. Required if Volare is not installed.",
 )
 @click.option(
-    "--volare-auto/--manual",
+    "--volare-pdk/--manual-pdk",
     "use_volare",
     default=True,
     help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
@@ -305,13 +317,20 @@ def run_smoke_test(
 )
 @click.option(
     "--log-level",
-    "log_level_name",
-    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
-    default="INFO",
-    help="A logging level. Set to WARNING or higher to silence logs.",
+    type=str,
+    default="VERBOSE",
+    help=dedent(
+        """
+        A logging level. Set to INFO or higher to silence subprocess logs.
+
+        You can provide either a number or a string out of the following (higher is more silent):
+        """
+    )
+    + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
 )
-@click.argument("config_files", nargs=-1)
-def cli(dockerized: bool, docker_mounts: Tuple[str], **kwargs):
+@click.argument("config_files", required=True, nargs=-1)
+@click.pass_context
+def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwargs):
     if dockerized:
         argv = sys.argv.copy()[1:]
         argv.remove("--dockerized")
@@ -326,7 +345,7 @@ def cli(dockerized: bool, docker_mounts: Tuple[str], **kwargs):
             exit(e.returncode)
 
     else:
-        run(**kwargs)
+        run(ctx, **kwargs)
 
 
 if __name__ == "__main__":

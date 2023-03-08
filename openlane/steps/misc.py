@@ -18,8 +18,9 @@ from .step import Step
 from ..state import State
 from ..state import DesignFormat
 
+from ..logging import info
+from ..common import get_script_dir
 from ..config import Path, Variable
-from ..common import get_script_dir, log
 
 
 @Step.factory.register()
@@ -48,9 +49,9 @@ class LoadBaseSDC(Step):
             )
         )
         if self.config.get("BASE_SDC_FILE") is not None:
-            log(f"Loaded SDC file at '{self.config['BASE_SDC_FILE']}'.")
+            info(f"Loaded SDC file at '{self.config['BASE_SDC_FILE']}'.")
             new_state[DesignFormat.SDC] = self.config["BASE_SDC_FILE"]
         else:
-            log("Loaded default SDC file.")
+            info("Loaded default SDC file.")
 
         return new_state

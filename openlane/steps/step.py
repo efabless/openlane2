@@ -38,14 +38,16 @@ from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import (
     mkdirp,
-    print,
-    rule,
-    log,
     slugify,
-    warn,
-    err,
     final,
     internal,
+)
+from ..logging import (
+    rule,
+    verbose,
+    info,
+    warn,
+    err,
 )
 
 StepConditionLambda = Callable[[Config], bool]
@@ -345,17 +347,17 @@ class Step(ABC):
             if isinstance(flow_control_value, bool):
                 if not flow_control_value:
                     if self.flow_control_msg is not None:
-                        log(self.flow_control_msg)
+                        info(self.flow_control_msg)
                     else:
-                        log(
+                        info(
                             f"`{self.flow_control_variable}` is set to False: skipping…"
                         )
                         return self.state_in.copy()
             elif flow_control_value is None:
                 if self.flow_control_msg is not None:
-                    log(self.flow_control_msg)
+                    info(self.flow_control_msg)
                 else:
-                    log(
+                    info(
                         f"Required variable `{self.flow_control_variable}` is set to null: skipping…"
                     )
                 return self.state_in.copy()
@@ -460,7 +462,7 @@ class Step(ABC):
                 elif current_rpt is not None:
                     current_rpt.write(line)
                 else:
-                    print(line.strip())
+                    verbose(line.strip())
                     log_file.write(line)
         returncode = process.wait()
         if returncode != 0:

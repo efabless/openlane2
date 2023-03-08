@@ -15,11 +15,10 @@ from __future__ import annotations
 
 import subprocess
 from typing import List, Tuple
-from logging import ERROR, INFO
 from concurrent.futures import Future
 
 from .flow import Flow
-from ..common import set_log_level, success, log
+from ..logging import get_log_level, set_log_level, LogLevels, success, info
 from ..state import State
 from ..steps import Step, Yosys, OpenROAD
 from ..config import Config
@@ -59,7 +58,8 @@ class Optimizing(Flow):
         synthesis_futures: List[Tuple[Config, Future[State]]] = []
         self.start_stage("Synthesis Exploration")
 
-        set_log_level(ERROR)
+        log_level_bk = get_log_level()
+        set_log_level(LogLevels.ERROR)
 
         for strategy in ["AREA 0", "AREA 2", "DELAY 1"]:
             config = self.config.copy()
@@ -89,7 +89,7 @@ class Optimizing(Flow):
         ]
 
         self.end_stage()
-        set_log_level(INFO)
+        set_log_level(log_level_bk)
 
         min_strat = synthesis_states[0][0]["SYNTH_STRATEGY"]
         min_config = synthesis_states[0][0]
@@ -104,7 +104,7 @@ class Optimizing(Flow):
                 min_strat = strategy
                 min_config = config
 
-        log(f"Using result from '{min_strat}…")
+        info(f"Using result from '{min_strat}…")
 
         self.start_stage("Floorplanning and Placement")
 
@@ -136,7 +136,7 @@ class Optimizing(Flow):
             gpl.start()
             step_list.append(gpl)
         except subprocess.CalledProcessError:
-            log("High utilization failed- attempting low utilization…")
+            info("High utilization failed- attempting low utilization…")
             fp_config = min_config.copy()
             fp_config["FP_CORE_UTIL"] = 40
             fp = OpenROAD.Floorplan(

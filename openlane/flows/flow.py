@@ -48,7 +48,8 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..common import mkdirp, console, log, internal, final, slugify
+from ..logging import console, info
+from ..common import mkdirp, internal, final, slugify
 
 
 class FlowException(RuntimeError):
@@ -208,7 +209,7 @@ class Flow(ABC):
             entries = os.listdir(self.run_dir)
             if len(entries) == 0:
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
-            log(f"Using existing run at '{tag}' with the '{self.name}' flow.")
+            info(f"Using existing run at '{tag}' with the '{self.name}' flow.")
 
             # Extract maximum step ordinal
             for entry in entries:
@@ -244,7 +245,7 @@ class Flow(ABC):
                 f"Run directory for '{tag}' already exists as a file and not a directory."
             )
         except FileNotFoundError:
-            log(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
+            info(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
             mkdirp(self.run_dir)
 
         config_res_path = os.path.join(self.run_dir, "resolved.json")

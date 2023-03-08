@@ -13,10 +13,10 @@
 # limitations under the License.
 import os
 import json
-from textwrap import dedent
 import yaml
 from enum import Enum
 from decimal import Decimal
+from textwrap import dedent
 from collections import UserDict, UserString
 from typing import (
     Any,
@@ -150,15 +150,15 @@ class Config(UserDict):
         return (
             dedent(
                 f"""
-        ### {title}
-        #### {values_title}
+                ### {title}
+                #### {values_title}
 
-        <br />
+                <br />
 
-        ```yml
-        %s
-        ```
-        """
+                ```yml
+                %s
+                ```
+                """
             )
             % yaml.safe_dump(json.loads(self.dumps()))
         )

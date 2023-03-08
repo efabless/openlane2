@@ -24,7 +24,7 @@ from ..steps import (
     StepError,
     DeferredStepError,
 )
-from ..common import log, success, err
+from ..logging import info, success, err
 
 
 class SequentialFlow(Flow):
@@ -77,7 +77,7 @@ class SequentialFlow(Flow):
 
         step_list = []
 
-        log("Starting…")
+        info("Starting…")
 
         executing = frm is None
         deferred_errors = []
@@ -90,7 +90,7 @@ class SequentialFlow(Flow):
 
             self.start_stage(step.name)
             if not executing:
-                log(f"Skipping step '{step.name}'…")
+                info(f"Skipping step '{step.name}'…")
                 self.end_stage(no_increment_ordinal=True)
                 continue
 

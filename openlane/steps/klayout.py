@@ -19,8 +19,9 @@ from base64 import b64encode
 from .step import Step, StepError
 from ..state import DesignFormat, State
 
+from ..logging import warn
 from ..config import Path, Variable
-from ..common import get_script_dir, warn
+from ..common import get_script_dir
 
 
 @Step.factory.register()

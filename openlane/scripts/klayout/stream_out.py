@@ -106,7 +106,8 @@ except ImportError:
             elif isinstance(value, str) and os.path.exists(value):
                 value = os.path.abspath(value)
 
-            args.append(f"{key}={value}")
+            args.append(f"{key}={value or 'NULL'}")
+
         os.execlp("klayout", *args)
 
     if __name__ == "__main__":
@@ -125,7 +126,7 @@ if TYPE_CHECKING:
     input_gds_files: str = ""
     seal_gds: Optional[str] = ""
 
-if seal_gds == "None":
+if seal_gds == "NULL":
     seal_gds = None
 
 

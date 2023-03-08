@@ -19,10 +19,11 @@ from typing import List, Dict
 from abc import abstractmethod
 
 from .step import Step
+from ..logging import info
 from .tclstep import TclStep
-from ..state import DesignFormat, State
 from ..config import Variable
-from ..common import log
+
+from ..state import DesignFormat, State
 
 
 def get_metrics(stats: Dict) -> Dict:
@@ -130,7 +131,7 @@ class LVS(NetgenStep):
         assert isinstance(self.state_in, State)
 
         if self.config["NETGEN_SETUP"] is None:
-            log(f"Skipping {self.name}: Netgen is not supported for this PDK.")
+            info(f"Skipping {self.name}: Netgen is not supported for this PDK.")
             return Step.run(self, **kwargs)
 
         spice_glob = os.path.join(

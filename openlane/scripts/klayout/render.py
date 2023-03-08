@@ -97,7 +97,8 @@ except ImportError:
             elif isinstance(value, str) and os.path.exists(value):
                 value = os.path.abspath(value)
 
-            args.append(f"{key}={value}")
+            args.append(f"{key}={value or 'NULL'}")
+
         os.execlp("klayout", *args)
 
     if __name__ == "__main__":

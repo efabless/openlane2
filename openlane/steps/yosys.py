@@ -18,10 +18,9 @@ from abc import abstractmethod
 
 from .step import Step
 from .tclstep import TclStep
+from .common_variables import constraint_variables
 from ..state import State
 from ..state import DesignFormat
-from .common_variables import constraint_variables
-
 from ..common import get_script_dir
 from ..config import Path, Variable, StringEnum
 

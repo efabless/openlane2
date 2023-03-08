@@ -32,8 +32,9 @@ from .common_variables import (
     constraint_variables,
 )
 
+from ..logging import info, warn
+from ..common import get_script_dir
 from ..config import Variable, Path, StringEnum
-from ..common import get_script_dir, log, warn
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -590,13 +591,13 @@ class GlobalRouting(OpenROADStep):
             net_count_after = len(nets)
 
             if net_count_before == net_count_after:
-                log("Antenna count unchanged after OpenROAD antenna fixer.")
+                info("Antenna count unchanged after OpenROAD antenna fixer.")
             elif net_count_after > net_count_before:
                 warn(
                     "Inexplicably, the OpenROAD antenna fixer has generated more antenna. The flow may continue, but you may want to report a bug."
                 )
             else:
-                log(
+                info(
                     f"Antenna count reduced using OpenROAD antenna fixer: {net_count_before} -> {net_count_after}"
                 )
 
