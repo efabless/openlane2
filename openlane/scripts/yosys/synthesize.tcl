@@ -39,26 +39,52 @@ if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
     set vIdirsArgs [join $vIdirsArgs]
 }
 
-if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-    log "Reading $::env(LIB_SYNTH) as a blackbox"
-    foreach lib $::env(LIB_SYNTH) {
-        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+proc read_models {} {
+    global vIdirsArgs
+    if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
+        log "Reading $::env(LIB_SYNTH) as a blackbox"
+        foreach lib $::env(LIB_SYNTH) {
+            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+        }
+    }
+    if { [info exists ::env(EXTRA_LIBS) ] } {
+        foreach lib $::env(EXTRA_LIBS) {
+            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+        }
+    }
+    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+        foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
+            read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
+        }
     }
 }
 
-if { [info exists ::env(EXTRA_LIBS) ] } {
-    foreach lib $::env(EXTRA_LIBS) {
-        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+
+if { [info exists ::env(SYNTH_DEFINES) ] } {
+    foreach define $::env(SYNTH_DEFINES) {
+        log "Defining $define"
+        verilog_defines -D$define
     }
 }
+read_models
+foreach define $::env(SYNTH_USE_PG_PINS_DEFINES) {
+    log "Defining $define"
+    verilog_defines -D$define
+}
+for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
+    read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]
+}
+select -module $vtop
+json -o $::env(SAVE_JSON)
+design -reset
 
-if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-    foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-        read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
+if { [info exists ::env(SYNTH_DEFINES) ] } {
+    foreach define $::env(SYNTH_DEFINES) {
+        log "Defining $define"
+        verilog_defines -D$define
     }
 }
-
-
+read_models
 # ns expected (in sdc as well)
 set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
 

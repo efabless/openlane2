@@ -56,9 +56,10 @@ class OdbpyStep(Step):
             command.append(file_path)
             out_paths[output] = Path(file_path)
 
-        command += [
-            str(state_out[DesignFormat.ODB]),
-        ]
+        for input in self.inputs:
+            id, ext, _ = input.value
+            command.append(f"--input-{id}")
+            command.append(state_out[input])
 
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
@@ -136,6 +137,19 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().get_command() + [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
+            ]
+class TestStep(OdbpyStep):
+    id = "Odb.TestStep"
+    name = "test step"
+    inputs = [DesignFormat.JSON, DesignFormat.ODB]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "test.py")
+
+    def get_command(self) -> List[str]:
+        return super().get_command() + [
+            "--design-name",
+            self.config["DESIGN_NAME"],
         ]
 
 

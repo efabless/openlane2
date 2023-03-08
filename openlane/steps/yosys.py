@@ -39,7 +39,7 @@ class YosysStep(TclStep):
 class Synthesis(YosysStep):
     id = "Yosys.Synthesis"
     inputs = []  # The input RTL is part of the configuration
-    outputs = [DesignFormat.NETLIST]
+    outputs = [DesignFormat.NETLIST, DesignFormat.JSON]
 
     config_vars = constraint_variables + [
         Variable(

@@ -94,6 +94,12 @@ class DesignFormat(Enum):
         "GDSII Stream (KLayout)",
     )
 
+    JSON = (
+        "json",
+        "json",
+        "description",
+    )
+
 
 DesignFormatByID: Dict[str, DesignFormat] = {
     format.value[0]: format for format in DesignFormat
