@@ -4,6 +4,7 @@
 
 <h1 align="center">OpenLane</h1>
 <p align="center">
+    <a href="https://openlane2.readthedocs.io/"><img src="https://readthedocs.org/projects/openlane2/badge/?version=latest" alt="Documentation Build Status Badge"/></a>
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"/></a>
     <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.8-3776AB.svg?style=flat&logo=python&logoColor=white" alt="Python 3.8 or higher" /></a>
     <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code Style: black"/></a>
@@ -72,10 +73,10 @@ export PATH="/home/test/.local/bin:$PATH"
 Do note that the path (`/home/test/.local/bin` in this example) varies depending on your operating system and version of Python you install, and whether you use `sudo` (absolutely not recommended) or not, so ensure that you actually read the warning and add the correct path.
 
 ### Nix
-See [Nix-based installation](docs/source/getting_started/nix_installation/index.md) in the docs.
+See [Nix-based installation](https://openlane.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
 
 ### Docker
-See [Docker-based installation](docs/source/getting_started/docker_installation/index.md) in the docs.
+See [Docker-based installation](https://openlane.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
 
 ### Conda
 TBD
