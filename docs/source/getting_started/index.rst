@@ -4,6 +4,7 @@ Getting Started
 .. toctree::
    :glob:
    
-   installation/index.md
+   docker_installation/index.md
+   nix_installation/index.md
    quickstart
    updating

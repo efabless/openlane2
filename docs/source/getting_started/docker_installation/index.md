@@ -1,4 +1,8 @@
-# Docker-based Installation
+# Docker-based Installation (Beginners)
+
+```{warning}
+The Docker images for OpenLane 2 are not currently available, but we're actively working on them.
+```
 
 For ease of installation, OpenLane offers the ability to transparently [Docker](https://en.wikipedia.org/wiki/Docker_(software)) containers.
 
