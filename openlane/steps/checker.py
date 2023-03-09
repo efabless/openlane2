@@ -237,20 +237,10 @@ class LVS(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "lvs__total__errors"
+        return "netgen__total__errors"
 
     def get_metric_description(self) -> str:
         return "LVS errors"
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        state_out = super().run()
-        lvs_errors_count = state_out.metrics.get("netgen__total__errors")
-        if lvs_errors_count is None:
-            warn("No LVS errors reported. Netgen.LVS didn't run")
-        elif lvs_errors_count > 0:
-            error_msg = f"{lvs_errors_count} LVS errors found."
-            err(f"{error_msg} - deferred")
-            raise DeferredStepError(error_msg)
-        return state_out
+
+    def get_threshold(self) -> Optional[Decimal]:
+        return Decimal(0)

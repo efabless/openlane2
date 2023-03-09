@@ -11,36 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from collections import namedtuple
 import json
 import re
+
+from rich import print
+from rich.table import Table
+
 
 from reader import click, click_odb, OdbReader
 import odb, utl
 
 
-Module = namedtuple("Module", ["name", "power_pins", "ground_pins"])
 Instance = namedtuple(
     "Instance",
     ["name", "module", "power_connections", "ground_connections"],
 )
-
-
-def extract_modules(db, design_json, design_name):
-    module_names = [
-        design_json["modules"][design_name]["cells"][cell_name]["type"]
-        for cell_name in design_json["modules"][design_name]["cells"]
-    ]
-
-    modules = []
-    for module_name in module_names:
-        pins = db.findMaster(module_name).getMTerms()
-        power_pins = [pin.getName() for pin in pins if pin.getSigType() == "POWER"]
-        ground_pins = [pin.getName() for pin in pins if pin.getSigType() == "GROUND"]
-        m = Module(name=module_name, power_pins=power_pins, ground_pins=ground_pins)
-        modules.append(m)
-
-    return modules
 
 
 def is_power(db, module_name, pin_name):
@@ -48,11 +35,7 @@ def is_power(db, module_name, pin_name):
     if master is None:
         return False
 
-    pin = next(
-        pin
-        for pin in master.getMTerms()
-        if pin.getName() == pin_name
-    )
+    pin = next(pin for pin in master.getMTerms() if pin.getName() == pin_name)
     return pin.getSigType() == "POWER"
 
 
@@ -196,15 +179,16 @@ def add_global_connection(
 
 @click.command()
 @click.option("--input-json", required=True)
-@click.option("--design-name", required=True)
 @click_odb
-def cli(input_db, input_json, design_name, reader: OdbReader):
+def cli(input_db, input_json, reader: OdbReader):
+    grid = Table.grid("message", "instance", "pin", "net", expand=False)
 
     design_str = open(input_json).read()
     design_json = json.loads(design_str)
 
     db = reader.db
     chip = db.getChip()
+    design_name = chip.getBlock().getName()
 
     instances = extract_instances(db, design_json, design_name)
     for instance in instances:
@@ -217,6 +201,12 @@ def cli(input_db, input_json, design_name, reader: OdbReader):
                 pin_pattern=pin,
                 power=True,
             )
+            grid.add_row(
+                "Setting power ",
+                f"instance({instance.name}) ",
+                f"pin({pin}) ",
+                f"net({net_name})",
+            )
         for pin in instance.ground_connections.keys():
             net_name = instance.ground_connections[pin]
             add_global_connection(
@@ -226,6 +216,14 @@ def cli(input_db, input_json, design_name, reader: OdbReader):
                 pin_pattern=pin,
                 ground=True,
             )
+            grid.add_row(
+                "Setting ground ",
+                f"instance({instance.name})",
+                f"pin({pin})",
+                f"net({net_name})",
+            )
+
+    print(grid)
 
 
 if __name__ == "__main__":

@@ -137,21 +137,19 @@ class ApplyDEFTemplate(OdbpyStep):
         ]
 
 
-class TestStep(OdbpyStep):
-    id = "Odb.TestStep"
-    name = "test step"
+class SetPowerConnections(OdbpyStep):
+    id = "Odb.SetPowerConnections"
+    name = "Set Power Connections"
     inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "test.py")
+        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
 
     def get_command(self) -> List[str]:
         assert isinstance(self.state_in, State)
         return super().get_command() + [
             "--input-json",
             str(self.state_in[DesignFormat.JSON_HEADER]),
-            "--design-name",
-            self.config["DESIGN_NAME"],
         ]
 
 

@@ -42,7 +42,7 @@ class Classic(SequentialFlow):
         Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
-        Odb.TestStep,
+        Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         Odb.ApplyDEFTemplate,
         OpenROAD.TapDecapInsertion,
