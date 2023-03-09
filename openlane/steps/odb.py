@@ -56,10 +56,7 @@ class OdbpyStep(Step):
             command.append(file_path)
             out_paths[output] = Path(file_path)
 
-        for input in self.inputs:
-            id, ext, _ = input.value
-            command.append(f"--input-{id}")
-            command.append(state_out[input])
+        command += [str(state_out[DesignFormat.ODB])]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
