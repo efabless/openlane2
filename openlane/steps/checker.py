@@ -192,8 +192,8 @@ class DisconnectedPins(Step):
             )
         elif disconnected_pins_count > 0:
             error_msg = (
-                f"{disconnected_pins_count} disconnected pins found. Likely there are lvs errors. "
-                f"Check disconnected pins logs."
+                f"{disconnected_pins_count} disconnected pins found. Likely there are lvs errors."
+                + "Check disconnected pins logs."
             )
             raise StepError(error_msg)
         return state_out

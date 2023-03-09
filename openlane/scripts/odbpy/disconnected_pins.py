@@ -25,18 +25,18 @@ from reader import click_odb, OdbReader
 import utl
 
 
-def isConnected(iterm):
+def is_connected(iterm):
     return iterm.getNet() is not None
 
 
-def isSpecial(iterm):
+def is_special(iterm):
     return iterm.getSigType() == "POWER" or iterm.getSigType() == "GROUND"
 
 
-def hasDisconnect(instance):
+def has_disconnect(instance):
     return (
         True
-        if [iterm for iterm in instance.getITerms() if not isConnected(iterm)]
+        if [iterm for iterm in instance.getITerms() if not is_connected(iterm)]
         else False
     )
 
@@ -59,27 +59,27 @@ def main(
     instances_with_disconnect = [
         instance
         for instance in instances
-        if hasDisconnect(instance)
+        if has_disconnect(instance)
         and (instance.getMaster().getName() not in ignore_master)
     ]
 
     for instance in instances_with_disconnect:
         iterms = instance.getITerms()
         signal_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if not isSpecial(iterm)
+            iterm.getMTerm().getName() for iterm in iterms if not is_special(iterm)
         ]
         power_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if isSpecial(iterm)
+            iterm.getMTerm().getName() for iterm in iterms if is_special(iterm)
         ]
         disconnected_power_pins = [
             iterm.getMTerm().getName()
             for iterm in iterms
-            if isSpecial(iterm) and not isConnected(iterm)
+            if is_special(iterm) and not is_connected(iterm)
         ]
         disconnected_signal_pins = [
             iterm.getMTerm().getName()
             for iterm in iterms
-            if not isSpecial(iterm) and not isConnected(iterm)
+            if not is_special(iterm) and not is_connected(iterm)
         ]
         table.add_row(
             instance.getName(),
@@ -88,10 +88,14 @@ def main(
             ",".join(signal_pins),
             ",".join(disconnected_signal_pins),
         )
-        disconnected_pins_count += len(disconnected_signal_pins) + len(disconnected_power_pins)
+        disconnected_pins_count += len(disconnected_signal_pins) + len(
+            disconnected_power_pins
+        )
     rich.print(table)
 
-    utl.metric_integer("design__instance__count__disconnected_pins", disconnected_pins_count)
+    utl.metric_integer(
+        "design__instance__count__disconnected_pins", disconnected_pins_count
+    )
 
 
 if __name__ == "__main__":

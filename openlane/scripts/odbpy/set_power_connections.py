@@ -18,10 +18,11 @@ import re
 
 from rich import print
 from rich.table import Table
+import odb
+import utl
 
 
 from reader import click, click_odb, OdbReader
-import odb, utl
 
 
 Instance = namedtuple(
