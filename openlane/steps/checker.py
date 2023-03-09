@@ -73,7 +73,7 @@ class MetricChecker(Step):
 class YosysUnmappedCells(MetricChecker):
     id = "Checker.YosysUnmappedCells"
     flow_control_variable = "QUIT_ON_UNMAPPED_CELLS"
-    name = "Unmapped cells Checker"
+    name = "Unmapped Cells Checker"
     deferred = False
 
     config_vars = [
@@ -98,7 +98,7 @@ class TrDRC(MetricChecker):
     id = "Checker.TrDRC"
     flow_control_variable = "QUIT_ON_TR_DRC"
     name = "Routing DRC Checker"
-    long_name = "Routing Design Rule Check"
+    long_name = "Routing Design Rule Checker"
 
     config_vars = [
         Variable(
@@ -121,7 +121,7 @@ class MagicDRC(MetricChecker):
     id = "Checker.MagicDRC"
     flow_control_variable = "QUIT_ON_MAGIC_DRC"
     name = "Magic DRC Checker"
-    long_name = "Magic Design Rule Check"
+    long_name = "Magic Design Rule Checker"
 
     config_vars = [
         Variable(
@@ -144,7 +144,7 @@ class IllegalOverlap(MetricChecker):
     id = "Checker.IllegalOverlap"
     flow_control_variable = "QUIT_ON_ILLEGAL_OVERLAPS"
     name = "Illegal Overlap Checker"
-    long_name = "Spice Extraction-based Illegal Overlap Check"
+    long_name = "Spice Extraction-based Illegal Overlap Checker"
 
     config_vars = [
         Variable(
@@ -166,7 +166,7 @@ class IllegalOverlap(MetricChecker):
 class DisconnectedPins(Step):
     id = "Checker.DisconnectedPins"
     flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
-    name = "Disconnected pins check"
+    name = "Disconnected Pins Checker"
 
     def run(
         self,
@@ -204,7 +204,7 @@ class WireLength(MetricChecker):
             "QUIT_ON_LONG_WIRE",
             bool,
             "Exits the flow if any wire length exceeds the threshold set in the PDK.",
-            default=False,
+            default=True,
         ),
     ]
 

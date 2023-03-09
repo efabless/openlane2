@@ -196,7 +196,7 @@ class ReportWireLength(OdbpyStep):
 @Step.factory.register()
 class ReportDisconnectedPins(OdbpyStep):
     id = "Odb.ReportDisconnectedPins"
-    name = "Report disconnected instance pins"
+    name = "Report Disconnected Pins"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
