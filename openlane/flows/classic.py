@@ -36,6 +36,7 @@ class Classic(SequentialFlow):
     """
 
     Steps: List[Type[Step]] = [
+        Yosys.JsonHeader,
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Misc.LoadBaseSDC,

@@ -28,7 +28,9 @@ from ..config import Path, Variable, StringEnum
 
 class YosysStep(TclStep):
     def get_command(self) -> List[str]:
-        return ["yosys", "-c", self.get_script_path()]
+        script_path = self.get_script_path()
+        assert isinstance(script_path, str)
+        return ["yosys", "-c", script_path]
 
     @abstractmethod
     def get_script_path(self):
@@ -36,10 +38,29 @@ class YosysStep(TclStep):
 
 
 @Step.factory.register()
+class JsonHeader(YosysStep):
+    id = "Yosys.JsonHeader"
+    inputs = []
+    outputs = [DesignFormat.JSON_HEADER]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "yosys", "json_header.tcl")
+
+    config_vars = [
+        Variable(
+            "SYNTH_POWER_DEFINE",
+            Optional[str],
+            "Specifies the name of the define used to guard power and ground connections",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES"],
+        )
+    ]
+
+
+@Step.factory.register()
 class Synthesis(YosysStep):
     id = "Yosys.Synthesis"
     inputs = []  # The input RTL is part of the configuration
-    outputs = [DesignFormat.NETLIST, DesignFormat.JSON]
+    outputs = [DesignFormat.NETLIST]
 
     config_vars = constraint_variables + [
         Variable(
@@ -72,6 +93,11 @@ class Synthesis(YosysStep):
             ),
             "Strategies for abc logic synthesis and technology mapping. AREA strategies usually result in a more compact design, while DELAY strategies usually result in a design that runs at a higher frequency. Please note that there is no way to know which strategy is the best before trying them.",
             default="AREA 0",
+        ),
+        Variable(
+            "SYNTH_DEFINES",
+            Optional[List[str]],
+            "Synthesis defines",
         ),
         Variable(
             "SYNTH_BUFFERING",

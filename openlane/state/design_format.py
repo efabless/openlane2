@@ -94,10 +94,10 @@ class DesignFormat(Enum):
         "GDSII Stream (KLayout)",
     )
 
-    JSON = (
-        "json",
-        "json",
-        "description",
+    JSON_HEADER = (
+        "json_header",
+        "header.json",
+        "Design Json Header File. It contains partial information about the design",
     )
 
 
