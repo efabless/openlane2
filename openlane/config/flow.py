@@ -177,12 +177,6 @@ all_variables = [
         default=False,
     ),
     Variable(
-        "CHECK_UNMAPPED_CELLS",
-        bool,
-        "Checks if there are unmapped cells after synthesis and aborts if any was found.",
-        default=True,
-    ),
-    Variable(
         "CHECK_ASSIGN_STATEMENTS",
         bool,
         "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
@@ -192,36 +186,6 @@ all_variables = [
         "QUIT_ON_DISCONNECTED_PINS",
         bool,
         "Checks for disconnected instance pins.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_TR_DRC",
-        bool,
-        "Checks for DRC violations after routing and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LONG_WIRE",
-        bool,
-        "Exits the flow if any wire length exceeds the threshold set in the PDK.",
-        default=False,
-    ),
-    Variable(
-        "QUIT_ON_MAGIC_DRC",
-        bool,
-        "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_ILLEGAL_OVERLAPS",
-        bool,
-        "Checks for illegal overlaps during magic extraction. In some cases, these imply existing undetected shorts in the design. It also exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LVS_ERROR",
-        bool,
-        "Checks for LVS errors after netgen LVS is executed and exits the flow if any was found.",
         default=True,
     ),
 ]

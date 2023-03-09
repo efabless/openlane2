@@ -81,6 +81,7 @@ class YosysUnmappedCells(MetricChecker):
             "QUIT_ON_UNMAPPED_CELLS",
             bool,
             "Checks for unmapped cells after sythesis",
+            deprecated_names=["CHECK_UNMAPPED_CELLS"],
             default=True,
         ),
     ]
