@@ -368,7 +368,7 @@ def resolve(
         # So we don't crash on conditional processing:
         def coalesce(variable_name: str):
             nonlocal implicitly_exposed, exposed_dict
-            if os.getenv(variable_name) is not None:
+            if os.environ.get(variable_name) is not None:
                 implicitly_exposed += [variable_name]
             else:
                 exposed_dict[variable_name] = ""

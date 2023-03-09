@@ -18,9 +18,9 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
-try:
+if "klayout" in os.path.basename(sys.executable):
     import pya
-except ImportError:
+else:
     import click
 
     @click.command()
@@ -33,15 +33,13 @@ except ImportError:
     @click.option(
         "-T",
         "--lyt",
-        required=os.getenv("KLAYOUT_TECH") is None,
-        default=os.getenv("KLAYOUT_TECH"),
+        required=True,
         help="KLayout .lyt file",
     )
     @click.option(
         "-P",
         "--lyp",
-        required=os.getenv("KLAYOUT_PROPERTIES") is None,
-        default=os.getenv("KLAYOUT_PROPERTIES"),
+        required=True,
         help="KLayout .lyp file",
     )
     @click.option(

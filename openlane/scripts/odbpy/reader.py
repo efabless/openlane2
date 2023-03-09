@@ -28,7 +28,7 @@ except locale.Error:
     # We tried. :)
     pass
 
-if python_path := os.getenv("ODB_PYTHONPATH"):
+if python_path := os.environ.get("ODB_PYTHONPATH", None):
     sys.path = python_path.split(":") + sys.path
 
 sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))

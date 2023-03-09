@@ -1,3 +1,10 @@
+# 2.0.0-a2
+* Handle `PDK_ROOT`, `PDK` and `STD_CELL_LIBRARY` environment variables.
+* Unify environment inspection by using `os.environ`- eliminated getenv
+* KLayout scripts no longer accept environment variables.
+* Updated Docker images for consistency.
+* Added ReadTheDocs configuration.
+
 # 2.0.0-a1
 * Update smoke test
 * Fix bug with default variables

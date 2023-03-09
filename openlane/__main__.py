@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import subprocess
 from textwrap import dedent
+from functools import partial
 from typing import Tuple, Type, Optional, List, Union
 
 import click
@@ -205,7 +206,12 @@ def run_smoke_test(
     ctx.exit(0)
 
 
-@click.command(no_args_is_help=True)
+click.option = partial(click.option, show_default=True)
+
+
+@click.command(
+    no_args_is_help=True,
+)
 @click.version_option(
     __version__,
     prog_name="OpenLane",
@@ -236,20 +242,12 @@ def run_smoke_test(
     default=False,
     help="Run OpenLane primarily using a Docker container. Some caveats apply.",
 )
-@click.option("--docker-mount", "docker_mounts", multiple=True, default=[], help="")
 @click.option(
-    "-p",
-    "--pdk",
-    type=str,
-    default="sky130A",
-    help="The process design kit to use. [default: sky130A]",
-)
-@click.option(
-    "-s",
-    "--scl",
-    type=str,
-    default=None,
-    help="The standard cell library to use. [default: varies by PDK]",
+    "--docker-mount",
+    "docker_mounts",
+    multiple=True,
+    default=[],
+    help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
 )
 @click.option(
     "-f",
@@ -260,15 +258,29 @@ def run_smoke_test(
     help="The built-in OpenLane flow to use",
 )
 @click.option(
-    "--pdk-root",
-    default=None,
-    help="Override volare PDK root folder. Required if Volare is not installed.",
-)
-@click.option(
     "--volare-pdk/--manual-pdk",
     "use_volare",
     default=True,
     help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
+)
+@click.option(
+    "--pdk-root",
+    default=os.environ.pop("PDK_ROOT", None),
+    help="Override volare PDK root folder. Required if Volare is not installed.",
+)
+@click.option(
+    "-p",
+    "--pdk",
+    type=str,
+    default=os.environ.pop("PDK", "sky130A"),
+    help="The process design kit to use.",
+)
+@click.option(
+    "-s",
+    "--scl",
+    type=str,
+    default=os.environ.pop("STD_CELL_LIBRARY", None),
+    help=f"The standard cell library to use. If None, the PDK's default standard cell library is used.",
 )
 @click.option(
     "--run-tag",
@@ -342,9 +354,12 @@ def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwarg
 
         try:
             run_in_container(
-                f"ghcr.io/efabless/openlane:{__version__}",
+                f"ghcr.io/efabless/openlane2:{__version__}",
                 ["openlane"] + argv,
-                docker_mounts,
+                pdk_root=kwargs["pdk_root"],
+                pdk=kwargs["pdk"],
+                scl=kwargs["scl"],
+                other_mounts=docker_mounts,
             )
         except subprocess.CalledProcessError as e:
             exit(e.returncode)

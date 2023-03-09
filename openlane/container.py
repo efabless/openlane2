@@ -42,14 +42,14 @@ def permission_args(cinfo: ContainerInfo) -> List[str]:
 def gui_args(osinfo: OSInfo) -> List[str]:
     args = []
     if osinfo.kernel == "Linux":
-        if os.getenv("DISPLAY") is None:
+        if os.environ.get("DISPLAY") is None:
             warn(
                 "DISPLAY environment variable not set. GUI features will not be available."
             )
         else:
             args += [
                 "-e",
-                f"DISPLAY={os.getenv('DISPLAY')}",
+                f"DISPLAY={os.environ.get('DISPLAY')}",
                 "-v",
                 "/tmp/.X11-unix:/tmp/.X11-unix",
                 "-v",
@@ -117,7 +117,10 @@ docker_ids: Set[str] = set()
 def run_in_container(
     image: str,
     args: Sequence[str],
-    other_mounts: Optional[Sequence[str]] = None,
+    pdk_root: Optional[str],
+    pdk: Optional[str],
+    scl: Optional[str],
+    other_mounts: Optional[Sequence[str]],
 ):
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
@@ -142,13 +145,22 @@ def run_in_container(
 
     mount_args += ["-v", f"{home}:{home}"]
 
-    pdk_root = volare.get_volare_home()
+    pdk_root = volare.get_volare_home(pdk_root)
     mount_args += [
         "-v",
         f"{pdk_root}:{pdk_root}",
         "-e",
         f"PDK_ROOT={pdk_root}",
     ]
+
+    if pdk is not None:
+        mount_args += ["-e", f"PDK={pdk}"]
+
+    if scl is not None:
+        mount_args += [
+            "-e",
+            f"STD_CELL_LIBRARY={scl}",
+        ]
 
     cwd = os.path.abspath(os.getcwd())
     if not cwd.startswith(home):
