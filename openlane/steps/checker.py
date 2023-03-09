@@ -19,7 +19,7 @@ from abc import abstractmethod
 from .step import Step, StepError, DeferredStepError, State
 
 from ..config import Variable
-from ..common import err, warn, log
+from ..logging import err, warn, info
 
 
 class MetricChecker(Step):
@@ -60,7 +60,7 @@ class MetricChecker(Step):
                         raise StepError(error_msg)
 
                 else:
-                    log(f"Check for {metric_description} clear.")
+                    info(f"Check for {metric_description} clear.")
             else:
                 warn(
                     f"The {metric_description} metric was not found. Are you sure the relevant step was run?"

@@ -18,7 +18,7 @@ import requests
 import subprocess
 from typing import List, Sequence, Set, Optional
 
-from .common import err, log, print, warn
+from .logging import err, info, print, warn
 from .env_info import ContainerInfo, OSInfo
 
 
@@ -184,7 +184,7 @@ def run_in_container(
         else:
             cmd_escaped.append(el)
 
-    log("Running containerized command:")
+    info("Running containerized command:")
     print(" ".join(cmd_escaped))
     subprocess.check_call(
         cmd,

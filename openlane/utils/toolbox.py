@@ -21,8 +21,9 @@ from shutil import which
 from typing import FrozenSet, Optional, Tuple
 
 from .memoize import memoize
+from ..logging import warn
 from ..config import Config
-from ..common import mkdirp, warn, get_script_dir
+from ..common import mkdirp, get_script_dir
 
 
 class Toolbox(object):

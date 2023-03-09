@@ -20,7 +20,7 @@ from typing import Union, Optional, Dict, Any
 from .design_format import DesignFormat, DesignFormatByID
 
 from ..config import Path
-from ..common import warn
+from ..logging import warn
 
 
 class StateEncoder(json.JSONEncoder):

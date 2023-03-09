@@ -24,20 +24,6 @@ all_variables = [
         "The name of the top level module of the design. This is the only required variable for all steps and all flows.",
     ),
     Variable(
-        "SYNTH_DEFINES",
-        Optional[List[str]],
-        "Synthesis defines",
-    ),
-    Variable(
-        "QUIT_ON_SYNTH_CHECKS",
-        bool,
-        (
-            "Use yosys `check -assert` at the end of synthesis. "
-            "This checks for combinational loops, conflicting drivers and wires with no drivers."
-        ),
-        default=True,
-    ),
-    Variable(
         "PDK",
         str,
         "Specifies the process design kit (PDK).",

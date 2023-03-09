@@ -48,7 +48,8 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..common import mkdirp, console, log, internal, final, slugify
+from ..logging import console, info
+from ..common import mkdirp, internal, final, slugify
 
 
 class FlowException(RuntimeError):
@@ -208,7 +209,7 @@ class Flow(ABC):
             entries = os.listdir(self.run_dir)
             if len(entries) == 0:
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
-            log(f"Using existing run at '{tag}' with the '{self.name}' flow.")
+            info(f"Using existing run at '{tag}' with the '{self.name}' flow.")
 
             # Extract maximum step ordinal
             for entry in entries:
@@ -244,7 +245,7 @@ class Flow(ABC):
                 f"Run directory for '{tag}' already exists as a file and not a directory."
             )
         except FileNotFoundError:
-            log(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
+            info(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
             mkdirp(self.run_dir)
 
         config_res_path = os.path.join(self.run_dir, "resolved.json")
@@ -296,7 +297,13 @@ class Flow(ABC):
         pass
 
     @internal
-    def run_step_async(self, step: Step, *args, **kwargs) -> Future[State]:
+    def start_step_async(
+        self,
+        step: Step,
+        toolbox: Optional[Toolbox] = None,
+        *args,
+        **kwargs,
+    ) -> Future[State]:
         """
         A helper function that may run a step asynchronously.
 
@@ -306,9 +313,14 @@ class Flow(ABC):
         See the Step initializer for more info.
 
         :param step: The step object to run
+        :param toolbox: An optional override for the flow's :class:`Toolbox`.
+            If you don't know what this means, just leave this as ``None``.
         :param args: Arguments to `step.start`
         :param kwargs: Keyword arguments to `step.start`
         """
+
+        kwargs["toolbox"] = toolbox or self.toolbox
+
         return self.tpe.submit(step.start, *args, **kwargs)
 
     @internal

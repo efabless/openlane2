@@ -28,8 +28,8 @@ from os.path import join, dirname, isdir, relpath
 from .step import Step
 from ..state import State
 from ..config import Path
-from ..common import mkdirp, log, warn
-from ..common import get_script_dir, get_openlane_root
+from ..logging import info, warn
+from ..common import mkdirp, get_script_dir, get_openlane_root
 
 
 def create_reproducible(
@@ -44,7 +44,7 @@ def create_reproducible(
     run_path_rel = os.path.relpath(run_path)
     pdk_root = env_in["PDK_ROOT"]
 
-    log(
+    info(
         textwrap.dedent(
             """\
             OpenLane TCLStep Issue Packager
@@ -62,7 +62,7 @@ def create_reproducible(
 
     # Phase 1: Set up destination folder
     destination_folder = os.path.join(step_dir, "tcl_reproducible")
-    log(f"Setting up '{destination_folder}'…")
+    info(f"Setting up '{destination_folder}'…")
 
     try:
         shutil.rmtree(destination_folder)
@@ -136,7 +136,7 @@ def create_reproducible(
         try:
             script = open(current).read()
             if verbose:
-                log(f"Processing {current}…")
+                info(f"Processing {current}…")
 
             for key, value in env.items():
                 value = str(value)
@@ -149,7 +149,7 @@ def create_reproducible(
                     accessor = use[1] or use[3]
                     env_keys_used.add(key)
                     if verbose:
-                        log(f"Found {accessor}…")
+                        info(f"Found {accessor}…")
                     value_substituted = full.replace(accessor, value)
 
                     if value_substituted.endswith(".tcl") or value_substituted.endswith(
@@ -199,7 +199,7 @@ def create_reproducible(
             warnings.append(f"Couldn't copy {frm}: {e}. Skipped.")
 
     if verbose:
-        log("\nProcessing environment variables…\n---")
+        info("\nProcessing environment variables…\n---")
 
     ol_root = get_openlane_root()
     loop_guard = 1024
@@ -210,7 +210,7 @@ def create_reproducible(
         full_value = env[key]
         final_env[key] = ""
         if verbose:
-            log(f"Processing {key}: {full_value}")
+            info(f"Processing {key}: {full_value}")
         for potential_file in full_value.split():
             potential_file_abspath = os.path.abspath(potential_file)
             if potential_file_abspath.startswith(run_path):
@@ -253,7 +253,7 @@ def create_reproducible(
                 final_env[key] += f"{potential_file} "
         final_env[key] = final_env[key].rstrip()
     if verbose:
-        log("---\n")
+        info("---\n")
 
     for warning in warnings:
         warn(warning)
@@ -342,7 +342,6 @@ class TclStep(Step):
         """
         state = super().run()
         command = self.get_command()
-        script = self.get_script_path()
 
         kwargs, env = self.extract_env(kwargs)
 
@@ -374,14 +373,10 @@ class TclStep(Step):
             filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
             env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
-        log_filename = os.path.splitext(os.path.basename(script))[0]
-        log_path = os.path.join(self.step_dir, f"{log_filename}.log")
-
         try:
             self.run_subprocess(
                 command,
                 env=env,
-                log_to=log_path,
                 **kwargs,
             )
         except subprocess.CalledProcessError:
@@ -391,7 +386,7 @@ class TclStep(Step):
                 env,
                 self.get_script_path(),
             )
-            log(
+            info(
                 f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
             )
             raise

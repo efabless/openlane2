@@ -18,10 +18,9 @@ from abc import abstractmethod
 
 from .step import Step
 from .tclstep import TclStep
+from .common_variables import constraint_variables
 from ..state import State
 from ..state import DesignFormat
-from .common_variables import constraint_variables
-
 from ..common import get_script_dir
 from ..config import Path, Variable, StringEnum
 
@@ -67,6 +66,12 @@ class Synthesis(YosysStep):
             "VERILOG_FILES",
             List[Path],
             "The paths of the design's Verilog files.",
+        ),
+        Variable(
+            "QUIT_ON_SYNTH_CHECKS",
+            bool,
+            "Use yosys `check -assert` at the end of synthesis. This checks for combinational loops, conflicting drivers and wires with no drivers.",
+            default=True,
         ),
         Variable(
             "SYNTH_AUTONAME",

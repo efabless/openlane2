@@ -22,69 +22,6 @@ import typing
 import pathlib
 import unicodedata
 
-import rich.console
-
-console = rich.console.Console()
-
-
-def print(*args, **kwargs):
-    """
-    Prints to the terminal without formatting.
-
-    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
-    """
-    console.print(*args, **kwargs)
-
-
-def log(*args, **kwargs):
-    """
-    Prints to the terminal with automatic rich formatting.
-
-    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.log
-    """
-    if kwargs.get("_stack_offset") is None:
-        kwargs["_stack_offset"] = 2
-    console.log(*args, **kwargs)
-
-
-def rule(*args, **kwargs):
-    """
-    Prints a horizontal line on the terminal.
-
-    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.rule
-    """
-    console.rule(*args, **kwargs)
-
-
-def success(printable, *args, **kwargs):
-    """
-    Logs an item to the terminal with a success unicode character and
-    green/bold formatting.
-    """
-    if kwargs.get("_stack_offset") is None:
-        kwargs["_stack_offset"] = 2
-    log(f"⭕ [green][bold] {printable}", *args, **kwargs)
-
-
-def warn(printable, *args, **kwargs):
-    """
-    Logs an item to the terminal with a warning unicode character and
-    gold/bold formatting.
-    """
-    if kwargs.get("_stack_offset") is None:
-        kwargs["_stack_offset"] = 2
-    log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
-
-
-def err(printable, *args, **kwargs):
-    """
-    Logs an item to the terminal with a warning unicode character and
-    gold/bold formatting.
-    """
-    if kwargs.get("_stack_offset") is None:
-        kwargs["_stack_offset"] = 2
-    log(f"❌ [red][bold] {printable}", *args, **kwargs)
-
 
 def mkdirp(path: typing.Union[str, os.PathLike]):
     """

@@ -19,8 +19,9 @@ from base64 import b64encode
 from .step import Step, StepError
 from ..state import DesignFormat, State
 
+from ..logging import warn
 from ..config import Path, Variable
-from ..common import get_script_dir, warn
+from ..common import get_script_dir
 
 
 @Step.factory.register()
@@ -107,7 +108,6 @@ class StreamOut(Step):
                 self.config["DESIGN_NAME"],
             ]
             + layout_args,
-            log_to=os.path.join(self.step_dir, "stream-out.log"),
             env=env,
         )
 
@@ -193,7 +193,6 @@ class XOR(Step):
                 layout_a,
                 layout_b,
             ],
-            log_to=os.path.join(self.step_dir, "xor.log"),
             env=env,
         )
 

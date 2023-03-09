@@ -130,3 +130,5 @@ set ::env(CLOCK_TREE_SYNTH) 0
 
 # magic extraction issues
 set ::env(MAGIC_DEF_LABELS) 0
+
+set ::env(QUIT_ON_SYNTH_CHECKS) 0

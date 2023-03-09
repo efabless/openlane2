@@ -27,7 +27,7 @@ from .flow import removed_variables, all_variables as flow_common_variables
 from .tcleval import env_from_tcl
 from .config import Config, Meta
 from .variable import Variable
-from ..common import log, warn
+from ..logging import info, warn
 
 
 class InvalidConfig(ValueError):
@@ -128,7 +128,7 @@ class ConfigBuilder(object):
             raise InvalidConfig("default configuration", design_warnings, design_errors)
 
         if len(design_warnings) > 0:
-            log(
+            info(
                 "Loading the default configuration has generated the following warnings:"
             )
         for warning in design_warnings:
@@ -315,7 +315,7 @@ class ConfigBuilder(object):
             )
 
         if len(design_warnings) > 0:
-            log(
+            info(
                 "Loading the design configuration file has generated the following warnings:"
             )
         for warning in design_warnings:
@@ -402,7 +402,7 @@ class ConfigBuilder(object):
             )
 
         if len(design_warnings) > 0:
-            log(
+            info(
                 "Loading the design configuration file has generated the following warnings:"
             )
         for warning in design_warnings:
@@ -485,7 +485,7 @@ class ConfigBuilder(object):
 
         if len(pdk_warnings) > 0:
             if full_pdk_warnings:
-                log(
+                info(
                     "Loading the PDK configuration files has generated the following warnings:"
                 )
                 for warning in pdk_warnings:
