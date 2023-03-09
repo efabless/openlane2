@@ -75,8 +75,8 @@ class OdbReader(object):
 
 def click_odb(function):
     @functools.wraps(function)
-    def wrapper(input_odb, input_lefs, **kwargs):
-        reader = OdbReader(input_odb)
+    def wrapper(input_db, input_lefs, **kwargs):
+        reader = OdbReader(input_db)
 
         signature = inspect.signature(function)
         parameter_keys = signature.parameters.keys()
@@ -93,11 +93,11 @@ def click_odb(function):
         kwargs = {k: kwargs[k] for k in kwargs.keys() if not k.startswith("output_")}
 
         if "input_db" in parameter_keys:
-            kwargs["input_db"] = input_odb
+            kwargs["input_db"] = input_db
         if "input_lefs" in parameter_keys:
             kwargs["input_lefs"] = input_lefs
 
-        if input_odb.endswith(".def"):
+        if input_db.endswith(".def"):
             print(
                 "Error: Invocation was not updated to use an odb file.", file=sys.stderr
             )
@@ -127,6 +127,6 @@ def click_odb(function):
         help="LEF file needed to have a proper view of the DEF files",
         multiple=True,
     )(wrapper)
-    wrapper = click.option("--input-odb")(wrapper)
+    wrapper = click.argument("input_db")(wrapper)
 
     return wrapper
