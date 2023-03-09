@@ -168,6 +168,15 @@ class DisconnectedPins(Step):
     flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
     name = "Disconnected Pins Checker"
 
+    config_vars = [
+        Variable(
+            "QUIT_ON_DISCONNECTED_PINS",
+            bool,
+            "Checks for disconnected instance pins.",
+            default=True,
+        ),
+    ]
+
     def run(
         self,
         **kwargs,

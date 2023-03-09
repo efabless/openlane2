@@ -153,12 +153,6 @@ all_variables = [
         "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
         default=False,
     ),
-    Variable(
-        "QUIT_ON_DISCONNECTED_PINS",
-        bool,
-        "Checks for disconnected instance pins.",
-        default=True,
-    ),
 ]
 removed_variables: Dict[str, str] = {
     "PL_RANDOM_GLB_PLACEMENT": "The random global placer no longer yields a tangible benefit with newer versions of OpenROAD.",
