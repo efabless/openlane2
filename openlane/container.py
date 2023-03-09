@@ -85,7 +85,7 @@ def remote_manifest_exists(image: str) -> bool:
         request = requests.get(url, headers={"Accept": "application/json"})
         request.raise_for_status()
     except requests.exceptions.ConnectionError:
-        err("Couldn't connect to the internet to pull Docker images.")
+        err("Couldn't connect to the internet to pull container images.")
         return False
     except requests.exceptions.HTTPError:
         err(
@@ -96,9 +96,6 @@ def remote_manifest_exists(image: str) -> bool:
 
 
 def ensure_image(image: str) -> bool:
-    if image.startswith("docker.io/"):
-        image = image.split("/", maxsplit=1)[1]
-
     if image_exists(image):
         return True
 
@@ -108,7 +105,7 @@ def ensure_image(image: str) -> bool:
     try:
         subprocess.check_call(["docker", "pull", image])
     except subprocess.CalledProcessError:
-        err(f"Failed to pull image {image} from the Docker registries.")
+        err(f"Failed to pull image {image} from the container registries.")
         return False
 
     return True

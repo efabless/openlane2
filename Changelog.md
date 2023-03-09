@@ -1,3 +1,7 @@
+# 2.0.0-a1
+* Update smoke test
+* Fix bug with default variables
+
 # 2.0.0-dev15
 
 * `log` -> `info`

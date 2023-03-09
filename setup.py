@@ -23,10 +23,12 @@ setup(
             "scripts/*",
             "scripts/**/*",
             "scripts/**/**/*",
+            "smoke_test_design/*",
+            "smoke_test_design/**/*",
         ]
     },
     version=version,
-    description="A full open source RTL to GDSII flow",
+    description="An infrastructure for implementing chip design flows",
     long_description=open("Readme.md").read(),
     long_description_content_type="text/markdown",
     author="Efabless Corporation and Contributors",

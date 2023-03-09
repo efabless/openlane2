@@ -66,7 +66,7 @@ class ContainerInfo(StringRepresentable):
             try:
                 info = json.loads(info_str)
             except Exception:
-                raise Exception("Docker info was not valid JSON.")
+                raise Exception("Result from 'docker info' was not valid JSON.")
 
             if info.get("host") is not None:
                 if info["host"].get("conmon") is not None:

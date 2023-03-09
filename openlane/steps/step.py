@@ -444,7 +444,7 @@ class Step(ABC):
         if "stderr" not in kwargs:
             kwargs["stderr"] = subprocess.STDOUT
         process = subprocess.Popen(
-            cmd,
+            cmd_str,
             encoding="utf8",
             **kwargs,
         )

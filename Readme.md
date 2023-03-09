@@ -1,4 +1,7 @@
-<h1 align="center">OpenLane 2.0</h1>
+> OpenLane 2 is in early access and all APIs are, presently, highly unstable and subject to change without notice.
+> If you don't know why you're here, you're probably looking for the previous version of OpenLane at https://github.com/The-OpenROAD-Project/OpenLane.
+
+<h1 align="center">OpenLane</h1>
 <p align="center">
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"/></a>
     <a href="https://openlane.readthedocs.io/"><img src="https://readthedocs.org/projects/openlane/badge/?version=latest" alt="Documentation Build Status Badge"/></a>
@@ -38,7 +41,14 @@ You'll need the following:
 * A reasonably modern version of OpenROAD from https://github.com/The-OpenROAD-Project/OpenROAD
 * A reasonably modern version of Magic from https://github.com/RTimothyEdwards/Magic
 * A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
+* KLayout 0.28.5+ from https://github.com/KLayout/klayout
 * Python **3.8** or higher with PIP, Venv and Python-Tk
+
+### Docker
+TBD
+
+### Conda
+TBD
 
 ### Nix
 * Install [Nix](https://nixos.org/download.html). \[Package manager. Takes around 3 minutes.\]
@@ -52,10 +62,10 @@ You'll need the following:
 
 That's it. Whenever you want to use OpenLane, `nix-shell` in the repository root directory and you'll have a full OpenLane environment. The first time might take around 10 minutes while binaries are pulled from the cache.
 
-To quickly test your installation, simply run `openlane ./designs/spm/config.json`.
+To quickly test your installation, simply run `openlane --smoke-test`.
 
 ### Other Methods
-You'll need to compile the above tools. We're planning to support Conda down the line.
+You'll need to bring your own compiled tools.
 
 To set up the Python deps, simply type `make venv` to create a virtual environment 
 with all the Python dependencies installed. To activate the virtual environment,

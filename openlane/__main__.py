@@ -195,7 +195,12 @@ def run_smoke_test(
             + [os.path.join(final_path, "config.json")]
         )
 
-        subprocess.check_call(cmd)
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError:
+            print("")
+            err("Smoke test failed.")
+            ctx.exit(-1)
 
     ctx.exit(0)
 
@@ -337,7 +342,7 @@ def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwarg
 
         try:
             run_in_container(
-                f"docker.io/donnio/openlane:{__version__}",
+                f"ghcr.io/efabless/openlane:{__version__}",
                 ["openlane"] + argv,
                 docker_mounts,
             )
