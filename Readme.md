@@ -73,10 +73,10 @@ export PATH="/home/test/.local/bin:$PATH"
 Do note that the path (`/home/test/.local/bin` in this example) varies depending on your operating system and version of Python you install, and whether you use `sudo` (absolutely not recommended) or not, so ensure that you actually read the warning and add the correct path.
 
 ### Nix
-See [Nix-based installation](https://openlane.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
+See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
 
 ### Docker
-See [Docker-based installation](https://openlane.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
+See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
 
 ### Conda
 TBD
