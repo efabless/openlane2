@@ -200,7 +200,7 @@ class WireLength(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "route__max__wirelength"
+        return "route__wirelength__max"
 
     def get_metric_description(self) -> str:
         return "Threshold-surpassing long wires"
