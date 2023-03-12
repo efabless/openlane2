@@ -16,6 +16,8 @@
 set ::env(PDK) "sky130A"
 set ::env(STD_CELL_LIBRARY) "sky130_fd_sc_hd"
 
+set script_dir $::env(DESIGN_DIR)
+
 # This makes sure that the core rings are outside the boundaries
 # of your block.
 set ::env(MAGIC_ZEROIZE_ORIGIN) 0
@@ -27,7 +29,7 @@ set ::env(DIE_AREA) "0 0 2920 3520"
 set ::env(RUN_CVC) 0
 
 # Pin Configurations. DON'T TOUCH
-set ::env(FP_PIN_ORDER_CFG) $::env(DESIGN_DIR)/pin_order.cfg
+set ::env(FP_PIN_ORDER_CFG) $script_dir/pin_order.cfg
 
 set ::unit 2.4
 set ::env(FP_IO_VEXTEND) [expr 2*$::unit]
@@ -55,8 +57,6 @@ set ::env(FP_PDN_HSPACING) [expr 5*$::env(FP_PDN_CORE_RING_HWIDTH)]
 set ::env(VDD_NETS) [list {vccd1} {vccd2} {vdda1} {vdda2}]
 set ::env(GND_NETS) [list {vssd1} {vssd2} {vssa1} {vssa2}]
 set ::env(SYNTH_USE_PG_PINS_DEFINES) "USE_POWER_PINS"
-#set ::env(SYNTH_POWER_DEFINE) "USE_POWER_PINS"
-#set ::env(SYNTH_DEFINES) "USE_POWER_PINS"
 set ::env(QUIT_ON_SYNTH_CHECKS) 0
 
 # PDN Pitch
@@ -74,8 +74,8 @@ set ::env(DESIGN_NAME) user_project_wrapper
 
 ## Source Verilog Files
 set ::env(VERILOG_FILES) "\
-    $::env(DESIGN_DIR)/src/defines.v \
-    $::env(DESIGN_DIR)/src/user_project_wrapper.v"
+    $script_dir/src/defines.v \
+    $script_dir/src/user_project_wrapper.v"
 
 ## Clock configurations
 set ::env(CLOCK_PORT) "user_clock2"
@@ -90,21 +90,21 @@ set ::env(CLOCK_PERIOD) "10"
 #    mprj2 vccd2 vssd2 vccd2 vssd2"
 
 ### Macro Placement
-set ::env(MACRO_PLACEMENT_CFG) $::env(DESIGN_DIR)/macro.cfg
+set ::env(MACRO_PLACEMENT_CFG) $script_dir/macro.cfg
 
 ### Black-box verilog and views
 set ::env(VERILOG_FILES_BLACKBOX) "\
-    $::env(DESIGN_DIR)/src/defines.v\
-    $::env(DESIGN_DIR)/src/user_proj_example.v\
-    $::env(DESIGN_DIR)/src/user_proj_example2.v"
+    $script_dir/src/defines.v\
+    $script_dir/src/user_proj_example.v\
+    $script_dir/src/user_proj_example2.v"
 
 set ::env(EXTRA_LEFS) "\
-    $::env(DESIGN_DIR)/macros/user_proj_example.lef\
-    $::env(DESIGN_DIR)/macros/user_proj_example2.lef"
+    $script_dir/macros/user_proj_example.lef\
+    $script_dir/macros/user_proj_example2.lef"
 
 set ::env(EXTRA_GDS_FILES) "\
-    $::env(DESIGN_DIR)/macros/user_proj_example.gds\
-    $::env(DESIGN_DIR)/macros/user_proj_example2.gds"
+    $script_dir/macros/user_proj_example.gds\
+    $script_dir/macros/user_proj_example2.gds"
 
 set ::env(RT_MAX_LAYER) {met4}
 

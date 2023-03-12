@@ -41,12 +41,14 @@ def has_disconnect(instance):
     )
 
 
-@click.option("--ignore-master", default="", type=str, help="Master cells to ignore")
+@click.option(
+    "--ignore-module", default=[""], multiple=True, type=str, help="Modules to ignore"
+)
 @click.command()
 @click_odb
 def main(
     reader: OdbReader,
-    ignore_master: List[str],
+    ignore_module: List[str],
 ):
     db = reader.db
     block = db.getChip().getBlock()
@@ -60,7 +62,7 @@ def main(
         instance
         for instance in instances
         if has_disconnect(instance)
-        and (instance.getMaster().getName() not in ignore_master)
+        and (instance.getMaster().getName() not in ignore_module)
     ]
 
     for instance in instances_with_disconnect:
