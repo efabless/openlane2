@@ -228,7 +228,7 @@ class LVS(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "netgen__total__errors"
+        return "design__lvs_errors__count"
 
     def get_metric_description(self) -> str:
         return "LVS errors"
