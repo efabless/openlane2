@@ -98,7 +98,7 @@ def main(
     rich.print(table)
 
     utl.metric_integer(
-        "design__instance__count__disconnected_pins", disconnected_pins_count
+        "design__disconnected_pins__count", disconnected_pins_count
     )
 
 

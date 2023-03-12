@@ -163,11 +163,11 @@ class IllegalOverlap(MetricChecker):
 
 
 @Step.factory.register()
-class DisconnectedPins(Step):
+class DisconnectedPins(MetricChecker):
     id = "Checker.DisconnectedPins"
     flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
     name = "Disconnected Pins Checker"
-
+    deferred = False
     config_vars = [
         Variable(
             "QUIT_ON_DISCONNECTED_PINS",
@@ -177,26 +177,11 @@ class DisconnectedPins(Step):
         ),
     ]
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        state_out = super().run()
-        if (
-            disconnected_pins_count := state_out.metrics.get(
-                "design__instance__count__disconnected_pins"
-            )
-        ) is None:
-            warn(
-                "Disconnected pins not reported. Odb.ReportDisconnectedPins didn't run"
-            )
-        elif disconnected_pins_count > 0:
-            error_msg = (
-                f"{disconnected_pins_count} disconnected pins found. Likely there are lvs errors."
-                + "Check disconnected pins logs."
-            )
-            raise StepError(error_msg)
-        return state_out
+    def get_metric_name(self) -> str:
+        return "design__disconnected_pins__count"
+
+    def get_metric_description(self) -> str:
+        return "Disconnected pins count"
 
 
 @Step.factory.register()
@@ -204,9 +189,6 @@ class WireLength(MetricChecker):
     id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
-
-    metric_name = "route__max__wirelength"
-    metric_description = "Threshold-surpassing long wires"
 
     config_vars = [
         Variable(
@@ -250,6 +232,3 @@ class LVS(MetricChecker):
 
     def get_metric_description(self) -> str:
         return "LVS errors"
-
-    def get_threshold(self) -> Optional[Decimal]:
-        return Decimal(0)
