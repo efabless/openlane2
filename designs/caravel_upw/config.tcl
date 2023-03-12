@@ -57,7 +57,6 @@ set ::env(FP_PDN_HSPACING) [expr 5*$::env(FP_PDN_CORE_RING_HWIDTH)]
 set ::env(VDD_NETS) [list {vccd1} {vccd2} {vdda1} {vdda2}]
 set ::env(GND_NETS) [list {vssd1} {vssd2} {vssa1} {vssa2}]
 set ::env(SYNTH_USE_PG_PINS_DEFINES) "USE_POWER_PINS"
-set ::env(QUIT_ON_SYNTH_CHECKS) 0
 
 # PDN Pitch
 set ::env(FP_PDN_VPITCH) 180
@@ -82,12 +81,6 @@ set ::env(CLOCK_PORT) "user_clock2"
 set ::env(CLOCK_NET) "mprj1.clk"
 
 set ::env(CLOCK_PERIOD) "10"
-
-## Internal Macros
-### Macro PDN Connections
-#set ::env(FP_PDN_MACRO_HOOKS) "\
-#    mprj1 vccd1 vssd1 vccd1 vssd1,\
-#    mprj2 vccd2 vssd2 vccd2 vssd2"
 
 ### Macro Placement
 set ::env(MACRO_PLACEMENT_CFG) $script_dir/macro.cfg

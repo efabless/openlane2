@@ -17,6 +17,7 @@
 from typing import List
 
 import click
+import odb
 import rich
 import rich.table
 
@@ -25,15 +26,15 @@ from reader import click_odb, OdbReader
 import utl
 
 
-def is_connected(iterm):
+def is_connected(iterm: odb.dbITerm) -> bool:
     return iterm.getNet() is not None
 
 
-def is_special(iterm):
+def is_special(iterm: odb.dbITerm) -> bool:
     return iterm.getSigType() == "POWER" or iterm.getSigType() == "GROUND"
 
 
-def has_disconnect(instance):
+def has_disconnect(instance: odb.dbInst) -> bool:
     return (
         True
         if [iterm for iterm in instance.getITerms() if not is_connected(iterm)]

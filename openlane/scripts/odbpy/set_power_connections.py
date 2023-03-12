@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from collections import namedtuple
+from typing import List
 import json
 import re
 
+import odb
+
 from rich import print
 from rich.table import Table
-import odb
 import utl
 
 
@@ -31,7 +33,7 @@ Instance = namedtuple(
 )
 
 
-def is_power(db, module_name, pin_name):
+def is_power(db: odb.dbDatabase, module_name: str, pin_name: str) -> bool:
     master = db.findMaster(module_name)
     if master is None:
         return False
@@ -40,7 +42,7 @@ def is_power(db, module_name, pin_name):
     return pin.getSigType() == "POWER"
 
 
-def is_ground(db, module_name, pin_name):
+def is_ground(db: odb.dbDatabase, module_name: str, pin_name: str) -> bool:
     master = db.findMaster(module_name)
     if master is None:
         return False
@@ -53,13 +55,13 @@ def is_ground(db, module_name, pin_name):
     return pin.getSigType() == "GROUND"
 
 
-def is_bus(pin_connections):
+def is_bus(pin_connections: List) -> bool:
     return len(pin_connections) > 1
 
 
-def extract_net_name(design_json, design_name, connection_bit):
+def extract_net_name(design_dict: dict, design_name: str, connection_bit: List) -> str:
     assert len(connection_bit) == 1
-    nets = design_json["modules"][design_name]["netnames"]
+    nets = design_dict["modules"][design_name]["netnames"]
     net = next(
         wire_name
         for wire_name in nets.keys()
@@ -68,8 +70,10 @@ def extract_net_name(design_json, design_name, connection_bit):
     return net
 
 
-def extract_power_pins(db, design_json, design_name, cell_name):
-    cells = design_json["modules"][design_name]["cells"]
+def extract_power_pins(
+    db: odb.dbDatabase, design_dict: dict, design_name: str, cell_name: str
+) -> dict:
+    cells = design_dict["modules"][design_name]["cells"]
     module = cells[cell_name]["type"]
     non_bus_pins = {
         pin_name: cells[cell_name]["connections"][pin_name]
@@ -83,14 +87,16 @@ def extract_power_pins(db, design_json, design_name, cell_name):
     }
     for pin_name in power_pins.keys():
         connection_bit = power_pins[pin_name]
-        net = extract_net_name(design_json, design_name, connection_bit)
+        net = extract_net_name(design_dict, design_name, connection_bit)
         power_pins[pin_name] = net
 
     return power_pins
 
 
-def extract_ground_pins(db, design_json, design_name, cell_name):
-    cells = design_json["modules"][design_name]["cells"]
+def extract_ground_pins(
+    db: odb.dbDatabase, design_dict: dict, design_name: str, cell_name: str
+) -> dict:
+    cells = design_dict["modules"][design_name]["cells"]
     module = cells[cell_name]["type"]
     non_bus_pins = {
         pin_name: cells[cell_name]["connections"][pin_name]
@@ -104,19 +110,21 @@ def extract_ground_pins(db, design_json, design_name, cell_name):
     }
     for pin_name in ground_pins.keys():
         connection_bit = ground_pins[pin_name]
-        net = extract_net_name(design_json, design_name, connection_bit)
+        net = extract_net_name(design_dict, design_name, connection_bit)
         ground_pins[pin_name] = net
 
     return ground_pins
 
 
-def extract_instances(db, design_json, design_name):
+def extract_instances(
+    db: odb.dbDatabase, design_dict: dict, design_name: str
+) -> List[Instance]:
     instances = []
-    cells = design_json["modules"][design_name]["cells"]
+    cells = design_dict["modules"][design_name]["cells"]
     for cell_name in cells.keys():
         module = cells[cell_name]["type"]
-        power_pins = extract_power_pins(db, design_json, design_name, cell_name)
-        ground_pins = extract_ground_pins(db, design_json, design_name, cell_name)
+        power_pins = extract_power_pins(db, design_dict, design_name, cell_name)
+        ground_pins = extract_ground_pins(db, design_dict, design_name, cell_name)
         instances.append(
             Instance(
                 name=cell_name,
@@ -185,13 +193,13 @@ def cli(input_db, input_json, reader: OdbReader):
     grid = Table.grid("message", "instance", "pin", "net", expand=False)
 
     design_str = open(input_json).read()
-    design_json = json.loads(design_str)
+    design_dict = json.loads(design_str)
 
     db = reader.db
     chip = db.getChip()
     design_name = chip.getBlock().getName()
 
-    instances = extract_instances(db, design_json, design_name)
+    instances = extract_instances(db, design_dict, design_name)
     for instance in instances:
         for pin in instance.power_connections.keys():
             net_name = instance.power_connections[pin]
