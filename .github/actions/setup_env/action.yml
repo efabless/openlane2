@@ -3,11 +3,6 @@ description: Sets up the repo and a number of environment variables that are use
 runs:
   using: "composite"
   steps:
-    - name: Check out Git repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-
     - name: Export Repo URL
       shell: bash
       run: echo "REPO_URL=https://github.com/${{ github.repository }}.git" >> $GITHUB_ENV

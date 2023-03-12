@@ -12,6 +12,10 @@ jobs:
     name: Lint
     runs-on: ubuntu-22.04
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup_env
       - name: Install Linters
@@ -32,6 +36,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Build (Nix on ${{ matrix.os }})
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup_env
       - name: Setup Nix
@@ -66,6 +74,10 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
     name: Build (Python ${{ matrix.python-version }})
     steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup_env
       - name: Set Up Python
