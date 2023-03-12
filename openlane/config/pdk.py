@@ -45,7 +45,6 @@ pdk_variables = [
         Optional[Decimal],
         "A value above which wire lengths generate warnings. If `QUIT_ON_LONG_WIRE` is set, the flow will error out instead of simply generating a warning.",
         units="µm",
-        default=1,
     ),
     Variable(
         "TECH_LEF",

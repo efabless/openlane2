@@ -195,7 +195,7 @@ class WireLength(MetricChecker):
             "QUIT_ON_LONG_WIRE",
             bool,
             "Exits the flow if any wire length exceeds the threshold set in the PDK.",
-            default=True,
+            default=False,
         ),
     ]
 
