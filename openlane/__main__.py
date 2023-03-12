@@ -206,7 +206,7 @@ def run_smoke_test(
     ctx.exit(0)
 
 
-click.option = partial(click.option, show_default=True)
+o = partial(click.option, show_default=True)
 
 
 @click.command(
@@ -228,7 +228,7 @@ click.option = partial(click.option, show_default=True)
         """
     ).strip(),
 )
-@click.option(
+@o(
     "--bare-version",
     is_flag=True,
     is_eager=True,
@@ -236,20 +236,20 @@ click.option = partial(click.option, show_default=True)
     callback=print_bare_version,
     hidden=True,
 )
-@click.option(
+@o(
     "--dockerized/--native",
     is_eager=True,
     default=False,
     help="Run OpenLane primarily using a Docker container. Some caveats apply.",
 )
-@click.option(
+@o(
     "--docker-mount",
     "docker_mounts",
     multiple=True,
     default=[],
     help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
 )
-@click.option(
+@o(
     "-f",
     "--flow",
     "flow_name",
@@ -257,38 +257,38 @@ click.option = partial(click.option, show_default=True)
     default=None,
     help="The built-in OpenLane flow to use",
 )
-@click.option(
+@o(
     "--volare-pdk/--manual-pdk",
     "use_volare",
     default=True,
     help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
 )
-@click.option(
+@o(
     "--pdk-root",
     default=os.environ.pop("PDK_ROOT", None),
     help="Override volare PDK root folder. Required if Volare is not installed.",
 )
-@click.option(
+@o(
     "-p",
     "--pdk",
     type=str,
     default=os.environ.pop("PDK", "sky130A"),
     help="The process design kit to use.",
 )
-@click.option(
+@o(
     "-s",
     "--scl",
     type=str,
     default=os.environ.pop("STD_CELL_LIBRARY", None),
-    help=f"The standard cell library to use. If None, the PDK's default standard cell library is used.",
+    help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
 )
-@click.option(
+@o(
     "--run-tag",
     default=None,
     type=str,
     help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
 )
-@click.option(
+@o(
     "-I",
     "--with-initial-state",
     "initial_state_json",
@@ -296,7 +296,7 @@ click.option = partial(click.option, show_default=True)
     default=None,
     help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
 )
-@click.option(
+@o(
     "-c",
     "--override-config",
     "config_override_strings",
@@ -304,20 +304,20 @@ click.option = partial(click.option, show_default=True)
     multiple=True,
     help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
 )
-@click.option(
+@o(
     "--smoke-test",
     is_flag=True,
     help="Runs a basic OpenLane smoke test.",
     expose_value=False,
     callback=run_smoke_test,
 )
-@click.option(
+@o(
     "--last-run",
     is_flag=True,
     default=False,
     help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
 )
-@click.option(
+@o(
     "-F",
     "--from",
     "frm",
@@ -325,14 +325,14 @@ click.option = partial(click.option, show_default=True)
     default=None,
     help="Start from a step with this id. Supported by sequential flows.",
 )
-@click.option(
+@o(
     "-T",
     "--to",
     type=str,
     default=None,
     help="Stop at a step with this id. Supported by sequential flows.",
 )
-@click.option(
+@o(
     "--log-level",
     type=str,
     default="VERBOSE",

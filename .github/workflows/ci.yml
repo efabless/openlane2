@@ -1,0 +1,82 @@
+name: CI
+
+# Events that trigger workflow
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Install Linters
+        run: make venv
+      - name: Lint
+        run: make lint
+      - name: Tag Commit
+        if: ${{ env.PUBLISH == '1' }}
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          tag: "${{ env.NEW_TAG }}"
+          repo-token: "${{ secrets.GH_TOKEN }}"
+  build-nix:
+    needs: lint
+    strategy:
+      matrix:
+        os: ["ubuntu-22.04", "macos-12"]
+    runs-on: ${{ matrix.os }}
+    name: Build (Nix on ${{ matrix.os }})
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_token: ${{ secrets.CACHIX_TOKEN }}
+      - name: Build
+        run: |
+          nix-build
+      - name: Push
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          nix-build | cachix push openlane
+      - name: Auth (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        run: |
+          nix-build docker.nix | docker load
+          docker push ghcr.io/${{ github.repository }}:$TAG
+  build-py:
+    runs-on: ubuntu-22.04
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+    name: Build (Python ${{ matrix.python-version }})
+    steps:
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build Distribution
+        run: |
+          make dist
+      - name: Publish
+        if: ${{ matrix.python-version == '3.8' && env.PUBLISH == '1' }}
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
