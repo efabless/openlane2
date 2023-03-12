@@ -51,7 +51,23 @@ class JsonHeader(YosysStep):
             Optional[str],
             "Specifies the name of the define used to guard power and ground connections",
             deprecated_names=["SYNTH_USE_PG_PINS_DEFINES"],
-        )
+        ),
+        Variable(
+            "SYNTH_DEFINES",
+            Optional[List[str]],
+            "Synthesis defines",
+        ),
+        Variable(
+            "SYNTH_READ_BLACKBOX_LIB",
+            bool,
+            "A flag that enable reading the full (untrimmed) liberty file as a blackbox for synthesis. Please note that this is not used in technology mapping. This should only be used when trying to preserve gate instances in the rtl of the design.",
+            default=False,
+        ),
+        Variable(
+            "VERILOG_FILES",
+            List[Path],
+            "The paths of the design's Verilog files.",
+        ),
     ]
 
 
