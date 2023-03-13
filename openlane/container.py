@@ -73,13 +73,26 @@ def image_exists(image: str) -> bool:
 
 
 def remote_manifest_exists(image: str) -> bool:
+    registry = "docker.io"
+    image_elements = image.split("/", maxsplit=1)
+    if len(image_elements) > 1:
+        registry = image_elements[0]
+        image = image_elements[1]
     elements = image.split(":")
     repo = elements[0]
     tag = "latest"
     if len(elements) > 1:
         tag = elements[1]
 
-    url = f"https://registry.hub.docker.com/v2/repositories/{repo}/tags/{tag}"
+    url = None
+    if registry == "docker.io":
+        url = f"https://registry.hub.docker.com/v2/repositories/{repo}/tags/{tag}"
+    elif registry == "ghcr.io":
+        url = f"https://ghcr.io/v2/{repo}/manifests/{tag}"
+        print(url)
+    else:
+        err(f"Unknown registry '{registry}'.")
+        return False
 
     try:
         request = requests.get(url, headers={"Accept": "application/json"})
@@ -98,9 +111,6 @@ def remote_manifest_exists(image: str) -> bool:
 def ensure_image(image: str) -> bool:
     if image_exists(image):
         return True
-
-    if not remote_manifest_exists(image):
-        return False
 
     try:
         subprocess.check_call(["docker", "pull", image])
