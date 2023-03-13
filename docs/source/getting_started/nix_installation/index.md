@@ -8,7 +8,11 @@ Or more simply, on Ubuntu, run the following in your Terminal:
 
 ```sh
 sudo apt-get install -y curl
-sh <(curl -L https://nixos.org/nix/install) --daemon
+sh <(curl -L https://nixos.org/nix/install) --no-daemon
+```
+
+```{note}
+On systemd-based Linux systems, you can replace `--no-daemon` with `--daemon`.
 ```
 
 Or on macOS:
@@ -25,6 +29,25 @@ Make sure to close all terminals after you're done with this step.
 Cachix allows the reproducible Nix builds to be stored on a cloud server so you do not have to build OpenLane's dependencies from scratch on every computer, which will take a long time.
 
 First, you want to install Cachix by running the following in your terminal:
+
+```sh
+nix-env -iA cachix
+```
+
+Then set up the OpenLane binary cache as follows:
+
+```sh
+cachix use openlane
+```
+
+``````{note}
+If `cachix use openlane` fails, re-run it as follows:
+
+```sh
+sudo env PATH="$PATH" cachix use openlane
+```
+
+``````
 
 ### Cloning OpenLane
 With git installed, just run the following:
