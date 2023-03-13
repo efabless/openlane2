@@ -68,7 +68,7 @@ jobs:
       - name: Build and Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          nix-build docker.nix | docker load
+          $(nix-build docker.nix) | docker load
           docker push ghcr.io/${{ github.repository }}:$TAG
   build-py:
     runs-on: ubuntu-22.04
@@ -88,11 +88,30 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Smoke Test
+        run: |
+          make venv
+          ./venv/bin/python3 -m openlane --version
+  publish-py:
+    runs-on: ubuntu-22.04
+    needs: lint
+    name: Publish (PyPI)
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
       - name: Build Distribution
         run: |
           make dist
       - name: Publish
-        if: ${{ matrix.python-version == '3.8' && env.PUBLISH == '1' }}
+        if: ${{ env.PUBLISH == '1' }}
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
