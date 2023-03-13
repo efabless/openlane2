@@ -15,12 +15,11 @@
 # limitations under the License.
 import os
 import sys
+import subprocess
 
 from gh import gh
 
 sys.path.insert(0, os.getcwd())
-
-import openlane  # noqa: E402
 
 print("Getting tags…")
 
@@ -28,12 +27,15 @@ latest_tag = None
 latest_tag_commit = None
 tags = [pair[1] for pair in gh.openlane.tags]
 
-tag_exists = openlane.__version__ in tags
+version = subprocess.check_output(
+    ["python3", "./openlane/__version__.py"], encoding="utf8"
+)
+tag_exists = version in tags
 
 if tag_exists:
     print("Tag already exists. Leaving NEW_TAG unaltered.")
 else:
-    new_tag = openlane.__version__
+    new_tag = version
 
     print("Found new tag %s." % new_tag)
     gh.export_env("NEW_TAG", new_tag)
