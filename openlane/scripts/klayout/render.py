@@ -141,7 +141,7 @@ try:
     with open(output, "wb") as f:
         f.write(pixels.to_png_data())
 
-    exit(0)
+    pya.Application.instance().exit(0)
 except Exception as e:
     print(e)
-    exit(1)
+    pya.Application.instance().exit(1)
