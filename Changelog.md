@@ -1,3 +1,28 @@
+# 2.0.0-dev16
+* Remove `FP_PDN_MACRO_HOOKS` for `caravel_upw`
+* Disable `QUIT_ON_SYNTH_CHECKS` for `caravel_upw`
+* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINES`
+* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`
+* Add `IGNORE_DISCONNECTED_MODULES` for `disconnected_pins.py`. Ignoring some cells is necessary for example conb cell in sky130
+* Add `./openlane/scripts/odbpy/disconnected_pins.py` that reports disconnected instance pins in the design
+* Add `./openlane/scripts/odbpy/set_power_connections.py`
+* Rename metrics:
+    - `route__max__wirelength` -> `route__wirelength__max`
+    - `die__area` -> `design__die__bbox`
+    - `core__area` -> `design__core__bbox`
+    - `lvs__total__errors` -> `design__lvs_errors__count`
+    - `lvs__device_count_difference` -> `design__lvs_device_difference__count`
+    - `lvs__net_count_differences` -> `design__lvs_net_differences__count`
+    - `lvs__property_fails` -> `design__lvs_property_fails__count`
+    - `lvs__unmatched_devices` -> `design__lvs_unmatched_devices__count`
+    - `lvs__unmatched_nets` -> `design__lvs_unmatched_nets__count`
+    - `lvs__unmatched_pins` -> `design__lvs_unmatched_pins__count`
+* Add steps:
+    - `DisconnectedPins`: Checker for `ReporDisconnectedPins`.
+    - `ReportDisconnectedPins`: Report disconnected instance pins in a design.
+    - `JsonHeader`: RTL to JSON.
+    - `SetPowerConnections`: Uses JSON generated in `JsonHeader` and modules information in odb to add global connections for macros in a design.
+
 # 2.0.0-dev15
 
 * `log` -> `info`

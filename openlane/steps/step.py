@@ -448,9 +448,11 @@ class Step(ABC):
             encoding="utf8",
             **kwargs,
         )
+        lines = ""
         if process_stdout := process.stdout:
             current_rpt = None
             while line := process_stdout.readline():
+                lines += line
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                     report_path = os.path.join(self.step_dir, report_name)
@@ -465,7 +467,10 @@ class Step(ABC):
                     verbose(line.strip())
                     log_file.write(line)
         returncode = process.wait()
+        split_lines = lines.split("\n")
         if returncode != 0:
+            err("\n".join(split_lines[-10:]))
+            err(f"Log file: {log_path}")
             raise subprocess.CalledProcessError(returncode, process.args)
 
     @internal
