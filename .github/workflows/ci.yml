@@ -53,18 +53,6 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: |
           nix-build | cachix push openlane
-      - name: Auth (Docker)
-        if: ${{ env.PUBLISH == '1' }}
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Push (Docker)
-        if: ${{ env.PUBLISH == '1' }}
-        run: |
-          $(nix-build docker.nix) | docker load
-          docker push ghcr.io/${{ github.repository }}:$TAG
   build-py:
     runs-on: ubuntu-22.04
     needs: lint
