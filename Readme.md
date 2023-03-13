@@ -47,7 +47,20 @@ You'll need the following:
 * A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
 * KLayout 0.28.5+ from https://github.com/KLayout/klayout
 
-### PIP
+### Docker
+Works for Windows, macOS and Linux. Easier to set up, but less integrated with your filesystem. Recommended for general users.
+
+See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
+
+### Nix
+Works for macOS and Linux. A bit more complex to set up, but more integrated with your filesystem and overall less upload and download deltas.
+
+See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
+
+### Conda
+TBA
+
+### Python-only Installation
 You'll need to bring your own compiled tools, but otherwise, simply install OpenLane as follows:
 
 ```sh
@@ -73,15 +86,6 @@ export PATH="/home/test/.local/bin:$PATH"
 ```
 
 Do note that the path (`/home/test/.local/bin` in this example) varies depending on your operating system and version of Python you install, and whether you use `sudo` (absolutely not recommended) or not, so ensure that you actually read the warning and add the correct path.
-
-### Nix
-See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
-
-### Docker
-See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
-
-### Conda
-TBD
 
 ## Usage
 In the root folder of the repository with the `venv` activated, you may invoke:
