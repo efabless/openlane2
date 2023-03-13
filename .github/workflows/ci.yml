@@ -104,7 +104,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_TOKEN }}
       - name: Build and Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
