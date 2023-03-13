@@ -20,13 +20,13 @@ runs:
       run: echo "NEW_TAG=NO_NEW_TAG" >> $GITHUB_ENV
 
     - name: Check for new version
-      if: ${{ env.BRANCH_NAME == 'ci-test' }}
+      if: ${{ github.event_name == 'push' && env.BRANCH_NAME == 'ci-test' }}
       shell: bash
       run: |
         python3 ./.github/scripts/generate_tag.py
 
     - name: Publish
-      if: ${{ github.event_name == 'push' && env.BRANCH_NAME == 'ci-test' && env.TAG != 'NO_NEW_TAG' }}
+      if: ${{ github.event_name == 'push' && env.BRANCH_NAME == 'ci-test' && env.NEW_TAG != 'NO_NEW_TAG' }}
       shell: bash
       run: |
         echo "PUBLISH=1" >> $GITHUB_ENV

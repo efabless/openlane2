@@ -30,6 +30,7 @@ tags = [pair[1] for pair in gh.openlane.tags]
 version = subprocess.check_output(
     ["python3", "./openlane/__version__.py"], encoding="utf8"
 )
+print(version, tags)
 tag_exists = version in tags
 
 if tag_exists:
