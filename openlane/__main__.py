@@ -15,10 +15,12 @@ import os
 import sys
 import glob
 import shutil
+import marshal
 import tempfile
 import subprocess
 from textwrap import dedent
 from functools import partial
+import traceback
 from typing import Tuple, Type, Optional, List, Union
 
 import click
@@ -36,7 +38,7 @@ from .common import (
     get_opdks_rev,
     get_openlane_root,
 )
-from .container import run_in_container
+from .container import run_in_container, sanitize_path
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
 
@@ -206,6 +208,53 @@ def run_smoke_test(
     ctx.exit(0)
 
 
+def cli_in_container(ctx: click.Context, docker_mounts: Tuple[str], kwargs: dict):
+    f = None
+    status = 0
+    try:
+        if isj := kwargs.get("initial_state_json"):
+            _, kwargs["initial_state_json"] = sanitize_path(isj)
+
+        config_files: List[str] = []
+        for file in kwargs["config_files"]:
+            _, target = sanitize_path(file)
+            config_files.append(target)
+        kwargs["config_files"] = config_files
+
+        pdk_root = kwargs.pop("pdk_root")
+        pdk = kwargs.pop("pdk")
+        scl = kwargs.pop("scl")
+
+        f = tempfile.NamedTemporaryFile("wb", suffix=".marshalled", delete=False)
+        marshal.dump(kwargs, f, 4)
+        f.close()
+        _, binary = sanitize_path(f.name)
+
+        run_in_container(
+            f"ghcr.io/efabless/openlane2:{__version__}",
+            ["python3", "-m", "openlane", binary],
+            pdk_root=pdk_root,
+            pdk=pdk,
+            scl=scl,
+            other_mounts=docker_mounts + (os.path.dirname(f.name),),
+        )
+    except ValueError as e:
+        print(e)
+        status = -1
+    except subprocess.CalledProcessError as e:
+        status = e.returncode
+    except Exception:
+        traceback.print_exc()
+        status = -1
+    finally:
+        if f is not None:
+            try:
+                os.unlink(f.name)
+            except FileNotFoundError:
+                pass
+        ctx.exit(status)
+
+
 o = partial(click.option, show_default=True)
 
 
@@ -292,7 +341,11 @@ o = partial(click.option, show_default=True)
     "-I",
     "--with-initial-state",
     "initial_state_json",
-    type=str,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+    ),
     default=None,
     help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
 )
@@ -345,27 +398,26 @@ o = partial(click.option, show_default=True)
     )
     + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
 )
-@click.argument("config_files", required=True, nargs=-1)
+@click.argument(
+    "config_files",
+    required=True,
+    nargs=-1,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+    ),
+)
 @click.pass_context
 def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwargs):
     if dockerized:
-        argv = sys.argv.copy()[1:]
-        argv.remove("--dockerized")
-
-        try:
-            run_in_container(
-                f"ghcr.io/efabless/openlane2:{__version__}",
-                ["openlane"] + argv,
-                pdk_root=kwargs["pdk_root"],
-                pdk=kwargs["pdk"],
-                scl=kwargs["scl"],
-                other_mounts=docker_mounts,
-            )
-        except subprocess.CalledProcessError as e:
-            exit(e.returncode)
-
-    else:
-        run(ctx, **kwargs)
+        cli_in_container(ctx, docker_mounts, kwargs)
+    run_kwargs = kwargs
+    args = kwargs["config_files"]
+    if len(args) == 1 and args[0].endswith(".marshalled"):
+        run_kwargs = marshal.load(open(args[0], "rb"))
+        run_kwargs.update(**{k: kwargs[k] for k in ["pdk_root", "pdk", "scl"]})
+    run(ctx, **run_kwargs)
 
 
 if __name__ == "__main__":

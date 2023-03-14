@@ -29,7 +29,7 @@ in dockerTools.streamLayeredImage {
         neovim
         delta
         zsh
-    ];
+    ] ++ openlane-app.propagatedBuildInputs;
 
     created = "now";
     config = {
