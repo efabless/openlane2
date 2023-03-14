@@ -56,9 +56,7 @@ class OdbpyStep(Step):
             command.append(file_path)
             out_paths[output] = Path(file_path)
 
-        command += [
-            str(state_out[DesignFormat.ODB]),
-        ]
+        command += [str(state_out[DesignFormat.ODB]),]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
@@ -135,6 +133,22 @@ class ApplyDEFTemplate(OdbpyStep):
         ]
 
 
+class SetPowerConnections(OdbpyStep):
+    id = "Odb.SetPowerConnections"
+    name = "Set Power Connections"
+    inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
+
+    def get_command(self) -> List[str]:
+        assert isinstance(self.state_in, State)
+        return super().get_command() + [
+            "--input-json",
+            str(self.state_in[DesignFormat.JSON_HEADER]),
+        ]
+
+
 @Step.factory.register()
 class ManualMacroPlacement(OdbpyStep):
     id = "Odb.ManualMacro"
@@ -166,6 +180,7 @@ class ManualMacroPlacement(OdbpyStep):
 class ReportWireLength(OdbpyStep):
     id = "Odb.ReportWireLength"
     name = "Report Wire Length"
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "wire_lengths.py")
@@ -176,6 +191,24 @@ class ReportWireLength(OdbpyStep):
             "--report-out",
             os.path.join(self.step_dir, "wire_lengths.csv"),
         ]
+
+
+@Step.factory.register()
+class ReportDisconnectedPins(OdbpyStep):
+    id = "Odb.ReportDisconnectedPins"
+    name = "Report Disconnected Pins"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        if self.config["IGNORE_DISCONNECTED_MODULES"] is not None:
+            ignore_arg = [f'--ignore-module {module}' for module in self.config["IGNORE_DISCONNECTED_MODULES"]]
+            ignore_arg = " ".join(ignore_arg).split()
+            command += ignore_arg
+        return command
+
 
 
 @Step.factory.register()

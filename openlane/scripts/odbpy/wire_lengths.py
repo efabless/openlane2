@@ -89,7 +89,7 @@ def main(
             f"Net {net.getName()} is above the length threshold ({length_microns}/{threshold} μm)."
         )
 
-    utl.metric_float("route__max__wirelength", float(max_wire_length))
+    utl.metric_float("route__wirelength__max", float(max_wire_length))
 
 
 if __name__ == "__main__":

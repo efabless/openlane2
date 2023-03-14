@@ -20,6 +20,12 @@ from .config import Config
 pdk_variables = [
     # Core/Common
     Variable(
+        "IGNORE_DISCONNECTED_MODULES",
+        List[str],
+        "Modules to ignore when checking for disconnected pins",
+        default=["sky130_fd_sc_hd__conb_1"],
+    ),
+    Variable(
         "STD_CELL_LIBRARY",
         str,
         "Specifies the standard cell library to be used under the specified PDK.",

@@ -350,7 +350,7 @@ class Step(ABC):
                         info(self.flow_control_msg)
                     else:
                         info(
-                            f"`{self.flow_control_variable}` is set to False: skipping…"
+                            f"`{self.flow_control_variable}` is set to False: skipping {self.id} …"
                         )
                         return self.state_in.copy()
             elif flow_control_value is None:
