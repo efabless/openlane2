@@ -206,7 +206,6 @@ class CustomIOPlacement(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")
 
     def get_command(self) -> List[str]:
-
         length = max(
             self.config["FP_IO_VLENGTH"],
             self.config["FP_IO_HLENGTH"],

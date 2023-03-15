@@ -28,6 +28,7 @@ from typing import (
     Optional,
 )
 
+
 class Path(UserString, os.PathLike):
     """
     A Path type for OpenLane configuration variables.

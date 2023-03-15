@@ -256,7 +256,6 @@ class ConfigBuilder(object):
         full_pdk_warnings: bool = False,
         resolve_json: bool = False,
     ) -> "Config":
-
         meta_raw: Optional[dict] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
