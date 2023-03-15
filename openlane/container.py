@@ -15,6 +15,7 @@ import os
 import re
 import pathlib
 import getpass
+import tempfile
 import requests
 import subprocess
 from typing import List, Sequence, Set, Optional, Union, Tuple
@@ -197,6 +198,13 @@ def run_in_container(
     if not from_cwd.startswith(from_home):
         mount_args += ["-v", f"{from_cwd}:{to_cwd}"]
     mount_args += ["-w", to_cwd]
+
+    mount_args += [
+        "-v",
+        f"{tempfile.gettempdir()}:/tmp",
+        "-e",
+        "TMPDIR=/tmp",
+    ]
 
     if other_mounts is not None:
         for mount in other_mounts:
