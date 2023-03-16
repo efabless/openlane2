@@ -1,3 +1,7 @@
+# 2.0.0-a5
+
+* Fix a small path resolution issue.
+
 # 2.0.0-a4
 
 * Add basic CI that builds for Linux, macOS and Docker
