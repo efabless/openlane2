@@ -79,7 +79,7 @@ jobs:
   publish:
     runs-on: ubuntu-22.04
     needs: [build-py, build-nix]
-    name: Build/Test Docker (and Publish, if applicable)
+    name: Test (and Publish, if applicable)
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
