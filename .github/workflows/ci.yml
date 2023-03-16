@@ -101,8 +101,8 @@ jobs:
       - name: Smoke Test (Docker)
         run: |
           docker run --rm\
-            -v $TMPDIR:$TMPDIR\
-            -e TMPDIR=$TMPDIR\
+            -v /tmp:/tmp\
+            -e TMPDIR=/tmp\
             openlane:intermediate\
             python3 -m openlane --smoke-test
       - name: Auth (Docker)
