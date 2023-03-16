@@ -1,4 +1,14 @@
+# 2.0.0-a4
+
+* Add basic CI that builds for Linux, macOS and Docker
+* Various improvements to Dockerization so that `openlane --dockerized` can run on Windows
+
+# 2.0.0-a3
+
+* Fixed an issue where KLayout scripts exited silently.
+
 # 2.0.0-a2
+
 * Handle `PDK_ROOT`, `PDK` and `STD_CELL_LIBRARY` environment variables.
 * Unify environment inspection by using `os.environ`- eliminated getenv
 * KLayout scripts no longer accept environment variables.
@@ -6,6 +16,7 @@
 * Added ReadTheDocs configuration.
 
 # 2.0.0-a1
+
 * Update smoke test
 * Fix bug with default variables
 

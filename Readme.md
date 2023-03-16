@@ -4,12 +4,14 @@
 
 <h1 align="center">OpenLane</h1>
 <p align="center">
-    <a href="https://openlane2.readthedocs.io/"><img src="https://readthedocs.org/projects/openlane2/badge/?version=latest" alt="Documentation Build Status Badge"/></a>
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"/></a>
     <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.8-3776AB.svg?style=flat&logo=python&logoColor=white" alt="Python 3.8 or higher" /></a>
     <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code Style: black"/></a>
     <a href="https://mypy-lang.org/"><img src="https://www.mypy-lang.org/static/mypy_badge.svg" alt="Checked with mypy"/></a>
     <a href="https://nixos.org/"><img src="https://img.shields.io/static/v1?logo=nixos&logoColor=white&label=&message=Built%20with%20Nix&color=41439a" alt="Built with Nix"/></a>
+</p>
+<p>
+    <a href="https://openlane2.readthedocs.io/"><img src="https://readthedocs.org/projects/openlane2/badge/?version=latest" alt="Documentation Build Status Badge"/></a>
     <a href="https://invite.skywater.tools"><img src="https://img.shields.io/badge/Community-Open%20Source%20Silicon%20Slack-ff69b4?logo=slack" alt="Invite to the Open Source Silicon Slack"/></a>
 </p>
 
@@ -45,7 +47,20 @@ You'll need the following:
 * A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
 * KLayout 0.28.5+ from https://github.com/KLayout/klayout
 
-### PIP
+### Docker
+Works for Windows, macOS and Linux. Easier to set up, but less integrated with your filesystem. Recommended for general users.
+
+See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
+
+### Nix
+Works for macOS and Linux. A bit more complex to set up, but more integrated with your filesystem and overall less upload and download deltas.
+
+See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
+
+### Conda
+TBA
+
+### Python-only Installation
 You'll need to bring your own compiled tools, but otherwise, simply install OpenLane as follows:
 
 ```sh
@@ -71,15 +86,6 @@ export PATH="/home/test/.local/bin:$PATH"
 ```
 
 Do note that the path (`/home/test/.local/bin` in this example) varies depending on your operating system and version of Python you install, and whether you use `sudo` (absolutely not recommended) or not, so ensure that you actually read the warning and add the correct path.
-
-### Nix
-See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
-
-### Docker
-See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
-
-### Conda
-TBD
 
 ## Usage
 In the root folder of the repository with the `venv` activated, you may invoke:

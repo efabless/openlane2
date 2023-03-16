@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 import os
-import re
+import subprocess
 from setuptools import setup, find_packages
 
 
 __dir__ = os.path.dirname(__file__)
-
-version_rx = re.compile(r"__version__ = \"([^\"]+)\"\n")
-version_file_str = open(os.path.join("openlane", "__version__.py")).read()
-version_match = version_rx.match(version_file_str)
-assert version_match is not None
-version = version_match[1]
+version = subprocess.check_output(
+    [
+        "python3",
+        f"{os.path.abspath(os.path.dirname(__file__))}/openlane/__version__.py",
+    ],
+    encoding="utf8",
+)
 
 requirements = open("requirements.txt").read().strip().split("\n")
 setup(

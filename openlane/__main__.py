@@ -15,10 +15,12 @@ import os
 import sys
 import glob
 import shutil
+import marshal
 import tempfile
 import subprocess
 from textwrap import dedent
 from functools import partial
+import traceback
 from typing import Tuple, Type, Optional, List, Union
 
 import click
@@ -36,7 +38,7 @@ from .common import (
     get_opdks_rev,
     get_openlane_root,
 )
-from .container import run_in_container
+from .container import run_in_container, sanitize_path
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
 
@@ -206,7 +208,54 @@ def run_smoke_test(
     ctx.exit(0)
 
 
-click.option = partial(click.option, show_default=True)
+def cli_in_container(ctx: click.Context, docker_mounts: Tuple[str], kwargs: dict):
+    f = None
+    status = 0
+    try:
+        if isj := kwargs.get("initial_state_json"):
+            _, kwargs["initial_state_json"] = sanitize_path(isj)
+
+        config_files: List[str] = []
+        for file in kwargs["config_files"]:
+            _, target = sanitize_path(file)
+            config_files.append(target)
+        kwargs["config_files"] = config_files
+
+        pdk_root = kwargs.pop("pdk_root")
+        pdk = kwargs.pop("pdk")
+        scl = kwargs.pop("scl")
+
+        f = tempfile.NamedTemporaryFile("wb", suffix=".marshalled", delete=False)
+        marshal.dump(kwargs, f, 4)
+        f.close()
+        _, binary = sanitize_path(f.name)
+
+        run_in_container(
+            f"ghcr.io/efabless/openlane2:{__version__}",
+            ["python3", "-m", "openlane", binary],
+            pdk_root=pdk_root,
+            pdk=pdk,
+            scl=scl,
+            other_mounts=docker_mounts + (os.path.dirname(f.name),),
+        )
+    except ValueError as e:
+        print(e)
+        status = -1
+    except subprocess.CalledProcessError as e:
+        status = e.returncode
+    except Exception:
+        traceback.print_exc()
+        status = -1
+    finally:
+        if f is not None:
+            try:
+                os.unlink(f.name)
+            except FileNotFoundError:
+                pass
+        ctx.exit(status)
+
+
+o = partial(click.option, show_default=True)
 
 
 @click.command(
@@ -228,7 +277,7 @@ click.option = partial(click.option, show_default=True)
         """
     ).strip(),
 )
-@click.option(
+@o(
     "--bare-version",
     is_flag=True,
     is_eager=True,
@@ -236,20 +285,20 @@ click.option = partial(click.option, show_default=True)
     callback=print_bare_version,
     hidden=True,
 )
-@click.option(
+@o(
     "--dockerized/--native",
     is_eager=True,
     default=False,
     help="Run OpenLane primarily using a Docker container. Some caveats apply.",
 )
-@click.option(
+@o(
     "--docker-mount",
     "docker_mounts",
     multiple=True,
     default=[],
     help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
 )
-@click.option(
+@o(
     "-f",
     "--flow",
     "flow_name",
@@ -257,46 +306,50 @@ click.option = partial(click.option, show_default=True)
     default=None,
     help="The built-in OpenLane flow to use",
 )
-@click.option(
+@o(
     "--volare-pdk/--manual-pdk",
     "use_volare",
     default=True,
     help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
 )
-@click.option(
+@o(
     "--pdk-root",
     default=os.environ.pop("PDK_ROOT", None),
     help="Override volare PDK root folder. Required if Volare is not installed.",
 )
-@click.option(
+@o(
     "-p",
     "--pdk",
     type=str,
     default=os.environ.pop("PDK", "sky130A"),
     help="The process design kit to use.",
 )
-@click.option(
+@o(
     "-s",
     "--scl",
     type=str,
     default=os.environ.pop("STD_CELL_LIBRARY", None),
-    help=f"The standard cell library to use. If None, the PDK's default standard cell library is used.",
+    help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
 )
-@click.option(
+@o(
     "--run-tag",
     default=None,
     type=str,
     help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
 )
-@click.option(
+@o(
     "-I",
     "--with-initial-state",
     "initial_state_json",
-    type=str,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+    ),
     default=None,
     help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
 )
-@click.option(
+@o(
     "-c",
     "--override-config",
     "config_override_strings",
@@ -304,20 +357,20 @@ click.option = partial(click.option, show_default=True)
     multiple=True,
     help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
 )
-@click.option(
+@o(
     "--smoke-test",
     is_flag=True,
     help="Runs a basic OpenLane smoke test.",
     expose_value=False,
     callback=run_smoke_test,
 )
-@click.option(
+@o(
     "--last-run",
     is_flag=True,
     default=False,
     help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
 )
-@click.option(
+@o(
     "-F",
     "--from",
     "frm",
@@ -325,14 +378,14 @@ click.option = partial(click.option, show_default=True)
     default=None,
     help="Start from a step with this id. Supported by sequential flows.",
 )
-@click.option(
+@o(
     "-T",
     "--to",
     type=str,
     default=None,
     help="Stop at a step with this id. Supported by sequential flows.",
 )
-@click.option(
+@o(
     "--log-level",
     type=str,
     default="VERBOSE",
@@ -345,27 +398,26 @@ click.option = partial(click.option, show_default=True)
     )
     + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
 )
-@click.argument("config_files", required=True, nargs=-1)
+@click.argument(
+    "config_files",
+    required=True,
+    nargs=-1,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+    ),
+)
 @click.pass_context
 def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwargs):
     if dockerized:
-        argv = sys.argv.copy()[1:]
-        argv.remove("--dockerized")
-
-        try:
-            run_in_container(
-                f"ghcr.io/efabless/openlane2:{__version__}",
-                ["openlane"] + argv,
-                pdk_root=kwargs["pdk_root"],
-                pdk=kwargs["pdk"],
-                scl=kwargs["scl"],
-                other_mounts=docker_mounts,
-            )
-        except subprocess.CalledProcessError as e:
-            exit(e.returncode)
-
-    else:
-        run(ctx, **kwargs)
+        cli_in_container(ctx, docker_mounts, kwargs)
+    run_kwargs = kwargs
+    args = kwargs["config_files"]
+    if len(args) == 1 and args[0].endswith(".marshalled"):
+        run_kwargs = marshal.load(open(args[0], "rb"))
+        run_kwargs.update(**{k: kwargs[k] for k in ["pdk_root", "pdk", "scl"]})
+    run(ctx, **run_kwargs)
 
 
 if __name__ == "__main__":

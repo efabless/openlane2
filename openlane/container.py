@@ -12,31 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 import pathlib
 import getpass
+import tempfile
 import requests
 import subprocess
-from typing import List, Sequence, Set, Optional
+from typing import List, Sequence, Set, Optional, Union, Tuple
 
 from .logging import err, info, print, warn
-from .env_info import ContainerInfo, OSInfo
+from .env_info import OSInfo
+
+CONTAINER_ENGINE = os.getenv("OPENLANE_CONTAINER_ENGINE", "docker")
 
 
-def permission_args(cinfo: ContainerInfo) -> List[str]:
-    if cinfo.engine != "docker":
-        return []
+def permission_args(osinfo: OSInfo) -> List[str]:
+    if (
+        osinfo.kernel == "Linux"
+        and osinfo.container_info is not None
+        and osinfo.container_info.engine == "docker"
+        and not osinfo.container_info.rootless
+    ):
+        uid = (
+            subprocess.check_output(["id", "-u", getpass.getuser()])
+            .decode("utf8")
+            .strip()
+        )
+        gid = (
+            subprocess.check_output(["id", "-g", getpass.getuser()])
+            .decode("utf8")
+            .strip()
+        )
 
-    if cinfo.rootless:
-        return []
+        return ["--user", f"{uid}:{gid}"]
 
-    uid = (
-        subprocess.check_output(["id", "-u", getpass.getuser()]).decode("utf8").strip()
-    )
-    gid = (
-        subprocess.check_output(["id", "-g", getpass.getuser()]).decode("utf8").strip()
-    )
-
-    return ["--user", f"{uid}:{gid}"]
+    return []
 
 
 def gui_args(osinfo: OSInfo) -> List[str]:
@@ -64,7 +74,7 @@ def gui_args(osinfo: OSInfo) -> List[str]:
 
 def image_exists(image: str) -> bool:
     images = (
-        subprocess.check_output(["docker", "images", image])
+        subprocess.check_output([CONTAINER_ENGINE, "images", image])
         .decode("utf8")
         .rstrip()
         .split("\n")[1:]
@@ -73,13 +83,26 @@ def image_exists(image: str) -> bool:
 
 
 def remote_manifest_exists(image: str) -> bool:
+    registry = "docker.io"
+    image_elements = image.split("/", maxsplit=1)
+    if len(image_elements) > 1:
+        registry = image_elements[0]
+        image = image_elements[1]
     elements = image.split(":")
     repo = elements[0]
     tag = "latest"
     if len(elements) > 1:
         tag = elements[1]
 
-    url = f"https://registry.hub.docker.com/v2/repositories/{repo}/tags/{tag}"
+    url = None
+    if registry == "docker.io":
+        url = f"https://registry.hub.docker.com/v2/repositories/{repo}/tags/{tag}"
+    elif registry == "ghcr.io":
+        url = f"https://ghcr.io/v2/{repo}/manifests/{tag}"
+        print(url)
+    else:
+        err(f"Unknown registry '{registry}'.")
+        return False
 
     try:
         request = requests.get(url, headers={"Accept": "application/json"})
@@ -99,11 +122,8 @@ def ensure_image(image: str) -> bool:
     if image_exists(image):
         return True
 
-    if not remote_manifest_exists(image):
-        return False
-
     try:
-        subprocess.check_call(["docker", "pull", image])
+        subprocess.check_call([CONTAINER_ENGINE, "pull", image])
     except subprocess.CalledProcessError:
         err(f"Failed to pull image {image} from the container registries.")
         return False
@@ -112,6 +132,18 @@ def ensure_image(image: str) -> bool:
 
 
 docker_ids: Set[str] = set()
+
+win_path_sep = re.compile(r"\\")
+
+
+def sanitize_path(path: Union[str, os.PathLike]) -> Tuple[str, str]:
+    path_str = str(path)
+    abspath = os.path.abspath(path_str)
+    mountable_path = abspath
+    print()
+    if os.path.sep == "\\":
+        mountable_path = win_path_sep.sub("/", abspath)[2:]
+    return (abspath, mountable_path)
 
 
 def run_in_container(
@@ -130,27 +162,27 @@ def run_in_container(
 
     osinfo = OSInfo.get()
     if not osinfo.supported:
-        raise SystemError(f"Unsupported operating system '{osinfo.kernel}'.")
+        warn(
+            f"Unsupported host operating system '{osinfo.kernel}'. You may encounter unexpected issues."
+        )
 
-    cinfo = osinfo.container_info
-
-    if cinfo is None:
+    if osinfo.container_info is None:
         raise FileNotFoundError("No compatible container engine found.")
 
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
 
     mount_args = []
-    home = os.path.abspath(pathlib.Path.home())
+    from_home, to_home = sanitize_path(pathlib.Path.home())
 
-    mount_args += ["-v", f"{home}:{home}"]
+    mount_args += ["-v", f"{from_home}:{to_home}"]
 
-    pdk_root = volare.get_volare_home(pdk_root)
+    from_pdk, to_pdk = sanitize_path(volare.get_volare_home(pdk_root))
     mount_args += [
         "-v",
-        f"{pdk_root}:{pdk_root}",
+        f"{from_pdk}:{to_pdk}",
         "-e",
-        f"PDK_ROOT={pdk_root}",
+        f"PDK_ROOT={to_pdk}",
     ]
 
     if pdk is not None:
@@ -162,24 +194,31 @@ def run_in_container(
             f"STD_CELL_LIBRARY={scl}",
         ]
 
-    cwd = os.path.abspath(os.getcwd())
-    if not cwd.startswith(home):
-        mount_args += ["-v", f"{cwd}:{cwd}"]
+    from_cwd, to_cwd = sanitize_path(os.getcwd())
+    if not from_cwd.startswith(from_home):
+        mount_args += ["-v", f"{from_cwd}:{to_cwd}"]
+    mount_args += ["-w", to_cwd]
+
+    mount_args += [
+        "-v",
+        f"{tempfile.gettempdir()}:/tmp",
+        "-e",
+        "TMPDIR=/tmp",
+    ]
 
     if other_mounts is not None:
         for mount in other_mounts:
-            mount_args += ["-v", f"{mount}:{mount}"]
-
-    mount_args += ["-w", cwd]
+            mount_from, mount_to = sanitize_path(mount)
+            mount_args += ["-v", f"{mount_from}:{mount_to}"]
 
     cmd = (
         [
-            "docker",
+            CONTAINER_ENGINE,
             "run",
             "--rm",
-            "-ti",
+            "-t",
         ]
-        + permission_args(cinfo)
+        + permission_args(osinfo)
         + mount_args
         + gui_args(osinfo)
         + [image]

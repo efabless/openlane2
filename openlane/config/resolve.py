@@ -312,7 +312,7 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
         elif isinstance(value, list):
             valid = True
             processed = []
-            for (i, item) in enumerate(value):
+            for i, item in enumerate(value):
                 current_key = f"{key}[{i}]"
                 processed.append(f"{process_scalar(current_key, item, state)}")
 

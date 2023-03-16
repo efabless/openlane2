@@ -1,0 +1,139 @@
+name: CI
+
+# Events that trigger workflow
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Install Linters
+        run: make venv
+      - name: Lint
+        run: make lint
+  build-nix:
+    needs: lint
+    strategy:
+      matrix:
+        os: ["ubuntu-22.04", "macos-12"]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    name: Build (Nix on ${{ matrix.os }})
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_token: ${{ secrets.CACHIX_TOKEN }}
+      - name: Build
+        run: |
+          nix-build
+      - name: Push
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          nix-build | cachix push openlane
+  build-py:
+    runs-on: ubuntu-22.04
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+      fail-fast: false
+    name: Build (Python ${{ matrix.python-version }})
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Smoke Test
+        run: |
+          make venv
+          ./venv/bin/python3 -m openlane --version
+  publish:
+    runs-on: ubuntu-22.04
+    needs: [build-py, build-nix]
+    name: Test (and Publish, if applicable)
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_token: ${{ secrets.CACHIX_TOKEN }}
+      - name: Build
+        run: |
+          nix-build
+      - name: Create Image (Docker)
+        run: |
+          $(nix-build --argstr name openlane --argstr tag intermediate docker.nix) | docker load
+      - name: Smoke Test (Docker)
+        run: |
+          docker run --rm\
+            -v /tmp:/tmp\
+            -e TMPDIR=/tmp\
+            openlane:intermediate\
+            python3 -m openlane --smoke-test
+      - name: Auth (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+      - name: Push (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        run: |
+          docker tag openlane:intermediate ghcr.io/${{ github.repository }}:$NEW_TAG
+          docker push ghcr.io/${{ github.repository }}:$NEW_TAG
+      - name: Set Up Python
+        if: ${{ env.PUBLISH == '1' }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Build Distribution
+        if: ${{ env.PUBLISH == '1' }}
+        run: |
+          make dist
+      - name: Publish
+        if: ${{ env.PUBLISH == '1' }}
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+      - name: Tag Commit
+        if: ${{ env.PUBLISH == '1' }}
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          tag: "${{ env.NEW_TAG }}"
+          repo-token: "${{ secrets.GH_TOKEN }}"
