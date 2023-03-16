@@ -216,7 +216,7 @@ def run_in_container(
             CONTAINER_ENGINE,
             "run",
             "--rm",
-            "-ti",
+            "-t",
         ]
         + permission_args(osinfo)
         + mount_args

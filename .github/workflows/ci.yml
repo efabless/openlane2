@@ -100,7 +100,7 @@ jobs:
           $(nix-build --argstr name openlane --argstr tag intermediate docker.nix) | docker load
       - name: Smoke Test (Docker)
         run: |
-          docker run --rm -ti\
+          docker run --rm\
             -v $TMPDIR:$TMPDIR\
             -e TMPDIR=$TMPDIR\
             openlane:intermediate\
