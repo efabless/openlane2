@@ -8,8 +8,8 @@ All categories ordered by last name, alphabetically.
 
 ## OpenLane 1.0 Core Developers
 * Manar Abdelatty<sup>*</sup> \<manarabdelaty@efabless.com\>
-* Mohamed Gaber \<donn@efabless.com\>
 * Kareem Farid \<kareem.farid@efabless.com\>
+* Mohamed Gaber \<donn@efabless.com\>
 * Ahmed Ghazy<sup>*</sup> \<ahmed.ghazy@efabless.com\>
 * Amr Gouhar<sup>*</sup> \<aagouhar@efabless.com\>
 
