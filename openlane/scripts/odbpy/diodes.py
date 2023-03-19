@@ -353,7 +353,7 @@ def place(
     threshold = int(
         threshold_microns * Decimal(reader.db.getTech().getDbUnitsPerMicron())
     )
-    print(f"Inserting >= {threshold} dbus ({threshold_microns}µm)…")
+    print(f"Inserting for nets >= {threshold} dbus ({threshold_microns} microns)...")
 
     print(f"Design name: {reader.name}")
 
