@@ -1,3 +1,6 @@
+# 2.0.0-a7
+* Add the custom diode insertion script.
+
 # 2.0.0-a6
 * Add validation on step exit.
 
