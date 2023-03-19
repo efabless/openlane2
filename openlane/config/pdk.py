@@ -484,7 +484,7 @@ scl_variables = [
         "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
     ),
     Variable(
-        "ANTENNA_THRESHOLD",
+        "HEURISTIC_ANTENNA_THRESHOLD",
         Optional[Decimal],
         "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will typically use a default value.",
         units="µm",

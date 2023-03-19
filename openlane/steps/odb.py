@@ -275,7 +275,7 @@ class HeuristicDiodeInsertion(OdbpyStep):
         cell, pin = self.config["DIODE_CELL"].split("/")
 
         threshold_opts = []
-        if threshold := self.config["ANTENNA_THRESHOLD"]:
+        if threshold := self.config["HEURISTIC_ANTENNA_THRESHOLD"]:
             threshold_opts = ["--threshold", threshold]
 
         return (
