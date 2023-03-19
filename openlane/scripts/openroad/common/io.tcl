@@ -25,7 +25,7 @@ proc read_netlist {args} {
     link_design $::env(DESIGN_NAME)
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
+        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.sdc} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -116,7 +116,7 @@ proc read {args} {
     read_libs {*}$read_libs_args
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
+        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.sdc} errmsg]} {
             puts stderr $errmsg
             exit 1
         }

@@ -79,7 +79,7 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OpenROADStep(TclStep):
-    inputs = [DesignFormat.ODB]
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = [
         DesignFormat.ODB,
         DesignFormat.DEF,
@@ -180,7 +180,7 @@ class NetlistSTA(OpenROADStep):
     id = "OpenROAD.NetlistSTA"
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
-    inputs = [DesignFormat.NETLIST]
+    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
     outputs = []
 
     def get_script_path(self):
@@ -199,7 +199,7 @@ class Floorplan(OpenROADStep):
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
 
-    inputs = [DesignFormat.NETLIST]
+    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
@@ -657,6 +657,7 @@ class LayoutSTA(OpenROADStep):
     id = "OpenROAD.LayoutSTA"
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
 
     outputs = []
 
