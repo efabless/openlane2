@@ -32,7 +32,7 @@ from typing import (
     Type,
 )
 
-from ..state import State
+from ..state import State, InvalidState
 from ..state import DesignFormat, DesignFormatByID
 from ..utils import Toolbox
 from ..config import Config, Variable
@@ -369,6 +369,10 @@ class Step(ABC):
         self.start_time = time.time()
         rule(f"{self.long_name}")
         self.state_out = self.run(**kwargs)
+        try:
+            self.state_out.validate()
+        except InvalidState as e:
+            raise StepException(f"Step {self.name} generated invalid state: {e}")
         self.end_time = time.time()
 
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:

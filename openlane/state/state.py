@@ -22,6 +22,8 @@ from .design_format import DesignFormat, DesignFormatByID
 from ..config import Path
 from ..logging import warn
 
+class InvalidState(RuntimeError):
+    pass
 
 class StateEncoder(json.JSONEncoder):
     def default(self, o):
@@ -50,7 +52,7 @@ class State(UserDict):
     The state is the only thing that can be altered by steps other than the
     filesystem.
 
-    This dictionary has a property named `metrics` that also carries statistics
+    This object has a property named `metrics` that also carries statistics
     about the design: area, wire length, et cetera.
     """
 
@@ -75,9 +77,10 @@ class State(UserDict):
             key = id
         return super().__setitem__(key, item)
 
-    def as_dict(self) -> dict:
+    def _as_dict(self, metrics: bool = True) -> dict:
         final: Dict[Any, Any] = dict(self)
-        final["metrics"] = self.metrics
+        if metrics:
+            final["metrics"] = self.metrics
         return final
 
     def __copy__(self: "State") -> "State":
@@ -86,12 +89,27 @@ class State(UserDict):
         return new
 
     def __repr__(self) -> str:
-        return self.as_dict().__repr__()
+        return self._as_dict().__repr__()
 
     def dumps(self, **kwargs) -> str:
+        """
+        Dumps data as JSON.
+
+        
+        """
         if "indent" not in kwargs:
             kwargs["indent"] = 4
-        return json.dumps(self.as_dict(), cls=StateEncoder, **kwargs)
+        return json.dumps(self._as_dict(), cls=StateEncoder, **kwargs)
+
+    def validate(self) -> bool:
+        for key, value in self._as_dict(metrics=False).items():
+            if DesignFormatByID.get(key) is None:
+                raise InvalidState(f"Key {key} does not match a known design format.")
+            if value is not None:
+                if not isinstance(value, Path):
+                    raise InvalidState(f"Value for format {key} is not a openlane.config.Path object: '{value}'.")
+                if not os.path.exists(str(value)):
+                    raise InvalidState(f"Value for format {key} does not exist: '{value}'.")
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":
@@ -130,7 +148,7 @@ class State(UserDict):
                     <th>Path</th>
                 </tr>
         """
-        for id, value in dict(self).items():
+        for id, value in self._as_dict(metrics=False).items():
             assert isinstance(id, str)
             if value is None:
                 continue
