@@ -22,8 +22,10 @@ from .design_format import DesignFormat, DesignFormatByID
 from ..config import Path
 from ..logging import warn
 
+
 class InvalidState(RuntimeError):
     pass
+
 
 class StateEncoder(json.JSONEncoder):
     def default(self, o):
@@ -95,21 +97,25 @@ class State(UserDict):
         """
         Dumps data as JSON.
 
-        
+
         """
         if "indent" not in kwargs:
             kwargs["indent"] = 4
         return json.dumps(self._as_dict(), cls=StateEncoder, **kwargs)
 
-    def validate(self) -> bool:
+    def validate(self):
         for key, value in self._as_dict(metrics=False).items():
             if DesignFormatByID.get(key) is None:
                 raise InvalidState(f"Key {key} does not match a known design format.")
             if value is not None:
                 if not isinstance(value, Path):
-                    raise InvalidState(f"Value for format {key} is not a openlane.config.Path object: '{value}'.")
+                    raise InvalidState(
+                        f"Value for format {key} is not a openlane.config.Path object: '{value}'."
+                    )
                 if not os.path.exists(str(value)):
-                    raise InvalidState(f"Value for format {key} does not exist: '{value}'.")
+                    raise InvalidState(
+                        f"Value for format {key} does not exist: '{value}'."
+                    )
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":

@@ -1,3 +1,6 @@
+# 2.0.0-a6
+* Add validation on step exit.
+
 # 2.0.0-a5
 
 * Fix a small path resolution issue.
