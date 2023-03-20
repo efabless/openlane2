@@ -1,3 +1,12 @@
+# 2.0.0-a7
+* Add `DesignFormat.SDC` to `OpenROADStep` `NetlistSTA` and `LayoutSTA` steps
+* Add `sdc_reader.tcl`: a hook script for reading in sdc files to handle deprecated variables
+* Replace deprecated variables in `base.sdc`
+* Properly use `TIME_DERATING_CONSTRAINT` in `base.sdc`
+* Properly use `SYNTH_DRIVING_CELL` in `base.sdc`
+* Properly use `SYNTH_CLK_DRIVING_CELL` in `base.sdc`
+* Replace deprecated variable `LVS_CONNECT_BY_LABEL` in magic scripts
+
 # 2.0.0-a6
 * Add validation on step exit.
 
