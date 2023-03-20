@@ -48,7 +48,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   name = "openlane";
 
   version_file = builtins.readFile ./openlane/__version__.py;
-  version_list = builtins.match ''^__version__ = "([^"]+)"''\n''$'' version_file;
+  version_list = builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' version_file;
   version = builtins.head version_list;
 
   src = gitignore-src.gitignoreSource ./.;

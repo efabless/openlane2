@@ -17,6 +17,7 @@ import yaml
 from enum import Enum
 from decimal import Decimal
 from textwrap import dedent
+from dataclasses import dataclass, asdict
 from collections import UserDict, UserString
 from typing import (
     Any,
@@ -26,14 +27,6 @@ from typing import (
     List,
     Optional,
 )
-
-from dataclasses import dataclass, asdict
-
-
-@dataclass
-class Meta:
-    version: int = 1
-    flow: Union[None, str, List[str]] = "Classic"
 
 
 class Path(UserString, os.PathLike):
@@ -51,6 +44,12 @@ class Path(UserString, os.PathLike):
         A convenience method calling :meth:`os.path.exists`
         """
         return os.path.exists(self)
+
+
+@dataclass
+class Meta:
+    version: int = 1
+    flow: Union[None, str, List[str]] = "Classic"
 
 
 class ConfigEncoder(json.JSONEncoder):

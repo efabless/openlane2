@@ -348,7 +348,6 @@ def place(
     port_protect,
     short_span,
 ):
-
     print(f"Design name: {reader.name}")
 
     pp_val = {
