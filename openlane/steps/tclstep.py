@@ -134,6 +134,7 @@ def create_reproducible(
         warnings = []
 
         try:
+            print(current)
             script = open(current).read()
             if verbose:
                 info(f"Processing {current}…")
