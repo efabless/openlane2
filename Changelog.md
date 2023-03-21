@@ -1,4 +1,11 @@
+# 2.0.0-a7
+
+* Add the custom diode insertion script as a `Step` (disabled by default).
+* `Flow` objects are now passed explicitly to child `Step` objects, removing earlier stack inspection code.
+* `flow_config_vars` now only affect steps running inside a Flow.
+
 # 2.0.0-a6
+
 * Add validation on step exit.
 
 # 2.0.0-a5
