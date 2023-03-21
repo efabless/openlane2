@@ -16,7 +16,7 @@ from __future__ import annotations
 import os
 import glob
 import datetime
-from abc import abstractmethod, ABC
+from abc import abstractmethod
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import (
     List,
@@ -64,7 +64,7 @@ class FlowImplementationError(RuntimeError):
     pass
 
 
-class Flow(ABC):
+class Flow(Step._FlowType):
     """
     An abstract base class for a flow.
 
@@ -370,8 +370,7 @@ class Flow(ABC):
         max_stage_digits = len(str(self.max_stage))
         return f"%0{max_stage_digits}d-" % self.ordinal
 
-    @internal
-    def dir_for_step(self, step: Step):
+    def dir_for_step(self, step: Step) -> str:
         """
         Returns a directory within the run directory for a specific step,
         prefixed with the current progress bar stage number.

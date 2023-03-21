@@ -255,7 +255,7 @@ class HeuristicDiodeInsertion(OdbpyStep):
             "RUN_HEURISTIC_DIODE_INSERTION",
             bool,
             "Enables/disables this step.",
-            default=True,
+            default=False,  # For compatibility with OL1. Yep.
         ),
         Variable(
             "DIODE_ON_PORTS",

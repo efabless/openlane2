@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import os
 import time
-import inspect
 import textwrap
 import subprocess
 from abc import abstractmethod, ABC
@@ -77,6 +76,18 @@ LastState: State = State()
 
 
 class Step(ABC):
+    class _FlowType(ABC):
+        """
+        "Forward declaration" for the methods a step uses to interact with its
+        parent Flow.
+        """
+
+        toolbox: Optional[Toolbox] = None
+
+        @abstractmethod
+        def dir_for_step(self, step: Step) -> str:
+            pass
+
     """
     An abstract base class for Step objects.
 
@@ -94,23 +105,22 @@ class Step(ABC):
         will automatically use :ref:`Config.current_interactive`, but it is
         otherwise required.
 
+    :param flow: The parent flow, if applicable.
+
     :param state_in: The state object this step will use as an input.
 
         The state may also be a `Future[State]`, in which case,
         the `run()` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
 
+        See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
+
         If running in interactive mode, you can set this to ``None``, where it
         will use the last generated state, but it is otherwise required.
 
-        See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
+    :param step_dir: A "scratch directory" for the step. Required.
 
-    :param step_dir: A "scratch directory" for the step.
-
-        If not provided, the call stack will be examined for a
-        `self.dir_for_step` function, which will then be called to
-        get a directory for said step. If not found, a new folder will be
-        created in the current working directory.
+        You may omit this argument as ``None`` if "flow" is specified.
 
     :param name: An optional override name for the step. Useful in custom flows.
     :param id: An optional override name for the ID. Useful in custom flows.
@@ -118,10 +128,12 @@ class Step(ABC):
 
         If set to false, Step implementations are expected to
         output nothing to the terminal.
-    :param
 
     :attr flow_control_variable: An optional key for a configuration variable.
-        If it exists, if this variable is "False" or "None", the step is skipped.
+
+        If running inside a Flow, and this exists, if this variable is "False"
+        or "None", the step is skipped.
+
     :attr flow_control_msg: If `flow_control_variable` causes the step to be
         skipped and this variable is set, the value of this variable is
         printed.
@@ -155,6 +167,7 @@ class Step(ABC):
         id: Optional[str] = None,
         name: Optional[str] = None,
         long_name: Optional[str] = None,
+        flow: Optional[_FlowType] = None,
         **kwargs,
     ):
         if self.id == NotImplemented:
@@ -206,28 +219,23 @@ class Step(ABC):
                 "Variables may not be passed as keyword arguments unless the Config object is per-step."
             )
 
-        if step_dir is None:
-            try:
-                frame = inspect.currentframe()
-                if frame is not None:
-                    current = frame.f_back
-                    while current is not None:
-                        locals = current.f_locals
-                        if "self" in locals and hasattr(locals["self"], "dir_for_step"):
-                            step_dir = locals["self"].dir_for_step(self)
-                        current = current.f_back
-                if step_dir is None:
-                    step_dir = os.path.join(
-                        os.getcwd(),
-                        "openlane_run",
-                        f"{Step.counter}-{slugify(self.id)}",
-                    )
-                    Step.counter += 1
-            finally:
-                del frame
-
-        self.step_dir = step_dir
         self.config = config.copy()
+
+        self.flow = flow
+        if step_dir is None:
+            if self.flow is not None:
+                self.step_dir = self.flow.dir_for_step(self)
+            elif self.config.interactive:
+                raise TypeError("Missing required argument 'step_dir'")
+            else:
+                step_dir = os.path.join(
+                    os.getcwd(),
+                    "openlane_run",
+                    f"{Step.counter}-{slugify(self.id)}",
+                )
+                Step.counter += 1
+        else:
+            self.step_dir = step_dir
         self.state_in = state_in
 
     @classmethod
@@ -301,13 +309,11 @@ class Step(ABC):
 
         :param toolbox: The flow's :class:`Toolbox` object, required.
 
-            If not running in a flow, i.e., in interactive mode, you may leave
-            this argument as ``None``, where a global toolbox will be used
-            instead.
+            If running in interactive mode, you may omit this argument as ``None``,
+            where a global toolbox will be used instead.
 
-            If running inside a flow, you may also leave this argument as ``None``.
-            As a convenience, the call stack will be examined for a :attr:`self.toolbox`,
-            which will be used instead.
+            If running inside a flow, you may also omit this argument as ``None``,
+            where the flow's toolbox will used to be instead.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
@@ -317,32 +323,27 @@ class Step(ABC):
         global LastState
 
         if toolbox is None:
-            try:
-                frame = inspect.currentframe()
-                if frame is not None:
-                    current = frame.f_back
-                    while current is not None:
-                        locals = current.f_locals
-                        if "self" in locals and hasattr(locals["self"], "toolbox"):
-                            assert isinstance(locals["self"].toolbox, Toolbox)
-                            toolbox = locals["self"].toolbox
-                        current = current.f_back
-                if toolbox is None:
-                    if not self.config.interactive:
-                        raise TypeError(
-                            "Missing argument 'toolbox' required when not running in a Flow"
-                        )
-                else:
+            if self.flow is not None:
+                if toolbox := self.flow.toolbox:
                     self.toolbox = toolbox
-            finally:
-                del frame
+                else:
+                    raise StepException(
+                        "Attempted to 'start' a step before its parent Flow."
+                    )
+            elif not self.config.interactive:
+                raise TypeError(
+                    "Missing argument 'toolbox' required when not running in a Flow"
+                )
+            else:
+                # Use the default global value.
+                pass
         else:
             self.toolbox = toolbox
 
         if isinstance(self.state_in, Future):
             self.state_in = self.state_in.result()
 
-        if self.flow_control_variable is not None:
+        if self.flow is not None and self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if isinstance(flow_control_value, bool):
                 if not flow_control_value:
