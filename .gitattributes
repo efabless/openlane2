@@ -1,2 +1,1 @@
-designs/* linguist-detectable=false
-.github/* linguist-detectable=false
+*.v linguist-detectable=false
