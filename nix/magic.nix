@@ -38,14 +38,19 @@
 
 with pkgs; stdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "8d08cb2f2f33c79bea478a79543721d476554c78";
+  rev = "d8f926865dd24ac78558e939f5c816cdc2cb4eb8";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-V+3XduqeUVjaua8JIhln0imLFs4og9ibeUOh0N5aXa0=";
+    sha256 = "sha256-LJqVJacBwBhHTwjcjUVu9Ga2j1mu6C8gYTcdKMW3fT0=";
   };
+
+  patches = [
+    ./patches/magic/csh.patch
+    ./patches/magic/fprintf.patch
+  ];
 
   nativeBuildInputs = [ python3 tcsh gnused ];
 
@@ -72,18 +77,8 @@ with pkgs; stdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-    # csh -> tcsh
-    set -x
-    for file in ./scripts/*; do
-        sed -Ei 's@/bin/csh/?@/usr/bin/env tcsh@g' $file
-    done
-    set +x
-
     # nix shebang fix
     patchShebangs ./scripts
-
-    # Remove manual csh test
-    sed -i '5386,5388d' ./scripts/configure
 
     # "Precompute" git rev-parse HEAD
     sed -i 's@`git rev-parse HEAD`@${rev}@' ./scripts/defs.mak.in

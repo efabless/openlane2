@@ -1,3 +1,7 @@
+# 2.0.0-a8
+* Update `volare` dependency.
+* Update `magic` version + make `magic` nix derivation more resilient.
+
 # 2.0.0-a7
 
 * Add the custom diode insertion script as a `Step` (disabled by default).
