@@ -1,3 +1,7 @@
+# 2.0.0-a10
+* Add `wrapper.tcl` to capture errors in Magic scripts.
+* Fix instances of a deprecated variable was used in Magic scripts.
+
 # 2.0.0-a9
 
 * Add port diode insertion script.
