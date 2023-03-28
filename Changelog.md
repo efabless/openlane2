@@ -1,4 +1,10 @@
+# 2.0.0-a9
+
+* Add port diode insertion script.
+* Fix formula for calculating `FP_TARGET_DENSITY_PCT`.
+
 # 2.0.0-a8
+
 * Update `volare` dependency.
 * Update `magic` version + make `magic` nix derivation more resilient.
 

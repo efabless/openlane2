@@ -343,6 +343,8 @@ class Step(ABC):
         if isinstance(self.state_in, Future):
             self.state_in = self.state_in.result()
 
+        rule(f"{self.long_name}")
+
         if self.flow is not None and self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if isinstance(flow_control_value, bool):
@@ -351,7 +353,7 @@ class Step(ABC):
                         info(self.flow_control_msg)
                     else:
                         info(
-                            f"`{self.flow_control_variable}` is set to False: skipping…"
+                            f"'{self.flow_control_variable}' is set to False: skipping…"
                         )
                         return self.state_in.copy()
             elif flow_control_value is None:
@@ -359,7 +361,7 @@ class Step(ABC):
                     info(self.flow_control_msg)
                 else:
                     info(
-                        f"Required variable `{self.flow_control_variable}` is set to null: skipping…"
+                        f"Required variable '{self.flow_control_variable}' is set to null: skipping…"
                     )
                 return self.state_in.copy()
 
@@ -368,7 +370,6 @@ class Step(ABC):
             f.write(self.state_in.dumps())
 
         self.start_time = time.time()
-        rule(f"{self.long_name}")
         self.state_out = self.run(**kwargs)
         try:
             self.state_out.validate()
