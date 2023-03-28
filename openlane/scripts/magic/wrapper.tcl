@@ -11,25 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 
-load $::env(DESIGN_NAME) -dereference
-
-set extdir $::env(signoff_tmpfiles)/magic_antenna_ext
-file mkdir $extdir
-cd $extdir
-
-select top cell
-extract do local
-extract no capacitance
-extract no coupling
-extract no resistance
-extract no adjust
-if { ! $::env(MAGIC_NO_EXT_UNIQUE) } {
-    extract unique
+if {[catch {source $::env(MAGIC_SCRIPT)} err]} {
+    puts "Error: $err"
+    exit 1
 }
-extract
-feedback save $::env(_tmp_feedback_file)
-
-antennacheck debug
-antennacheck
