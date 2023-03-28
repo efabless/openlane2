@@ -19,6 +19,7 @@ import odb
 import re
 import sys
 import random
+from decimal import Decimal
 
 from reader import click_odb, click
 
@@ -36,7 +37,7 @@ class DiodeInserter:
         diode_pin,
         fake_diode_cell=None,
         side_strategy="source",
-        short_span=0,
+        threshold=0,
         port_protect=[],
         verbose=False,
     ):
@@ -47,7 +48,7 @@ class DiodeInserter:
         self.diode_pin = diode_pin
         self.fake_diode_cell = fake_diode_cell
         self.side_strategy = side_strategy
-        self.short_span = short_span
+        self.threshold = threshold
         self.port_protect = port_protect
 
         self.true_diode_master = block.getDataBase().findMaster(diode_cell)
@@ -289,7 +290,7 @@ class DiodeInserter:
 
             # Determine the span of the signal and skip small internal nets
             span = self.net_span(net)
-            if (span < self.short_span) and not io_protect:
+            if (span < self.threshold) and not io_protect:
                 self.debug(f"[d] Skipping small net {net.getConstName():s} ({span:d})")
                 continue
 
@@ -312,7 +313,7 @@ class DiodeInserter:
 @click.option(
     "-f",
     "--fake-diode-cell",
-    required=True,
+    default=None,
     help="Name of the cell to use as fake diode",
 )
 @click.option(
@@ -331,11 +332,12 @@ class DiodeInserter:
     help="Always place a true diode on nets connected to selected ports",
 )
 @click.option(
-    "-s",
-    "--short-span",
-    type=int,
-    default=90000,
-    help='Maximum span of a net to be considered "short" and not needing a diode',
+    "-t",
+    "--threshold",
+    "threshold_microns",
+    type=Decimal,
+    default=90,
+    help="Minimum manhattan distance of a net to be considered an antenna risk requiring a diode",
 )
 @click_odb
 def place(
@@ -346,8 +348,12 @@ def place(
     diode_pin,
     side_strategy,
     port_protect,
-    short_span,
+    threshold_microns,
 ):
+    threshold = int(
+        threshold_microns * Decimal(reader.db.getTech().getDbUnitsPerMicron())
+    )
+    print(f"Inserting for nets >= {threshold} dbus ({threshold_microns} microns)...")
 
     print(f"Design name: {reader.name}")
 
@@ -364,7 +370,7 @@ def place(
         diode_pin=diode_pin,
         fake_diode_cell=fake_diode_cell,
         side_strategy=side_strategy,
-        short_span=short_span,
+        threshold=threshold,
         port_protect=pp_val[port_protect],
         verbose=verbose,
     )

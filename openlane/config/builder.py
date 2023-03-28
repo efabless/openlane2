@@ -187,6 +187,7 @@ class ConfigBuilder(object):
                 raise TypeError(
                     "The argument design_dir is not supported when config_in is not a dictionary."
                 )
+            config_in = os.path.abspath(config_in)
 
             design_dir = str(os.path.dirname(config_in))
             config_in = str(config_in)
@@ -256,7 +257,6 @@ class ConfigBuilder(object):
         full_pdk_warnings: bool = False,
         resolve_json: bool = False,
     ) -> "Config":
-
         meta_raw: Optional[dict] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
@@ -340,15 +340,7 @@ class ConfigBuilder(object):
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
         )
 
-        try:
-            import volare
-
-            pdk_root = volare.get_volare_home(pdk_root)
-        except ImportError:
-            if pdk_root is None:
-                raise ValueError(
-                    "The pdk_root argument is required as Volare is not installed."
-                )
+        pdk_root = Self._resolve_pdk_root(pdk_root)
 
         config_in = Config(
             {
@@ -359,7 +351,7 @@ class ConfigBuilder(object):
 
         tcl_vars_in = config_in.copy()
         tcl_vars_in[Keys.scl] = ""
-        tcl_vars_in[Keys.design_dir] = os.path.abspath(design_dir)
+        tcl_vars_in[Keys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
 
         process_info = resolve(
@@ -384,7 +376,7 @@ class ConfigBuilder(object):
 
         tcl_vars_in[Keys.pdk] = pdk
         tcl_vars_in[Keys.scl] = scl
-        tcl_vars_in[Keys.design_dir] = os.path.abspath(design_dir)
+        tcl_vars_in[Keys.design_dir] = design_dir
 
         design_config = env_from_tcl(tcl_vars_in, config)
 
@@ -408,9 +400,22 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
-        config_in["PDK_ROOT"] = os.path.abspath(pdk_root)
+        config_in["PDK_ROOT"] = pdk_root
 
         return config_in
+
+    @classmethod
+    def _resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:
+        try:
+            import volare
+
+            pdk_root = volare.get_volare_home(pdk_root)
+        except ImportError:
+            if pdk_root is None:
+                raise ValueError(
+                    "The pdk_root argument is required as Volare is not installed."
+                )
+        return os.path.abspath(pdk_root)
 
     @classmethod
     def _get_pdk_config(
@@ -423,15 +428,7 @@ class ConfigBuilder(object):
         """
         :returns: A tuple of the PDK configuration, the PDK path and the SCL.
         """
-        try:
-            import volare
-
-            pdk_root = volare.get_volare_home(pdk_root)
-        except ImportError:
-            if pdk_root is None:
-                raise ValueError(
-                    "The pdk_root argument is required as Volare is not installed."
-                )
+        pdk_root = Self._resolve_pdk_root(pdk_root)
 
         config_in = Config(
             {

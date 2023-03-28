@@ -47,11 +47,12 @@
 
 
 import os
+import sys
 from typing import TYPE_CHECKING, Optional
 
-try:
+if "klayout" in os.path.basename(sys.executable):
     import pya
-except ImportError:
+else:
     import click
 
     @click.command()
@@ -65,15 +66,13 @@ except ImportError:
     @click.option(
         "-T",
         "--lyt",
-        required=os.getenv("KLAYOUT_TECH") is None,
-        default=os.getenv("KLAYOUT_TECH"),
+        required=True,
         help="KLayout .lyt file",
     )
     @click.option(
         "-P",
         "--lyp",
-        required=os.getenv("KLAYOUT_PROPERTIES") is None,
-        default=os.getenv("KLAYOUT_PROPERTIES"),
+        required=True,
         help="KLayout .lyp file",
     )
     @click.option(
@@ -194,7 +193,7 @@ try:
     print(f"[INFO] Writing out GDS '{output}'…")
     top_only_layout.write(output)
     print("[INFO] Done.")
-    exit(0)
+    pya.Application.instance().exit(0)
 except Exception as e:
     print(e)
-    exit(1)
+    pya.Application.instance().exit(1)

@@ -66,7 +66,7 @@ class ContainerInfo(StringRepresentable):
             try:
                 info = json.loads(info_str)
             except Exception:
-                raise Exception("Docker info was not valid JSON.")
+                raise Exception("Result from 'docker info' was not valid JSON.")
 
             if info.get("host") is not None:
                 if info["host"].get("conmon") is not None:
@@ -124,21 +124,22 @@ class OSInfo(StringRepresentable):
         self.distro = None
         self.distro_version = None
         self.container_info = None
-        self.supported = self.kernel in ["Darwin", "Linux"]
+        self.supported = self.kernel in ["Darwin", "Linux", "Windows"]
 
     @staticmethod
     def get():
         # type: () -> 'OSInfo'
         osinfo = OSInfo()
 
+        if osinfo.kernel == "Windows":
+            osinfo.distro = "Windows"
+            osinfo.distro_version = platform.release()
+            osinfo.kernel_version = platform.version()
+
         if osinfo.kernel == "Darwin":
             osinfo.distro = "macOS"
             osinfo.distro_version = platform.mac_ver()[0]
             osinfo.kernel_version = platform.release()
-            try:
-                subprocess.check_output(["brew", "--version"])
-            except Exception:
-                pass
 
         if osinfo.kernel == "Linux":
             os_release = ""

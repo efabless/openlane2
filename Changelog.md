@@ -1,27 +1,42 @@
-# 2.0.0-dev16
-* Remove `FP_PDN_MACRO_HOOKS` for `caravel_upw`
-* Disable `QUIT_ON_SYNTH_CHECKS` for `caravel_upw`
-* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINES`
-* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`
-* Add `IGNORE_DISCONNECTED_MODULES` for `disconnected_pins.py`. Ignoring some cells is necessary for example conb cell in sky130
-* Add `./openlane/scripts/odbpy/disconnected_pins.py` that reports disconnected instance pins in the design
-* Add `./openlane/scripts/odbpy/set_power_connections.py`
-* Rename metrics:
-    - `route__max__wirelength` -> `route__wirelength__max`
-    - `die__area` -> `design__die__bbox`
-    - `core__area` -> `design__core__bbox`
-    - `lvs__total__errors` -> `design__lvs_errors__count`
-    - `lvs__device_count_difference` -> `design__lvs_device_difference__count`
-    - `lvs__net_count_differences` -> `design__lvs_net_differences__count`
-    - `lvs__property_fails` -> `design__lvs_property_fails__count`
-    - `lvs__unmatched_devices` -> `design__lvs_unmatched_devices__count`
-    - `lvs__unmatched_nets` -> `design__lvs_unmatched_nets__count`
-    - `lvs__unmatched_pins` -> `design__lvs_unmatched_pins__count`
-* Add steps:
-    - `DisconnectedPins`: Checker for `ReporDisconnectedPins`.
-    - `ReportDisconnectedPins`: Report disconnected instance pins in a design.
-    - `JsonHeader`: RTL to JSON.
-    - `SetPowerConnections`: Uses JSON generated in `JsonHeader` and modules information in odb to add global connections for macros in a design.
+# 2.0.0-a8
+* Update `volare` dependency.
+* Update `magic` version + make `magic` nix derivation more resilient.
+
+# 2.0.0-a7
+
+* Add the custom diode insertion script as a `Step` (disabled by default).
+* `Flow` objects are now passed explicitly to child `Step` objects, removing earlier stack inspection code.
+* `flow_config_vars` now only affect steps running inside a Flow.
+
+# 2.0.0-a6
+
+* Add validation on step exit.
+
+# 2.0.0-a5
+
+* Fix a small path resolution issue.
+
+# 2.0.0-a4
+
+* Add basic CI that builds for Linux, macOS and Docker
+* Various improvements to Dockerization so that `openlane --dockerized` can run on Windows
+
+# 2.0.0-a3
+
+* Fixed an issue where KLayout scripts exited silently.
+
+# 2.0.0-a2
+
+* Handle `PDK_ROOT`, `PDK` and `STD_CELL_LIBRARY` environment variables.
+* Unify environment inspection by using `os.environ`- eliminated getenv
+* KLayout scripts no longer accept environment variables.
+* Updated Docker images for consistency.
+* Added ReadTheDocs configuration.
+
+# 2.0.0-a1
+
+* Update smoke test
+* Fix bug with default variables
 
 # 2.0.0-dev15
 

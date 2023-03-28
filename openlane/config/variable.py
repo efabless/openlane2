@@ -158,9 +158,10 @@ class Variable:
         """
         return newline_rx.sub("<br />", self.description)
 
-    def process(
+    def _process(
         self,
-        value,
+        exists: bool,
+        value: Any,
         validating_type: Optional[Type] = None,
         values_so_far: Optional[Dict[str, Any]] = None,
     ):
@@ -174,14 +175,22 @@ class Variable:
 
         assert validating_type is not None
 
-        if value is None:
-            if not self.is_optional():
-                if self.default is not None:
-                    value = self.default
-                else:
-                    raise ValueError(f"Required variable {self.name} given null value.")
+        if not exists:
+            if self.default is not None:
+                return self._process(True, self.default, validating_type, values_so_far)
+            elif self.is_optional():
+                return None
             else:
+                raise ValueError(
+                    f"Required variable {self.name} did not get a specified value."
+                )
+        elif value is None:
+            if self.is_optional():
                 return value
+            else:
+                raise ValueError(
+                    f"Required variable {self.name} received a null value."
+                )
 
         if type(value) == str:
             value = process_string(value, values_so_far)
@@ -203,7 +212,7 @@ class Variable:
                     f"Invalid List provided for variable {self.name}: {value}"
                 )
             for item in value:
-                return_value.append(self.process(item, subtype))
+                return_value.append(self._process(True, item, subtype))
             return return_value
         elif validating_type == Path:
             if not os.path.exists(value):
@@ -269,7 +278,7 @@ class Variable:
                 value = deprecated_callable(value)
             i = i + 1
 
-        return self.process(value, values_so_far=values_so_far.data)
+        return self._process(exists, value, values_so_far=values_so_far.data)
 
     def __hash__(self) -> int:
         return hash((self.name, self.description))
@@ -313,6 +322,30 @@ class Variable:
         errors = []
         final = Config()
         mutable = config.copy()
+
+        if dis := mutable.get("DIODE_INSERTION_STRATEGY"):
+            try:
+                dis = int(dis)
+            except ValueError:
+                pass
+            if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
+                errors.append(
+                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                )
+            else:
+                warnings.append(
+                    "The DIODE_INSERTION_STRATEGY variable has been deprecated. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                )
+
+                config["GRT_REPAIR_ANTENNAS"] = False
+                config["RUN_HEURISTIC_DIODE_INSERTION"] = False
+                if dis in [3, 6]:
+                    config["GRT_REPAIR_ANTENNAS"] = True
+                if dis in [5, 6]:
+                    config["RUN_HEURISTIC_DIODE_INSERTION"] = True
+
+            del mutable["DIODE_INSERTION_STRATEGY"]
+
         for variable in variables:
             try:
                 value_processed = variable._compile(

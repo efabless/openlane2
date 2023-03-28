@@ -51,6 +51,7 @@ class Classic(SequentialFlow):
         OpenROAD.GeneratePDN,
         OpenROAD.GlobalPlacement,
         OpenROAD.RepairDesign,
+        Odb.HeuristicDiodeInsertion,
         OpenROAD.DetailedPlacement,
         OpenROAD.CTS,
         OpenROAD.ResizerTimingPostCTS,

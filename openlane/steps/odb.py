@@ -24,7 +24,7 @@ from ..state import State
 from ..state import DesignFormat
 from .common_variables import io_layer_variables
 
-from ..config import Path, Variable
+from ..config import Path, Variable, StringEnum
 from ..common import get_openlane_root, get_script_dir
 
 inf_rx = re.compile(r"\b(-?)inf\b")
@@ -89,18 +89,25 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        return [
-            "openroad",
-            "-exit",
-            "-metrics",
-            metrics_path,
-            "-python",
-            self.get_script_path(),
-        ] + lefs
+        return (
+            [
+                "openroad",
+                "-exit",
+                "-metrics",
+                metrics_path,
+                "-python",
+                self.get_script_path(),
+            ]
+            + self.get_subcommand()
+            + lefs
+        )
 
     @abstractmethod
     def get_script_path(self):
         pass
+
+    def get_subcommand(self) -> List[str]:
+        return []
 
 
 @Step.factory.register()
@@ -239,7 +246,6 @@ class CustomIOPlacement(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")
 
     def get_command(self) -> List[str]:
-
         length = max(
             self.config["FP_IO_VLENGTH"],
             self.config["FP_IO_HLENGTH"],
@@ -268,3 +274,52 @@ class CustomIOPlacement(OdbpyStep):
                 else "--ignore-unmatched"
             ),
         ]
+
+
+@Step.factory.register()
+class HeuristicDiodeInsertion(OdbpyStep):
+    id = "Odb.HeuristicDiodeInsertion"
+    name = "Heuristic Diode Insertion"
+    long_name = "Heuristic Diode Insertion Script"
+
+    flow_control_variable = "RUN_HEURISTIC_DIODE_INSERTION"
+    config_vars = [
+        Variable(
+            "RUN_HEURISTIC_DIODE_INSERTION",
+            bool,
+            "Enables/disables this step.",
+            default=False,  # For compatibility with OL1. Yep.
+        ),
+        Variable(
+            "DIODE_ON_PORTS",
+            StringEnum("DIODE_ON_PORTS", ["none", "in", "out", "both"]),
+            "Always insert diodes on ports with the specified polarities.",
+            default="in",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "diodes.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["place"]
+
+    def get_command(self) -> List[str]:
+        cell, pin = self.config["DIODE_CELL"].split("/")
+
+        threshold_opts = []
+        if threshold := self.config["HEURISTIC_ANTENNA_THRESHOLD"]:
+            threshold_opts = ["--threshold", threshold]
+
+        return (
+            super().get_command()
+            + [
+                "--diode-cell",
+                cell,
+                "--diode-pin",
+                pin,
+                "--port-protect",
+                self.config["DIODE_ON_PORTS"].value,
+            ]
+            + threshold_opts
+        )

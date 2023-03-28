@@ -26,6 +26,6 @@ Flows and/or custom Steps for the design of more sophisticated chips.
 
 from .flows import Flow
 from .steps import Step
-from .config import ConfigBuilder, InvalidConfig
+from .config import Variable, Config, ConfigBuilder, InvalidConfig
 from .common import *
 from .__version__ import __version__

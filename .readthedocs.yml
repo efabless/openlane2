@@ -1,0 +1,15 @@
+# .readthedocs.yml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.10"
+  commands:
+    - pip3 install -r ./requirements_dev.txt -r ./requirements.txt
+    - cd docs && python3 -m sphinx.cmd.build -M html "source" "_build"
+    - mv docs/_build _readthedocs

@@ -490,9 +490,10 @@ scl_variables = [
         "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
     ),
     Variable(
-        "FAKEDIODE_CELL",
-        Optional[str],
-        "Defines a diode cell used to fix antenna violations. Name only.",
+        "HEURISTIC_ANTENNA_THRESHOLD",
+        Optional[Decimal],
+        "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will typically use a default value.",
+        units="µm",
     ),
     # Routing
     Variable(
@@ -538,4 +539,6 @@ def migrate_old_config(config: Config) -> Config:
 
 
 all_variables: List[Variable] = pdk_variables + scl_variables
-removed_variables: Dict[str, str] = {}
+removed_variables: Dict[str, str] = {
+    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed."
+}

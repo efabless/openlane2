@@ -84,7 +84,7 @@ def main(
                 length_printable = str(to_si(length_microns))
             print(f"{net.getName()},{length_printable}", file=f)
 
-    for (net, length_microns) in above_threshold:
+    for net, length_microns in above_threshold:
         print(
             f"Net {net.getName()} is above the length threshold ({length_microns}/{threshold} μm)."
         )
