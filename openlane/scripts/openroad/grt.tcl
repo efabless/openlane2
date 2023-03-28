@@ -16,23 +16,23 @@ read
 
 set_propagated_clock [all_clocks]
 
-if { $::env(GRT_REPAIR_ANTENNAE) } {
+if { $::env(GRT_REPAIR_ANTENNAS) } {
     set diode_split [split $::env(DIODE_CELL) "/"]
     set_placement_padding -masters [lindex $diode_split 0] -left $::env(DIODE_PADDING)
 }
 
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
-# Check Antennae (Pre-Repair)
+# Check Antennas (Pre-Repair)
 puts "%OL_CREATE_REPORT antenna.rpt"
 check_antennas -verbose
 puts "%OL_END_REPORT"
 
-if { $::env(GRT_REPAIR_ANTENNAE) } {
+if { $::env(GRT_REPAIR_ANTENNAS) } {
     repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS)
     check_placement
 
-    # Check Antennae (Post-Repair)
+    # Check Antennas (Post-Repair)
     puts "%OL_CREATE_REPORT antenna_after.rpt"
     check_antennas -verbose
     puts "%OL_END_REPORT"

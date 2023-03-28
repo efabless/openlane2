@@ -542,11 +542,10 @@ class GlobalRouting(OpenROADStep):
                 default=False,
             ),
             Variable(
-                "GRT_REPAIR_ANTENNAE",
+                "GRT_REPAIR_ANTENNAS",
                 bool,
                 "Specifies the insertion strategy of diodes to be used in the flow.",
                 default=True,
-                deprecated_names=[("DIODE_INSERTION_STRATEGY", lambda x: x in [3, 6])],
             ),
             Variable(
                 "GRT_ANTENNA_ITERS",
@@ -754,7 +753,7 @@ class ParasiticsSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-# Antennae
+# Antennas
 def get_antenna_nets(report: str) -> List[str]:
     pattern = re.compile(r"Net:\s*(\w+)")
     antenna_nets = []
