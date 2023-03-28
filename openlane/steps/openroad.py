@@ -368,7 +368,7 @@ class GlobalPlacement(OpenROADStep):
             Variable(
                 "PL_TARGET_DENSITY_PCT",
                 Optional[Decimal],
-                "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
+                "The desired placement density of cells. If not specified, the value will be equal to (`FP_CORE_UTIL` + 5 * `GPL_CELL_PADDING` + 10).",
                 units="%",
                 deprecated_names=[
                     ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
@@ -406,7 +406,10 @@ class GlobalPlacement(OpenROADStep):
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["PL_TARGET_DENSITY_PCT"] = f"{self.config['FP_CORE_UTIL'] + 5}"
+        env[
+            "PL_TARGET_DENSITY_PCT"
+        ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
+        # Overriden by super if the value is not None
         return super().run(env=env, **kwargs)
 
 
