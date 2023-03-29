@@ -48,6 +48,8 @@ class Classic(SequentialFlow):
         Odb.CustomIOPlacement,
         OpenROAD.GeneratePDN,
         OpenROAD.GlobalPlacement,
+        Odb.DiodesOnPorts,
+        Odb.HeuristicDiodeInsertion,
         OpenROAD.RepairDesign,
         OpenROAD.DetailedPlacement,
         OpenROAD.CTS,

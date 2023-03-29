@@ -69,6 +69,7 @@ class Optimizing(Flow):
                 config,
                 id=f"synthesis-{strategy}",
                 state_in=initial_state,
+                flow=self,
             )
             synth_future = self.start_step_async(synth_step)
             step_list.append(synth_step)
@@ -77,6 +78,7 @@ class Optimizing(Flow):
                 config,
                 state_in=synth_future,
                 id=f"sta-{strategy}",
+                flow=self,
             )
 
             step_list.append(sta_step)
@@ -115,6 +117,7 @@ class Optimizing(Flow):
             state_in=min_area_state,
             id="fp_highutl",
             long_name="Floorplanning (High Util)",
+            flow=self,
         )
         fp.start()
         step_list.append(fp)
@@ -124,6 +127,7 @@ class Optimizing(Flow):
                 state_in=fp.state_out,
                 id="io-highutl",
                 long_name="I/O Placement (High Util)",
+                flow=self,
             )
             io.start()
             step_list.append(io)
@@ -132,6 +136,7 @@ class Optimizing(Flow):
                 state_in=io.state_out,
                 id="gpl-highutil",
                 long_name="Global Placement (High Util)",
+                flow=self,
             )
             gpl.start()
             step_list.append(gpl)
@@ -144,6 +149,7 @@ class Optimizing(Flow):
                 state_in=min_area_state,
                 id="fp-lowutl",
                 long_name="Floorplanning (Low Util)",
+                flow=self,
             )
             fp.start()
             step_list.append(fp)
@@ -152,6 +158,7 @@ class Optimizing(Flow):
                 state_in=fp.state_out,
                 id="io-lowutl",
                 long_name="I/O Placement (Low Util)",
+                flow=self,
             )
             io.start()
             step_list.append(io)
@@ -160,6 +167,7 @@ class Optimizing(Flow):
                 state_in=io.state_out,
                 id="gpl-lowutl",
                 long_name="Global Placement (Low Util)",
+                flow=self,
             )
             gpl.start()
             step_list.append(gpl)

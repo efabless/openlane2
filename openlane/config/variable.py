@@ -322,6 +322,31 @@ class Variable:
         errors = []
         final = Config()
         mutable = config.copy()
+
+        if dis := mutable.get("DIODE_INSERTION_STRATEGY"):
+            try:
+                dis = int(dis)
+            except ValueError:
+                pass
+            if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
+                errors.append(
+                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                )
+            else:
+                warnings.append(
+                    "The DIODE_INSERTION_STRATEGY variable has been deprecated. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                )
+
+                config["GRT_REPAIR_ANTENNAS"] = False
+                config["RUN_HEURISTIC_DIODE_INSERTION"] = False
+                if dis in [3, 6]:
+                    config["GRT_REPAIR_ANTENNAS"] = True
+                if dis in [5, 6]:
+                    config["RUN_HEURISTIC_DIODE_INSERTION"] = True
+                    config["DIODE_ON_PORTS"] = "in"
+
+            del mutable["DIODE_INSERTION_STRATEGY"]
+
         for variable in variables:
             try:
                 value_processed = variable._compile(

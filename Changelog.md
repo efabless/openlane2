@@ -1,13 +1,25 @@
+# 2.0.0-a10
+* Add `wrapper.tcl` to capture errors in Magic scripts.
+* Fix instances of a deprecated variable was used in Magic scripts.
+
+# 2.0.0-a9
+
+* Add port diode insertion script.
+* Fix formula for calculating `FP_TARGET_DENSITY_PCT`.
+
+# 2.0.0-a8
+
+* Update `volare` dependency.
+* Update `magic` version + make `magic` nix derivation more resilient.
+
 # 2.0.0-a7
-* Add `DesignFormat.SDC` to `OpenROADStep` `NetlistSTA` and `LayoutSTA` steps
-* Add `sdc_reader.tcl`: a hook script for reading in sdc files to handle deprecated variables
-* Replace deprecated variables in `base.sdc`
-* Properly use `TIME_DERATING_CONSTRAINT` in `base.sdc`
-* Properly use `SYNTH_DRIVING_CELL` in `base.sdc`
-* Properly use `SYNTH_CLK_DRIVING_CELL` in `base.sdc`
-* Replace deprecated variable `LVS_CONNECT_BY_LABEL` in magic scripts
+
+* Add the custom diode insertion script as a `Step` (disabled by default).
+* `Flow` objects are now passed explicitly to child `Step` objects, removing earlier stack inspection code.
+* `flow_config_vars` now only affect steps running inside a Flow.
 
 # 2.0.0-a6
+
 * Add validation on step exit.
 
 # 2.0.0-a5

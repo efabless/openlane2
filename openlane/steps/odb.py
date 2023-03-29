@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import json
+from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Optional
 
@@ -24,8 +25,9 @@ from ..state import State
 from ..state import DesignFormat
 from .common_variables import io_layer_variables
 
-from ..config import Path, Variable
+from ..config import Path, Variable, StringEnum
 from ..common import get_openlane_root, get_script_dir
+from ..logging import warn
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -91,18 +93,25 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        return [
-            "openroad",
-            "-exit",
-            "-metrics",
-            metrics_path,
-            "-python",
-            self.get_script_path(),
-        ] + lefs
+        return (
+            [
+                "openroad",
+                "-exit",
+                "-metrics",
+                metrics_path,
+                "-python",
+                self.get_script_path(),
+            ]
+            + self.get_subcommand()
+            + lefs
+        )
 
     @abstractmethod
     def get_script_path(self):
         pass
+
+    def get_subcommand(self) -> List[str]:
+        return []
 
 
 @Step.factory.register()
@@ -234,3 +243,106 @@ class CustomIOPlacement(OdbpyStep):
                 else "--ignore-unmatched"
             ),
         ]
+
+
+@Step.factory.register()
+class DiodesOnPorts(OdbpyStep):
+    id = "Odb.DiodesOnPorts"
+    name = "Diodes on Ports"
+    long_name = "Diode on Port Insertion Script"
+
+    config_vars = [
+        Variable(
+            "DIODE_ON_PORTS",
+            StringEnum("DIODE_ON_PORTS", ["none", "in", "out", "both"]),
+            "Always insert diodes on ports with the specified polarities.",
+            default="none",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "diodes.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["place"]
+
+    def get_command(self) -> List[str]:
+        cell, pin = self.config["DIODE_CELL"].split("/")
+
+        return super().get_command() + [
+            "--threshold",
+            "Infinity",
+            "--diode-cell",
+            cell,
+            "--diode-pin",
+            pin,
+            "--port-protect",
+            self.config["DIODE_ON_PORTS"].value,
+        ]
+
+    def run(self, **kwargs) -> State:
+        if self.config["DIODE_ON_PORTS"].value == "none":
+            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            return Step.run(self, **kwargs)
+
+        if self.config["GPL_CELL_PADDING"] == 0:
+            warn(
+                "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
+            )
+
+        return super().run(**kwargs)
+
+
+@Step.factory.register()
+class HeuristicDiodeInsertion(OdbpyStep):
+    id = "Odb.HeuristicDiodeInsertion"
+    name = "Heuristic Diode Insertion"
+    long_name = "Heuristic Diode Insertion Script"
+
+    flow_control_variable = "RUN_HEURISTIC_DIODE_INSERTION"
+    config_vars = [
+        Variable(
+            "RUN_HEURISTIC_DIODE_INSERTION",
+            bool,
+            "Enables/disables this step.",
+            default=False,  # For compatibility with OL1. Yep.
+        ),
+        Variable(
+            "HEURISTIC_ANTENNA_THRESHOLD",
+            Optional[Decimal],
+            "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will typically use a default value.",
+            units="µm",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "diodes.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["place"]
+
+    def get_command(self) -> List[str]:
+        cell, pin = self.config["DIODE_CELL"].split("/")
+
+        threshold_opts = []
+        if threshold := self.config["HEURISTIC_ANTENNA_THRESHOLD"]:
+            threshold_opts = ["--threshold", threshold]
+
+        return (
+            super().get_command()
+            + [
+                "--diode-cell",
+                cell,
+                "--diode-pin",
+                pin,
+            ]
+            + threshold_opts
+        )
+
+    def run(self, **kwargs) -> State:
+        if self.config["GPL_CELL_PADDING"] == 0:
+            warn(
+                "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
+            )
+
+        return super().run(**kwargs)

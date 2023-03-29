@@ -462,14 +462,14 @@ scl_variables = [
     ),
     Variable(
         "GPL_CELL_PADDING",
-        Optional[Decimal],
-        "Cell padding value (in sites) for global placement. Using this is not recommended as you can simply use the density control for global placement.",
+        Decimal,
+        "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
         units="sites",
     ),
     Variable(
         "DPL_CELL_PADDING",
         Decimal,
-        "Defines the number of sites to pad the cells lef views with during detailed placement. The number will be integer divided by 2 and placed on both sides.",
+        "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
         units="sites",
     ),
     Variable(
@@ -482,11 +482,6 @@ scl_variables = [
         "DIODE_CELL",
         Optional[str],
         "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
-    ),
-    Variable(
-        "FAKEDIODE_CELL",
-        Optional[str],
-        "Defines a diode cell used to fix antenna violations. Name only.",
     ),
     # Routing
     Variable(
@@ -532,4 +527,6 @@ def migrate_old_config(config: Config) -> Config:
 
 
 all_variables: List[Variable] = pdk_variables + scl_variables
-removed_variables: Dict[str, str] = {}
+removed_variables: Dict[str, str] = {
+    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed."
+}

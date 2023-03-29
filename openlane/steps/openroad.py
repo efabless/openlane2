@@ -368,7 +368,7 @@ class GlobalPlacement(OpenROADStep):
             Variable(
                 "PL_TARGET_DENSITY_PCT",
                 Optional[Decimal],
-                "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
+                "The desired placement density of cells. If not specified, the value will be equal to (`FP_CORE_UTIL` + 5 * `GPL_CELL_PADDING` + 10).",
                 units="%",
                 deprecated_names=[
                     ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
@@ -406,7 +406,10 @@ class GlobalPlacement(OpenROADStep):
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["PL_TARGET_DENSITY_PCT"] = f"{self.config['FP_CORE_UTIL'] + 5}"
+        env[
+            "PL_TARGET_DENSITY_PCT"
+        ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
+        # Overriden by super if the value is not None
         return super().run(env=env, **kwargs)
 
 
@@ -542,11 +545,10 @@ class GlobalRouting(OpenROADStep):
                 default=False,
             ),
             Variable(
-                "GRT_REPAIR_ANTENNAE",
+                "GRT_REPAIR_ANTENNAS",
                 bool,
                 "Specifies the insertion strategy of diodes to be used in the flow.",
                 default=True,
-                deprecated_names=[("DIODE_INSERTION_STRATEGY", lambda x: x in [3, 6])],
             ),
             Variable(
                 "GRT_ANTENNA_ITERS",
@@ -755,7 +757,7 @@ class ParasiticsSTA(OpenROADStep):
         return super().run(env=env, **kwargs)
 
 
-# Antennae
+# Antennas
 def get_antenna_nets(report: str) -> List[str]:
     pattern = re.compile(r"Net:\s*(\w+)")
     antenna_nets = []

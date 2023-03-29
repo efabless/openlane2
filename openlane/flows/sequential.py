@@ -38,7 +38,7 @@ class SequentialFlow(Flow):
     """
 
     @classmethod
-    def make(Self, step_ids: List[str]) -> Type["SequentialFlow"]:
+    def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
         step_list = []
         for name in step_ids:
             step = Step.get(name)
@@ -84,7 +84,7 @@ class SequentialFlow(Flow):
 
         current_state = initial_state
         for cls in self.Steps:
-            step = cls(config=self.config, state_in=current_state)
+            step = cls(config=self.config, state_in=current_state, flow=self)
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
