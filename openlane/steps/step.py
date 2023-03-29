@@ -254,32 +254,38 @@ class Step(ABC):
         """
         Renders Markdown help for this step to a string.
         """
+        doc_string = ""
+        if Self.__doc__:
+            doc_string = textwrap.dedent(Self.__doc__)
 
-        result = textwrap.dedent(
-            f"""
-        ### {Self._get_desc()}
+        result = (
+            textwrap.dedent(
+                f"""\
+                ### <a name="{Self.id}"></a> {Self._get_desc()}
 
-        {Self.__doc__ or ""}
+                %s
 
-        #### Importing
+                #### Importing
 
-        <br />
+                <br />
 
-        ```python
-        from {Self.__module__} import {Self.__name__}
+                ```python
+                from {Self.__module__} import {Self.__name__}
 
-        # or
-        
-        from openlane.steps import Step
+                # or
+                
+                from openlane.steps import Step
 
-        Synthesis = Step.get("{Self.id}")
-        ``` 
+                {Self.__name__} = Step.get("{Self.id}")
+                ``` 
 
-        #### Configuration Variables
+                #### Configuration Variables
 
-        | Variable Name | Type | Description | Default | Units |
-        | - | - | - | - | - |
-        """
+                | Variable Name | Type | Description | Default | Units |
+                | - | - | - | - | - |
+                """
+            )
+            % doc_string
         )
         for var in Self.config_vars:
             units = var.units or ""
