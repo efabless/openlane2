@@ -5,14 +5,17 @@ Each Flow's list configuration variables is essentially a sum of its included st
 
 Additionally, the [PDK Configuration Variables](./pdk_config_vars.md) are exposed to all steps.
 
-## Flows
+If you're looking for documentation for the `Flow` Python classes themselves, check the API reference [here](./api/flows/index.md).
+
+${"##"} Flows
 
 %for flow in flows:
 ${flow.get_help_md()}
 %endfor
 
 
-## Universal Flow Configuration Variables
+${"##"} Universal Flow Configuration Variables
+
 These are flow configuration variables that are used commonly enough that we decided to expose them to all steps and all flows.
 
 Configuration objects, be they JSON, Tcl or directly passed to the Python API, can freely override these values.

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import subprocess
 import sys
 from typing import Optional
 from base64 import b64encode
@@ -193,6 +194,67 @@ class XOR(Step):
                 layout_a,
                 layout_b,
             ],
+            env=env,
+        )
+
+        return state_out
+
+
+@Step.factory.register()
+class OpenGUI(Step):
+    id = "KLayout.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.DEF]
+    outputs = []
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        assert isinstance(self.state_in, State)
+
+        lyp = self.config["KLAYOUT_PROPERTIES"]
+        lyt = self.config["KLAYOUT_TECH"]
+        lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
+        if None in [lyp, lyt, lym]:
+            raise StepError(
+                "Cannot open design in KLayout as the PDK does not appear to support KLayout."
+            )
+
+        lefs = [
+            "--input-lef",
+            str(self.config["TECH_LEF"]),
+        ]
+        for lef in self.config["CELL_LEFS"]:
+            lefs.append("--input-lef")
+            lefs.append(str(lef))
+        if extra_lefs := self.config["EXTRA_LEFS"]:
+            for lef in extra_lefs:
+                lefs.append("--input-lef")
+                lefs.append(str(lef))
+
+        kwargs, env = self.extract_env(kwargs)
+
+        cmd = [
+            sys.executable,
+            os.path.join(
+                get_script_dir(),
+                "klayout",
+                "open_design.py",
+            ),
+            "--lyt",
+            str(lyt),
+            "--lyp",
+            str(lyp),
+            "--lym",
+            str(lym),
+            str(self.state_in.get("def")),
+        ] + lefs
+
+        print(" ".join(cmd))
+
+        subprocess.check_call(
+            cmd,
             env=env,
         )
 

@@ -81,7 +81,11 @@ def generate_module_docs(app: Sphinx, conf: Config):
             f.write(
                 template.render(
                     module=module,
-                    flows=[flow_factory.get(key) for key in flow_factory.list()],
+                    flows=[
+                        flow_factory.get(key)
+                        for key in flow_factory.list()
+                        if flow_factory.get(key).__doc__ is not None
+                    ],
                 )
             )
 

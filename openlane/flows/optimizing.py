@@ -24,20 +24,14 @@ from ..steps import Step, Yosys, OpenROAD
 from ..config import Config
 
 
+#   "Optimizing" is a custom demo flow to show what's possible with non-sequential Flows in OpenLane 2.
+#   It works across two steps:
+#   * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
+#       The best-performing strategy in terms of minimizing the area makes it to the next stage.
+#   * Floorplanning and Placement - tries FP and placement with a high utilization.
+#       If the high utilization fails, a lower is fallen back to as a suggestion.
 @Flow.factory.register()
 class Optimizing(Flow):
-    """
-    A customized flow composed of two stages:
-
-    * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
-
-    The best-performing strategy in terms of minimizing the area makes it to the next stage.
-
-    * Floorplanning and Placement - tries FP and placement with a high utilization.
-
-    If the high utilization fails, a lower is fallen back to as a suggestion.
-    """
-
     Steps = [
         Yosys.Synthesis,
         OpenROAD.NetlistSTA,

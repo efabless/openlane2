@@ -13,105 +13,39 @@
 # limitations under the License.
 from __future__ import annotations
 
-import os
-import sys
-import tempfile
-import subprocess
-from typing import List, Tuple
-
 from .flow import Flow
-from ..common import get_script_dir
-from ..state import State
-from ..steps import Step, KLayout
+from .sequential import SequentialFlow
+from ..steps import KLayout, OpenROAD
 
 
 @Flow.factory.register()
-class OpenInKLayout(Flow):
+class OpenInKLayout(SequentialFlow):
     """
-    This 'flow' actually just opens the LEF/DEF from the initial state object
-    in KLayout. Fancy that.
+    This 'flow' actually just has one step that opens the LEF/DEF from the
+    initial state object in KLayout. Fancy that.
 
     Intended for use with run tags that have already been run with
-    another flow.
+    another flow, i.e.: ::
+        openlane [...]
+        openlane --last-run --flow OpenInKLayout [...]
     """
-
-    Steps = [KLayout.StreamOut]
 
     name = "Opening in KLayout"
-
-    def run(
-        self,
-        initial_state: State,
-        **kwargs,
-    ) -> Tuple[State, List[Step]]:
-        self.set_max_stage_count(1)
-        self.start_stage("Opening in KLayout")
-
-        lefs = ["--input-lef", self.config["TECH_LEF"]]
-        for lef in self.config["CELL_LEFS"]:
-            lefs.append("--input-lef")
-            lefs.append(lef)
-        if extra_lefs := self.config["EXTRA_LEFS"]:
-            for lef in extra_lefs:
-                lefs.append("--input-lef")
-                lefs.append(lef)
-
-        subprocess.check_call(
-            [
-                sys.executable,
-                os.path.join(
-                    get_script_dir(),
-                    "klayout",
-                    "open_design.py",
-                ),
-                "--lyt",
-                self.config["KLAYOUT_TECH"],
-                "--lyp",
-                self.config["KLAYOUT_PROPERTIES"],
-                "--lym",
-                self.config["KLAYOUT_DEF_LAYER_MAP"],
-                initial_state["def"],
-            ]
-            + lefs
-        )
-        self.end_stage()
-
-        return (initial_state, [])
+    Steps = [KLayout.OpenGUI]
 
 
 @Flow.factory.register()
-class OpenInOpenROAD(Flow):
+class OpenInOpenROAD(SequentialFlow):
     """
-    This 'flow' actually just opens the ODB from the initial state object
-    in the OpenROAD GUI.
+    This 'flow' actually just has one step that opens the ODB from
+    the initial state object in OpenROAD.
 
     Intended for use with run tags that have already been run with
-    another flow.
+    another flow, i.e. ::
+        openlane [...]
+        openlane --last-run --flow OpenInOpenROAD [...]
     """
 
     name = "Opening in OpenROAD"
 
-    Steps = []
-
-    def run(
-        self,
-        initial_state: State,
-        **kwargs,
-    ) -> Tuple[State, List[Step]]:
-        self.set_max_stage_count(1)
-
-        with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
-            f.write(f"read_db \"{initial_state['odb']}\"")
-            f.flush()
-
-            subprocess.check_call(
-                [
-                    "openroad",
-                    "-no_splash",
-                    "-gui",
-                    f.name,
-                ]
-            )
-        self.end_stage()
-
-        return (initial_state, [])
+    Steps = [OpenROAD.OpenGUI]

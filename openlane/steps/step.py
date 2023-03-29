@@ -263,11 +263,11 @@ class Step(ABC):
                 f"""\
                 ### <a name="{Self.id}"></a> {Self._get_desc()}
 
+                ```{{eval-rst}}
                 %s
+                ```
 
                 #### Importing
-
-                <br />
 
                 ```python
                 from {Self.__module__} import {Self.__name__}
@@ -277,19 +277,23 @@ class Step(ABC):
                 from openlane.steps import Step
 
                 {Self.__name__} = Step.get("{Self.id}")
-                ``` 
-
+                ```
+                """
+            )
+            % doc_string
+        )
+        if len(Self.config_vars):
+            result += textwrap.dedent(
+                """
                 #### Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units |
                 | - | - | - | - | - |
                 """
             )
-            % doc_string
-        )
-        for var in Self.config_vars:
-            units = var.units or ""
-            result += f"| `{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+            for var in Self.config_vars:
+                units = var.units or ""
+                result += f"| `{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
 
         return result
 

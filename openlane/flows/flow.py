@@ -131,11 +131,17 @@ class Flow(Step._FlowType):
                 f"""\
                 ### {Self.__name__}
 
+                ```{{eval-rst}}
                 %s
+                ```
+
+                #### Using from the CLI
+
+                ```sh
+                openlane --flow {Self.__name__} [...]
+                ```
 
                 #### Importing
-
-                <br />
 
                 ```python
                 from openlane.flows import Flow

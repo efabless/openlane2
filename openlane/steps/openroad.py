@@ -14,6 +14,8 @@
 import os
 import re
 import json
+import tempfile
+import subprocess
 from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
@@ -1053,3 +1055,32 @@ class ResizerTimingPostGRT(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")
+
+
+@Step.factory.register()
+class OpenGUI(Step):
+    id = "OpenROAD.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.ODB]
+    outputs = []
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        assert isinstance(self.state_in, State)
+
+        with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
+            f.write(f"read_db \"{state_out['odb']}\"")
+            f.flush()
+
+            subprocess.check_call(
+                [
+                    "openroad",
+                    "-no_splash",
+                    "-gui",
+                    f.name,
+                ]
+            )
+
+        return state_out
