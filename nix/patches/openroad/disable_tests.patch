@@ -1,0 +1,299 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index aad3493d6..64b449825 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -69,6 +69,9 @@ option(USE_SYSTEM_OPENSTA "Use system shared OpenSTA library" OFF)
+ # Allow to use external shared abc libraries
+ option(USE_SYSTEM_ABC "Use system shared ABC library" OFF)
+ 
++# Allow disabling tests
++option(ENABLE_TESTS "Enable OpenROAD tests" ON)
++
+ project(OpenROAD VERSION 1
+   LANGUAGES CXX
+ )
+@@ -141,8 +144,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+ 
+ add_subdirectory(third-party)
+ 
+-enable_testing()
+-add_custom_target(build_and_test ${CMAKE_CTEST_COMMAND} --parallel --output-on-failure)
+-include(GoogleTest)
++if(ENABLE_TESTS)
++  enable_testing()
++  add_custom_target(build_and_test ${CMAKE_CTEST_COMMAND} --parallel --output-on-failure)
++  include(GoogleTest)
++endif()
+ 
+ add_subdirectory(src)
+diff --git a/src/dpl/CMakeLists.txt b/src/dpl/CMakeLists.txt
+index 5dc86afd4..ea1bc360c 100644
+--- a/src/dpl/CMakeLists.txt
++++ b/src/dpl/CMakeLists.txt
+@@ -122,4 +122,6 @@ if (Python3_FOUND AND BUILD_PYTHON)
+ 
+ endif()
+ 
+-add_subdirectory(test)
+\ No newline at end of file
++if(ENABLE_TESTS)
++  add_subdirectory(test)
++endif()
+\ No newline at end of file
+diff --git a/src/drt/CMakeLists.txt b/src/drt/CMakeLists.txt
+index d148b3084..a432ed291 100644
+--- a/src/drt/CMakeLists.txt
++++ b/src/drt/CMakeLists.txt
+@@ -172,48 +172,50 @@ target_compile_options(drt
+ ############################################################
+ # Unit testing
+ ############################################################
+-enable_testing()
++if(ENABLE_TESTS)
++  enable_testing()
+ 
+-add_executable(trTest
+-  ${FLEXROUTE_HOME}/test/gcTest.cpp
+-  ${FLEXROUTE_HOME}/test/fixture.cpp
+-  ${FLEXROUTE_HOME}/test/stubs.cpp
+-  ${OPENROAD_HOME}/src/gui/src/stub.cpp
+-)
+-
+-target_include_directories(trTest
+-  PRIVATE
+-  ${FLEXROUTE_HOME}/src
+-  ${OPENROAD_HOME}/include
+-)
++  add_executable(trTest
++    ${FLEXROUTE_HOME}/test/gcTest.cpp
++    ${FLEXROUTE_HOME}/test/fixture.cpp
++    ${FLEXROUTE_HOME}/test/stubs.cpp
++    ${OPENROAD_HOME}/src/gui/src/stub.cpp
++  )
+ 
+-target_link_libraries(trTest
+-  drt
+-  odb
+-)
++  target_include_directories(trTest
++    PRIVATE
++    ${FLEXROUTE_HOME}/src
++    ${OPENROAD_HOME}/include
++  )
+ 
+-# Use the shared library if found.  We need to pass this info to
+-# the code to select the corresponding include.  Using the shared
+-# library speeds up compilation.
+-if (Boost_unit_test_framework_FOUND)
+-  message(STATUS "Boost unit_test_framework library found")
+   target_link_libraries(trTest
+-    Boost::unit_test_framework
+-  )
+-  target_compile_definitions(trTest
+-    PRIVATE
+-    HAS_BOOST_UNIT_TEST_LIBRARY
++    drt
++    odb
+   )
+-endif()
+ 
+-add_test(NAME trTest COMMAND trTest)
+-add_dependencies(build_and_test trTest)
++  # Use the shared library if found.  We need to pass this info to
++  # the code to select the corresponding include.  Using the shared
++  # library speeds up compilation.
++  if (Boost_unit_test_framework_FOUND)
++    message(STATUS "Boost unit_test_framework library found")
++    target_link_libraries(trTest
++      Boost::unit_test_framework
++    )
++    target_compile_definitions(trTest
++      PRIVATE
++      HAS_BOOST_UNIT_TEST_LIBRARY
++    )
++  endif()
+ 
+-if(DEBUG_DRT_UNDERFLOW)
+-  target_compile_definitions(drt
+-    PRIVATE
+-    DEBUG_DRT_UNDERFLOW=1
+-  )
++  add_test(NAME trTest COMMAND trTest)
++  add_dependencies(build_and_test trTest)
++
++  if(DEBUG_DRT_UNDERFLOW)
++    target_compile_definitions(drt
++      PRIVATE
++      DEBUG_DRT_UNDERFLOW=1
++    )
++  endif()
+ endif()
+ 
+ ############################################################
+diff --git a/src/odb/CMakeLists.txt b/src/odb/CMakeLists.txt
+index eb7fca065..e1e790d51 100644
+--- a/src/odb/CMakeLists.txt
++++ b/src/odb/CMakeLists.txt
+@@ -28,7 +28,10 @@ add_subdirectory(src/def)
+ add_subdirectory(src/zutil)
+ add_subdirectory(src/tm)
+ add_subdirectory(src/cdl)
+-add_subdirectory(test/cpp)
++
++if(ENABLE_TESTS)
++  add_subdirectory(test/cpp)
++endif()
+ 
+ add_library(odb INTERFACE)
+ target_link_libraries(odb
+@@ -73,12 +76,14 @@ endif()
+ ############################################################
+ # Unit testing
+ ############################################################
+-enable_testing()
++if(ENABLE_TESTS)
++  enable_testing()
+ 
+-add_executable(parseTest
+-  ${PROJECT_SOURCE_DIR}/test/parseTest.cpp
+-)
++  add_executable(parseTest
++    ${PROJECT_SOURCE_DIR}/test/parseTest.cpp
++  )
+ 
+-target_link_libraries(parseTest
+-  odb
+-)
++  target_link_libraries(parseTest
++    odb
++  )
++endif()
+\ No newline at end of file
+diff --git a/src/rcx/src/CMakeLists.txt b/src/rcx/src/CMakeLists.txt
+index 0dede15da..e2636ccee 100644
+--- a/src/rcx/src/CMakeLists.txt
++++ b/src/rcx/src/CMakeLists.txt
+@@ -95,39 +95,40 @@ messages(
+ ############################################################
+ # Unit testing
+ ############################################################
+-enable_testing()
++if(ENABLE_TESTS)
++  enable_testing()
+ 
+-add_executable(rcxUnitTest
+-  ${PROJECT_SOURCE_DIR}/test/ext2dBoxTest.cpp
+-)
+-
+-target_include_directories(rcxUnitTest
+-  PRIVATE
+-  ${PROJECT_SOURCE_DIR}/src
+-  ${OPENROAD_HOME}/include
+-)
+-
+-target_link_libraries(rcxUnitTest
+-  rcx_lib
+-)
+-
+-# Use the shared library if found.  We need to pass this info to
+-# the code to select the corresponding include.  Using the shared
+-# library speeds up compilation.
+-if (Boost_unit_test_framework_FOUND)
+-  message(STATUS "Boost unit_test_framework library found")
+-  target_link_libraries(trTest
+-    Boost::unit_test_framework
++  add_executable(rcxUnitTest
++    ${PROJECT_SOURCE_DIR}/test/ext2dBoxTest.cpp
+   )
+-  target_compile_definitions(trTest
++
++  target_include_directories(rcxUnitTest
+     PRIVATE
+-    HAS_BOOST_UNIT_TEST_LIBRARY
++    ${PROJECT_SOURCE_DIR}/src
++    ${OPENROAD_HOME}/include
+   )
+-endif()
+ 
+-add_test(NAME trTest COMMAND trTest)
+-add_dependencies(build_and_test trTest)
++  target_link_libraries(rcxUnitTest
++    rcx_lib
++  )
+ 
++  # Use the shared library if found.  We need to pass this info to
++  # the code to select the corresponding include.  Using the shared
++  # library speeds up compilation.
++  if (Boost_unit_test_framework_FOUND)
++    message(STATUS "Boost unit_test_framework library found")
++    target_link_libraries(rcxUnitTest
++      Boost::unit_test_framework
++    )
++    target_compile_definitions(rcxUnitTest
++      PRIVATE
++      HAS_BOOST_UNIT_TEST_LIBRARY
++    )
++  endif()
++
++  add_test(NAME rcxUnitTest COMMAND rcxUnitTest)
++  add_dependencies(build_and_test rcxUnitTest)
++endif()
+ 
+ if (Python3_FOUND AND BUILD_PYTHON)
+   swig_lib(NAME          rcx_py
+diff --git a/src/utl/CMakeLists.txt b/src/utl/CMakeLists.txt
+index 5da5d89cd..464e5b3ca 100644
+--- a/src/utl/CMakeLists.txt
++++ b/src/utl/CMakeLists.txt
+@@ -104,19 +104,21 @@ target_link_libraries(utl
+ 
+ ############################################################
+ # Unit testing
+-############################################################
+-enable_testing()
++############################################################\
++if(ENABLE_TESTS)
++  enable_testing()
+ 
+-add_executable(CFileUtilsTest
+-  ${PROJECT_SOURCE_DIR}/src/utl/test/CFileUtilsTest.cpp
+-)
++  add_executable(CFileUtilsTest
++    ${PROJECT_SOURCE_DIR}/src/utl/test/CFileUtilsTest.cpp
++  )
+ 
+-target_include_directories(CFileUtilsTest
+-  PRIVATE
+-  ${PROJECT_SOURCE_DIR}/src
+-  ${OPENROAD_HOME}/include
+-)
++  target_include_directories(CFileUtilsTest
++    PRIVATE
++    ${PROJECT_SOURCE_DIR}/src
++    ${OPENROAD_HOME}/include
++  )
+ 
+-target_link_libraries(CFileUtilsTest
+-  utl
+-)
++  target_link_libraries(CFileUtilsTest
++    utl
++  )
++endif()
+\ No newline at end of file
+diff --git a/third-party/CMakeLists.txt b/third-party/CMakeLists.txt
+index dfd8c155d..d863c490c 100644
+--- a/third-party/CMakeLists.txt
++++ b/third-party/CMakeLists.txt
+@@ -33,7 +33,10 @@
+ ##
+ ###############################################################################
+ 
+-add_subdirectory(gtest EXCLUDE_FROM_ALL)
++
++if(ENABLE_TESTS)
++  add_subdirectory(gtest EXCLUDE_FROM_ALL)
++endif()
+ 
+ if (NOT USE_SYSTEM_ABC)
+ 

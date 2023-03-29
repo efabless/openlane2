@@ -158,7 +158,7 @@ proc write {args} {
 
     if { [info exists ::env(SAVE_SDC)] } {
         puts "Writing timing constraints to '$::env(SAVE_SDC)'…"
-        write_sdc $::env(SAVE_SDC)
+        write_sdc -no_timestamp $::env(SAVE_SDC)
     }
 
     if { [info exists ::env(SAVE_SPEF)] } {
