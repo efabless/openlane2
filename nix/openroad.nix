@@ -27,13 +27,13 @@ with pkgs; let
   });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "5d4aeb1c605719de28366908f4fbaae439a57d05";
+  rev = "71a707440d5db5c0d0ec83f86b4a3d797e39c678";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-c7zIJ/WZWEGFKmnaJjM6Yya5wHrnT16FyuBiNb6P8Dw=";
+    sha256 = "sha256-CcDUKS/fkEMHCB4Gz6B3fHZdu089wGRv2Fzj7VRb2v8=";
     fetchSubmodules = true;
   };
 
@@ -56,10 +56,6 @@ in clangStdenv.mkDerivation rec {
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
   '';
-
-  patches = [
-    ./patches/openroad/disable_tests.patch
-  ];
 
   buildInputs = [
     abc
