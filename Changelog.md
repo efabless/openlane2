@@ -1,3 +1,12 @@
+# 2.0.0-a11
+* Update OpenROAD, Add ABC patch to use system zlib
+* Adds SDC files as an input to `OpenROADStep`, `NetlistSTA` and `LayoutSTA` steps
+* Add `sdc_reader.tcl`: a hook script for reading in SDC files while handling deprecated variables
+* Replace deprecated variables in base.sdc
+    * Properly use TIME_DERATING_CONSTRAINT in base.sdc 
+    * Properly use SYNTH_DRIVING_CELL in base.sdc
+    * Properly use SYNTH_CLK_DRIVING_CELL in base.sdc
+
 # 2.0.0-a10
 * Add `wrapper.tcl` to capture errors in Magic scripts.
 * Fix instances of a deprecated variable was used in Magic scripts.

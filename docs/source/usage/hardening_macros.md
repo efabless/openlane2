@@ -64,7 +64,7 @@ Static Timing Analysis happens multiple times during the flow. However, they all
 
 2. The clock period that you prefer the design to run with. This could be set using `CLOCK_PERIOD` and the unit is ns. It is important to note that the flow will use this value to calculate the worst and total negative slack, also if timing optimizations are enabled, it will try to optimize for it and give suggested clock period at the end of the run in `<run-path>/reports/metrics.csv` This value should be used in the future to speed up the optimization process and it will be the estimated value at which the design should run.
 
-3. The IO delay percentage from the clock period `IO_PCT_CONSTRAINT`. More about that [here][0].
+3. The IO delay percentage from the clock period `IO_DELAY_CONSTRAINT`. More about that [here][0].
 
 4. You may want to write a custom SDC file to be used in STA and CTS. The default SDC file in the flow is [this file][11]. However, you can change that by pointing to a new file with the environment variable `BASE_SDC_FILE`. More about that [here][0].
 
