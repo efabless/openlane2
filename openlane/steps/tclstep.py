@@ -160,6 +160,8 @@ def create_reproducible(
                             tcls_to_process.append(value_substituted)
         except FileNotFoundError:
             warnings.append(f"{current} was not found, might be a product. Skipping…")
+        except Exception as e:
+            warnings.append(f"{current} error. {e}")
 
         current = shift(tcls_to_process)
 

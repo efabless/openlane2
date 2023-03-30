@@ -27,13 +27,13 @@ with pkgs; let
   });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "6de104daffe029fd717645b21f3e6ed6aad1042b";
+  rev = "71a707440d5db5c0d0ec83f86b4a3d797e39c678";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-nXAHbfEIQlZrvYynL7uQDAl2JTCpqMcWVrJQP/3SK+w=";
+    sha256 = "sha256-CcDUKS/fkEMHCB4Gz6B3fHZdu089wGRv2Fzj7VRb2v8=";
     fetchSubmodules = true;
   };
 
@@ -44,6 +44,7 @@ in clangStdenv.mkDerivation rec {
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
     "-DABC_LIBRARY=${abc}/lib/libabc.a"
     "-DCMAKE_CXX_FLAGS=-I${abc}/include"
+    "-DENABLE_TESTS:BOOL=OFF"
     "-DVERBOSE=1"
   ];
 

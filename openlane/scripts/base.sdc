@@ -4,8 +4,8 @@ if {[info exists ::env(CLOCK_PORT)] && $::env(CLOCK_PORT) != ""} {
     create_clock -name __VIRTUAL_CLK__ -period $::env(CLOCK_PERIOD)
     set ::env(CLOCK_PORT) __VIRTUAL_CLK__
 }
-set input_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_PCT)]
-set output_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_PCT)]
+set input_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_DELAY_CONSTRAINT)]
+set output_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_DELAY_CONSTRAINT)]
 puts "\[INFO\] Setting output delay to: $output_delay_value"
 puts "\[INFO\] Setting input delay to: $input_delay_value"
 
@@ -29,13 +29,15 @@ if { ![info exists ::env(SYNTH_CLK_DRIVING_CELL)] } {
     set ::env(SYNTH_CLK_DRIVING_CELL) $::env(SYNTH_DRIVING_CELL)
 }
 
-if { ![info exists ::env(SYNTH_CLK_DRIVING_CELL_PIN)] } {
-    set ::env(SYNTH_CLK_DRIVING_CELL_PIN) $::env(SYNTH_DRIVING_CELL_PIN)
-}
+set_driving_cell \
+    -lib_cell [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0] \
+    -pin [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1] \
+    $all_inputs_wo_clk_rst
 
-set_driving_cell -lib_cell $::env(SYNTH_DRIVING_CELL) -pin $::env(SYNTH_DRIVING_CELL_PIN) $all_inputs_wo_clk_rst
-
-set_driving_cell -lib_cell $::env(SYNTH_CLK_DRIVING_CELL) -pin $::env(SYNTH_CLK_DRIVING_CELL_PIN) $clk_input
+set_driving_cell \
+    -lib_cell [lindex [split $::env(SYNTH_CLK_DRIVING_CELL) "/"] 0] \
+    -pin [lindex [split $::env(SYNTH_CLK_DRIVING_CELL) "/"] 1] \
+    $clk_input
 
 set cap_load [expr $::env(SYNTH_CAP_LOAD) / 1000.0]
 puts "\[INFO\] Setting load to: $cap_load"
@@ -47,6 +49,6 @@ set_clock_uncertainty $::env(CLOCK_UNCERTAINTY_CONSTRAINT) [get_clocks $::env(CL
 puts "\[INFO\] Setting clock transition to: $::env(CLOCK_TRANSITION_CONSTRAINT)"
 set_clock_transition $::env(CLOCK_TRANSITION_CONSTRAINT) [get_clocks $::env(CLOCK_PORT)]
 
-puts "\[INFO\] Setting timing derate to: [expr {$::env(TIME_DERATING_CONSTRAINT) * 10}] %"
-set_timing_derate -early [expr {1-$::env(TIME_DERATING_CONSTRAINT)}]
-set_timing_derate -late [expr {1+$::env(TIME_DERATING_CONSTRAINT)}]
+puts "\[INFO\] Setting timing derate to: $::env(TIME_DERATING_CONSTRAINT) %"
+set_timing_derate -early [expr 1-[expr $::env(TIME_DERATING_CONSTRAINT) / 100]]
+set_timing_derate -late [expr 1+[expr $::env(TIME_DERATING_CONSTRAINT) / 100]]
