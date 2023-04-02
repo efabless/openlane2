@@ -146,7 +146,7 @@ class ApplyDEFTemplate(OdbpyStep):
 
 @Step.factory.register()
 class ManualMacroPlacement(OdbpyStep):
-    id = "Odb.ManualMacro"
+    id = "Odb.ManualMacroPlacement"
     name = "Manual Macro Placement"
 
     flow_control_variable = "MACRO_PLACEMENT_CFG"
@@ -156,7 +156,7 @@ class ManualMacroPlacement(OdbpyStep):
         Variable(
             "MACRO_PLACEMENT_CFG",
             Optional[Path],
-            "Specifies the path a file specifying how OpenLane should place certain macros.",
+            "Specifies the path a file specifying how OpenLane should place certain macros. The file is defined as a line-break delimited list of instances and positions, in the format `instance_name X_pos Y_pos Orientation`.",
         ),
     ]
 

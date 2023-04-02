@@ -43,9 +43,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     "myst_parser",
-    "markdown_code_links",  # CUSTOM
-    "markdown_cross_doc_section_links",  # CUSTOM
-    "image_links",  # CUSTOM
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
 ]

@@ -293,7 +293,7 @@ class Step(ABC):
             )
             for var in Self.config_vars:
                 units = var.units or ""
-                result += f"| `{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
 
         return result
 

@@ -320,8 +320,8 @@ class Variable:
 
         warnings: List[str] = []
         errors = []
-        final = Config()
-        mutable = config.copy()
+        final = Config()._unlock()
+        mutable = config.copy()._unlock()
 
         if dis := mutable.get("DIODE_INSERTION_STRATEGY"):
             try:
@@ -366,4 +366,4 @@ class Variable:
             elif "_OPT" not in key:
                 warnings.append(f"Unknown key {key} provided.")
 
-        return (final, warnings, errors)
+        return (final._lock(), warnings, errors)

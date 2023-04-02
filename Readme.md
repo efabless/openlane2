@@ -69,33 +69,15 @@ python3 -m pip install --upgrade openlane
 
 To quickly test your installation, run `openlane --smoke-test`. This may take up to 10 minutes depending on your computer's speed and internet connection.
 
-#### Troubleshooting
-With a typical Python 3.8 or higher installation with PIP, installing OpenLane is usually as simple as a `pip install`.
-
-***Despite that***, there are some peculiarities with PIP itself: For example, you may see a warning among these lines:
-
-```sh
-  WARNING: The script openlane is installed in '/home/test/.local/bin' which is not on PATH.
-  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
-```
-
-The solution is as simple as adding something like this to your shell's profile:
-
-```sh
-export PATH="/home/test/.local/bin:$PATH"
-```
-
-Do note that the path (`/home/test/.local/bin` in this example) varies depending on your operating system and version of Python you install, and whether you use `sudo` (absolutely not recommended) or not, so ensure that you actually read the warning and add the correct path.
-
 ## Usage
 In the root folder of the repository with the `venv` activated, you may invoke:
 
 ```sh
-openlane --pdk-root <path/to/pdk> </path/to/config.json>
+python3 -m openlane [--dockerized] --pdk-root <path/to/pdk> </path/to/config.json>
 ```
 
 To start with, you can try:
 
 ```sh
-openlane --pdk-root $HOME/.volare ./designs/spm/config.json
+python3 -m openlane --pdk-root $HOME/.volare ./designs/spm/config.json
 ```

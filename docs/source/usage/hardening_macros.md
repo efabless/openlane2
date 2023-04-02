@@ -1,8 +1,27 @@
 > Note: Information in this document is still being ported from OpenLane 1 to OpenLane 2 and may be partially inaccurate.
-# Hardening Macros
-Using OpenLane, you can produce a GDSII from an RTL for macros, and then use these macros to create your chip. Check [this][4] for more details about chip integration.
+# Creating A Design
+When you have OpenLane up and running, you can start using it to implement your
+hardware designs.
 
-In this document we will go through the hardening steps and discuss in some detail what considerations should be made when hardening your macro.
+Hardware designs are written in **hardware description languages**, which, as
+the name implies, describe the hardware constructs in a manner similar to
+programming languages, and designers then use tools like OpenLane to transform
+these hardware expressions into a database format that is then sent to a foundry
+for manufacturing.
+
+Designs can either be **top-level chips** or **macros**. Top-level chips are,
+as the name implies, full chips that are to be sent to a foundry for manufacture.
+
+Macros, on the other hand, are "pre-compiled" pieces of hardware that are
+intended for integration into larger designs.
+
+If you're coming from a software development background, you may liken macros to
+static libraries- they are already compiled, but are intended to be used in a 
+larger program and are not entirely useful on their own.
+
+In this document we will go through the hardening steps and discuss in some
+detail what considerations should be made when hardening either macros or top-level chips
+that do not use any macros.
 
 ## Base Requirements
 You should start by setting the basic configuration file for your design.
@@ -15,9 +34,11 @@ The basic configuration `config.json` or `config.tcl` file should at least conta
 | `VERILOG_FILES` | Space-delimited list of Verilog files used in your design*. |
 | `CLOCK_PORT` | List of clock ports used in your design. If your design is purely combinational, you can set this value to `""` (Tcl) or `null` (JSON). |
 | `DESIGN_IS_CORE` | `1/0` (Tcl), `true/false` (JSON): Whether your design is a core or a reusable macro: for macros, you want to set this to `0`/`false`<sup>**</sup>. |
-> \* The ``` `include ``` directive is not supported.
->
-> \** If you are hardening the chip core, check [this][4] for more details about chip integration.
+
+```{note}
+The ``` `include ``` directive is not supported in Verilog files. Explicitly ignore all of your files.
+```
+
 
 So, for example:
 

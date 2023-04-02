@@ -1,4 +1,7 @@
-# Migrating `DIODE_INSERTION_STRATEGY`
+# Variable Migration Guides
+These are migration guides for some particularly complex variables from OpenLane 1.
+
+## Migrating `DIODE_INSERTION_STRATEGY`
 
 As they were extremely complex, the OpenLane 1.0 diode insertion strategies were replaced by two flags in OpenLane 2's "Classic" flow:
 

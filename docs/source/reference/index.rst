@@ -1,9 +1,10 @@
 Reference Manual
 --------------------------------------------------------------------------------
 .. toctree::
-   configuration.md
-   flow_config_vars.md
-   step_config_vars.md
-   pdk_config_vars.md
-   api/index.md
+   configuration
+   flow_config_vars
+   step_config_vars
+   pdk_config_vars
+   architecture
+   api
 

@@ -27,5 +27,5 @@ Configuration objects, be they JSON, Tcl or directly passed to the Python API, c
 | Variable Name | Type | Description | Default | Units |
 | - | - | - | - | - |
 %for var in module.all_variables:
-| `${var.name}` | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
+| <a name="${var.name}"></a>`${var.name}` | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
 %endfor

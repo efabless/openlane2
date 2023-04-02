@@ -295,7 +295,9 @@ class ConfigBuilder(object):
             design_dir=design_dir,
         )
 
+        config_in._unlock()
         config_in.update(**resolved)
+        config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
@@ -321,8 +323,9 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
+        config_in._unlock()
         config_in["PDK_ROOT"] = pdk_root
-        return config_in
+        return config_in._lock()
 
     @classmethod
     def _loads_tcl(
@@ -349,7 +352,7 @@ class ConfigBuilder(object):
             }
         )
 
-        tcl_vars_in = config_in.copy()
+        tcl_vars_in = config_in.copy()._unlock()
         tcl_vars_in[Keys.scl] = ""
         tcl_vars_in[Keys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
@@ -378,9 +381,11 @@ class ConfigBuilder(object):
         tcl_vars_in[Keys.scl] = scl
         tcl_vars_in[Keys.design_dir] = design_dir
 
-        design_config = env_from_tcl(tcl_vars_in, config)
+        design_config = env_from_tcl(tcl_vars_in._lock(), config)
 
+        config_in._unlock()
         config_in.update(**design_config)
+        config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
@@ -400,9 +405,9 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
+        config_in._unlock()
         config_in["PDK_ROOT"] = pdk_root
-
-        return config_in
+        return config_in._lock()
 
     @classmethod
     def _resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:

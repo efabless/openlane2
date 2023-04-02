@@ -93,7 +93,7 @@ class Synthesis(YosysStep):
         Variable(
             "SYNTH_READ_BLACKBOX_LIB",
             bool,
-            "A flag that enable reading the full (untrimmed) liberty file as a blackbox for synthesis. Please note that this is not used in technology mapping. This should only be used when trying to preserve gate instances in the rtl of the design.",
+            "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
             default=False,
         ),
         Variable(

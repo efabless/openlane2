@@ -3,11 +3,17 @@ all: dist
 dist: venv/created
 	./venv/bin/python3 setup.py sdist bdist_wheel
 
+.PHONY: mount
+mount:
+	@echo "make mount is not needed in OpenLane 2. You may simply call 'openlane --dockerized'."
+
+.PHONY: pdk
+pdk:
+	@echo "make pdk is not needed in OpenLane 2."
+
 .PHONY: openlane
 openlane:
-	@echo "make openlane is deprecated. Please use make docker-image."
-	@echo "----"
-	@$(MAKE) docker-image
+	@echo "make openlane is not needed in OpenLane 2."
 
 .PHONY: docker-image
 docker-image: venv
