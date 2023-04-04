@@ -19,10 +19,10 @@ from typing import List
 
 import click
 import odb
-import rich
-import rich.table
 
 from reader import click_odb, OdbReader
+from reader import rich
+from reader import Table
 
 import utl
 
@@ -55,7 +55,7 @@ def main(
     db = reader.db
     block = db.getChip().getBlock()
     instances = block.getInsts()
-    table = rich.table.Table(
+    table = Table(
         "Instance", "Power", "Disconnected", "Signal", "Disconnected", title=""
     )
     disconnected_pins_count = 0

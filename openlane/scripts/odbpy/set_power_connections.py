@@ -49,10 +49,9 @@ import json
 import re
 
 import odb
-import utl
 
 from reader import rich
-from rich import print
+from reader import Table
 from rich.table import Table
 
 
@@ -264,7 +263,7 @@ def cli(input_db, input_json, reader: OdbReader):
                 f"net({net_name})",
             )
 
-    print(grid)
+    rich.print(grid)
 
 
 if __name__ == "__main__":
