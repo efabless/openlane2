@@ -68,6 +68,11 @@ class JsonHeader(YosysStep):
             List[Path],
             "The paths of the design's Verilog files.",
         ),
+        Variable(
+            "VERILOG_INCLUDE_DIRS",
+            Optional[List[str]],
+            "Specifies the Verilog `include` directories.",
+        ),
     ]
 
 

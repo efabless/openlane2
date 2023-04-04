@@ -97,9 +97,7 @@ def main(
         )
     rich.print(table)
 
-    utl.metric_integer(
-        "design__disconnected_pins__count", disconnected_pins_count
-    )
+    utl.metric_integer("design__disconnected_pins__count", disconnected_pins_count)
 
 
 if __name__ == "__main__":

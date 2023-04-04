@@ -58,7 +58,9 @@ class OdbpyStep(Step):
             command.append(file_path)
             out_paths[output] = Path(file_path)
 
-        command += [str(state_out[DesignFormat.ODB]),]
+        command += [
+            str(state_out[DesignFormat.ODB]),
+        ]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
@@ -213,7 +215,10 @@ class ReportDisconnectedPins(OdbpyStep):
     def get_command(self) -> List[str]:
         command = super().get_command()
         if self.config["IGNORE_DISCONNECTED_MODULES"] is not None:
-            ignore_arg = [f'--ignore-module {module}' for module in self.config["IGNORE_DISCONNECTED_MODULES"]]
+            ignore_arg = [
+                f"--ignore-module {module}"
+                for module in self.config["IGNORE_DISCONNECTED_MODULES"]
+            ]
             ignore_arg = " ".join(ignore_arg).split()
             command += ignore_arg
         return command
