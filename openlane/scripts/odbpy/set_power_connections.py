@@ -49,10 +49,11 @@ import json
 import re
 
 import odb
+import utl
 
+from reader import rich
 from rich import print
 from rich.table import Table
-import utl
 
 
 from reader import click, click_odb, OdbReader
