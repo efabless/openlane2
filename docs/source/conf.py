@@ -47,10 +47,10 @@ extensions = [
     "generate_configvar_docs",  # CUSTOM
 ]
 try:
-    import sphinxcontrib.spelling
+    import sphinxcontrib.spelling  # noqa: F401
 
     try:
-        import enchant
+        import enchant  # noqa: F401
 
         extensions += [
             "sphinxcontrib.spelling",
@@ -59,7 +59,7 @@ try:
         spelling_lang = "en_US"
         tokenizer_lang = "en_US"
     except ImportError:
-        print(f"Failed to import 'enchant'- spellchecker cannot run", file=sys.stderr)
+        print("Failed to import 'enchant'- spellchecker cannot run", file=sys.stderr)
 except ImportError:
     pass
 
