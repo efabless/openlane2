@@ -76,8 +76,12 @@ class MagicStep(TclStep):
 
     def run(self, **kwargs) -> State:
         # https://github.com/RTimothyEdwards/magic/issues/218
-        kwargs["stdin"] = open(self.get_script_path(), encoding="utf8")
-        return super().run(**kwargs)
+        kwargs, env = self.extract_env(kwargs)
+        kwargs["stdin"] = open(
+            os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
+        )
+        env["MAGIC_SCRIPT"] = self.get_script_path()
+        return super().run(env=env, **kwargs)
 
 
 @Step.factory.register()

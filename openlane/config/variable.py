@@ -343,6 +343,7 @@ class Variable:
                     config["GRT_REPAIR_ANTENNAS"] = True
                 if dis in [5, 6]:
                     config["RUN_HEURISTIC_DIODE_INSERTION"] = True
+                    config["DIODE_ON_PORTS"] = "in"
 
             del mutable["DIODE_INSERTION_STRATEGY"]
 

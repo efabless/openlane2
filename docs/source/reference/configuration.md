@@ -31,7 +31,7 @@ An minimal demonstrative configuration file would look as follows:
     "pdk::sky130A": {
         "MAX_FANOUT_CONSTRAINT": 6,
         "FP_CORE_UTIL": 40,
-        "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 5.0)",
+        "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 10.0)",
         "scl::sky130_fd_sc_hd": {
             "CLOCK_PERIOD": 15
         }

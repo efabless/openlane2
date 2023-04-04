@@ -79,7 +79,7 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OpenROADStep(TclStep):
-    inputs = [DesignFormat.ODB]
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = [
         DesignFormat.ODB,
         DesignFormat.DEF,
@@ -180,7 +180,7 @@ class NetlistSTA(OpenROADStep):
     id = "OpenROAD.NetlistSTA"
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
-    inputs = [DesignFormat.NETLIST]
+    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
     outputs = []
 
     def get_script_path(self):
@@ -199,7 +199,7 @@ class Floorplan(OpenROADStep):
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
 
-    inputs = [DesignFormat.NETLIST]
+    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
@@ -368,7 +368,7 @@ class GlobalPlacement(OpenROADStep):
             Variable(
                 "PL_TARGET_DENSITY_PCT",
                 Optional[Decimal],
-                "The desired placement density of cells. If not specified, the value will be equal to `FP_CORE_UTIL` + 5%.",
+                "The desired placement density of cells. If not specified, the value will be equal to (`FP_CORE_UTIL` + 5 * `GPL_CELL_PADDING` + 10).",
                 units="%",
                 deprecated_names=[
                     ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
@@ -406,7 +406,10 @@ class GlobalPlacement(OpenROADStep):
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["PL_TARGET_DENSITY_PCT"] = f"{self.config['FP_CORE_UTIL'] + 5}"
+        env[
+            "PL_TARGET_DENSITY_PCT"
+        ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
+        # Overriden by super if the value is not None
         return super().run(env=env, **kwargs)
 
 
@@ -656,6 +659,7 @@ class LayoutSTA(OpenROADStep):
     id = "OpenROAD.LayoutSTA"
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
 
     outputs = []
 
