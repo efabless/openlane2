@@ -219,7 +219,6 @@ class ReportDisconnectedPins(OdbpyStep):
         return command
 
 
-
 @Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
     id = "Odb.CustomIOPlacement"
