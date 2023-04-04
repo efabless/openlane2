@@ -15,7 +15,7 @@ The module consists of three submodules: {mod}`openlane.flows`, {mod}`openlane.s
 ## Steps
 Steps are the primary execution unit of OpenLane.
 
-The {class}`openlane.flows.Step` class is an [abstract base class](https://docs.python.org/3/glossary.html#term-abstract-base-class)
+The {class}`openlane.steps.Step` class is an [abstract base class](https://docs.python.org/3/glossary.html#term-abstract-base-class)
 from which all other steps inherit. 
 
 Each step takes two inputs: a **Configuration Object** and a **State**, and
@@ -27,10 +27,12 @@ Steps should align themselves to one principle:
 
 * <u>The same step with the same input configuration and same input state must emit the same output.</u>
 
-This is applied as far as the functionality goes:
+<a name="step-strictures"></a> This is applied as far as the functionality goes:
+
 * Steps **do NOT** modify files in-place. New files must be created in the step's dedicated directory. If the tool does not support out-of-place modification, copy the files then modify the copies.
 * Steps **do NOT** modify the config_in. This is programmatically enforced.
 * Steps **do NOT** rely on external filesystem paths. If a path is not in the configuration or in the input state, it effectively does not exist to the Step.
+    * This applies the other way around as well: Steps **do NOT** create files outside of their step directory.
 * Steps **do** fix [PRNG](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) seeds for replicability. They can be exposed as a configuration variable.
 
 More of these strictures may be programatically enforced by the infrastructure in the future.
@@ -38,7 +40,13 @@ More of these strictures may be programatically enforced by the infrastructure i
 Some aspects cannot be made entirely deterministic, such as timestamps in views, file paths and the like. These are acceptable breaks from this dogma.
 
 ### States
-A state is a snapshot of paths to views at any point in time.
+A state is a snapshot of paths to views at any point in time, in dictionary form.
+
+Keys must be of the type {class}`openlane.steps.DesignFormat` and values must be
+of the type {class}`openlane.config.Path`.
+
+States also have another property: {attr}`openlane.steps.State.metrics`. This
+attribute captures design metrics, which may be updated by any flow.
 
 ## Flows
 Flows are scripts that incorporate multiple `Step`s to achieve a certain
@@ -56,9 +64,10 @@ and a consecutive states, i.e.
     State_{i} = Step_{i}(State_{i - 1}, Config)
 ```
 
-So, for a flow of {math}`n` steps, the final state, {math}`State_{n}` will be the output of the entire state.
+So, for a flow of {math}`n` steps, the final state, {math}`State_{n}` will be
+the output of the entire flow.
 
-The default flow of OpenLane when run from the commandline is a SequentialFlow
+The default flow of OpenLane when run from the command-line is a SequentialFlow
 named [`Classic`](./flow_config_vars.md#classic), which is based off of the
 original, Tcl-based version of OpenLane.
 

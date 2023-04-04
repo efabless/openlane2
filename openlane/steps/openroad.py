@@ -400,6 +400,13 @@ class GlobalPlacement(OpenROADStep):
                 "Specifies whether or not to run STA after global placement using OpenROAD's estimate_parasitics -placement and generate reports.",
                 default=True,
             ),
+            Variable(
+                "FP_CORE_UTIL",
+                Decimal,
+                "The core utilization percentage.",
+                default=50,
+                units="%",
+            ),
         ]
     )
 
@@ -458,67 +465,71 @@ class CTS(OpenROADStep):
     long_name = "Clock Tree Synthesis"
     flow_control_variable = "RUN_CTS"
 
-    config_vars = dpl_variables + [
-        Variable(
-            "RUN_CTS",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["CLOCK_TREE_SYNTH"],
-        ),
-        Variable(
-            "CTS_TARGET_SKEW",
-            Decimal,
-            "The target clock skew in picoseconds.",
-            default=200,
-            units="ps",
-        ),
-        Variable(
-            "CTS_TOLERANCE",
-            int,
-            "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
-            default=100,
-        ),
-        Variable(
-            "CTS_SINK_CLUSTERING_SIZE",
-            int,
-            "Specifies the maximum number of sinks per cluster.",
-            default=25,
-        ),
-        Variable(
-            "CTS_SINK_CLUSTERING_MAX_DIAMETER",
-            Decimal,
-            "Specifies maximum diameter of the sink cluster.",
-            default=50,
-            units="μm",
-        ),
-        Variable(
-            "CTS_REPORT_TIMING",
-            bool,
-            "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
-            default=True,
-        ),
-        Variable(
-            "CTS_CLK_MAX_WIRE_LENGTH",
-            Decimal,
-            "Specifies the maximum wire length on the clock net.",
-            default=0,
-            units="µm",
-        ),
-        Variable(
-            "CTS_DISABLE_POST_PROCESSING",
-            bool,
-            "Specifies whether or not to disable post cts processing for outlier sinks.",
-            default=False,
-        ),
-        Variable(
-            "CTS_DISTANCE_BETWEEN_BUFFERS",
-            Decimal,
-            "Specifies the distance between buffers when creating the clock tree.",
-            default=0,
-            units="µm",
-        ),
-    ]
+    config_vars = (
+        OpenROADStep.config_vars
+        + dpl_variables
+        + [
+            Variable(
+                "RUN_CTS",
+                bool,
+                "Enables/disables this step.",
+                default=True,
+                deprecated_names=["CLOCK_TREE_SYNTH"],
+            ),
+            Variable(
+                "CTS_TARGET_SKEW",
+                Decimal,
+                "The target clock skew in picoseconds.",
+                default=200,
+                units="ps",
+            ),
+            Variable(
+                "CTS_TOLERANCE",
+                int,
+                "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
+                default=100,
+            ),
+            Variable(
+                "CTS_SINK_CLUSTERING_SIZE",
+                int,
+                "Specifies the maximum number of sinks per cluster.",
+                default=25,
+            ),
+            Variable(
+                "CTS_SINK_CLUSTERING_MAX_DIAMETER",
+                Decimal,
+                "Specifies maximum diameter of the sink cluster.",
+                default=50,
+                units="μm",
+            ),
+            Variable(
+                "CTS_REPORT_TIMING",
+                bool,
+                "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
+                default=True,
+            ),
+            Variable(
+                "CTS_CLK_MAX_WIRE_LENGTH",
+                Decimal,
+                "Specifies the maximum wire length on the clock net.",
+                default=0,
+                units="µm",
+            ),
+            Variable(
+                "CTS_DISABLE_POST_PROCESSING",
+                bool,
+                "Specifies whether or not to disable post cts processing for outlier sinks.",
+                default=False,
+            ),
+            Variable(
+                "CTS_DISTANCE_BETWEEN_BUFFERS",
+                Decimal,
+                "Specifies the distance between buffers when creating the clock tree.",
+                default=0,
+                units="µm",
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")

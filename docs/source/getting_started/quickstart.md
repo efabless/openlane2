@@ -29,8 +29,6 @@ For example, a design named `gcd` would have an invocation that looks something 
 python3 -m openlane --dockerized ./gcd/config.json
 ```
 
-See [First Design](../usage/first_design.md) for 
-
 
 ## Using the API
 

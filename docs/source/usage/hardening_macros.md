@@ -1,5 +1,5 @@
 > Note: Information in this document is still being ported from OpenLane 1 to OpenLane 2 and may be partially inaccurate.
-# Creating A Design
+# Hardening Designs with the Default Flow
 When you have OpenLane up and running, you can start using it to implement your
 hardware designs.
 
@@ -20,55 +20,37 @@ static libraries- they are already compiled, but are intended to be used in a
 larger program and are not entirely useful on their own.
 
 In this document we will go through the hardening steps and discuss in some
-detail what considerations should be made when hardening either macros or top-level chips
-that do not use any macros.
+detail what considerations should be made when hardening either macros or
+top-level chips that do not use any macros.
 
 ## Base Requirements
 You should start by setting the basic configuration file for your design.
 
-The basic configuration `config.json` or `config.tcl` file should at least contain these variables:
+You can configure any of the variables in these lists:
 
-| Key | Description |
-|-|-|
-| `DESIGN_NAME` | The Verilog module name of your design. |
-| `VERILOG_FILES` | Space-delimited list of Verilog files used in your design*. |
-| `CLOCK_PORT` | List of clock ports used in your design. If your design is purely combinational, you can set this value to `""` (Tcl) or `null` (JSON). |
-| `DESIGN_IS_CORE` | `1/0` (Tcl), `true/false` (JSON): Whether your design is a core or a reusable macro: for macros, you want to set this to `0`/`false`<sup>**</sup>. |
+* [All Common Flow Variables](../reference/flow_config_vars.md#universal-flow-configuration-variables)
+* [All PDK/SCL Variables](../reference/pdk_config_vars.md)
+* The declared configuration variables of [the default Flow's steps](../reference/flow_config_vars.md#classic)
+    * Click on each step to see its configuration variables.
 
-```{note}
-The ``` `include ``` directive is not supported in Verilog files. Explicitly ignore all of your files.
-```
+The basic configuration `config.json` file for the default flowshould at least
+contain these variables:
 
+* [`DESIGN_NAME`](../reference/flow_config_vars.md#DESIGN_NAME)
+* [`VERILOG_FILES`](../reference/step_config_vars.md#Yosys.Synthesis.VERILOG_FILES)
+* [`CLOCK_PORT`](../reference/flow_config_vars.md#DESIGN_NAME)
+* [`DESIGN_IS_CORE`](../reference/flow_config_vars.md#DESIGN_IS_CORE)
 
 So, for example:
-
-<table>
-<tr><th>JSON</th><th>Tcl</th></tr>
-<tr>
-<td>
     
 ```json
     "DESIGN_NAME": "spm",
     "VERILOG_FILES": "dir::src/*.v",
+    "CLOCK_PORT": "clk",
     "DESIGN_IS_CORE": false
 ```
 
-</td>
-<td>
-
-```tcl
-set ::env(DESIGN_NAME) {spm}
-
-set ::env(VERILOG_FILES) [glob $::env(DESIGN_DIR)/src/*.v]
-set ::env(CLOCK_PORT) {clk}
-set ::env(DESIGN_IS_CORE) {0}
-```
-
-</td>
-</tr>
-</table>
-
-These configurations should get you through the flow with the all other configurations using OpenLane default values, read about those [here][0]. However, in the coming sections we will take a closer look on how to determine the best values for most of the other configurations.
+These configurations should get you through the flow with the all other configurations using OpenLane default values, which you can read about here. However, in the coming sections we will take a closer look on how to determine the best values for most of the other configurations.
 
 ## Synthesis
 Then you need to consider the best values for the `MAX_FANOUT_CONSTRAINT`.

@@ -17,6 +17,7 @@ import os
 import time
 import textwrap
 import subprocess
+from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import (
@@ -49,22 +50,16 @@ from ..logging import (
     err,
 )
 
-StepConditionLambda = Callable[[Config], bool]
-
-
-class MissingInputError(ValueError):
-    pass
-
 
 class StepError(ValueError):
     pass
 
 
-class StepException(StepError):
+class DeferredStepError(StepError):
     pass
 
 
-class DeferredStepError(StepError):
+class StepException(StepError):
     pass
 
 
@@ -206,7 +201,7 @@ class Step(ABC):
                 mutable,
                 variables=self.config_vars,
             )
-            config.update(**overrides)
+            config = config.copy(**overrides)
             for warning in warnings:
                 warn(warning)
             if len(errors) != 0:
@@ -225,10 +220,10 @@ class Step(ABC):
         if step_dir is None:
             if self.flow is not None:
                 self.step_dir = self.flow.dir_for_step(self)
-            elif self.config.interactive:
+            elif not self.config.interactive:
                 raise TypeError("Missing required argument 'step_dir'")
             else:
-                step_dir = os.path.join(
+                self.step_dir = os.path.join(
                     os.getcwd(),
                     "openlane_run",
                     f"{Step.counter}-{slugify(self.id)}",
@@ -282,6 +277,25 @@ class Step(ABC):
             )
             % doc_string
         )
+        if len(Self.inputs) + len(Self.outputs):
+            result += textwrap.dedent(
+                """
+                #### Inputs and Outputs
+
+                | Inputs | Outputs |
+                | - | - |
+                """
+            )
+            for input, output in zip_longest(Self.inputs, Self.outputs):
+                input_str = ""
+                if input is not None:
+                    input_str = f"{input.value[2]} (.{input.value[1]})"
+
+                output_str = ""
+                if output is not None:
+                    output_str = f"{output.value[2]} (.{output.value[1]})"
+                result += f"| {input_str} | {output_str} |"
+
         if len(Self.config_vars):
             result += textwrap.dedent(
                 """
@@ -414,7 +428,7 @@ class Step(ABC):
         for input in self.inputs:
             value = self.state_in.get(input)
             if value is None:
-                raise MissingInputError(
+                raise StepException(
                     f"{type(self).__name__}: missing required input '{input.name}'"
                 )
 
@@ -519,7 +533,7 @@ class Step(ABC):
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:
             """
-            Adds a step type to the registry using its :mem:`Step.id` attribute.
+            Adds a step type to the registry using its :attr:`Step.id` attribute.
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:

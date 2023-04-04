@@ -46,12 +46,29 @@ extensions = [
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
 ]
+try:
+    import sphinxcontrib.spelling
+
+    try:
+        import enchant
+
+        extensions += [
+            "sphinxcontrib.spelling",
+        ]
+
+        spelling_lang = "en_US"
+        tokenizer_lang = "en_US"
+    except ImportError:
+        print(f"Failed to import 'enchant'- spellchecker cannot run", file=sys.stderr)
+except ImportError:
+    pass
 
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
 
+autodoc_member_order = "bysource"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

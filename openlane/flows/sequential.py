@@ -19,9 +19,9 @@ from typing import List, Tuple, Optional, Type
 from .flow import Flow, FlowException, FlowError
 from ..state import State
 from ..steps import (
-    MissingInputError,
     Step,
     StepError,
+    StepException,
     DeferredStepError,
 )
 from ..logging import info, success, err
@@ -39,16 +39,16 @@ class SequentialFlow(Flow):
 
     @classmethod
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
-        step_list = []
+        Step_list = []
         for name in step_ids:
             step = Step.get(name)
             if step is None:
                 raise TypeError(f"No step found with id '{name}'")
-            step_list.append(step)
+            Step_list.append(step)
 
         class CustomSequentialFlow(SequentialFlow):
             name = "Custom Sequential Flow"
-            Steps = step_list
+            Steps = Step_list
 
         return CustomSequentialFlow
 
@@ -97,7 +97,7 @@ class SequentialFlow(Flow):
             step_list.append(step)
             try:
                 current_state = step.start()
-            except MissingInputError as e:
+            except StepException as e:
                 raise FlowException(str(e))
             except DeferredStepError as e:
                 deferred_errors.append(str(e))

@@ -6,7 +6,8 @@ For example, hardening a macro + padframe for a top level design is too complex
 using the Classic flow, and may require you to write your own custom-based flow.
 
 ***First of all***, please review OpenLane's high-level architecture [at this link](../reference/architecture.md).
-This defines many of the terms and enumerates strictures used in this document.
+
+This defines many of the terms used and enumerates strictures mentioned in this document.
 
 ## Custom Sequential Flows
 ### In Configuration Files
@@ -84,7 +85,7 @@ flow = MyFlow.init_with_config(
 flow.start()
 ```
 
-The {method}`openlane.flows.Flow.start` method will return a tuple comprised of:
+The {meth}`openlane.flows.Flow.start` method will return a tuple comprised of:
 * The final output state ({math}`State_{n}`).
 * A list of all step objects created during the running of this flow object.
 
@@ -93,7 +94,7 @@ Do NOT call the `run` method of any `Flow` from outside of `Flow` and its
 subclasses- consider it a private method. `start` is class-independent and
 does some incredibly important processing.
 
-You should not be subclassing `start` either.
+You should not be overriding `start` either.
 ```
 
 ## Fully Customized Flows
@@ -101,7 +102,7 @@ Each `Flow` subclass must:
 
 * Declare the steps used in the {attr}`openlane.flows.Flow.Steps` attribute.
     * The steps are examined so their configuration variables can be validated ahead of time.
-* Implement the {method}`openlane.flows.Flow.run` method.
+* Implement the {meth}`openlane.flows.Flow.run` method.
     * This step is responsible for the core logic of the flow, i.e., instantiating
     steps and calling them.
     * This method must return the final state and a list of step objects created.
@@ -129,7 +130,7 @@ sdc_load = Misc.LoadBaseSDC(
 
 While you may not modify the configuration object {attr}`openlane.flows.Flow.config`,
 you can slightly modify the configuration used by each step using the config object's
-{method}`openlane.config.Config.copy` method, which allows you to supply overrides as follows:
+{meth}`openlane.config.Config.copy` method, which allows you to supply overrides as follows:
 
 ```python3
 config_altered = config.copy(FP_CORE_UTIL=9)
@@ -151,22 +152,23 @@ Classic - Stage 17 - CTS ━━━━━━━━━━━━━━━━━╺�
 ```
 
 The Flow object has methods to manage this progress bar:
-    * {method}`openlane.flows.Flow.set_max_stage_count`
-    * {method}`openlane.flows.Flow.start_stage`
-    * {method}`openlane.flows.Flow.end_stage`.
+
+* {meth}`openlane.flows.Flow.set_max_stage_count`
+* {meth}`openlane.flows.Flow.start_stage`
+* {meth}`openlane.flows.Flow.end_stage`.
 
 They are to be called from inside the `run` method. In Sequential Flows,
 {math}`|Steps| = |Stages| = n`, but in custom flows, stages can incorporate any
 number of steps. This is useful for example when running series of steps in parallel
 as shown in the next section, where incrementing by step is not exactly viable.
 
-### Mutli-Threading
+### Multi-Threading
 ```{important}
 The `Flow` object is NOT thread-safe. If you're going to run one or more steps
 in parallel, please follow this guide on how to do so.
 ```
 
-The `Flow` object offers a method to run steps asynchronously, {method}`openlane.config.Config.start_step_async`.
+The `Flow` object offers a method to run steps asynchronously, {meth}`openlane.config.Config.start_step_async`.
 This method returns a [`Future`](https://en.wikipedia.org/wiki/Futures_and_promises)
 encapsulating a State object, which can then be used as an input to future Steps.
 
@@ -175,6 +177,7 @@ inspect the last Future from a set of asynchronous steps, it will automatically
 run the required steps, in parallel if need be.
 
 Here is a demo flow built on exactly this principle. It works across two stages:
+
 * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
     The best-performing strategy in terms of minimizing the area makes it to the
     next stage.
@@ -187,3 +190,36 @@ language: python
 start-after: "@Flow.factory.register()"
 ---
 ```
+
+## Error Throwing and Handling
+Steps may throw one of these hierarchy of errors, namely:
+
+* {exc}`openlane.steps.StepError`: For when there is an error in running one of the
+  tools or the input data.
+    * {exc}`openlane.steps.DeferredStepError`: A `StepError` that suggests that the
+    Flow continue anyway and only report this error when the flow finishes. This
+    is useful for errors that are not "show-stoppers," i.e. a timing violation
+    for example.
+    * {exc}`openlane.steps.StepException`: A `StepError` when there is a
+    higher-level step failure, such as the step object itself generating an
+    invalid state or a state input to a `Step` has missing inputs.
+
+As a rule of thumb, it is sufficient to forward these errors as one of these two:
+
+* {exc}`openlane.flows.FlowError`
+    * {exc}`openlane.flows.FlowException`
+
+Which share a similar hieararchy. Here is how `SequentialFlow`, for example, handles
+its `StepError`s:
+
+```{literalinclude} ../../../openlane/flows/sequential.py
+---
+language: python
+start-after: "step_list.append(step)"
+end-before: "self.end_stage()"
+---
+```
+
+As you may see, the deferred errors are saved for later, but the other two are
+forwarded pretty much-as is. If no other errors are encountered, the deferred
+errors are logged then reported as a `StepException`.
