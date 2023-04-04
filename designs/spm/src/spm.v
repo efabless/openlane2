@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module spm(clk, rst, x, y, p, f);
+module spm(clk, rst, x, y, p);
     parameter size = 32;
     input clk, rst;
     input y;
     input[size-1:0] x;
     output p;
-    output f;
 
-    assign f = 1'b0;
     wire[size-1:1] pp;
     wire[size-1:0] xy;
 
