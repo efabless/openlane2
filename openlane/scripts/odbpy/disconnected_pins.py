@@ -17,10 +17,9 @@
 
 from typing import List
 
-import click
 import odb
 
-from reader import click_odb, OdbReader
+from reader import click, click_odb, OdbReader
 from reader import rich
 from reader import Table
 
