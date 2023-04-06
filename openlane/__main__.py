@@ -156,7 +156,8 @@ def run(
         err("OpenLane will now quit.")
         exit(1)
     except FlowError as e:
-        err(f"The following error was encountered while running the flow: {e}")
+        if not "deferred" in str(e):
+            err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")
         exit(2)
 

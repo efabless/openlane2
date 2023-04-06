@@ -347,7 +347,7 @@ class Flow(Step._FlowType):
             return
         self.progress.update(
             self.task_id,
-            description=f"{self.name} - Stage {self.ordinal} - {name}",
+            description=f"{self.name} - Stage {self.completed + 1} - {name}",
         )
 
     @internal
