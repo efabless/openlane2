@@ -8,7 +8,7 @@ Additionally, the [PDK Configuration Variables](./pdk_config_vars.md) are expose
 If you're looking for documentation for the `Step` Python classes themselves, check the API reference [here](./api/steps/index.md).
 
 ```{warning}
-* Two steps in a given Flow may share a configuration variable name if-and-only-if the variables are otherwise identical, i.e., the name, type, default value and description all match letter-for-letter. Otherwise, the flow will not compile.
+* Two steps in a given Flow may share a configuration variable name if-and-only-if the variables are otherwise identical, i.e., the name, type, and default value all match. Otherwise, the flow will not compile.
 * Some steps have a variable prefixed with `RUN_` that enables or disables said step. This is a vestige from OpenLane 1 and it is recommended to explicitly specify your flow either by using the API or in your JSON configuration file's `meta` object.
 ```
 

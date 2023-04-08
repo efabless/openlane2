@@ -123,6 +123,13 @@ class Config(UserDict):
         return meta
 
     def copy(self, **overrides) -> "Config":
+        """
+        Produces a shallow copy of the configuration object.
+
+        :param overrides: A series of configuration overrides as key-value pairs.
+            These values are NOT validated and you should not be overriding these
+            haphazardly.
+        """
         import copy
 
         data = self.data

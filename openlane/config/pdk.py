@@ -288,7 +288,7 @@ scl_variables = [
     Variable(
         "NO_SYNTH_CELL_LIST",
         Path,
-        "Path to a text file containing a list of cells to be excluded from the liberty file in synthesis alone. If not defined, the original liberty file will be used as-is.",
+        "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
     ),
     Variable(
         "BAD_CELL_LIST",

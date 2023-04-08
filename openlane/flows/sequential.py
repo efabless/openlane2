@@ -91,7 +91,7 @@ class SequentialFlow(Flow):
             self.start_stage(step.name)
             if not executing:
                 info(f"Skipping step '{step.name}'…")
-                self.end_stage(no_increment_ordinal=True)
+                self.end_stage()
                 continue
 
             step_list.append(step)

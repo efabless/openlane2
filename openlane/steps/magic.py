@@ -86,6 +86,10 @@ class MagicStep(TclStep):
 
 @Step.factory.register()
 class WriteLEF(MagicStep):
+    """
+    Writes a LEF view of the design using the GDS using Magic.
+    """
+
     id = "Magic.WriteLEF"
     name = "Write LEF (Magic)"
     flow_control_variable = "RUN_MAGIC_WRITE_LEF"
@@ -121,8 +125,16 @@ class WriteLEF(MagicStep):
 
 @Step.factory.register()
 class StreamOut(MagicStep):
+    """
+    Converts DEF views into GDSII streams using Magic.
+
+    If ``PRIMARY_SIGNOFF_TOOL`` is set to ``"magic"``, both GDS and MAG_GDS
+    will be updated, and if set to another tool, only ``MAG_GDS`` will be
+    updated.
+    """
+
     id = "Magic.StreamOut"
-    name = "GDS-II Stream Out (Magic)"
+    name = "GDSII Stream Out (Magic)"
     flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
     inputs = [DesignFormat.DEF]
@@ -185,6 +197,17 @@ class StreamOut(MagicStep):
 
 @Step.factory.register()
 class DRC(MagicStep):
+    """
+    Performs `design rule checking <https://en.wikipedia.org/wiki/Design_rule_checking>`_
+    on the GDSII stream using Magic.
+
+    This also converts the results to a KLayout database, which can be loaded.
+
+    The metrics will be updated with ``magic__drc_errors``. You can use
+    `the relevant checker <#Checker.MagicDRC>`_ to quit if that number is
+    nonzero.
+    """
+
     id = "Magic.DRC"
     name = "DRC"
     long_name = "Design Rule Checks"
@@ -233,6 +256,14 @@ class DRC(MagicStep):
 
 @Step.factory.register()
 class SpiceExtraction(MagicStep):
+    """
+    Extracts a SPICE netlist from the GDSII stream. Used in Layout vs. Schematic
+    checks.
+    Also, the metrics will be updated with ``magic__illegal__overlaps``. You can use
+    `the relevant checker <#Checker.IllegalOverlap>`_ to quit if that number is
+    nonzero.
+    """
+
     id = "Magic.SpiceExtraction"
     name = "SPICE Extraction"
     long_name = "SPICE Model Extraction"

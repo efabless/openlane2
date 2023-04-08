@@ -288,7 +288,6 @@ class Variable:
             raise NotImplementedError()
         return (
             self.name == rhs.name
-            and self.description == rhs.description
             and self.type == rhs.type
             and self.default == rhs.default
         )

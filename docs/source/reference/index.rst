@@ -6,5 +6,5 @@ Reference Manual
    step_config_vars
    pdk_config_vars
    architecture
-   api
+   api/index
 

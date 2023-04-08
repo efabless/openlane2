@@ -22,17 +22,14 @@ You should not be overriding `start` either.
 
 But also, each Step is required to:
 
-* Declare any required {class}`openlane.step.State` inputs in the {class}`openlane.step.Step.inputs`
+* Declare any required {class}`openlane.state.State` inputs in the `inputs`
   attribute.
     * This will enforce checking the input states for these views.
-* Declare any potential state modifications in the {class}`openlane.step.Step.outputs`
-    attribute.
+* Declare any potential state modifications in the `outputs` attribute.
     * This list is checked for completeness and validity- i.e. the {class}`Step`
     superclass WILL throw a `StepException` if a Step modifies any State variable
     it does not declare.
-* Declare any used configuration variables in the {class}`openlane.step.Step.config_vars`
-    attribute.
-
+* Declare any used configuration variables in the `config_vars` attribute.
 
 ```{important}
 Don't forget the [`Step` strictures](../reference/architecture.md#step-strictures).
@@ -86,7 +83,7 @@ Otherwise, you're basically free to write any logic you desire, with one excepti
   I/O for the process, and allow the creation of report files straight from the
   logs- more on that later.
 
-Do note that this is your opportunity to also extract and update {attr}`openlane.Step.metrics`.
+Do note that this is your opportunity to also extract and update `openlane.state.State.metrics`.
 ## Creating Reports
 You can create report files manually in Python, but if you're running a subprocess,
 you can also write `%OL_CREATE_REPORT <name>.rpt` to stdout and everything until
@@ -105,7 +102,7 @@ and it emplaces all configuration variables as environment variables using this 
 
 * List variables are joined with a space character.
 * Enumerations are replaced with the enumeration name.
-* Booleans are replaced with `"1"` if True or `"0"` if false.
+* Booleans are replaced with `"1"` if true or `"0"` if false.
 * Integers and Decimals are turned into Base-10 strings.
 
 The state is also exposed to the TclStep as is:

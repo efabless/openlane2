@@ -54,8 +54,9 @@ class State(UserDict):
     The state is the only thing that can be altered by steps other than the
     filesystem.
 
-    This object has a property named `metrics` that also carries statistics
-    about the design: area, wire length, et cetera.
+    :attr metrics: A dictionary that carries statistics about the design: area,
+        wire length, et cetera, but also miscellaneous data, for example, whether it
+        passed a certain check or not.
     """
 
     metrics: dict

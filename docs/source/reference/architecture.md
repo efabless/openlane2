@@ -40,13 +40,14 @@ More of these strictures may be programatically enforced by the infrastructure i
 Some aspects cannot be made entirely deterministic, such as timestamps in views, file paths and the like. These are acceptable breaks from this dogma.
 
 ### States
-A state is a snapshot of paths to views at any point in time, in dictionary form.
+A {class}`openlane.steps.State` is a snapshot of paths to views at any point in
+time, in dictionary form.
 
 Keys must be of the type {class}`openlane.steps.DesignFormat` and values must be
 of the type {class}`openlane.config.Path`.
 
-States also have another property: {attr}`openlane.steps.State.metrics`. This
-attribute captures design metrics, which may be updated by any flow.
+States also have another property: metrics. This attribute captures design
+metrics, which may be read and/or updated by any step.
 
 ## Flows
 Flows are scripts that incorporate multiple `Step`s to achieve a certain

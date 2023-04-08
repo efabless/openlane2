@@ -71,17 +71,6 @@ LastState: State = State()
 
 
 class Step(ABC):
-    class _FlowType(ABC):
-        """
-        "Forward declaration" for the methods a step uses to interact with its
-        parent Flow.
-        """
-
-        toolbox: Optional[Toolbox] = None
-
-        @abstractmethod
-        def dir_for_step(self, step: Step) -> str:
-            pass
 
     """
     An abstract base class for Step objects.
@@ -96,8 +85,7 @@ class Step(ABC):
 
     :param config: A configuration object.
 
-        If running in interactive mode, you can set this to ``None``, where it
-        will automatically use :ref:`Config.current_interactive`, but it is
+        If running in interactive mode, you can set this to ``None``, but it is
         otherwise required.
 
     :param flow: The parent flow, if applicable.
@@ -132,15 +120,37 @@ class Step(ABC):
     :attr flow_control_msg: If `flow_control_variable` causes the step to be
         skipped and this variable is set, the value of this variable is
         printed.
+
+    :attr inputs: A list of :class:`openlane.state.DesignFormat` objects that
+        are required for this step. These will be validated by the :meth:`start`
+        method.
+
+    :attr outputs: A list of :class:`openlane.state.DesignFormat` objects that
+        may be emitted by this step. A step is not allowed to modify design
+        formats not declared in `outputs`.
+
+    :attr config_vars: A list of configuration `openlane.config.Variable` objects
+        to be used to alter the behavior of this Step.
     """
 
-    inputs: List[DesignFormat] = []
-    outputs: List[DesignFormat] = []
+    class _FlowType(ABC):
+        """
+        "Forward declaration" for the methods a step uses to interact with its
+        parent Flow.
+        """
+
+        toolbox: Optional[Toolbox] = None
+
+        @abstractmethod
+        def dir_for_step(self, step: Step) -> str:
+            pass
 
     id: str = NotImplemented
     name: str
     long_name: str
 
+    inputs: ClassVar[List[DesignFormat]] = []
+    outputs: ClassVar[List[DesignFormat]] = []
     flow_control_variable: ClassVar[Optional[str]] = None
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
@@ -245,11 +255,11 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self):
+    def get_help_md(Self, docstring_override: str = ""):
         """
         Renders Markdown help for this step to a string.
         """
-        doc_string = ""
+        doc_string = docstring_override
         if Self.__doc__:
             doc_string = textwrap.dedent(Self.__doc__)
 

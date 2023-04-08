@@ -36,6 +36,20 @@ class YosysStep(TclStep):
 
 @Step.factory.register()
 class Synthesis(YosysStep):
+    """
+    Performs synthesis and technology mapping using Yosys and ABC, emitting a
+    netlist. Requires Yosys 0.26 or higher.
+
+    Some metrics will also be extracted and updated, namely:
+
+    * ``design__instance__count``
+    * ``design__instance_unmapped__count``
+
+    If using Yosys 0.27 or higher:
+
+    * ``design__instance__area`` is also updated.
+    """
+
     id = "Yosys.Synthesis"
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]

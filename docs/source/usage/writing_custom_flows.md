@@ -22,7 +22,7 @@ a flow entirely in the `config.json` file, with no API access needed:
             "Yosys.Synthesis",
             "Misc.LoadBaseSDC",
             "OpenROAD.Floorplan",
-            "OpenROAD.TapDecapInsertion",
+            "OpenROAD.TapEndcapInsertion",
             "OpenROAD.GeneratePDN",
             "OpenROAD.IOPlacement",
             "OpenROAD.GlobalPlacement",
@@ -54,7 +54,7 @@ class MyFlow(SequentialFlow):
         Yosys.Synthesis,
         Misc.LoadBaseSDC,
         OpenROAD.Floorplan,
-        OpenROAD.TapDecapInsertion,
+        OpenROAD.TapEndcapInsertion,
         OpenROAD.GeneratePDN,
         OpenROAD.IOPlacement,
         OpenROAD.GlobalPlacement,
@@ -100,7 +100,7 @@ You should not be overriding `start` either.
 ## Fully Customized Flows
 Each `Flow` subclass must:
 
-* Declare the steps used in the {attr}`openlane.flows.Flow.Steps` attribute.
+* Declare the steps used in the `Steps` attribute.
     * The steps are examined so their configuration variables can be validated ahead of time.
 * Implement the {meth}`openlane.flows.Flow.run` method.
     * This step is responsible for the core logic of the flow, i.e., instantiating
@@ -128,7 +128,7 @@ sdc_load = Misc.LoadBaseSDC(
 )
 ```
 
-While you may not modify the configuration object {attr}`openlane.flows.Flow.config`,
+While you may not modify the configuration object (in `self.config`),
 you can slightly modify the configuration used by each step using the config object's
 {meth}`openlane.config.Config.copy` method, which allows you to supply overrides as follows:
 
@@ -168,7 +168,7 @@ The `Flow` object is NOT thread-safe. If you're going to run one or more steps
 in parallel, please follow this guide on how to do so.
 ```
 
-The `Flow` object offers a method to run steps asynchronously, {meth}`openlane.config.Config.start_step_async`.
+The `Flow` object offers a method to run steps asynchronously, {meth}`openlane.flows.Flow.start_step_async`.
 This method returns a [`Future`](https://en.wikipedia.org/wiki/Futures_and_promises)
 encapsulating a State object, which can then be used as an input to future Steps.
 
