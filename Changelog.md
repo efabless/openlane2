@@ -1,3 +1,7 @@
+# 2.0.0-a12
+* Fixes a bug where if OpenLane is invoked from the same directory as the design,
+  KLayout stream-outs would break.
+
 # 2.0.0-a11
 * Update OpenROAD, Add ABC patch to use system zlib
 * Adds SDC files as an input to `OpenROADStep`, `NetlistSTA` and `LayoutSTA` steps
