@@ -1,3 +1,18 @@
+# 2.0.0-a14
+* Add steps to extract, preserve and check power connections:
+    * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
+    * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
+    * `Yosys.JsonHeader`: RTL to a JSON Header.
+    * `Odb.SetPowerConnections`: Uses JSON generated in `Yosys/JsonHeader` and module information in Odb to add global connections for macros in a design.
+* Add `IGNORE_DISCONNECTED_MODULES` as a PDK variable, as some cells need to be ignored.
+* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINE`.
+* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`.
+* Rename various metrics.
+* Change various configuration variables for included `caravel_upw` design.
+* Fix `DIODE_INSERTION_STRATEGY` translations
+* Allow overriding from CLI when using Tcl configuration files.
+
+
 # 2.0.0-a13
 ## Documentation
 * Built-in flows now have full generated documentation akin to steps.
