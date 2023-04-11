@@ -48,7 +48,7 @@ class StateDecoder(json.JSONDecoder):
         return super(StateEncoder, self).default(o)
 
 
-class State(UserDict[Union[str, DesignFormat], Optional[Path]]):
+class State(UserDict):
     """
     Basically, a dictionary with keys of type DesignFormat and string values,
     the string values being filesystem paths.
