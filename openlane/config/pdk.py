@@ -17,6 +17,8 @@ from typing import List, Optional, Dict
 from .variable import Path, Variable
 from .config import Config
 
+# Note that values in this file do not take defaults.
+
 pdk_variables = [
     # Core/Common
     Variable(
@@ -442,6 +444,11 @@ scl_variables = [
         str,
         "Defines the lower PDN layer.",
     ),
+    Variable(
+        "IGNORE_DISCONNECTED_MODULES",
+        List[str],
+        "Modules (or cells) to ignore when checking for disconnected pins.",
+    ),
     # Placement
     Variable(
         "PLACE_SITE",
@@ -522,6 +529,8 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL"]
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
+
+    new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
     return new._lock()
 

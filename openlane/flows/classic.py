@@ -40,11 +40,13 @@ class Classic(SequentialFlow):
     """
 
     Steps: List[Type[Step]] = [
+        Yosys.JsonHeader,
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
+        Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         OpenROAD.TapEndcapInsertion,
         OpenROAD.IOPlacement,
@@ -61,6 +63,8 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.DetailedRouting,
         Checker.TrDRC,
+        Odb.ReportDisconnectedPins,
+        Checker.DisconnectedPins,
         Odb.ReportWireLength,
         Checker.WireLength,
         OpenROAD.FillInsertion,

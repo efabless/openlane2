@@ -197,10 +197,6 @@ class ConfigBuilder(object):
             elif config_in.endswith(".tcl"):
                 raw = open(config_in, encoding="utf8").read()
                 loader = Self._loads_tcl
-                if config_override_strings is None:
-                    raise ValueError(
-                        "CLI override strings are not supported with .Tcl configuration files."
-                    )
             else:
                 if os.path.isdir(config_in):
                     raise ValueError(
@@ -386,6 +382,9 @@ class ConfigBuilder(object):
 
         config_in._unlock()
         config_in.update(**design_config)
+        for string in config_override_strings:
+            key, value = string.split("=", 1)
+            config_in[key] = value
         config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(

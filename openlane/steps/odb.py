@@ -151,6 +151,22 @@ class ApplyDEFTemplate(OdbpyStep):
         ]
 
 
+class SetPowerConnections(OdbpyStep):
+    id = "Odb.SetPowerConnections"
+    name = "Set Power Connections"
+    inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
+
+    def get_command(self) -> List[str]:
+        assert isinstance(self.state_in, State)
+        return super().get_command() + [
+            "--input-json",
+            str(self.state_in[DesignFormat.JSON_HEADER]),
+        ]
+
+
 @Step.factory.register()
 class ManualMacroPlacement(OdbpyStep):
     """
@@ -195,6 +211,7 @@ class ReportWireLength(OdbpyStep):
 
     id = "Odb.ReportWireLength"
     name = "Report Wire Length"
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "wire_lengths.py")
@@ -205,6 +222,23 @@ class ReportWireLength(OdbpyStep):
             "--report-out",
             os.path.join(self.step_dir, "wire_lengths.csv"),
         ]
+
+
+@Step.factory.register()
+class ReportDisconnectedPins(OdbpyStep):
+    id = "Odb.ReportDisconnectedPins"
+    name = "Report Disconnected Pins"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        if ignored_modules := self.config["IGNORE_DISCONNECTED_MODULES"]:
+            for module in ignored_modules:
+                command.append("--ignore-module")
+                command.append(module)
+        return command
 
 
 @Step.factory.register()

@@ -27,11 +27,53 @@ from ..config import Path, Variable, StringEnum
 
 class YosysStep(TclStep):
     def get_command(self) -> List[str]:
-        return ["yosys", "-c", self.get_script_path()]
+        script_path = self.get_script_path()
+        assert isinstance(script_path, str)
+        return ["yosys", "-c", script_path]
 
     @abstractmethod
     def get_script_path(self):
         pass
+
+
+@Step.factory.register()
+class JsonHeader(YosysStep):
+    id = "Yosys.JsonHeader"
+    inputs = []
+    outputs = [DesignFormat.JSON_HEADER]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "yosys", "json_header.tcl")
+
+    config_vars = [
+        Variable(
+            "SYNTH_POWER_DEFINE",
+            Optional[str],
+            "Specifies the name of the define used to guard power and ground connections",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES"],
+        ),
+        Variable(
+            "SYNTH_DEFINES",
+            Optional[List[str]],
+            "Synthesis defines",
+        ),
+        Variable(
+            "SYNTH_READ_BLACKBOX_LIB",
+            bool,
+            "A flag that enable reading the full (untrimmed) liberty file as a blackbox for synthesis. Please note that this is not used in technology mapping. This should only be used when trying to preserve gate instances in the rtl of the design.",
+            default=False,
+        ),
+        Variable(
+            "VERILOG_FILES",
+            List[Path],
+            "The paths of the design's Verilog files.",
+        ),
+        Variable(
+            "VERILOG_INCLUDE_DIRS",
+            Optional[List[str]],
+            "Specifies the Verilog `include` directories.",
+        ),
+    ]
 
 
 @Step.factory.register()
@@ -91,6 +133,11 @@ class Synthesis(YosysStep):
             ),
             "Strategies for abc logic synthesis and technology mapping. AREA strategies usually result in a more compact design, while DELAY strategies usually result in a design that runs at a higher frequency. Please note that there is no way to know which strategy is the best before trying them.",
             default="AREA 0",
+        ),
+        Variable(
+            "SYNTH_DEFINES",
+            Optional[List[str]],
+            "Synthesis defines",
         ),
         Variable(
             "SYNTH_BUFFERING",

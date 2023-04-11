@@ -14,7 +14,8 @@
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable, StringEnum
+from .variable import Path, Variable
+from .config import StringEnum
 
 all_variables = [
     # Common
@@ -108,11 +109,6 @@ all_variables = [
         "Points to the parent LEF file that includes this macro/design and uses this LEF file to determine the best locations for the pins. It must be used with `FP_CONTEXT_DEF`, otherwise it's considered non-existing. If not set, then the IO pins will be placed based on one of the other methods depending on the rest of the configurations.",
     ),
     Variable(
-        "SYNTH_USE_PG_PINS_DEFINES",
-        Optional[List[str]],
-        "Specifies the power guard used in the verilog source code to specify the power and ground pins. This is used to automatically extract `VDD_NETS` and `GND_NET` variables from the verilog, with the assumption that they will be order `inout vdd1, inout gnd1, inout vdd2, inout gnd2, ...`.",
-    ),
-    Variable(
         "FP_PADFRAME_CFG",
         Optional[str],
         "A configuration file passed to `padringer`, a padframe generator.",
@@ -151,12 +147,6 @@ all_variables = [
         bool,
         "Enables logic verification using yosys, for comparing each netlist at each stage of the flow with the previous netlist and verifying that they are logically equivalent. Warning: this will increase the runtime significantly.",
         default=False,
-    ),
-    Variable(
-        "CHECK_UNMAPPED_CELLS",
-        bool,
-        "Checks if there are unmapped cells after synthesis and aborts if any was found.",
-        default=True,
     ),
     Variable(
         "CHECK_ASSIGN_STATEMENTS",

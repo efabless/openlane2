@@ -186,8 +186,8 @@ class StreamOut(MagicStep):
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         assert isinstance(self.state_in, State)
-        if die_area := self.state_in.metrics.get("die__area"):
-            env["DIE_AREA"] = die_area
+        if diea_area := self.state_in.metrics.get("design__die__bbox"):
+            env["DIE_AREA"] = diea_area
 
         state_out = super().run(env=env, **kwargs)
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
