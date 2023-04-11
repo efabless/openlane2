@@ -17,6 +17,6 @@ The Flow Module
 An API for implementing new flows using the OpenLane infrastructure, as well
 as a number of built-in flows.
 """
-from . import builtins
 from .flow import Flow, FlowException, FlowError
 from .sequential import SequentialFlow
+from . import builtins

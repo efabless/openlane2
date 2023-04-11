@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import io
 import os
 import re
 import json
+import tempfile
+import subprocess
 from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
@@ -128,7 +131,7 @@ class OpenROADStep(TclStep):
         """
         The `run()` override for the OpenROADStep class handles two things:
 
-        1. Before the `super()` call: It creates a version of the liberty file
+        1. Before the `super()` call: It creates a version of the lib file
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
         in the environment variable `LIB_PNR`.
 
@@ -177,6 +180,11 @@ class OpenROADStep(TclStep):
 
 @Step.factory.register()
 class NetlistSTA(OpenROADStep):
+    """
+    Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenROAD on the netlist as output by Yosys.
+    """
+
     id = "OpenROAD.NetlistSTA"
     name = "Netlist STA"
     long_name = "Netlist Static Timing Analysis"
@@ -195,6 +203,10 @@ class NetlistSTA(OpenROADStep):
 
 @Step.factory.register()
 class Floorplan(OpenROADStep):
+    """
+    Creates DEF and ODB files with the initial floorplan based on the Yosys netlist.
+    """
+
     id = "OpenROAD.Floorplan"
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
@@ -271,6 +283,13 @@ class Floorplan(OpenROADStep):
 
 @Step.factory.register()
 class IOPlacement(OpenROADStep):
+    """
+    Places I/O pins on a floor-planned ODB file using OpenROAD's built-in placer.
+
+    If ``FP_PIN_ORDER_CFG`` is not ``None``, this step is skipped (for
+    compatibility with OpenLane 1.)
+    """
+
     id = "OpenROAD.IOPlacement"
     name = "I/O Placement"
 
@@ -294,7 +313,7 @@ class IOPlacement(OpenROADStep):
             Variable(
                 "FP_PIN_ORDER_CFG",
                 Optional[Path],
-                "Points to the pin order configuration file to set the pins in specific directions (S, W, E, N). If not set, then the IO pins will be placed using OpenROAD's basic pin placer.",
+                "Path to a custom pin configuration file.",
             ),
         ]
     )
@@ -311,14 +330,19 @@ class IOPlacement(OpenROADStep):
 
 
 @Step.factory.register()
-class TapDecapInsertion(OpenROADStep):
-    id = "OpenROAD.TapDecapInsertion"
+class TapEndcapInsertion(OpenROADStep):
+    """
+    Places well TAP cells across a floorplan, as well as end-cap cells at the
+    edges of the floorplan.
+    """
+
+    id = "OpenROAD.TapEndcapInsertion"
     name = "Tap/Decap Insertion"
-    flow_control_variable = "RUN_TAP_DECAP_INSERTION"
+    flow_control_variable = "RUN_TAP_ENDCAP_INSERTION"
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "RUN_TAP_DECAP_INSERTION",
+            "RUN_TAP_ENDCAP_INSERTION",
             bool,
             "Enables/disables this step.",
             default=True,
@@ -346,6 +370,10 @@ class TapDecapInsertion(OpenROADStep):
 
 @Step.factory.register()
 class GeneratePDN(OpenROADStep):
+    """
+    Creates a power distribution network on a floorplanned ODB file.
+    """
+
     id = "OpenROAD.GeneratePDN"
     name = "Generate PDN"
     long_name = "Power Distribution Network Generation"
@@ -358,6 +386,12 @@ class GeneratePDN(OpenROADStep):
 
 @Step.factory.register()
 class GlobalPlacement(OpenROADStep):
+    """
+    Performs a somewhat nebulous initial placement for standard cells in a
+    floorplan. While the placement is not concrete, it is enough to start
+    accounting for issues such as fanout, transition time, et cetera.
+    """
+
     id = "OpenROAD.GlobalPlacement"
     name = "Global Placement"
 
@@ -397,6 +431,13 @@ class GlobalPlacement(OpenROADStep):
                 bool,
                 "Specifies whether or not to run STA after global placement using OpenROAD's estimate_parasitics -placement and generate reports.",
                 default=True,
+            ),
+            Variable(
+                "FP_CORE_UTIL",
+                Decimal,
+                "The core utilization percentage.",
+                default=50,
+                units="%",
             ),
         ]
     )
@@ -441,6 +482,11 @@ class BasicMacroPlacement(OpenROADStep):
 
 @Step.factory.register()
 class DetailedPlacement(OpenROADStep):
+    """
+    Performs "detailed placement" on an ODB file with global placement. This results
+    in a concrete and legal placement of all cells.
+    """
+
     id = "OpenROAD.DetailedPlacement"
     name = "Detailed Placement"
 
@@ -452,71 +498,82 @@ class DetailedPlacement(OpenROADStep):
 
 @Step.factory.register()
 class CTS(OpenROADStep):
+    """
+    Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
+    for an ODB file with detailed-placed cells, using reasonably accurate resistance
+    and capacitance estimations. Detailed Placement is then re-performed to
+    accomodate the new cells.
+    """
+
     id = "OpenROAD.CTS"
     long_name = "Clock Tree Synthesis"
     flow_control_variable = "RUN_CTS"
 
-    config_vars = dpl_variables + [
-        Variable(
-            "RUN_CTS",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["CLOCK_TREE_SYNTH"],
-        ),
-        Variable(
-            "CTS_TARGET_SKEW",
-            Decimal,
-            "The target clock skew in picoseconds.",
-            default=200,
-            units="ps",
-        ),
-        Variable(
-            "CTS_TOLERANCE",
-            int,
-            "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
-            default=100,
-        ),
-        Variable(
-            "CTS_SINK_CLUSTERING_SIZE",
-            int,
-            "Specifies the maximum number of sinks per cluster.",
-            default=25,
-        ),
-        Variable(
-            "CTS_SINK_CLUSTERING_MAX_DIAMETER",
-            Decimal,
-            "Specifies maximum diameter of the sink cluster.",
-            default=50,
-            units="μm",
-        ),
-        Variable(
-            "CTS_REPORT_TIMING",
-            bool,
-            "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
-            default=True,
-        ),
-        Variable(
-            "CTS_CLK_MAX_WIRE_LENGTH",
-            Decimal,
-            "Specifies the maximum wire length on the clock net.",
-            default=0,
-            units="µm",
-        ),
-        Variable(
-            "CTS_DISABLE_POST_PROCESSING",
-            bool,
-            "Specifies whether or not to disable post cts processing for outlier sinks.",
-            default=False,
-        ),
-        Variable(
-            "CTS_DISTANCE_BETWEEN_BUFFERS",
-            Decimal,
-            "Specifies the distance between buffers when creating the clock tree.",
-            default=0,
-            units="µm",
-        ),
-    ]
+    config_vars = (
+        OpenROADStep.config_vars
+        + dpl_variables
+        + [
+            Variable(
+                "RUN_CTS",
+                bool,
+                "Enables/disables this step.",
+                default=True,
+                deprecated_names=["CLOCK_TREE_SYNTH"],
+            ),
+            Variable(
+                "CTS_TARGET_SKEW",
+                Decimal,
+                "The target clock skew in picoseconds.",
+                default=200,
+                units="ps",
+            ),
+            Variable(
+                "CTS_TOLERANCE",
+                int,
+                "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
+                default=100,
+            ),
+            Variable(
+                "CTS_SINK_CLUSTERING_SIZE",
+                int,
+                "Specifies the maximum number of sinks per cluster.",
+                default=25,
+            ),
+            Variable(
+                "CTS_SINK_CLUSTERING_MAX_DIAMETER",
+                Decimal,
+                "Specifies maximum diameter of the sink cluster.",
+                default=50,
+                units="μm",
+            ),
+            Variable(
+                "CTS_REPORT_TIMING",
+                bool,
+                "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
+                default=True,
+            ),
+            Variable(
+                "CTS_CLK_MAX_WIRE_LENGTH",
+                Decimal,
+                "Specifies the maximum wire length on the clock net.",
+                default=0,
+                units="µm",
+            ),
+            Variable(
+                "CTS_DISABLE_POST_PROCESSING",
+                bool,
+                "Specifies whether or not to disable post cts processing for outlier sinks.",
+                default=False,
+            ),
+            Variable(
+                "CTS_DISTANCE_BETWEEN_BUFFERS",
+                Decimal,
+                "Specifies the distance between buffers when creating the clock tree.",
+                default=0,
+                units="µm",
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
@@ -524,6 +581,21 @@ class CTS(OpenROADStep):
 
 @Step.factory.register()
 class GlobalRouting(OpenROADStep):
+    """
+    The initial phase of routing. Given a detailed-placed ODB file, this
+    phase starts assigning coarse-grained routing "regions" for each net so they
+    may be later connected to wires.
+
+    Estimated capacitance and resistance values are much more accurate for
+    global routing.
+
+    Updates the ``antenna__count`` metric.
+
+    At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
+    mitigations may also be applied, updating the `antenna__count` count.
+    See the variables for more info.
+    """
+
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
@@ -579,37 +651,54 @@ class GlobalRouting(OpenROADStep):
         state_out = super().run(**kwargs)
 
         antenna_rpt_path = os.path.join(self.step_dir, "antenna.rpt")
-        antenna_rpt = open(antenna_rpt_path).read()
-        nets = get_antenna_nets(antenna_rpt)
+        net_count = get_antenna_nets(
+            open(antenna_rpt_path),
+            open(os.path.join(self.step_dir, "antenna_nets.txt"), "w"),
+        )
 
         antenna_report_post_fix_path = os.path.join(
             self.step_dir, "antenna_post_fix.rpt"
         )
         if os.path.exists(antenna_report_post_fix_path):
-            net_count_before = len(nets)
+            net_count_after = get_antenna_nets(
+                open(antenna_report_post_fix_path),
+                open(os.path.join(self.step_dir, "antenna_nets_post_fix.txt"), "w"),
+            )
 
-            antenna_rpt = open(antenna_report_post_fix_path).read()
-            nets = get_antenna_nets(antenna_rpt)
-            net_count_after = len(nets)
-
-            if net_count_before == net_count_after:
-                info("Antenna count unchanged after OpenROAD antenna fixer.")
-            elif net_count_after > net_count_before:
+            if net_count == net_count_after:
+                info(
+                    f"Antenna count unchanged after OpenROAD antenna fixer. ({net_count})"
+                )
+            elif net_count_after > net_count:
                 warn(
-                    "Inexplicably, the OpenROAD antenna fixer has generated more antenna. The flow may continue, but you may want to report a bug."
+                    f"Inexplicably, the OpenROAD antenna fixer has generated more antennas ({net_count} -> {net_count_after}). The flow will continue, but you may want to report a bug."
                 )
             else:
                 info(
-                    f"Antenna count reduced using OpenROAD antenna fixer: {net_count_before} -> {net_count_after}"
+                    f"Antenna count reduced using OpenROAD antenna fixer: {net_count} -> {net_count_after}"
                 )
+            net_count = net_count_after
 
-        state_out.metrics["antenna_nets"] = nets
+        state_out.metrics["antenna__count"] = net_count
 
         return state_out
 
 
 @Step.factory.register()
 class DetailedRouting(OpenROADStep):
+    """
+    The latter phase of routing. This transforms the abstract nets from global
+    routing into wires on the metal layers that respect all design rules, avoids
+    creating accidental shorts, and ensures all wires are connected.
+
+    This is by far the longest part of a typical flow, taking hours, days or weeks
+    on larger designs.
+
+    After this point, all cells connected to a net can no longer be moved or
+    removed without a custom-written step of some kind that will also rip up
+    wires.
+    """
+
     id = "OpenROAD.DetailedRouting"
     name = "Detailed Routing"
     flow_control_variable = "RUN_DRT"
@@ -624,7 +713,7 @@ class DetailedRouting(OpenROADStep):
         Variable(
             "ROUTING_CORES",
             Optional[int],
-            "Specifies the number of threads to be used in OpenROAD Detailed Routing. If unset, this will be equal to your thread count.",
+            "Specifies the number of threads to be used in OpenROAD Detailed Routing. If unset, this will be equal to your machine's thread count.",
         ),
         Variable(
             "DRT_MIN_LAYER",
@@ -656,6 +745,11 @@ class DetailedRouting(OpenROADStep):
 
 @Step.factory.register()
 class LayoutSTA(OpenROADStep):
+    """
+    Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenROAD on the ODB layout in its current state.
+    """
+
     id = "OpenROAD.LayoutSTA"
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
@@ -674,6 +768,13 @@ class LayoutSTA(OpenROADStep):
 
 @Step.factory.register()
 class FillInsertion(OpenROADStep):
+    """
+    Fills gaps in the floorplan with filler and decapacitance cells.
+
+    This is run after detailed placement. After this point, the design is basically
+    completely hardened.
+    """
+
     id = "OpenROAD.FillInsertion"
     name = "Fill Insertion"
     flow_control_variable = "RUN_FILL_INSERTION"
@@ -693,6 +794,12 @@ class FillInsertion(OpenROADStep):
 
 @Step.factory.register()
 class ParasiticsExtraction(OpenROADStep):
+    """
+    This extracts `parasitic <https://en.wikipedia.org/wiki/Parasitic_element_(electrical_networks)>`_
+    electrical values from a detailed-placed circuit. These can be used to create
+    basically the highest accurate STA possible for a design.
+    """
+
     id = "OpenROAD.ParasiticsExtraction"
     name = "Parasitics Extraction"
     flow_control_variable = "RUN_SPEF_EXTRACTION"
@@ -731,6 +838,10 @@ class ParasiticsExtraction(OpenROADStep):
 
 @Step.factory.register()
 class ParasiticsSTA(OpenROADStep):
+    """
+    Performs accurate static timing analysis using extracted parasitics.
+    """
+
     id = "OpenROAD.ParasiticsSTA"
     name = "Parasitics STA"
     long_name = "Parasitics-based Static Timing Analysis"
@@ -758,22 +869,31 @@ class ParasiticsSTA(OpenROADStep):
 
 
 # Antennas
-def get_antenna_nets(report: str) -> List[str]:
+def get_antenna_nets(report: io.TextIOWrapper, output: io.TextIOWrapper) -> int:
     pattern = re.compile(r"Net:\s*(\w+)")
-    antenna_nets = []
+    count = 0
 
-    for line in report.splitlines():
+    for line in report:
+        line = line.strip()
         m = pattern.match(line)
         if m is None:
             continue
         net = m[1]
-        antenna_nets.append(net)
+        output.write(f"{net}\n")
+        count += 1
 
-    return antenna_nets
+    return count
 
 
 @Step.factory.register()
 class CheckAntennas(OpenROADStep):
+    """
+    Runs OpenROAD to check if one or more long nets may constitute an
+    `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    The metric ``antenna__count`` will be updated with the number of violating nets.
+    """
+
     id = "OpenROAD.CheckAntennas"
     name = "Check Antennas"
 
@@ -786,15 +906,20 @@ class CheckAntennas(OpenROADStep):
     def run(self, **kwargs) -> State:
         state_out = super().run(**kwargs)
 
-        antenna_rpt = open(os.path.join(self.step_dir, "antenna.rpt")).read()
-
-        state_out.metrics["antenna_nets"] = get_antenna_nets(antenna_rpt)
+        state_out.metrics["antenna__count"] = get_antenna_nets(
+            open(os.path.join(self.step_dir, "antenna.rpt")),
+            open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
+        )
 
         return state_out
 
 
 @Step.factory.register()
 class IRDropReport(OpenROADStep):
+    """
+    Performs voltage-drop analysis on the power distribution network.
+    """
+
     id = "OpenROAD.IRDropReport"
     name = "IR Drop Report"
     long_name = "Generate IR Drop Report"
@@ -860,6 +985,10 @@ class IRDropReport(OpenROADStep):
 
 @Step.factory.register()
 class RepairDesign(OpenROADStep):
+    """
+    Runs a number of design "repairs" on a global-placed ODB file.
+    """
+
     id = "OpenROAD.RepairDesign"
     name = "Repair Design (Post-Global Placement)"
     flow_control_variable = "RUN_REPAIR_DESIGN"
@@ -936,6 +1065,15 @@ class RepairDesign(OpenROADStep):
 
 @Step.factory.register()
 class ResizerTimingPostCTS(OpenROADStep):
+    """
+    First attempt to meet timing requirements for a cell based on basic timing
+    information after clock tree synthesis.
+
+    Standard cells may be resized, and buffer cells may be inserted to ensure
+    that no hold violations exist and no setup violations exist at the current
+    clock.
+    """
+
     id = "OpenROAD.ResizerTimingPostCTS"
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
     flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
@@ -983,7 +1121,7 @@ class ResizerTimingPostCTS(OpenROADStep):
             Variable(
                 "PL_RESIZER_ALLOW_SETUP_VIOS",
                 bool,
-                "Allows the creation of setup violations when fixing hold violations.",
+                "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
                 default=False,
             ),
         ]
@@ -995,6 +1133,16 @@ class ResizerTimingPostCTS(OpenROADStep):
 
 @Step.factory.register()
 class ResizerTimingPostGRT(OpenROADStep):
+    """
+    Second attempt to meet timing requirements for a cell based on timing
+    information after estimating resistance and capacitance values based on
+    global routing.
+
+    Standard cells may be resized, and buffer cells may be inserted to ensure
+    that no hold violations exist and no setup violations exist at the current
+    clock.
+    """
+
     id = "OpenROAD.ResizerTimingPostGRT"
     name = "Resizer Timing Optimizations (Post-Global Routing)"
     flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
@@ -1054,3 +1202,37 @@ class ResizerTimingPostGRT(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")
+
+
+@Step.factory.register()
+class OpenGUI(Step):
+    """
+    Opens the ODB view in the OpenROAD GUI. Useful to inspect some parameters,
+    such as routing density and whatnot.
+    """
+
+    id = "OpenROAD.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.ODB]
+    outputs = []
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+
+        assert isinstance(self.state_in, State)
+
+        with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
+            f.write(f"read_db \"{state_out['odb']}\"")
+            f.flush()
+
+            subprocess.check_call(
+                [
+                    "openroad",
+                    "-no_splash",
+                    "-gui",
+                    f.name,
+                ]
+            )
+
+        return state_out

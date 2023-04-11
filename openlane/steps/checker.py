@@ -25,6 +25,20 @@ from ..logging import err, warn, info
 class MetricChecker(Step):
     deferred = True
 
+    @classmethod
+    def get_help_md(Self):
+        threshold_string = Self.get_threshold_description(None)
+        if threshold_string is None:
+            threshold_string = str(Self.get_threshold(None))
+        dynamic_docstring = "Raises"
+        if Self.deferred:
+            dynamic_docstring += " a deferred error"
+        else:
+            dynamic_docstring += " an immediate error"
+        dynamic_docstring += f" if {Self.get_metric_description(None)} (metric: ``{Self.get_metric_name(None)}``) are >= {threshold_string}."
+
+        return super().get_help_md(dynamic_docstring)
+
     @abstractmethod
     def get_metric_name(self) -> str:
         raise NotImplementedError()
@@ -35,6 +49,9 @@ class MetricChecker(Step):
 
     def get_threshold(self) -> Optional[Decimal]:
         return Decimal(0)
+
+    def get_threshold_description(self) -> Optional[str]:
+        return None
 
     def run(self, **kwargs) -> State:
         state_out = super().run()
@@ -209,6 +226,9 @@ class WireLength(MetricChecker):
         threshold = self.config["WIRE_LENGTH_THRESHOLD"]
         assert threshold is None or isinstance(threshold, Decimal)
         return threshold
+
+    def get_threshold_description(self) -> Optional[str]:
+        return "the threshold specified in the configuration file."
 
 
 @Step.factory.register()

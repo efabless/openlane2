@@ -43,18 +43,32 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     "myst_parser",
-    "markdown_code_links",  # CUSTOM
-    "markdown_cross_doc_section_links",  # CUSTOM
-    "image_links",  # CUSTOM
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
 ]
+try:
+    import sphinxcontrib.spelling  # noqa: F401
+
+    try:
+        import enchant  # noqa: F401
+
+        extensions += [
+            "sphinxcontrib.spelling",
+        ]
+
+        spelling_lang = "en_US"
+        tokenizer_lang = "en_US"
+    except ImportError:
+        print("Failed to import 'enchant'- spellchecker cannot run", file=sys.stderr)
+except ImportError:
+    pass
 
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
 
+autodoc_member_order = "bysource"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

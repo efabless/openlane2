@@ -32,7 +32,11 @@ from .sequential import SequentialFlow
 @Flow.factory.register()
 class Classic(SequentialFlow):
     """
-    The flow most similar to the original Tcl-based OpenLane.
+    A flow of type :class:`openlane.flows.SequentialFlow` that is the most
+    similar to the original OpenLane 1.0 flow, running the Verilog RTL through
+    Yosys, OpenROAD, KLayout and Magic to produce a valid GDSII for simpler designs.
+
+    This is the default when using OpenLane via the command-line.
     """
 
     Steps: List[Type[Step]] = [
@@ -44,8 +48,7 @@ class Classic(SequentialFlow):
         OpenROAD.Floorplan,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
-        Odb.ApplyDEFTemplate,
-        OpenROAD.TapDecapInsertion,
+        OpenROAD.TapEndcapInsertion,
         OpenROAD.IOPlacement,
         Odb.CustomIOPlacement,
         OpenROAD.GeneratePDN,

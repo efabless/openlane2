@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import glob
 import datetime
+import textwrap
 from abc import abstractmethod
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import (
@@ -115,6 +116,48 @@ class Flow(Step._FlowType):
         self.run_dir: Optional[str] = None
         self.tmp_dir: Optional[str] = None
         self.toolbox: Optional[Toolbox] = None
+
+    @classmethod
+    def get_help_md(Self):
+        """
+        Renders Markdown help for this flow to a string.
+        """
+        doc_string = ""
+        if Self.__doc__:
+            doc_string = textwrap.dedent(Self.__doc__)
+
+        result = (
+            textwrap.dedent(
+                f"""\
+                ### {Self.__name__}
+
+                ```{{eval-rst}}
+                %s
+                ```
+
+                #### Using from the CLI
+
+                ```sh
+                openlane --flow {Self.__name__} [...]
+                ```
+
+                #### Importing
+
+                ```python
+                from openlane.flows import Flow
+
+                {Self.__name__} = Flow.get("{Self.__name__}")
+                ```
+                """
+            )
+            % doc_string
+        )
+        if len(Self.Steps):
+            result += "#### Included Steps\n"
+            for step in Self.Steps:
+                result += f"* [`{step.id}`](./step_config_vars.md#{step.id})\n"
+
+        return result
 
     @classmethod
     def get_config_variables(Self) -> List[Variable]:
@@ -351,13 +394,12 @@ class Flow(Step._FlowType):
         )
 
     @internal
-    def end_stage(self, no_increment_ordinal: bool = False):
+    def end_stage(self):
         """
         Ends the current stage, updating the progress bar appropriately.
         """
         self.completed += 1
-        if not no_increment_ordinal:
-            self.ordinal += 1
+        self.ordinal += 1
         assert self.progress is not None and self.task_id is not None
         self.progress.update(self.task_id, completed=float(self.completed))
 

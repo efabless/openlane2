@@ -6,7 +6,7 @@
 This page assumes you have already installed OpenLane. Check the sidebar to install OpenLane if you haven't already.
 :::
 
-This guide covers running the flow on existing desings, adding new designs and quick overview of the design directory structure.
+This guide covers running the flow on existing desings and a quick overview of the design directory structure.
 
 ## Using Configuration Files
 Like with previous versions of OpenLane, you can use configuration files as specified in their reference manual [here](../reference/configuration.md). You would have to create a `config.json` or `config.tcl` file.

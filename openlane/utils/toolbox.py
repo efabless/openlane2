@@ -93,18 +93,18 @@ class Toolbox(object):
         as_cell_lists: bool = False,
     ) -> str:
         """
-        Returns a path to a new liberty file without specific cells.
+        Returns a path to a new lib file without specific cells.
 
         This function is memoized, i.e., results are cached for a specific set
         of inputs.
 
-        :param input_lib_files: A `frozenset` of input liberty files.
+        :param input_lib_files: A `frozenset` of input lib files.
         :param excluded_cells: A `frozenset` of either cells to be removed or
             lists of cells to be removed if `as_cell_lists` is set to `True`.
         :param as_cell_lists: If set to true, `excluded_cells` is treated as a
             list of files that are themselves lists of cells. Otherwise, it is
             treated as a list of cells.
-        :returns: A path to a liberty file with the removed cells.
+        :returns: A path to a lib file with the removed cells.
         """
         if as_cell_lists:  # Paths to files
             excluded_cells_str = ""

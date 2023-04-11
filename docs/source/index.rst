@@ -13,6 +13,6 @@ Check the sidebar to the left to get started.
 
    getting_started/index
    usage/index
-   for_developers/index
    reference/index
    additional_material
+   contributors/index
