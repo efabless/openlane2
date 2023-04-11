@@ -41,7 +41,9 @@ class OdbpyStep(Step):
         **kwargs,
     ) -> State:
         """
+        <!--
         TODO
+        -->
         """
 
         state_out = super().run(**kwargs)
@@ -189,6 +191,8 @@ class ReportWireLength(OdbpyStep):
     detect when one wire is connected to too many things.
     """
 
+    outputs = []
+
     id = "Odb.ReportWireLength"
     name = "Report Wire Length"
 
@@ -208,6 +212,8 @@ class CustomIOPlacement(OdbpyStep):
     """
     Places I/O pins using a custom script, which uses a "pin order configuration"
     file.
+
+    Check the reference documentation for the structure of said file.
     """
 
     id = "Odb.CustomIOPlacement"
@@ -269,9 +275,11 @@ class CustomIOPlacement(OdbpyStep):
 @Step.factory.register()
 class DiodesOnPorts(OdbpyStep):
     """
-    Inserts diodes on ports to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+    Unconditionally inserts diodes on design ports diodes on ports,
+    to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
     Useful for hardening macros, where ports may get long wires that are
-    unaccounted for when hardening the top-level chip.
+    unaccounted for when hardening a top-level chip.
     """
 
     id = "Odb.DiodesOnPorts"

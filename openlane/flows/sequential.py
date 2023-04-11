@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import os
 import subprocess
 from typing import List, Tuple, Optional, Type
 
@@ -113,5 +114,12 @@ class SequentialFlow(Flow):
             for error in deferred_errors:
                 err(error)
             raise FlowError("One or more deferred errors were encountered.")
+
+        final_views_path = os.path.join(self.run_dir, "final")
+        info(f"Saving final views to '{final_views_path}'…")
+        try:
+            current_state.save_snapshot(final_views_path)
+        except Exception as e:
+            raise FlowException(f"Failed to save final views: {e}")
         success("Flow complete.")
         return (current_state, step_list)

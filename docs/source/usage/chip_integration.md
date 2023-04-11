@@ -1,4 +1,3 @@
-> Note: Information in this document is still being ported from OpenLane 1 to OpenLane 2 and may be partially inaccurate.
 # Multi-Macro Top Level Chips
 The current methodology views a multi-macro top-level chip using the following hierarchy:
 
@@ -32,6 +31,9 @@ You need to set the following environment variables in your configuration file f
 
 You also need to enable the [`Odb.ManualMacroPlacement`](../reference/step_config_vars.md#manual-macro-placement) step.
 * In the default flow, you use it by creating a placement configuration file and pointing to it using this variable: [`MACRO_PLACEMENT_CFG`](../reference/step_config_vars.md#Odb.ManualMacroPlacement.MACRO_PLACEMENT_CFG)
-## Hardening the Padframe
 
-(TODO)
+<!--
+TODO:
+    * Padframe
+    * PDN
+-->

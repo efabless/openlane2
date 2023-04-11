@@ -46,7 +46,6 @@ class Classic(SequentialFlow):
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
         Odb.ManualMacroPlacement,
-        Odb.ApplyDEFTemplate,
         OpenROAD.TapEndcapInsertion,
         OpenROAD.IOPlacement,
         Odb.CustomIOPlacement,

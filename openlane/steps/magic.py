@@ -259,6 +259,7 @@ class SpiceExtraction(MagicStep):
     """
     Extracts a SPICE netlist from the GDSII stream. Used in Layout vs. Schematic
     checks.
+
     Also, the metrics will be updated with ``magic__illegal__overlaps``. You can use
     `the relevant checker <#Checker.IllegalOverlap>`_ to quit if that number is
     nonzero.

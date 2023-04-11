@@ -26,8 +26,9 @@ class OpenInKLayout(SequentialFlow):
 
     Intended for use with run tags that have already been run with
     another flow, i.e.: ::
-        openlane [...]
-        openlane --last-run --flow OpenInKLayout [...]
+
+      openlane [...]
+      openlane --last-run --flow OpenInKLayout [...]
     """
 
     name = "Opening in KLayout"
@@ -42,8 +43,9 @@ class OpenInOpenROAD(SequentialFlow):
 
     Intended for use with run tags that have already been run with
     another flow, i.e. ::
-        openlane [...]
-        openlane --last-run --flow OpenInOpenROAD [...]
+
+      openlane [...]
+      openlane --last-run --flow OpenInOpenROAD [...]
     """
 
     name = "Opening in OpenROAD"

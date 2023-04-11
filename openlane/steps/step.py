@@ -71,7 +71,6 @@ LastState: State = State()
 
 
 class Step(ABC):
-
     """
     An abstract base class for Step objects.
 
@@ -80,8 +79,8 @@ class Step(ABC):
     paths and/or metrics.
 
     Warning: The initializer for Step is not thread-safe. Please use it on the main
-    thread and then, if you're using a Flow object, use `start_step_async`, or
-    if you're not, you may use `start` in another thread. That part's fine.
+    thread and then, if you're using a Flow object, use ``start_step_async``, or
+    if you're not, you may use ``start`` in another thread. That part's fine.
 
     :param config: A configuration object.
 
@@ -92,8 +91,8 @@ class Step(ABC):
 
     :param state_in: The state object this step will use as an input.
 
-        The state may also be a `Future[State]`, in which case,
-        the `run()` call will block until that Future is realized.
+        The state may also be a ``Future[State]``, in which case,
+        the ``run()`` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
 
         See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
@@ -117,7 +116,7 @@ class Step(ABC):
         If running inside a Flow, and this exists, if this variable is "False"
         or "None", the step is skipped.
 
-    :attr flow_control_msg: If `flow_control_variable` causes the step to be
+    :attr flow_control_msg: If ``flow_control_variable`` causes the step to be
         skipped and this variable is set, the value of this variable is
         printed.
 
@@ -127,9 +126,9 @@ class Step(ABC):
 
     :attr outputs: A list of :class:`openlane.state.DesignFormat` objects that
         may be emitted by this step. A step is not allowed to modify design
-        formats not declared in `outputs`.
+        formats not declared in ``outputs``.
 
-    :attr config_vars: A list of configuration `openlane.config.Variable` objects
+    :attr config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
     """
 
@@ -426,7 +425,7 @@ class Step(ABC):
 
         When subclassing, override this function, then call it first thing
         via super().run(**kwargs). This lets you use the input verification and
-        the State copying code, as well as resolving the `state_in` if `state_in`
+        the State copying code, as well as resolving the ``state_in`` if ``state_in``
         is a future.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
@@ -455,13 +454,13 @@ class Step(ABC):
         **kwargs,
     ):
         """
-        A helper function for `Step` objects to run subprocesses.
+        A helper function for :class:`Step` objects to run subprocesses.
 
         The output from the subprocess is processed line-by-line.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional override for the log path from `get_log_path`.
+        :param log_to: An optional override for the log path from ``get_log_path``.
             Useful for if you run multiple subprocesses within one step.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
@@ -511,7 +510,7 @@ class Step(ABC):
     @internal
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
-        An assisting function: Given a `kwargs` object, it does the following:
+        An assisting function: Given a ``kwargs`` object, it does the following:
 
             * If the kwargs object has an "env" variable, it separates it into
                 its own variable.
@@ -519,7 +518,7 @@ class Step(ABC):
                 is created based on the current environment.
 
         :param kwargs: A Python keyword arguments object.
-        :returns (kwargs, env): A kwargs without an `env` object, and an isolated `env` object.
+        :returns (kwargs, env): A kwargs without an ``env`` object, and an isolated ``env`` object.
         """
         env = kwargs.get("env")
         if env is None:

@@ -13,11 +13,14 @@
 # limitations under the License.
 import odb
 
+import os
 import re
+import sys
 import math
+import click
 import random
 
-from reader import click_odb, click
+from reader import click_odb
 
 
 def grid_to_tracks(origin, count, step):
@@ -50,9 +53,9 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
 
     if total_pin_count > tracks:
         print(
-            f"There are more pins/virtual_pins: {total_pin_count}, than places to put them: {tracks}. Try making your floorplan area larger."
+            f"There are more pins/virtual_pins: {total_pin_count}, than places to put them: {tracks} in the {side} side. Try making your floorplan area larger."
         )
-        exit(1)
+        sys.exit(1)
     elif total_pin_count == tracks:
         return possible_locations, side_pin_placement  # All positions.
     elif total_pin_count == 0:
@@ -144,8 +147,9 @@ def bus_keys(enum):
 
 @click.command()
 @click.option(
-    "-u/-U",
-    "--unmatched-error/--ignore-unmatched",
+    "-u",
+    "--unmatched-error",
+    is_flag=True,
     default=False,
     help="Treat unmatched pins as error",
 )
@@ -260,7 +264,7 @@ def io_place(
 
                 if len(line) > 1:
                     print("Only one entry allowed per line.")
-                    exit(1)
+                    sys.exit(1)
 
                 token = line[0]
 
@@ -282,7 +286,7 @@ def io_place(
                         "Use #BUS_SORT to group 'bus bits' by index.",
                         "Please make sure you have set a valid side first before listing pins",
                     )
-                    exit(1)
+                    sys.exit(1)
                 elif token == "#BUS_SORT":
                     bus_sort_flag = True
                 else:
@@ -313,6 +317,13 @@ def io_place(
     bterms = [bterm[1] for bterm in bterms_enum]
 
     pin_placement = {"#N": [], "#E": [], "#S": [], "#W": []}
+    pin_distance_min = {
+        "#N": V_WIDTH + V_LAYER.getSpacing(),
+        "#S": V_WIDTH + V_LAYER.getSpacing(),
+        "#E": H_WIDTH + H_LAYER.getSpacing(),
+        "#W": H_WIDTH + H_LAYER.getSpacing(),
+    }
+    pin_distance = pin_distance_min.copy()
     bterm_regex_map = {}
     for side in pin_placement_cfg:
         for regex in pin_placement_cfg[side]:  # going through them in order
@@ -322,7 +333,16 @@ def io_place(
                     pin_placement[side].append(virtual_pins_count)
                 except ValueError:
                     print("You provided invalid values for virtual pins")
-                    exit(1)
+                    sys.exit(1)
+            elif regex[0] == "@":
+                variable = regex[1:].split("=")
+                if variable[0] == "min_distance":
+                    pin_distance[side] = float(variable[1]) * reader.dbunits
+                    if pin_distance[side] < pin_distance_min[side]:
+                        print(
+                            f"Warning: Using min_distance {pin_distance_min[side] / reader.dbunits} for {side} pins to avoid overlap"
+                        )
+                        pin_distance[side] = pin_distance_min[side]
             else:
                 regex += "$"  # anchor
                 for bterm in bterms:
@@ -335,7 +355,7 @@ def io_place(
                             print(
                                 f"Error: Multiple regexes matched {pin_name}. Those are {bterm_regex_map[bterm]} and {regex}"
                             )
-                            exit(1)
+                            sys.exit(os.EX_DATAERR)
                         bterm_regex_map[bterm] = regex
                         pin_placement[side].append(bterm)  # to maintain the order
 
@@ -346,7 +366,7 @@ def io_place(
         print("Those are:", [bterm.getName() for bterm in unmatched_bterms])
         if unmatched_error_flag:
             print("Treating unmatched pins as errors. Exiting..")
-            exit(1)
+            sys.exit(1)
         else:
             print("Assigning random sides to the above pins")
             for bterm in unmatched_bterms:
@@ -363,27 +383,37 @@ def io_place(
 
     print("Block boundaries:", BLOCK_LL_X, BLOCK_LL_Y, BLOCK_UR_X, BLOCK_UR_Y)
 
-    origin, count, step = reader.block.findTrackGrid(H_LAYER).getGridPatternY(0)
-    print(f"Horizontal Tracks Origin: {origin}, Count: {count}, Step: {step}")
-    h_tracks = grid_to_tracks(origin, count, step)
+    origin, count, h_step = reader.block.findTrackGrid(H_LAYER).getGridPatternY(0)
+    print(f"Horizontal Tracks Origin: {origin}, Count: {count}, Step: {h_step}")
+    h_tracks = grid_to_tracks(origin, count, h_step)
 
-    origin, count, step = reader.block.findTrackGrid(V_LAYER).getGridPatternX(0)
-    print(f"Vertical Tracks Origin: {origin}, Count: {count}, Step: {step}")
-    v_tracks = grid_to_tracks(origin, count, step)
+    origin, count, v_step = reader.block.findTrackGrid(V_LAYER).getGridPatternX(0)
+    print(f"Vertical Tracks Origin: {origin}, Count: {count}, Step: {v_step}")
+    v_tracks = grid_to_tracks(origin, count, v_step)
 
     for rev in reverse_arr:
         pin_placement[rev].reverse()
 
-    # create the pins
+    pin_tracks = {}
     for side in pin_placement:
         if side in ["#N", "#S"]:
-            slots, pin_placement[side] = equally_spaced_sequence(
-                side, pin_placement[side], v_tracks
-            )
-        else:
-            slots, pin_placement[side] = equally_spaced_sequence(
-                side, pin_placement[side], h_tracks
-            )
+            pin_tracks[side] = [
+                v_tracks[i]
+                for i in range(len(v_tracks))
+                if (i % (math.ceil(pin_distance[side] / v_step))) == 0
+            ]
+        elif side in ["#W", "#E"]:
+            pin_tracks[side] = [
+                h_tracks[i]
+                for i in range(len(h_tracks))
+                if (i % (math.ceil(pin_distance[side] / h_step))) == 0
+            ]
+
+    # create the pins
+    for side in pin_placement:
+        slots, pin_placement[side] = equally_spaced_sequence(
+            side, pin_placement[side], pin_tracks[side]
+        )
 
         assert len(slots) == len(pin_placement[side])
 
@@ -395,10 +425,8 @@ def io_place(
             pin_name = bterm.getName()
             pins = bterm.getBPins()
             if len(pins) > 0:
-                # print(f"Warning: {pin_name} already has shapes. Modifying them")
-                assert (
-                    len(pins) == 1
-                ), f"{pin_name} has multiple pins already placed. This is a fatal error."
+                print(f"Warning: {pin_name} already has shapes. Modifying them")
+                assert len(pins) == 1
                 pin_bpin = pins[0]
             else:
                 pin_bpin = odb.dbBPin_create(bterm)

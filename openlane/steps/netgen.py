@@ -110,9 +110,12 @@ class NetgenStep(TclStep):
 class LVS(NetgenStep):
     """
     Performs `Layout vs. Schematic <https://en.wikipedia.org/wiki/Layout_Versus_Schematic>`_ checks on the extracted SPICE netlist versus.
-    a verilog netlist with power connections. This detects if any accidental
-    shorts were added during the routing process, as well as verifying all
-    modules are properly connected to power and ground pins.
+    a verilog netlist with power connections.
+
+    This verifies the following:
+    * There are no unexpected shorts in the final layout.
+    * There are no unexpected opens in the final layout.
+    * All signals are connected correctly.
     """
 
     id = "Netgen.LVS"

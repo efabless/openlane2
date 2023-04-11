@@ -387,7 +387,6 @@ begin
         utmi_dmpulldown_r = 1'b0;
 
         // Long SE0 - could be reset or suspend
-        // TODO: Should revert to FS mode and check...
         if (usb_rst_time_q >= HS_RESET_TIME && usb_reset_w)
             next_state_r = STATE_WAIT_RST;
     end
@@ -651,7 +650,6 @@ begin
         setup_frame_q   <= 1'b0;
 end
 // Detect STATUS stage (ACK for SETUP GET requests)
-// TODO: Not quite correct .... 
 else if (ep0_rx_valid_w && !rx_strb_w && rx_last_w)
 begin
     setup_valid_q       <= 1'b0;
@@ -942,7 +940,6 @@ begin
     end
     else if (ctrl_sending_r && ctrl_send_accept_w)
     begin
-        // TODO: Send ZLP on exact multiple lengths...
         ctrl_txvalid_r  = 1'b1;
         ctrl_txdata_r   = desc_data_w;
         ctrl_txstrb_r   = 1'b1;
@@ -951,7 +948,6 @@ begin
         // Increment send index
         ctrl_send_idx_r = ctrl_send_idx_r + 16'd1;
 
-        // TODO: Detect need for ZLP
         if (ctrl_send_idx_r == wLength)
         begin
             ctrl_sending_r = 1'b0;
