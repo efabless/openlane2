@@ -115,6 +115,7 @@ class SequentialFlow(Flow):
                 err(error)
             raise FlowError("One or more deferred errors were encountered.")
 
+        assert self.run_dir is not None
         final_views_path = os.path.join(self.run_dir, "final")
         info(f"Saving final views to '{final_views_path}'…")
         try:
