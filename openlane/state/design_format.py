@@ -95,9 +95,9 @@ class DesignFormat(Enum):
     )
 
     JSON_HEADER = (
-        "json_header",
-        "header.json",
-        "Design Json Header File. It contains partial information about the design",
+        "json_h",
+        "h.json",
+        "Design JSON Header File",
     )
 
 

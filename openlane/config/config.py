@@ -26,7 +26,15 @@ from typing import (
     Union,
     List,
     Optional,
+    Sequence,
 )
+
+
+def StringEnum(name: str, values: Sequence[str]):
+    """
+    Creates a string enumeration where the keys and values are the same.
+    """
+    return Enum(name, [(value, value) for value in values])
 
 
 class Path(UserString, os.PathLike):
@@ -65,6 +73,8 @@ class ConfigEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, Enum):
             return str(o)
+        elif isinstance(o, StringEnum):
+            return o.value
         return super(ConfigEncoder, self).default(o)
 
 

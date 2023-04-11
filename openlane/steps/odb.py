@@ -234,13 +234,10 @@ class ReportDisconnectedPins(OdbpyStep):
 
     def get_command(self) -> List[str]:
         command = super().get_command()
-        if self.config["IGNORE_DISCONNECTED_MODULES"] is not None:
-            ignore_arg = [
-                f"--ignore-module {module}"
-                for module in self.config["IGNORE_DISCONNECTED_MODULES"]
-            ]
-            ignore_arg = " ".join(ignore_arg).split()
-            command += ignore_arg
+        if ignored_modules := self.config["IGNORE_DISCONNECTED_MODULES"]:
+            for module in ignored_modules:
+                command.append("--ignore-module")
+                command.append(module)
         return command
 
 

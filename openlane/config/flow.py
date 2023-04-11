@@ -14,7 +14,8 @@
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable, StringEnum
+from .variable import Path, Variable
+from .config import StringEnum
 
 all_variables = [
     # Common
