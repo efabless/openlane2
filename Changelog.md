@@ -1,3 +1,25 @@
+# 2.0.0-a13
+## Documentation
+* Built-in flows now have full generated documentation akin to steps.
+* Built-in steps now document their inputs, outputs and each built-in step has a human-readable text description.
+* Rewrite the RTL-to-GDS guides.
+* Add an architectural overview of OpenLane 2+.
+* Document pin config file format.
+* Add guides on writing custom flows AND custom steps.
+* Add a migration guide from OpenLane 1.
+* Port contributor's guide from OpenLane 1.
+* Removed default values from Jupyter Notebook.
+
+## Functional
+* `Config` is now immutable, `.copy()` can now take kwargs to override one or more values.
+* `TapDecapInsertion` -> `TapEndcapInsertion` (more accurate)
+* Dropped requirement for description to match between two variables to be "equal:" It is sometimes favorable to have a slightly different description in another step.
+* `OpenInKLayout`/`OpenInOpenROAD` turned into sequential flows with one step instead of hacks.
+* Fixed a bug where `OpenInKLayout` would exit instantly.
+* Updated and fixed `Optimizing` demo flow, as well as delisting it.
+* Port https://github.com/The-OpenROAD-Project/OpenLane/pull/1723 to OpenLane 2.
+* Remove `Odb.ApplyDEFTemplate` from default flow.
+
 # 2.0.0-a12
 * Fixes a bug where if OpenLane is invoked from the same directory as the design,
   KLayout stream-outs would break.

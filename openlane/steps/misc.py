@@ -25,6 +25,11 @@ from ..config import Path, Variable
 
 @Step.factory.register()
 class LoadBaseSDC(Step):
+    """
+    Loads an SDC file specified as a configuration variable into the state
+    object unaltered.
+    """
+
     id = "Misc.LoadBaseSDC"
     name = "Load Base SDC"
     long_name = "Load Base Design Constraints File"

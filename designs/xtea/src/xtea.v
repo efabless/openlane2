@@ -7,9 +7,6 @@
 ////                                                              ////
 ////  An implementation of the XTEA encryption algorithm.         ////
 ////                                                              ////
-////  TODO:                                                       ////
-////    * Write a spec                                            ////
-////    * Wishbone compliance                                     ////
 ////                                                              ////
 ////  Author: David Johnson, dj@david-web.co.uk                   ////
 ////                                                              ////

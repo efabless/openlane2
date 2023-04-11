@@ -5,7 +5,7 @@
             "Yosys.Synthesis",
             "Misc.LoadBaseSDC",
             "OpenROAD.Floorplan",
-            "OpenROAD.TapDecapInsertion",
+            "OpenROAD.TapEndcapInsertion",
             "OpenROAD.GeneratePDN",
             "OpenROAD.IOPlacement",
             "OpenROAD.GlobalPlacement",

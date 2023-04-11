@@ -113,10 +113,11 @@ class ConfigBuilder(object):
             PDK_ROOT,
         )
 
+        config_in._unlock()
         config_in["PDK_ROOT"] = PDK_ROOT
         config_in["DESIGN_NAME"] = DESIGN_NAME
-
         config_in.update(kwargs)
+        config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
@@ -161,7 +162,7 @@ class ConfigBuilder(object):
 
         :param config_override_strings: A list of "overrides" in the form of
             NAME=VALUE strings. These are primarily for running OpenLane from
-            the commandline and strictly speaking should not be used in the API.
+            the command-line and strictly speaking should not be used in the API.
 
         :param design_dir: The design directory for said configuration.
             Supported and required *if and only if* config_in is a dictionary.
@@ -295,7 +296,9 @@ class ConfigBuilder(object):
             design_dir=design_dir,
         )
 
+        config_in._unlock()
         config_in.update(**resolved)
+        config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
@@ -321,8 +324,9 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
+        config_in._unlock()
         config_in["PDK_ROOT"] = pdk_root
-        return config_in
+        return config_in._lock()
 
     @classmethod
     def _loads_tcl(
@@ -349,7 +353,7 @@ class ConfigBuilder(object):
             }
         )
 
-        tcl_vars_in = config_in.copy()
+        tcl_vars_in = config_in.copy()._unlock()
         tcl_vars_in[Keys.scl] = ""
         tcl_vars_in[Keys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
@@ -378,9 +382,11 @@ class ConfigBuilder(object):
         tcl_vars_in[Keys.scl] = scl
         tcl_vars_in[Keys.design_dir] = design_dir
 
-        design_config = env_from_tcl(tcl_vars_in, config)
+        design_config = env_from_tcl(tcl_vars_in._lock(), config)
 
+        config_in._unlock()
         config_in.update(**design_config)
+        config_in._lock()
 
         config_in, design_warnings, design_errors = Variable.process_config(
             config_in,
@@ -400,9 +406,9 @@ class ConfigBuilder(object):
         for warning in design_warnings:
             warn(warning)
 
+        config_in._unlock()
         config_in["PDK_ROOT"] = pdk_root
-
-        return config_in
+        return config_in._lock()
 
     @classmethod
     def _resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:

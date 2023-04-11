@@ -36,6 +36,20 @@ class YosysStep(TclStep):
 
 @Step.factory.register()
 class Synthesis(YosysStep):
+    """
+    Performs synthesis and technology mapping using Yosys and ABC, emitting a
+    netlist. Requires Yosys 0.26 or higher.
+
+    Some metrics will also be extracted and updated, namely:
+
+    * ``design__instance__count``
+    * ``design__instance_unmapped__count``
+
+    If using Yosys 0.27 or higher:
+
+    * ``design__instance__area`` is also updated.
+    """
+
     id = "Yosys.Synthesis"
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]
@@ -93,7 +107,7 @@ class Synthesis(YosysStep):
         Variable(
             "SYNTH_READ_BLACKBOX_LIB",
             bool,
-            "A flag that enable reading the full (untrimmed) liberty file as a blackbox for synthesis. Please note that this is not used in technology mapping. This should only be used when trying to preserve gate instances in the rtl of the design.",
+            "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
             default=False,
         ),
         Variable(

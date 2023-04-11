@@ -20,26 +20,21 @@ from concurrent.futures import Future
 from .flow import Flow
 from ..logging import get_log_level, set_log_level, LogLevels, success, info
 from ..state import State
-from ..steps import Step, Yosys, OpenROAD
+from ..steps import Step, Yosys, OpenROAD, Misc
 from ..config import Config
 
 
+#   "Optimizing" is a custom demo flow to show what's possible with non-sequential Flows in OpenLane 2.
+#   It works across two steps:
+#   * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
+#       The best-performing strategy in terms of minimizing the area makes it to the next stage.
+#   * Floorplanning and Placement - tries FP and placement with a high utilization.
+#       If the high utilization fails, a lower is fallen back to as a suggestion.
 @Flow.factory.register()
 class Optimizing(Flow):
-    """
-    A customized flow composed of two stages:
-
-    * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
-
-    The best-performing strategy in terms of minimizing the area makes it to the next stage.
-
-    * Floorplanning and Placement - tries FP and placement with a high utilization.
-
-    If the high utilization fails, a lower is fallen back to as a suggestion.
-    """
-
     Steps = [
         Yosys.Synthesis,
+        Misc.LoadBaseSDC,
         OpenROAD.NetlistSTA,
         OpenROAD.Floorplan,
         OpenROAD.IOPlacement,
@@ -62,8 +57,7 @@ class Optimizing(Flow):
         set_log_level(LogLevels.ERROR)
 
         for strategy in ["AREA 0", "AREA 2", "DELAY 1"]:
-            config = self.config.copy()
-            config["SYNTH_STRATEGY"] = strategy
+            config = self.config.copy(SYNTH_STRATEGY=strategy)
 
             synth_step = Yosys.Synthesis(
                 config,
@@ -74,9 +68,18 @@ class Optimizing(Flow):
             synth_future = self.start_step_async(synth_step)
             step_list.append(synth_step)
 
+            sdc_step = Misc.LoadBaseSDC(
+                config,
+                id=f"sdc-{strategy}",
+                state_in=synth_future,
+                flow=self,
+            )
+            sdc_future = self.start_step_async(sdc_step)
+            step_list.append(sdc_step)
+
             sta_step = OpenROAD.NetlistSTA(
                 config,
-                state_in=synth_future,
+                state_in=sdc_future,
                 id=f"sta-{strategy}",
                 flow=self,
             )
@@ -110,8 +113,7 @@ class Optimizing(Flow):
 
         self.start_stage("Floorplanning and Placement")
 
-        fp_config = min_config.copy()
-        fp_config["FP_CORE_UTIL"] = 99
+        fp_config = min_config.copy(FP_CORE_UTIL=99)
         fp = OpenROAD.Floorplan(
             fp_config,
             state_in=min_area_state,
@@ -142,8 +144,7 @@ class Optimizing(Flow):
             step_list.append(gpl)
         except subprocess.CalledProcessError:
             info("High utilization failed- attempting low utilization…")
-            fp_config = min_config.copy()
-            fp_config["FP_CORE_UTIL"] = 40
+            fp_config = min_config.copy(FP_CORE_UTIL=40)
             fp = OpenROAD.Floorplan(
                 fp_config,
                 state_in=min_area_state,

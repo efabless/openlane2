@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import json
+import shutil
 from decimal import Decimal
 from collections import UserDict
 from typing import Union, Optional, Dict, Any
@@ -20,6 +21,7 @@ from typing import Union, Optional, Dict, Any
 from .design_format import DesignFormat, DesignFormatByID
 
 from ..config import Path
+from ..common import mkdirp
 from ..logging import warn
 
 
@@ -54,8 +56,9 @@ class State(UserDict):
     The state is the only thing that can be altered by steps other than the
     filesystem.
 
-    This object has a property named `metrics` that also carries statistics
-    about the design: area, wire length, et cetera.
+    :attr metrics: A dictionary that carries statistics about the design: area,
+        wire length, et cetera, but also miscellaneous data, for example, whether
+        it passed a certain check or not.
     """
 
     metrics: dict
@@ -96,12 +99,27 @@ class State(UserDict):
     def dumps(self, **kwargs) -> str:
         """
         Dumps data as JSON.
-
-
         """
         if "indent" not in kwargs:
             kwargs["indent"] = 4
         return json.dumps(self._as_dict(), cls=StateEncoder, **kwargs)
+
+    def save_snapshot(self, path: Union[str, os.PathLike]):
+        mkdirp(path)
+        self.validate()
+        for key, value in self.items():
+            assert isinstance(key, str)
+            if value is None:
+                continue
+            target_dir = os.path.join(path, key)
+            mkdirp(target_dir)
+            target_path = os.path.join(target_dir, os.path.basename(value))
+            shutil.copyfile(value, target_path, follow_symlinks=True)
+        metrics_path = os.path.join(path, "metrics.csv")
+        with open(metrics_path, "w") as f:
+            f.write("Metric,Value\n")
+            for metric in self.metrics:
+                f.write(f"{metric}, {self.metrics[metric]}\n")
 
     def validate(self):
         for key, value in self._as_dict(metrics=False).items():

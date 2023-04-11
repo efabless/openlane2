@@ -13,15 +13,16 @@
 # limitations under the License.
 from __future__ import annotations
 
+import os
 import subprocess
 from typing import List, Tuple, Optional, Type
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
 from ..steps import (
-    MissingInputError,
     Step,
     StepError,
+    StepException,
     DeferredStepError,
 )
 from ..logging import info, success, err
@@ -39,16 +40,16 @@ class SequentialFlow(Flow):
 
     @classmethod
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
-        step_list = []
+        Step_list = []
         for name in step_ids:
             step = Step.get(name)
             if step is None:
                 raise TypeError(f"No step found with id '{name}'")
-            step_list.append(step)
+            Step_list.append(step)
 
         class CustomSequentialFlow(SequentialFlow):
             name = "Custom Sequential Flow"
-            Steps = step_list
+            Steps = Step_list
 
         return CustomSequentialFlow
 
@@ -91,13 +92,13 @@ class SequentialFlow(Flow):
             self.start_stage(step.name)
             if not executing:
                 info(f"Skipping step '{step.name}'…")
-                self.end_stage(no_increment_ordinal=True)
+                self.end_stage()
                 continue
 
             step_list.append(step)
             try:
                 current_state = step.start()
-            except MissingInputError as e:
+            except StepException as e:
                 raise FlowException(str(e))
             except DeferredStepError as e:
                 deferred_errors.append(str(e))
@@ -113,5 +114,13 @@ class SequentialFlow(Flow):
             for error in deferred_errors:
                 err(error)
             raise FlowError("One or more deferred errors were encountered.")
+
+        assert self.run_dir is not None
+        final_views_path = os.path.join(self.run_dir, "final")
+        info(f"Saving final views to '{final_views_path}'…")
+        try:
+            current_state.save_snapshot(final_views_path)
+        except Exception as e:
+            raise FlowException(f"Failed to save final views: {e}")
         success("Flow complete.")
         return (current_state, step_list)

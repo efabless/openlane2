@@ -70,8 +70,10 @@ def generate_module_docs(app: Sphinx, conf: Config):
                 )
             )
 
-        # 2. Flow
-        template = env.get_template("flow.md")
+        # 2. Flows
+        template = env.get_template("flows.md")
+        flow_factory = openlane.Flow.factory
+
         module = openlane.config.flow
         with open(
             os.path.join(doc_root_dir, "reference", "flow_config_vars.md"), "w"
@@ -79,20 +81,25 @@ def generate_module_docs(app: Sphinx, conf: Config):
             f.write(
                 template.render(
                     module=module,
+                    flows=[
+                        flow_factory.get(key)
+                        for key in flow_factory.list()
+                        if flow_factory.get(key).__doc__ is not None
+                    ],
                 )
             )
 
         # 3. Steps
         template = env.get_template("steps.md")
-        factory = openlane.Step.factory
+        step_factory = openlane.Step.factory
 
         # Pre-processing
         by_category = {}
-        for step in factory.list():
+        for step in step_factory.list():
             category, _ = step.split(".")
             if by_category.get(category) is None:
                 by_category[category] = []
-            by_category[category].append((step, factory.get(step)))
+            by_category[category].append((step, step_factory.get(step)))
 
         misc = ("Misc", by_category["Misc"])
         del by_category["Misc"]
@@ -115,7 +122,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
         ) as f:
             f.write(
                 template.render(
-                    factory=factory,
+                    factory=step_factory,
                     categories_sorted=categories_sorted,
                 )
             )

@@ -70,7 +70,7 @@ class DesignFormat(Enum):
     LIB = (
         "lib",
         "lib",
-        "Lib",
+        "LIB Timing Library Format",
     )
     SPICE = (
         "spice",

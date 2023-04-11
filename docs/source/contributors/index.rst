@@ -1,8 +1,9 @@
-Developer's Guide
+Notes for Contributors
 ################################################################################
 
 .. toctree::
    :glob:
-
-   docs_contribution
+   
+   code
+   docs
 

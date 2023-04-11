@@ -28,7 +28,12 @@ with pkgs; mkShell {
     delta
     zsh
 
-    # Testing
+    # Docs + Testing
+    enchant
     jupyter
   ];
+
+  shellHook = ''
+    LD_LIBRARY_PATH="${enchant}/lib:$LD_LIBRARY_PATH"
+  '';
 }
