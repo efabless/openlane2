@@ -71,7 +71,7 @@ pdk_variables = [
     ),
     Variable(
         "GPIO_PADS_LEF",
-        List[Path],
+        Optional[List[Path]],
         "Path(s) to GPIO pad LEF file(s).",
     ),
     Variable(
@@ -391,11 +391,6 @@ scl_variables = [
     ),
     # Clock Tree Synthesis
     Variable(
-        "CELL_CLK_PORT",
-        str,
-        "Name of the clock port used in all cells.",
-    ),
-    Variable(
         "CTS_ROOT_BUFFER",
         str,
         "Defines the cell inserted at the root of the clock tree. Used in CTS.",
@@ -446,7 +441,7 @@ scl_variables = [
     ),
     Variable(
         "IGNORE_DISCONNECTED_MODULES",
-        List[str],
+        Optional[List[str]],
         "Modules (or cells) to ignore when checking for disconnected pins.",
     ),
     # Placement
@@ -530,7 +525,23 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
 
-    new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
+    if new["PDK"].startswith("sky130"):
+        new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
+    elif new["PDK"].startswith("gf180mcu"):
+        del new["GPIO_PADS_LEF"]
+        del new["GPIO_PADS_VERILOG"]
+
+        del new["CARRY_SELECT_ADDER_MAP"]
+        del new["FULL_ADDER_MAP"]
+        del new["RIPPLE_CARRY_ADDER_MAP"]
+        del new["SYNTH_LATCH_MAP"]
+        del new["TRISTATE_BUFFER_MAP"]
+
+        del new["KLAYOUT_DRC_TECH_SCRIPT"]
+
+        new[
+            "SYNTH_CLK_DRIVING_CELL"
+        ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
 
     return new._lock()
 
