@@ -7,21 +7,15 @@ dist: venv/manifest.txt
 mount:
 	@echo "make mount is not needed in OpenLane 2. You may simply call 'openlane --dockerized'."
 
-.PHONY: pdk
-pdk:
-	@echo "make pdk is not needed in OpenLane 2."
-
-.PHONY: openlane
-openlane:
-	@echo "make openlane is not needed in OpenLane 2."
-
-.PHONY: mount
-mount:
-	@echo "make mount is not needed in OpenLane 2. You may simply call 'openlane --dockerized'."
-
 .PHONY: pdk pull-openlane
 pdk pull-openlane:
 	@echo "This command is not needed in OpenLane 2."
+
+.PHONY: openlane
+openlane:
+	@echo "make openlane is deprecated. Please use make docker-image."
+	@echo "----"
+	@$(MAKE) docker-image
 
 .PHONY: docker-image
 docker-image: venv
@@ -61,8 +55,7 @@ venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements.txt
-	PYTHONPATH= yes | ./venv/bin/mypy --install-types
-	PYTHONPATH= yes | ./venv/bin/mypy --install-types
+	PYTHONPATH= yes | ./venv/bin/mypy --install-types .
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
 
 .PHONY: veryclean
