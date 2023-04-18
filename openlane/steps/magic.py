@@ -240,16 +240,20 @@ class DRC(MagicStep):
 
         reports_dir = os.path.join(self.step_dir, "reports")
         report_path = os.path.join(reports_dir, "drc.rpt")
-        report_str = open(report_path, encoding="utf8").read()
+        report_stats = os.stat(report_path)
 
-        drc = DRCObject.from_magic(report_str)
-        drc_bbox = [
-            bbox for violation in drc.violations for bbox in violation.bounding_boxes
-        ]
-        state_out.metrics["magic__drc_errors"] = len(drc_bbox)
+        drc_db_file = None
+        if report_stats.st_size >= 0:  # 134217728:
+            drc_db_file = os.path.join(reports_dir, "drc.db")
 
-        with open(os.path.join(reports_dir, "drc.klayout.xml"), "w") as f:
-            f.write(drc.to_klayout_xml())
+        drc, bbox_count = DRCObject.from_magic(
+            open(report_path, encoding="utf8"),
+            db_file=drc_db_file,
+        )
+        state_out.metrics["magic__drc_errors"] = bbox_count
+
+        klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")
+        drc.to_klayout_xml(open(klayout_db_path, "wb"))
 
         return state_out
 
