@@ -27,13 +27,6 @@ from .resolve import process_string, Keys as SpecialKeys
 # VType = Union[Scalar, List[Scalar]]
 
 
-def StringEnum(name: str, values: Sequence[str]):
-    """
-    Creates a string enumeration where the keys and values are the same.
-    """
-    return Enum(name, [(value, value) for value in values])
-
-
 newline_rx = re.compile(r"\n")
 
 
@@ -288,7 +281,6 @@ class Variable:
             raise NotImplementedError()
         return (
             self.name == rhs.name
-            and self.description == rhs.description
             and self.type == rhs.type
             and self.default == rhs.default
         )
@@ -320,10 +312,13 @@ class Variable:
 
         warnings: List[str] = []
         errors = []
-        final = Config()
-        mutable = config.copy()
+        final = Config()._unlock()
+        mutable = config.copy()._unlock()
 
-        if dis := mutable.get("DIODE_INSERTION_STRATEGY"):
+        if (
+            mutable.get("DIODE_INSERTION_STRATEGY") is not None
+        ):  # Can't use := because 0 is a valid value
+            _, dis = mutable.extract("DIODE_INSERTION_STRATEGY")
             try:
                 dis = int(dis)
             except ValueError:
@@ -337,15 +332,14 @@ class Variable:
                     "The DIODE_INSERTION_STRATEGY variable has been deprecated. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
                 )
 
-                config["GRT_REPAIR_ANTENNAS"] = False
-                config["RUN_HEURISTIC_DIODE_INSERTION"] = False
+                final["GRT_REPAIR_ANTENNAS"] = False
+                final["RUN_HEURISTIC_DIODE_INSERTION"] = False
+                final["DIODE_ON_PORTS"] = "none"
                 if dis in [3, 6]:
-                    config["GRT_REPAIR_ANTENNAS"] = True
+                    final["GRT_REPAIR_ANTENNAS"] = True
                 if dis in [5, 6]:
-                    config["RUN_HEURISTIC_DIODE_INSERTION"] = True
-                    config["DIODE_ON_PORTS"] = "in"
-
-            del mutable["DIODE_INSERTION_STRATEGY"]
+                    final["RUN_HEURISTIC_DIODE_INSERTION"] = True
+                    final["DIODE_ON_PORTS"] = "in"
 
         for variable in variables:
             try:
@@ -364,6 +358,6 @@ class Variable:
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
             elif "_OPT" not in key:
-                warnings.append(f"Unknown key {key} provided.")
+                warnings.append(f"Unknown key '{key}' provided.")
 
-        return (final, warnings, errors)
+        return (final._lock(), warnings, errors)

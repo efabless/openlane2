@@ -59,7 +59,11 @@ else:
             args.append("-rd")
             if isinstance(value, tuple) or isinstance(value, list):
                 value = ";".join(value)
-            elif isinstance(value, str) and os.path.exists(value):
+            elif (
+                isinstance(value, str)
+                and os.path.exists(value)
+                and key != "design_name"
+            ):
                 value = os.path.abspath(value)
 
             args.append(f"{key}={value or 'NULL'}")
@@ -92,7 +96,6 @@ try:
     layout_options.lefdef_config.map_file = lym
 
     cell_view = main_window.load_layout(input, layout_options, 0)
-    pya.Application.instance().exit(0)
 except Exception as e:
     print(e, file=sys.stderr)
     pya.Application.instance().exit(1)

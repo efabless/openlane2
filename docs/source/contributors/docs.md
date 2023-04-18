@@ -43,8 +43,7 @@ After installation, every time you want to build the documentation proceed to en
 
 ```sh
 cd OpenLane/
-source ./venv/bin/activate
-make -C docs/ html
+make docs
 ```
 
 View the generated html files using your favorite web browser. Open this document in browser:
@@ -137,9 +136,9 @@ Configuration error:
 There is a programmable error in your configuration file:
 
 Traceback (most recent call last):
-File "/home/armleo/.local/lib/python3.10/site-packages/sphinx/config.py", line 343, in eval_config_file
+File "/home/user/.local/lib/python3.10/site-packages/sphinx/config.py", line 343, in eval_config_file
     exec(code, namespace)
-File "/home/armleo/Desktop/OpenLaneGSOC/conf.py", line 24, in <module>
+File "/home/user/Desktop/openlane/conf.py", line 24, in <module>
     from recommonmark.parser import CommonMarkParser
 ModuleNotFoundError: No module named 'recommonmark'
 ```

@@ -26,7 +26,15 @@ from typing import (
     Union,
     List,
     Optional,
+    Sequence,
 )
+
+
+def StringEnum(name: str, values: Sequence[str]):
+    """
+    Creates a string enumeration where the keys and values are the same.
+    """
+    return Enum(name, [(value, value) for value in values])
 
 
 class Path(UserString, os.PathLike):
@@ -65,6 +73,8 @@ class ConfigEncoder(json.JSONEncoder):
             return str(o)
         elif isinstance(o, Enum):
             return str(o)
+        elif isinstance(o, StringEnum):
+            return o.value
         return super(ConfigEncoder, self).default(o)
 
 
@@ -74,12 +84,27 @@ class Config(UserDict):
 
     It is recommended that you construct these using the :class:`ConfigBuilder`
     singleton class.
+
+    A created Config is immutable and cannot be modified by Steps.
     """
 
     current_interactive: ClassVar[Optional["Config"]] = None
+    locked: bool = False
 
     meta: Meta = Meta(version=1)
     interactive: bool = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.locked = True
+
+    def _unlock(self) -> "Config":
+        self.locked = False
+        return self
+
+    def _lock(self) -> "Config":
+        self.locked = True
+        return self
 
     @classmethod
     def get_meta(
@@ -106,6 +131,34 @@ class Config(UserDict):
             meta.flow = flow_override
 
         return meta
+
+    def copy(self, **overrides) -> "Config":
+        """
+        Produces a shallow copy of the configuration object.
+
+        :param overrides: A series of configuration overrides as key-value pairs.
+            These values are NOT validated and you should not be overriding these
+            haphazardly.
+        """
+        import copy
+
+        data = self.data
+        try:
+            self.data = {}
+            c = copy.copy(self)
+        finally:
+            self.data = data
+        c._unlock()
+        c.update(self)
+        c.update(overrides)
+        c._lock()
+        return c
+
+    def __setitem__(self, key: str, item: Any):
+        if self.locked:
+            raise AttributeError("Config objects are immutable.")
+
+        return super().__setitem__(key, item)
 
     def dumps(self) -> str:
         """

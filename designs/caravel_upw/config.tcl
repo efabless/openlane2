@@ -82,12 +82,6 @@ set ::env(CLOCK_NET) "mprj1.clk"
 
 set ::env(CLOCK_PERIOD) "10"
 
-## Internal Macros
-### Macro PDN Connections
-set ::env(FP_PDN_MACRO_HOOKS) "\
-    mprj1 vccd1 vssd1 vccd1 vssd1,\
-    mprj2 vccd2 vssd2 vccd2 vssd2"
-
 ### Macro Placement
 set ::env(MACRO_PLACEMENT_CFG) $script_dir/macro.cfg
 
@@ -124,7 +118,7 @@ set ::env(FP_PDN_ENABLE_RAILS) 0
 
 set ::env(DIODE_INSERTION_STRATEGY) 0
 set ::env(RUN_FILL_INSERTION) 0
-set ::env(RUN_TAP_DECAP_INSERTION) 0
+set ::env(RUN_TAP_ENDCAP_INSERTION) 0
 set ::env(CLOCK_TREE_SYNTH) 0
 
 # magic extraction issues

@@ -25,6 +25,20 @@ from ..logging import err, warn, info
 class MetricChecker(Step):
     deferred = True
 
+    @classmethod
+    def get_help_md(Self):
+        threshold_string = Self.get_threshold_description(None)
+        if threshold_string is None:
+            threshold_string = str(Self.get_threshold(None))
+        dynamic_docstring = "Raises"
+        if Self.deferred:
+            dynamic_docstring += " a deferred error"
+        else:
+            dynamic_docstring += " an immediate error"
+        dynamic_docstring += f" if {Self.get_metric_description(None)} (metric: ``{Self.get_metric_name(None)}``) are >= {threshold_string}."
+
+        return super().get_help_md(dynamic_docstring)
+
     @abstractmethod
     def get_metric_name(self) -> str:
         raise NotImplementedError()
@@ -35,6 +49,9 @@ class MetricChecker(Step):
 
     def get_threshold(self) -> Optional[Decimal]:
         return Decimal(0)
+
+    def get_threshold_description(self) -> Optional[str]:
+        return None
 
     def run(self, **kwargs) -> State:
         state_out = super().run()
@@ -73,7 +90,7 @@ class MetricChecker(Step):
 class YosysUnmappedCells(MetricChecker):
     id = "Checker.YosysUnmappedCells"
     flow_control_variable = "QUIT_ON_UNMAPPED_CELLS"
-    name = "Unmapped cells Checker"
+    name = "Unmapped Cells Checker"
     deferred = False
 
     config_vars = [
@@ -81,6 +98,7 @@ class YosysUnmappedCells(MetricChecker):
             "QUIT_ON_UNMAPPED_CELLS",
             bool,
             "Checks for unmapped cells after sythesis",
+            deprecated_names=["CHECK_UNMAPPED_CELLS"],
             default=True,
         ),
     ]
@@ -97,7 +115,7 @@ class TrDRC(MetricChecker):
     id = "Checker.TrDRC"
     flow_control_variable = "QUIT_ON_TR_DRC"
     name = "Routing DRC Checker"
-    long_name = "Routing Design Rule Check"
+    long_name = "Routing Design Rule Checker"
 
     config_vars = [
         Variable(
@@ -120,7 +138,7 @@ class MagicDRC(MetricChecker):
     id = "Checker.MagicDRC"
     flow_control_variable = "QUIT_ON_MAGIC_DRC"
     name = "Magic DRC Checker"
-    long_name = "Magic Design Rule Check"
+    long_name = "Magic Design Rule Checker"
 
     config_vars = [
         Variable(
@@ -143,7 +161,7 @@ class IllegalOverlap(MetricChecker):
     id = "Checker.IllegalOverlap"
     flow_control_variable = "QUIT_ON_ILLEGAL_OVERLAPS"
     name = "Illegal Overlap Checker"
-    long_name = "Spice Extraction-based Illegal Overlap Check"
+    long_name = "Spice Extraction-based Illegal Overlap Checker"
 
     config_vars = [
         Variable(
@@ -162,13 +180,32 @@ class IllegalOverlap(MetricChecker):
 
 
 @Step.factory.register()
+class DisconnectedPins(MetricChecker):
+    id = "Checker.DisconnectedPins"
+    flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
+    name = "Disconnected Pins Checker"
+    deferred = False
+    config_vars = [
+        Variable(
+            "QUIT_ON_DISCONNECTED_PINS",
+            bool,
+            "Checks for disconnected instance pins.",
+            default=True,
+        ),
+    ]
+
+    def get_metric_name(self) -> str:
+        return "design__disconnected_pins__count"
+
+    def get_metric_description(self) -> str:
+        return "Disconnected pins count"
+
+
+@Step.factory.register()
 class WireLength(MetricChecker):
     id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
-
-    metric_name = "route__max__wirelength"
-    metric_description = "Threshold-surpassing long wires"
 
     config_vars = [
         Variable(
@@ -180,7 +217,7 @@ class WireLength(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "route__max__wirelength"
+        return "route__wirelength__max"
 
     def get_metric_description(self) -> str:
         return "Threshold-surpassing long wires"
@@ -189,6 +226,9 @@ class WireLength(MetricChecker):
         threshold = self.config["WIRE_LENGTH_THRESHOLD"]
         assert threshold is None or isinstance(threshold, Decimal)
         return threshold
+
+    def get_threshold_description(self) -> Optional[str]:
+        return "the threshold specified in the configuration file."
 
 
 @Step.factory.register()
@@ -208,7 +248,7 @@ class LVS(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "lvs__total__errors"
+        return "design__lvs_errors__count"
 
     def get_metric_description(self) -> str:
         return "LVS errors"

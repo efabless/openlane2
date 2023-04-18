@@ -17,6 +17,7 @@ import os
 import time
 import textwrap
 import subprocess
+from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import (
@@ -49,22 +50,16 @@ from ..logging import (
     err,
 )
 
-StepConditionLambda = Callable[[Config], bool]
-
-
-class MissingInputError(ValueError):
-    pass
-
 
 class StepError(ValueError):
     pass
 
 
-class StepException(StepError):
+class DeferredStepError(StepError):
     pass
 
 
-class DeferredStepError(StepError):
+class StepException(StepError):
     pass
 
 
@@ -76,18 +71,6 @@ LastState: State = State()
 
 
 class Step(ABC):
-    class _FlowType(ABC):
-        """
-        "Forward declaration" for the methods a step uses to interact with its
-        parent Flow.
-        """
-
-        toolbox: Optional[Toolbox] = None
-
-        @abstractmethod
-        def dir_for_step(self, step: Step) -> str:
-            pass
-
     """
     An abstract base class for Step objects.
 
@@ -96,21 +79,20 @@ class Step(ABC):
     paths and/or metrics.
 
     Warning: The initializer for Step is not thread-safe. Please use it on the main
-    thread and then, if you're using a Flow object, use `start_step_async`, or
-    if you're not, you may use `start` in another thread. That part's fine.
+    thread and then, if you're using a Flow object, use ``start_step_async``, or
+    if you're not, you may use ``start`` in another thread. That part's fine.
 
     :param config: A configuration object.
 
-        If running in interactive mode, you can set this to ``None``, where it
-        will automatically use :ref:`Config.current_interactive`, but it is
+        If running in interactive mode, you can set this to ``None``, but it is
         otherwise required.
 
     :param flow: The parent flow, if applicable.
 
     :param state_in: The state object this step will use as an input.
 
-        The state may also be a `Future[State]`, in which case,
-        the `run()` call will block until that Future is realized.
+        The state may also be a ``Future[State]``, in which case,
+        the ``run()`` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
 
         See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
@@ -134,18 +116,40 @@ class Step(ABC):
         If running inside a Flow, and this exists, if this variable is "False"
         or "None", the step is skipped.
 
-    :attr flow_control_msg: If `flow_control_variable` causes the step to be
+    :attr flow_control_msg: If ``flow_control_variable`` causes the step to be
         skipped and this variable is set, the value of this variable is
         printed.
+
+    :attr inputs: A list of :class:`openlane.state.DesignFormat` objects that
+        are required for this step. These will be validated by the :meth:`start`
+        method.
+
+    :attr outputs: A list of :class:`openlane.state.DesignFormat` objects that
+        may be emitted by this step. A step is not allowed to modify design
+        formats not declared in ``outputs``.
+
+    :attr config_vars: A list of configuration :class:`openlane.config.Variable` objects
+        to be used to alter the behavior of this Step.
     """
 
-    inputs: List[DesignFormat] = []
-    outputs: List[DesignFormat] = []
+    class _FlowType(ABC):
+        """
+        "Forward declaration" for the methods a step uses to interact with its
+        parent Flow.
+        """
+
+        toolbox: Optional[Toolbox] = None
+
+        @abstractmethod
+        def dir_for_step(self, step: Step) -> str:
+            pass
 
     id: str = NotImplemented
     name: str
     long_name: str
 
+    inputs: ClassVar[List[DesignFormat]] = []
+    outputs: ClassVar[List[DesignFormat]] = []
     flow_control_variable: ClassVar[Optional[str]] = None
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
@@ -206,7 +210,7 @@ class Step(ABC):
                 mutable,
                 variables=self.config_vars,
             )
-            config.update(**overrides)
+            config = config.copy(**overrides)
             for warning in warnings:
                 warn(warning)
             if len(errors) != 0:
@@ -225,10 +229,10 @@ class Step(ABC):
         if step_dir is None:
             if self.flow is not None:
                 self.step_dir = self.flow.dir_for_step(self)
-            elif self.config.interactive:
+            elif not self.config.interactive:
                 raise TypeError("Missing required argument 'step_dir'")
             else:
-                step_dir = os.path.join(
+                self.step_dir = os.path.join(
                     os.getcwd(),
                     "openlane_run",
                     f"{Step.counter}-{slugify(self.id)}",
@@ -250,40 +254,69 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self):
+    def get_help_md(Self, docstring_override: str = ""):
         """
         Renders Markdown help for this step to a string.
         """
+        doc_string = docstring_override
+        if Self.__doc__:
+            doc_string = textwrap.dedent(Self.__doc__)
 
-        result = textwrap.dedent(
-            f"""
-        ### {Self._get_desc()}
+        result = (
+            textwrap.dedent(
+                f"""\
+                ### <a name="{Self.id}"></a> {Self._get_desc()}
 
-        {Self.__doc__ or ""}
+                ```{{eval-rst}}
+                %s
+                ```
 
-        #### Importing
+                #### Importing
 
-        <br />
+                ```python
+                from {Self.__module__} import {Self.__name__}
 
-        ```python
-        from {Self.__module__} import {Self.__name__}
+                # or
+                
+                from openlane.steps import Step
 
-        # or
-        
-        from openlane.steps import Step
-
-        Synthesis = Step.get("{Self.id}")
-        ``` 
-
-        #### Configuration Variables
-
-        | Variable Name | Type | Description | Default | Units |
-        | - | - | - | - | - |
-        """
+                {Self.__name__} = Step.get("{Self.id}")
+                ```
+                """
+            )
+            % doc_string
         )
-        for var in Self.config_vars:
-            units = var.units or ""
-            result += f"| `{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+        if len(Self.inputs) + len(Self.outputs):
+            result += textwrap.dedent(
+                """
+                #### Inputs and Outputs
+
+                | Inputs | Outputs |
+                | - | - |
+                """
+            )
+            for input, output in zip_longest(Self.inputs, Self.outputs):
+                input_str = ""
+                if input is not None:
+                    input_str = f"{input.value[2]} (.{input.value[1]})"
+
+                output_str = ""
+                if output is not None:
+                    output_str = f"{output.value[2]} (.{output.value[1]})"
+                result += f"| {input_str} | {output_str} |"
+
+        if len(Self.config_vars):
+            result += textwrap.dedent(
+                """
+                #### Configuration Variables
+
+                | Variable Name | Type | Description | Default | Units |
+                | - | - | - | - | - |
+                """
+            )
+            for var in Self.config_vars:
+                units = var.units or ""
+                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
 
         return result
 
@@ -353,7 +386,7 @@ class Step(ABC):
                         info(self.flow_control_msg)
                     else:
                         info(
-                            f"'{self.flow_control_variable}' is set to False: skipping…"
+                            f"`{self.flow_control_variable}` is set to False: skipping {self.id} …"
                         )
                         return self.state_in.copy()
             elif flow_control_value is None:
@@ -392,7 +425,7 @@ class Step(ABC):
 
         When subclassing, override this function, then call it first thing
         via super().run(**kwargs). This lets you use the input verification and
-        the State copying code, as well as resolving the `state_in` if `state_in`
+        the State copying code, as well as resolving the ``state_in`` if ``state_in``
         is a future.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
@@ -404,7 +437,7 @@ class Step(ABC):
         for input in self.inputs:
             value = self.state_in.get(input)
             if value is None:
-                raise MissingInputError(
+                raise StepException(
                     f"{type(self).__name__}: missing required input '{input.name}'"
                 )
 
@@ -421,13 +454,13 @@ class Step(ABC):
         **kwargs,
     ):
         """
-        A helper function for `Step` objects to run subprocesses.
+        A helper function for :class:`Step` objects to run subprocesses.
 
         The output from the subprocess is processed line-by-line.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional override for the log path from `get_log_path`.
+        :param log_to: An optional override for the log path from ``get_log_path``.
             Useful for if you run multiple subprocesses within one step.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
@@ -454,9 +487,11 @@ class Step(ABC):
             encoding="utf8",
             **kwargs,
         )
+        lines = ""
         if process_stdout := process.stdout:
             current_rpt = None
             while line := process_stdout.readline():
+                lines += line
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                     report_path = os.path.join(self.step_dir, report_name)
@@ -471,13 +506,16 @@ class Step(ABC):
                     verbose(line.strip())
                     log_file.write(line)
         returncode = process.wait()
+        split_lines = lines.split("\n")
         if returncode != 0:
+            err("\n".join(split_lines[-10:]))
+            err(f"Log file: {log_path}")
             raise subprocess.CalledProcessError(returncode, process.args)
 
     @internal
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
-        An assisting function: Given a `kwargs` object, it does the following:
+        An assisting function: Given a ``kwargs`` object, it does the following:
 
             * If the kwargs object has an "env" variable, it separates it into
                 its own variable.
@@ -485,7 +523,7 @@ class Step(ABC):
                 is created based on the current environment.
 
         :param kwargs: A Python keyword arguments object.
-        :returns (kwargs, env): A kwargs without an `env` object, and an isolated `env` object.
+        :returns (kwargs, env): A kwargs without an ``env`` object, and an isolated ``env`` object.
         """
         env = kwargs.get("env")
         if env is None:
@@ -509,7 +547,7 @@ class Step(ABC):
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:
             """
-            Adds a step type to the registry using its :mem:`Step.id` attribute.
+            Adds a step type to the registry using its :attr:`Step.id` attribute.
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:

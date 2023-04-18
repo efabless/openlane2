@@ -70,7 +70,7 @@ class DesignFormat(Enum):
     LIB = (
         "lib",
         "lib",
-        "Lib",
+        "LIB Timing Library Format",
     )
     SPICE = (
         "spice",
@@ -92,6 +92,12 @@ class DesignFormat(Enum):
         "klayout_gds",
         "klayout.gds",
         "GDSII Stream (KLayout)",
+    )
+
+    JSON_HEADER = (
+        "json_h",
+        "h.json",
+        "Design JSON Header File",
     )
 
 

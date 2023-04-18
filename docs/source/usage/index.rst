@@ -1,4 +1,4 @@
-Usage guides
+Usage Guides
 ------------------------
 
 .. toctree::
@@ -6,8 +6,9 @@ Usage guides
 
    hardening_macros
    chip_integration
-   advanced_power_grid_control
+   writing_custom_flows
+   writing_custom_steps
    custom_pdk_builds
-   migrating_dis
+   migration/index
 
    

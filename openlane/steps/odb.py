@@ -41,7 +41,9 @@ class OdbpyStep(Step):
         **kwargs,
     ) -> State:
         """
+        <!--
         TODO
+        -->
         """
 
         state_out = super().run(**kwargs)
@@ -116,6 +118,11 @@ class OdbpyStep(Step):
 
 @Step.factory.register()
 class ApplyDEFTemplate(OdbpyStep):
+    """
+    Copies the floorplan of a "template" DEF file for a new design, i.e.,
+    it will copy the die area, core area, and non-power pin names and locations.
+    """
+
     id = "Odb.ApplyDEFTemplate"
     name = "Apply DEF Template"
 
@@ -126,7 +133,7 @@ class ApplyDEFTemplate(OdbpyStep):
         Variable(
             "FP_DEF_TEMPLATE",
             Optional[Path],
-            "Points to the DEF file to be used as a template when running `apply_def_template`. This will be used to exctract pin names, locations, shapes -excluding power and ground pins- as well as the die area and replicate all this information in the `CURRENT_DEF`.",
+            "Points to the DEF file to be used as a template.",
         ),
     ]
 
@@ -144,9 +151,31 @@ class ApplyDEFTemplate(OdbpyStep):
         ]
 
 
+class SetPowerConnections(OdbpyStep):
+    id = "Odb.SetPowerConnections"
+    name = "Set Power Connections"
+    inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
+
+    def get_command(self) -> List[str]:
+        assert isinstance(self.state_in, State)
+        return super().get_command() + [
+            "--input-json",
+            str(self.state_in[DesignFormat.JSON_HEADER]),
+        ]
+
+
 @Step.factory.register()
 class ManualMacroPlacement(OdbpyStep):
-    id = "Odb.ManualMacro"
+    """
+    Performs macro placement using a simple configuration file. The file is
+    defined as a line-break delimited list of instances and positions, in the
+    format ``instance_name X_pos Y_pos Orientation``.
+    """
+
+    id = "Odb.ManualMacroPlacement"
     name = "Manual Macro Placement"
 
     flow_control_variable = "MACRO_PLACEMENT_CFG"
@@ -156,7 +185,7 @@ class ManualMacroPlacement(OdbpyStep):
         Variable(
             "MACRO_PLACEMENT_CFG",
             Optional[Path],
-            "Specifies the path a file specifying how OpenLane should place certain macros.",
+            "Path to the file. If this is `None`, this step is skipped.",
         ),
     ]
 
@@ -173,8 +202,16 @@ class ManualMacroPlacement(OdbpyStep):
 
 @Step.factory.register()
 class ReportWireLength(OdbpyStep):
+    """
+    Outputs a CSV of long wires, printed by length. Useful as a design aid to
+    detect when one wire is connected to too many things.
+    """
+
+    outputs = []
+
     id = "Odb.ReportWireLength"
     name = "Report Wire Length"
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "wire_lengths.py")
@@ -188,7 +225,31 @@ class ReportWireLength(OdbpyStep):
 
 
 @Step.factory.register()
+class ReportDisconnectedPins(OdbpyStep):
+    id = "Odb.ReportDisconnectedPins"
+    name = "Report Disconnected Pins"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        if ignored_modules := self.config["IGNORE_DISCONNECTED_MODULES"]:
+            for module in ignored_modules:
+                command.append("--ignore-module")
+                command.append(module)
+        return command
+
+
+@Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
+    """
+    Places I/O pins using a custom script, which uses a "pin order configuration"
+    file.
+
+    Check the reference documentation for the structure of said file.
+    """
+
     id = "Odb.CustomIOPlacement"
     name = "Custom I/O Placement"
     long_name = "Custom I/O Pin Placement Script"
@@ -200,7 +261,7 @@ class CustomIOPlacement(OdbpyStep):
         Variable(
             "FP_PIN_ORDER_CFG",
             Optional[Path],
-            "Points to the pin order configuration file to set the pins in specific directions (S, W, E, N). If not set, then the IO pins will be placed using OpenROAD's basic pin placer.",
+            "Path to the configuration file. If set to `None`, this step is skipped.",
         ),
         Variable(
             "QUIT_ON_UNMATCHED_IO",
@@ -247,6 +308,14 @@ class CustomIOPlacement(OdbpyStep):
 
 @Step.factory.register()
 class DiodesOnPorts(OdbpyStep):
+    """
+    Unconditionally inserts diodes on design ports diodes on ports,
+    to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    Useful for hardening macros, where ports may get long wires that are
+    unaccounted for when hardening a top-level chip.
+    """
+
     id = "Odb.DiodesOnPorts"
     name = "Diodes on Ports"
     long_name = "Diode on Port Insertion Script"
@@ -295,6 +364,21 @@ class DiodesOnPorts(OdbpyStep):
 
 @Step.factory.register()
 class HeuristicDiodeInsertion(OdbpyStep):
+    """
+    Runs a custom diode insertion script to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    This script uses the `Manhattan length <https://en.wikipedia.org/wiki/Manhattan_distance>`_
+    of a (non-existent) wire at the global placement stage, and places diodes
+    if they exceed a certain threshold. This, however, requires some padding:
+    `GPL_CELL_PADDING` and `DPL_CELL_PADDING` must be higher than 0 for this
+    script to work reliably.
+
+    This step is unique in that it is the only step with a ``RUN_`` variable that
+    is disabled by default. This is for compatibility with OpenLane 1 configs.
+
+    The original script was written by `Sylvain "tnt" Munaut <https://github.com/smunaut>`_.
+    """
+
     id = "Odb.HeuristicDiodeInsertion"
     name = "Heuristic Diode Insertion"
     long_name = "Heuristic Diode Insertion Script"

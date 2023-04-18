@@ -1,3 +1,44 @@
+# 2.0.0-a14
+* Add steps to extract, preserve and check power connections:
+    * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
+    * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
+    * `Yosys.JsonHeader`: RTL to a JSON Header.
+    * `Odb.SetPowerConnections`: Uses JSON generated in `Yosys/JsonHeader` and module information in Odb to add global connections for macros in a design.
+* Add `IGNORE_DISCONNECTED_MODULES` as a PDK variable, as some cells need to be ignored.
+* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINE`.
+* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`.
+* Rename various metrics.
+* Change various configuration variables for included `caravel_upw` design.
+* Fix `DIODE_INSERTION_STRATEGY` translations
+* Allow overriding from CLI when using Tcl configuration files.
+
+
+# 2.0.0-a13
+## Documentation
+* Built-in flows now have full generated documentation akin to steps.
+* Built-in steps now document their inputs, outputs and each built-in step has a human-readable text description.
+* Rewrite the RTL-to-GDS guides.
+* Add an architectural overview of OpenLane 2+.
+* Document pin config file format.
+* Add guides on writing custom flows AND custom steps.
+* Add a migration guide from OpenLane 1.
+* Port contributor's guide from OpenLane 1.
+* Removed default values from Jupyter Notebook.
+
+## Functional
+* `Config` is now immutable, `.copy()` can now take kwargs to override one or more values.
+* `TapDecapInsertion` -> `TapEndcapInsertion` (more accurate)
+* Dropped requirement for description to match between two variables to be "equal:" It is sometimes favorable to have a slightly different description in another step.
+* `OpenInKLayout`/`OpenInOpenROAD` turned into sequential flows with one step instead of hacks.
+* Fixed a bug where `OpenInKLayout` would exit instantly.
+* Updated and fixed `Optimizing` demo flow, as well as delisting it.
+* Port https://github.com/The-OpenROAD-Project/OpenLane/pull/1723 to OpenLane 2.
+* Remove `Odb.ApplyDEFTemplate` from default flow.
+
+# 2.0.0-a12
+* Fixes a bug where if OpenLane is invoked from the same directory as the design,
+  KLayout stream-outs would break.
+
 # 2.0.0-a11
 * Update OpenROAD, Add ABC patch to use system zlib
 * Adds SDC files as an input to `OpenROADStep`, `NetlistSTA` and `LayoutSTA` steps

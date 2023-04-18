@@ -83,13 +83,13 @@ def get_metrics(stats: Dict) -> Dict:
         + pin_fails
     )
     metrics = {}
-    metrics["lvs__device_count_difference"] = device_differences
-    metrics["lvs__net_count_differences"] = net_differences
-    metrics["lvs__property_fails"] = property_fails
-    metrics["lvs__total__errors"] = total_errors
-    metrics["lvs__unmatched_devices"] = device_fails
-    metrics["lvs__unmatched_nets"] = net_fails
-    metrics["lvs__unmatched_pins"] = pin_fails
+    metrics["design__lvs_device_difference__count"] = device_differences
+    metrics["design__lvs_net_differences__count"] = net_differences
+    metrics["design__lvs_property_fails__count"] = property_fails
+    metrics["design__lvs_errors__count"] = total_errors
+    metrics["design__lvs_unmatched_devices__count"] = device_fails
+    metrics["design__lvs_unmatched_nets__count"] = net_fails
+    metrics["design__lvs_unmatched_pins__count"] = pin_fails
 
     return metrics
 
@@ -108,6 +108,16 @@ class NetgenStep(TclStep):
 
 @Step.factory.register()
 class LVS(NetgenStep):
+    """
+    Performs `Layout vs. Schematic <https://en.wikipedia.org/wiki/Layout_Versus_Schematic>`_ checks on the extracted SPICE netlist versus.
+    a verilog netlist with power connections.
+
+    This verifies the following:
+    * There are no unexpected shorts in the final layout.
+    * There are no unexpected opens in the final layout.
+    * All signals are connected correctly.
+    """
+
     id = "Netgen.LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
     flow_control_variable = "RUN_LVS"

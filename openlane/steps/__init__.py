@@ -20,17 +20,31 @@ configuration objects. Configuration objects are the primary input to a flow.
 """
 from .step import (
     Step,
-    StepConditionLambda,
-    MissingInputError,
     DeferredStepError,
     StepError,
+    StepException,
 )
 from .tclstep import TclStep
 from . import checker as Checker
+
+# You'll notice some TclStep subclasses are exposed separately-
+# this is for documentation.
 from . import yosys as Yosys
+from .yosys import YosysStep
+
 from . import openroad as OpenROAD
+from .openroad import OpenROADStep
+
 from . import magic as Magic
+from .magic import MagicStep
+
 from . import odb as Odb
+
+# from .odb import OdbpyStep
+
 from . import netgen as Netgen
+
+# from .netgen import NetgenStep
+
 from . import klayout as KLayout
 from . import misc as Misc

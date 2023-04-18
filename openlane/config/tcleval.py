@@ -23,7 +23,7 @@ def env_from_tcl(env_in: Config, tcl_in: str) -> Config:
     interpreter = tkinter.Tcl()
 
     initial_env = os.environ.copy()
-    env_out = env_in.copy()
+    env_out = env_in.copy()._unlock()
 
     with tempfile.NamedTemporaryFile("r+") as f:
         env_str = ""
@@ -58,4 +58,4 @@ def env_from_tcl(env_in: Config, tcl_in: str) -> Config:
             if initial_env.get(key) is None and env_in.get(key) != value:
                 env_out[key] = value
 
-    return env_out
+    return env_out._lock()

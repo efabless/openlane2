@@ -18,8 +18,8 @@ This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.
 """
 from .builder import ConfigBuilder, InvalidConfig
-from .config import Config
-from .variable import Variable, StringEnum, Path
+from .config import Config, StringEnum
+from .variable import Variable, Path
 from .resolve import Keys
 
 from .tcleval import env_from_tcl

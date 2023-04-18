@@ -17,6 +17,8 @@ from typing import List, Optional, Dict
 from .variable import Path, Variable
 from .config import Config
 
+# Note that values in this file do not take defaults.
+
 pdk_variables = [
     # Core/Common
     Variable(
@@ -288,7 +290,7 @@ scl_variables = [
     Variable(
         "NO_SYNTH_CELL_LIST",
         Path,
-        "Path to a text file containing a list of cells to be excluded from the liberty file in synthesis alone. If not defined, the original liberty file will be used as-is.",
+        "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
     ),
     Variable(
         "BAD_CELL_LIST",
@@ -442,6 +444,11 @@ scl_variables = [
         str,
         "Defines the lower PDN layer.",
     ),
+    Variable(
+        "IGNORE_DISCONNECTED_MODULES",
+        List[str],
+        "Modules (or cells) to ignore when checking for disconnected pins.",
+    ),
     # Placement
     Variable(
         "PLACE_SITE",
@@ -499,7 +506,7 @@ scl_variables = [
 
 
 def migrate_old_config(config: Config) -> Config:
-    new = config.copy()
+    new = config.copy()._unlock()
     # 1. Migrate SYNTH_DRIVING_CELL
     del new["SYNTH_DRIVING_CELL"]
     del new["SYNTH_DRIVING_CELL_PIN"]
@@ -523,7 +530,9 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
 
-    return new
+    new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
+
+    return new._lock()
 
 
 all_variables: List[Variable] = pdk_variables + scl_variables
