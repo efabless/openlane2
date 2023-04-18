@@ -55,7 +55,7 @@ venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements.txt
-	PYTHONPATH= yes | ./venv/bin/mypy --install-types .
+	PYTHONPATH= ./venv/bin/mypy --install-types --non-interactive . || true
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
 
 .PHONY: veryclean
