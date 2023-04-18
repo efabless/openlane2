@@ -7,10 +7,6 @@ black[jupyter]
 flake8>=4.0.1
 flake8-no-implicit-concat==0.3.3
 mypy
-types-requests
-types-PyYAML
-types-setuptools
-types-attrs
 
 # docs
 furo

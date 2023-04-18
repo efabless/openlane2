@@ -11,15 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import datetime
 import io
 import re
 import json
 from enum import IntEnum
 from decimal import Decimal
-from shelve import DbfilenameShelf
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Tuple, Union, Dict
+from typing import List, Optional, Tuple, Dict
 
 BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
@@ -39,11 +37,7 @@ class Violation:
 @dataclass
 class DRC:
     module: str
-    violations: Union[Dict[str, Violation], DbfilenameShelf[Violation]]
-
-    def __del__(self):
-        if isinstance(self.violations, DbfilenameShelf):
-            self.violations.close()
+    violations: Dict[str, Violation]
 
     @classmethod
     def from_magic(
@@ -59,10 +53,7 @@ class DRC:
         MAGIC_SPLIT_LINE = "-" * 40
         MAGIC_RULE_PARSER = re.compile(r"\s*(.+)\s*\((\w+)\.(\w+)\)\s*")
 
-        violations: Union[Dict[str, Violation], DbfilenameShelf[Violation]] = {}
-
-        if db_file is not None:
-            violations = DbfilenameShelf(db_file)
+        violations: Dict[str, Violation] = {}
 
         violation: Optional[Violation] = None
         state = State.header
@@ -109,7 +100,7 @@ class DRC:
     def dumps(self):
         return json.dumps(asdict(self))
 
-    def to_klayout_xml(self, out: io.BytesIO):
+    def to_klayout_xml(self, out: io.BufferedIOBase):
         from lxml import etree as ET
 
         with ET.xmlfile(out, encoding="utf8", buffered=False) as xf:
