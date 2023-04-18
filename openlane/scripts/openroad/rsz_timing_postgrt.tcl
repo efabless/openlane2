@@ -58,9 +58,7 @@ unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 # Re-GRT
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
-write
-
-# Run post timing optimizations STA
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -global_routing
-set ::env(RUN_STANDALONE) 0
-source $::env(SCRIPTS_DIR)/openroad/sta.tcl
+
+write

@@ -179,26 +179,78 @@ class OpenROADStep(TclStep):
 
 
 @Step.factory.register()
-class NetlistSTA(OpenROADStep):
+class STA(OpenROADStep):
     """
     Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenROAD on the netlist as output by Yosys.
+    using OpenROAD on the input netlist.
     """
 
-    id = "OpenROAD.NetlistSTA"
-    name = "Netlist STA"
-    long_name = "Netlist Static Timing Analysis"
-    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
+    id = "OpenROAD.STA"
+    name = "STA"
+    long_name = "Static Timing Analysis"
+
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = []
 
+    def layout_preview(self) -> Optional[str]:
+        return None
+
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "sta.tcl")
+        return os.path.join(get_script_dir(), "openroad", "sta", "multi_corner.tcl")
 
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        env["RUN_STANDALONE"] = "1"
-        env["STA_PRE_CTS"] = "1"
+        assert isinstance(self.state_in, State)
+        if self.state_in.metrics.get("cts__run"):
+            env["STA_PRE_CTS"] = "1"
+        if self.state_in.metrics.get("grt__run"):
+            env["ESTIMATE_PARASITICS"] = "-global_routing"
+        elif self.state_in.metrics.get("gpl__run"):
+            env["ESTIMATE_PARASITICS"] = "-placement"
         return super().run(env=env, **kwargs)
+
+
+@Step.factory.register()
+class HierarchicalSTA(STA):
+    """
+    Performs hierchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenSTA on the input netlist and all available Verilog models.
+    """
+
+    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
+    outputs = [DesignFormat.LIB, DesignFormat.SDF]
+
+    id = "OpenROAD.HierarchicalSTA"
+    name = "Hierarchical STA"
+    long_name = "Hierarchical Static Timing Analysis"
+
+    def get_command(self) -> List[str]:
+        return ["sta", "-exit", self.get_script_path()]
+
+
+@Step.factory.register()
+class ParasiticsSTA(HierarchicalSTA):
+    """
+    Performs accurate, hierarchical static timing analysis using estimated or
+    extracted parasitics using OpenSTA on the input netlist.
+    """
+
+    id = "OpenROAD.ParasiticsSTA"
+    name = "Parasitics STA"
+    long_name = "Parasitics-based Static Timing Analysis"
+    flow_control_variable = "RUN_SPEF_STA"
+
+    inputs = HierarchicalSTA.inputs + [DesignFormat.SPEF]
+    outputs = [DesignFormat.LIB, DesignFormat.SDF]
+
+    config_vars = STA.config_vars + [
+        Variable(
+            "RUN_SPEF_STA",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+        ),
+    ]
 
 
 @Step.factory.register()
@@ -451,7 +503,9 @@ class GlobalPlacement(OpenROADStep):
             "PL_TARGET_DENSITY_PCT"
         ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
         # Overriden by super if the value is not None
-        return super().run(env=env, **kwargs)
+        state_out = super().run(env=env, **kwargs)
+        state_out.metrics["gpl__run"] = True
+        return state_out
 
 
 @Step.factory.register()
@@ -547,12 +601,6 @@ class CTS(OpenROADStep):
                 units="μm",
             ),
             Variable(
-                "CTS_REPORT_TIMING",
-                bool,
-                "Specifies whether or not to run STA after clock tree synthesis using OpenROAD's `estimate_parasitics -placement`.",
-                default=True,
-            ),
-            Variable(
                 "CTS_CLK_MAX_WIRE_LENGTH",
                 Decimal,
                 "Specifies the maximum wire length on the clock net.",
@@ -577,6 +625,11 @@ class CTS(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
+
+    def run(self, **kwargs) -> State:
+        state_out = super().run(**kwargs)
+        state_out.metrics["cts__run"] = True
+        return state_out
 
 
 @Step.factory.register()
@@ -680,6 +733,7 @@ class GlobalRouting(OpenROADStep):
             net_count = net_count_after
 
         state_out.metrics["antenna__count"] = net_count
+        state_out.metrics["grt__run"] = True
 
         return state_out
 
@@ -833,38 +887,6 @@ class ParasiticsExtraction(OpenROADStep):
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         env["RCX_RULESET"] = f"{self.config['RCX_RULES']}"
-        return super().run(env=env, **kwargs)
-
-
-@Step.factory.register()
-class ParasiticsSTA(OpenROADStep):
-    """
-    Performs accurate static timing analysis using extracted parasitics.
-    """
-
-    id = "OpenROAD.ParasiticsSTA"
-    name = "Parasitics STA"
-    long_name = "Parasitics-based Static Timing Analysis"
-    flow_control_variable = "RUN_SPEF_STA"
-
-    config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_SPEF_STA",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
-    ]
-
-    inputs = OpenROADStep.inputs + [DesignFormat.SPEF]
-    outputs = [DesignFormat.LIB, DesignFormat.SDF]
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "sta.tcl")
-
-    def run(self, **kwargs) -> State:
-        kwargs, env = self.extract_env(kwargs)
-        env["RUN_STANDALONE"] = "1"
         return super().run(env=env, **kwargs)
 
 

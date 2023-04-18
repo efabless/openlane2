@@ -61,18 +61,7 @@ lappend arg_list -pad_left $cell_pad_side
 
 global_placement {*}$arg_list
 
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
+estimate_parasitics -placement
+
 write
-
-if {[info exists ::env(CLOCK_PORT)]} {
-	if { $::env(PL_ESTIMATE_PARASITICS) == 1 } {
-		unset_propagated_clock [all_clocks]
-		# set rc values
-		source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-		estimate_parasitics -placement
-
-		set ::env(RUN_STANDALONE) 0
-		source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-	}
-} else {
-	puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}

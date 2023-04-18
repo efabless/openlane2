@@ -14,18 +14,48 @@
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_global_connections.tcl
 
-proc read_netlist {args} {
-    puts "Reading netlist…"
+proc is_blackbox {file_path blackbox_wildcard} {
+    set not_found [catch { exec bash -c "grep '$blackbox_wildcard' $file_path" }]
+    return [expr !$not_found]
+}
 
-    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+proc read_netlist {args} {
+    sta::parse_key_args "read_netlists" args \
+        keys {}\
+        flags {-powered -all}
+
+    set netlist $::env(CURRENT_NETLIST)
+    if { [info exists flags(-powered)] } {
+        set netlist $::env(CURRENT_POWERED_NETLIST)
+    }
+
+    puts "Reading netlist '$netlist'…"
+
+    if {[catch {read_verilog $netlist} errmsg]} {
         puts stderr $errmsg
         exit 1
+    }
+
+    if { [info exists flags(-all)] } {
+        set blackbox_wildcard {/// sta-blackbox}
+        if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+            foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
+                if { [is_blackbox $verilog_file $blackbox_wildcard] } {
+                    puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
+                } elseif { [catch {read_verilog $verilog_file} err] } {
+                    puts "Error while reading $verilog_file:"
+                    puts $err
+                    puts "Make sure that this a gate-level netlist not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
+                    exit 1
+                }
+            }
+        }
     }
 
     link_design $::env(DESIGN_NAME)
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.tcl} errmsg]} {
+        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -35,49 +65,31 @@ proc read_netlist {args} {
 
 proc read_libs {args} {
     sta::parse_key_args "read_libs" args \
-        keys {-override}\
-        flags {-multi_corner}
+        keys {-typical -slowest -fastest}\
+        flags {}
 
-    set libs $::env(LIB_PNR)
-
-    if { [info exists keys(-override)] } {
-        set libs $keys(-override)
+    if { ![info exists keys(-typical)] } {
+        puts "read_libs -typical is required"
+        exit 1
     }
+    if { [info exists keys(-slowest)] } {
+        set corner(Slowest) $keys(-slowest)
+    }
+    if { [info exists keys(-fastest)] } {
+        set corner(Fastest) $keys(-fastest)
+    }
+    set corner(Typical) $keys(-typical)
+    puts "define_corners [array name corner]"
+    define_corners {*}[array name corner]
 
-    if { [info exists flags(-multi_corner)] } {
-        # Note that the one defined first is the "default": meaning you
-        # shouldn't use -multi_corner for scripts that do not explicitly
-        # specify the corners for STA calls.
-        define_corners ss tt ff;
-
-        foreach lib $::env(LIB_SLOWEST) {
-            read_liberty -corner ss $lib
-        }
-        foreach lib $::env(LIB_TYPICAL) {
-            read_liberty -corner tt $lib
-        }
-        foreach lib $::env(LIB_FASTEST) {
-            read_liberty -corner ff $lib
-        }
-
-        foreach corner {ss tt ff} {
-            if { [info exists ::env(EXTRA_LIBS) ] } {
-                foreach lib $::env(EXTRA_LIBS) {
-                    read_liberty -corner $corner $lib
-                }
-            }
-        }
-    } else {
-        foreach lib $libs {
-            read_liberty $lib
-        }
-
+    foreach corner_name [array name corner] {
+        puts "read_liberty -corner $corner_name $corner($corner_name)"
+        read_liberty -corner $corner_name $corner($corner_name)
         if { [info exists ::env(EXTRA_LIBS) ] } {
             foreach lib $::env(EXTRA_LIBS) {
-                read_liberty $lib
+                read_liberty -corner $corner_name $lib
             }
         }
-
     }
 }
 
@@ -95,28 +107,29 @@ proc read_lefs {args} {
 
 proc read {args} {
     sta::parse_key_args "read" args \
-        keys {-override_libs}\
-        flags {-multi_corner_libs}
+        keys {}\
+        flags {}
 
-    if {[catch {read_db $::env(CURRENT_ODB)} errmsg]} {
-        puts stderr $errmsg
-        exit 1
+    if { [info exists ::env(IO_READ_DEF)] && $::env(IO_READ_DEF) } {
+        read_lefs
+        if { [ catch {read_def $::env(CURRENT_DEF)} errmsg ]} {
+            puts stderr $errmsg
+            exit 1
+        }
+    } else {
+        puts "\[INFO\]: Reading ODB at '$::env(CURRENT_ODB)'…"
+        if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
+            puts stderr $errmsg
+            exit 1
+        }
     }
 
-    set read_libs_args [list]
-
-    if { [info exists keys(-override_libs)]} {
-        lappend read_libs_args -override $keys(-override_libs)
+    if { [get_libs -quiet *] == {} } {
+        read_libs -typical $::env(LIB_PNR)
     }
-
-    if { [info exists flags(-multi_corner_libs)] } {
-        lappend read_libs_args -multi_corner
-    }
-
-    read_libs {*}$read_libs_args
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.tcl} errmsg]} {
+        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -129,7 +142,7 @@ proc write {args} {
     # attempt to write a corresponding view to the specified location.
     sta::parse_key_args "write" args \
         keys {}\
-        flags {}
+        flags {-no_global_connect}
 
 
     source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
@@ -188,7 +201,7 @@ proc write {args} {
         }
     }
 
-    if { [info exists ::env(SAVE_LIB)] && !$::env(STA_PRE_CTS) && $::env(STA_WRITE_LIB)} {
+    if { [info exists ::env(SAVE_LIB)] && !$::env(STA_PRE_CTS)} {
         set corners [sta::corners]
         if { [llength $corners] > 1 } {
             puts "Writing timing models for all corners…"
@@ -202,6 +215,39 @@ proc write {args} {
         } else {
             puts "Writing timing model to '$::env(SAVE_LIB)'…"
             write_timing_model $::env(SAVE_LIB)
+        }
+    }
+}
+
+
+proc read_spefs {} {
+    set corners [sta::corners]
+    if { [info exists ::env(CURRENT_SPEF)] } {
+        foreach corner $corners {
+            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
+            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
+            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
+        }
+    }
+
+    if { [info exists ::env(EXTRA_SPEFS)] } {
+        foreach {module_name spef_file_min spef_file_nom spef_file_max} "$::env(EXTRA_SPEFS)" {
+            set matched 0
+            foreach cell [get_cells *] {
+                if { "[get_property $cell ref_name]" eq "$module_name" && !$matched } {
+                    puts "Matched [get_property $cell name] with $module_name"
+                    set matched 1
+                    foreach corner $corners {
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_min
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_nom
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_max
+                    }
+                }
+            }
+            if { $matched != 1 } {
+                puts "Error: Module $module_name specified in EXTRA_SPEFS not found."
+                exit 1
+            }
         }
     }
 }

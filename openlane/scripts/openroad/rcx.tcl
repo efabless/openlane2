@@ -15,7 +15,7 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 if { [info exists ::env(RCX_LEF)] } {
     read_lef $::env(RCX_LEF)
     read_def $::env(RCX_DEF)
-    read_libs -override "$::env(RCX_LIB)"
+    read_libs -typical "$::env(RCX_LIB)"
 } else {
     read
 }
