@@ -1,4 +1,23 @@
+# 2.0.0-a15
+
+* Reimplement DRC database using `lxml`
+* Makefile `venv` creation updated
+* Misc. aesthetic bugfixes for sequential flows
+* Add steps to extract, preserve and check power connections:
+    * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
+    * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
+    * `Yosys.JsonHeader`: RTL to a JSON Header.
+    * `Odb.SetPowerConnections`: Uses JSON generated in `Yosys/JsonHeader` and module information in Odb to add global connections for macros in a design.
+* Add `IGNORE_DISCONNECTED_MODULES` as a PDK variable, as some cells need to be ignored.
+* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINE`.
+* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`.
+* Rename various metrics.
+* Change various configuration variables for included `caravel_upw` design.
+* Fix `DIODE_INSERTION_STRATEGY` translations
+* Allow overriding from CLI when using Tcl configuration files.
+
 # 2.0.0-a14
+
 * Add steps to extract, preserve and check power connections:
     * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
     * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
@@ -14,6 +33,7 @@
 
 
 # 2.0.0-a13
+
 ## Documentation
 * Built-in flows now have full generated documentation akin to steps.
 * Built-in steps now document their inputs, outputs and each built-in step has a human-readable text description.
@@ -36,10 +56,12 @@
 * Remove `Odb.ApplyDEFTemplate` from default flow.
 
 # 2.0.0-a12
+
 * Fixes a bug where if OpenLane is invoked from the same directory as the design,
   KLayout stream-outs would break.
 
 # 2.0.0-a11
+
 * Update OpenROAD, Add ABC patch to use system zlib
 * Adds SDC files as an input to `OpenROADStep`, `NetlistSTA` and `LayoutSTA` steps
 * Add `sdc_reader.tcl`: a hook script for reading in SDC files while handling deprecated variables
@@ -49,6 +71,7 @@
     * Properly use SYNTH_CLK_DRIVING_CELL in base.sdc
 
 # 2.0.0-a10
+
 * Add `wrapper.tcl` to capture errors in Magic scripts.
 * Fix instances of a deprecated variable was used in Magic scripts.
 
