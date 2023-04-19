@@ -18,7 +18,7 @@ from decimal import Decimal
 from collections import UserDict
 from typing import Union, Optional, Dict, Any
 
-from .design_format import DesignFormat
+from .design_format import DesignFormat, DesignFormatObject
 
 from ..config import Path
 from ..common import mkdirp
@@ -111,7 +111,10 @@ class State(UserDict):
             assert isinstance(key, str)
             if value is None:
                 continue
-            target_dir = os.path.join(path, key)
+            df = DesignFormat.by_id(key)
+            assert df is not None
+            assert isinstance(df.value, DesignFormatObject)
+            target_dir = os.path.join(path, df.value.folder)
             mkdirp(target_dir)
             target_path = os.path.join(target_dir, os.path.basename(value))
             shutil.copyfile(value, target_path, follow_symlinks=True)

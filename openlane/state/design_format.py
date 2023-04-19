@@ -21,6 +21,11 @@ class DesignFormatObject:
     id: str
     extension: str
     name: str
+    folder_override: Optional[str] = None
+
+    @property
+    def folder(self) -> str:
+        return self.folder_override or self.id
 
 
 class DesignFormat(Enum):
@@ -67,8 +72,20 @@ class DesignFormat(Enum):
     )
     SPEF: DesignFormatObject = DesignFormatObject(
         "spef",
+        "nom.spef",
+        "Standard Parasitics Extraction Format (Nominal Corner)",
+    )
+    SPEF_MIN: DesignFormatObject = DesignFormatObject(
+        "spef_min",
+        "min.spef",
+        "Standard Parasitics Extraction Format (Minimum Corner)",
         "spef",
-        "Standard Parasitics Extraction Format",
+    )
+    SPEF_MAX: DesignFormatObject = DesignFormatObject(
+        "spef_max",
+        "max.spef",
+        "Standard Parasitics Extraction Format (Maximum Corner)",
+        "spef",
     )
     LIB: DesignFormatObject = DesignFormatObject(
         "lib",
