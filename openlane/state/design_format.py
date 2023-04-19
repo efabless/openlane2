@@ -12,95 +12,102 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import Dict
+from dataclasses import dataclass
+from typing import Dict, Optional
+
+
+@dataclass
+class DesignFormatObject:
+    id: str
+    extension: str
+    name: str
 
 
 class DesignFormat(Enum):
     """
     A list of design formats that may be kept in the state object.
-
-    The value of the enum is a tuple with the following entries:
-        - [0] id
-        - [1] file extension
-        - [2] human readable name
     """
 
-    NETLIST = (
+    NETLIST: DesignFormatObject = DesignFormatObject(
         "nl",
         "nl.v",
         "Verilog Netlist",
     )
-    POWERED_NETLIST = (
+    POWERED_NETLIST: DesignFormatObject = DesignFormatObject(
         "pnl",
         "pnl.v",
         "Powered Verilog Netlist",
     )
 
-    DEF = (
+    DEF: DesignFormatObject = DesignFormatObject(
         "def",
         "def",
         "Design Exchange Format",
     )
-    LEF = (
+    LEF: DesignFormatObject = DesignFormatObject(
         "lef",
         "lef",
         "Library Exchange Format",
     )
-    ODB = (
+    ODB: DesignFormatObject = DesignFormatObject(
         "odb",
         "odb",
         "OpenDB Database",
     )
 
-    SDC = (
+    SDC: DesignFormatObject = DesignFormatObject(
         "sdc",
         "sdc",
         "Design Constraints",
     )
-    SDF = (
+    SDF: DesignFormatObject = DesignFormatObject(
         "sdf",
         "sdf",
         "Standard Delay Format",
     )
-    SPEF = (
+    SPEF: DesignFormatObject = DesignFormatObject(
         "spef",
         "spef",
         "Standard Parasitics Extraction Format",
     )
-    LIB = (
+    LIB: DesignFormatObject = DesignFormatObject(
         "lib",
         "lib",
         "LIB Timing Library Format",
     )
-    SPICE = (
+    SPICE: DesignFormatObject = DesignFormatObject(
         "spice",
         "spice",
         "Simulation Program with Integrated Circuit Emphasis",
     )
 
-    GDS = (
+    GDS: DesignFormatObject = DesignFormatObject(
         "gds",
         "gds",
         "GDSII Stream",
     )
-    MAG_GDS = (
+    MAG_GDS: DesignFormatObject = DesignFormatObject(
         "mag_gds",
         "magic.gds",
         "GDSII Stream (Magic)",
     )
-    KLAYOUT_GDS = (
+    KLAYOUT_GDS: DesignFormatObject = DesignFormatObject(
         "klayout_gds",
         "klayout.gds",
         "GDSII Stream (KLayout)",
     )
 
-    JSON_HEADER = (
+    JSON_HEADER: DesignFormatObject = DesignFormatObject(
         "json_h",
         "h.json",
         "Design JSON Header File",
     )
 
+    @staticmethod
+    def by_id(id: str) -> Optional["DesignFormat"]:
+        return _designformat_by_id.get(id)
 
-DesignFormatByID: Dict[str, DesignFormat] = {
-    format.value[0]: format for format in DesignFormat
+
+_designformat_by_id: Dict[str, "DesignFormat"] = {
+    format.value.id: format for format in DesignFormat
 }

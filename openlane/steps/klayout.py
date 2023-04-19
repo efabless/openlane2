@@ -75,7 +75,7 @@ class StreamOut(Step):
 
         klayout_gds_out = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value[1]}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value.extension}",
         )
 
         layout_args = [
@@ -107,7 +107,7 @@ class StreamOut(Step):
                     "klayout",
                     "stream_out.py",
                 ),
-                self.state_in[DesignFormat.DEF.value[0]],
+                self.state_in[DesignFormat.DEF.value.id],
                 "--output",
                 klayout_gds_out,
                 "--lyt",

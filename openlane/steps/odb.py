@@ -53,10 +53,9 @@ class OdbpyStep(Step):
 
         command = self.get_command()
         for output in [DesignFormat.ODB, DesignFormat.DEF]:
-            id, ext, _ = output.value
-            filename = f"{self.config['DESIGN_NAME']}.{ext}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
             file_path = os.path.join(self.step_dir, filename)
-            command.append(f"--output-{id}")
+            command.append(f"--output-{output.value.id}")
             command.append(file_path)
             out_paths[output] = Path(file_path)
 

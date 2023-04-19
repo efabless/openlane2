@@ -18,7 +18,7 @@ from decimal import Decimal
 from collections import UserDict
 from typing import Union, Optional, Dict, Any
 
-from .design_format import DesignFormat, DesignFormatByID
+from .design_format import DesignFormat
 
 from ..config import Path
 from ..common import mkdirp
@@ -66,19 +66,19 @@ class State(UserDict):
     def __init__(self, metrics: Optional[dict] = None) -> None:
         super().__init__()
         for format in DesignFormat:
-            id: str = format.value[0]
+            id: str = format.value.id
             self[id] = None
         self.metrics = metrics or {}
 
     def __getitem__(self, key: Union[DesignFormat, str]) -> Optional[Path]:
         if isinstance(key, DesignFormat):
-            id: str = key.value[0]
+            id: str = key.value.id
             key = id
         return super().__getitem__(key)
 
     def __setitem__(self, key: Union[DesignFormat, str], item: Optional[Path]):
         if isinstance(key, DesignFormat):
-            id: str = key.value[0]
+            id: str = key.value.id
             key = id
         return super().__setitem__(key, item)
 
@@ -123,7 +123,7 @@ class State(UserDict):
 
     def validate(self):
         for key, value in self._as_dict(metrics=False).items():
-            if DesignFormatByID.get(key) is None:
+            if DesignFormat.by_id(key) is None:
                 raise InvalidState(f"Key {key} does not match a known design format.")
             if value is not None:
                 if not isinstance(value, Path):
@@ -146,7 +146,7 @@ class State(UserDict):
         state = Self(metrics=metrics)
 
         for key, value in raw.items():
-            df = DesignFormatByID.get(key)
+            df = DesignFormat.by_id(key)
             if df is None:
                 warn(f"Unknown design format ID '{key}' in loaded state.")
                 continue
@@ -177,13 +177,14 @@ class State(UserDict):
             if value is None:
                 continue
 
-            format = DesignFormatByID[id]
+            format = DesignFormat.by_id(id)
+            assert format is not None
 
             value_rel = os.path.relpath(value, ".")
 
             result += f"""
                 <tr>
-                    <td>{format.value[2]}</td>
+                    <td>{format.value.id}</td>
                     <td><a href="{value_rel}">{value_rel}</a></td>
                 </tr>
             """

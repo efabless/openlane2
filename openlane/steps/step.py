@@ -33,7 +33,7 @@ from typing import (
 )
 
 from ..state import State, InvalidState
-from ..state import DesignFormat, DesignFormatByID
+from ..state import DesignFormat
 from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import (
@@ -296,13 +296,14 @@ class Step(ABC):
                 """
             )
             for input, output in zip_longest(Self.inputs, Self.outputs):
+                assert isinstance(output, DesignFormat)
                 input_str = ""
                 if input is not None:
-                    input_str = f"{input.value[2]} (.{input.value[1]})"
+                    input_str = f"{input.value.name} (.{input.value.extension})"
 
                 output_str = ""
                 if output is not None:
-                    output_str = f"{output.value[2]} (.{output.value[1]})"
+                    output_str = f"{output.value.name} (.{output.value.extension})"
                 result += f"| {input_str} | {output_str} |"
 
         if len(Self.config_vars):
@@ -602,7 +603,9 @@ class Step(ABC):
                 continue
 
             if self.state_in.get(id) != value:
-                views_updated.append(DesignFormatByID[id].value[2])
+                df = DesignFormat.by_id(id)
+                assert df is not None
+                views_updated.append(df.value.name)
 
         if len(views_updated):
             result += "#### Views updated:\n"

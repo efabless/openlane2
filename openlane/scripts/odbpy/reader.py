@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))
 import click
 import rich
 from rich.table import Table
-from openlane.state.design_format import DesignFormat, DesignFormatByID
+from openlane.state.design_format import DesignFormat, DesignFormatObject
 
 click  # Re-export now that the environment actually works properly
 
@@ -90,7 +90,7 @@ def click_odb(function):
         for key, value in kwargs.items():
             if key.startswith("output_"):
                 id = key[7:]
-                outputs.append((DesignFormatByID[id], value))
+                outputs.append((DesignFormat.by_id(id), value))
 
         kwargs = {k: kwargs[k] for k in kwargs.keys() if not k.startswith("output_")}
 
@@ -114,11 +114,11 @@ def click_odb(function):
     for format in DesignFormat:
         if write_fn.get(format) is None:
             continue
-        id, _, name = format.value
+        assert isinstance(format.value, DesignFormatObject)
         wrapper = click.option(
-            f"--output-{id}",
+            f"--output-{format.value.id}",
             default=None,
-            help=f"Write {name}",
+            help=f"Write {format.value.name}",
         )(wrapper)
 
     wrapper = click.option(

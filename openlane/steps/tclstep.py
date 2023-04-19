@@ -372,7 +372,7 @@ class TclStep(Step):
             env[f"CURRENT_{input.name}"] = str(state[input])
 
         for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
             env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
         try:
