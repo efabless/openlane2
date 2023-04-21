@@ -442,7 +442,9 @@ class ConfigBuilder(object):
             }
         )
         if scl is not None:
+            config_in._unlock()
             config_in[Keys.scl] = scl
+            config_in._lock()
 
         pdkpath = os.path.join(pdk_root, pdk)
         if not os.path.exists(pdkpath):
