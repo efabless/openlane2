@@ -1,5 +1,8 @@
 # 2.0.0-a17
+
 * Fixed a crash when the SCL is specified via command-line.
+* Fixed a changelog merge nightmare.
+
 # 2.0.0-a16
 
 * Reimplement DRC database using `lxml`
