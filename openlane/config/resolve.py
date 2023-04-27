@@ -42,9 +42,6 @@ class InvalidConfig(Exception):
     pass
 
 
-State = dict
-
-
 class Expr(object):
     class SyntaxError(Exception):
         pass
@@ -212,7 +209,7 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def process_string(value: str, state: State) -> Optional[str]:
+def process_string(value: str, state: dict) -> Optional[str]:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
@@ -269,7 +266,7 @@ def process_string(value: str, state: State) -> Optional[str]:
     return value
 
 
-def process_scalar(key: str, value: Scalar, state: State) -> Scalar:
+def process_scalar(key: str, value: Scalar, state: dict) -> Scalar:
     if isinstance(value, str):
         value = process_string(value, state)
     elif value is None:
@@ -285,7 +282,7 @@ def process_scalar(key: str, value: Scalar, state: State) -> Scalar:
     return value
 
 
-def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
+def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
     PDK_PREFIX = "pdk::"
     SCL_PREFIX = "scl::"
 
@@ -329,7 +326,7 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
 
 
 def process_config_dict(config_in: dict, exposed_variables: Dict[str, str]):
-    state = State(exposed_variables)
+    state = dict(exposed_variables)
     process_config_dict_recursive(config_in, state)
     return state
 

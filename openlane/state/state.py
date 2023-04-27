@@ -50,8 +50,8 @@ class StateDecoder(json.JSONDecoder):
 
 class State(UserDict):
     """
-    Basically, a dictionary with keys of type DesignFormat and string values,
-    the string values being filesystem paths.
+    Basically, a dictionary with keys of type :class:`DesignFormat` and values
+    of type :class:`Path`.
 
     The state is the only thing that can be altered by steps other than the
     filesystem.
