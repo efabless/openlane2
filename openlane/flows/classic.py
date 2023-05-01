@@ -44,7 +44,7 @@ class Classic(SequentialFlow):
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Misc.LoadBaseSDC,
-        OpenROAD.HierarchicalSTA,
+        # OpenROAD.HierarchicalSTA,
         OpenROAD.Floorplan,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,

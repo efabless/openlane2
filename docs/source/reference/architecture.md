@@ -29,11 +29,16 @@ Steps should align themselves to one principle:
 
 <a name="step-strictures"></a> This is applied as far as the functionality goes:
 
-* Steps **do NOT** modify files in-place. New files must be created in the step's dedicated directory. If the tool does not support out-of-place modification, copy the files then modify the copies.
+* Steps **do NOT** modify files in-place. New files must be created in the step's
+  dedicated directory. If the tool does not support out-of-place modification,
+  copy the files then modify the copies.
 * Steps **do NOT** modify the config_in. This is programmatically enforced.
-* Steps **do NOT** rely on external filesystem paths. If a path is not in the configuration or in the input state, it effectively does not exist to the Step.
-    * This applies the other way around as well: Steps **do NOT** create files outside of their step directory.
-* Steps **do** fix [PRNG](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) seeds for replicability. They can be exposed as a configuration variable.
+* Steps **do NOT** rely on external filesystem paths. If a path is not in the
+  configuration or in the input state, it effectively does not exist to the Step.
+    * This applies the other way around as well: Steps **do NOT** create files
+    outside of their step directory.
+* Steps **do** fix [PRNG](https://en.wikipedia.org/wiki/Pseudorandom_number_generator)
+  seeds for replicability. They can be exposed as a configuration variable.
 
 More of these strictures may be programatically enforced by the infrastructure in the future.
 
@@ -44,7 +49,10 @@ A {class}`openlane.steps.State` is a snapshot of paths to views at any point in
 time, in dictionary form.
 
 Keys must be of the type {class}`openlane.steps.DesignFormat` and values must be
-of the type {class}`openlane.config.Path`.
+either:
+* Of the type {class}`openlane.config.Path`.
+* N-nested dictionaries with key values such that the leaves are of the type
+  {class}`openlane.config.Path` as well.
 
 States also have another property: metrics. This attribute captures design
 metrics, which may be read and/or updated by any step.
@@ -72,8 +80,21 @@ The default flow of OpenLane when run from the command-line is a SequentialFlow
 named [`Classic`](./flow_config_vars.md#classic), which is based off of the
 original, Tcl-based version of OpenLane.
 
-## The Configuration Builder
-The configuration builder takes a `Flow` and a raw configuration object as an input, which can be any of:
+## Configuration
+### Objects
+Configuration objects are a thoroughly-validated dictionary of values assigned
+to various configuration variables throughout a flow.
+
+A flow's configuration variables in an aggregate of all its incorporate steps.
+
+The configuration object supports Python's basic scalars (except for `float`),
+`Decimal`, `List` and `Dict`, the latter two infinitely nestable. Steps are given
+this configuration object as an input.
+
+### Builder
+The configuration builder takes a `Flow` and a raw configuration object as an
+input, which can be any of:
+
 * A Python dictionary
 * A path to an existent JSON configuration file
 * A path to an existent Tcl configuration file (deprecated)

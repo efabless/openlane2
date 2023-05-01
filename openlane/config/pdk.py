@@ -43,19 +43,9 @@ pdk_variables = [
         units="µm",
     ),
     Variable(
-        "TECH_LEF",
-        Path,
-        "Path to the technology LEF file in the nominal extraction corner.",
-    ),
-    Variable(
-        "TECH_LEF_MIN",
-        Optional[Path],
-        "Path to the technology LEF file in the minimum extraction corner.",
-    ),
-    Variable(
-        "TECH_LEF_MAX",
-        Optional[Path],
-        "Path to the technology LEF file in the maximum extraction corner.",
+        "TECH_LEFS",
+        Dict[str, Path],
+        "Paths to the technology LEF files by process corner. At least one must exist with the key 'nom', representing the nominal process corner.",
     ),
     Variable(
         "CELL_LEFS",
@@ -149,19 +139,9 @@ pdk_variables = [
         "A metal layer with which to estimate parasitics in earlier stages of the flow.",
     ),
     Variable(
-        "RCX_RULES",
-        Path,
-        "Path to the OpenRCX extraction rules for the nominal process corner.",
-    ),
-    Variable(
-        "RCX_RULES_MIN",
-        Optional[Path],
-        "Path to the OpenRCX extraction rules for the minimum process corner.",
-    ),
-    Variable(
-        "RCX_RULES_MAX",
-        Optional[Path],
-        "Path to the OpenRCX extraction rules for the maximum process corner.",
+        "RCX_RULESETS",
+        Dict[str, Path],
+        "Paths to the OpenRCX extraction rules by process corner.",
     ),
     # Floorplanning
     Variable(
@@ -530,6 +510,26 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
 
+    # 5. Process Corners
+    del new["RCX_RULES"]
+    new["RCX_RULESETS"] = f"nom \"{config['RCX_RULES']}\""
+    if config.get("RCX_RULES_MIN") is not None:
+        del new["RCX_RULES_MIN"]
+        new["RCX_RULESETS"] += f" min \"{config['RCX_RULES_MIN']}\""
+    if config.get("RCX_RULES_MAX") is not None:
+        del new["RCX_RULES_MAX"]
+        new["RCX_RULESETS"] += f" max \"{config['RCX_RULES_MAX']}\""
+
+    del new["TECH_LEF"]
+    new["TECH_LEFS"] = f"nom \"{config['TECH_LEF']}\""
+    if config.get("TECH_LEF_MIN") is not None:
+        del new["TECH_LEF_MIN"]
+        new["TECH_LEFS"] += f" min \"{config['TECH_LEF_MIN']}\""
+    if config.get("TECH_LEF_MAX") is not None:
+        del new["TECH_LEF_MAX"]
+        new["TECH_LEFS"] += f" max \"{config['TECH_LEF_MAX']}\""
+
+    # 6. Disconnected Modules
     new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
     return new._lock()

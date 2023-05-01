@@ -13,6 +13,7 @@
 # limitations under the License.
 import re
 import os
+import shlex
 import inspect
 from enum import Enum
 from typing import get_origin, get_args
@@ -54,6 +55,7 @@ class Variable:
         - ``Union`` (incl. ``Optional``)
         - ``List``
         - ``Tuple``
+        - ``Dict``
 
     :param description: A human-readable description of the variable. Used to
         generate help strings and documentation.
@@ -205,8 +207,37 @@ class Variable:
                     f"Invalid List provided for variable {self.name}: {value}"
                 )
             for item in value:
-                return_value.append(self._process(True, item, subtype))
+                return_value.append(self._process(True, item, subtype, values_so_far))
             return return_value
+        elif get_origin(validating_type) == dict:
+            raw = value
+            key_type, value_type = get_args(validating_type)
+            if isinstance(value, dict):
+                pass
+            elif isinstance(value, str):
+                # Assuming Tcl format:
+                components = shlex.split(value)
+                if len(components) % 2 != 0:
+                    raise ValueError(
+                        f"Tcl-style flat dictionary provided for variable {self.name} is invalid: uneven number of components ({len(components)})"
+                    )
+                raw = {}
+                for i in range(0, len(components) // 2):
+                    key = components[2 * i]
+                    val = components[2 * i + 1]
+                    raw[key] = val
+            else:
+                raise ValueError(
+                    f"Value provided for variable {self.name} of type {validating_type} is not a dictionary: '{value}'"
+                )
+
+            processed = {}
+            for key, val in raw.items():
+                key_validated = self._process(True, key, key_type, values_so_far)
+                value_validated = self._process(True, val, value_type, values_so_far)
+                processed[key_validated] = value_validated
+
+            return processed
         elif validating_type == Path:
             if not os.path.exists(value):
                 raise ValueError(
@@ -227,7 +258,7 @@ class Variable:
                 return validating_type[value]
             except KeyError:
                 raise ValueError(
-                    f"Variable provided for variable {self.name} of enumerated type {validating_type} is invalid: 'value'"
+                    f"Variable provided for variable {self.name} of enumerated type {validating_type} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Decimal):
             try:

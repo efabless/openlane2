@@ -19,7 +19,7 @@
 }:
 
 with pkgs; let
-    olenv = python3.withPackages(ps: with ps; [ openlane-app ]);
+    olenv = python3Full.withPackages(ps: with ps; [ openlane-app ]);
 in dockerTools.streamLayeredImage {
     inherit name;
     tag = if tag == null then "${openlane-app.version}" else tag;

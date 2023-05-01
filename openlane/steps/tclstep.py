@@ -16,13 +16,14 @@ from __future__ import annotations
 import os
 import re
 import glob
+import shlex
 import shutil
 import textwrap
 import subprocess
 from enum import Enum
 from decimal import Decimal
 from collections import deque
-from typing import List, Dict, Sequence, Union
+from typing import Any, List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
 
 from .step import Step
@@ -248,7 +249,6 @@ def create_reproducible(
             ):  # /dev/null, /dev/stdout, /dev/stderr, etc should still work
                 final_path = join(destination_folder, potential_file)
                 final_value = os.path.relpath(final_path, destination_folder)
-                print(potential_file_abspath, final_path)
                 copy(potential_file, final_path)
                 final_env[key] += f"{final_value} "
             else:
@@ -268,7 +268,7 @@ def create_reproducible(
     ) -> str:
         array = []
         for key, value in sorted(env.items()):
-            array.append(format_string.format(key=key, value=value))
+            array.append(format_string.format(key=key, value=shlex.quote(value)))
         value = f"\n{'    ' * indent}".join(array)
         return value
 
@@ -280,7 +280,7 @@ def create_reproducible(
                 #!/bin/sh
                 dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
                 cd $dir;
-                {env_list("export {key}='{value}';", indent=4)}
+                {env_list("export {key}={value};", indent=4)}
                 {' '.join(new_cmd)}
                 """
             )
@@ -306,6 +306,28 @@ class TclStep(Step):
     A TclStep Step corresponds to running one Tcl script with such a utility.
     """
 
+    @staticmethod
+    def value_to_tcl(value: Any) -> str:
+        if isinstance(value, list):
+            result = []
+            for item in value:
+                result.append(TclStep.value_to_tcl(item))
+            return shlex.join(result)
+        elif isinstance(value, dict):
+            result = []
+            for v_key, v_value in value.items():
+                result.append(TclStep.value_to_tcl(v_key))
+                result.append(TclStep.value_to_tcl(v_value))
+            return shlex.join(result)
+        elif isinstance(value, Enum):
+            return value.value
+        elif isinstance(value, bool):
+            return "1" if value else "0"
+        elif isinstance(value, Decimal) or isinstance(value, int):
+            return str(value)
+        else:
+            return str(value)
+
     def get_script_path(self):
         """
         :returns: A Tcl script to be run by this step.
@@ -318,6 +340,39 @@ class TclStep(Step):
         """
         return ["tclsh", self.get_script_path()]
 
+    def prepare_env(self, env: dict, state: State) -> dict:
+        """
+        <!--
+        TODO
+        -->
+        """
+        env = env.copy()
+
+        env["SCRIPTS_DIR"] = get_script_dir()
+        env["STEP_DIR"] = os.path.abspath(self.step_dir)
+        env["TECH_LEF"] = self.config["TECH_LEFS"]["nom"]
+
+        for element in self.config.keys():
+            value = self.config[element]
+            if value is None:
+                continue
+            env[element] = TclStep.value_to_tcl(value)
+
+        for input in self.inputs:
+            key = f"CURRENT_{input.name}"
+            if input.value.multiple:
+                key = f"CURRENT_{input.name}_DICT"
+            env[key] = TclStep.value_to_tcl(state[input])
+
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
+
+        return env
+
     def run(
         self,
         **kwargs,
@@ -326,6 +381,7 @@ class TclStep(Step):
         This overriden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
+        See :meth:`prepare_env` for more info.
 
         Additionally, it logs the output to a ``.log`` file named after the script.
 
@@ -347,33 +403,7 @@ class TclStep(Step):
 
         kwargs, env = self.extract_env(kwargs)
 
-        env["SCRIPTS_DIR"] = get_script_dir()
-        env["STEP_DIR"] = os.path.abspath(self.step_dir)
-
-        for element in self.config.keys():
-            value = self.config[element]
-            if value is None:
-                continue
-
-            if isinstance(value, list):
-                value = " ".join(list(map(lambda x: str(x), value)))
-            elif isinstance(value, Enum):
-                value = value._name_
-            elif isinstance(value, bool):
-                value = "1" if value else "0"
-            elif isinstance(value, Decimal) or isinstance(value, int):
-                value = str(value)
-
-            env[element] = value
-
-        for input in self.inputs:
-            if input is None:
-                continue
-            env[f"CURRENT_{input.name}"] = str(state[input])
-
-        for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
-            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
+        env = self.prepare_env(env, state)
 
         try:
             self.run_subprocess(
@@ -394,6 +424,9 @@ class TclStep(Step):
             raise
 
         for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
             path = Path(env[f"SAVE_{output.name}"])
             if not path.exists():
                 continue

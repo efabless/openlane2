@@ -73,12 +73,12 @@ proc read_libs {args} {
         exit 1
     }
     if { [info exists keys(-slowest)] } {
-        set corner(Slowest) $keys(-slowest)
+        set corner(ss) $keys(-slowest)
     }
     if { [info exists keys(-fastest)] } {
-        set corner(Fastest) $keys(-fastest)
+        set corner(ff) $keys(-fastest)
     }
-    set corner(Typical) $keys(-typical)
+    set corner(tt) $keys(-typical)
     puts "define_corners [array name corner]"
     define_corners {*}[array name corner]
 
@@ -135,6 +135,41 @@ proc read {args} {
         }
     }
 }
+
+proc read_spefs {} {
+    if { ![info exists ::env(CURRENT_SPEF_DICT)] } {
+        set process_corner "nom"
+        set spef [dict get $::env(CURRENT_SPEF_DICT) $process_corner]
+        set corners [sta::corners]
+        foreach corner $corners {
+            read_spef -corner [$corner name] $spef
+            read_spef -corner [$corner name] $spef
+            read_spef -corner [$corner name] $spef
+        }
+    }
+
+    if { [info exists ::env(EXTRA_SPEFS)] } {
+        foreach {module_name spef_file_min spef_file_nom spef_file_max} "$::env(EXTRA_SPEFS)" {
+            set matched 0
+            foreach cell [get_cells *] {
+                if { "[get_property $cell ref_name]" eq "$module_name" && !$matched } {
+                    puts "Matched [get_property $cell name] with $module_name"
+                    set matched 1
+                    foreach corner $corners {
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_min
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_nom
+                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_max
+                    }
+                }
+            }
+            if { $matched != 1 } {
+                puts "Error: Module $module_name specified in EXTRA_SPEFS not found."
+                exit 1
+            }
+        }
+    }
+}
+
 
 proc write {args} {
     # This script will attempt to write views based on existing "SAVE_"
@@ -200,54 +235,17 @@ proc write {args} {
             write_sdf -include_typ -divider . $::env(SAVE_SDF)
         }
     }
-
-    if { [info exists ::env(SAVE_LIB)] && !$::env(STA_PRE_CTS)} {
-        set corners [sta::corners]
-        if { [llength $corners] > 1 } {
-            puts "Writing timing models for all corners…"
-            set prefix [file rootname $::env(SAVE_LIB)]
-            foreach corner $corners {
-                set corner_name [$corner name]
-                set target $prefix.$corner_name.lib
-                puts "Writing timing models for the $corner_name corner to $target…"
-                write_timing_model -corner $corner_name $target
-            }
-        } else {
-            puts "Writing timing model to '$::env(SAVE_LIB)'…"
-            write_timing_model $::env(SAVE_LIB)
-        }
-    }
 }
 
-
-proc read_spefs {} {
-    set corners [sta::corners]
-    if { [info exists ::env(CURRENT_SPEF)] } {
+proc write_libs {} {
+    if { [info exists ::env(LIB_SAVE_PATH)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
+        set corners [sta::corners]
+        puts "Writing timing models for all corners…"
         foreach corner $corners {
-            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
-            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
-            read_spef -corner [$corner name] $::env(CURRENT_SPEF)
-        }
-    }
-
-    if { [info exists ::env(EXTRA_SPEFS)] } {
-        foreach {module_name spef_file_min spef_file_nom spef_file_max} "$::env(EXTRA_SPEFS)" {
-            set matched 0
-            foreach cell [get_cells *] {
-                if { "[get_property $cell ref_name]" eq "$module_name" && !$matched } {
-                    puts "Matched [get_property $cell name] with $module_name"
-                    set matched 1
-                    foreach corner $corners {
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_min
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_nom
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_max
-                    }
-                }
-            }
-            if { $matched != 1 } {
-                puts "Error: Module $module_name specified in EXTRA_SPEFS not found."
-                exit 1
-            }
+            set corner_name [$corner name]
+            set target $::env(LIB_SAVE_PATH)/$corner_name.lib
+            puts "Writing timing models for the $corner_name corner to $target…"
+            write_timing_model -corner $corner_name $target
         }
     }
 }

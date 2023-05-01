@@ -22,6 +22,7 @@ class DesignFormatObject:
     extension: str
     name: str
     folder_override: Optional[str] = None
+    multiple: bool = False
 
     @property
     def folder(self) -> str:
@@ -72,25 +73,15 @@ class DesignFormat(Enum):
     )
     SPEF: DesignFormatObject = DesignFormatObject(
         "spef",
-        "nom.spef",
-        "Standard Parasitics Extraction Format (Nominal Corner)",
-    )
-    SPEF_MIN: DesignFormatObject = DesignFormatObject(
-        "spef_min",
-        "min.spef",
-        "Standard Parasitics Extraction Format (Minimum Corner)",
         "spef",
-    )
-    SPEF_MAX: DesignFormatObject = DesignFormatObject(
-        "spef_max",
-        "max.spef",
-        "Standard Parasitics Extraction Format (Maximum Corner)",
-        "spef",
+        "Standard Parasitics Extraction Format",
+        multiple=True,  # nom, min, max, ...
     )
     LIB: DesignFormatObject = DesignFormatObject(
         "lib",
         "lib",
         "LIB Timing Library Format",
+        multiple=True,
     )
     SPICE: DesignFormatObject = DesignFormatObject(
         "spice",

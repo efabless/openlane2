@@ -452,6 +452,7 @@ class Step(ABC):
         self,
         cmd: Sequence[Union[str, os.PathLike]],
         log_to: Optional[str] = None,
+        silent: bool = False,
         **kwargs,
     ):
         """
@@ -496,6 +497,8 @@ class Step(ABC):
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                     report_path = os.path.join(self.step_dir, report_name)
+                    report_dir = os.path.dirname(report_path)
+                    mkdirp(report_dir)
                     current_rpt = open(report_path, "w")
                 elif line.startswith(REPORT_END_LOCUS):
                     if current_rpt is not None:
@@ -504,7 +507,8 @@ class Step(ABC):
                 elif current_rpt is not None:
                     current_rpt.write(line)
                 else:
-                    verbose(line.strip())
+                    if not silent:
+                        verbose(line.strip())
                     log_file.write(line)
         returncode = process.wait()
         split_lines = lines.split("\n")

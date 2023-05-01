@@ -86,7 +86,7 @@ class OdbpyStep(Step):
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        lefs = ["--input-lef", self.config["TECH_LEF"]]
+        lefs = ["--input-lef", self.config["TECH_LEFS"]["nom"]]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)

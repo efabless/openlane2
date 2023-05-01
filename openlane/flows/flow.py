@@ -49,7 +49,7 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..logging import console, info
+from ..logging import console, info, verbose
 from ..common import mkdirp, internal, final, slugify
 
 
@@ -277,6 +277,8 @@ class Flow(Step._FlowType):
                     if time > latest_time:
                         latest_time = time
                         latest_json = state_out_json
+
+                verbose(f"Using state at '{latest_json}'.")
 
                 if latest_json is not None:
                     initial_state = State.loads(

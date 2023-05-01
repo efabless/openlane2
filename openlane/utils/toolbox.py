@@ -52,7 +52,7 @@ class Toolbox(object):
             return None
         lyp, lyt, lym = files
 
-        lef_arguments = ["-l", str(config["TECH_LEF"])]
+        lef_arguments = ["-l", str(config["TECH_LEFS"]["nom"])]
         for file in config["CELL_LEFS"]:
             lef_arguments += ["-l", str(file)]
         if extra := config["EXTRA_LEFS"]:

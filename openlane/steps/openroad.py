@@ -17,15 +17,15 @@ import re
 import json
 import tempfile
 import subprocess
+from glob import glob
 from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from typing import List, Dict, Tuple, Optional
+from concurrent.futures import Future, ThreadPoolExecutor
 
 from .step import Step
-from ..state import State
 from .tclstep import TclStep
-from ..state import DesignFormat
 from .common_variables import (
     io_layer_variables,
     pdn_variables,
@@ -35,8 +35,9 @@ from .common_variables import (
     constraint_variables,
 )
 
+from ..state import State, DesignFormat
 from ..logging import info, warn
-from ..common import get_script_dir
+from ..common import get_script_dir, mkdirp
 from ..config import Variable, Path, StringEnum
 
 EXAMPLE_INPUT = """
@@ -124,6 +125,19 @@ class OpenROADStep(TclStep):
     def get_script_path(self):
         pass
 
+    def prepare_env(self, env: dict, state: State) -> dict:
+        env = super().prepare_env(env, state)
+
+        lib_pnr = self.toolbox.remove_cells_from_lib(
+            frozenset(self.config["LIB"]),
+            frozenset([self.config["BAD_CELL_LIST"]]),
+            as_cell_lists=True,
+        )
+
+        env["LIB_PNR"] = lib_pnr
+
+        return env
+
     def run(
         self,
         **kwargs,
@@ -139,14 +153,6 @@ class OpenROADStep(TclStep):
         updates the State's `metrics` property with any new metrics in that object.
         """
         kwargs, env = self.extract_env(kwargs)
-
-        lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset(self.config["LIB"]),
-            frozenset([self.config["BAD_CELL_LIST"]]),
-            as_cell_lists=True,
-        )
-
-        env["LIB_PNR"] = lib_pnr
 
         state_out = super().run(env=env, **kwargs)
 
@@ -250,7 +256,63 @@ class ParasiticsSTA(HierarchicalSTA):
             "Enables/disables this step.",
             default=True,
         ),
+        Variable(
+            "STA_CORES",
+            Optional[int],
+            "Specifies the number of processes to be used during Multi-Corner Static-Timing Analysis. If unset or zero, this will be equal to your machine's thread count.",
+        ),
     ]
+
+    def run(self, **kwargs) -> State:
+        process_count = os.cpu_count()
+        if cores := self.config.get("RCX_CORES"):
+            process_count = cores
+
+        state = Step.run(self, **kwargs)
+        kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state)
+
+        def run_corner(corner: str):
+            nonlocal env
+            current_env = env.copy()
+            current_env["TECH_LEF"] = self.config["TECH_LEFS"][corner]
+
+            corner_path = os.path.join(self.step_dir, corner)
+            mkdirp(corner_path)
+
+            current_env["LIB_SAVE_PATH"] = corner_path
+            current_env["PROCESS_CORNER"] = corner_path
+            current_env["STA_MULTICORNER"] = "1"
+
+            self.run_subprocess(
+                self.get_command(),
+                log_to=os.path.join(self.step_dir, f"{corner}.log"),
+                env=current_env,
+                silent=True,
+            )
+
+            process_corner_values = {}
+            timing_corner_lib_files = glob("*.lib", root_dir=corner_path)
+            for file in timing_corner_lib_files:
+                file_path = os.path.join(corner_path, file)
+                timing_corner = file[:-4]
+                process_corner_values[timing_corner] = Path(file_path)
+
+            return process_corner_values
+
+        futures: Dict[str, Future[str]] = {}
+        with ThreadPoolExecutor(process_count) as tpe:
+            for corner in self.config["TECH_LEFS"]:
+                futures[corner] = tpe.submit(
+                    run_corner,
+                    corner,
+                )
+
+        state[DesignFormat.LIB] = state.get(DesignFormat.LIB) or {}
+        for corner, future in futures.items():
+            state[DesignFormat.LIB][corner] = future.result()
+
+        return state
 
 
 @Step.factory.register()
@@ -876,6 +938,11 @@ class ParasiticsExtraction(OpenROADStep):
             Optional[Path],
             "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
         ),
+        Variable(
+            "RCX_CORES",
+            Optional[int],
+            "Specifies the number of processes to be used during Multi-Corner RCX. If unset or zero, this will be equal to your machine's thread count.",
+        ),
     ]
 
     # default inputs
@@ -885,9 +952,46 @@ class ParasiticsExtraction(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
 
     def run(self, **kwargs) -> State:
+        process_count = os.cpu_count()
+        if cores := self.config.get("RCX_CORES"):
+            process_count = cores
+
+        state = Step.run(self, **kwargs)
         kwargs, env = self.extract_env(kwargs)
-        env["RCX_RULESET"] = f"{self.config['RCX_RULES']}"
-        return super().run(env=env, **kwargs)
+        env = self.prepare_env(env, state)
+
+        def run_corner(corner: str):
+            nonlocal env
+            current_env = env.copy()
+            current_env["RCX_RULESET"] = self.config["RCX_RULESETS"][corner]
+            current_env["TECH_LEF"] = self.config["TECH_LEFS"][corner]
+            out = os.path.join(
+                self.step_dir, f"{self.config['DESIGN_NAME']}.{corner}.spef"
+            )
+            current_env["SAVE_SPEF"] = out
+
+            self.run_subprocess(
+                self.get_command(),
+                log_to=os.path.join(self.step_dir, f"{corner}.log"),
+                env=current_env,
+                silent=True,
+            )
+
+            return out
+
+        futures: Dict[str, Future[str]] = {}
+        with ThreadPoolExecutor(process_count) as tpe:
+            for corner in self.config["RCX_RULESETS"]:
+                futures[corner] = tpe.submit(
+                    run_corner,
+                    corner,
+                )
+
+        state[DesignFormat.SPEF] = state.get(DesignFormat.SPEF) or {}
+        for corner, future in futures.items():
+            state[DesignFormat.SPEF][corner] = Path(future.result())
+
+        return state
 
 
 # Antennas

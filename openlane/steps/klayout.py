@@ -80,7 +80,7 @@ class StreamOut(Step):
 
         layout_args = [
             "--input-lef",
-            self.config["TECH_LEF"],
+            self.config["TECH_LEFS"]["nom"],
         ]
         for lef in self.config["CELL_LEFS"]:
             layout_args.append("--input-lef")

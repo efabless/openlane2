@@ -21,6 +21,11 @@ if { [info exists ::env(STA_MULTICORNER)] && $::env(STA_MULTICORNER) } {
 }
 read_libs {*}$arg_list
 
+set report_dir "."
+if { [info exists ::env(PROCESS_CORNER)] } {
+    set report_dir "$::env(PROCESS_CORNER)"
+}
+
 if { [file tail [info nameofexecutable]] == "sta" } {
     # OpenSTA
     read_netlist -all
@@ -41,7 +46,7 @@ if { [info exists ::env(STA_PRE_CTS)] && $::env(STA_PRE_CTS) == 1 } {
     set_propagated_clock [all_clocks]
 }
 
-puts "%OL_CREATE_REPORT min.rpt"
+puts "%OL_CREATE_REPORT $report_dir/min.rpt"
 puts "\n==========================================================================="
 puts "report_checks -path_delay min (Hold)"
 puts "============================================================================"
@@ -53,7 +58,7 @@ foreach corner [sta::corners] {
 puts "%OL_END_REPORT"
 
 
-puts "%OL_CREATE_REPORT max.rpt"
+puts "%OL_CREATE_REPORT $report_dir/max.rpt"
 puts "\n==========================================================================="
 puts "report_checks -path_delay max (Setup)"
 puts "============================================================================"
@@ -65,7 +70,7 @@ foreach corner [sta::corners] {
 puts "%OL_END_REPORT"
 
 
-puts "%OL_CREATE_REPORT checks.rpt"
+puts "%OL_CREATE_REPORT $report_dir/checks.rpt"
 puts "\n==========================================================================="
 puts "report_checks -unconstrained"
 puts "==========================================================================="
@@ -113,7 +118,7 @@ puts "%OL_END_REPORT"
 
 
 
-puts "%OL_CREATE_REPORT power.rpt"
+puts "%OL_CREATE_REPORT $report_dir/power.rpt"
 puts "\n==========================================================================="
 puts " report_power"
 puts "============================================================================"
@@ -127,7 +132,7 @@ puts "%OL_END_REPORT"
 # report clock skew if the clock port is defined
 # OR hangs if this command is run on clockless designs
 if { $::env(CLOCK_PORT) != "__VIRTUAL_CLK__" && $::env(CLOCK_PORT) != "" } {
-    puts "%OL_CREATE_REPORT skew.rpt"
+    puts "%OL_CREATE_REPORT $report_dir/skew.rpt"
     puts "\n==========================================================================="
     puts "report_clock_skew"
     puts "============================================================================"
@@ -135,7 +140,7 @@ if { $::env(CLOCK_PORT) != "__VIRTUAL_CLK__" && $::env(CLOCK_PORT) != "" } {
     puts "%OL_END_REPORT"
 }
 
-puts "%OL_CREATE_REPORT summary.rpt"
+puts "%OL_CREATE_REPORT $report_dir/summary.rpt"
 puts "\n==========================================================================="
 puts "report_tns"
 puts "============================================================================"
@@ -156,3 +161,5 @@ puts "report_worst_slack -min (Hold)"
 puts "============================================================================"
 report_worst_slack -min
 puts "%OL_END_REPORT"
+
+write_libs

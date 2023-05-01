@@ -22,7 +22,6 @@ from .design_format import DesignFormat, DesignFormatObject
 
 from ..config import Path
 from ..common import mkdirp
-from ..logging import warn
 
 
 class InvalidState(RuntimeError):
@@ -61,6 +60,8 @@ class State(UserDict):
         it passed a certain check or not.
     """
 
+    VT = Union[Path, Dict[str, Path]]
+
     metrics: dict
 
     def __init__(self, metrics: Optional[dict] = None) -> None:
@@ -70,13 +71,13 @@ class State(UserDict):
             self[id] = None
         self.metrics = metrics or {}
 
-    def __getitem__(self, key: Union[DesignFormat, str]) -> Optional[Path]:
+    def __getitem__(self, key: Union[DesignFormat, str]) -> Optional[VT]:
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
         return super().__getitem__(key)
 
-    def __setitem__(self, key: Union[DesignFormat, str], item: Optional[Path]):
+    def __setitem__(self, key: Union[DesignFormat, str], item: Optional[VT]):
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
@@ -104,39 +105,111 @@ class State(UserDict):
             kwargs["indent"] = 4
         return json.dumps(self._as_dict(), cls=StateEncoder, **kwargs)
 
-    def save_snapshot(self, path: Union[str, os.PathLike]):
+    def _save_snapshot_recursive(
+        self,
+        path: Union[str, os.PathLike],
+        views: Union[Dict, "State"],
+        key_path: str = "",
+    ):
         mkdirp(path)
-        self.validate()
-        for key, value in self.items():
-            assert isinstance(key, str)
+        for key, value in views.items():
+            assert isinstance(
+                key, str
+            ), f"Misconstructed state in '{key_path}': '{key}' is not a string"
+            current_key_path = f"{key_path}.{key}"
             if value is None:
                 continue
-            df = DesignFormat.by_id(key)
-            assert df is not None
-            assert isinstance(df.value, DesignFormatObject)
-            target_dir = os.path.join(path, df.value.folder)
-            mkdirp(target_dir)
-            target_path = os.path.join(target_dir, os.path.basename(value))
-            shutil.copyfile(value, target_path, follow_symlinks=True)
+            current_folder = key
+            if df := DesignFormat.by_id(key):
+                assert isinstance(
+                    df.value, DesignFormatObject
+                )  # This one's for the type checker to shut up
+                current_folder = df.value.folder
+
+            if isinstance(value, dict):
+                subdirectory = os.path.join(path, current_folder)
+                self._save_snapshot_recursive(
+                    subdirectory,
+                    value,
+                    key_path=current_key_path,
+                )
+            else:
+                target_dir = os.path.join(
+                    path,
+                    current_folder,
+                )
+                mkdirp(target_dir)
+                target_path = os.path.join(target_dir, os.path.basename(value))
+                shutil.copyfile(value, target_path, follow_symlinks=True)
+
+    def save_snapshot(self, path: Union[str, os.PathLike]):
+        self.validate()
+        self._save_snapshot_recursive(path, self)
         metrics_path = os.path.join(path, "metrics.csv")
         with open(metrics_path, "w") as f:
             f.write("Metric,Value\n")
             for metric in self.metrics:
                 f.write(f"{metric}, {self.metrics[metric]}\n")
 
-    def validate(self):
-        for key, value in self._as_dict(metrics=False).items():
-            if DesignFormat.by_id(key) is None:
-                raise InvalidState(f"Key {key} does not match a known design format.")
+    def _validate_recursive(
+        self,
+        views: Dict,
+        key_path: str = "",
+        depth: int = 0,
+    ):
+        for key, value in views.items():
+            current_key_path = f"{key_path}.{key}"
+            if depth == 0 and DesignFormat.by_id(key) is None:
+                raise InvalidState(
+                    f"Key {current_key_path} does not match a known design format."
+                )
             if value is not None:
-                if not isinstance(value, Path):
-                    raise InvalidState(
-                        f"Value for format {key} is not a openlane.config.Path object: '{value}'."
+                if isinstance(value, Path):
+                    if not os.path.exists(str(value)):
+                        raise InvalidState(
+                            f"Path for format {current_key_path} does not exist: '{value}'."
+                        )
+                elif isinstance(value, dict):
+                    self._validate_recursive(
+                        value, key_path=current_key_path, depth=depth + 1
                     )
-                if not os.path.exists(str(value)):
+                else:
                     raise InvalidState(
-                        f"Value for format {key} does not exist: '{value}'."
+                        f"Value for format '{current_key_path}' is not a Path nor a dictionary of strings to Paths: '{value}'."
                     )
+
+    def validate(self):
+        self._validate_recursive(self._as_dict(metrics=False))
+
+    @classmethod
+    def _loads_recursive(
+        Self,
+        target: Union[Dict, "State"],
+        views: Union[Dict, "State"],
+        validate_path: bool = True,
+        key_path: str = "",
+    ):
+        for key, value in views.items():
+            current_key_path = f"{key_path}.{key}"
+            if value is None:
+                target[key] = value
+                continue
+
+            if isinstance(value, dict):
+                all_values: Dict = {}
+                Self._loads_recursive(
+                    all_values,
+                    value,
+                    validate_path,
+                    key_path=current_key_path,
+                )
+                target[key] = all_values
+            else:
+                if validate_path and not os.path.exists(value):
+                    raise ValueError(
+                        f"Provided path '{value}' to design format '{current_key_path}' does not exist."
+                    )
+                target[key] = Path(value)
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":
@@ -148,21 +221,7 @@ class State(UserDict):
 
         state = Self(metrics=metrics)
 
-        for key, value in raw.items():
-            df = DesignFormat.by_id(key)
-            if df is None:
-                warn(f"Unknown design format ID '{key}' in loaded state.")
-                continue
-
-            if value is None:
-                state[df] = value
-                continue
-
-            if validate_path and not os.path.exists(value):
-                raise ValueError(
-                    f"Provided path '{value}' to design format '{key}' does not exist."
-                )
-            state[df] = Path(value)
+        Self._loads_recursive(state, raw, validate_path)
 
         return state
 

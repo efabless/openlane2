@@ -18,7 +18,12 @@ read
 source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
-read_spef $::env(CURRENT_SPEF)
+if {![dict exists "$::env(CURRENT_SPEF_DICT)" "nom"]} {
+    puts "No `nom` corner SPEF file exists. Cannot perform IR-drop analysis."
+    exit -1
+}
+
+read_spef [dict get "$::env(CURRENT_SPEF_DICT)" "nom"]
 
 puts "%OL_CREATE_REPORT irdrop.rpt"
 analyze_power_grid -net $::env(VDD_NET) -outfile $::env(STEP_DIR)/voltages.csv
