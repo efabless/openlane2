@@ -211,12 +211,12 @@ class Synthesis(YosysStep):
         self,
         **kwargs,
     ) -> State:
-        assert isinstance(self.config["LIB"], list)
+        _, default_lib_list = self.toolbox.get_libs(self.config)
 
         kwargs, env = self.extract_env(kwargs)
 
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(self.config["LIB"]),
+            frozenset(default_lib_list),
             excluded_cells=frozenset(
                 [
                     self.config["BAD_CELL_LIST"],
@@ -226,7 +226,7 @@ class Synthesis(YosysStep):
             as_cell_lists=True,
         )
 
-        env["LIB_SYNTH"] = lib_synth
+        env["LIB_SYNTH"] = " ".join(lib_synth)
         state_out = super().run(env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")

@@ -24,7 +24,7 @@ from abc import abstractmethod
 from typing import List, Dict, Tuple, Optional
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from .step import Step
+from .step import Step, StepException
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -36,7 +36,7 @@ from .common_variables import (
 )
 
 from ..state import State, DesignFormat
-from ..logging import info, warn
+from ..logging import err, info, warn
 from ..common import get_script_dir, mkdirp
 from ..config import Variable, Path, StringEnum
 
@@ -94,12 +94,6 @@ class OpenROADStep(TclStep):
 
     config_vars = constraint_variables + [
         Variable(
-            "STA_WRITE_LIB",
-            bool,
-            "Controls whether a timing model is written using OpenROAD OpenSTA after static timing analysis. This is an option as it in its current state, the timing model generation (and the model itself) can be quite buggy.",
-            default=False,
-        ),
-        Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
             bool,
             "Enables the connection of macros to the top level power grid.",
@@ -128,13 +122,14 @@ class OpenROADStep(TclStep):
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
+        _, lib_list = self.toolbox.get_libs(self.config)
         lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset(self.config["LIB"]),
+            frozenset(lib_list),
             frozenset([self.config["BAD_CELL_LIST"]]),
             as_cell_lists=True,
         )
 
-        env["LIB_PNR"] = lib_pnr
+        env["LIB_PNR"] = " ".join(lib_pnr)
 
         return env
 
@@ -207,8 +202,7 @@ class STA(OpenROADStep):
     def run(self, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         assert isinstance(self.state_in, State)
-        if self.state_in.metrics.get("cts__run"):
-            env["STA_PRE_CTS"] = "1"
+        env["STA_PRE_CTS"] = "0" if self.state_in.metrics.get("cts__run") else "1"
         if self.state_in.metrics.get("grt__run"):
             env["ESTIMATE_PARASITICS"] = "-global_routing"
         elif self.state_in.metrics.get("gpl__run"):
@@ -230,8 +224,31 @@ class HierarchicalSTA(STA):
     name = "Hierarchical STA"
     long_name = "Hierarchical Static Timing Analysis"
 
+    config_vars = STA.config_vars + [
+        Variable(
+            "HSTA_MACRO_PRIORITIZE_SPEF",
+            bool,
+            "Prioritize the use of SPEF files + Netlists over LIB files if available for macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
+            default=True,
+        ),
+    ]
+
     def get_command(self) -> List[str]:
         return ["sta", "-exit", self.get_script_path()]
+
+    def run(self, **kwargs) -> State:
+        kwargs, env = self.extract_env(kwargs)
+        assert isinstance(self.state_in, State)
+
+        timing_corner, lib_list = self.toolbox.get_libs(
+            self.config,
+            scl_only=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+        )
+        env["TIMING_CORNER_0"] = timing_corner
+        for lib in lib_list:
+            env["TIMING_CORNER_0"] += f" {lib}"
+
+        return super().run(**kwargs)
 
 
 @Step.factory.register()
@@ -257,13 +274,19 @@ class ParasiticsSTA(HierarchicalSTA):
             default=True,
         ),
         Variable(
-            "STA_CORES",
+            "RCSTA_CORES",
             Optional[int],
-            "Specifies the number of processes to be used during Multi-Corner Static-Timing Analysis. If unset or zero, this will be equal to your machine's thread count.",
+            "Specifies the upper bound for processes to be used at a time, with the upper bound being the number of interconnect corners provided with a PDK. If unset or zero, this will be equal to your machine's thread count.",
+        ),
+        Variable(
+            "RCSTA_CORNER_MAP",
+            Optional[Dict[str, List[str]]],
+            "A map from the interconnect corner to a list of associated timing corners.",
         ),
     ]
 
     def run(self, **kwargs) -> State:
+
         process_count = os.cpu_count()
         if cores := self.config.get("RCX_CORES"):
             process_count = cores
@@ -272,33 +295,77 @@ class ParasiticsSTA(HierarchicalSTA):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state)
 
-        def run_corner(corner: str):
+        def run_corner(interconnect_corner: str):
+            assert isinstance(self.state_in, State)
+            spefs = self.state_in["spef"]
+            assert isinstance(
+                spefs, dict
+            ), "Invalid input state: spef is not a dictionary"
+
+            spef_in = spefs.get(interconnect_corner)
+            if spef_in is None:
+                raise StepException(
+                    f"Parasitics extraction not yet performed for corner '{interconnect_corner}'"
+                )
+
             nonlocal env
             current_env = env.copy()
-            current_env["TECH_LEF"] = self.config["TECH_LEFS"][corner]
+            corner_path = os.path.join(self.step_dir, interconnect_corner)
 
-            corner_path = os.path.join(self.step_dir, corner)
-            mkdirp(corner_path)
+            # Prepare Timing Corner Info
+            timing_corners: List[str] = list(self.config["LIBS"].keys())
+            if tcs_by_ics := self.config["RCSTA_CORNER_MAP"]:
+                if tcs_by_ics.get(interconnect_corner) is not None:
+                    timing_corners = tcs_by_ics[interconnect_corner]
 
+            # Prepare Environment Variables
+            current_env["CURRENT_SPEF"] = str(spef_in)
+            current_env["INTERCONNECT_CORNER"] = interconnect_corner
             current_env["LIB_SAVE_PATH"] = corner_path
-            current_env["PROCESS_CORNER"] = corner_path
             current_env["STA_MULTICORNER"] = "1"
 
-            self.run_subprocess(
-                self.get_command(),
-                log_to=os.path.join(self.step_dir, f"{corner}.log"),
-                env=current_env,
-                silent=True,
+            for i, timing_corner in enumerate(timing_corners):
+                tc_key = f"TIMING_CORNER_{i}"
+                value = f"{timing_corner}"
+                _, tc_libs = self.toolbox.get_libs(
+                    self.config,
+                    timing_corner,
+                    scl_only=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+                )
+                for lib in tc_libs:
+                    value += f" {lib}"
+                current_env[tc_key] = value
+
+            log_path = os.path.join(self.step_dir, f"{interconnect_corner}.log")
+            info(
+                f"Running Multi-Corner STA for corners incorporating the {interconnect_corner} interconnect corner ({log_path})…"
             )
 
-            process_corner_values = {}
+            try:
+                mkdirp(corner_path)
+                self.run_subprocess(
+                    self.get_command(),
+                    log_to=log_path,
+                    env=current_env,
+                    silent=True,
+                )
+                info(
+                    f"Finished multi-corner STA for corners incorporating the {interconnect_corner} interconnect corner."
+                )
+            except subprocess.CalledProcessError as e:
+                err(
+                    f"multi-corner STA for corners incorporating the {corner} interconnect corner."
+                )
+                raise e
+
+            result = {}
             timing_corner_lib_files = glob("*.lib", root_dir=corner_path)
             for file in timing_corner_lib_files:
                 file_path = os.path.join(corner_path, file)
                 timing_corner = file[:-4]
-                process_corner_values[timing_corner] = Path(file_path)
+                result[timing_corner] = Path(file_path)
 
-            return process_corner_values
+            return result
 
         futures: Dict[str, Future[str]] = {}
         with ThreadPoolExecutor(process_count) as tpe:
@@ -909,15 +976,16 @@ class FillInsertion(OpenROADStep):
 
 
 @Step.factory.register()
-class ParasiticsExtraction(OpenROADStep):
+class RCX(OpenROADStep):
     """
     This extracts `parasitic <https://en.wikipedia.org/wiki/Parasitic_element_(electrical_networks)>`_
     electrical values from a detailed-placed circuit. These can be used to create
     basically the highest accurate STA possible for a design.
     """
 
-    id = "OpenROAD.ParasiticsExtraction"
-    name = "Parasitics Extraction"
+    id = "OpenROAD.RCX"
+    name = "Parasitics (RC) Extraction"
+    long_name = "Parasitic Resistance/Capacitance Extraction"
     flow_control_variable = "RUN_SPEF_EXTRACTION"
 
     config_vars = OpenROADStep.config_vars + [
@@ -945,7 +1013,7 @@ class ParasiticsExtraction(OpenROADStep):
         ),
     ]
 
-    # default inputs
+    inputs = [DesignFormat.DEF]
     outputs = [DesignFormat.SPEF]
 
     def get_script_path(self):
@@ -961,27 +1029,43 @@ class ParasiticsExtraction(OpenROADStep):
         env = self.prepare_env(env, state)
 
         def run_corner(corner: str):
+            rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
+            if rcx_ruleset is None:
+                warn(
+                    f"RCX ruleset for corner {corner} not found. The corner may be ill-defined."
+                )
+                return None
+
             nonlocal env
             current_env = env.copy()
-            current_env["RCX_RULESET"] = self.config["RCX_RULESETS"][corner]
-            current_env["TECH_LEF"] = self.config["TECH_LEFS"][corner]
+            current_env["RCX_LEF"] = self.config["TECH_LEFS"][corner]
+            current_env["RCX_RULESET"] = rcx_ruleset
+
             out = os.path.join(
                 self.step_dir, f"{self.config['DESIGN_NAME']}.{corner}.spef"
             )
             current_env["SAVE_SPEF"] = out
 
-            self.run_subprocess(
-                self.get_command(),
-                log_to=os.path.join(self.step_dir, f"{corner}.log"),
-                env=current_env,
-                silent=True,
-            )
+            log_path = os.path.join(self.step_dir, f"{corner}.log")
+            info(f"Running RCX for the {corner} interconnect corner ({log_path})…")
+
+            try:
+                self.run_subprocess(
+                    self.get_command(),
+                    log_to=log_path,
+                    env=current_env,
+                    silent=True,
+                )
+                info(f"Finished RCX for the {corner} interconnect corner.")
+            except subprocess.CalledProcessError as e:
+                err(f"Failed RCX for the {corner} interconnect corner:")
+                raise e
 
             return out
 
         futures: Dict[str, Future[str]] = {}
         with ThreadPoolExecutor(process_count) as tpe:
-            for corner in self.config["RCX_RULESETS"]:
+            for corner in self.config["TECH_LEFS"]:
                 futures[corner] = tpe.submit(
                     run_corner,
                     corner,
@@ -989,7 +1073,8 @@ class ParasiticsExtraction(OpenROADStep):
 
         state[DesignFormat.SPEF] = state.get(DesignFormat.SPEF) or {}
         for corner, future in futures.items():
-            state[DesignFormat.SPEF][corner] = Path(future.result())
+            if result := Path(future.result()):
+                state[DesignFormat.SPEF][corner] = Path(result)
 
         return state
 
@@ -1068,7 +1153,20 @@ class IRDropReport(OpenROADStep):
     def run(self, **kwargs) -> State:
         from decimal import Decimal
 
-        state_out = super().run(**kwargs)
+        assert isinstance(self.state_in, State)
+        spefs = self.state_in["spef"]
+        assert isinstance(spefs, dict), "Invalid input state: spef is not a dictionary"
+
+        kwargs, env = self.extract_env(kwargs)
+
+        spef_in = spefs.get("nom")
+        if spef_in is None:
+            raise StepException(
+                "Parasitics extraction not yet performed for corner 'nom'."
+            )
+
+        env["CURRENT_SPEF"] = spef_in
+        state_out = super().run(env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
 

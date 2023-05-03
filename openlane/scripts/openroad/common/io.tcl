@@ -63,38 +63,54 @@ proc read_netlist {args} {
 
 }
 
+proc lshift listVar {
+    upvar 1 $listVar l
+    set r [lindex $l 0]
+    set l [lreplace $l [set l 0] 0]
+    return $r
+}
+
 proc read_libs {args} {
     sta::parse_key_args "read_libs" args \
-        keys {-typical -slowest -fastest}\
+        keys {}\
         flags {}
 
-    if { ![info exists keys(-typical)] } {
-        puts "read_libs -typical is required"
-        exit 1
-    }
-    if { [info exists keys(-slowest)] } {
-        set corner(ss) $keys(-slowest)
-    }
-    if { [info exists keys(-fastest)] } {
-        set corner(ff) $keys(-fastest)
-    }
-    set corner(tt) $keys(-typical)
-    puts "define_corners [array name corner]"
-    define_corners {*}[array name corner]
+    set i "0"
+    set tc_key "TIMING_CORNER_$i"
+    while { [info exists ::env($tc_key)] } {
+        set corner_name [lindex $::env($tc_key) 0]
+        set corner_libs [lreplace $::env($tc_key) 0 0]
+        set corner($corner_name) $corner_libs
 
-    foreach corner_name [array name corner] {
-        puts "read_liberty -corner $corner_name $corner($corner_name)"
-        read_liberty -corner $corner_name $corner($corner_name)
-        if { [info exists ::env(EXTRA_LIBS) ] } {
-            foreach lib $::env(EXTRA_LIBS) {
+        set i [expr $i + 1]
+        set tc_key "TIMING_CORNER_$i"
+    }
+
+    if { $i != "0" } {
+        # Cannot be done incrementally, believe it or not
+        define_corners {*}[array name corner]
+
+        foreach corner_name [array name corner] {
+            puts "Reading libs for corner $corner_name…"
+            set corner_libs $corner($corner_name)
+            foreach lib $corner_libs {
+                puts "Reading '$lib'…"
                 read_liberty -corner $corner_name $lib
             }
+        }
+
+    } elseif { [get_libs -quiet *] == {} } {
+        # LIB_PNR contains all libs and extra libs but with known-bad cells
+        # excluded, so OpenROAD can use cells by functionality and come up
+        # with a valid design.
+        foreach lib $::env(LIB_PNR) {
+            read_liberty $lib
         }
     }
 }
 
-proc read_lefs {args} {
-    read_lef $::env(TECH_LEF)
+proc read_lefs {{tlef_key "TECH_LEF"}} {
+    read_lef $::env($tlef_key)
     foreach lef $::env(CELL_LEFS) {
         read_lef $lef
     }
@@ -124,9 +140,7 @@ proc read {args} {
         }
     }
 
-    if { [get_libs -quiet *] == {} } {
-        read_libs -typical $::env(LIB_PNR)
-    }
+    read_libs
 
     if { [info exists ::env(CURRENT_SDC)] } {
         if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
@@ -137,15 +151,16 @@ proc read {args} {
 }
 
 proc read_spefs {} {
-    if { ![info exists ::env(CURRENT_SPEF_DICT)] } {
-        set process_corner "nom"
-        set spef [dict get $::env(CURRENT_SPEF_DICT) $process_corner]
-        set corners [sta::corners]
-        foreach corner $corners {
-            read_spef -corner [$corner name] $spef
-            read_spef -corner [$corner name] $spef
-            read_spef -corner [$corner name] $spef
-        }
+    if { ![info exists ::env(CURRENT_SPEF)] } {
+        return
+    }
+
+    set spef $::env(CURRENT_SPEF)
+    set corners [sta::corners]
+    foreach corner $corners {
+        read_spef -corner [$corner name] $spef
+        read_spef -corner [$corner name] $spef
+        read_spef -corner [$corner name] $spef
     }
 
     if { [info exists ::env(EXTRA_SPEFS)] } {

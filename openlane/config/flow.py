@@ -88,9 +88,14 @@ all_variables = [
         "Specifies LEF files of pre-hardened macros used in the current design, used in placement and routing.",
     ),
     Variable(
+        "EXTRA_SPEFS",
+        Optional[List[Path]],
+        "Specifies SPEF files of pre-hardened macros used in the current design, used during parasitics-based static timing analyses. This is loaded for all interconnect corners.",
+    ),
+    Variable(
         "EXTRA_LIBS",
         Optional[List[Path]],
-        "Specifies LIB files of pre-hardened macros used in the current design, used during timing analysis. (Optional).",
+        "Specifies LIB files of pre-hardened macros used in the current design, used during timing analyses (and during parasitics-based STA as a fallback). These are loaded indiscriminately for all timing corners.",
     ),
     Variable(
         "EXTRA_GDS_FILES",

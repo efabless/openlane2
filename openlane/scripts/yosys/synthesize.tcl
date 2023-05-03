@@ -12,52 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 yosys -import
+source $::env(SCRIPTS_DIR)/yosys/common.tcl
 
 # inputs expected as env vars
 set buffering $::env(SYNTH_BUFFERING)
 set sizing $::env(SYNTH_SIZING)
 set vtop $::env(DESIGN_NAME)
 set sclib $::env(LIB_SYNTH)
+
+set lib_args [list]
+foreach lib $sclib {
+    lappend lib_args -liberty $lib
+}
+
+
 if {[info exists ::env(DFF_LIB_SYNTH)]} {
     set dfflib $::env(DFF_LIB_SYNTH)
 } else {
     set dfflib $sclib
 }
 
-if { [info exists ::env(SYNTH_DEFINES) ] } {
-    foreach define $::env(SYNTH_DEFINES) {
-        log "Defining $define"
-        verilog_defines -D$define
-    }
+set dfflib_args [list]
+foreach lib $dfflib {
+    lappend dfflib_args -liberty $lib
 }
 
-set vIdirsArgs ""
-if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-    foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-        lappend vIdirsArgs "-I$dir"
-    }
-    set vIdirsArgs [join $vIdirsArgs]
-}
-
-if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-    log "Reading $::env(LIB_SYNTH) as a blackbox"
-    foreach lib $::env(LIB_SYNTH) {
-        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-    }
-}
-
-if { [info exists ::env(EXTRA_LIBS) ] } {
-    foreach lib $::env(EXTRA_LIBS) {
-        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-    }
-}
-
-if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-    foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-        read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
-    }
-}
-
+read_deps
 
 # ns expected (in sdc as well)
 set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
@@ -307,26 +287,26 @@ if { [info exists ::env(SYNTH_LATCH_MAP)] && [file exists $::env(SYNTH_LATCH_MAP
     simplemap
 }
 
-dfflibmap -liberty $dfflib
+dfflibmap {*}$dfflib_args
 tee -o "$report_dir/post_dff.json" stat -json
 
 proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     upvar clock_period clock_period
     upvar sdc_file sdc
-    upvar sclib lib
+    upvar sclib libs
     upvar report_dir report_dir
+    upvar lib_args lib_args
 
     log "\[INFO\] USING STRATEGY $strategy_name"
 
     set strategy_escaped [string map {" " _} $strategy_name]
 
     design -load checkpoint
-
     abc -D "$clock_period" \
         -constr "$sdc" \
-        -liberty "$lib" \
         -script "$script" \
-        -showtmp
+        -showtmp \
+        {*}$lib_args
 
     setundef -zero
 
@@ -351,7 +331,9 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     }
     write_verilog -noattr -noexpr -nohex -nodec -defparam $output
     if { $::env(QUIT_ON_SYNTH_CHECKS) == 1 } {
-        read_liberty -ignore_miss_func $::env(LIB_SYNTH)
+        foreach lib $libs {
+            read_liberty -ignore_miss_func $lib
+        }
         check -assert $::env(DESIGN_NAME)
     }
     design -reset
@@ -366,28 +348,7 @@ run_strategy\
 if { $::env(SYNTH_NO_FLAT) } {
     design -reset
 
-    if { [info exists ::env(SYNTH_DEFINES) ] } {
-        foreach define $::env(SYNTH_DEFINES) {
-            log "Defining $define"
-            verilog_defines -D$define
-        }
-    }
-
-    foreach lib $::env(LIB_SYNTH_COMPLETE_NO_PG) {
-        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-    }
-
-    if { [info exists ::env(EXTRA_LIBS) ] } {
-        foreach lib $::env(EXTRA_LIBS) {
-            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-        }
-    }
-
-    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-        foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-            read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
-        }
-    }
+    read_deps
 
     file copy -force $::env(SAVE_NETLIST) $::env(synthesis_results)/$::env(DESIGN_NAME).hierarchy.nl.v
     read_verilog -sv $::env(SAVE_NETLIST)

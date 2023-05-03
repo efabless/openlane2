@@ -45,7 +45,12 @@ pdk_variables = [
     Variable(
         "TECH_LEFS",
         Dict[str, Path],
-        "Paths to the technology LEF files by process corner. At least one must exist with the key 'nom', representing the nominal process corner.",
+        "Map of interconnect corners to to technology LEF files. A corner not specified here will not be supported by OpenRCX.",
+    ),
+    Variable(
+        "RCX_RULESETS",
+        Dict[str, Path],
+        "Map of interconnect corners to OpenRCX extraction rules. A corner not specified here will not be supported by OpenRCX.",
     ),
     Variable(
         "CELL_LEFS",
@@ -137,11 +142,6 @@ pdk_variables = [
         "WIRE_RC_LAYER",
         Optional[str],
         "A metal layer with which to estimate parasitics in earlier stages of the flow.",
-    ),
-    Variable(
-        "RCX_RULESETS",
-        Dict[str, Path],
-        "Paths to the OpenRCX extraction rules by process corner.",
     ),
     # Floorplanning
     Variable(
@@ -260,13 +260,12 @@ scl_variables = [
         List[str],
         "A list of cell names or wildcards of decap cells to be used in fill insertion.",
     ),
-    # Synthesis
     Variable(
-        "LIB",
-        List[Path],
-        "Path to the lib file to be used during synthesis.",
-        deprecated_names=["LIB_SYNTH"],
+        "LIBS",
+        Dict[str, List[Path]],
+        "A map from arbitrarily-named timing corners to a list of associated liberty files. The first entry should correspond to the typical process, temperature and voltage, and will be used for synthesis.",
     ),
+    # Synthesis
     Variable(
         "NO_SYNTH_CELL_LIST",
         Path,
@@ -277,25 +276,6 @@ scl_variables = [
         Path,
         "Path to a text file containing a list of bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND timing optimizations. If not defined, all cells will be used.",
         deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
-    ),
-    # Static Timing Analysis
-    Variable(
-        "LIB_TYPICAL",
-        List[Path],
-        "Path to the lib file to be used during typical timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_TYPICAL"],
-    ),
-    Variable(
-        "LIB_SLOWEST",
-        List[Path],
-        "Path to the lib file to be used during slowest timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_SLOWEST"],
-    ),
-    Variable(
-        "LIB_FASTEST",
-        List[Path],
-        "Path to the lib file to be used during fastest timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_FASTEST"],
     ),
     # Synthesis
     Variable(
@@ -510,7 +490,7 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
 
-    # 5. Process Corners
+    # 5. Interconnect Corners
     del new["RCX_RULES"]
     new["RCX_RULESETS"] = f"nom \"{config['RCX_RULES']}\""
     if config.get("RCX_RULES_MIN") is not None:
@@ -529,7 +509,30 @@ def migrate_old_config(config: Config) -> Config:
         del new["TECH_LEF_MAX"]
         new["TECH_LEFS"] += f" max \"{config['TECH_LEF_MAX']}\""
 
-    # 6. Disconnected Modules
+    # 6. Timing Corners
+    lib_sta: Optional[Dict[str, str]] = None
+
+    lib_tt = new.pop("LIB_SYNTH", None)
+    if lib_tt is not None:
+        lib_sta = {}
+        lib_sta["typical"] = lib_tt
+
+    lib_ss = new.pop("LIB_SLOWEST", None)
+    if lib_ss is not None:
+        assert (
+            lib_sta is not None
+        ), "PDK has LIB_SYNTH_SLOWEST but not LIB_SYNTH_TYPICAL"
+        lib_sta["slowest"] = lib_ss
+
+    lib_ff = new.pop("LIB_FASTEST", None)
+    if lib_ff is not None:
+        assert (
+            lib_sta is not None
+        ), "PDK has LIB_SYNTH_FASTEST but not LIB_SYNTH_TYPICAL"
+        lib_sta["fastest"] = lib_ff
+    new["LIBS"] = lib_sta
+
+    # 7. Disconnected Modules
     new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
     return new._lock()
@@ -537,5 +540,6 @@ def migrate_old_config(config: Config) -> Config:
 
 all_variables: List[Variable] = pdk_variables + scl_variables
 removed_variables: Dict[str, str] = {
-    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed."
+    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed.",
+    "LIB_SYNTH": "The first entry in STA will be used instead.",
 }

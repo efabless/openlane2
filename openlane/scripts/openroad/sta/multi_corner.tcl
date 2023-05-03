@@ -13,17 +13,11 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
-set arg_list [list]
-lappend arg_list -typical $::env(LIB_TYPICAL)
-if { [info exists ::env(STA_MULTICORNER)] && $::env(STA_MULTICORNER) } {
-    lappend arg_list -fastest $::env(LIB_FASTEST)
-    lappend arg_list -slowest $::env(LIB_SLOWEST)
-}
-read_libs {*}$arg_list
+read_libs
 
 set report_dir "."
-if { [info exists ::env(PROCESS_CORNER)] } {
-    set report_dir "$::env(PROCESS_CORNER)"
+if { [info exists ::env(INTERCONNECT_CORNER)] } {
+    set report_dir "$::env(INTERCONNECT_CORNER)"
 }
 
 if { [file tail [info nameofexecutable]] == "sta" } {

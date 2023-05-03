@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-if { [info exists ::env(RCX_LEF)] } {
-    read_lef $::env(RCX_LEF)
-    read_def $::env(RCX_DEF)
-    read_libs -typical "$::env(RCX_LIB)"
-} else {
-    read
-}
+read_lefs "RCX_LEF"
+read_def $::env(CURRENT_DEF)
+read_libs
+
 
 set_propagated_clock [all_clocks]
 

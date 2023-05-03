@@ -296,13 +296,13 @@ class Step(ABC):
                 """
             )
             for input, output in zip_longest(Self.inputs, Self.outputs):
-                assert isinstance(output, DesignFormat)
                 input_str = ""
                 if input is not None:
                     input_str = f"{input.value.name} (.{input.value.extension})"
 
                 output_str = ""
                 if output is not None:
+                    assert isinstance(output, DesignFormat)
                     output_str = f"{output.value.name} (.{output.value.extension})"
                 result += f"| {input_str} | {output_str} |"
 

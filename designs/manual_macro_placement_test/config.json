@@ -16,7 +16,9 @@
     "DIODE_INSERTION_STRATEGY": 0,
     "GLB_RESIZER_TIMING_OPTIMIZATIONS": false,
     "VERILOG_FILES": "dir::src/*.v",
-    "EXTRA_LEFS": "dir::macros/lef/*.lef",
-    "EXTRA_GDS_FILES": "dir::macros/gds/*.gds",
+    "EXTRA_LEFS": "dir::macros/*.lef",
+    "EXTRA_GDS_FILES": "dir::macros/*.gds",
+    "EXTRA_LIBS": "dir::macros/*.lib",
+    "EXTRA_SPEFS": "dir::macros/*.spef",
     "QUIT_ON_SYNTH_CHECKS": false
 }

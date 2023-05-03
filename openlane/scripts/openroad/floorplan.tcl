@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read_libs -typical $::env(LIB_PNR)
+read_libs
 read_lefs
 read_netlist
 
