@@ -199,12 +199,10 @@ def run_smoke_test(
             cmd += ["--pdk-root", pdk_root]
 
         if dockerized:
-            cmd += ["--dockerized"]
-
-            docker_mounts = [d] + list(ctx.params.get("docker_mounts"))
-
-            for mount in docker_mounts:
-                cmd += ["--docker-mount", mount]
+            cmd += ["--dockerized", "--docker-mount", d]
+            if extra_mounts := ctx.params.get("docker_mounts"):
+                for mount in extra_mounts:
+                    cmd += ["--docker-mount", mount]
 
         try:
             subprocess.check_call(cmd)
