@@ -34,7 +34,7 @@ if {$::env(FP_IO_VTHICKNESS_MULT) != "" && $::env(FP_IO_HTHICKNESS_MULT) != ""} 
 }
 
 set arg_list [list]
-if { $::env(FP_IO_MODE) == 1 } {
+if { $::env(FP_IO_MODE) == "random_equidistant" } {
 	lappend arg_list -random
 }
 

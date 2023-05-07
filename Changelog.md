@@ -1,20 +1,22 @@
-# 2.0.0-a15
+# 2.0.0-a18
+
+* Updated the smoke test to support PDK downloads to a different directory.
+* Updated config builder to resolve the PDK root much earlier to avoid an issue where a crash would affect the issue reproducible.
+* Updated `SYNTH_READ_BLACKBOX_LIB` to read the full `LIB` variable instead of `LIB_SYNTH`, which also fixes a crash when reading JSON headers.
+* Updated post-GRT resizer timing script to re-run GRT before the repair: see https://github.com/The-OpenROAD-Project/OpenROAD/issues/3155
+* Added a "yosys proc" to the JSON header generator (thanks @smnaut)
+* Fixed a bug where random equidistant mode did not work for OpenROAD IO placer.
+
+# 2.0.0-a17
+
+* Fixed a crash when the SCL is specified via command-line.
+* Fixed a changelog merge nightmare.
+
+# 2.0.0-a16
 
 * Reimplement DRC database using `lxml`
 * Makefile `venv` creation updated
 * Misc. aesthetic bugfixes for sequential flows
-* Add steps to extract, preserve and check power connections:
-    * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
-    * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
-    * `Yosys.JsonHeader`: RTL to a JSON Header.
-    * `Odb.SetPowerConnections`: Uses JSON generated in `Yosys/JsonHeader` and module information in Odb to add global connections for macros in a design.
-* Add `IGNORE_DISCONNECTED_MODULES` as a PDK variable, as some cells need to be ignored.
-* Rename `SYNTH_USE_PG_PINS_DEFINES` to `SYNTH_POWER_DEFINE`.
-* Rename `CHECK_UNMAPPED_CELLS` to `QUIT_ON_UNMAPPED_CELLS`.
-* Rename various metrics.
-* Change various configuration variables for included `caravel_upw` design.
-* Fix `DIODE_INSERTION_STRATEGY` translations
-* Allow overriding from CLI when using Tcl configuration files.
 
 # 2.0.0-a14
 

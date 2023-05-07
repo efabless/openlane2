@@ -107,6 +107,8 @@ class ConfigBuilder(object):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
+        PDK_ROOT = Self._resolve_pdk_root(PDK_ROOT)
+
         config_in, _, _ = Self._get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
@@ -214,12 +216,14 @@ class ConfigBuilder(object):
             raw = config_in
             loader = Self._load_dict
 
+        pdk_root = Self._resolve_pdk_root(pdk_root)
+
         loaded = loader(
             raw,
             design_dir,
             flow_config_vars=flow_config_vars,
-            pdk=pdk,
             pdk_root=pdk_root,
+            pdk=pdk,
             scl=scl,
             config_override_strings=(config_override_strings or []),
         )
@@ -248,12 +252,13 @@ class ConfigBuilder(object):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         config_override_strings: Sequence[str],
+        pdk_root: str,
         pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         resolve_json: bool = False,
     ) -> "Config":
+
         meta_raw: Optional[dict] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
@@ -331,8 +336,8 @@ class ConfigBuilder(object):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         config_override_strings: Sequence[str],  # Unused, kept for API consistency
+        pdk_root: str,
         pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
     ) -> "Config":
@@ -426,14 +431,13 @@ class ConfigBuilder(object):
     def _get_pdk_config(
         Self,
         pdk: str,
-        scl: Optional[str] = None,
-        pdk_root: Optional[str] = None,
+        scl: Optional[str],
+        pdk_root: str,
         full_pdk_warnings: Optional[bool] = False,
     ) -> Tuple[Config, str, str]:
         """
         :returns: A tuple of the PDK configuration, the PDK path and the SCL.
         """
-        pdk_root = Self._resolve_pdk_root(pdk_root)
 
         config_in = Config(
             {
@@ -442,7 +446,9 @@ class ConfigBuilder(object):
             }
         )
         if scl is not None:
+            config_in._unlock()
             config_in[Keys.scl] = scl
+            config_in._lock()
 
         pdkpath = os.path.join(pdk_root, pdk)
         if not os.path.exists(pdkpath):

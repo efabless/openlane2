@@ -28,7 +28,8 @@ if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
 # set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
-# estimate wire rc parasitics
+# (Re-)GRT and Estimate Parasitics
+source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 estimate_parasitics -global_routing
 
 # Resize
@@ -46,19 +47,13 @@ if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
 }
 repair_timing {*}$arg_list
 
+# Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
-
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg
     exit 1
 }
-
 unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
-
-# Re-GRT
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
-
-source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-estimate_parasitics -global_routing
 
 write

@@ -21,4 +21,5 @@ for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
     read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]
 }
 select -module $vtop
+yosys proc
 json -o $::env(SAVE_JSON_HEADER)
