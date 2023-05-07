@@ -17,8 +17,8 @@ if { [info exists ::env(SYNTH_POWER_DEFINE)] } {
     verilog_defines -D$::env(SYNTH_POWER_DEFINE)
 }
 if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-    log "Reading $::env(LIB_SYNTH) as a blackbox"
-    foreach lib $::env(LIB_SYNTH) {
+    log "Reading $::env(LIB) as a blackbox"
+    foreach lib $::env(LIB) {
         read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
 }
@@ -36,4 +36,5 @@ for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
     read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]
 }
 select -module $vtop
+yosys proc
 json -o $::env(SAVE_JSON_HEADER)

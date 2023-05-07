@@ -1,3 +1,12 @@
+# 2.0.0-a18
+
+* Updated the smoke test to support PDK downloads to a different directory.
+* Updated config builder to resolve the PDK root much earlier to avoid an issue where a crash would affect the issue reproducible.
+* Updated `SYNTH_READ_BLACKBOX_LIB` to read the full `LIB` variable instead of `LIB_SYNTH`, which also fixes a crash when reading JSON headers.
+* Updated post-GRT resizer timing script to re-run GRT before the repair: see https://github.com/The-OpenROAD-Project/OpenROAD/issues/3155
+* Added a "yosys proc" to the JSON header generator (thanks @smnaut)
+* Fixed a bug where random equidistant mode did not work for OpenROAD IO placer.
+
 # 2.0.0-a17
 
 * Fixed a crash when the SCL is specified via command-line.

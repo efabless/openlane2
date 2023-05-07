@@ -189,15 +189,22 @@ def run_smoke_test(
             final_path,
         )
 
-        cmd = (
-            [
-                (sys.executable if not dockerized else "python3"),
-                "-m",
-                "openlane",
-            ]
-            + (["--dockerized", "--docker-mount", d] if dockerized else [])
-            + [os.path.join(final_path, "config.json")]
-        )
+        cmd = [
+            (sys.executable if not dockerized else "python3"),
+            "-m",
+            "openlane",
+            os.path.join(final_path, "config.json"),
+        ]
+        if pdk_root := ctx.params.get("pdk_root"):
+            cmd += ["--pdk-root", pdk_root]
+
+        if dockerized:
+            cmd += ["--dockerized"]
+
+            docker_mounts = [d] + list(ctx.params.get("docker_mounts"))
+
+            for mount in docker_mounts:
+                cmd += ["--docker-mount", mount]
 
         try:
             subprocess.check_call(cmd)
@@ -296,6 +303,7 @@ o = partial(click.option, show_default=True)
     "--docker-mount",
     "docker_mounts",
     multiple=True,
+    is_eager=True,
     default=[],
     help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
 )
@@ -315,6 +323,7 @@ o = partial(click.option, show_default=True)
 )
 @o(
     "--pdk-root",
+    is_eager=True,
     default=os.environ.pop("PDK_ROOT", None),
     help="Override volare PDK root folder. Required if Volare is not installed.",
 )

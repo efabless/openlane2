@@ -40,8 +40,8 @@ if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
 }
 
 if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-    log "Reading $::env(LIB_SYNTH) as a blackbox"
-    foreach lib $::env(LIB_SYNTH) {
+    log "Reading $::env(LIB) as a blackbox"
+    foreach lib $::env(LIB) {
         read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
 }
