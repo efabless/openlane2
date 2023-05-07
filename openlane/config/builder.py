@@ -107,6 +107,8 @@ class ConfigBuilder(object):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
+        PDK_ROOT = Self._resolve_pdk_root(PDK_ROOT)
+
         config_in, _, _ = Self._get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
