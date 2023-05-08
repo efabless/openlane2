@@ -16,9 +16,36 @@
     "DIODE_INSERTION_STRATEGY": 0,
     "GLB_RESIZER_TIMING_OPTIMIZATIONS": false,
     "VERILOG_FILES": "dir::src/*.v",
-    "EXTRA_LEFS": "dir::macros/*.lef",
-    "EXTRA_GDS_FILES": "dir::macros/*.gds",
-    "EXTRA_LIBS": "dir::macros/*.lib",
-    "EXTRA_SPEFS": "dir::macros/*.spef",
+    "MACROS": {
+        "spm": {
+            "module": "spm",
+            "instances": {
+                "spm_inst_0": {
+                    "location": [
+                        5.59000,
+                        148.23
+                    ],
+                    "orientation": "N"
+                },
+                "spm_inst_1": {
+                    "location": [
+                        5.59000,
+                        148.23
+                    ],
+                    "orientation": "N"
+                }
+            },
+            "gds": "dir::macros/spm.gds",
+            "lef": [
+                "dir::macros/spm.lef"
+            ],
+            "spef": {
+                "*": "dir::macros/spm.nom.spef"
+            },
+            "lib": {
+                "*": "dir::macros/spm.lib"
+            }
+        }
+    },
     "QUIT_ON_SYNTH_CHECKS": false
 }

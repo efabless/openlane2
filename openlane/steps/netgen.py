@@ -19,10 +19,10 @@ from typing import List, Dict
 from abc import abstractmethod
 
 from .step import Step
-from ..logging import info
 from .tclstep import TclStep
-from ..config import Variable
 
+from ..logging import info
+from ..config import Variable, Keys
 from ..state import DesignFormat, State
 
 
@@ -145,10 +145,10 @@ class LVS(NetgenStep):
             return Step.run(self, **kwargs)
 
         spice_glob = os.path.join(
-            self.config["PDK_ROOT"],
-            self.config["PDK"],
+            self.config[Keys.pdk_root],
+            self.config[Keys.pdk],
             "libs.ref",
-            self.config["STD_CELL_LIBRARY"],
+            self.config[Keys.scl],
             "spice",
             "*.spice",
         )

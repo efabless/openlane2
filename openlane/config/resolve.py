@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import UserString
 import re
 import os
 import glob
@@ -238,7 +239,7 @@ def process_string(value: str, state: dict) -> Optional[str]:
             if found is None:
                 return None
 
-            if type(found) != str:
+            if type(found) != str and not isinstance(found, UserString):
                 if type(found) in [int, float]:
                     raise InvalidConfig(
                         f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
@@ -247,6 +248,8 @@ def process_string(value: str, state: dict) -> Optional[str]:
                     raise InvalidConfig(
                         f"Referenced variable {reference_variable} is not a string: {type(found)}."
                     )
+
+            found = str(found)
 
             value = reference.replace(match[0], found)
 
@@ -291,21 +294,18 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
         if not isinstance(key, str):
             raise InvalidConfig(f"Invalid key {key}: must be a string.")
         if isinstance(value, dict):
-            withhold = True
             if key.startswith(PDK_PREFIX):
+                withhold = True
                 pdk_match = key[len(PDK_PREFIX) :]
                 if fnmatch.fnmatch(state[Keys.pdk], pdk_match):
                     process_config_dict_recursive(value, state)
             elif key.startswith(SCL_PREFIX):
+                withhold = True
                 scl_match = key[len(SCL_PREFIX) :]
                 if state[Keys.scl] is not None and fnmatch.fnmatch(
                     state[Keys.scl], scl_match
                 ):
                     process_config_dict_recursive(value, state)
-            else:
-                raise InvalidConfig(
-                    f"Invalid value type {type(value)} for key '{key}'."
-                )
         elif isinstance(value, list):
             valid = True
             processed = []

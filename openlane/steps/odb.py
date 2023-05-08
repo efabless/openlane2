@@ -20,7 +20,7 @@ from abc import abstractmethod
 from typing import List, Optional
 
 
-from .step import Step
+from .step import Step, StepException
 from ..state import State
 from ..state import DesignFormat
 from .common_variables import io_layer_variables
@@ -86,7 +86,14 @@ class OdbpyStep(Step):
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        lefs = ["--input-lef", self.config["TECH_LEFS"]["nom"]]
+
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lefs = ["--input-lef", tech_lefs[0]]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)

@@ -39,7 +39,7 @@ the interconnect corner.
 ## Default Flow Configuration
 In its current state, the default OpenLane flow allows SCLs to configure the following:
 
-* A list of PVT-corners with arbitrary names that correspond to liberty files
+* A list of PVT-corners with names that correspond to liberty files
 * A list of interconnect corners with arbitrary names that *may* correspond to any of:
   * `TECH_LEF`
 
@@ -49,9 +49,9 @@ The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for thes
 
 | Name | Process {NMOS, PMOS} | Voltage (V) | Temperature (C) | Corresponding File |
 | - | - | - | - | - |
-| "typical" | {T, T} | 1.8 | 25 | `sky130_fd_sc_hd__tt_025C_1v80.lib` |
-| "slowest" | {S, S} | 1.6 | 100 | `sky130_fd_sc_hd__ss_100C_1v60.lib` |
-| "fastest" | {F, F} | 1.95 | -40 | `sky130_fd_sc_hd__ff_n40C_1v95.lib` |
+| "tt_025C_1v80" | {T, T} | 1.8 | 25 | `sky130_fd_sc_hd__tt_025C_1v80.lib` |
+| "ss_100C_1v60" | {S, S} | 1.6 | 100 | `sky130_fd_sc_hd__ss_100C_1v60.lib` |
+| "ff_n40C_1v95" | {F, F} | 1.95 | -40 | `sky130_fd_sc_hd__ff_n40C_1v95.lib` |
 
 * Interconnect: Corner data stored in [`TECH_LEFS`](../reference/pdk_config_vars.md#TECH_LEFS) and [`RCX_RULESETS`](../reference/pdk_config_vars.md#RCX_RULESETS)
 

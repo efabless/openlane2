@@ -80,6 +80,7 @@ proc read_libs {args} {
     while { [info exists ::env($tc_key)] } {
         set corner_name [lindex $::env($tc_key) 0]
         set corner_libs [lreplace $::env($tc_key) 0 0]
+
         set corner($corner_name) $corner_libs
 
         set i [expr $i + 1]
@@ -93,8 +94,9 @@ proc read_libs {args} {
         foreach corner_name [array name corner] {
             puts "Reading libs for corner $corner_name…"
             set corner_libs $corner($corner_name)
+            puts $corner_libs
             foreach lib $corner_libs {
-                puts "Reading '$lib'…"
+                puts "> read_liberty -corner $corner_name $lib"
                 read_liberty -corner $corner_name $lib
             }
         }
@@ -104,6 +106,7 @@ proc read_libs {args} {
         # excluded, so OpenROAD can use cells by functionality and come up
         # with a valid design.
         foreach lib $::env(LIB_PNR) {
+            puts "> read_liberty $lib"
             read_liberty $lib
         }
     }
@@ -113,6 +116,11 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
     read_lef $::env($tlef_key)
     foreach lef $::env(CELL_LEFS) {
         read_lef $lef
+    }
+    if { [info exist ::env(MACRO_LEFS)] } {
+        foreach lef $::env(MACRO_LEFS) {
+            read_lef $lef
+        }
     }
     if { [info exist ::env(EXTRA_LEFS)] } {
         foreach lef $::env(EXTRA_LEFS) {

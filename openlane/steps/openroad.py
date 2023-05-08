@@ -125,7 +125,7 @@ class OpenROADStep(TclStep):
         _, lib_list = self.toolbox.get_libs(self.config)
         lib_pnr = self.toolbox.remove_cells_from_lib(
             frozenset(lib_list),
-            frozenset([self.config["BAD_CELL_LIST"]]),
+            frozenset([self.config["PNR_EXCLUSION_CELL_LIST"]]),
             as_cell_lists=True,
         )
 
@@ -242,8 +242,9 @@ class HierarchicalSTA(STA):
 
         timing_corner, lib_list = self.toolbox.get_libs(
             self.config,
-            scl_only=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+            prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
         )
+        print(timing_corner, lib_list)
         env["TIMING_CORNER_0"] = timing_corner
         for lib in lib_list:
             env["TIMING_CORNER_0"] += f" {lib}"
@@ -329,8 +330,8 @@ class ParasiticsSTA(HierarchicalSTA):
                 value = f"{timing_corner}"
                 _, tc_libs = self.toolbox.get_libs(
                     self.config,
-                    timing_corner,
-                    scl_only=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+                    f"{interconnect_corner}_{timing_corner}",
+                    prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
                 )
                 for lib in tc_libs:
                     value += f" {lib}"

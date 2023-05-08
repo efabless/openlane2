@@ -219,8 +219,8 @@ class Synthesis(YosysStep):
             frozenset(default_lib_list),
             excluded_cells=frozenset(
                 [
-                    self.config["BAD_CELL_LIST"],
-                    self.config["NO_SYNTH_CELL_LIST"],
+                    self.config["SYNTH_EXCLUSION_CELL_LIST"],
+                    self.config["PNR_EXCLUSION_CELL_LIST"],
                 ]
             ),
             as_cell_lists=True,

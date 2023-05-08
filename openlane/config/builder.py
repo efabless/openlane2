@@ -116,7 +116,6 @@ class ConfigBuilder(object):
         )
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = PDK_ROOT
         config_in["DESIGN_NAME"] = DESIGN_NAME
         config_in.update(kwargs)
         config_in._lock()
@@ -326,7 +325,6 @@ class ConfigBuilder(object):
             warn(warning)
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = pdk_root
         return config_in._lock()
 
     @classmethod
@@ -349,7 +347,7 @@ class ConfigBuilder(object):
 
         config_in = Config(
             {
-                "PDK_ROOT": pdk_root,
+                Keys.pdk_root: pdk_root,
                 Keys.pdk: pdk,
             }
         )
@@ -411,7 +409,6 @@ class ConfigBuilder(object):
             warn(warning)
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = pdk_root
         return config_in._lock()
 
     @classmethod
@@ -441,7 +438,7 @@ class ConfigBuilder(object):
 
         config_in = Config(
             {
-                "PDK_ROOT": pdk_root,
+                Keys.pdk_root: pdk_root,
                 Keys.pdk: pdk,
             }
         )

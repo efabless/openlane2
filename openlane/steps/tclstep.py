@@ -26,9 +26,9 @@ from collections import deque
 from typing import Any, List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
 
-from .step import Step
+from .step import Step, StepException
 from ..state import State
-from ..config import Path
+from ..config import Path, Keys
 from ..logging import info, warn
 from ..common import mkdirp, get_script_dir, get_openlane_root
 
@@ -43,7 +43,7 @@ def create_reproducible(
     step_dir = os.path.abspath(step_dir)
     run_path = os.path.dirname(step_dir)
     run_path_rel = os.path.relpath(run_path)
-    pdk_root = env_in["PDK_ROOT"]
+    pdk_root = env_in[Keys.pdk_root]
 
     info(
         textwrap.dedent(
@@ -112,7 +112,7 @@ def create_reproducible(
         except Exception:
             return None
 
-    env_keys_used = set(["PDK_ROOT"])
+    env_keys_used = set([Keys.pdk_root])
     tcls = set()
     env = env_in.copy()
     current = shift(tcls_to_process)
@@ -350,7 +350,14 @@ class TclStep(Step):
 
         env["SCRIPTS_DIR"] = get_script_dir()
         env["STEP_DIR"] = os.path.abspath(self.step_dir)
-        env["TECH_LEF"] = self.config["TECH_LEFS"]["nom"]
+
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        env["TECH_LEF"] = tech_lefs[0]
 
         for element in self.config.keys():
             value = self.config[element]

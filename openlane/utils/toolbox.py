@@ -11,19 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from enum import IntEnum
+from dataclasses import asdict
 import os
 import re
 import sys
 import uuid
+import fnmatch
 import tempfile
 import subprocess
+from enum import IntEnum
 from shutil import which
-from typing import FrozenSet, Optional, Tuple, List
+from typing import Dict, FrozenSet, Optional, Tuple, List, Union
 
 from .memoize import memoize
+from ..state import DesignFormat
 from ..logging import warn
-from ..config import Config, Path
+from ..config import Config, Path, Macro
 from ..common import mkdirp, get_script_dir
 
 
@@ -33,25 +36,83 @@ class Toolbox(object):
             tmp_dir = "./openlane_tmp"  # Temporary
         self.tmp_dir = os.path.abspath(tmp_dir)
 
+    def filter_views(
+        self,
+        config: Config,
+        views_by_corner: Dict[str, Union[Path, List[Path]]],
+        timing_corner: Optional[str] = None,
+    ) -> List[Path]:
+        timing_corner = timing_corner or config["DEFAULT_CORNER"]
+        result: List[Path] = []
+
+        for key, value in views_by_corner.items():
+            if not fnmatch.fnmatch(timing_corner, key):
+                continue
+            if isinstance(value, list):
+                result += value
+            else:
+                result += [value]
+
+        return result
+
+    def get_macro_views(
+        self,
+        config: Config,
+        view: DesignFormat,
+        timing_corner: Optional[str] = None,
+    ) -> List[Path]:
+        timing_corner = timing_corner or config["DEFAULT_CORNER"]
+        macros = config["MACROS"]
+        result = []
+
+        if macros is None:
+            return result
+
+        id = view.value.id
+        for macro in macros.values():
+            assert isinstance(macro, Macro)
+            views = None
+            try:
+                views = getattr(macro, id)
+            except:
+                pass
+            if views is None:
+                warn(f"No {view.value.name} view found for macro '{macro.module}'.")
+            if isinstance(views, list):
+                result += views
+            else:
+                result.append(views)
+        return result
+
     def get_libs(
         self,
         config: Config,
         timing_corner: Optional[str] = None,
-        scl_only: bool = False,
+        prioritize_spef: bool = False,
     ) -> Tuple[str, List[Path]]:
-        default_corner = next(iter(config["LIBS"]))
-        timing_corner = timing_corner or default_corner
+        """
+        Returns the lib files for a given configuration and timing corner.
 
-        lib_list = config["LIBS"].get(timing_corner)
-        if lib_list is None:
-            raise ValueError(
-                f"Timing corner '{timing_corner}' is unknown- if you specified a custom timing corner in your config, make sure you also specify its relevant 'LIBS'."
-            )
+        :param config: A configuration object.
+        :param timing_corner: A fully qualified IPVT corner to get libs for.
 
-        if not scl_only:
-            # TODO: Macro config objects
+            If not specified, the value for `DEFAULT_CORNER` from the SCL will
+            be used.
+        :param prioritize_spef: Do not return lib files for macros that have
+            SPEF views.
+        """
+        timing_corner = timing_corner or config["DEFAULT_CORNER"]
+
+        lib_list = []
+        lib_list += self.filter_views(config, config["LIBS"], timing_corner)
+
+        if len(lib_list) == 0:
+            warn(f"No SCL lib files found for {timing_corner}.")
+
+        if not prioritize_spef:
+            self.get_macro_views(config, DesignFormat.LIB, timing_corner)
             extra_libs = config["EXTRA_LIBS"] or []
-            lib_list += extra_libs
+            lib_list = lib_list + extra_libs
 
         return (timing_corner, lib_list)
 
@@ -75,7 +136,13 @@ class Toolbox(object):
             return None
         lyp, lyt, lym = files
 
-        lef_arguments = ["-l", str(config["TECH_LEFS"]["nom"])]
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise ValueError(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lef_arguments = ["-l", str(tech_lefs[0])]
         for file in config["CELL_LEFS"]:
             lef_arguments += ["-l", str(file)]
         if extra := config["EXTRA_LEFS"]:

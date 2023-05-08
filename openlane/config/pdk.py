@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import re
 from decimal import Decimal
 from typing import List, Optional, Dict
 
@@ -20,11 +22,16 @@ from .config import Config
 # Note that values in this file do not take defaults.
 
 pdk_variables = [
+    Variable(
+        "PDK_ROOT",
+        str,
+        "The path to all PDKs. This doesn't actually need to be defined by the PDK config file itself.",
+    ),
     # Core/Common
     Variable(
         "STD_CELL_LIBRARY",
         str,
-        "Specifies the standard cell library to be used under the specified PDK.",
+        "Specifies the default standard cell library to be used under the specified PDK.",
     ),
     Variable(
         "VDD_PIN",
@@ -261,20 +268,26 @@ scl_variables = [
         "A list of cell names or wildcards of decap cells to be used in fill insertion.",
     ),
     Variable(
+        "DEFAULT_CORNER",
+        str,
+        "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
+    ),
+    Variable(
         "LIBS",
         Dict[str, List[Path]],
-        "A map from arbitrarily-named timing corners to a list of associated liberty files. The first entry should correspond to the typical process, temperature and voltage, and will be used for synthesis.",
+        "A map from PVT-corners to a list of associated liberty files. The first entry should correspond to the typical process, temperature and voltage, and will be used for synthesis. Wildcards supported.",
     ),
     # Synthesis
     Variable(
-        "NO_SYNTH_CELL_LIST",
+        "SYNTH_EXCLUSION_CELL_LIST",
         Path,
         "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
+        deprecated_names=["NO_SYNTH_CELL_LIST"],
     ),
     Variable(
-        "BAD_CELL_LIST",
+        "PNR_EXCLUSION_CELL_LIST",
         Path,
-        "Path to a text file containing a list of bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND timing optimizations. If not defined, all cells will be used.",
+        "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
         deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
     ),
     # Synthesis
@@ -501,35 +514,39 @@ def migrate_old_config(config: Config) -> Config:
         new["RCX_RULESETS"] += f" max \"{config['RCX_RULES_MAX']}\""
 
     del new["TECH_LEF"]
-    new["TECH_LEFS"] = f"nom \"{config['TECH_LEF']}\""
+    new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
     if config.get("TECH_LEF_MIN") is not None:
         del new["TECH_LEF_MIN"]
-        new["TECH_LEFS"] += f" min \"{config['TECH_LEF_MIN']}\""
+        new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
     if config.get("TECH_LEF_MAX") is not None:
         del new["TECH_LEF_MAX"]
-        new["TECH_LEFS"] += f" max \"{config['TECH_LEF_MAX']}\""
+        new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
 
     # 6. Timing Corners
-    lib_sta: Optional[Dict[str, str]] = None
+    lib_sta: Dict[str, List[str]] = {}
+    ws = re.compile(r"\s+")
 
-    lib_tt = new.pop("LIB_SYNTH", None)
-    if lib_tt is not None:
-        lib_sta = {}
-        lib_sta["typical"] = lib_tt
+    default_pvt = ""
 
-    lib_ss = new.pop("LIB_SLOWEST", None)
-    if lib_ss is not None:
-        assert (
-            lib_sta is not None
-        ), "PDK has LIB_SYNTH_SLOWEST but not LIB_SYNTH_TYPICAL"
-        lib_sta["slowest"] = lib_ss
+    def process_sta(key: str):
+        nonlocal new, default_pvt
+        lib_raw = new.pop(key)
+        if lib_raw is None:
+            return
+        lib = lib_raw.strip()
+        lib_list = ws.split(lib)
+        first_lib = os.path.basename(lib_list[0])[:-4]
+        pvt = first_lib.split("__")[1]
+        if default_pvt == "":
+            default_pvt = pvt
+        corner = f"*_{pvt}"
+        lib_sta[corner] = lib_list
 
-    lib_ff = new.pop("LIB_FASTEST", None)
-    if lib_ff is not None:
-        assert (
-            lib_sta is not None
-        ), "PDK has LIB_SYNTH_FASTEST but not LIB_SYNTH_TYPICAL"
-        lib_sta["fastest"] = lib_ff
+    process_sta("LIB_SYNTH")
+    process_sta("LIB_SLOWEST")
+    process_sta("LIB_FASTEST")
+
+    new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIBS"] = lib_sta
 
     # 7. Disconnected Modules

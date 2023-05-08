@@ -21,6 +21,7 @@ from .builder import ConfigBuilder, InvalidConfig
 from .config import Config, StringEnum
 from .variable import Variable, Path
 from .resolve import Keys
+from .macro import Macro
 
 from .tcleval import env_from_tcl
 from .flow import all_variables as universal_flow_config_variables

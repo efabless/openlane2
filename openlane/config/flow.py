@@ -14,11 +14,17 @@
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable
+from .macro import Macro
 from .config import StringEnum
+from .variable import Path, Variable
 
 all_variables = [
     # Common
+    Variable(
+        "DESIGN_DIR",
+        Path,
+        "The directory of the design. Does not need to be provided explicitly.",
+    ),
     Variable(
         "DESIGN_NAME",
         str,
@@ -72,25 +78,25 @@ all_variables = [
     ),
     # Macros
     Variable(
+        "MACROS",
+        Optional[Dict[str, Macro]],
+        "A dictionary of Macros to be used.",
+    ),
+    Variable(
+        "EXTRA_LEFS",
+        Optional[List[Path]],
+        "Specifies miscellaneous LEF files to be loaded indiscriminately whenever LEFs are loaded.",
+    ),
+    Variable(
         "EXTRA_VERILOG_MODELS",
         Optional[List[Path]],
-        "Black-boxed Verilog models of pre-hardened macros used in the current design, used in synthesis.",
+        "Specifies miscellaneous Verilog models to be loaded indiscriminately during synthesis.",
         deprecated_names=["VERILOG_FILES_BLACKBOX"],
     ),
     Variable(
         "EXTRA_SPICE_MODELS",
         Optional[List[Path]],
-        "Black-boxed SPICE models of pre-hardened macros used in the current design, used in LVS.",
-    ),
-    Variable(
-        "EXTRA_LEFS",
-        Optional[List[Path]],
-        "Specifies LEF files of pre-hardened macros used in the current design, used in placement and routing.",
-    ),
-    Variable(
-        "EXTRA_SPEFS",
-        Optional[List[Path]],
-        "Specifies SPEF files of pre-hardened macros used in the current design, used during parasitics-based static timing analyses. This is loaded for all interconnect corners.",
+        "Miscellaneous SPICE files .",
     ),
     Variable(
         "EXTRA_LIBS",

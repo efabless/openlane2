@@ -17,7 +17,7 @@ import sys
 from typing import Optional
 from base64 import b64encode
 
-from .step import Step, StepError
+from .step import Step, StepError, StepException
 from ..state import DesignFormat, State
 
 from ..logging import warn
@@ -78,9 +78,15 @@ class StreamOut(Step):
             f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value.extension}",
         )
 
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
         layout_args = [
             "--input-lef",
-            self.config["TECH_LEFS"]["nom"],
+            tech_lefs[0],
         ]
         for lef in self.config["CELL_LEFS"]:
             layout_args.append("--input-lef")
