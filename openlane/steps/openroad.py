@@ -281,113 +281,50 @@ class ParasiticsSTA(HierarchicalSTA):
             "Enables/disables this step.",
             default=True,
         ),
-        Variable(
-            "RCSTA_CORES",
-            Optional[int],
-            "Specifies the upper bound for processes to be used at a time, with the upper bound being the number of interconnect corners provided with a PDK. If unset or zero, this will be equal to your machine's thread count.",
-        ),
-        Variable(
-            "RCSTA_CORNER_MAP",
-            Optional[Dict[str, List[str]]],
-            "A map from the interconnect corner to a list of associated timing corners.",
-        ),
     ]
 
     def run(self, **kwargs) -> State:
-
-        process_count = os.cpu_count()
-        if cores := self.config.get("RCX_CORES"):
-            process_count = cores
-
-        state = Step.run(self, **kwargs)
         kwargs, env = self.extract_env(kwargs)
-        env = self.prepare_env(env, state)
+        assert isinstance(self.state_in, State)
 
-        def run_corner(interconnect_corner: str):
-            assert isinstance(self.state_in, State)
-            spefs = self.state_in["spef"]
-            assert isinstance(
-                spefs, dict
-            ), "Invalid input state: spef is not a dictionary"
-
-            spef_in = spefs.get(interconnect_corner)
-            if spef_in is None:
-                raise StepException(
-                    f"Parasitics extraction not yet performed for corner '{interconnect_corner}'"
-                )
-
-            nonlocal env
-            current_env = env.copy()
-            corner_path = os.path.join(self.step_dir, interconnect_corner)
-
-            # Prepare Timing Corner Info
-            timing_corners: List[str] = list(self.config["LIB"].keys())
-            if tcs_by_ics := self.config["RCSTA_CORNER_MAP"]:
-                if tcs_by_ics.get(interconnect_corner) is not None:
-                    timing_corners = tcs_by_ics[interconnect_corner]
-
-            # Prepare Environment Variables
-            current_env["CURRENT_SPEF"] = str(spef_in)
-            current_env["INTERCONNECT_CORNER"] = interconnect_corner
-            current_env["LIB_SAVE_PATH"] = corner_path
-            current_env["STA_MULTICORNER"] = "1"
-
-            for i, timing_corner in enumerate(timing_corners):
-                tc_key = f"TIMING_CORNER_{i}"
-                value = f"{timing_corner}"
-                _, timing_file_list = self.toolbox.get_timing_files(
-                    self.config,
-                    f"{interconnect_corner}_{timing_corner}",
-                    prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
-                )
-                for view in timing_file_list:
-                    value += f" {view}"
-                current_env[tc_key] = value
-
-            log_path = os.path.join(self.step_dir, f"{interconnect_corner}.log")
-            info(
-                f"Running Multi-Corner STA for corners incorporating the {interconnect_corner} interconnect corner ({log_path})…"
+        env["LIB_SAVE_DIR"] = self.step_dir
+        env["CURRENT_SPEF"] = ""
+        for i, corner in enumerate(self.config["STA_CORNERS"]):
+            spefs = self.toolbox.filter_views(
+                self.config, self.state_in["spef"], corner
             )
-
-            try:
-                mkdirp(corner_path)
-                self.run_subprocess(
-                    self.get_command(),
-                    log_to=log_path,
-                    env=current_env,
-                    silent=True,
+            if len(spefs) < 1:
+                raise StepException(
+                    f"No SPEF file compatible with corner '{corner}' found."
                 )
-                info(
-                    f"Finished multi-corner STA for corners incorporating the {interconnect_corner} interconnect corner."
+            elif len(spefs) > 1:
+                warn(
+                    f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
-            except subprocess.CalledProcessError as e:
-                err(
-                    f"multi-corner STA for corners incorporating the {corner} interconnect corner."
-                )
-                raise e
+            spef = spefs[0]
 
-            result = {}
-            timing_corner_lib_files = glob("*.lib", root_dir=corner_path)
-            for file in timing_corner_lib_files:
-                file_path = os.path.join(corner_path, file)
-                timing_corner = file[:-4]
-                result[timing_corner] = Path(file_path)
+            env["CURRENT_SPEF"] += f" {corner} {spef}"
 
-            return result
+            tc_key = f"TIMING_CORNER_{i}"
+            _, timing_file_list = self.toolbox.get_timing_files(
+                self.config,
+                corner,
+                prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
+            )
+            timing_file_value = corner
+            for view in timing_file_list:
+                timing_file_value += f" {view}"
+            env[tc_key] = timing_file_value
 
-        futures: Dict[str, Future[str]] = {}
-        with ThreadPoolExecutor(process_count) as tpe:
-            for corner in self.config["TECH_LEFS"]:
-                futures[corner] = tpe.submit(
-                    run_corner,
-                    corner,
-                )
+        state_out = super().run(env=env, **kwargs)
 
-        state[DesignFormat.LIB] = state.get(DesignFormat.LIB) or {}
-        for corner, future in futures.items():
-            state[DesignFormat.LIB][corner] = future.result()
+        state_out[DesignFormat.LIB] = state_out.get(DesignFormat.LIB) or {}
+        libs = glob(os.path.join(self.step_dir, "*.lib"))
+        for lib in libs:
+            corner = lib[:-4]
+            state_out[DesignFormat.LIB][corner] = os.path.join(self.step_dir, lib)
 
-        return state
+        return state_out
 
 
 @Step.factory.register()
@@ -1061,8 +998,12 @@ class RCX(OpenROADStep):
             current_env["RCX_LEF"] = tech_lefs[0]
             current_env["RCX_RULESET"] = rcx_ruleset
 
+            corner_clean = corner
+            if corner_clean.endswith("_*"):
+                corner_clean = corner_clean[:-2]
+
             out = os.path.join(
-                self.step_dir, f"{self.config['DESIGN_NAME']}.{corner}.spef"
+                self.step_dir, f"{self.config['DESIGN_NAME']}.{corner_clean}.spef"
             )
             current_env["SAVE_SPEF"] = out
 

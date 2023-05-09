@@ -47,13 +47,13 @@ pdk_variables = [
     Variable(
         "WIRE_LENGTH_THRESHOLD",
         Optional[Decimal],
-        "A value above which wire lengths generate warnings. If `QUIT_ON_LONG_WIRE` is set, the flow will error out instead of simply generating a warning.",
+        "A value above which wire lengths generate warnings.",
         units="µm",
     ),
     Variable(
         "TECH_LEFS",
         Dict[str, Path],
-        "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX.",
+        "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX in the default flow.",
     ),
     Variable(
         "CELL_LEFS",
@@ -134,7 +134,7 @@ pdk_variables = [
         Optional[List[str]],
         "KLayout layers to ignore during XOR operations.",
     ),
-    # Timing and Power
+    ## Timing and Power
     Variable(
         "DEFAULT_MAX_TRAN",
         Optional[Decimal],
@@ -145,6 +145,21 @@ pdk_variables = [
         "WIRE_RC_LAYER",
         Optional[str],
         "A metal layer with which to estimate parasitics in earlier stages of the flow.",
+    ),
+    Variable(
+        "RCX_RULESETS",
+        Optional[Dict[str, Path]],
+        "Map of corner patterns to OpenRCX extraction rules. A corner not matched by exactly one pattern in this dictionary will not be supported by OpenRCX, and a PDK not specifying this variable will not be supported by OpenRCX.",
+    ),
+    Variable(
+        "DEFAULT_CORNER",
+        str,
+        "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
+    ),
+    Variable(
+        "STA_CORNERS",
+        List[str],
+        "A list of fully qualified IPVT (Interconnect, transistor Process, Voltage, and Temperature) timing corners on which to conduct multi-corner static timing analysis.",
     ),
     # Floorplanning
     Variable(
@@ -264,16 +279,10 @@ scl_variables = [
         "A list of cell names or wildcards of decap cells to be used in fill insertion.",
     ),
     Variable(
-        "DEFAULT_CORNER",
-        str,
-        "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
-    ),
-    Variable(
         "LIB",
         Dict[str, List[Path]],
-        "A map from PVT-corners to a list of associated liberty files. The first entry should correspond to the typical process, temperature and voltage, and will be used for synthesis. Wildcards supported.",
+        "A map from corner patterns to a list of associated liberty files. Exactly one entry must match the `DEFAULT_CORNER`.",
     ),
-    # Synthesis
     Variable(
         "SYNTH_EXCLUSION_CELL_LIST",
         Path,
@@ -541,6 +550,18 @@ def migrate_old_config(config: Config) -> Config:
     process_sta("LIB_SYNTH")
     process_sta("LIB_SLOWEST")
     process_sta("LIB_FASTEST")
+
+    new["STA_CORNERS"] = [
+        "nom_tt_025C_1v80",
+        "nom_ss_100C_1v60",
+        "nom_ff_n40C_1v95",
+        "min_tt_025C_1v80",
+        "min_ss_100C_1v60",
+        "min_ff_n40C_1v95",
+        "max_tt_025C_1v80",
+        "max_ss_100C_1v60",
+        "max_ff_n40C_1v95",
+    ]
 
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIB"] = lib_sta

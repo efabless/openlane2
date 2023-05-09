@@ -507,6 +507,8 @@ class Step(ABC):
                 elif current_rpt is not None:
                     current_rpt.write(line)
                 else:
+                    if "table template" in line:
+                        continue
                     if not silent:
                         verbose(line.strip())
                     log_file.write(line)

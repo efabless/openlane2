@@ -13,22 +13,15 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
-read_timing_info
 
-set report_dir "."
-if { [info exists ::env(INTERCONNECT_CORNER)] } {
-    set report_dir "$::env(INTERCONNECT_CORNER)"
-}
 
-if { [file tail [info nameofexecutable]] == "sta" } {
-    # OpenSTA
-    read_netlist -all
-} else {
-    # OpenROAD
+if { [file tail [info nameofexecutable]] == "openroad" } {
     read
     if { [info exists ::env(ESTIMATE_PARASITICS)]} {
         estimate_parasitics {*}$::env(ESTIMATE_PARASITICS)
     }
+} else {
+    read_timing_info
 }
 
 set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um

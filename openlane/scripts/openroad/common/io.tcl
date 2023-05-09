@@ -72,7 +72,6 @@ proc lshift listVar {
 proc read_timing_info {args} {
     set i "0"
     set tc_key "TIMING_CORNER_$i"
-    puts [info exists ::env($tc_key)]
     while { [info exists ::env($tc_key)] } {
         set corner_name [lindex $::env($tc_key) 0]
         set corner_libs [lreplace $::env($tc_key) 0 0]
@@ -92,11 +91,18 @@ proc read_timing_info {args} {
 
     foreach corner_name [array name corner] {
         puts "Reading timing models for corner $corner_name…"
+
         set corner_models $corner($corner_name)
         foreach model $corner_models {
             if { [string match *.spef $model]} {
                 puts "> read_spef -corner $corner_name $model"
                 read_spef -corner $corner_name $model
+            } elseif { [string match *.v $model] } {
+                puts "> read_verilog $model"
+                if {[catch {read_verilog $model} errmsg]} {
+                    puts stderr $errmsg
+                    exit 1
+                }
             } else {
                 puts "> read_liberty -corner $corner_name $model"
                 read_liberty -corner $corner_name $model
@@ -107,6 +113,19 @@ proc read_timing_info {args} {
             foreach extra_lib $::env(EXTRA_LIBS) {
                 puts "> read_liberty -corner $corner_name $extra_lib"
                 read_liberty -corner $corner_name $extra_lib
+            }
+        }
+    }
+
+
+    if { [file tail [info nameofexecutable]] == "sta" } {
+        # OpenSTA
+        read_netlists -all
+        if { [info exists ::env(CURRENT_SPEF)] } {
+            foreach corner_name [array name corner] {
+                set spef [dict get $::env(CURRENT_SPEF) $corner_name]
+                puts "> read_spef -corner $corner_name $spef"
+                read_spef -corner $corner_name $spef
             }
         }
     }
