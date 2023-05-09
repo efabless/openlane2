@@ -23,9 +23,10 @@ from shutil import which
 from typing import FrozenSet, Mapping, Optional, Tuple, List, Union
 
 from .memoize import memoize
-from ..state import DesignFormat
-from ..logging import warn
-from ..config import Config, Path, Macro
+
+from ..logging import verbose, warn
+from ..config import Config, Macro
+from ..state import DesignFormat, Path
 from ..common import mkdirp, get_script_dir
 
 
@@ -59,7 +60,6 @@ class Toolbox(object):
         config: Config,
         view: DesignFormat,
         timing_corner: Optional[str] = None,
-        _unless_exist: Optional[DesignFormat] = None,
     ) -> List[Path]:
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         macros = config["MACROS"]
@@ -68,27 +68,9 @@ class Toolbox(object):
         if macros is None:
             return result
 
-        id = view.value.id
-        superseding_id = "NONEXISTENT"
-        if _unless_exist is not None:
-            superseding_id = _unless_exist.value.id
         for macro in macros.values():
             assert isinstance(macro, Macro)
-            views = None
-            try:
-                views = getattr(macro, id)
-            except AttributeError:
-                pass
-            superseding_views = None
-            try:
-                superseding_views = getattr(macro, superseding_id)
-            except AttributeError:
-                pass
-            if views is None and superseding_views is None:
-                warn(f"No {view.value.name} view found for macro '{macro.module}'.")
-                continue
-            if superseding_views is not None:
-                continue
+            views = macro.view_by_df(view)
 
             if isinstance(views, dict):
                 views_filtered = self.filter_views(config, views, timing_corner)
@@ -99,12 +81,12 @@ class Toolbox(object):
                 result += [Path(views)]
         return result
 
-    def get_libs(
+    def get_timing_files(
         self,
         config: Config,
         timing_corner: Optional[str] = None,
-        prioritize_spef: bool = False,
-    ) -> Tuple[str, List[Path], List[Path]]:
+        prioritize_nl: bool = False,
+    ) -> Tuple[str, List[Path]]:
         """
         Returns the lib files for a given configuration and timing corner.
 
@@ -113,28 +95,59 @@ class Toolbox(object):
 
             If not specified, the value for `DEFAULT_CORNER` from the SCL will
             be used.
-        :param prioritize_spef: Do not return lib files for macros that have
-            SPEF views.
+        :param prioritize_nl: Do not return lib files for macros that have
+            Gate-Level Netlists and SPEF views.
+        :returns: A tuple of the name of timing corner and the (potentially heterogenous) list of files to be used.
         """
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
 
-        lib_list = []
-        lib_list += self.filter_views(config, config["LIB"], timing_corner)
+        result = []
+        result += self.filter_views(config, config["LIB"], timing_corner)
 
-        if len(lib_list) == 0:
+        if len(result) == 0:
             warn(f"No SCL lib files found for {timing_corner}.")
 
-        spef_list = []
-        prioritized = None
-        if prioritize_spef:
-            prioritized = DesignFormat.SPEF
-            spef_list = self.get_macro_views(config, DesignFormat.SPEF, timing_corner)
+        macros = config["MACROS"]
+        if macros is None:
+            macros = {}
 
-        lib_list += self.get_macro_views(
-            config, DesignFormat.LIB, timing_corner, _unless_exist=prioritized
-        )
+        for module, data in macros.items():
+            assert isinstance(data, Macro)
+            if prioritize_nl:
+                netlists = data.nl
+                spefs = self.filter_views(
+                    config,
+                    data.spef,
+                    timing_corner,
+                )
+                if len(netlists) and not len(spefs):
+                    warn(
+                        f"Netlists found for macro {module}, but no parasitics extraction found at corner {timing_corner}. The netlist cannot be used for timing on this module."
+                    )
+                elif len(spefs) and not len(netlists):
+                    warn(
+                        f"Parasitics extraction(s) found for macro {module} at corner {timing_corner}, but no netlist found. The parasitics cannot be used for timing on this module."
+                    )
+                elif len(spefs) and len(netlists):
+                    verbose(f"Adding {[netlists + spefs]} to timing info…")
+                    result += netlists
+                    result += spefs
+                    continue
+            # NL/SPEF not prioritized or not found
+            libs = self.filter_views(
+                config,
+                data.lib,
+                timing_corner,
+            )
+            if not len(libs):
+                warn(
+                    f"No libs found for macro {module} at corner {timing_corner}. The module will be black-boxed."
+                )
+                continue
+            verbose(f"Adding {libs} to timing info…")
+            result += libs
 
-        return (timing_corner, lib_list, spef_list)
+        return (timing_corner, result)
 
     def _render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
         klayout_bin = which("klayout")

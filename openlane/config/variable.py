@@ -21,8 +21,9 @@ from typing import Iterable, Literal, get_origin, get_args
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
 from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable, Sequence
 
-from .config import Config, Path
+from .config import Config
 from .resolve import process_string, Keys as SpecialKeys
+from ..state import Path
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -367,7 +368,7 @@ class Variable:
                 kwargs_dict[key] = value_processed
             return validating_type(**kwargs_dict)
         elif validating_type == Path:
-            if not os.path.exists(value):
+            if not os.path.exists(str(value)):
                 raise ValueError(
                     f"Path provided for variable {key_path} does not exist: '{value}'"
                 )

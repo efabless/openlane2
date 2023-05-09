@@ -15,12 +15,10 @@ import os
 from typing import Optional
 
 from .step import Step
-from ..state import State
-from ..state import DesignFormat
-
 from ..logging import info
 from ..common import get_script_dir
-from ..config import Path, Variable
+from ..config import Variable
+from ..state import State, DesignFormat, Path
 
 
 @Step.factory.register()

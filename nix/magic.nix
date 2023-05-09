@@ -38,18 +38,17 @@
 
 with pkgs; stdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "d8f926865dd24ac78558e939f5c816cdc2cb4eb8";
+  rev = "44b269e037d41c312e2f7fed8fa6b349067cde74";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-LJqVJacBwBhHTwjcjUVu9Ga2j1mu6C8gYTcdKMW3fT0=";
+    sha256 = "sha256-CFuvjYsq23ULqcjXxHc8I2jHNLrWY8Cd6XLlyXSp5FI=";
   };
 
   patches = [
     ./patches/magic/csh.patch
-    ./patches/magic/fprintf.patch
   ];
 
   nativeBuildInputs = [ python3 tcsh gnused ];

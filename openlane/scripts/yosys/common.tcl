@@ -25,17 +25,15 @@ proc read_deps {{power_defines "off"}} {
         }
     }
 
-    uplevel 1 {set vIdirsArgs ""}
-    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-            uplevel 1 {lappend vIdirsArgs "-I$dir"}
-        }
-        uplevel 1 {set vIdirsArgs [join $vIdirsArgs]}
-    }
-
     if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
         log "Reading $::env(LIB) as a blackbox"
         foreach lib $::env(LIB) {
+            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
+        }
+    }
+
+    if { [info exists ::env(MACRO_LIBS) ] } {
+        foreach lib $::env(MACRO_LIBS) {
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }
     }
@@ -47,9 +45,14 @@ proc read_deps {{power_defines "off"}} {
     }
 
     if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-        foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-            read_verilog -sv -lib {*}$vIdirsArgs $verilog_file
+        set verilog_include_args [list]
+        if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+            foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+                lappend verilog_include_args "-I$dir"
+            }
         }
+        log "$::env(EXTRA_VERILOG_MODELS)"
+        read_verilog -sv -lib {*}$verilog_include_args {*}$::env(EXTRA_VERILOG_MODELS)
     }
 
 }

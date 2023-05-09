@@ -16,8 +16,9 @@ import re
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable
+from .variable import Variable
 from .config import Config
+from ..state import Path
 
 # Note that values in this file do not take defaults.
 
@@ -52,12 +53,7 @@ pdk_variables = [
     Variable(
         "TECH_LEFS",
         Dict[str, Path],
-        "Map of interconnect corners to to technology LEF files. A corner not specified here will not be supported by OpenRCX.",
-    ),
-    Variable(
-        "RCX_RULESETS",
-        Dict[str, Path],
-        "Map of interconnect corners to OpenRCX extraction rules. A corner not specified here will not be supported by OpenRCX.",
+        "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX.",
     ),
     Variable(
         "CELL_LEFS",
@@ -558,5 +554,5 @@ def migrate_old_config(config: Config) -> Config:
 all_variables: List[Variable] = pdk_variables + scl_variables
 removed_variables: Dict[str, str] = {
     "FAKEDIODE_CELL": "Fake diode-based strategies have been removed.",
-    "LIB_SYNTH": "The first entry in STA will be used instead.",
+    "LIB_SYNTH": "Use the lib dictionary instead.",
 }

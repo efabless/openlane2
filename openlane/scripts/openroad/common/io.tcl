@@ -113,15 +113,21 @@ proc read_timing_info {args} {
 }
 
 proc read_libs {args} {
-    # LIB_PNR contains all libs and extra libs but with known-bad cells
+    # PNR_LIBS contains all libs and extra libs but with known-bad cells
     # excluded, so OpenROAD can use cells by functionality and come up
     # with a valid design.
     if { [get_libs -quiet *] != {} } {
         return
     }
-    foreach lib $::env(LIB_PNR) {
+    foreach lib $::env(PNR_LIBS) {
         puts "> read_liberty $lib"
         read_liberty $lib
+    }
+    if { [info exists ::env(MACRO_LIBS) ] } {
+        foreach extra_lib $::env(MACRO_LIBS) {
+            puts "> read_liberty $extra_lib"
+            read_liberty $extra_lib
+        }
     }
     if { [info exists ::env(EXTRA_LIBS) ] } {
         foreach extra_lib $::env(EXTRA_LIBS) {

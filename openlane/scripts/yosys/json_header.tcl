@@ -17,8 +17,14 @@ set vtop $::env(DESIGN_NAME)
 
 read_deps "on"
 
+set verilog_include_args [list]
+if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+    foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+        lappend verilog_include_args "-I$dir"
+    }
+}
 for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
-    read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]
+    read_verilog -sv {*}$verilog_include_args [lindex $::env(VERILOG_FILES) $i]
 }
 select -module $vtop
 yosys proc

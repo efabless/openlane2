@@ -16,7 +16,8 @@ from typing import List, Optional, Dict
 
 from .macro import Macro
 from .config import StringEnum
-from .variable import Path, Variable
+from .variable import Variable
+from ..state import Path
 
 all_variables = [
     # Common

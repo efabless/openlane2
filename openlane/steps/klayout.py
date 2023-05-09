@@ -19,8 +19,8 @@ from typing import Optional, List
 
 from .step import Step, StepError, StepException
 from ..logging import warn
-from ..state import DesignFormat, State
-from ..config import Path, Variable, Config
+from ..state import DesignFormat, State, Path
+from ..config import Variable, Config
 from ..common import get_script_dir
 from ..utils import Toolbox
 
@@ -120,8 +120,6 @@ class StreamOut(Step):
             for gds in extra_gds:
                 layout_args.append("--with-gds-file")
                 layout_args.append(gds)
-
-        print(layout_args)
 
         kwargs, env = self.extract_env(kwargs)
 

@@ -18,7 +18,7 @@ from enum import Enum
 from decimal import Decimal
 from textwrap import dedent
 from dataclasses import dataclass, asdict, is_dataclass
-from collections import UserDict, UserString
+from collections import UserDict
 from typing import (
     Any,
     ClassVar,
@@ -29,29 +29,14 @@ from typing import (
     Sequence,
 )
 
+from ..state import Path
+
 
 def StringEnum(name: str, values: Sequence[str]):
     """
     Creates a string enumeration where the keys and values are the same.
     """
     return Enum(name, [(value, value) for value in values])
-
-
-class Path(UserString, os.PathLike):
-    """
-    A Path type for OpenLane configuration variables.
-
-    Basically just a string.
-    """
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def exists(self) -> bool:
-        """
-        A convenience method calling :meth:`os.path.exists`
-        """
-        return os.path.exists(self)
 
 
 @dataclass

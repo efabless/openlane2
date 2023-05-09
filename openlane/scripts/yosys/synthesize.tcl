@@ -18,7 +18,7 @@ source $::env(SCRIPTS_DIR)/yosys/common.tcl
 set buffering $::env(SYNTH_BUFFERING)
 set sizing $::env(SYNTH_SIZING)
 set vtop $::env(DESIGN_NAME)
-set sclib $::env(LIB_SYNTH)
+set sclib $::env(SYNTH_LIBS)
 
 set lib_args [list]
 foreach lib $sclib {
@@ -183,8 +183,14 @@ if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
 }
 
 # Start Synthesis
+set verilog_include_args [list]
+if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+    foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+        lappend verilog_include_args "-I$dir"
+    }
+}
 for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
-    read_verilog -sv {*}$vIdirsArgs [lindex $::env(VERILOG_FILES) $i]
+    read_verilog -sv {*}$verilog_include_args [lindex $::env(VERILOG_FILES) $i]
 }
 
 if { [info exists ::env(SYNTH_PARAMETERS) ] } {
@@ -309,7 +315,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     insbuf -buf {*}[split $::env(SYNTH_BUFFER_CELL) "/"]
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(LIB_SYNTH) 0] -json
+    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(SYNTH_LIBS) 0] -json
 
     if { [info exists ::env(SYNTH_AUTONAME)] && $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include

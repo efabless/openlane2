@@ -11,23 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import reduce
 import os
 import re
+import shutil
 import sys
 import json
 from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Optional
 
-
 from .step import Step, StepException
-from ..state import State
-from ..state import DesignFormat
 from .common_variables import io_layer_variables
-
-from ..config import Path, Variable, StringEnum
-from ..common import get_openlane_root, get_script_dir
 from ..logging import warn
+from ..state import State, DesignFormat, Path
+from ..config import Variable, StringEnum, Macro
+from ..common import get_openlane_root, get_script_dir
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -179,19 +178,18 @@ class ManualMacroPlacement(OdbpyStep):
     Performs macro placement using a simple configuration file. The file is
     defined as a line-break delimited list of instances and positions, in the
     format ``instance_name X_pos Y_pos Orientation``.
+
+    If no macro instances are configured, this step is skipped.
     """
 
     id = "Odb.ManualMacroPlacement"
     name = "Manual Macro Placement"
 
-    flow_control_variable = "MACRO_PLACEMENT_CFG"
-    flow_control_msg = "No macros configured, skipping…"
-
     config_vars = [
         Variable(
             "MACRO_PLACEMENT_CFG",
             Optional[Path],
-            "Path to the file. If this is `None`, this step is skipped.",
+            "Path to an optional override for instance placement instead of the `MACROS` object for compatibility with OpenLane 1. If both are `None`, this step is skipped.",
         ),
     ]
 
@@ -201,9 +199,35 @@ class ManualMacroPlacement(OdbpyStep):
     def get_command(self) -> List[str]:
         return super().get_command() + [
             "--config",
-            self.config["MACRO_PLACEMENT_CFG"],
+            os.path.join(self.step_dir, "placement.cfg"),
             "--fixed",
         ]
+
+    def run(self, **kwargs) -> State:
+        cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
+        if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
+            warn(
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+            )
+            shutil.copyfile(cfg_ref, cfg_file)
+        elif macros := self.config.get("MACROS"):
+            instance_count = reduce(
+                lambda x, y: x + len(y.instances), macros.values(), 0
+            )
+            if instance_count >= 1:
+                with open(cfg_file, "w") as f:
+                    for macro in macros.values():
+                        assert isinstance(macro, Macro)
+                        for name, data in macro.instances.items():
+                            f.write(
+                                f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                            )
+
+        if not cfg_file.exists():
+            warn("No instances found, skipping…")
+            return Step.run(self, **kwargs)
+
+        return super().run(**kwargs)
 
 
 @Step.factory.register()

@@ -35,10 +35,10 @@ from .common_variables import (
     constraint_variables,
 )
 
-from ..state import State, DesignFormat
 from ..logging import err, info, warn
+from ..config import Variable, StringEnum
 from ..common import get_script_dir, mkdirp
-from ..config import Variable, Path, StringEnum
+from ..state import State, DesignFormat, Path
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -122,14 +122,22 @@ class OpenROADStep(TclStep):
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
-        _, lib_list, _ = self.toolbox.get_libs(self.config)
+        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
+        lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+
         lib_pnr = self.toolbox.remove_cells_from_lib(
             frozenset(lib_list),
             frozenset([self.config["PNR_EXCLUSION_CELL_LIST"]]),
             as_cell_lists=True,
         )
 
-        env["LIB_PNR"] = " ".join(lib_pnr)
+        env["PNR_LIBS"] = " ".join(lib_pnr)
+        env["MACRO_LIBS"] = " ".join(
+            [
+                str(lib)
+                for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+            ]
+        )
 
         return env
 
@@ -142,7 +150,7 @@ class OpenROADStep(TclStep):
 
         1. Before the `super()` call: It creates a version of the lib file
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
-        in the environment variable `LIB_PNR`.
+        in the environment variable `PNR_LIBS`.
 
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
@@ -226,9 +234,9 @@ class HierarchicalSTA(STA):
 
     config_vars = STA.config_vars + [
         Variable(
-            "HSTA_MACRO_PRIORITIZE_SPEF",
+            "HSTA_MACRO_PRIORITIZE_NL",
             bool,
-            "Prioritize the use of SPEF files + Netlists over LIB files if available for macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
+            "Prioritize the use of Netlists + SPEF files over LIB files if available for macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
             default=True,
         ),
     ]
@@ -240,13 +248,13 @@ class HierarchicalSTA(STA):
         kwargs, env = self.extract_env(kwargs)
         assert isinstance(self.state_in, State)
 
-        timing_corner, lib_list, spef_list = self.toolbox.get_libs(
+        timing_corner, timing_file_list = self.toolbox.get_timing_files(
             self.config,
-            prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+            prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
         )
         env["TIMING_CORNER_0"] = timing_corner
-        for lib in lib_list:
-            env["TIMING_CORNER_0"] += f" {lib}"
+        for view in timing_file_list:
+            env["TIMING_CORNER_0"] += f" {view}"
 
         return super().run(env=env, **kwargs)
 
@@ -327,13 +335,13 @@ class ParasiticsSTA(HierarchicalSTA):
             for i, timing_corner in enumerate(timing_corners):
                 tc_key = f"TIMING_CORNER_{i}"
                 value = f"{timing_corner}"
-                _, tc_libs, spef_list = self.toolbox.get_libs(
+                _, timing_file_list = self.toolbox.get_timing_files(
                     self.config,
                     f"{interconnect_corner}_{timing_corner}",
-                    prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
+                    prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
                 )
-                for lib in tc_libs:
-                    value += f" {lib}"
+                for view in timing_file_list:
+                    value += f" {view}"
                 current_env[tc_key] = value
 
             log_path = os.path.join(self.step_dir, f"{interconnect_corner}.log")

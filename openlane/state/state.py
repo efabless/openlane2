@@ -17,13 +17,28 @@ import os
 import json
 import shutil
 from decimal import Decimal
-from collections import UserDict
+from collections import UserDict, UserString
 from typing import Union, Optional, Dict, Any
 
 from .design_format import DesignFormat, DesignFormatObject
-
-from ..config import Path
 from ..common import mkdirp
+
+
+class Path(UserString, os.PathLike):
+    """
+    A Path type for OpenLane configuration variables.
+
+    Basically just a string.
+    """
+
+    def __fspath__(self) -> str:
+        return str(self)
+
+    def exists(self) -> bool:
+        """
+        A convenience method calling :meth:`os.path.exists`
+        """
+        return os.path.exists(self)
 
 
 class InvalidState(RuntimeError):
@@ -165,7 +180,7 @@ class State(UserDict[str, VT]):
                 )
             if value is not None:
                 if isinstance(value, Path):
-                    if not os.path.exists(str(value)):
+                    if not value.exists():
                         raise InvalidState(
                             f"Path for format {current_key_path} does not exist: '{value}'."
                         )

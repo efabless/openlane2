@@ -27,9 +27,10 @@ from typing import Any, List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
 
 from .step import Step, StepException
-from ..state import State, DesignFormat
-from ..config import Path, Keys
+
+from ..config import Keys
 from ..logging import info, warn
+from ..state import State, DesignFormat, Path
 from ..common import mkdirp, get_script_dir, get_openlane_root
 
 

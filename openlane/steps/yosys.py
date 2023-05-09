@@ -21,11 +21,11 @@ from abc import abstractmethod
 from .step import Step
 from .tclstep import TclStep
 from .common_variables import constraint_variables
-from ..state import State
-from ..state import DesignFormat
+
 from ..logging import verbose
 from ..common import get_script_dir
-from ..config import Path, Variable, StringEnum
+from ..config import Variable, StringEnum
+from ..state import State, DesignFormat, Path
 
 
 MULTIPLE_FAILURES = r"""
@@ -295,12 +295,11 @@ class Synthesis(YosysStep):
         self,
         **kwargs,
     ) -> State:
-        _, default_lib_list, _ = self.toolbox.get_libs(self.config)
-
+        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         kwargs, env = self.extract_env(kwargs)
 
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(default_lib_list),
+            frozenset(lib_list),
             excluded_cells=frozenset(
                 [
                     self.config["SYNTH_EXCLUSION_CELL_LIST"],
@@ -310,7 +309,13 @@ class Synthesis(YosysStep):
             as_cell_lists=True,
         )
 
-        env["LIB_SYNTH"] = " ".join(lib_synth)
+        env["SYNTH_LIBS"] = " ".join(lib_synth)
+        env["MACRO_LIBS"] = " ".join(
+            [
+                str(lib)
+                for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+            ]
+        )
         state_out = super().run(env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")

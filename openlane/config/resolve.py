@@ -37,6 +37,7 @@ PROCESS_INFO_ALLOWLIST = [
 
 
 Scalar = Union[str, int, float, bool, None]
+Valid = Union[Scalar, dict, list]
 
 
 class InvalidConfig(Exception):
@@ -210,7 +211,7 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def process_string(value: str, state: dict) -> Optional[str]:
+def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
@@ -218,21 +219,24 @@ def process_string(value: str, state: dict) -> Optional[str]:
     DIR_PREFIX = "dir::"
     PDK_DIR_PREFIX = "pdk_dir::"
 
-    if value.startswith(DIR_PREFIX):
-        value = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
-    elif value.startswith(PDK_DIR_PREFIX):
-        value = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
+    mutable: str = value
 
-    if value.startswith(EXPR_PREFIX):
+    if value.startswith(DIR_PREFIX):
+        mutable = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
+    elif value.startswith(PDK_DIR_PREFIX):
+        mutable = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
+
+    if mutable.startswith(EXPR_PREFIX):
         try:
-            value = f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
+            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
-    elif value.startswith(REF_PREFIX):
-        reference = value[len(REF_PREFIX) :]
+    elif mutable.startswith(REF_PREFIX):
+        reference = mutable[len(REF_PREFIX) :]
         match = ref_rx.match(reference)
         if match is None:
             raise InvalidConfig(f"Invalid reference string '{reference}'")
+
         reference_variable = match[1]
         try:
             found = state[reference_variable]
@@ -251,29 +255,36 @@ def process_string(value: str, state: dict) -> Optional[str]:
 
             found = str(found)
 
-            value = reference.replace(match[0], found)
+            replaced = reference.replace(match[0], found)
 
             found_abs = os.path.abspath(found)
-            full_abspath = os.path.abspath(value)
+            full_abspath = os.path.abspath(replaced)
 
             # Resolve globs for paths that are inside the exposed directory
             if full_abspath.startswith(found_abs):
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
-                if len(files_escaped) != 0:
-                    value = " ".join(files_escaped)
+                files_escaped.sort()
+                if len(files_escaped) == 1:
+                    return files_escaped[0]
+                elif len(files_escaped) > 1:
+                    return files_escaped
+
+            return found_abs
         except KeyError:
             raise InvalidConfig(
                 f"Referenced variable '{reference_variable}' not found."
             )
-    return value
+    else:
+        return mutable
 
 
-def process_scalar(key: str, value: Scalar, state: dict) -> Scalar:
+def process_scalar(key: str, value: Scalar, state: dict) -> Valid:
+    result: Valid = value
     if isinstance(value, str):
-        value = process_string(value, state)
+        result = process_string(value, state)
     elif value is None:
-        value = ""
+        result = ""
     elif not (
         isinstance(value, bool)
         or isinstance(value, int)
@@ -282,7 +293,7 @@ def process_scalar(key: str, value: Scalar, state: dict) -> Scalar:
     ):
         raise InvalidConfig(f"Invalid value type {type(value)} for key '{key}'.")
 
-    return value
+    return result
 
 
 def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
