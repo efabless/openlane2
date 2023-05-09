@@ -14,6 +14,11 @@
 
 # LEF
 lef read $::env(TECH_LEF)
+if { [info exist ::env(MACRO_LEFS)] } {
+    foreach lef_file $::env(MACRO_LEFS) {
+        lef read $lef_file
+    }
+}
 if { [info exist ::env(EXTRA_LEFS)] } {
     foreach lef_file $::env(EXTRA_LEFS) {
         lef read $lef_file

@@ -27,7 +27,7 @@ from typing import Any, List, Dict, Sequence, Union
 from os.path import join, dirname, isdir, relpath
 
 from .step import Step, StepException
-from ..state import State
+from ..state import State, DesignFormat
 from ..config import Path, Keys
 from ..logging import info, warn
 from ..common import mkdirp, get_script_dir, get_openlane_root
@@ -358,6 +358,9 @@ class TclStep(Step):
             )
 
         env["TECH_LEF"] = tech_lefs[0]
+
+        macro_lefs = self.toolbox.get_macro_views(self.config, DesignFormat.LEF)
+        env["MACRO_LEFS"] = " ".join([str(lef) for lef in macro_lefs])
 
         for element in self.config.keys():
             value = self.config[element]

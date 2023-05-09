@@ -13,7 +13,7 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
-read_libs
+read_timing_info
 
 set report_dir "."
 if { [info exists ::env(INTERCONNECT_CORNER)] } {
@@ -23,7 +23,6 @@ if { [info exists ::env(INTERCONNECT_CORNER)] } {
 if { [file tail [info nameofexecutable]] == "sta" } {
     # OpenSTA
     read_netlist -all
-    read_spefs
 } else {
     # OpenROAD
     read

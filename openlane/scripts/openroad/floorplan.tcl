@@ -14,7 +14,7 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_libs
 read_lefs
-read_netlist
+read_netlists
 
 unset_propagated_clock [all_clocks]
 

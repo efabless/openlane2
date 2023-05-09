@@ -45,7 +45,7 @@ In its current state, the default OpenLane flow allows SCLs to configure the fol
 
 The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for these corners:
 
-* PVT: Corner data stored in [`LIBS`](../reference/pdk_config_vars.md#LIBS)
+* PVT: Corner data stored in [`LIB`](../reference/pdk_config_vars.md#LIB)
 
 | Name | Process {NMOS, PMOS} | Voltage (V) | Temperature (C) | Corresponding File |
 | - | - | - | - | - |

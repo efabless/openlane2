@@ -16,13 +16,7 @@
     "DIODE_INSERTION_STRATEGY": 0,
     "GLB_RESIZER_TIMING_OPTIMIZATIONS": false,
     "VERILOG_FILES": "dir::src/*.v",
-    "EXTRA_GDS_FILES": "dir::macros/spm.gds",
-    "EXTRA_LEFS": "dir::macros/spm.lef",
-    "EXTRA_SPEFS": [
-        "spm",
-        "dir::macros/spm.nom.spef",
-        "dir::macros/spm.nom.spef",
-        "dir::macros/spm.nom.spef"
-    ],
+    "EXTRA_GDS_FILES": "dir::macros/gds/spm.gds",
+    "EXTRA_LEFS": "dir::macros/lef/spm.lef",
     "QUIT_ON_SYNTH_CHECKS": false
 }

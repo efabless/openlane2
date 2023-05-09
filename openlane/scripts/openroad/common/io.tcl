@@ -19,7 +19,7 @@ proc is_blackbox {file_path blackbox_wildcard} {
     return [expr !$not_found]
 }
 
-proc read_netlist {args} {
+proc read_netlists {args} {
     sta::parse_key_args "read_netlists" args \
         keys {}\
         flags {-powered -all}
@@ -69,11 +69,7 @@ proc lshift listVar {
     return $r
 }
 
-proc read_libs {args} {
-    sta::parse_key_args "read_libs" args \
-        keys {}\
-        flags {}
-
+proc read_timing_info {args} {
     set i "0"
     set tc_key "TIMING_CORNER_$i"
     puts [info exists ::env($tc_key)]
@@ -87,29 +83,50 @@ proc read_libs {args} {
         set tc_key "TIMING_CORNER_$i"
     }
 
-    puts $i
+    if { $i == "0" } {
+        puts "\[WARN] No timing information read."
+        return
+    }
 
-    if { $i != "0" } {
-        # Cannot be done incrementally, believe it or not
-        define_corners {*}[array name corner]
+    define_corners {*}[array name corner]
 
-        foreach corner_name [array name corner] {
-            puts "Reading libs for corner $corner_name…"
-            set corner_libs $corner($corner_name)
-            puts $corner_libs
-            foreach lib $corner_libs {
-                puts "> read_liberty -corner $corner_name $lib"
-                read_liberty -corner $corner_name $lib
+    foreach corner_name [array name corner] {
+        puts "Reading timing models for corner $corner_name…"
+        set corner_models $corner($corner_name)
+        foreach model $corner_models {
+            if { [string match *.spef $model]} {
+                puts "> read_spef -corner $corner_name $model"
+                read_spef -corner $corner_name $model
+            } else {
+                puts "> read_liberty -corner $corner_name $model"
+                read_liberty -corner $corner_name $model
             }
         }
+        if { [info exists ::env(EXTRA_LIBS) ] } {
+            puts "Reading explicitly-specified extra libs for $corner_name…"
+            foreach extra_lib $::env(EXTRA_LIBS) {
+                puts "> read_liberty -corner $corner_name $extra_lib"
+                read_liberty -corner $corner_name $extra_lib
+            }
+        }
+    }
+}
 
-    } elseif { [get_libs -quiet *] == {} } {
-        # LIB_PNR contains all libs and extra libs but with known-bad cells
-        # excluded, so OpenROAD can use cells by functionality and come up
-        # with a valid design.
-        foreach lib $::env(LIB_PNR) {
-            puts "> read_liberty $lib"
-            read_liberty $lib
+proc read_libs {args} {
+    # LIB_PNR contains all libs and extra libs but with known-bad cells
+    # excluded, so OpenROAD can use cells by functionality and come up
+    # with a valid design.
+    if { [get_libs -quiet *] != {} } {
+        return
+    }
+    foreach lib $::env(LIB_PNR) {
+        puts "> read_liberty $lib"
+        read_liberty $lib
+    }
+    if { [info exists ::env(EXTRA_LIBS) ] } {
+        foreach extra_lib $::env(EXTRA_LIBS) {
+            puts "> read_liberty $extra_lib"
+            read_liberty $extra_lib
         }
     }
 }
@@ -158,42 +175,6 @@ proc read {args} {
         }
     }
 }
-
-proc read_spefs {} {
-    if { ![info exists ::env(CURRENT_SPEF)] } {
-        return
-    }
-
-    set spef $::env(CURRENT_SPEF)
-    set corners [sta::corners]
-    foreach corner $corners {
-        read_spef -corner [$corner name] $spef
-        read_spef -corner [$corner name] $spef
-        read_spef -corner [$corner name] $spef
-    }
-
-    if { [info exists ::env(EXTRA_SPEFS)] } {
-        foreach {module_name spef_file_min spef_file_nom spef_file_max} "$::env(EXTRA_SPEFS)" {
-            set matched 0
-            foreach cell [get_cells *] {
-                if { "[get_property $cell ref_name]" eq "$module_name" && !$matched } {
-                    puts "Matched [get_property $cell name] with $module_name"
-                    set matched 1
-                    foreach corner $corners {
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_min
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_nom
-                        read_spef -path [get_property $cell name] -corner [$corner name] $spef_file_max
-                    }
-                }
-            }
-            if { $matched != 1 } {
-                puts "Error: Module $module_name specified in EXTRA_SPEFS not found."
-                exit 1
-            }
-        }
-    }
-}
-
 
 proc write {args} {
     # This script will attempt to write views based on existing "SAVE_"

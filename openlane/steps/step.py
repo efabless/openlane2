@@ -436,7 +436,7 @@ class Step(ABC):
         assert isinstance(self.state_in, State)
 
         for input in self.inputs:
-            value = self.state_in.get(input)
+            value = self.state_in[input]
             if value is None:
                 raise StepException(
                     f"{type(self).__name__}: missing required input '{input.name}'"
@@ -602,7 +602,6 @@ class Step(ABC):
 
         views_updated = []
         for id, value in dict(self.state_out).items():
-            assert isinstance(id, str)
             if value is None:
                 continue
 

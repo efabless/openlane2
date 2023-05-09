@@ -28,11 +28,10 @@ from ..config import Path, Variable, StringEnum
 class YosysStep(TclStep):
     def get_command(self) -> List[str]:
         script_path = self.get_script_path()
-        assert isinstance(script_path, str)
         return ["yosys", "-c", script_path]
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
 
@@ -211,7 +210,7 @@ class Synthesis(YosysStep):
         self,
         **kwargs,
     ) -> State:
-        _, default_lib_list = self.toolbox.get_libs(self.config)
+        _, default_lib_list, _ = self.toolbox.get_libs(self.config)
 
         kwargs, env = self.extract_env(kwargs)
 

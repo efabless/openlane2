@@ -81,6 +81,10 @@ class MagicStep(TclStep):
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
         )
         env["MAGIC_SCRIPT"] = self.get_script_path()
+
+        env["MACRO_GDS_FILES"] = ""
+        for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
+            env["MACRO_GDS_FILES"] += f" {gds}"
         return super().run(env=env, **kwargs)
 
 

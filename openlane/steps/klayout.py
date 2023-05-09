@@ -14,15 +14,44 @@
 import os
 import subprocess
 import sys
-from typing import Optional
 from base64 import b64encode
+from typing import Optional, List
 
 from .step import Step, StepError, StepException
-from ..state import DesignFormat, State
-
 from ..logging import warn
-from ..config import Path, Variable
+from ..state import DesignFormat, State
+from ..config import Path, Variable, Config
 from ..common import get_script_dir
+from ..utils import Toolbox
+
+
+def get_lef_args(config: Config, toolbox: Toolbox) -> List[str]:
+    tech_lefs = toolbox.filter_views(config, config["TECH_LEFS"])
+    if len(tech_lefs) != 1:
+        raise StepException(
+            "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+        )
+
+    lef_args = [
+        "--input-lef",
+        str(tech_lefs[0]),
+    ]
+
+    for lef in config["CELL_LEFS"]:
+        lef_args.append("--input-lef")
+        lef_args.append(str(lef))
+
+    macro_lefs = toolbox.get_macro_views(config, DesignFormat.LEF)
+    for lef in macro_lefs:
+        lef_args.append("--input-lef")
+        lef_args.append(str(lef))
+
+    if extra_lefs := config["EXTRA_LEFS"]:
+        for lef in extra_lefs:
+            lef_args.append("--input-lef")
+            lef_args.append(str(lef))
+
+    return lef_args
 
 
 @Step.factory.register()
@@ -78,30 +107,21 @@ class StreamOut(Step):
             f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value.extension}",
         )
 
-        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
-        if len(tech_lefs) != 1:
-            raise StepException(
-                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
-            )
+        layout_args = []
+        layout_args += get_lef_args(self.config, self.toolbox)
 
-        layout_args = [
-            "--input-lef",
-            tech_lefs[0],
-        ]
-        for lef in self.config["CELL_LEFS"]:
-            layout_args.append("--input-lef")
-            layout_args.append(lef)
-        if extra_lefs := self.config["EXTRA_LEFS"]:
-            for lef in extra_lefs:
-                layout_args.append("--input-lef")
-                layout_args.append(lef)
         for gds in self.config["CELL_GDS"]:
+            layout_args.append("--with-gds-file")
+            layout_args.append(gds)
+        for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             layout_args.append("--with-gds-file")
             layout_args.append(gds)
         if extra_gds := self.config["EXTRA_GDS_FILES"]:
             for gds in extra_gds:
                 layout_args.append("--with-gds-file")
                 layout_args.append(gds)
+
+        print(layout_args)
 
         kwargs, env = self.extract_env(kwargs)
 
@@ -249,18 +269,7 @@ class OpenGUI(Step):
                 "Cannot open design in KLayout as the PDK does not appear to support KLayout."
             )
 
-        lefs = [
-            "--input-lef",
-            str(self.config["TECH_LEF"]),
-        ]
-        for lef in self.config["CELL_LEFS"]:
-            lefs.append("--input-lef")
-            lefs.append(str(lef))
-        if extra_lefs := self.config["EXTRA_LEFS"]:
-            for lef in extra_lefs:
-                lefs.append("--input-lef")
-                lefs.append(str(lef))
-
+        lefs = get_lef_args(self.config, self.toolbox)
         kwargs, env = self.extract_env(kwargs)
 
         cmd = [

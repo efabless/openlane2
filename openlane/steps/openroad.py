@@ -122,7 +122,7 @@ class OpenROADStep(TclStep):
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
-        _, lib_list = self.toolbox.get_libs(self.config)
+        _, lib_list, _ = self.toolbox.get_libs(self.config)
         lib_pnr = self.toolbox.remove_cells_from_lib(
             frozenset(lib_list),
             frozenset([self.config["PNR_EXCLUSION_CELL_LIST"]]),
@@ -240,7 +240,7 @@ class HierarchicalSTA(STA):
         kwargs, env = self.extract_env(kwargs)
         assert isinstance(self.state_in, State)
 
-        timing_corner, lib_list = self.toolbox.get_libs(
+        timing_corner, lib_list, spef_list = self.toolbox.get_libs(
             self.config,
             prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
         )
@@ -313,7 +313,7 @@ class ParasiticsSTA(HierarchicalSTA):
             corner_path = os.path.join(self.step_dir, interconnect_corner)
 
             # Prepare Timing Corner Info
-            timing_corners: List[str] = list(self.config["LIBS"].keys())
+            timing_corners: List[str] = list(self.config["LIB"].keys())
             if tcs_by_ics := self.config["RCSTA_CORNER_MAP"]:
                 if tcs_by_ics.get(interconnect_corner) is not None:
                     timing_corners = tcs_by_ics[interconnect_corner]
@@ -327,7 +327,7 @@ class ParasiticsSTA(HierarchicalSTA):
             for i, timing_corner in enumerate(timing_corners):
                 tc_key = f"TIMING_CORNER_{i}"
                 value = f"{timing_corner}"
-                _, tc_libs = self.toolbox.get_libs(
+                _, tc_libs, spef_list = self.toolbox.get_libs(
                     self.config,
                     f"{interconnect_corner}_{timing_corner}",
                     prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
@@ -1038,7 +1038,19 @@ class RCX(OpenROADStep):
 
             nonlocal env
             current_env = env.copy()
-            current_env["RCX_LEF"] = self.config["TECH_LEFS"][corner]
+
+            tech_lefs = self.toolbox.filter_views(
+                self.config, self.config["TECH_LEFS"], corner
+            )
+            if len(tech_lefs) < 1:
+                warn(f"No tech lef for timing corner {corner} found.")
+                return None
+            elif len(tech_lefs) > 1:
+                warn(
+                    f"Multiple tech lefs found for timing corner {corner}. Only the first one matched will be used."
+                )
+
+            current_env["RCX_LEF"] = tech_lefs[0]
             current_env["RCX_RULESET"] = rcx_ruleset
 
             out = os.path.join(
@@ -1065,7 +1077,7 @@ class RCX(OpenROADStep):
 
         futures: Dict[str, Future[str]] = {}
         with ThreadPoolExecutor(process_count) as tpe:
-            for corner in self.config["TECH_LEFS"]:
+            for corner in self.config["RCX_RULESETS"]:
                 futures[corner] = tpe.submit(
                     run_corner,
                     corner,
@@ -1073,7 +1085,7 @@ class RCX(OpenROADStep):
 
         state[DesignFormat.SPEF] = state.get(DesignFormat.SPEF) or {}
         for corner, future in futures.items():
-            if result := Path(future.result()):
+            if result := future.result():
                 state[DesignFormat.SPEF][corner] = Path(result)
 
         return state
@@ -1159,13 +1171,15 @@ class IRDropReport(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
 
-        spef_in = spefs.get("nom")
-        if spef_in is None:
+        spefs_in = self.toolbox.filter_views(self.config, spefs)
+        if len(spefs_in) > 1:
             raise StepException(
-                "Parasitics extraction not yet performed for corner 'nom'."
+                "Found more than one input SPEF file for the default corner."
             )
+        elif len(spefs_in) < 1:
+            raise StepException("No SPEF file found for the default corner.")
 
-        env["CURRENT_SPEF"] = spef_in
+        env["CURRENT_SPEF"] = str(spefs_in[0])
         state_out = super().run(env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()

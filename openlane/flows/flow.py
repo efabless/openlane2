@@ -396,12 +396,17 @@ class Flow(Step._FlowType):
         )
 
     @internal
-    def end_stage(self):
+    def end_stage(self, increment_ordinal: bool = True):
         """
         Ends the current stage, updating the progress bar appropriately.
+
+        :param increment_ordinal: Increment the step ordinal.
+
+            You may want to set this to ``False`` if the stage is being skipped.
         """
         self.completed += 1
-        self.ordinal += 1
+        if increment_ordinal:
+            self.ordinal += 1
         assert self.progress is not None and self.task_id is not None
         self.progress.update(self.task_id, completed=float(self.completed))
 

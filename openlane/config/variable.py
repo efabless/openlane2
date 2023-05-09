@@ -21,8 +21,6 @@ from typing import Iterable, Literal, get_origin, get_args
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
 from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable, Sequence
 
-from openlane.config import macro
-
 from .config import Config, Path
 from .resolve import process_string, Keys as SpecialKeys
 
@@ -526,7 +524,7 @@ class Variable:
                 )
             elif len(extra_spef_list) % 4 != 0:
                 errors.append(
-                    f"Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
+                    "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
                 )
             else:
                 translated_macros = True
@@ -541,13 +539,13 @@ class Variable:
                         extra_spef_list[start + 2],
                         extra_spef_list[start + 3],
                     )
-                    current_macro = {"module": module, "gds": "/dev/null"}
-                    current_macro["spef"] = {
+                    macro_dict = {"module": module, "gds": "/dev/null"}
+                    macro_dict["spef"] = {
                         "min_*": [min],
                         "nom_*": [nom],
                         "max_*": [max],
                     }
-                    mutable["MACROS"][module] = current_macro
+                    mutable["MACROS"][module] = macro_dict
 
         for variable in variables:
             try:

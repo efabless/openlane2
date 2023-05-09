@@ -273,7 +273,7 @@ scl_variables = [
         "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
     ),
     Variable(
-        "LIBS",
+        "LIB",
         Dict[str, List[Path]],
         "A map from PVT-corners to a list of associated liberty files. The first entry should correspond to the typical process, temperature and voltage, and will be used for synthesis. Wildcards supported.",
     ),
@@ -505,13 +505,13 @@ def migrate_old_config(config: Config) -> Config:
 
     # 5. Interconnect Corners
     del new["RCX_RULES"]
-    new["RCX_RULESETS"] = f"nom \"{config['RCX_RULES']}\""
+    new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
     if config.get("RCX_RULES_MIN") is not None:
         del new["RCX_RULES_MIN"]
-        new["RCX_RULESETS"] += f" min \"{config['RCX_RULES_MIN']}\""
+        new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
     if config.get("RCX_RULES_MAX") is not None:
         del new["RCX_RULES_MAX"]
-        new["RCX_RULESETS"] += f" max \"{config['RCX_RULES_MAX']}\""
+        new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
 
     del new["TECH_LEF"]
     new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
@@ -547,7 +547,7 @@ def migrate_old_config(config: Config) -> Config:
     process_sta("LIB_FASTEST")
 
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
-    new["LIBS"] = lib_sta
+    new["LIB"] = lib_sta
 
     # 7. Disconnected Modules
     new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"

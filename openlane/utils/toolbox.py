@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from dataclasses import asdict
 import os
 import re
 import sys
@@ -21,7 +20,7 @@ import tempfile
 import subprocess
 from enum import IntEnum
 from shutil import which
-from typing import Dict, FrozenSet, Optional, Tuple, List, Union
+from typing import FrozenSet, Mapping, Optional, Tuple, List, Union
 
 from .memoize import memoize
 from ..state import DesignFormat
@@ -39,7 +38,7 @@ class Toolbox(object):
     def filter_views(
         self,
         config: Config,
-        views_by_corner: Dict[str, Union[Path, List[Path]]],
+        views_by_corner: Mapping[str, Union[Path, List[Path]]],
         timing_corner: Optional[str] = None,
     ) -> List[Path]:
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
@@ -60,7 +59,7 @@ class Toolbox(object):
         config: Config,
         view: DesignFormat,
         timing_corner: Optional[str] = None,
-        _unless_exist: Optional[DesignFormat] = None
+        _unless_exist: Optional[DesignFormat] = None,
     ) -> List[Path]:
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         macros = config["MACROS"]
@@ -81,20 +80,23 @@ class Toolbox(object):
             except AttributeError:
                 pass
             superseding_views = None
-            print(superseding_id)
             try:
                 superseding_views = getattr(macro, superseding_id)
             except AttributeError:
                 pass
-            print(views, superseding_views)
-            if views is None and superseding_view is None:
+            if views is None and superseding_views is None:
                 warn(f"No {view.value.name} view found for macro '{macro.module}'.")
                 continue
             if superseding_views is not None:
                 continue
 
-            views_filtered = self.filter_views(config, views, timing_corner)
-            result += views_filtered
+            if isinstance(views, dict):
+                views_filtered = self.filter_views(config, views, timing_corner)
+                result += views_filtered
+            elif isinstance(views, list):
+                result += views
+            elif str(views) != "":
+                result += [Path(views)]
         return result
 
     def get_libs(
@@ -102,7 +104,7 @@ class Toolbox(object):
         config: Config,
         timing_corner: Optional[str] = None,
         prioritize_spef: bool = False,
-    ) -> Tuple[str, List[Path]]:
+    ) -> Tuple[str, List[Path], List[Path]]:
         """
         Returns the lib files for a given configuration and timing corner.
 
@@ -117,20 +119,22 @@ class Toolbox(object):
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
 
         lib_list = []
-        lib_list += self.filter_views(config, config["LIBS"], timing_corner)
+        lib_list += self.filter_views(config, config["LIB"], timing_corner)
 
         if len(lib_list) == 0:
             warn(f"No SCL lib files found for {timing_corner}.")
 
+        spef_list = []
         prioritized = None
         if prioritize_spef:
             prioritized = DesignFormat.SPEF
-        lib_list += self.get_macro_views(config, DesignFormat.LIB, timing_corner, _unless_exist=prioritized)
-        
-        extra_libs = config["EXTRA_LIBS"] or []
-        lib_list += extra_libs
+            spef_list = self.get_macro_views(config, DesignFormat.SPEF, timing_corner)
 
-        return (timing_corner, lib_list)
+        lib_list += self.get_macro_views(
+            config, DesignFormat.LIB, timing_corner, _unless_exist=prioritized
+        )
+
+        return (timing_corner, lib_list, spef_list)
 
     def _render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
         klayout_bin = which("klayout")

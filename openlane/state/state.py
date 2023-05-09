@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from __future__ import annotations
+
 import os
 import json
 import shutil
@@ -47,7 +49,10 @@ class StateDecoder(json.JSONDecoder):
         return super(StateEncoder, self).default(o)
 
 
-class State(UserDict):
+VT = Union[Path, Dict[str, Path], None]
+
+
+class State(UserDict[str, VT]):
     """
     Basically, a dictionary with keys of type :class:`DesignFormat` and values
     of type :class:`Path`.
@@ -60,8 +65,6 @@ class State(UserDict):
         it passed a certain check or not.
     """
 
-    VT = Union[Path, Dict[str, Path]]
-
     metrics: dict
 
     def __init__(self, metrics: Optional[dict] = None) -> None:
@@ -71,19 +74,19 @@ class State(UserDict):
             self[id] = None
         self.metrics = metrics or {}
 
-    def __getitem__(self, key: Union[DesignFormat, str]) -> Optional[VT]:
+    def __getitem__(self, key: Union[DesignFormat, str]) -> VT:
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
         return super().__getitem__(key)
 
-    def __setitem__(self, key: Union[DesignFormat, str], item: Optional[VT]):
+    def __setitem__(self, key: Union[DesignFormat, str], item: VT):
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
         return super().__setitem__(key, item)
 
-    def _as_dict(self, metrics: bool = True) -> dict:
+    def _as_dict(self, metrics: bool = True) -> Dict[str, Any]:
         final: Dict[Any, Any] = dict(self)
         if metrics:
             final["metrics"] = self.metrics
@@ -113,9 +116,6 @@ class State(UserDict):
     ):
         mkdirp(path)
         for key, value in views.items():
-            assert isinstance(
-                key, str
-            ), f"Misconstructed state in '{key_path}': '{key}' is not a string"
             current_key_path = f"{key_path}.{key}"
             if value is None:
                 continue
@@ -235,7 +235,6 @@ class State(UserDict):
                 </tr>
         """
         for id, value in self._as_dict(metrics=False).items():
-            assert isinstance(id, str)
             if value is None:
                 continue
 
