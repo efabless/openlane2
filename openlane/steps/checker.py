@@ -97,7 +97,7 @@ class YosysUnmappedCells(MetricChecker):
         Variable(
             "QUIT_ON_UNMAPPED_CELLS",
             bool,
-            "Checks for unmapped cells after sythesis",
+            "Checks for unmapped cells after synthesis.",
             deprecated_names=["CHECK_UNMAPPED_CELLS"],
             default=True,
         ),
@@ -108,6 +108,29 @@ class YosysUnmappedCells(MetricChecker):
 
     def get_metric_description(self) -> str:
         return "Unmapped Yosys instances"
+
+
+@Step.factory.register()
+class YosysSynthChecks(MetricChecker):
+    id = "Checker.YosysChecks"
+    flow_control_variable = "QUIT_ON_SYNTH_CHECKS"
+    name = "Yosys Synth Checks"
+    deferred = False
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_SYNTH_CHECKS",
+            bool,
+            "Quits the flow if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
+            default=True,
+        ),
+    ]
+
+    def get_metric_name(self) -> str:
+        return "synthesis__check_error__count"
+
+    def get_metric_description(self) -> str:
+        return "Yosys check errors"
 
 
 @Step.factory.register()
@@ -229,6 +252,29 @@ class WireLength(MetricChecker):
 
     def get_threshold_description(self) -> Optional[str]:
         return "the threshold specified in the configuration file."
+
+
+@Step.factory.register()
+class XOR(MetricChecker):
+    id = "Checker.XOR"
+    flow_control_variable = "QUIT_ON_XOR_ERROR"
+    name = "XOR Difference Checker"
+    long_name = "Magic vs. KLayout XOR Difference Checker"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_XOR_ERROR",
+            bool,
+            "Checks for geometric differences between the Magic and KLayout stream-outs.",
+            default=True,
+        ),
+    ]
+
+    def get_metric_name(self) -> str:
+        return "design__xor_difference__count"
+
+    def get_metric_description(self) -> str:
+        return "XOR differences"
 
 
 @Step.factory.register()
