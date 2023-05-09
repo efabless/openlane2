@@ -1,3 +1,10 @@
+# 2.0.0-a19
+* Create new metric `synthesis__check_error__count` with a corresponding Checker, with said Checker being the new executor of the `QUIT_ON_SYNTH_CHECKS` variable
+    * Check report parser imported from OpenLane 1
+* Create `SYNTH_CHECKS_ALLOW_TRISTATE` to exclude unmapped tribufs from previous metric.
+* Create new metric `design__xor_difference__count` with a corresponding Checker to flag a deferred error on XOR differences.
+* Fix a few typos.
+
 # 2.0.0-a18
 
 * Updated the smoke test to support PDK downloads to a different directory.

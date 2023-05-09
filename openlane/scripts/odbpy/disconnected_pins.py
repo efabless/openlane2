@@ -94,7 +94,9 @@ def main(
         disconnected_pins_count += len(disconnected_signal_pins) + len(
             disconnected_power_pins
         )
-    rich.print(table)
+
+    if disconnected_pins_count != 0:
+        rich.print(table)
 
     utl.metric_integer("design__disconnected_pins__count", disconnected_pins_count)
 

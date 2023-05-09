@@ -79,14 +79,6 @@ set A_factor  0.00
 set B_factor  0.88
 set F_factor  0.00
 
-# Don't change these unless you know what you are doing
-set stat_ext    ".stat.rpt"
-set chk_ext    ".chk.rpt"
-set gl_ext      ".gl.v"
-set constr_ext  ".$clock_period.constr"
-set timing_ext  ".timing.txt"
-set abc_ext     ".abc"
-
 
 # Create SDC File
 set sdc_file $::env(STEP_DIR)/synthesis.sdc
@@ -350,10 +342,6 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
         autoname
     }
     write_verilog -noattr -noexpr -nohex -nodec -defparam $output
-    if { $::env(QUIT_ON_SYNTH_CHECKS) == 1 } {
-        read_liberty -ignore_miss_func $::env(LIB_SYNTH)
-        check -assert $::env(DESIGN_NAME)
-    }
     design -reset
 }
 design -save checkpoint
