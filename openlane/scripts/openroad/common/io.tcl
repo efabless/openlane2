@@ -29,8 +29,7 @@ proc read_netlist {args} {
         set netlist $::env(CURRENT_POWERED_NETLIST)
     }
 
-    puts "Reading netlist '$netlist'…"
-
+    puts "> read_verilog $netlist"
     if {[catch {read_verilog $netlist} errmsg]} {
         puts stderr $errmsg
         exit 1
@@ -77,6 +76,7 @@ proc read_libs {args} {
 
     set i "0"
     set tc_key "TIMING_CORNER_$i"
+    puts [info exists ::env($tc_key)]
     while { [info exists ::env($tc_key)] } {
         set corner_name [lindex $::env($tc_key) 0]
         set corner_libs [lreplace $::env($tc_key) 0 0]
@@ -86,6 +86,8 @@ proc read_libs {args} {
         set i [expr $i + 1]
         set tc_key "TIMING_CORNER_$i"
     }
+
+    puts $i
 
     if { $i != "0" } {
         # Cannot be done incrementally, believe it or not
@@ -141,7 +143,6 @@ proc read {args} {
             exit 1
         }
     } else {
-        puts "\[INFO\]: Reading ODB at '$::env(CURRENT_ODB)'…"
         if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
             puts stderr $errmsg
             exit 1

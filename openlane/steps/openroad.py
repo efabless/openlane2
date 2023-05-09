@@ -244,12 +244,11 @@ class HierarchicalSTA(STA):
             self.config,
             prioritize_spef=self.config["HSTA_MACRO_PRIORITIZE_SPEF"],
         )
-        print(timing_corner, lib_list)
         env["TIMING_CORNER_0"] = timing_corner
         for lib in lib_list:
             env["TIMING_CORNER_0"] += f" {lib}"
 
-        return super().run(**kwargs)
+        return super().run(env=env, **kwargs)
 
 
 @Step.factory.register()

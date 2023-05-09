@@ -60,28 +60,41 @@ class Toolbox(object):
         config: Config,
         view: DesignFormat,
         timing_corner: Optional[str] = None,
+        _unless_exist: Optional[DesignFormat] = None
     ) -> List[Path]:
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         macros = config["MACROS"]
-        result = []
+        result: List[Path] = []
 
         if macros is None:
             return result
 
         id = view.value.id
+        superseding_id = "NONEXISTENT"
+        if _unless_exist is not None:
+            superseding_id = _unless_exist.value.id
         for macro in macros.values():
             assert isinstance(macro, Macro)
             views = None
             try:
                 views = getattr(macro, id)
-            except:
+            except AttributeError:
                 pass
-            if views is None:
+            superseding_views = None
+            print(superseding_id)
+            try:
+                superseding_views = getattr(macro, superseding_id)
+            except AttributeError:
+                pass
+            print(views, superseding_views)
+            if views is None and superseding_view is None:
                 warn(f"No {view.value.name} view found for macro '{macro.module}'.")
-            if isinstance(views, list):
-                result += views
-            else:
-                result.append(views)
+                continue
+            if superseding_views is not None:
+                continue
+
+            views_filtered = self.filter_views(config, views, timing_corner)
+            result += views_filtered
         return result
 
     def get_libs(
@@ -109,10 +122,13 @@ class Toolbox(object):
         if len(lib_list) == 0:
             warn(f"No SCL lib files found for {timing_corner}.")
 
-        if not prioritize_spef:
-            self.get_macro_views(config, DesignFormat.LIB, timing_corner)
-            extra_libs = config["EXTRA_LIBS"] or []
-            lib_list = lib_list + extra_libs
+        prioritized = None
+        if prioritize_spef:
+            prioritized = DesignFormat.SPEF
+        lib_list += self.get_macro_views(config, DesignFormat.LIB, timing_corner, _unless_exist=prioritized)
+        
+        extra_libs = config["EXTRA_LIBS"] or []
+        lib_list += extra_libs
 
         return (timing_corner, lib_list)
 
@@ -136,7 +152,7 @@ class Toolbox(object):
             return None
         lyp, lyt, lym = files
 
-        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        tech_lefs = self.filter_views(config, config["TECH_LEFS"])
         if len(tech_lefs) != 1:
             raise ValueError(
                 "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
