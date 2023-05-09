@@ -240,6 +240,10 @@ class XOR(Step):
             env=env,
         )
 
+        state_out.metrics["design__xor_difference__count"] = int(
+            open(os.path.join(self.step_dir, "difference_count.rpt")).read().strip()
+        )
+
         return state_out
 
 

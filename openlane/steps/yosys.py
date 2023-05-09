@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
+import io
 import json
 from typing import List, Optional
 from abc import abstractmethod
@@ -21,8 +23,91 @@ from .tclstep import TclStep
 from .common_variables import constraint_variables
 from ..state import State
 from ..state import DesignFormat
+from ..logging import verbose
 from ..common import get_script_dir
 from ..config import Path, Variable, StringEnum
+
+
+MULTIPLE_FAILURES = r"""
+21. Executing CHECK pass (checking for obvious problems).
+Checking module spm...
+Warning: multiple conflicting drivers for spm.\x:
+    module input f[0]
+    module input x[0]
+Warning: multiple conflicting drivers for spm.\y:
+    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
+    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:19$3 ($tribuf)
+    module input y[0]
+Warning: found logic loop in module spm:
+    cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
+    wire \y
+Found and reported 3 problems.
+"""
+
+NO_TRISTATE = r"""
+21. Executing CHECK pass (checking for obvious problems).
+Checking module spm...
+Warning: Wire spm.\k is used but has no driver.
+Found and reported 1 problems.
+"""
+
+TRISTATE_ONLY = r"""
+21. Executing CHECK pass (checking for obvious problems).
+Checking module spm...
+Warning: multiple conflicting drivers for spm.\y:
+    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
+    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:17$3 ($tribuf)
+    module input y[0]
+Warning: found logic loop in module spm:
+    cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
+    wire \y
+Found and reported 2 problems.
+"""
+
+starts_with_whitespace = re.compile(r"^\s+.+$")
+
+
+def parse_yosys_check(
+    report: io.TextIOBase,
+    tristate_okay: bool = False,
+) -> int:
+    """
+    >>> rpt = io.StringIO(MULTIPLE_FAILURES); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    True
+    >>> rpt = io.StringIO(MULTIPLE_FAILURES); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    True
+    >>> rpt = io.StringIO(NO_TRISTATE); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    False
+    >>> rpt = io.StringIO(NO_TRISTATE); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    False
+    >>> rpt = io.StringIO(TRISTATE_ONLY); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    False
+    >>> rpt = io.StringIO(TRISTATE_ONLY); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
+    True
+    """
+    verbose("Parsing synthesis checks…")
+    errors_encountered: int = 0
+    current_warning = None
+
+    for line in report:
+        if line.startswith("Warning:"):
+            if current_warning is not None:
+                if tristate_okay and "tribuf" in current_warning:
+                    verbose("Ignoring tristate-related error:")
+                    verbose(current_warning)
+                else:
+                    verbose("Encountered check error:")
+                    verbose(current_warning)
+                    errors_encountered += 1
+            current_warning = line
+        elif (
+            starts_with_whitespace.match(line) is not None
+            and current_warning is not None
+        ):
+            current_warning += line
+        else:
+            pass
+    return errors_encountered
 
 
 class YosysStep(TclStep):
@@ -102,15 +187,15 @@ class Synthesis(YosysStep):
             "The paths of the design's Verilog files.",
         ),
         Variable(
-            "QUIT_ON_SYNTH_CHECKS",
+            "SYNTH_CHECKS_ALLOW_TRISTATE",
             bool,
-            "Use yosys `check -assert` at the end of synthesis. This checks for combinational loops, conflicting drivers and wires with no drivers.",
+            "Ignore multiple-driver warnings if they are connected to tri-state buffers on a best-effort basis.",
             default=True,
         ),
         Variable(
             "SYNTH_AUTONAME",
             bool,
-            "Generates names for  netlistinstances. This results in instance names that can be very long, but are more human-readable.",
+            "Generates names for netlist instances. This results in instance names that can be very long, but are more human-readable.",
             default=False,
         ),
         Variable(
@@ -242,5 +327,10 @@ class Synthesis(YosysStep):
             cells[y] for y in cells.keys() if y.startswith(unmapped_keyword)
         ]
         state_out.metrics["design__instance_unmapped__count"] = sum(unmapped_cells)
+
+        state_out.metrics["synthesis__check_error__count"] = parse_yosys_check(
+            open(os.path.join(self.step_dir, "reports", "chk.rpt")),
+            self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
+        )
 
         return state_out
