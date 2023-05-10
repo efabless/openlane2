@@ -98,7 +98,7 @@ class WriteLEF(MagicStep):
     name = "Write LEF (Magic)"
     flow_control_variable = "RUN_MAGIC_WRITE_LEF"
 
-    inputs = [DesignFormat.GDS]
+    inputs = [DesignFormat.GDS, DesignFormat.DEF]
     outputs = [DesignFormat.LEF]
 
     config_vars = MagicStep.config_vars + [
@@ -110,9 +110,9 @@ class WriteLEF(MagicStep):
             deprecated_names=["MAGIC_GENERATE_LEF"],
         ),
         Variable(
-            "MAGIC_GENERATE_MAGLEF",
+            "MAGIC_LEF_WRITE_USE_GDS",
             bool,
-            "Generate a MAGLEF view using Magic alongside generated LEF views.",
+            "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
             default=True,
         ),
         Variable(
@@ -124,7 +124,7 @@ class WriteLEF(MagicStep):
     ]
 
     def get_script_path(self):
-        raise NotImplementedError()
+        return os.path.join(get_script_dir(), "magic", "lef.tcl")
 
 
 @Step.factory.register()

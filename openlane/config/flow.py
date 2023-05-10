@@ -52,12 +52,12 @@ all_variables = [
     ),
     Variable(
         "CLOCK_PORT",
-        Optional[str],
-        "The name of the design's clock port.",
+        Optional[List[str]],
+        "The name(s) of the design's clock port(s).",
     ),
     Variable(
         "CLOCK_NET",
-        Optional[str],
+        Optional[List[str]],
         "The name of the net input to root clock buffer.",
         default="ref::$CLOCK_PORT",
     ),

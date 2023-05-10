@@ -134,7 +134,7 @@ class State(UserDict[str, VT]):
             current_key_path = f"{key_path}.{key}"
             if value is None:
                 continue
-            current_folder = key
+            current_folder = key.strip("*")
             if df := DesignFormat.by_id(key):
                 assert isinstance(
                     df.value, DesignFormatObject
@@ -158,6 +158,12 @@ class State(UserDict[str, VT]):
                 shutil.copyfile(value, target_path, follow_symlinks=True)
 
     def save_snapshot(self, path: Union[str, os.PathLike]):
+        """
+        Validates the current state then saves all views to a folder by
+        design format, including the metrics.
+
+        :param path: The folder that would contain other folders.
+        """
         self.validate()
         self._save_snapshot_recursive(path, self)
         metrics_path = os.path.join(path, "metrics.csv")

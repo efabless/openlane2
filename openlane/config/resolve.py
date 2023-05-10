@@ -270,7 +270,7 @@ def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
                 elif len(files_escaped) > 1:
                     return files_escaped
 
-            return found_abs
+            return full_abspath
         except KeyError:
             raise InvalidConfig(
                 f"Referenced variable '{reference_variable}' not found."

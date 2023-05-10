@@ -981,6 +981,10 @@ class RCX(OpenROADStep):
                 )
                 return None
 
+            corner_clean = corner
+            if corner_clean.endswith("_*"):
+                corner_clean = corner_clean[:-2]
+
             nonlocal env
             current_env = env.copy()
 
@@ -998,17 +1002,15 @@ class RCX(OpenROADStep):
             current_env["RCX_LEF"] = tech_lefs[0]
             current_env["RCX_RULESET"] = rcx_ruleset
 
-            corner_clean = corner
-            if corner_clean.endswith("_*"):
-                corner_clean = corner_clean[:-2]
-
             out = os.path.join(
                 self.step_dir, f"{self.config['DESIGN_NAME']}.{corner_clean}.spef"
             )
             current_env["SAVE_SPEF"] = out
 
-            log_path = os.path.join(self.step_dir, f"{corner}.log")
-            info(f"Running RCX for the {corner} interconnect corner ({log_path})…")
+            log_path = os.path.join(self.step_dir, f"{corner_clean}.log")
+            info(
+                f"Running RCX for the {corner_clean} interconnect corner ({log_path})…"
+            )
 
             try:
                 self.run_subprocess(
@@ -1017,9 +1019,9 @@ class RCX(OpenROADStep):
                     env=current_env,
                     silent=True,
                 )
-                info(f"Finished RCX for the {corner} interconnect corner.")
+                info(f"Finished RCX for the {corner_clean} interconnect corner.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed RCX for the {corner} interconnect corner:")
+                err(f"Failed RCX for the {corner_clean} interconnect corner:")
                 raise e
 
             return out
@@ -1095,6 +1097,7 @@ class IRDropReport(OpenROADStep):
     id = "OpenROAD.IRDropReport"
     name = "IR Drop Report"
     long_name = "Generate IR Drop Report"
+    flow_control_variable = "RUN_IRDROP_REPORT"
 
     inputs = [DesignFormat.ODB, DesignFormat.SPEF]
     outputs = []

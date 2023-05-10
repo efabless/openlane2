@@ -24,7 +24,7 @@ from typing import FrozenSet, Mapping, Optional, Tuple, List, Union
 
 from .memoize import memoize
 
-from ..logging import verbose, warn
+from ..logging import debug, verbose, warn
 from ..config import Config, Macro
 from ..state import DesignFormat, Path
 from ..common import mkdirp, get_script_dir
@@ -129,7 +129,7 @@ class Toolbox(object):
                         f"Parasitics extraction(s) found for macro {module} at corner {timing_corner}, but no netlist found. The parasitics cannot be used for timing on this module."
                     )
                 elif len(spefs) and len(netlists):
-                    verbose(f"Adding {[netlists + spefs]} to timing info…")
+                    debug(f"Adding {[netlists + spefs]} to timing info…")
                     result += netlists
                     result += spefs
                     continue
@@ -144,7 +144,7 @@ class Toolbox(object):
                     f"No libs found for macro {module} at corner {timing_corner}. The module will be black-boxed."
                 )
                 continue
-            verbose(f"Adding {libs} to timing info…")
+            debug(f"Adding {libs} to timing info…")
             result += libs
 
         return (timing_corner, result)

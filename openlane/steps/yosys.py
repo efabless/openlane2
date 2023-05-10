@@ -22,7 +22,7 @@ from .step import Step
 from .tclstep import TclStep
 from .common_variables import constraint_variables
 
-from ..logging import verbose
+from ..logging import debug, verbose
 from ..common import get_script_dir
 from ..config import Variable, StringEnum
 from ..state import State, DesignFormat, Path
@@ -93,11 +93,11 @@ def parse_yosys_check(
         if line.startswith("Warning:"):
             if current_warning is not None:
                 if tristate_okay and "tribuf" in current_warning:
-                    verbose("Ignoring tristate-related error:")
-                    verbose(current_warning)
+                    debug("Ignoring tristate-related error:")
+                    debug(current_warning)
                 else:
-                    verbose("Encountered check error:")
-                    verbose(current_warning)
+                    debug("Encountered check error:")
+                    debug(current_warning)
                     errors_encountered += 1
             current_warning = line
         elif (

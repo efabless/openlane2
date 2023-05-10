@@ -19,38 +19,19 @@ proc is_blackbox {file_path blackbox_wildcard} {
     return [expr !$not_found]
 }
 
-proc read_netlists {args} {
-    sta::parse_key_args "read_netlists" args \
+proc read_netlist {args} {
+    sta::parse_key_args "read_netlist" args \
         keys {}\
         flags {-powered -all}
 
     set netlist $::env(CURRENT_NETLIST)
-    if { [info exists flags(-powered)] } {
-        set netlist $::env(CURRENT_POWERED_NETLIST)
-    }
-
     puts "> read_verilog $netlist"
     if {[catch {read_verilog $netlist} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
 
-    if { [info exists flags(-all)] } {
-        set blackbox_wildcard {/// sta-blackbox}
-        if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-            foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-                if { [is_blackbox $verilog_file $blackbox_wildcard] } {
-                    puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
-                } elseif { [catch {read_verilog $verilog_file} err] } {
-                    puts "Error while reading $verilog_file:"
-                    puts $err
-                    puts "Make sure that this a gate-level netlist not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
-                    exit 1
-                }
-            }
-        }
-    }
-
+    puts "> link_design $::env(DESIGN_NAME)"
     link_design $::env(DESIGN_NAME)
 
     if { [info exists ::env(CURRENT_SDC)] } {
@@ -87,6 +68,9 @@ proc read_timing_info {args} {
         return
     }
 
+    set nl_bucket [list]
+    set spef_bucket [list]
+
     define_corners {*}[array name corner]
 
     foreach corner_name [array name corner] {
@@ -95,19 +79,15 @@ proc read_timing_info {args} {
         set corner_models $corner($corner_name)
         foreach model $corner_models {
             if { [string match *.spef $model]} {
-                puts "> read_spef -corner $corner_name $model"
-                read_spef -corner $corner_name $model
+                lappend spef_bucket $corner_name $model
             } elseif { [string match *.v $model] } {
-                puts "> read_verilog $model"
-                if {[catch {read_verilog $model} errmsg]} {
-                    puts stderr $errmsg
-                    exit 1
-                }
+                lappend nl_bucket $model
             } else {
                 puts "> read_liberty -corner $corner_name $model"
                 read_liberty -corner $corner_name $model
             }
         }
+
         if { [info exists ::env(EXTRA_LIBS) ] } {
             puts "Reading explicitly-specified extra libs for $corner_name…"
             foreach extra_lib $::env(EXTRA_LIBS) {
@@ -117,16 +97,48 @@ proc read_timing_info {args} {
         }
     }
 
+    set macro_nls [lsort -unique $nl_bucket]
 
     if { [file tail [info nameofexecutable]] == "sta" } {
         # OpenSTA
-        read_netlists -all
-        if { [info exists ::env(CURRENT_SPEF)] } {
-            foreach corner_name [array name corner] {
-                set spef [dict get $::env(CURRENT_SPEF) $corner_name]
-                puts "> read_spef -corner $corner_name $spef"
-                read_spef -corner $corner_name $spef
+        set blackbox_wildcard {/// sta-blackbox}
+        foreach nl $macro_nls {
+            if { [catch {read_verilog $nl} err] } {
+                puts "Error while reading macro netlist '$nl':"
+                puts $err
+                puts "Make sure that this a gate-level netlist and not an RTL file."
+                exit 1
             }
+        }
+        if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+            foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
+                if { [is_blackbox $verilog_file $blackbox_wildcard] } {
+                    puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
+                } elseif { [catch {read_verilog $verilog_file} err] } {
+                    puts "Error while reading $verilog_file:"
+                    puts $err
+                    puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
+                    exit 1
+                }
+            }
+        }
+        read_netlist
+    }
+
+    set ::macro_spefs $spef_bucket
+}
+
+proc read_spefs {} {
+    if { [info exists ::env(CURRENT_SPEF)] } {
+        foreach {corner_name spef} $::env(CURRENT_SPEF) {
+            puts "> read_spef -corner $corner_name $spef"
+            read_spef -corner $corner_name $spef
+        }
+    }
+    if { [info exists ::env(macro_spefs)] } {
+        foreach {corner_name spef} $::env(spefs) {
+            puts "> read_spef -corner $corner_name $spef"
+            read_spef -corner $corner_name $spef
         }
     }
 }
@@ -194,6 +206,7 @@ proc read {args} {
     read_libs
 
     if { [info exists ::env(CURRENT_SDC)] } {
+        puts "> read_sdc $::env(CURRENT_SDC)"
         if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
             puts stderr $errmsg
             exit 1

@@ -505,7 +505,10 @@ class Step(ABC):
                         current_rpt.close()
                     current_rpt = None
                 elif current_rpt is not None:
+                    log_file.write(line)
                     current_rpt.write(line)
+                    # No echo- the timing reports especially can be very large
+                    # and terminal emulators will slow the flow down.
                 else:
                     if "table template" in line:
                         continue

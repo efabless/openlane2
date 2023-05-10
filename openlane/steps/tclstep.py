@@ -343,9 +343,7 @@ class TclStep(Step):
 
     def prepare_env(self, env: dict, state: State) -> dict:
         """
-        <!--
-        TODO
-        -->
+        Creates a copy of the environment dictionary, then converts
         """
         env = env.copy()
 

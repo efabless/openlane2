@@ -77,6 +77,7 @@ class Classic(SequentialFlow):
         OpenROAD.ParasiticsSTA,
         OpenROAD.IRDropReport,
         Magic.StreamOut,
+        Magic.WriteLEF,
         KLayout.StreamOut,
         KLayout.XOR,
         Checker.XOR,
