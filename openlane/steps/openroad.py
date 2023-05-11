@@ -203,11 +203,6 @@ class STA(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta", "multi_corner.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        kwargs, env = self.extract_env(kwargs)
-        env["STA_PRE_CTS"] = "0" if state_in.metrics.get("cts__run") else "1"
-        return super().run(state_in, env=env, **kwargs)
-
 
 @Step.factory.register()
 class HierarchicalSTA(STA):

@@ -1,9 +1,35 @@
+# 2.0.0-a20
+
+* Created a `Macro` definition object to replace a litany of variables.
+    * `libs`, `spefs` and `sdf` files now use wildcards as keys, which will be
+    matched against timing corners for loading, i.e., a SPEF with key `nom_*` will
+    match timing corner `nom_tt_025C_1V80`.
+        * This has been applied to PDK lib files, RCX rulesets and technology LEF
+        files as well.
+        * `Toolbox` object now has methods for matching the proper LIB/SPEF files.
+* PDKs now list a `DEFAULT_CORNER` for picking LIB files as well as a list of
+  `STA_TIMING` corners. 
+* Expanded the range of valid types for `Variable`: these new classes are
+  supported, all with theoretically infinite nesting:
+    * `Dict`
+    * `Union`
+    * `Literal`
+* `State` rewritten to support nested dictionaries and type annotations.
+    * (Subclass of `Mapping`- Python 3.8 does not support subscripting `UserDict`. Yep.)
+* Created a `config.json` for the caravel_upw example for testing purposes.
+* Updated Magic, add new patch for Clang
+* `self.state_in` is now always a future for consistency, but `run()` now takes
+  a `state_in` which is guaranteed to be resolved.
+* `EXTRA_LEFS`, `EXTRA_LIBS`, etc kept as a fallback for consistency.
+* Remove `STA_PRE_CTS`- STA now always propagates clocks
+
 # 2.0.0-a19
-* Create new metric `synthesis__check_error__count` with a corresponding Checker, with said Checker being the new executor of the `QUIT_ON_SYNTH_CHECKS` variable
+
+* Created new metric `synthesis__check_error__count` with a corresponding Checker, with said Checker being the new executor of the `QUIT_ON_SYNTH_CHECKS` variable
     * Check report parser imported from OpenLane 1
-* Create `SYNTH_CHECKS_ALLOW_TRISTATE` to exclude unmapped tribufs from previous metric.
-* Create new metric `design__xor_difference__count` with a corresponding Checker to flag a deferred error on XOR differences.
-* Fix a few typos.
+* Created `SYNTH_CHECKS_ALLOW_TRISTATE` to exclude unmapped tribufs from previous metric.
+* Created new metric `design__xor_difference__count` with a corresponding Checker to flag a deferred error on XOR differences.
+* Fixed a few typos.
 
 # 2.0.0-a18
 

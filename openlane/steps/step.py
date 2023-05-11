@@ -524,11 +524,12 @@ class Step(ABC):
                     # No echo- the timing reports especially can be very large
                     # and terminal emulators will slow the flow down.
                 else:
+                    log_file.write(line)
+                    # hack for sky130 ff libraries
                     if "table template" in line:
                         continue
                     if not silent:
                         verbose(line.strip())
-                    log_file.write(line)
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:

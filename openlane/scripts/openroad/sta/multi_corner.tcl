@@ -29,11 +29,7 @@ read_spefs
 
 set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um
 
-if { [info exists ::env(STA_PRE_CTS)] && $::env(STA_PRE_CTS) == 1 } {
-    unset_propagated_clock [all_clocks]
-} else {
-    set_propagated_clock [all_clocks]
-}
+set_propagated_clock [all_clocks]
 
 puts "%OL_CREATE_REPORT min.rpt"
 puts "\n==========================================================================="

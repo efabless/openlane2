@@ -36,7 +36,7 @@
   pkgs ? import ./pkgs.nix,
 }:
 
-with pkgs; stdenv.mkDerivation rec {
+with pkgs; clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
   rev = "44b269e037d41c312e2f7fed8fa6b349067cde74";
 
@@ -49,6 +49,7 @@ with pkgs; stdenv.mkDerivation rec {
 
   patches = [
     ./patches/magic/csh.patch
+    ./patches/magic/efbuild_void_return.patch
   ];
 
   nativeBuildInputs = [ python3 tcsh gnused ];

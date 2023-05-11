@@ -17,8 +17,8 @@ import os
 import json
 import shutil
 from decimal import Decimal
-from collections import UserDict, UserString
-from typing import Union, Optional, Dict, Any
+from collections import UserString
+from typing import Iterator, List, Mapping, TypeVar, Union, Optional, Dict, Any
 
 from .design_format import DesignFormat, DesignFormatObject
 from ..common import mkdirp
@@ -67,10 +67,10 @@ class StateDecoder(json.JSONDecoder):
 VT = Union[Path, Dict[str, Path], None]
 
 
-class State(UserDict[str, VT]):
+class State(Mapping[str, VT]):
     """
     Basically, a dictionary with keys of type :class:`DesignFormat` and values
-    of type :class:`Path`.
+    of (nested dictionaries of) :class:`Path`.
 
     The state is the only thing that can be altered by steps other than the
     filesystem.
@@ -80,26 +80,28 @@ class State(UserDict[str, VT]):
         it passed a certain check or not.
     """
 
+    _data: dict
+
     metrics: dict
 
     def __init__(self, metrics: Optional[dict] = None) -> None:
         super().__init__()
+        self._data = {}
         for format in DesignFormat:
-            id: str = format.value.id
-            self[id] = None
+            self[format] = None
         self.metrics = metrics or {}
 
     def __getitem__(self, key: Union[DesignFormat, str]) -> VT:
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
-        return super().__getitem__(key)
+        return self._data[key]
 
     def __setitem__(self, key: Union[DesignFormat, str], item: VT):
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
-        return super().__setitem__(key, item)
+        self._data[key] = item
 
     def _as_dict(self, metrics: bool = True) -> Dict[str, Any]:
         final: Dict[Any, Any] = dict(self)
@@ -107,10 +109,46 @@ class State(UserDict[str, VT]):
             final["metrics"] = self.metrics
         return final
 
-    def __copy__(self: "State") -> "State":
-        new = super().__copy__()
-        new.metrics = self.metrics.copy()
+    T = TypeVar("T", Dict, List)
+
+    def __copy_recursive__(self, input: T) -> T:
+        def resolve_value(value):
+            value_final = value
+            if isinstance(value, dict) or isinstance(value, list):
+                value_final = self.__copy_recursive__(value)
+            return value_final
+
+        if isinstance(input, list):
+            result = []
+            for value in input:
+                result.append(resolve_value(value))
+            return result
+        else:
+            result = {}
+            for key, value in input.items():
+                result[key] = resolve_value(value)
+            return result
+
+    def copy(self: "State") -> "State":
+        new = State()
+        new._data = self.__copy_recursive__(self._data)
+        new.metrics = self.__copy_recursive__(self.metrics)
         return new
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._data)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+    def __len__(self) -> int:
+        return len(self._data)
 
     def __repr__(self) -> str:
         return self._as_dict().__repr__()
