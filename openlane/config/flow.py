@@ -81,7 +81,7 @@ all_variables = [
     Variable(
         "MACROS",
         Optional[Dict[str, Macro]],
-        "A dictionary of Macros to be used.",
+        "A dictionary of Macro definition objects. See {py:class}`openlane.config.Macro` for more info.",
     ),
     Variable(
         "EXTRA_LEFS",
@@ -179,6 +179,7 @@ removed_variables: Dict[str, str] = {
     "GLB_OPTIMIZE_MIRRORING": "Shares DPL_OPTIMIZE_MIRRORING.",
     "GRT_MAX_DIODE_INS_ITERS": "Relevant diode insertion strategies removed.",
     "TAKE_LAYOUT_SCROT": "Buggy/dubious utility.",
+    "MAGIC_PAD": "Hacky/dubious utility.",
     "GENERATE_FINAL_SUMMARY_REPORT": "To be specified via API/CLI- not much of a configuration variable.",
     "USE_GPIO_PADS": "Add the pad's files to EXTRA_LEFS and EXTRA_VERILOG_MODELS as apprioriate.",
     "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",

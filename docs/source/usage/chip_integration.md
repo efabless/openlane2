@@ -16,22 +16,57 @@ The current methodology goes as follows:
 4. Hardening the full chip with the padframe.
 
 You already know how to harden individual macros from the previous document. Now, a couple are left.
+
 ## Hardening The Core
 
 The chip core would usually have other macros inside it.
 
-You need to set the following environment variables in your configuration file for the chip core:
+In addition to the configuration variables for most cores, you will also need
+to set the [`MACROS`](../reference/flow_config_vars.md#MACROS) configuration
+object.
 
-* [`VERILOG_FILES`](../reference/step_config_vars.md#Yosys.Synthesis.VERILOG_FILES)
-    * If you're using standard cells directly in your RTL, [`SYNTH_READ_BLACKBOX_LIB`](../reference/step_config_vars.md#Yosys.Synthesis.SYNTH_READ_BLACKBOX_LIB)
+The Macro configuration object may look kind of like this:
+
+```json
+{
+    "MACROS": {
+        "spm": {
+            "instances": {
+                "spm_1": {
+                    "location": [100, 100],
+                    "orientation": "N"
+                }
+            },
+            "libs": ["dir::macros/spm/lib/spm.lib"],
+            "gds": [
+                "dir::macros/spm/gds/spm.magic.gds"
+            ],
+            "lef": [
+                "dir::macros/spm/lef/spm.lef"
+            ],
+            "nl": [
+                "dir::macros/spm/nl/spm.nl.v"
+            ],
+            "spef": {
+                "nom_*": "dir::macros/spm/spef/nom/spm.nom.spef",
+                "min_*": "dir::macros/spm/spef/min/spm.min.spef",
+                "max_*": "dir::macros/spm/spef/max/spm.max.spef"
+            }
+        }
+    }
+}
+```
+
+The flow will handle loading any views you specify appropriately: `nl` will be
+loaded during STA for example, `lef` during PNR and `gds` during stream-out.
+
+For backwards compatibility with OpenLane 1, there exist a number of variables
+that load views indiscriminately, but their use is discouraged:
+
 * [`EXTRA_LIBS`](../reference/flow_config_vars.md#EXTRA_LIBS)
 * [`EXTRA_LEFS`](../reference/flow_config_vars.md#EXTRA_LEFS)
 * [`EXTRA_VERILOG_MODELS`](../reference/flow_config_vars.md#EXTRA_VERILOG_MODELS)
 * [`EXTRA_GDS_FILES`](../reference/flow_config_vars.md#EXTRA_GDS_FILES)
-
-You also need to enable the [`Odb.ManualMacroPlacement`](../reference/step_config_vars.md#manual-macro-placement) step.
-* In the default flow, you use it by creating a placement configuration file and pointing to it using this variable: [`MACRO_PLACEMENT_CFG`](../reference/step_config_vars.md#Odb.ManualMacroPlacement.MACRO_PLACEMENT_CFG)
-
 <!--
 TODO:
     * Padframe

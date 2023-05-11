@@ -68,7 +68,9 @@
                     "orientation": "N"
                 }
             },
-            "gds": "dir::macros/user_proj_example.gds",
+            "gds": [
+                "dir::macros/user_proj_example.gds"
+            ],
             "lef": [
                 "dir::macros/user_proj_example.lef"
             ]
@@ -90,7 +92,9 @@
                     "orientation": "N"
                 }
             },
-            "gds": "dir::macros/user_proj_example2.gds",
+            "gds": [
+                "dir::macros/user_proj_example2.gds"
+            ],
             "lef": [
                 "dir::macros/user_proj_example2.lef"
             ]

@@ -36,7 +36,9 @@
                     "orientation": "N"
                 }
             },
-            "gds": "dir::macros/spm/gds/spm.magic.gds",
+            "gds": [
+                "dir::macros/spm/gds/spm.magic.gds"
+            ],
             "lef": [
                 "dir::macros/spm/lef/spm.lef"
             ],

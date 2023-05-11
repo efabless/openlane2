@@ -540,7 +540,7 @@ class Variable:
                         extra_spef_list[start + 2],
                         extra_spef_list[start + 3],
                     )
-                    macro_dict = {"module": module, "gds": "/dev/null"}
+                    macro_dict = {"module": module, "gds": ["/dev/null"]}
                     macro_dict["spef"] = {
                         "min_*": [min],
                         "nom_*": [nom],
