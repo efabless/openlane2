@@ -84,10 +84,8 @@ class StreamOut(Step):
         )
     ]
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
-
-        assert isinstance(self.state_in, State)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         lyp = self.config["KLAYOUT_PROPERTIES"]
         lyt = self.config["KLAYOUT_TECH"]
@@ -131,7 +129,7 @@ class StreamOut(Step):
                     "klayout",
                     "stream_out.py",
                 ),
-                self.state_in[DesignFormat.DEF.value.id],
+                state_in[DesignFormat.DEF.value.id],
                 "--output",
                 klayout_gds_out,
                 "--lyt",
@@ -200,8 +198,8 @@ class XOR(Step):
         ),
     ]
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         ignored = ""
         if ignore_list := self.config["KLAYOUT_XOR_IGNORE_LAYERS"]:
@@ -258,10 +256,8 @@ class OpenGUI(Step):
     inputs = [DesignFormat.DEF]
     outputs = []
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
-
-        assert isinstance(self.state_in, State)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         lyp = self.config["KLAYOUT_PROPERTIES"]
         lyt = self.config["KLAYOUT_TECH"]
@@ -287,7 +283,7 @@ class OpenGUI(Step):
             str(lyp),
             "--lym",
             str(lym),
-            str(self.state_in.get("def")),
+            str(state_out.get("def")),
         ] + lefs
 
         print(" ".join(cmd))

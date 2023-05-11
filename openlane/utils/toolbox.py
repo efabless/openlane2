@@ -24,7 +24,7 @@ from typing import FrozenSet, Mapping, Optional, Tuple, List, Union
 
 from .memoize import memoize
 
-from ..logging import debug, verbose, warn
+from ..logging import debug, warn
 from ..config import Config, Macro
 from ..state import DesignFormat, Path
 from ..common import mkdirp, get_script_dir
@@ -68,8 +68,11 @@ class Toolbox(object):
         if macros is None:
             return result
 
-        for macro in macros.values():
-            assert isinstance(macro, Macro)
+        for module, macro in macros.items():
+            if not isinstance(macro, Macro):
+                raise TypeError(
+                    f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
+                )
             views = macro.view_by_df(view)
 
             if isinstance(views, dict):
@@ -111,13 +114,16 @@ class Toolbox(object):
         if macros is None:
             macros = {}
 
-        for module, data in macros.items():
-            assert isinstance(data, Macro)
+        for module, macro in macros.items():
+            if not isinstance(macro, Macro):
+                raise TypeError(
+                    f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
+                )
             if prioritize_nl:
-                netlists = data.nl
+                netlists = macro.nl
                 spefs = self.filter_views(
                     config,
-                    data.spef,
+                    macro.spef,
                     timing_corner,
                 )
                 if len(netlists) and not len(spefs):
@@ -136,7 +142,7 @@ class Toolbox(object):
             # NL/SPEF not prioritized or not found
             libs = self.filter_views(
                 config,
-                data.lib,
+                macro.lib,
                 timing_corner,
             )
             if not len(libs):

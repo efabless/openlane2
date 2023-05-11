@@ -43,8 +43,8 @@ class LoadBaseSDC(Step):
         ),
     ]
 
-    def run(self, **kwargs) -> State:
-        new_state = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        new_state = super().run(state_in, **kwargs)
         new_state[DesignFormat.SDC] = Path(
             os.path.join(
                 get_script_dir(),

@@ -74,7 +74,7 @@ class MagicStep(TclStep):
             str(self.config["MAGICRC"]),
         ]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         # https://github.com/RTimothyEdwards/magic/issues/218
         kwargs, env = self.extract_env(kwargs)
         kwargs["stdin"] = open(
@@ -85,7 +85,7 @@ class MagicStep(TclStep):
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
-        return super().run(env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -187,13 +187,12 @@ class StreamOut(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        assert isinstance(self.state_in, State)
-        if diea_area := self.state_in.metrics.get("design__die__bbox"):
+        if diea_area := state_in.metrics.get("design__die__bbox"):
             env["DIE_AREA"] = diea_area
 
-        state_out = super().run(env=env, **kwargs)
+        state_out = super().run(state_in, env=env, **kwargs)
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
             state_out[DesignFormat.GDS] = state_out[DesignFormat.MAG_GDS]
         return state_out
@@ -239,8 +238,8 @@ class DRC(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "drc.tcl")
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         reports_dir = os.path.join(self.step_dir, "reports")
         report_path = os.path.join(reports_dir, "drc.rpt")
@@ -299,8 +298,8 @@ class SpiceExtraction(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()

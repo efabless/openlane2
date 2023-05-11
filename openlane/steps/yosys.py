@@ -291,10 +291,7 @@ class Synthesis(YosysStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         kwargs, env = self.extract_env(kwargs)
 
@@ -316,7 +313,7 @@ class Synthesis(YosysStep):
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
-        state_out = super().run(env=env, **kwargs)
+        state_out = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()

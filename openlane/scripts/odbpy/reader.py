@@ -114,6 +114,7 @@ def click_odb(function):
     for format in DesignFormat:
         if write_fn.get(format) is None:
             continue
+        # For type-checker: all guaranteed to be DesignFormatObjects
         assert isinstance(format.value, DesignFormatObject)
         wrapper = click.option(
             f"--output-{format.value.id}",

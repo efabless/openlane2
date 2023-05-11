@@ -92,7 +92,7 @@ class Step(ABC):
     :param state_in: The state object this step will use as an input.
 
         The state may also be a ``Future[State]``, in which case,
-        the ``run()`` call will block until that Future is realized.
+        the ``start()`` call will block until that Future is realized.
         This allows you to chain a number of asynchronous steps.
 
         See https://en.wikipedia.org/wiki/Futures_and_promises for a primer.
@@ -240,7 +240,13 @@ class Step(ABC):
                 Step.counter += 1
         else:
             self.step_dir = step_dir
-        self.state_in = state_in
+
+        state_in_future: Future[State] = Future()
+        if isinstance(state_in, State):
+            state_in_future.set_result(state_in)
+        else:
+            state_in_future = state_in
+        self.state_in = state_in_future
 
     @classmethod
     def _get_desc(Self) -> str:
@@ -302,7 +308,10 @@ class Step(ABC):
 
                 output_str = ""
                 if output is not None:
-                    assert isinstance(output, DesignFormat)
+                    if not isinstance(output, DesignFormat):
+                        raise StepException(
+                            f"Output '{output}' is not a valid DesignFormat enum object."
+                        )
                     output_str = f"{output.value.name} (.{output.value.extension})"
                 result += f"| {input_str} | {output_str} |"
 
@@ -374,8 +383,7 @@ class Step(ABC):
         else:
             self.toolbox = toolbox
 
-        if isinstance(self.state_in, Future):
-            self.state_in = self.state_in.result()
+        state_in_result = self.state_in.result()
 
         rule(f"{self.long_name}")
 
@@ -389,7 +397,7 @@ class Step(ABC):
                         info(
                             f"`{self.flow_control_variable}` is set to False: skipping {self.id} …"
                         )
-                        return self.state_in.copy()
+                        return state_in_result.copy()
             elif flow_control_value is None:
                 if self.flow_control_msg is not None:
                     info(self.flow_control_msg)
@@ -397,14 +405,14 @@ class Step(ABC):
                     info(
                         f"Required variable '{self.flow_control_variable}' is set to null: skipping…"
                     )
-                return self.state_in.copy()
+                return state_in_result.copy()
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
-            f.write(self.state_in.dumps())
+            f.write(state_in_result.dumps())
 
         self.start_time = time.time()
-        self.state_out = self.run(**kwargs)
+        self.state_out = self.run(state_in_result, **kwargs)
         try:
             self.state_out.validate()
         except InvalidState as e:
@@ -418,31 +426,37 @@ class Step(ABC):
             LastState = self.state_out
         return self.state_out
 
-    @internal
     @abstractmethod
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         """
         The "core" of a step.
 
-        When subclassing, override this function, then call it first thing
-        via super().run(**kwargs). This lets you use the input verification and
-        the State copying code, as well as resolving the ``state_in`` if ``state_in``
-        is a future.
+        When subclassing, override this function. You may call it first thing
+        via super().run(**kwargs) where it verifies the existence of inputs and
+        copies the input state.
+        This step is considered per-object private, i.e., if a Step's run is
+        called anywhere outside of the same object's :meth:`start`, its behavior
+        is undefined.
 
+        :param state_in: The input state.
+
+            Note that `self.state_in` is stored as a future and would need to be
+            resolved before use first otherwise.
+
+            For reference, `start()` is responsible for resolving it
+            for `.run()`.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
 
-        assert isinstance(self.state_in, State)
-
         for input in self.inputs:
-            value = self.state_in[input]
+            value = state_in[input]
             if value is None:
                 raise StepException(
                     f"{type(self).__name__}: missing required input '{input.name}'"
                 )
 
-        return self.state_in.copy()
+        return state_in.copy()
 
     def get_log_path(self) -> str:
         return os.path.join(self.step_dir, f"{slugify(self.id)}.log")
@@ -597,7 +611,7 @@ class Step(ABC):
             return """
                 ### Step not yet executed.
             """
-        assert isinstance(self.state_in, State)
+        state_in = self.state_in.result()
         assert self.start_time is not None and self.end_time is not None
 
         result = ""
@@ -610,7 +624,7 @@ class Step(ABC):
             if value is None:
                 continue
 
-            if self.state_in.get(id) != value:
+            if state_in.get(id) != value:
                 df = DesignFormat.by_id(id)
                 assert df is not None
                 views_updated.append(df.value.name)

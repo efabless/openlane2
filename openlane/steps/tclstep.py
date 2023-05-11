@@ -382,10 +382,7 @@ class TclStep(Step):
 
         return env
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         """
         This overriden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
@@ -398,16 +395,16 @@ class TclStep(Step):
 
             kwargs, env = self.extract_env(kwargs)
             env["CUSTOM_ENV_VARIABLE"] = "1"
-            return super().run(env=env, **kwargs)
+            return super().run(state_in, env=env, **kwargs)
 
         This will allow you to add further custom environment variables to a call
         while still respecting an `env` argument further up the call-stack.
 
-
+        :param state_in: See superclass.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-        state = super().run()
+        state = super().run(state_in, **kwargs)
         command = self.get_command()
 
         kwargs, env = self.extract_env(kwargs)

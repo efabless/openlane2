@@ -181,4 +181,6 @@ removed_variables: Dict[str, str] = {
     "TAKE_LAYOUT_SCROT": "Buggy/dubious utility.",
     "GENERATE_FINAL_SUMMARY_REPORT": "To be specified via API/CLI- not much of a configuration variable.",
     "USE_GPIO_PADS": "Add the pad's files to EXTRA_LEFS and EXTRA_VERILOG_MODELS as apprioriate.",
+    "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
+    "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
 }

@@ -137,12 +137,10 @@ class LVS(NetgenStep):
     def get_script_path(self):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
-    def run(self, **kwargs) -> State:
-        assert isinstance(self.state_in, State)
-
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["NETGEN_SETUP"] is None:
             info(f"Skipping {self.name}: Netgen is not supported for this PDK.")
-            return Step.run(self, **kwargs)
+            return Step.run(self, state_in, **kwargs)
 
         spice_glob = os.path.join(
             self.config[Keys.pdk_root],
@@ -174,11 +172,11 @@ class LVS(NetgenStep):
                 )
 
             print(
-                f"lvs {{ {self.state_in[DesignFormat.SPICE]} {design_name} }} {{ {self.state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {os.path.abspath(self.step_dir)}/lvs.rpt -json",
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {os.path.abspath(self.step_dir)}/lvs.rpt -json",
                 file=f,
             )
 
-        state_out = super().run(**kwargs)
+        state_out = super().run(state_in, **kwargs)
         stats_file = os.path.join(self.step_dir, "lvs.json")
         stats_string = open(stats_file).read()
         lvs_metrics = get_metrics(json.loads(stats_string))

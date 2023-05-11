@@ -17,8 +17,12 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_timing_info
 if { [file tail [info nameofexecutable]] == "openroad" } {
     read
-    if { [info exists ::env(ESTIMATE_PARASITICS)]} {
-        estimate_parasitics {*}$::env(ESTIMATE_PARASITICS)
+
+    # Internal API- brittle
+    if { [grt::have_routes] } {
+        estimate_parasitics -global_routing
+    } elseif { [rsz::check_corner_wire_cap] } {
+        estimate_parasitics -placement
     }
 }
 read_spefs

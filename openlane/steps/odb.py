@@ -35,17 +35,8 @@ class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        """
-        <!--
-        TODO
-        -->
-        """
-
-        state_out = super().run(**kwargs)
+    def run(self, state_in, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
         kwargs, env = self.extract_env(kwargs)
 
         out_paths = {}
@@ -165,10 +156,10 @@ class SetPowerConnections(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
 
     def get_command(self) -> List[str]:
-        assert isinstance(self.state_in, State)
+        state_in = self.state_in.result()
         return super().get_command() + [
             "--input-json",
-            str(self.state_in[DesignFormat.JSON_HEADER]),
+            str(state_in[DesignFormat.JSON_HEADER]),
         ]
 
 
@@ -203,7 +194,7 @@ class ManualMacroPlacement(OdbpyStep):
             "--fixed",
         ]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
             warn(
@@ -216,8 +207,11 @@ class ManualMacroPlacement(OdbpyStep):
             )
             if instance_count >= 1:
                 with open(cfg_file, "w") as f:
-                    for macro in macros.values():
-                        assert isinstance(macro, Macro)
+                    for module, macro in macros.items():
+                        if not isinstance(macro, Macro):
+                            raise StepException(
+                                f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
+                            )
                         for name, data in macro.instances.items():
                             f.write(
                                 f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
@@ -225,9 +219,9 @@ class ManualMacroPlacement(OdbpyStep):
 
         if not cfg_file.exists():
             warn("No instances found, skipping…")
-            return Step.run(self, **kwargs)
+            return Step.run(self, state_in, **kwargs)
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -379,17 +373,17 @@ class DiodesOnPorts(OdbpyStep):
             self.config["DIODE_ON_PORTS"].value,
         ]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["DIODE_ON_PORTS"].value == "none":
             warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
-            return Step.run(self, **kwargs)
+            return Step.run(self, state_in, **kwargs)
 
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -453,10 +447,10 @@ class HeuristicDiodeInsertion(OdbpyStep):
             + threshold_opts
         )
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)

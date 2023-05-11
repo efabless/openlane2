@@ -35,9 +35,9 @@ from .common_variables import (
     constraint_variables,
 )
 
+from ..common import get_script_dir
 from ..logging import err, info, warn
 from ..config import Variable, StringEnum
-from ..common import get_script_dir, mkdirp
 from ..state import State, DesignFormat, Path
 
 EXAMPLE_INPUT = """
@@ -141,10 +141,7 @@ class OpenROADStep(TclStep):
 
         return env
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
+    def run(self, state_in, **kwargs) -> State:
         """
         The `run()` override for the OpenROADStep class handles two things:
 
@@ -157,7 +154,7 @@ class OpenROADStep(TclStep):
         """
         kwargs, env = self.extract_env(kwargs)
 
-        state_out = super().run(env=env, **kwargs)
+        state_out = super().run(state_in, env=env, **kwargs)
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
@@ -175,9 +172,8 @@ class OpenROADStep(TclStep):
         if self.state_out is None:
             return None
 
-        assert isinstance(self.state_in, State)
-
-        if self.state_out.get("def") == self.state_in.get("def"):
+        state_in = self.state_in.result()
+        if self.state_out.get("def") == state_in.get("def"):
             return None
 
         if image := self.toolbox.render_png(self.config, str(self.state_out["def"])):
@@ -207,15 +203,10 @@ class STA(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta", "multi_corner.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        assert isinstance(self.state_in, State)
-        env["STA_PRE_CTS"] = "0" if self.state_in.metrics.get("cts__run") else "1"
-        if self.state_in.metrics.get("grt__run"):
-            env["ESTIMATE_PARASITICS"] = "-global_routing"
-        elif self.state_in.metrics.get("gpl__run"):
-            env["ESTIMATE_PARASITICS"] = "-placement"
-        return super().run(env=env, **kwargs)
+        env["STA_PRE_CTS"] = "0" if state_in.metrics.get("cts__run") else "1"
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -244,9 +235,8 @@ class HierarchicalSTA(STA):
     def get_command(self) -> List[str]:
         return ["sta", "-exit", self.get_script_path()]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        assert isinstance(self.state_in, State)
 
         timing_corner, timing_file_list = self.toolbox.get_timing_files(
             self.config,
@@ -256,7 +246,7 @@ class HierarchicalSTA(STA):
         for view in timing_file_list:
             env["TIMING_CORNER_0"] += f" {view}"
 
-        return super().run(env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -283,16 +273,23 @@ class ParasiticsSTA(HierarchicalSTA):
         ),
     ]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
-        assert isinstance(self.state_in, State)
 
         env["LIB_SAVE_DIR"] = self.step_dir
         env["CURRENT_SPEF"] = ""
         for i, corner in enumerate(self.config["STA_CORNERS"]):
-            spefs = self.toolbox.filter_views(
-                self.config, self.state_in["spef"], corner
-            )
+            if state_in["spef"] is None:
+                raise StepException(
+                    "SPEF extraction was not performed before parasitics STA."
+                )
+
+            if not isinstance(state_in["spef"], dict):
+                raise StepException(
+                    f"Malformed input state: value for SPEF is not a dictionary."
+                )
+
+            spefs = self.toolbox.filter_views(self.config, state_in["spef"], corner)
             if len(spefs) < 1:
                 raise StepException(
                     f"No SPEF file compatible with corner '{corner}' found."
@@ -316,14 +313,20 @@ class ParasiticsSTA(HierarchicalSTA):
                 timing_file_value += f" {view}"
             env[tc_key] = timing_file_value
 
-        state_out = super().run(env=env, **kwargs)
+        state_out = super().run(state_in, env=env, **kwargs)
 
-        state_out[DesignFormat.LIB] = state_out.get(DesignFormat.LIB) or {}
+        lib_dict = state_out[DesignFormat.LIB] or {}
+
+        if not isinstance(lib_dict, dict):
+            raise StepException(
+                f"Malformed input state: value for LIB is not a dictionary."
+            )
         libs = glob(os.path.join(self.step_dir, "*.lib"))
         for lib in libs:
             corner = lib[:-4]
-            state_out[DesignFormat.LIB][corner] = os.path.join(self.step_dir, lib)
+            lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
 
+        state_out[DesignFormat.LIB] = lib_dict
         return state_out
 
 
@@ -394,7 +397,7 @@ class Floorplan(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         path = self.config["FP_TRACKS_INFO"]
         tracks_info_str = open(path).read()
         tracks_commands = old_to_new_tracks(tracks_info_str)
@@ -404,7 +407,7 @@ class Floorplan(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
-        return super().run(env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -447,12 +450,12 @@ class IOPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             # Skip - Step just checks and copies
-            return Step.run(self, **kwargs)
+            return Step.run(self, state_in, **kwargs)
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -553,12 +556,6 @@ class GlobalPlacement(OpenROADStep):
                 default=True,
             ),
             Variable(
-                "PL_ESTIMATE_PARASITICS",
-                bool,
-                "Specifies whether or not to run STA after global placement using OpenROAD's estimate_parasitics -placement and generate reports.",
-                default=True,
-            ),
-            Variable(
                 "FP_CORE_UTIL",
                 Decimal,
                 "The core utilization percentage.",
@@ -571,14 +568,13 @@ class GlobalPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "gpl.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         env[
             "PL_TARGET_DENSITY_PCT"
         ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
         # Overriden by super if the value is not None
-        state_out = super().run(env=env, **kwargs)
-        state_out.metrics["gpl__run"] = True
+        state_out = super().run(state_in, env=env, **kwargs)
         return state_out
 
 
@@ -700,8 +696,8 @@ class CTS(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
         state_out.metrics["cts__run"] = True
         return state_out
 
@@ -757,12 +753,6 @@ class GlobalRouting(OpenROADStep):
                 deprecated_names=["GRT_ANT_ITERS"],
             ),
             Variable(
-                "GRT_ESTIMATE_PARASITICS",
-                bool,
-                "Specifies whether or not to run STA after global routing using OpenROAD's `estimate_parasitics -global_routing`.",
-                default=True,
-            ),
-            Variable(
                 "GRT_OVERFLOW_ITERS",
                 int,
                 "The maximum number of iterations waiting for the overflow to reach the desired value.",
@@ -774,8 +764,8 @@ class GlobalRouting(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         antenna_rpt_path = os.path.join(self.step_dir, "antenna.rpt")
         net_count = get_antenna_nets(
@@ -807,7 +797,6 @@ class GlobalRouting(OpenROADStep):
             net_count = net_count_after
 
         state_out.metrics["antenna__count"] = net_count
-        state_out.metrics["grt__run"] = True
 
         return state_out
 
@@ -864,11 +853,11 @@ class DetailedRouting(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("ROUTING_CORES") is None:
             env["ROUTING_CORES"] = str(os.cpu_count() or 1)
-        return super().run(env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -888,10 +877,10 @@ class LayoutSTA(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         kwargs, env = self.extract_env(kwargs)
         env["RUN_STANDALONE"] = "1"
-        return super().run(env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -964,12 +953,12 @@ class RCX(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         process_count = os.cpu_count()
         if cores := self.config.get("RCX_CORES"):
             process_count = cores
 
-        state = Step.run(self, **kwargs)
+        state = Step.run(self, state_in, **kwargs)
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state)
 
@@ -1034,10 +1023,17 @@ class RCX(OpenROADStep):
                     corner,
                 )
 
-        state[DesignFormat.SPEF] = state.get(DesignFormat.SPEF) or {}
+        spef_dict = state[DesignFormat.SPEF] or {}
+        if not isinstance(spef_dict, dict):
+            raise StepException(
+                f"Malformed input state: value for SPEF is not a dictionary."
+            )
+
         for corner, future in futures.items():
             if result := future.result():
-                state[DesignFormat.SPEF][corner] = Path(result)
+                spef_dict[corner] = Path(result)
+
+        state[DesignFormat.SPEF] = spef_dict
 
         return state
 
@@ -1077,8 +1073,8 @@ class CheckAntennas(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "check_antennas.tcl")
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         state_out.metrics["antenna__count"] = get_antenna_nets(
             open(os.path.join(self.step_dir, "antenna.rpt")),
@@ -1114,16 +1110,22 @@ class IRDropReport(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         from decimal import Decimal
 
-        assert isinstance(self.state_in, State)
-        spefs = self.state_in["spef"]
-        assert isinstance(spefs, dict), "Invalid input state: spef is not a dictionary"
+        if state_in["spef"] is None:
+            raise StepException(
+                "SPEF extraction was not performed before IR drop report."
+            )
+
+        if not isinstance(state_in["spef"], dict):
+            raise StepException(
+                f"Malformed input state: value for SPEF is not a dictionary."
+            )
 
         kwargs, env = self.extract_env(kwargs)
 
-        spefs_in = self.toolbox.filter_views(self.config, spefs)
+        spefs_in = self.toolbox.filter_views(self.config, state_in["spef"])
         if len(spefs_in) > 1:
             raise StepException(
                 "Found more than one input SPEF file for the default corner."
@@ -1132,7 +1134,7 @@ class IRDropReport(OpenROADStep):
             raise StepException("No SPEF file found for the default corner.")
 
         env["CURRENT_SPEF"] = str(spefs_in[0])
-        state_out = super().run(env=env, **kwargs)
+        state_out = super().run(state_in, env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
 
@@ -1407,10 +1409,8 @@ class OpenGUI(Step):
     inputs = [DesignFormat.ODB]
     outputs = []
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run(**kwargs)
-
-        assert isinstance(self.state_in, State)
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
             f.write(f"read_db \"{state_out['odb']}\"")

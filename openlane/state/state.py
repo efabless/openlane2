@@ -136,9 +136,8 @@ class State(UserDict[str, VT]):
                 continue
             current_folder = key.strip("*")
             if df := DesignFormat.by_id(key):
-                assert isinstance(
-                    df.value, DesignFormatObject
-                )  # This one's for the type checker to shut up
+                # For type-checker: all guaranteed to be DesignFormatObjects
+                assert isinstance(df.value, DesignFormatObject)
                 current_folder = df.value.folder
 
             if isinstance(value, dict):
@@ -200,6 +199,9 @@ class State(UserDict[str, VT]):
                     )
 
     def validate(self):
+        """
+        Ensures that all paths exist in a State.
+        """
         self._validate_recursive(self._as_dict(metrics=False))
 
     @classmethod
