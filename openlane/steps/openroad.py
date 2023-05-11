@@ -286,7 +286,7 @@ class ParasiticsSTA(HierarchicalSTA):
 
             if not isinstance(state_in["spef"], dict):
                 raise StepException(
-                    f"Malformed input state: value for SPEF is not a dictionary."
+                    "Malformed input state: value for SPEF is not a dictionary."
                 )
 
             spefs = self.toolbox.filter_views(self.config, state_in["spef"], corner)
@@ -319,7 +319,7 @@ class ParasiticsSTA(HierarchicalSTA):
 
         if not isinstance(lib_dict, dict):
             raise StepException(
-                f"Malformed input state: value for LIB is not a dictionary."
+                "Malformed input state: value for LIB is not a dictionary."
             )
         libs = glob(os.path.join(self.step_dir, "*.lib"))
         for lib in libs:
@@ -1026,7 +1026,7 @@ class RCX(OpenROADStep):
         spef_dict = state[DesignFormat.SPEF] or {}
         if not isinstance(spef_dict, dict):
             raise StepException(
-                f"Malformed input state: value for SPEF is not a dictionary."
+                "Malformed input state: value for SPEF is not a dictionary."
             )
 
         for corner, future in futures.items():
@@ -1120,7 +1120,7 @@ class IRDropReport(OpenROADStep):
 
         if not isinstance(state_in["spef"], dict):
             raise StepException(
-                f"Malformed input state: value for SPEF is not a dictionary."
+                "Malformed input state: value for SPEF is not a dictionary."
             )
 
         kwargs, env = self.extract_env(kwargs)
