@@ -1,3 +1,10 @@
+# 2.0.0-a21
+
+* Created a (very) rudimentary plugin system
+    * Add ability to list detected plugins with flag `--list-plugins`
+* Fixed a problem with reading SPEF files for macros
+* Various documentation updates
+
 # 2.0.0-a20
 
 * Created a `Macro` definition object to replace a litany of variables.
