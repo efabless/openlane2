@@ -15,12 +15,10 @@ import os
 from typing import Optional
 
 from .step import Step
-from ..state import State
-from ..state import DesignFormat
-
 from ..logging import info
 from ..common import get_script_dir
-from ..config import Path, Variable
+from ..config import Variable
+from ..state import State, DesignFormat, Path
 
 
 @Step.factory.register()
@@ -45,8 +43,8 @@ class LoadBaseSDC(Step):
         ),
     ]
 
-    def run(self, **kwargs) -> State:
-        new_state = super().run(**kwargs)
+    def run(self, state_in: State, **kwargs) -> State:
+        new_state = super().run(state_in, **kwargs)
         new_state[DesignFormat.SDC] = Path(
             os.path.join(
                 get_script_dir(),

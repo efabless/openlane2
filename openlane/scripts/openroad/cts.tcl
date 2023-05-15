@@ -85,15 +85,6 @@ if { [catch {check_placement -verbose} errmsg] } {
     exit 1
 }
 
-puts "cts_report"
+puts "%OL_CREATE_REPORT cts.rpt"
 report_cts
-puts "cts_report_end"
-
-if {[info exists ::env(CLOCK_PORT)]} {
-    if { [info exists ::env(CTS_REPORT_TIMING)] && $::env(CTS_REPORT_TIMING) } {
-        set ::env(RUN_STANDALONE) 0
-        source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-    }
-} else {
-    puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}
+puts "%OL_END_REPORT"

@@ -53,8 +53,8 @@ class MetricChecker(Step):
     def get_threshold_description(self) -> Optional[str]:
         return None
 
-    def run(self, **kwargs) -> State:
-        state_out = super().run()
+    def run(self, state_in: State, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
 
         metric_name = self.get_metric_name()
         metric_description = self.get_metric_description()

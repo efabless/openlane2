@@ -14,18 +14,28 @@
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_global_connections.tcl
 
-proc read_netlist {args} {
-    puts "Reading netlist…"
+proc is_blackbox {file_path blackbox_wildcard} {
+    set not_found [catch { exec bash -c "grep '$blackbox_wildcard' $file_path" }]
+    return [expr !$not_found]
+}
 
-    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+proc read_netlist {args} {
+    sta::parse_key_args "read_netlist" args \
+        keys {}\
+        flags {-powered -all}
+
+    set netlist $::env(CURRENT_NETLIST)
+    puts "> read_verilog $netlist"
+    if {[catch {read_verilog $netlist} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
 
+    puts "> link_design $::env(DESIGN_NAME)"
     link_design $::env(DESIGN_NAME)
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.tcl} errmsg]} {
+        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -33,58 +43,140 @@ proc read_netlist {args} {
 
 }
 
-proc read_libs {args} {
-    sta::parse_key_args "read_libs" args \
-        keys {-override}\
-        flags {-multi_corner}
+proc lshift listVar {
+    upvar 1 $listVar l
+    set r [lindex $l 0]
+    set l [lreplace $l [set l 0] 0]
+    return $r
+}
 
-    set libs $::env(LIB_PNR)
+proc read_timing_info {args} {
+    set i "0"
+    set tc_key "TIMING_CORNER_$i"
+    while { [info exists ::env($tc_key)] } {
+        set corner_name [lindex $::env($tc_key) 0]
+        set corner_libs [lreplace $::env($tc_key) 0 0]
 
-    if { [info exists keys(-override)] } {
-        set libs $keys(-override)
+        set corner($corner_name) $corner_libs
+
+        set i [expr $i + 1]
+        set tc_key "TIMING_CORNER_$i"
     }
 
-    if { [info exists flags(-multi_corner)] } {
-        # Note that the one defined first is the "default": meaning you
-        # shouldn't use -multi_corner for scripts that do not explicitly
-        # specify the corners for STA calls.
-        define_corners ss tt ff;
+    if { $i == "0" } {
+        puts "\[WARN] No timing information read."
+        return
+    }
 
-        foreach lib $::env(LIB_SLOWEST) {
-            read_liberty -corner ss $lib
-        }
-        foreach lib $::env(LIB_TYPICAL) {
-            read_liberty -corner tt $lib
-        }
-        foreach lib $::env(LIB_FASTEST) {
-            read_liberty -corner ff $lib
-        }
+    set nl_bucket [list]
+    set spef_bucket [list]
 
-        foreach corner {ss tt ff} {
-            if { [info exists ::env(EXTRA_LIBS) ] } {
-                foreach lib $::env(EXTRA_LIBS) {
-                    read_liberty -corner $corner $lib
-                }
+    define_corners {*}[array name corner]
+
+    foreach corner_name [array name corner] {
+        puts "Reading timing models for corner $corner_name…"
+
+        set corner_models $corner($corner_name)
+        foreach model $corner_models {
+            if { [string match *.spef $model]} {
+                lappend spef_bucket $corner_name $model
+            } elseif { [string match *.v $model] } {
+                lappend nl_bucket $model
+            } else {
+                puts "> read_liberty -corner $corner_name $model"
+                read_liberty -corner $corner_name $model
             }
-        }
-    } else {
-        foreach lib $libs {
-            read_liberty $lib
         }
 
         if { [info exists ::env(EXTRA_LIBS) ] } {
-            foreach lib $::env(EXTRA_LIBS) {
-                read_liberty $lib
+            puts "Reading explicitly-specified extra libs for $corner_name…"
+            foreach extra_lib $::env(EXTRA_LIBS) {
+                puts "> read_liberty -corner $corner_name $extra_lib"
+                read_liberty -corner $corner_name $extra_lib
             }
         }
+    }
 
+    set macro_nls [lsort -unique $nl_bucket]
+
+    if { [file tail [info nameofexecutable]] == "sta" } {
+        # OpenSTA
+        set blackbox_wildcard {/// sta-blackbox}
+        foreach nl $macro_nls {
+            if { [catch {read_verilog $nl} err] } {
+                puts "Error while reading macro netlist '$nl':"
+                puts $err
+                puts "Make sure that this a gate-level netlist and not an RTL file."
+                exit 1
+            }
+        }
+        if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+            foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
+                if { [is_blackbox $verilog_file $blackbox_wildcard] } {
+                    puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
+                } elseif { [catch {read_verilog $verilog_file} err] } {
+                    puts "Error while reading $verilog_file:"
+                    puts $err
+                    puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
+                    exit 1
+                }
+            }
+        }
+        read_netlist
+    }
+
+    set ::macro_spefs $spef_bucket
+}
+
+proc read_spefs {} {
+    if { [info exists ::env(CURRENT_SPEF)] } {
+        foreach {corner_name spef} $::env(CURRENT_SPEF) {
+            puts "> read_spef -corner $corner_name $spef"
+            read_spef -corner $corner_name $spef
+        }
+    }
+    if { [info exists ::env(macro_spefs)] } {
+        foreach {corner_name spef} $::env(spefs) {
+            puts "> read_spef -corner $corner_name $spef"
+            read_spef -corner $corner_name $spef
+        }
     }
 }
 
-proc read_lefs {args} {
-    read_lef $::env(TECH_LEF)
+proc read_libs {args} {
+    # PNR_LIBS contains all libs and extra libs but with known-bad cells
+    # excluded, so OpenROAD can use cells by functionality and come up
+    # with a valid design.
+    if { [get_libs -quiet *] != {} } {
+        return
+    }
+    foreach lib $::env(PNR_LIBS) {
+        puts "> read_liberty $lib"
+        read_liberty $lib
+    }
+    if { [info exists ::env(MACRO_LIBS) ] } {
+        foreach extra_lib $::env(MACRO_LIBS) {
+            puts "> read_liberty $extra_lib"
+            read_liberty $extra_lib
+        }
+    }
+    if { [info exists ::env(EXTRA_LIBS) ] } {
+        foreach extra_lib $::env(EXTRA_LIBS) {
+            puts "> read_liberty $extra_lib"
+            read_liberty $extra_lib
+        }
+    }
+}
+
+proc read_lefs {{tlef_key "TECH_LEF"}} {
+    read_lef $::env($tlef_key)
     foreach lef $::env(CELL_LEFS) {
         read_lef $lef
+    }
+    if { [info exist ::env(MACRO_LEFS)] } {
+        foreach lef $::env(MACRO_LEFS) {
+            read_lef $lef
+        }
     }
     if { [info exist ::env(EXTRA_LEFS)] } {
         foreach lef $::env(EXTRA_LEFS) {
@@ -95,28 +187,27 @@ proc read_lefs {args} {
 
 proc read {args} {
     sta::parse_key_args "read" args \
-        keys {-override_libs}\
-        flags {-multi_corner_libs}
+        keys {}\
+        flags {}
 
-    if {[catch {read_db $::env(CURRENT_ODB)} errmsg]} {
-        puts stderr $errmsg
-        exit 1
+    if { [info exists ::env(IO_READ_DEF)] && $::env(IO_READ_DEF) } {
+        read_lefs
+        if { [ catch {read_def $::env(CURRENT_DEF)} errmsg ]} {
+            puts stderr $errmsg
+            exit 1
+        }
+    } else {
+        if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
+            puts stderr $errmsg
+            exit 1
+        }
     }
 
-    set read_libs_args [list]
-
-    if { [info exists keys(-override_libs)]} {
-        lappend read_libs_args -override $keys(-override_libs)
-    }
-
-    if { [info exists flags(-multi_corner_libs)] } {
-        lappend read_libs_args -multi_corner
-    }
-
-    read_libs {*}$read_libs_args
+    read_libs
 
     if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {source $::env(SCRIPTS_DIR)/openroad/common/sdc_reader.tcl} errmsg]} {
+        puts "> read_sdc $::env(CURRENT_SDC)"
+        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -129,7 +220,7 @@ proc write {args} {
     # attempt to write a corresponding view to the specified location.
     sta::parse_key_args "write" args \
         keys {}\
-        flags {}
+        flags {-no_global_connect}
 
 
     source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
@@ -187,21 +278,17 @@ proc write {args} {
             write_sdf -include_typ -divider . $::env(SAVE_SDF)
         }
     }
+}
 
-    if { [info exists ::env(SAVE_LIB)] && !$::env(STA_PRE_CTS) && $::env(STA_WRITE_LIB)} {
+proc write_libs {} {
+    if { [info exists ::env(LIB_SAVE_PATH)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
         set corners [sta::corners]
-        if { [llength $corners] > 1 } {
-            puts "Writing timing models for all corners…"
-            set prefix [file rootname $::env(SAVE_LIB)]
-            foreach corner $corners {
-                set corner_name [$corner name]
-                set target $prefix.$corner_name.lib
-                puts "Writing timing models for the $corner_name corner to $target…"
-                write_timing_model -corner $corner_name $target
-            }
-        } else {
-            puts "Writing timing model to '$::env(SAVE_LIB)'…"
-            write_timing_model $::env(SAVE_LIB)
+        puts "Writing timing models for all corners…"
+        foreach corner $corners {
+            set corner_name [$corner name]
+            set target $::env(LIB_SAVE_PATH)/$corner_name.lib
+            puts "Writing timing models for the $corner_name corner to $target…"
+            write_timing_model -corner $corner_name $target
         }
     }
 }

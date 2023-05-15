@@ -49,7 +49,7 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..logging import console, info
+from ..logging import console, info, verbose
 from ..common import mkdirp, internal, final, slugify
 
 
@@ -278,6 +278,8 @@ class Flow(Step._FlowType):
                         latest_time = time
                         latest_json = state_out_json
 
+                verbose(f"Using state at '{latest_json}'.")
+
                 if latest_json is not None:
                     initial_state = State.loads(
                         open(latest_json, encoding="utf8").read()
@@ -394,12 +396,17 @@ class Flow(Step._FlowType):
         )
 
     @internal
-    def end_stage(self):
+    def end_stage(self, increment_ordinal: bool = True):
         """
         Ends the current stage, updating the progress bar appropriately.
+
+        :param increment_ordinal: Increment the step ordinal.
+
+            You may want to set this to ``False`` if the stage is being skipped.
         """
         self.completed += 1
-        self.ordinal += 1
+        if increment_ordinal:
+            self.ordinal += 1
         assert self.progress is not None and self.task_id is not None
         self.progress.update(self.task_id, completed=float(self.completed))
 

@@ -88,7 +88,7 @@ logs and reports.
 ├── 22-checker-trdrc
 ├── 23-odb-reportwirelength
 ├── 25-openroad-fillinsertion
-├── 26-openroad-parasiticsextraction
+├── 26-openroad-rcx
 ├── 27-openroad-parasiticssta
 ├── 28-openroad-irdropreport
 ├── 29-magic-streamout

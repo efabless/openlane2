@@ -35,7 +35,7 @@ class Optimizing(Flow):
     Steps = [
         Yosys.Synthesis,
         Misc.LoadBaseSDC,
-        OpenROAD.NetlistSTA,
+        OpenROAD.STA,
         OpenROAD.Floorplan,
         OpenROAD.IOPlacement,
         OpenROAD.GlobalPlacement,
@@ -77,7 +77,7 @@ class Optimizing(Flow):
             sdc_future = self.start_step_async(sdc_step)
             step_list.append(sdc_step)
 
-            sta_step = OpenROAD.NetlistSTA(
+            sta_step = OpenROAD.STA(
                 config,
                 state_in=sdc_future,
                 id=f"sta-{strategy}",

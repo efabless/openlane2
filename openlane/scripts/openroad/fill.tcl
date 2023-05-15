@@ -14,6 +14,16 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read
 
-filler_placement "$::env(DECAP_CELL) $::env(FILL_CELL)"
+set fill_list [list]
+foreach {pattern} $::env(DECAP_CELL) {
+    set stripped [string map {' {}} $pattern]
+    lappend fill_list $stripped
+}
+foreach {pattern} $::env(FILL_CELL) {
+    set stripped [string map {' {}} $pattern]
+    lappend fill_list $stripped
+}
+puts $fill_list
+filler_placement $fill_list
 
 write

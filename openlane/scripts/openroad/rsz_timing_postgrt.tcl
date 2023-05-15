@@ -56,10 +56,4 @@ if { [catch {check_placement -verbose} errmsg] } {
 unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
-# Write
 write
-
-# Run post timing optimizations STA
-estimate_parasitics -global_routing
-set ::env(RUN_STANDALONE) 0
-source $::env(SCRIPTS_DIR)/openroad/sta.tcl

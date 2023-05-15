@@ -18,19 +18,6 @@ source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 load $::env(DESIGN_NAME)
 select top cell
 
-# padding
-if { $::env(MAGIC_PAD) } {
-	puts "\[INFO\] Padding LEFs"
-	# assuming scalegrid 1 2
-	# use um
-	select top cell
-	box grow right [expr 100*($::env(PLACE_SITE_WIDTH))]
-	box grow left [expr 100*($::env(PLACE_SITE_WIDTH))]
-	box grow up [expr 100*($::env(PLACE_SITE_HEIGHT))]
-	box grow down [expr 100*($::env(PLACE_SITE_HEIGHT))]
-	property FIXED_BBOX [box values]
-}
-
 if { $::env(MAGIC_ZEROIZE_ORIGIN) } {
 	# assuming scalegrid 1 2
 	# makes origin zero based on the minimum enclosing box
@@ -58,7 +45,7 @@ cellname filepath $::env(DESIGN_NAME) $::env(STEP_DIR)
 
 save
 
-# Write GDS
+
 # mark the incoming cell defs as readonly so that their
 # GDS data gets copied verbatim
 gds readonly true
@@ -67,20 +54,37 @@ gds rescale false
 if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
 	gds polygon subcells true
 }
-
+# # Can be obtained from the PDK's .mag files.
+# set gds_files_in $::env(CELL_GDS)
+# foreach gds_file $gds_files_in {
+# 	puts "> gds read $gds_file"
+# 	gds read $gds_file
+# }
+if {  [info exist ::env(MACRO_GDS_FILES)] } {
+	set gds_files_in $::env(MACRO_GDS_FILES)
+	foreach gds_file $gds_files_in {
+		puts "> gds read $gds_file"
+		gds read $gds_file
+	}
+}
 if {  [info exist ::env(EXTRA_GDS_FILES)] } {
 	set gds_files_in $::env(EXTRA_GDS_FILES)
 	foreach gds_file $gds_files_in {
+		puts "> gds read $gds_file"
 		gds read $gds_file
 	}
 }
 
 load $::env(DESIGN_NAME)
 
+# if { $::env(MAGIC_GDS_FLATTEN) } {
+# 	puts "Flattening cell"
+# 	flatten top cell
+# }
+
 select top cell
 
-if {  [info exist ::env(MAGIC_DISABLE_HIER_GDS)]\
-	&& $::env(MAGIC_DISABLE_HIER_GDS) } {
+if {  $::env(MAGIC_DISABLE_CIF_INFO) } {
 	cif *hier write disable
 	cif *array write disable
 }

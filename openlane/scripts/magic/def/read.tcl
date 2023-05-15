@@ -13,8 +13,17 @@
 # limitations under the License.
 
 # LEF
+puts "> lef read $::env(TECH_LEF)"
 lef read $::env(TECH_LEF)
+if { [info exist ::env(MACRO_LEFS)] } {
+    foreach lef_file $::env(MACRO_LEFS) {
+        puts "> lef read $lef_file"
+        lef read $lef_file
+    }
+}
 if { [info exist ::env(EXTRA_LEFS)] } {
+    puts "> lef read $lef_file"
+    lef read $lef_file
     foreach lef_file $::env(EXTRA_LEFS) {
         lef read $lef_file
     }
@@ -30,4 +39,5 @@ if { $::env(MAGIC_DEF_LABELS) } {
     lappend def_read_args -labels
 }
 
+puts "> def read $def_read_args"
 def read {*}$def_read_args

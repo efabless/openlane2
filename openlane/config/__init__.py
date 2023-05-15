@@ -19,8 +19,9 @@ configuration objects. Configuration objects are the primary input to a flow.
 """
 from .builder import ConfigBuilder, InvalidConfig
 from .config import Config, StringEnum
-from .variable import Variable, Path
+from .variable import Variable
 from .resolve import Keys
+from .macro import Macro, Instance
 
 from .tcleval import env_from_tcl
 from .flow import all_variables as universal_flow_config_variables

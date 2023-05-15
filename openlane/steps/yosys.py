@@ -21,11 +21,11 @@ from abc import abstractmethod
 from .step import Step
 from .tclstep import TclStep
 from .common_variables import constraint_variables
-from ..state import State
-from ..state import DesignFormat
-from ..logging import verbose
+
+from ..logging import debug, verbose
 from ..common import get_script_dir
-from ..config import Path, Variable, StringEnum
+from ..config import Variable, StringEnum
+from ..state import State, DesignFormat, Path
 
 
 MULTIPLE_FAILURES = r"""
@@ -93,11 +93,11 @@ def parse_yosys_check(
         if line.startswith("Warning:"):
             if current_warning is not None:
                 if tristate_okay and "tribuf" in current_warning:
-                    verbose("Ignoring tristate-related error:")
-                    verbose(current_warning)
+                    debug("Ignoring tristate-related error:")
+                    debug(current_warning)
                 else:
-                    verbose("Encountered check error:")
-                    verbose(current_warning)
+                    debug("Encountered check error:")
+                    debug(current_warning)
                     errors_encountered += 1
             current_warning = line
         elif (
@@ -113,11 +113,10 @@ def parse_yosys_check(
 class YosysStep(TclStep):
     def get_command(self) -> List[str]:
         script_path = self.get_script_path()
-        assert isinstance(script_path, str)
         return ["yosys", "-c", script_path]
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
 
@@ -292,27 +291,29 @@ class Synthesis(YosysStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        assert isinstance(self.config["LIB"], list)
-
+    def run(self, state_in: State, **kwargs) -> State:
+        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         kwargs, env = self.extract_env(kwargs)
 
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(self.config["LIB"]),
+            frozenset(lib_list),
             excluded_cells=frozenset(
                 [
-                    self.config["BAD_CELL_LIST"],
-                    self.config["NO_SYNTH_CELL_LIST"],
+                    self.config["SYNTH_EXCLUSION_CELL_LIST"],
+                    self.config["PNR_EXCLUSION_CELL_LIST"],
                 ]
             ),
             as_cell_lists=True,
         )
 
-        env["LIB_SYNTH"] = lib_synth
-        state_out = super().run(env=env, **kwargs)
+        env["SYNTH_LIBS"] = " ".join(lib_synth)
+        env["MACRO_LIBS"] = " ".join(
+            [
+                str(lib)
+                for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+            ]
+        )
+        state_out = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
