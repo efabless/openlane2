@@ -1,8 +1,8 @@
 # 2.0.0-a21
 
-* Create a (very) rudimentary plugin system
+* Created a (very) rudimentary plugin system
     * Add ability to list detected plugins with flag `--list-plugins`
-* Fix a problem with reading SPEF files for macros
+* Fixed a problem with reading SPEF files for macros
 * Various documentation updates
 
 # 2.0.0-a20
