@@ -25,8 +25,8 @@ from typing import Tuple, Type, Optional, List, Union
 
 import click
 
-from .state import State
 from .__version__ import __version__
+from .state import State
 from .logging import (
     LogLevelsDict,
     set_log_level,
@@ -41,6 +41,7 @@ from .common import (
 from .container import run_in_container, sanitize_path
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
+from .plugins import discovered_plugins
 
 
 def run(
@@ -261,6 +262,19 @@ def cli_in_container(ctx: click.Context, docker_mounts: Tuple[str], kwargs: dict
         ctx.exit(status)
 
 
+def print_plugins(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    if not value:
+        return
+    print(f"openlane -> {__version__}")
+    for name, module in discovered_plugins.items():
+        print(f"{name} -> {module.__version__}")
+    ctx.exit(0)
+
+
 o = partial(click.option, show_default=True)
 
 
@@ -290,6 +304,14 @@ o = partial(click.option, show_default=True)
     expose_value=False,
     callback=print_bare_version,
     hidden=True,
+)
+@o(
+    "--list-plugins",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=print_plugins,
+    help="List all detected plugins for OpenLane.",
 )
 @o(
     "--dockerized/--native",

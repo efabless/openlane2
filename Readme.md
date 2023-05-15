@@ -1,6 +1,6 @@
 > Efabless OpenLane 2 is in early access and all APIs are, presently, highly unstable and subject to change without notice.
 >
-> If you don't know why you're here, you're probably looking for the stable version of OpenLane at https://github.com/The-OpenROAD-Project/OpenLane.
+> If you *don't* know why you're here, you're probably looking for the stable version of OpenLane at https://github.com/The-OpenROAD-Project/OpenLane.
 
 <h1 align="center">OpenLane</h1>
 <p align="center">
@@ -16,6 +16,8 @@
 </p>
 
 OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
+
+You can find the documentation [here](https://openlane2.readthedocs.io/) to get started.
 
 ```python
 from openlane import Flow
@@ -52,6 +54,8 @@ Works for Windows, macOS and Linux. Easier to set up, but less integrated with y
 
 See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
 
+Do note you'll need to add `--dockerized` to most CLI invocations of OpenLane.
+
 ### Nix
 Works for macOS and Linux. A bit more complex to set up, but more integrated with your filesystem and overall less upload and download deltas.
 
@@ -67,13 +71,11 @@ You'll need to bring your own compiled tools, but otherwise, simply install Open
 python3 -m pip install --upgrade openlane
 ```
 
-To quickly test your installation, run `openlane --smoke-test`. This may take up to 10 minutes depending on your computer's speed and internet connection.
-
 ## Usage
 In the root folder of the repository with the `venv` activated, you may invoke:
 
 ```sh
-python3 -m openlane [--dockerized] --pdk-root <path/to/pdk> </path/to/config.json>
+python3 -m openlane --pdk-root <path/to/pdk> </path/to/config.json>
 ```
 
 To start with, you can try:

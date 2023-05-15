@@ -31,7 +31,7 @@ Cachix allows the reproducible Nix builds to be stored on a cloud server so you 
 First, you want to install Cachix by running the following in your terminal:
 
 ```sh
-nix-env -iA cachix
+nix-env -f "<nixpkgs>" -iA cachix
 ```
 
 Then set up the OpenLane binary cache as follows:

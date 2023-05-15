@@ -43,13 +43,6 @@ proc read_netlist {args} {
 
 }
 
-proc lshift listVar {
-    upvar 1 $listVar l
-    set r [lindex $l 0]
-    set l [lreplace $l [set l 0] 0]
-    return $r
-}
-
 proc read_timing_info {args} {
     set i "0"
     set tc_key "TIMING_CORNER_$i"
@@ -135,8 +128,8 @@ proc read_spefs {} {
             read_spef -corner $corner_name $spef
         }
     }
-    if { [info exists ::env(macro_spefs)] } {
-        foreach {corner_name spef} $::env(spefs) {
+    if { [info exists ::macro_spefs] } {
+        foreach {corner_name spef} $::macro_spefs {
             puts "> read_spef -corner $corner_name $spef"
             read_spef -corner $corner_name $spef
         }
