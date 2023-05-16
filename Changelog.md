@@ -1,3 +1,8 @@
+# 2.0.0-a22
+
+* Fixed a bug with initializing configurations using dictionaries.
+* Added exception message for `InvalidConfig`.
+
 # 2.0.0-a21
 
 * Created a (very) rudimentary plugin system
