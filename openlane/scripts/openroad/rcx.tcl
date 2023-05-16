@@ -30,4 +30,4 @@ define_process_corner -ext_model_index 0 CURRENT_CORNER
 extract_parasitics $rcx_flags\
     -ext_model_file $::env(RCX_RULESET)\
     -lef_res
-write
+write_views

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
@@ -21,4 +21,4 @@ if { [catch {check_placement -verbose} errmsg] } {
     exit 1
 }
 
-write
+write_views

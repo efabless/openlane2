@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 import glob
 import shlex
 import shutil
@@ -23,28 +24,32 @@ import subprocess
 from enum import Enum
 from decimal import Decimal
 from collections import deque
-from typing import Any, List, Dict, Sequence, Union
+from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
+from typing import Any, List, Dict, Sequence, Union
 
 from .step import Step, StepException
 
-from ..config import Keys
+from ..config import Keys, ConfigEncoder
 from ..logging import info, warn
 from ..state import State, DesignFormat, Path
 from ..common import mkdirp, get_script_dir, get_openlane_root
 
 
 def create_reproducible(
+    design_dir: str,
     step_dir: str,
     cmd: Sequence[Union[str, os.PathLike]],
     env_in: Dict[str, str],
     tcl_script: str,
     verbose: bool = False,
 ) -> str:
+    design_dir = os.path.abspath(design_dir)
     step_dir = os.path.abspath(step_dir)
     run_path = os.path.dirname(step_dir)
     run_path_rel = os.path.relpath(run_path)
     pdk_root = env_in[Keys.pdk_root]
+    env_delta = {k: env_in[k] for k in env_in if k not in os.environ}
 
     info(
         textwrap.dedent(
@@ -113,7 +118,7 @@ def create_reproducible(
         except Exception:
             return None
 
-    env_keys_used = set([Keys.pdk_root])
+    env_keys_used = set(env_delta.keys())
     tcls = set()
     env = env_in.copy()
     current = shift(tcls_to_process)
@@ -206,6 +211,8 @@ def create_reproducible(
         info("\nProcessing environment variables…\n---")
 
     ol_root = get_openlane_root()
+    if verbose:
+        info(f"Resolving with OpenLane root: {ol_root}")
     loop_guard = 1024
     for key in env_keys_used:
         loop_guard -= 1
@@ -233,6 +240,15 @@ def create_reproducible(
                 final_value = join("pdk", relative)
                 final_path = join(destination_folder, final_value)
                 copy(potential_file, final_path)
+                final_env[key] += f"{final_value} "
+            elif potential_file_abspath.startswith(design_dir):
+                if potential_file_abspath == design_dir:  # Too many files
+                    continue
+                relative = relpath(potential_file, design_dir)
+                final_value = join("design", relative)
+                final_path = join(destination_folder, final_value)
+                from_path = potential_file
+                copy(from_path, final_path)
                 final_env[key] += f"{final_value} "
             elif potential_file_abspath.startswith(ol_root):
                 relative = relpath(potential_file, ol_root)
@@ -309,7 +325,9 @@ class TclStep(Step):
 
     @staticmethod
     def value_to_tcl(value: Any) -> str:
-        if isinstance(value, list):
+        if is_dataclass(value):
+            return json.dumps(asdict(value), cls=ConfigEncoder)
+        elif isinstance(value, list):
             result = []
             for item in value:
                 result.append(TclStep.value_to_tcl(item))
@@ -419,6 +437,7 @@ class TclStep(Step):
             )
         except subprocess.CalledProcessError:
             reproducible_folder = create_reproducible(
+                self.config["DESIGN_DIR"],
                 self.step_dir,
                 command,
                 env,

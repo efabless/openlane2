@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 set fill_list [list]
 foreach {pattern} $::env(DECAP_CELL) {
@@ -26,4 +26,4 @@ foreach {pattern} $::env(FILL_CELL) {
 puts $fill_list
 filler_placement $fill_list
 
-write
+write_views

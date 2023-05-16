@@ -1,3 +1,15 @@
+# 2.0.0-a23
+
+* Added warning on multiple clocks in `base.sdc`
+* Added usage of translation hook for SDC scripts
+    * Folded `sdc_reader.tcl` into `io.tcl`
+* Fixed calculation issue with I/O delays in `base.sdc`
+* Fixed SPEF read invocation to include instance path
+* Renamed multiple functions in `io.tcl` for clarity and to avoid aliasing
+  Tcl built-in functions
+* Tcl reproducibles now add entire environment delta vs. just "extracted" variables
+    * Better handling of objects inside the design directory
+    
 # 2.0.0-a22
 
 * Fixed a bug with initializing configurations using dictionaries.
