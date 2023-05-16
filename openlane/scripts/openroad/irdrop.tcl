@@ -13,7 +13,7 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
-read
+read_current_odb
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl

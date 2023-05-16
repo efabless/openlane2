@@ -1,3 +1,11 @@
+# 2.0.0-a23
+
+* Add usage of translation hook for SDC scripts
+    * Folded `sdc_reader.tcl` into `io.tcl`
+* Renamed multiple functions in `io.tcl` for clarity and to avoid aliasing
+  Tcl built-in functions
+* Fixed calculation issue with I/O delays in `base.sdc`
+
 # 2.0.0-a22
 
 * Fixed a bug with initializing configurations using dictionaries.

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 tapcell\
     -distance $::env(FP_TAPCELL_DIST)\
@@ -21,4 +21,4 @@ tapcell\
     -halo_width_x $::env(FP_TAP_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_TAP_VERTICAL_HALO)
 
-write
+write_views

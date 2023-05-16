@@ -16,7 +16,7 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
 read_timing_info
 if { [file tail [info nameofexecutable]] == "openroad" } {
-    read
+    read_current_odb
 
     # Internal API- brittle
     if { [grt::have_routes] } {

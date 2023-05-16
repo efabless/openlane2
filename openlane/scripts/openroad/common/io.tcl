@@ -14,13 +14,47 @@
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_global_connections.tcl
 
-proc is_blackbox {file_path blackbox_wildcard} {
-    set not_found [catch { exec bash -c "grep '$blackbox_wildcard' $file_path" }]
-    return [expr !$not_found]
+proc string_in_file {file_path substring} {
+    set f [open $file_path r]
+    set data [read $f]
+    close $f
+
+    if { [string first $substring $data] != -1} {
+        return 1
+    }
+    return 0
 }
 
-proc read_netlist {args} {
-    sta::parse_key_args "read_netlist" args \
+proc env_var_used {file var} {
+    return [string_in_file $file "\$::env($var)"]
+}
+
+proc read_current_sdc {} {
+    if { ![info exists ::env(CURRENT_SDC)]} {
+        puts "\[INFO] CURRENT_SDC not found. Not reading an SDC file."
+        return
+    }
+    set ::env(IO_PCT) [expr $::env(IO_DELAY_CONSTRAINT) / 100]
+    set ::env(SYNTH_TIMING_DERATE) [expr $::env(TIME_DERATING_CONSTRAINT) / 100]
+    set ::env(SYNTH_MAX_FANOUT) $::env(MAX_FANOUT_CONSTRAINT)
+    set ::env(SYNTH_CLOCK_UNCERTAINTY) $::env(CLOCK_UNCERTAINTY_CONSTRAINT)
+    set ::env(SYNTH_CLOCK_TRANSITION) $::env(CLOCK_TRANSITION_CONSTRAINT)
+
+    if { [env_var_used $::env(CURRENT_SDC) SYNTH_DRIVING_CELL_PIN] == 1 } {
+        set ::env(SYNTH_DRIVING_CELL_PIN) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1]
+        set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
+    }
+
+    puts "> read_sdc $::env(CURRENT_SDC)"
+    if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
+        puts stderr $errmsg
+        exit 1
+    }
+}
+
+
+proc read_current_netlist {args} {
+    sta::parse_key_args "read_current_netlist" args \
         keys {}\
         flags {-powered -all}
 
@@ -34,12 +68,7 @@ proc read_netlist {args} {
     puts "> link_design $::env(DESIGN_NAME)"
     link_design $::env(DESIGN_NAME)
 
-    if { [info exists ::env(CURRENT_SDC)] } {
-        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
-            puts stderr $errmsg
-            exit 1
-        }
-    }
+    read_current_sdc
 
 }
 
@@ -96,6 +125,7 @@ proc read_timing_info {args} {
         # OpenSTA
         set blackbox_wildcard {/// sta-blackbox}
         foreach nl $macro_nls {
+            puts "> read_verilog $nl"
             if { [catch {read_verilog $nl} err] } {
                 puts "Error while reading macro netlist '$nl':"
                 puts $err
@@ -105,9 +135,9 @@ proc read_timing_info {args} {
         }
         if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
             foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-                if { [is_blackbox $verilog_file $blackbox_wildcard] } {
+                if { [string_in_file $verilog_file $blackbox_wildcard] } {
                     puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
-                } elseif { [catch {read_verilog $verilog_file} err] } {
+                } elseif { [catch {puts "> read_verilog $verilog_file"; read_verilog $verilog_file} err] } {
                     puts "Error while reading $verilog_file:"
                     puts $err
                     puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
@@ -115,7 +145,7 @@ proc read_timing_info {args} {
                 }
             }
         }
-        read_netlist
+        read_current_netlist
     }
 
     set ::macro_spefs $spef_bucket
@@ -136,13 +166,16 @@ proc read_spefs {} {
     }
 }
 
-proc read_libs {args} {
+proc read_pnr_libs {args} {
     # PNR_LIBS contains all libs and extra libs but with known-bad cells
     # excluded, so OpenROAD can use cells by functionality and come up
     # with a valid design.
+
+    # If there are ANY libs already read- just leave
     if { [get_libs -quiet *] != {} } {
         return
     }
+
     foreach lib $::env(PNR_LIBS) {
         puts "> read_liberty $lib"
         read_liberty $lib
@@ -178,40 +211,26 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
     }
 }
 
-proc read {args} {
-    sta::parse_key_args "read" args \
+proc read_current_odb {args} {
+    sta::parse_key_args "read_current_odb" args \
         keys {}\
         flags {}
 
-    if { [info exists ::env(IO_READ_DEF)] && $::env(IO_READ_DEF) } {
-        read_lefs
-        if { [ catch {read_def $::env(CURRENT_DEF)} errmsg ]} {
-            puts stderr $errmsg
-            exit 1
-        }
-    } else {
-        if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
-            puts stderr $errmsg
-            exit 1
-        }
+    if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
+        puts stderr $errmsg
+        exit 1
     }
 
-    read_libs
-
-    if { [info exists ::env(CURRENT_SDC)] } {
-        puts "> read_sdc $::env(CURRENT_SDC)"
-        if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
-            puts stderr $errmsg
-            exit 1
-        }
-    }
+    # Read supporting views (if applicable)
+    read_pnr_libs
+    read_current_sdc
 }
 
-proc write {args} {
+proc write_views {args} {
     # This script will attempt to write views based on existing "SAVE_"
     # environment variables. If the SAVE_ variable exists, the script will
     # attempt to write a corresponding view to the specified location.
-    sta::parse_key_args "write" args \
+    sta::parse_key_args "write_views" args \
         keys {}\
         flags {-no_global_connect}
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 set ::block [[[::ord::get_db] getChip] getBlock]
 set ::insts [$::block getInsts]
@@ -30,7 +30,7 @@ if { !$placement_needed } {
 	puts "\[WARN] All instances are FIXED/FIRM."
 	puts "\[WARN] No need to perform global placement."
 	puts "\[WARN] Skipping…"
-	write
+	write_views
 	exit 0
 }
 
@@ -64,4 +64,4 @@ global_placement {*}$arg_list
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 
-write
+write_views
