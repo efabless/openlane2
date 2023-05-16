@@ -43,6 +43,7 @@ class InvalidConfig(ValueError):
         configuration file.
     :param args: Further arguments to be passed onto the constructor of
         :class:`ValueError`.
+    :param message: An optional override for the Exception message.
     :param kwargs: Further keyword arguments to be passed onto the constructor of
         :class:`ValueError`.
     """
@@ -52,13 +53,18 @@ class InvalidConfig(ValueError):
         config: str,
         warnings: List[str],
         errors: List[str],
+        message: Optional[str] = None,
         *args,
         **kwargs,
     ) -> None:
         self.config = config
         self.warnings = warnings
         self.errors = errors
-        super().__init__(*args, **kwargs)
+        if message is None:
+            message = "The following errors were encountered: \n"
+            for error in self.errors:
+                message += f"\t* {error}"
+        super().__init__(message, *args, **kwargs)
 
 
 class DecimalDecoder(json.JSONDecoder):
@@ -295,6 +301,8 @@ class ConfigBuilder(object):
             scl=config_in["STD_CELL_LIBRARY"],
             design_dir=design_dir,
         )
+
+        resolved["DESIGN_DIR"] = design_dir
 
         config_in._unlock()
         config_in.update(**resolved)
