@@ -89,22 +89,30 @@ class Toolbox(object):
         config: Config,
         timing_corner: Optional[str] = None,
         prioritize_nl: bool = False,
-    ) -> Tuple[str, List[Path]]:
+    ) -> Tuple[str, List[str]]:
         """
         Returns the lib files for a given configuration and timing corner.
 
         :param config: A configuration object.
-        :param timing_corner: A fully qualified IPVT corner to get libs for.
+        :param timing_corner: A fully qualified IPVT corner to get SCL libs for.
 
             If not specified, the value for `DEFAULT_CORNER` from the SCL will
             be used.
         :param prioritize_nl: Do not return lib files for macros that have
             Gate-Level Netlists and SPEF views.
-        :returns: A tuple of the name of timing corner and the (potentially heterogenous) list of files to be used.
+        :returns: A tuple:
+            - \\[0\\] being the name of the timing corner
+            - \\[1\\] being a heterogenous list of files
+                - Lib files are returned as-is
+                - Netlists are returned as-is
+                - SPEF files are returned in the format "{instance_name}@{spef_path}"
+
+            It is left up to the step or tool to process this list as they see
+            fit.
         """
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
 
-        result = []
+        result: List[Union[str, Path]] = []
         result += self.filter_views(config, config["LIB"], timing_corner)
 
         if len(result) == 0:
@@ -137,7 +145,9 @@ class Toolbox(object):
                 elif len(spefs) and len(netlists):
                     debug(f"Adding {[netlists + spefs]} to timing info…")
                     result += netlists
-                    result += spefs
+                    for spef in spefs:
+                        for instance in macro.instances:
+                            result.append(f"{instance}@{spef}")
                     continue
             # NL/SPEF not prioritized or not found
             libs = self.filter_views(
@@ -153,7 +163,7 @@ class Toolbox(object):
             debug(f"Adding {libs} to timing info…")
             result += libs
 
-        return (timing_corner, result)
+        return (timing_corner, [str(path) for path in result])
 
     def _render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
         klayout_bin = which("klayout")

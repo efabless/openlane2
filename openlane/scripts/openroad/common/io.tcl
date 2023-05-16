@@ -159,9 +159,11 @@ proc read_spefs {} {
         }
     }
     if { [info exists ::macro_spefs] } {
-        foreach {corner_name spef} $::macro_spefs {
-            puts "> read_spef -corner $corner_name $spef"
-            read_spef -corner $corner_name $spef
+        foreach {corner_name spef_info} $::macro_spefs {
+            set fields [split $spef_info "@"]
+            lassign $fields instance_path spef
+            puts "> read_spef -corner $corner_name -path $instance_path $spef"
+            read_spef -corner $corner_name -path $instance_path $spef
         }
     }
 }
