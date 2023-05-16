@@ -18,7 +18,7 @@ This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.
 """
 from .builder import ConfigBuilder, InvalidConfig
-from .config import Config, StringEnum
+from .config import Config, StringEnum, ConfigEncoder
 from .variable import Variable
 from .resolve import Keys
 from .macro import Macro, Instance

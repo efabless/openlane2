@@ -6,8 +6,8 @@ current_design manual_macro_placement_test
 ###############################################################################
 # Timing Constraints
 ###############################################################################
-create_clock -name clk1  -period 100.0000 [get_ports {clk1}]
-create_clock -name clk2  -period 100.0000 [get_ports {clk1}]
+create_clock -name clk1 -period 100.0000 [get_ports {clk1}]
+create_clock -name clk2 -period 100.0000 [get_ports {clk2}]
 set_input_delay 20.0000 -clock [get_clocks clk1] -add_delay [get_ports {x1[0]}]
 set_input_delay 20.0000 -clock [get_clocks clk1] -add_delay [get_ports {x1[10]}]
 set_input_delay 20.0000 -clock [get_clocks clk1] -add_delay [get_ports {x1[11]}]

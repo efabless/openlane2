@@ -1,17 +1,19 @@
 set clock_port __VIRTUAL_CLK__
-set port_args [list]
 if { [info exists ::env(CLOCK_PORT)] } {
     set port_count [llength $::env(CLOCK_PORT)]
+
     if { $port_count == "0" } {
         puts "\[WARN] No CLOCK_PORT found. A dummy clock will be used."
     } elseif { $port_count != "1" } {
         puts "\[WARN] Multi-clock files are not currently supported by the base SDC file. Only the first clock will be constrained."
     }
 
-    set clock_port [lindex $clock_port 0]
-    set port_args [get_ports $clock_port]
+    if { $port_count > "0" } {
+        set ::clock_port [lindex $::env(CLOCK_PORT) 0]
+    }
 }
-puts "\[INFO] Using clock $clock_port with ports $port_args…"
+set port_args [get_ports $clock_port]
+puts "\[INFO] Using clock $clock_port…"
 create_clock {*}$port_args -name $clock_port -period $::env(CLOCK_PERIOD)
 
 set input_delay_value [expr $::env(CLOCK_PERIOD) * $::env(IO_DELAY_CONSTRAINT) / 100]

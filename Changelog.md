@@ -5,7 +5,10 @@
 * Renamed multiple functions in `io.tcl` for clarity and to avoid aliasing
   Tcl built-in functions
 * Fixed calculation issue with I/O delays in `base.sdc`
-
+* Added warning on multiple clocks in `base.sdc`
+* Tcl reproducibles now add entire environment delta vs. just "extracted" variables
+    * Better handling of objects inside the design directory
+    
 # 2.0.0-a22
 
 * Fixed a bug with initializing configurations using dictionaries.
