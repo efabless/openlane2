@@ -58,8 +58,7 @@ all_variables = [
     Variable(
         "CLOCK_NET",
         Optional[List[str]],
-        "The name of the net input to root clock buffer.",
-        default="ref::$CLOCK_PORT",
+        "The name of the net input to root clock buffer. If unset, it is presumed to be equal to CLOCK_PORT.",
     ),
     Variable(
         "VDD_NETS",

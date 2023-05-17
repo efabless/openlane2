@@ -259,7 +259,7 @@ class ParasiticsSTA(HierarchicalSTA):
     inputs = HierarchicalSTA.inputs + [DesignFormat.SPEF]
     outputs = [DesignFormat.LIB, DesignFormat.SDF]
 
-    config_vars = STA.config_vars + [
+    config_vars = HierarchicalSTA.config_vars + [
         Variable(
             "RUN_SPEF_STA",
             bool,
@@ -692,7 +692,17 @@ class CTS(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
     def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+        kwargs, env = self.extract_env(kwargs)
+        if self.config.get("CLOCK_NET") is None:
+            if clock_port := self.config["CLOCK_PORT"]:
+                env["CLOCK_NET"] = " ".join(clock_port)
+            else:
+                warn(
+                    "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
+                )
+                return Step.run(self, state_in, **kwargs)
+
+        state_out = super().run(state_in, env=env, **kwargs)
         state_out.metrics["cts__run"] = True
         return state_out
 

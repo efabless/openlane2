@@ -14,12 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-if { ![info exists ::env(CLOCK_NET)] } {
-    puts "\[INFO]: ::env(CLOCK_NET) doesn't exist. Assuming clockless design and exiting…"
-    write_views
-    exit 0
-}
-
 if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
     set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1 * $::env(CLOCK_PERIOD)}]
 } else {

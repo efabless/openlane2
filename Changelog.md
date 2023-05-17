@@ -1,3 +1,9 @@
+# 2.0.0-a25
+
+* Made optional/default handling more straightforward to fix issue where
+  the default value of an Optional is not None.
+* Fixed config var inheritance issue for `OpenROAD.ParasiticsSTA`
+
 # 2.0.0-a24
 
 * Add support for gf180mcuC to PDK monkey-patch procedure
