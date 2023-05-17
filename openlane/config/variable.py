@@ -222,9 +222,11 @@ class Variable:
                     f"Required variable {key_path} did not get a specified value."
                 )
             else:
-                return None        
-        
-        assert (explicitly_specified and value is not None), "Configurator has built an inconsistent state."
+                return None
+
+        assert (
+            explicitly_specified and value is not None
+        ), "Configurator has built an inconsistent state."
 
         if is_optional(validating_type):
             validating_type = some_of(validating_type)
