@@ -96,7 +96,7 @@ class StreamOut(Step):
                     "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset, yet, KLayout is set as the primary sign-off tool."
                 )
             warn(
-                "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset. Skipping KLayout stream-out…"
+                "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset. Returning state unaltered…"
             )
             return state_out
 
@@ -207,11 +207,11 @@ class XOR(Step):
 
         layout_a = state_out[DesignFormat.MAG_GDS]
         if layout_a is None:
-            warn("No Magic stream-out has been performed. Skipping XOR…")
+            warn("No Magic stream-out has been performed. Skipping XOR process…")
             return state_out
         layout_b = state_out[DesignFormat.KLAYOUT_GDS]
         if layout_b is None:
-            warn("No KLayout stream-out has been performed. Skipping XOR…")
+            warn("No KLayout stream-out has been performed. Skipping XOR process…")
             return state_out
 
         kwargs, env = self.extract_env(kwargs)
