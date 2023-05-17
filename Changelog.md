@@ -1,3 +1,9 @@
+# 2.0.0-a24
+
+* Add support for gf180mcuC to PDK monkey-patch procedure
+* Update some PDK variables to be optional: `GPIO_PADS_LEF`, `IGNORE_DISCONNECTED_MODULES`
+* Remove unused PDK variable: `CELL_CLK_PORT`
+
 # 2.0.0-a23
 
 * Added warning on multiple clocks in `base.sdc`

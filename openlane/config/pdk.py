@@ -69,7 +69,7 @@ pdk_variables = [
     ),
     Variable(
         "GPIO_PADS_LEF",
-        List[Path],
+        Optional[List[Path]],
         "Path(s) to GPIO pad LEF file(s).",
     ),
     Variable(
@@ -369,11 +369,6 @@ scl_variables = [
     ),
     # Clock Tree Synthesis
     Variable(
-        "CELL_CLK_PORT",
-        str,
-        "Name of the clock port used in all cells.",
-    ),
-    Variable(
         "CTS_ROOT_BUFFER",
         str,
         "Defines the cell inserted at the root of the clock tree. Used in CTS.",
@@ -424,7 +419,7 @@ scl_variables = [
     ),
     Variable(
         "IGNORE_DISCONNECTED_MODULES",
-        List[str],
+        Optional[List[str]],
         "Modules (or cells) to ignore when checking for disconnected pins.",
     ),
     # Placement
@@ -551,24 +546,54 @@ def migrate_old_config(config: Config) -> Config:
     process_sta("LIB_SLOWEST")
     process_sta("LIB_FASTEST")
 
-    new["STA_CORNERS"] = [
-        "nom_tt_025C_1v80",
-        "nom_ss_100C_1v60",
-        "nom_ff_n40C_1v95",
-        "min_tt_025C_1v80",
-        "min_ss_100C_1v60",
-        "min_ff_n40C_1v95",
-        "max_tt_025C_1v80",
-        "max_ss_100C_1v60",
-        "max_ff_n40C_1v95",
-    ]
+    if new["PDK"].startswith("sky130"):
+        new["STA_CORNERS"] = [
+            "nom_tt_025C_1v80",
+            "nom_ss_100C_1v60",
+            "nom_ff_n40C_1v95",
+            "min_tt_025C_1v80",
+            "min_ss_100C_1v60",
+            "min_ff_n40C_1v95",
+            "max_tt_025C_1v80",
+            "max_ss_100C_1v60",
+            "max_ff_n40C_1v95",
+        ]
+    elif new["PDK"].startswith("gf180mcu"):
+        new["STA_CORNERS"] = [
+            "nom_tt_025C_5v00",
+            "nom_ss_125C_4v50",
+            "nom_ff_n40C_5v50",
+            "min_tt_025C_5v00",
+            "min_ss_125C_4v50",
+            "min_ff_n40C_5v50",
+            "max_tt_025C_5v00",
+            "max_ss_125C_4v50",
+            "max_ff_n40C_5v50",
+        ]
 
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIB"] = lib_sta
 
-    # 7. Disconnected Modules
-    new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
+    # 7. Disconnected Modules (sky130)
+    if new["PDK"].startswith("sky130"):
+        new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
+    # 8. Invalid Variables (gf180mcu)
+    if new["PDK"].startswith("gf180mcu"):
+        del new["GPIO_PADS_LEF"]
+        del new["GPIO_PADS_VERILOG"]
+
+        del new["CARRY_SELECT_ADDER_MAP"]
+        del new["FULL_ADDER_MAP"]
+        del new["RIPPLE_CARRY_ADDER_MAP"]
+        del new["SYNTH_LATCH_MAP"]
+        del new["TRISTATE_BUFFER_MAP"]
+
+        del new["KLAYOUT_DRC_TECH_SCRIPT"]
+
+        new[
+            "SYNTH_CLK_DRIVING_CELL"
+        ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
     return new._lock()
 
 
