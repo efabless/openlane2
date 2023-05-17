@@ -140,7 +140,6 @@ def sanitize_path(path: Union[str, os.PathLike]) -> Tuple[str, str]:
     path_str = str(path)
     abspath = os.path.abspath(path_str)
     mountable_path = abspath
-    print()
     if os.path.sep == "\\":
         mountable_path = win_path_sep.sub("/", abspath)[2:]
     return (abspath, mountable_path)

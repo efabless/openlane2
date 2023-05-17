@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 if { [info exists ::env(CONTEXTUAL_IO_FLAG)] } {
 	read_lef $::env(placement_tmpfiles)/top_level.lef
@@ -34,7 +34,7 @@ if {$::env(FP_IO_VTHICKNESS_MULT) != "" && $::env(FP_IO_HTHICKNESS_MULT) != ""} 
 }
 
 set arg_list [list]
-if { $::env(FP_IO_MODE) == 1 } {
+if { $::env(FP_IO_MODE) == "random_equidistant" } {
 	lappend arg_list -random
 }
 
@@ -50,4 +50,4 @@ place_pins {*}$arg_list \
 	-hor_layers $HMETAL \
 	-ver_layers $VMETAL
 
-write
+write_views

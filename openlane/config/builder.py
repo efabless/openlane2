@@ -43,6 +43,7 @@ class InvalidConfig(ValueError):
         configuration file.
     :param args: Further arguments to be passed onto the constructor of
         :class:`ValueError`.
+    :param message: An optional override for the Exception message.
     :param kwargs: Further keyword arguments to be passed onto the constructor of
         :class:`ValueError`.
     """
@@ -52,13 +53,18 @@ class InvalidConfig(ValueError):
         config: str,
         warnings: List[str],
         errors: List[str],
+        message: Optional[str] = None,
         *args,
         **kwargs,
     ) -> None:
         self.config = config
         self.warnings = warnings
         self.errors = errors
-        super().__init__(*args, **kwargs)
+        if message is None:
+            message = "The following errors were encountered: \n"
+            for error in self.errors:
+                message += f"\t* {error}"
+        super().__init__(message, *args, **kwargs)
 
 
 class DecimalDecoder(json.JSONDecoder):
@@ -107,6 +113,8 @@ class ConfigBuilder(object):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
+        PDK_ROOT = Self._resolve_pdk_root(PDK_ROOT)
+
         config_in, _, _ = Self._get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
@@ -114,7 +122,6 @@ class ConfigBuilder(object):
         )
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = PDK_ROOT
         config_in["DESIGN_NAME"] = DESIGN_NAME
         config_in.update(kwargs)
         config_in._lock()
@@ -214,12 +221,14 @@ class ConfigBuilder(object):
             raw = config_in
             loader = Self._load_dict
 
+        pdk_root = Self._resolve_pdk_root(pdk_root)
+
         loaded = loader(
             raw,
             design_dir,
             flow_config_vars=flow_config_vars,
-            pdk=pdk,
             pdk_root=pdk_root,
+            pdk=pdk,
             scl=scl,
             config_override_strings=(config_override_strings or []),
         )
@@ -248,12 +257,13 @@ class ConfigBuilder(object):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         config_override_strings: Sequence[str],
+        pdk_root: str,
         pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         resolve_json: bool = False,
     ) -> "Config":
+
         meta_raw: Optional[dict] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
@@ -292,6 +302,8 @@ class ConfigBuilder(object):
             design_dir=design_dir,
         )
 
+        resolved["DESIGN_DIR"] = design_dir
+
         config_in._unlock()
         config_in.update(**resolved)
         config_in._lock()
@@ -321,7 +333,6 @@ class ConfigBuilder(object):
             warn(warning)
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = pdk_root
         return config_in._lock()
 
     @classmethod
@@ -331,8 +342,8 @@ class ConfigBuilder(object):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         config_override_strings: Sequence[str],  # Unused, kept for API consistency
+        pdk_root: str,
         pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
     ) -> "Config":
@@ -344,7 +355,7 @@ class ConfigBuilder(object):
 
         config_in = Config(
             {
-                "PDK_ROOT": pdk_root,
+                Keys.pdk_root: pdk_root,
                 Keys.pdk: pdk,
             }
         )
@@ -406,7 +417,6 @@ class ConfigBuilder(object):
             warn(warning)
 
         config_in._unlock()
-        config_in["PDK_ROOT"] = pdk_root
         return config_in._lock()
 
     @classmethod
@@ -426,23 +436,24 @@ class ConfigBuilder(object):
     def _get_pdk_config(
         Self,
         pdk: str,
-        scl: Optional[str] = None,
-        pdk_root: Optional[str] = None,
+        scl: Optional[str],
+        pdk_root: str,
         full_pdk_warnings: Optional[bool] = False,
     ) -> Tuple[Config, str, str]:
         """
         :returns: A tuple of the PDK configuration, the PDK path and the SCL.
         """
-        pdk_root = Self._resolve_pdk_root(pdk_root)
 
         config_in = Config(
             {
-                "PDK_ROOT": pdk_root,
+                Keys.pdk_root: pdk_root,
                 Keys.pdk: pdk,
             }
         )
         if scl is not None:
+            config_in._unlock()
             config_in[Keys.scl] = scl
+            config_in._lock()
 
         pdkpath = os.path.join(pdk_root, pdk)
         if not os.path.exists(pdkpath):

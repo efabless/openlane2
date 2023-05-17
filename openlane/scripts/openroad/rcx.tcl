@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-if { [info exists ::env(RCX_LEF)] } {
-    read_lef $::env(RCX_LEF)
-    read_def $::env(RCX_DEF)
-    read_libs -override "$::env(RCX_LIB)"
-} else {
-    read
-}
+read_lefs "RCX_LEF"
+read_def $::env(CURRENT_DEF)
+read_timing_info
+
 
 set_propagated_clock [all_clocks]
 
@@ -33,4 +30,4 @@ define_process_corner -ext_model_index 0 CURRENT_CORNER
 extract_parasitics $rcx_flags\
     -ext_model_file $::env(RCX_RULESET)\
     -lef_res
-write
+write_views

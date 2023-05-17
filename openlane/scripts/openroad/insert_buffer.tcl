@@ -118,10 +118,10 @@ proc insert_buffer {pin_name pin_type master_name net_name inst_name} {
 
 if { [info exists ::env(INSERT_BUFFER_COMMAND) ]} {
     source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-    read
+    read_current_odb
 
     set arg_list [split $::env(INSERT_BUFFER_COMMAND) " "]
     insert_buffer {*}$arg_list
 
-    write
+    write_views
 }

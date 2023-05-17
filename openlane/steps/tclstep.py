@@ -15,34 +15,41 @@ from __future__ import annotations
 
 import os
 import re
+import json
 import glob
+import shlex
 import shutil
 import textwrap
 import subprocess
 from enum import Enum
 from decimal import Decimal
 from collections import deque
-from typing import List, Dict, Sequence, Union
+from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
+from typing import Any, List, Dict, Sequence, Union
 
-from .step import Step
-from ..state import State
-from ..config import Path
+from .step import Step, StepException
+
+from ..config import Keys, ConfigEncoder
 from ..logging import info, warn
+from ..state import State, DesignFormat, Path
 from ..common import mkdirp, get_script_dir, get_openlane_root
 
 
 def create_reproducible(
+    design_dir: str,
     step_dir: str,
     cmd: Sequence[Union[str, os.PathLike]],
     env_in: Dict[str, str],
     tcl_script: str,
     verbose: bool = False,
 ) -> str:
+    design_dir = os.path.abspath(design_dir)
     step_dir = os.path.abspath(step_dir)
     run_path = os.path.dirname(step_dir)
     run_path_rel = os.path.relpath(run_path)
-    pdk_root = env_in["PDK_ROOT"]
+    pdk_root = env_in[Keys.pdk_root]
+    env_delta = {k: env_in[k] for k in env_in if k not in os.environ}
 
     info(
         textwrap.dedent(
@@ -111,7 +118,7 @@ def create_reproducible(
         except Exception:
             return None
 
-    env_keys_used = set(["PDK_ROOT"])
+    env_keys_used = set(env_delta.keys())
     tcls = set()
     env = env_in.copy()
     current = shift(tcls_to_process)
@@ -204,6 +211,8 @@ def create_reproducible(
         info("\nProcessing environment variables…\n---")
 
     ol_root = get_openlane_root()
+    if verbose:
+        info(f"Resolving with OpenLane root: {ol_root}")
     loop_guard = 1024
     for key in env_keys_used:
         loop_guard -= 1
@@ -232,6 +241,15 @@ def create_reproducible(
                 final_path = join(destination_folder, final_value)
                 copy(potential_file, final_path)
                 final_env[key] += f"{final_value} "
+            elif potential_file_abspath.startswith(design_dir):
+                if potential_file_abspath == design_dir:  # Too many files
+                    continue
+                relative = relpath(potential_file, design_dir)
+                final_value = join("design", relative)
+                final_path = join(destination_folder, final_value)
+                from_path = potential_file
+                copy(from_path, final_path)
+                final_env[key] += f"{final_value} "
             elif potential_file_abspath.startswith(ol_root):
                 relative = relpath(potential_file, ol_root)
                 final_value = join("openlane", relative)
@@ -248,7 +266,6 @@ def create_reproducible(
             ):  # /dev/null, /dev/stdout, /dev/stderr, etc should still work
                 final_path = join(destination_folder, potential_file)
                 final_value = os.path.relpath(final_path, destination_folder)
-                print(potential_file_abspath, final_path)
                 copy(potential_file, final_path)
                 final_env[key] += f"{final_value} "
             else:
@@ -268,7 +285,7 @@ def create_reproducible(
     ) -> str:
         array = []
         for key, value in sorted(env.items()):
-            array.append(format_string.format(key=key, value=value))
+            array.append(format_string.format(key=key, value=shlex.quote(value)))
         value = f"\n{'    ' * indent}".join(array)
         return value
 
@@ -280,7 +297,7 @@ def create_reproducible(
                 #!/bin/sh
                 dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
                 cd $dir;
-                {env_list("export {key}='{value}';", indent=4)}
+                {env_list("export {key}={value};", indent=4)}
                 {' '.join(new_cmd)}
                 """
             )
@@ -306,6 +323,30 @@ class TclStep(Step):
     A TclStep Step corresponds to running one Tcl script with such a utility.
     """
 
+    @staticmethod
+    def value_to_tcl(value: Any) -> str:
+        if is_dataclass(value):
+            return json.dumps(asdict(value), cls=ConfigEncoder)
+        elif isinstance(value, list):
+            result = []
+            for item in value:
+                result.append(TclStep.value_to_tcl(item))
+            return shlex.join(result)
+        elif isinstance(value, dict):
+            result = []
+            for v_key, v_value in value.items():
+                result.append(TclStep.value_to_tcl(v_key))
+                result.append(TclStep.value_to_tcl(v_value))
+            return shlex.join(result)
+        elif isinstance(value, Enum):
+            return value.value
+        elif isinstance(value, bool):
+            return "1" if value else "0"
+        elif isinstance(value, Decimal) or isinstance(value, int):
+            return str(value)
+        else:
+            return str(value)
+
     def get_script_path(self):
         """
         :returns: A Tcl script to be run by this step.
@@ -318,14 +359,53 @@ class TclStep(Step):
         """
         return ["tclsh", self.get_script_path()]
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
+    def prepare_env(self, env: dict, state: State) -> dict:
+        """
+        Creates a copy of the environment dictionary, then converts
+        """
+        env = env.copy()
+
+        env["SCRIPTS_DIR"] = get_script_dir()
+        env["STEP_DIR"] = os.path.abspath(self.step_dir)
+
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        env["TECH_LEF"] = tech_lefs[0]
+
+        macro_lefs = self.toolbox.get_macro_views(self.config, DesignFormat.LEF)
+        env["MACRO_LEFS"] = " ".join([str(lef) for lef in macro_lefs])
+
+        for element in self.config.keys():
+            value = self.config[element]
+            if value is None:
+                continue
+            env[element] = TclStep.value_to_tcl(value)
+
+        for input in self.inputs:
+            key = f"CURRENT_{input.name}"
+            if input.value.multiple:
+                key = f"CURRENT_{input.name}_DICT"
+            env[key] = TclStep.value_to_tcl(state[input])
+
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
+
+        return env
+
+    def run(self, state_in: State, **kwargs) -> State:
         """
         This overriden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
+        See :meth:`prepare_env` for more info.
 
         Additionally, it logs the output to a ``.log`` file named after the script.
 
@@ -333,47 +413,21 @@ class TclStep(Step):
 
             kwargs, env = self.extract_env(kwargs)
             env["CUSTOM_ENV_VARIABLE"] = "1"
-            return super().run(env=env, **kwargs)
+            return super().run(state_in, env=env, **kwargs)
 
         This will allow you to add further custom environment variables to a call
         while still respecting an `env` argument further up the call-stack.
 
-
+        :param state_in: See superclass.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-        state = super().run()
+        state = super().run(state_in, **kwargs)
         command = self.get_command()
 
         kwargs, env = self.extract_env(kwargs)
 
-        env["SCRIPTS_DIR"] = get_script_dir()
-        env["STEP_DIR"] = os.path.abspath(self.step_dir)
-
-        for element in self.config.keys():
-            value = self.config[element]
-            if value is None:
-                continue
-
-            if isinstance(value, list):
-                value = " ".join(list(map(lambda x: str(x), value)))
-            elif isinstance(value, Enum):
-                value = value._name_
-            elif isinstance(value, bool):
-                value = "1" if value else "0"
-            elif isinstance(value, Decimal) or isinstance(value, int):
-                value = str(value)
-
-            env[element] = value
-
-        for input in self.inputs:
-            if input is None:
-                continue
-            env[f"CURRENT_{input.name}"] = str(state[input])
-
-        for output in self.outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value[1]}"
-            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
+        env = self.prepare_env(env, state)
 
         try:
             self.run_subprocess(
@@ -383,6 +437,7 @@ class TclStep(Step):
             )
         except subprocess.CalledProcessError:
             reproducible_folder = create_reproducible(
+                self.config["DESIGN_DIR"],
                 self.step_dir,
                 command,
                 env,
@@ -394,6 +449,9 @@ class TclStep(Step):
             raise
 
         for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
             path = Path(env[f"SAVE_{output.name}"])
             if not path.exists():
                 continue

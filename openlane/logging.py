@@ -89,6 +89,19 @@ def verbose(*args, **kwargs):
     console.print(*args, **kwargs)
 
 
+def debug(*args, **kwargs):
+    """
+    Prints to the terminal with automatic rich formatting.
+
+    Debug level or lower only.
+
+    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.log
+    """
+    if get_log_level() > LogLevels.DEBUG:
+        return
+    console.print(*args, **kwargs)
+
+
 def info(*args, **kwargs):
     """
     Prints to the terminal with automatic rich formatting.

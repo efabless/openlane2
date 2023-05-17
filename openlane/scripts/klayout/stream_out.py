@@ -138,7 +138,6 @@ try:
     tech = pya.Technology()
     tech.load(lyt)
     layout_options = tech.load_layout_options
-    layout_options.lefdef_config.macro_resolution_mode = 1
     layout_options.lefdef_config.read_lef_with_def = False
     layout_options.lefdef_config.lef_files = input_lefs.split(";")
     layout_options.lefdef_config.map_file = lym

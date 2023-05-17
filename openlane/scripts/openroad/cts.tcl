@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 if { ![info exists ::env(CLOCK_NET)] } {
     puts "\[INFO]: ::env(CLOCK_NET) doesn't exist. Assuming clockless design and exiting…"
-    write
+    write_views
     exit 0
 }
 
@@ -71,29 +71,20 @@ puts "\[INFO]: Repairing long wires on clock nets…"
 repair_clock_nets -max_wire_length $::env(CTS_CLK_MAX_WIRE_LENGTH)
 
 estimate_parasitics -placement
-write
+write_views
 
 puts "\[INFO\] Legalizing…"
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
 estimate_parasitics -placement
 
-write
+write_views
 
 if { [catch {check_placement -verbose} errmsg] } {
     puts stderr $errmsg
     exit 1
 }
 
-puts "cts_report"
+puts "%OL_CREATE_REPORT cts.rpt"
 report_cts
-puts "cts_report_end"
-
-if {[info exists ::env(CLOCK_PORT)]} {
-    if { [info exists ::env(CTS_REPORT_TIMING)] && $::env(CTS_REPORT_TIMING) } {
-        set ::env(RUN_STANDALONE) 0
-        source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-    }
-} else {
-    puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}
+puts "%OL_END_REPORT"

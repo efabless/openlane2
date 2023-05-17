@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 if {![info exists ::env(PDN_CFG)]} {
     set ::env(PDN_CFG) $::env(SCRIPTS_DIR)/openroad/common/pdn_cfg.tcl
@@ -44,4 +44,4 @@ if { $::env(FP_PDN_CHECK_NODES) } {
     check_power_grid -net $::env(GND_NET)
 }
 
-write
+write_views

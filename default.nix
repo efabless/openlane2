@@ -59,9 +59,10 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     # Tools
     openroad
     klayout
-    yosys
-    netgen
     python3
+    netgen
+    yosys
+    magic
     ruby
     tcl
 
@@ -73,6 +74,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     pcpp
     volare
     tkinter
-    magic
+    lxml
   ];
 }

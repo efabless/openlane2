@@ -11,23 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import reduce
 import os
 import re
+import shutil
 import sys
 import json
 from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Optional
 
-
-from .step import Step
-from ..state import State
-from ..state import DesignFormat
+from .step import Step, StepException
 from .common_variables import io_layer_variables
-
-from ..config import Path, Variable, StringEnum
-from ..common import get_openlane_root, get_script_dir
 from ..logging import warn
+from ..state import State, DesignFormat, Path
+from ..config import Variable, StringEnum, Macro
+from ..common import get_openlane_root, get_script_dir
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -36,27 +35,17 @@ class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
-    def run(
-        self,
-        **kwargs,
-    ) -> State:
-        """
-        <!--
-        TODO
-        -->
-        """
-
-        state_out = super().run(**kwargs)
+    def run(self, state_in, **kwargs) -> State:
+        state_out = super().run(state_in, **kwargs)
         kwargs, env = self.extract_env(kwargs)
 
         out_paths = {}
 
         command = self.get_command()
         for output in [DesignFormat.ODB, DesignFormat.DEF]:
-            id, ext, _ = output.value
-            filename = f"{self.config['DESIGN_NAME']}.{ext}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
             file_path = os.path.join(self.step_dir, filename)
-            command.append(f"--output-{id}")
+            command.append(f"--output-{output.value.id}")
             command.append(file_path)
             out_paths[output] = Path(file_path)
 
@@ -87,7 +76,14 @@ class OdbpyStep(Step):
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        lefs = ["--input-lef", self.config["TECH_LEF"]]
+
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lefs = ["--input-lef", tech_lefs[0]]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)
@@ -160,10 +156,10 @@ class SetPowerConnections(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
 
     def get_command(self) -> List[str]:
-        assert isinstance(self.state_in, State)
+        state_in = self.state_in.result()
         return super().get_command() + [
             "--input-json",
-            str(self.state_in[DesignFormat.JSON_HEADER]),
+            str(state_in[DesignFormat.JSON_HEADER]),
         ]
 
 
@@ -173,19 +169,18 @@ class ManualMacroPlacement(OdbpyStep):
     Performs macro placement using a simple configuration file. The file is
     defined as a line-break delimited list of instances and positions, in the
     format ``instance_name X_pos Y_pos Orientation``.
+
+    If no macro instances are configured, this step is skipped.
     """
 
     id = "Odb.ManualMacroPlacement"
     name = "Manual Macro Placement"
 
-    flow_control_variable = "MACRO_PLACEMENT_CFG"
-    flow_control_msg = "No macros configured, skipping…"
-
     config_vars = [
         Variable(
             "MACRO_PLACEMENT_CFG",
             Optional[Path],
-            "Path to the file. If this is `None`, this step is skipped.",
+            "Path to an optional override for instance placement instead of the `MACROS` object for compatibility with OpenLane 1. If both are `None`, this step is skipped.",
         ),
     ]
 
@@ -195,9 +190,38 @@ class ManualMacroPlacement(OdbpyStep):
     def get_command(self) -> List[str]:
         return super().get_command() + [
             "--config",
-            self.config["MACRO_PLACEMENT_CFG"],
+            os.path.join(self.step_dir, "placement.cfg"),
             "--fixed",
         ]
+
+    def run(self, state_in: State, **kwargs) -> State:
+        cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
+        if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
+            warn(
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+            )
+            shutil.copyfile(cfg_ref, cfg_file)
+        elif macros := self.config.get("MACROS"):
+            instance_count = reduce(
+                lambda x, y: x + len(y.instances), macros.values(), 0
+            )
+            if instance_count >= 1:
+                with open(cfg_file, "w") as f:
+                    for module, macro in macros.items():
+                        if not isinstance(macro, Macro):
+                            raise StepException(
+                                f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
+                            )
+                        for name, data in macro.instances.items():
+                            f.write(
+                                f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                            )
+
+        if not cfg_file.exists():
+            warn("No instances found, skipping…")
+            return Step.run(self, state_in, **kwargs)
+
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -349,17 +373,17 @@ class DiodesOnPorts(OdbpyStep):
             self.config["DIODE_ON_PORTS"].value,
         ]
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["DIODE_ON_PORTS"].value == "none":
             warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
-            return Step.run(self, **kwargs)
+            return Step.run(self, state_in, **kwargs)
 
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -423,10 +447,10 @@ class HeuristicDiodeInsertion(OdbpyStep):
             + threshold_opts
         )
 
-    def run(self, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> State:
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
-        return super().run(**kwargs)
+        return super().run(state_in, **kwargs)

@@ -11,20 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import re
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable
+from .variable import Variable
 from .config import Config
+from ..state import Path
 
 # Note that values in this file do not take defaults.
 
 pdk_variables = [
+    Variable(
+        "PDK_ROOT",
+        str,
+        "The path to all PDKs. This doesn't actually need to be defined by the PDK config file itself.",
+    ),
     # Core/Common
     Variable(
         "STD_CELL_LIBRARY",
         str,
-        "Specifies the standard cell library to be used under the specified PDK.",
+        "Specifies the default standard cell library to be used under the specified PDK.",
     ),
     Variable(
         "VDD_PIN",
@@ -39,23 +47,13 @@ pdk_variables = [
     Variable(
         "WIRE_LENGTH_THRESHOLD",
         Optional[Decimal],
-        "A value above which wire lengths generate warnings. If `QUIT_ON_LONG_WIRE` is set, the flow will error out instead of simply generating a warning.",
+        "A value above which wire lengths generate warnings.",
         units="µm",
     ),
     Variable(
-        "TECH_LEF",
-        Path,
-        "Path to the technology LEF file in the nominal extraction corner.",
-    ),
-    Variable(
-        "TECH_LEF_MIN",
-        Optional[Path],
-        "Path to the technology LEF file in the minimum extraction corner.",
-    ),
-    Variable(
-        "TECH_LEF_MAX",
-        Optional[Path],
-        "Path to the technology LEF file in the maximum extraction corner.",
+        "TECH_LEFS",
+        Dict[str, Path],
+        "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX in the default flow.",
     ),
     Variable(
         "CELL_LEFS",
@@ -136,7 +134,7 @@ pdk_variables = [
         Optional[List[str]],
         "KLayout layers to ignore during XOR operations.",
     ),
-    # Timing and Power
+    ## Timing and Power
     Variable(
         "DEFAULT_MAX_TRAN",
         Optional[Decimal],
@@ -149,19 +147,19 @@ pdk_variables = [
         "A metal layer with which to estimate parasitics in earlier stages of the flow.",
     ),
     Variable(
-        "RCX_RULES",
-        Path,
-        "Path to the OpenRCX extraction rules for the nominal process corner.",
+        "RCX_RULESETS",
+        Optional[Dict[str, Path]],
+        "Map of corner patterns to OpenRCX extraction rules. A corner not matched by exactly one pattern in this dictionary will not be supported by OpenRCX, and a PDK not specifying this variable will not be supported by OpenRCX.",
     ),
     Variable(
-        "RCX_RULES_MIN",
-        Optional[Path],
-        "Path to the OpenRCX extraction rules for the minimum process corner.",
+        "DEFAULT_CORNER",
+        str,
+        "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
     ),
     Variable(
-        "RCX_RULES_MAX",
-        Optional[Path],
-        "Path to the OpenRCX extraction rules for the maximum process corner.",
+        "STA_CORNERS",
+        List[str],
+        "A list of fully qualified IPVT (Interconnect, transistor Process, Voltage, and Temperature) timing corners on which to conduct multi-corner static timing analysis.",
     ),
     # Floorplanning
     Variable(
@@ -280,42 +278,22 @@ scl_variables = [
         List[str],
         "A list of cell names or wildcards of decap cells to be used in fill insertion.",
     ),
-    # Synthesis
     Variable(
         "LIB",
-        List[Path],
-        "Path to the lib file to be used during synthesis.",
-        deprecated_names=["LIB_SYNTH"],
+        Dict[str, List[Path]],
+        "A map from corner patterns to a list of associated liberty files. Exactly one entry must match the `DEFAULT_CORNER`.",
     ),
     Variable(
-        "NO_SYNTH_CELL_LIST",
+        "SYNTH_EXCLUSION_CELL_LIST",
         Path,
         "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
+        deprecated_names=["NO_SYNTH_CELL_LIST"],
     ),
     Variable(
-        "BAD_CELL_LIST",
+        "PNR_EXCLUSION_CELL_LIST",
         Path,
-        "Path to a text file containing a list of bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND timing optimizations. If not defined, all cells will be used.",
+        "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
         deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
-    ),
-    # Static Timing Analysis
-    Variable(
-        "LIB_TYPICAL",
-        List[Path],
-        "Path to the lib file to be used during typical timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_TYPICAL"],
-    ),
-    Variable(
-        "LIB_SLOWEST",
-        List[Path],
-        "Path to the lib file to be used during slowest timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_SLOWEST"],
-    ),
-    Variable(
-        "LIB_FASTEST",
-        List[Path],
-        "Path to the lib file to be used during fastest timing corner static timing analysis.",
-        deprecated_names=["LIB_SYNTH_FASTEST"],
     ),
     # Synthesis
     Variable(
@@ -525,9 +503,70 @@ def migrate_old_config(config: Config) -> Config:
     del new["DIODE_CELL_PIN"]
     new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
 
+    # 5. Interconnect Corners
+    del new["RCX_RULES"]
+    new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
+    if config.get("RCX_RULES_MIN") is not None:
+        del new["RCX_RULES_MIN"]
+        new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
+    if config.get("RCX_RULES_MAX") is not None:
+        del new["RCX_RULES_MAX"]
+        new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
+
+    del new["TECH_LEF"]
+    new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
+    if config.get("TECH_LEF_MIN") is not None:
+        del new["TECH_LEF_MIN"]
+        new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
+    if config.get("TECH_LEF_MAX") is not None:
+        del new["TECH_LEF_MAX"]
+        new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
+
+    # 6. Timing Corners
+    lib_sta: Dict[str, List[str]] = {}
+    ws = re.compile(r"\s+")
+
+    default_pvt = ""
+
+    def process_sta(key: str):
+        nonlocal new, default_pvt
+        lib_raw = new.pop(key)
+        if lib_raw is None:
+            return
+        lib = lib_raw.strip()
+        lib_list = ws.split(lib)
+        first_lib = os.path.basename(lib_list[0])[:-4]
+        pvt = first_lib.split("__")[1]
+        if default_pvt == "":
+            default_pvt = pvt
+        corner = f"*_{pvt}"
+        lib_sta[corner] = lib_list
+
+    process_sta("LIB_SYNTH")
+    process_sta("LIB_SLOWEST")
+    process_sta("LIB_FASTEST")
+
+    new["STA_CORNERS"] = [
+        "nom_tt_025C_1v80",
+        "nom_ss_100C_1v60",
+        "nom_ff_n40C_1v95",
+        "min_tt_025C_1v80",
+        "min_ss_100C_1v60",
+        "min_ff_n40C_1v95",
+        "max_tt_025C_1v80",
+        "max_ss_100C_1v60",
+        "max_ff_n40C_1v95",
+    ]
+
+    new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
+    new["LIB"] = lib_sta
+
+    # 7a. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
-    elif new["PDK"].startswith("gf180mcu"):
+
+    # 7b. Invalid Variables (gf180mcu)
+    if new["PDK"].startswith("gf180mcu"):
         del new["GPIO_PADS_LEF"]
         del new["GPIO_PADS_VERILOG"]
 
@@ -542,11 +581,11 @@ def migrate_old_config(config: Config) -> Config:
         new[
             "SYNTH_CLK_DRIVING_CELL"
         ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
-
     return new._lock()
 
 
 all_variables: List[Variable] = pdk_variables + scl_variables
 removed_variables: Dict[str, str] = {
-    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed."
+    "FAKEDIODE_CELL": "Fake diode-based strategies have been removed.",
+    "LIB_SYNTH": "Use the lib dictionary instead.",
 }

@@ -1,0 +1,13 @@
+diff --git a/extflat/EFbuild.c b/extflat/EFbuild.c
+index 021f534..81fc7a2 100644
+--- a/extflat/EFbuild.c
++++ b/extflat/EFbuild.c
+@@ -1789,7 +1789,7 @@ efNodeMerge(node1ptr, node2ptr)
+ 
+     /* Sanity check: ignore if same node */
+     if (*node1ptr == *node2ptr)
+-	return;
++	return NULL;
+ 
+     /* Keep the node with the greater number of entries, and merge  */
+     /* the node with fewer entries into it.			    */

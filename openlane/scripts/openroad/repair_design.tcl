@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 unset_propagated_clock [all_clocks]
 
@@ -67,11 +67,7 @@ if { [catch {check_placement -verbose} errmsg] } {
 
 unset_dont_touch_rx "$::env(RSZ_DONT_TOUCH_RX)"
 
-write
-
-# Run post-design optimization STA
-# set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
-set ::env(RUN_STANDALONE) 0
-source $::env(SCRIPTS_DIR)/openroad/sta.tcl
+
+write_views

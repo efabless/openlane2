@@ -1,4 +1,6 @@
 */runs/
+*/run/
+*/openlane_run/
 */lef/
 */gds/
 */mag/
@@ -9,4 +11,4 @@
 */run_*.json
 */run_*.tcl
 */matrix_*.json
-/passant_ram
+.ipynb_checkpoints

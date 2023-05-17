@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 set_propagated_clock [all_clocks]
 
@@ -38,18 +38,7 @@ if { $::env(GRT_REPAIR_ANTENNAS) } {
     puts "%OL_END_REPORT"
 }
 
-write
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
+estimate_parasitics -global_routing
 
-if {[info exists ::env(CLOCK_PORT)]} {
-    if { $::env(GRT_ESTIMATE_PARASITICS) == 1 } {
-        # set rc values
-        source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-        # estimate wire rc parasitics
-        estimate_parasitics -global_routing
-
-        set ::env(RUN_STANDALONE) 0
-        source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-    }
-} else {
-    puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}
+write_views

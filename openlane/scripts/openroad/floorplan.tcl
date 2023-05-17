@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read_libs
+read_pnr_libs
 read_lefs
-read_netlist
+read_current_netlist
 
 unset_propagated_clock [all_clocks]
 
@@ -99,4 +99,4 @@ source $::env(TRACKS_INFO_FILE_PROCESSED)
 utl::metric "design__die__bbox"  $::env(DIE_AREA)
 utl::metric "design__core__bbox" $::env(CORE_AREA)
 
-write
+write_views

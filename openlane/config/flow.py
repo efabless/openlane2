@@ -14,11 +14,18 @@
 from decimal import Decimal
 from typing import List, Optional, Dict
 
-from .variable import Path, Variable
+from .macro import Macro
 from .config import StringEnum
+from .variable import Variable
+from ..state import Path
 
 all_variables = [
     # Common
+    Variable(
+        "DESIGN_DIR",
+        Path,
+        "The directory of the design. Does not need to be provided explicitly.",
+    ),
     Variable(
         "DESIGN_NAME",
         str,
@@ -45,12 +52,12 @@ all_variables = [
     ),
     Variable(
         "CLOCK_PORT",
-        Optional[str],
-        "The name of the design's clock port.",
+        Optional[List[str]],
+        "The name(s) of the design's clock port(s).",
     ),
     Variable(
         "CLOCK_NET",
-        Optional[str],
+        Optional[List[str]],
         "The name of the net input to root clock buffer.",
         default="ref::$CLOCK_PORT",
     ),
@@ -72,25 +79,30 @@ all_variables = [
     ),
     # Macros
     Variable(
+        "MACROS",
+        Optional[Dict[str, Macro]],
+        "A dictionary of Macro definition objects. See {py:class}`openlane.config.Macro` for more info.",
+    ),
+    Variable(
+        "EXTRA_LEFS",
+        Optional[List[Path]],
+        "Specifies miscellaneous LEF files to be loaded indiscriminately whenever LEFs are loaded.",
+    ),
+    Variable(
         "EXTRA_VERILOG_MODELS",
         Optional[List[Path]],
-        "Black-boxed Verilog models of pre-hardened macros used in the current design, used in synthesis.",
+        "Specifies miscellaneous Verilog models to be loaded indiscriminately during synthesis.",
         deprecated_names=["VERILOG_FILES_BLACKBOX"],
     ),
     Variable(
         "EXTRA_SPICE_MODELS",
         Optional[List[Path]],
-        "Black-boxed SPICE models of pre-hardened macros used in the current design, used in LVS.",
-    ),
-    Variable(
-        "EXTRA_LEFS",
-        Optional[List[Path]],
-        "Specifies LEF files of pre-hardened macros used in the current design, used in placement and routing.",
+        "Miscellaneous SPICE files .",
     ),
     Variable(
         "EXTRA_LIBS",
         Optional[List[Path]],
-        "Specifies LIB files of pre-hardened macros used in the current design, used during timing analysis. (Optional).",
+        "Specifies LIB files of pre-hardened macros used in the current design, used during timing analyses (and during parasitics-based STA as a fallback). These are loaded indiscriminately for all timing corners.",
     ),
     Variable(
         "EXTRA_GDS_FILES",
@@ -167,6 +179,9 @@ removed_variables: Dict[str, str] = {
     "GLB_OPTIMIZE_MIRRORING": "Shares DPL_OPTIMIZE_MIRRORING.",
     "GRT_MAX_DIODE_INS_ITERS": "Relevant diode insertion strategies removed.",
     "TAKE_LAYOUT_SCROT": "Buggy/dubious utility.",
+    "MAGIC_PAD": "Hacky/dubious utility.",
     "GENERATE_FINAL_SUMMARY_REPORT": "To be specified via API/CLI- not much of a configuration variable.",
     "USE_GPIO_PADS": "Add the pad's files to EXTRA_LEFS and EXTRA_VERILOG_MODELS as apprioriate.",
+    "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
+    "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
 }

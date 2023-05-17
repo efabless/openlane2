@@ -1,4 +1,82 @@
+# 2.0.0-a23
+
+* Added warning on multiple clocks in `base.sdc`
+* Added usage of translation hook for SDC scripts
+    * Folded `sdc_reader.tcl` into `io.tcl`
+* Fixed calculation issue with I/O delays in `base.sdc`
+* Fixed SPEF read invocation to include instance path
+* Renamed multiple functions in `io.tcl` for clarity and to avoid aliasing
+  Tcl built-in functions
+* Tcl reproducibles now add entire environment delta vs. just "extracted" variables
+    * Better handling of objects inside the design directory
+    
+# 2.0.0-a22
+
+* Fixed a bug with initializing configurations using dictionaries.
+* Added exception message for `InvalidConfig`.
+
+# 2.0.0-a21
+
+* Created a (very) rudimentary plugin system
+    * Add ability to list detected plugins with flag `--list-plugins`
+* Fixed a problem with reading SPEF files for macros
+* Various documentation updates
+
+# 2.0.0-a20
+
+* Created a `Macro` definition object to replace a litany of variables.
+    * `libs`, `spefs` and `sdf` files now use wildcards as keys, which will be
+    matched against timing corners for loading, i.e., a SPEF with key `nom_*` will
+    match timing corner `nom_tt_025C_1V80`.
+        * This has been applied to PDK lib files, RCX rulesets and technology LEF
+        files as well.
+        * `Toolbox` object now has methods for matching the proper LIB/SPEF files.
+* PDKs now list a `DEFAULT_CORNER` for picking LIB files as well as a list of
+  `STA_TIMING` corners. 
+* Expanded the range of valid types for `Variable`: these new classes are
+  supported, all with theoretically infinite nesting:
+    * `Dict`
+    * `Union`
+    * `Literal`
+* `State` rewritten to support nested dictionaries and type annotations.
+    * (Subclass of `Mapping`- Python 3.8 does not support subscripting `UserDict`. Yep.)
+* Created a `config.json` for the caravel_upw example for testing purposes.
+* Updated Magic, add new patch for Clang
+* `self.state_in` is now always a future for consistency, but `run()` now takes
+  a `state_in` which is guaranteed to be resolved.
+* `EXTRA_LEFS`, `EXTRA_LIBS`, etc kept as a fallback for consistency.
+* Remove `STA_PRE_CTS`- STA now always propagates clocks
+
+# 2.0.0-a19
+
+* Created new metric `synthesis__check_error__count` with a corresponding Checker, with said Checker being the new executor of the `QUIT_ON_SYNTH_CHECKS` variable
+    * Check report parser imported from OpenLane 1
+* Created `SYNTH_CHECKS_ALLOW_TRISTATE` to exclude unmapped tribufs from previous metric.
+* Created new metric `design__xor_difference__count` with a corresponding Checker to flag a deferred error on XOR differences.
+* Fixed a few typos.
+
+# 2.0.0-a18
+
+* Updated the smoke test to support PDK downloads to a different directory.
+* Updated config builder to resolve the PDK root much earlier to avoid an issue where a crash would affect the issue reproducible.
+* Updated `SYNTH_READ_BLACKBOX_LIB` to read the full `LIB` variable instead of `LIB_SYNTH`, which also fixes a crash when reading JSON headers.
+* Updated post-GRT resizer timing script to re-run GRT before the repair: see https://github.com/The-OpenROAD-Project/OpenROAD/issues/3155
+* Added a "yosys proc" to the JSON header generator (thanks @smnaut)
+* Fixed a bug where random equidistant mode did not work for OpenROAD IO placer.
+
+# 2.0.0-a17
+
+* Fixed a crash when the SCL is specified via command-line.
+* Fixed a changelog merge nightmare.
+
+# 2.0.0-a16
+
+* Reimplement DRC database using `lxml`
+* Makefile `venv` creation updated
+* Misc. aesthetic bugfixes for sequential flows
+
 # 2.0.0-a14
+
 * Add steps to extract, preserve and check power connections:
     * `Checker.DisconnectedPins`: Checker for `ReportDisconnectedPins`.
     * `Odb.ReportDisconnectedPins`: Report disconnected instance pins in a design.
@@ -14,6 +92,7 @@
 
 
 # 2.0.0-a13
+
 ## Documentation
 * Built-in flows now have full generated documentation akin to steps.
 * Built-in steps now document their inputs, outputs and each built-in step has a human-readable text description.
@@ -36,10 +115,12 @@
 * Remove `Odb.ApplyDEFTemplate` from default flow.
 
 # 2.0.0-a12
+
 * Fixes a bug where if OpenLane is invoked from the same directory as the design,
   KLayout stream-outs would break.
 
 # 2.0.0-a11
+
 * Update OpenROAD, Add ABC patch to use system zlib
 * Adds SDC files as an input to `OpenROADStep`, `NetlistSTA` and `LayoutSTA` steps
 * Add `sdc_reader.tcl`: a hook script for reading in SDC files while handling deprecated variables
@@ -49,6 +130,7 @@
     * Properly use SYNTH_CLK_DRIVING_CELL in base.sdc
 
 # 2.0.0-a10
+
 * Add `wrapper.tcl` to capture errors in Magic scripts.
 * Fix instances of a deprecated variable was used in Magic scripts.
 

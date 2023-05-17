@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 set ::block [[[::ord::get_db] getChip] getBlock]
 set ::insts [$::block getInsts]
@@ -30,7 +30,7 @@ if { !$placement_needed } {
 	puts "\[WARN] All instances are FIXED/FIRM."
 	puts "\[WARN] No need to perform global placement."
 	puts "\[WARN] Skipping…"
-	write
+	write_views
 	exit 0
 }
 
@@ -61,18 +61,7 @@ lappend arg_list -pad_left $cell_pad_side
 
 global_placement {*}$arg_list
 
-write
+source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
+estimate_parasitics -placement
 
-if {[info exists ::env(CLOCK_PORT)]} {
-	if { $::env(PL_ESTIMATE_PARASITICS) == 1 } {
-		unset_propagated_clock [all_clocks]
-		# set rc values
-		source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
-		estimate_parasitics -placement
-
-		set ::env(RUN_STANDALONE) 0
-		source $::env(SCRIPTS_DIR)/openroad/sta.tcl
-	}
-} else {
-	puts "\[WARN\]: No CLOCK_PORT found. Skipping STA…"
-}
+write_views

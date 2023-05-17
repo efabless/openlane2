@@ -25,8 +25,8 @@ from typing import Tuple, Type, Optional, List, Union
 
 import click
 
-from .state import State
 from .__version__ import __version__
+from .state import State
 from .logging import (
     LogLevelsDict,
     set_log_level,
@@ -41,6 +41,7 @@ from .common import (
 from .container import run_in_container, sanitize_path
 from .flows import Flow, SequentialFlow, FlowException, FlowError
 from .config import Config, InvalidConfig
+from .plugins import discovered_plugins
 
 
 def run(
@@ -156,7 +157,8 @@ def run(
         err("OpenLane will now quit.")
         exit(1)
     except FlowError as e:
-        err(f"The following error was encountered while running the flow: {e}")
+        if "deferred" not in str(e):
+            err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")
         exit(2)
 
@@ -188,15 +190,20 @@ def run_smoke_test(
             final_path,
         )
 
-        cmd = (
-            [
-                (sys.executable if not dockerized else "python3"),
-                "-m",
-                "openlane",
-            ]
-            + (["--dockerized", "--docker-mount", d] if dockerized else [])
-            + [os.path.join(final_path, "config.json")]
-        )
+        cmd = [
+            (sys.executable if not dockerized else "python3"),
+            "-m",
+            "openlane",
+            os.path.join(final_path, "config.json"),
+        ]
+        if pdk_root := ctx.params.get("pdk_root"):
+            cmd += ["--pdk-root", pdk_root]
+
+        if dockerized:
+            cmd += ["--dockerized", "--docker-mount", d]
+            if extra_mounts := ctx.params.get("docker_mounts"):
+                for mount in extra_mounts:
+                    cmd += ["--docker-mount", mount]
 
         try:
             subprocess.check_call(cmd)
@@ -255,6 +262,19 @@ def cli_in_container(ctx: click.Context, docker_mounts: Tuple[str], kwargs: dict
         ctx.exit(status)
 
 
+def print_plugins(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    if not value:
+        return
+    print(f"openlane -> {__version__}")
+    for name, module in discovered_plugins.items():
+        print(f"{name} -> {module.__version__}")
+    ctx.exit(0)
+
+
 o = partial(click.option, show_default=True)
 
 
@@ -286,6 +306,14 @@ o = partial(click.option, show_default=True)
     hidden=True,
 )
 @o(
+    "--list-plugins",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=print_plugins,
+    help="List all detected plugins for OpenLane.",
+)
+@o(
     "--dockerized/--native",
     is_eager=True,
     default=False,
@@ -295,6 +323,7 @@ o = partial(click.option, show_default=True)
     "--docker-mount",
     "docker_mounts",
     multiple=True,
+    is_eager=True,
     default=[],
     help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
 )
@@ -314,6 +343,7 @@ o = partial(click.option, show_default=True)
 )
 @o(
     "--pdk-root",
+    is_eager=True,
     default=os.environ.pop("PDK_ROOT", None),
     help="Override volare PDK root folder. Required if Volare is not installed.",
 )

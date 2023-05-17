@@ -4,21 +4,27 @@ import subprocess
 from setuptools import setup, find_packages
 
 
+module_name = "openlane"
+
 __dir__ = os.path.dirname(__file__)
 version = subprocess.check_output(
     [
         "python3",
-        f"{os.path.abspath(os.path.dirname(__file__))}/openlane/__version__.py",
+        os.path.join(
+            os.path.abspath(os.path.dirname(__file__)),
+            module_name,
+            "__version__.py",
+        ),
     ],
     encoding="utf8",
 )
 
 requirements = open("requirements.txt").read().strip().split("\n")
 setup(
-    name="openlane",
+    name=module_name,
     packages=find_packages(),
     package_data={
-        "openlane": [
+        module_name: [
             "py.typed",
             "open_pdks_rev",
             "scripts/*",

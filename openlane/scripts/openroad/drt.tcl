@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read
+read_current_odb
 
 set_thread_count $::env(ROUTING_CORES)
 
@@ -34,4 +34,4 @@ detailed_route\
     -or_seed 42\
     -verbose 1
 
-write
+write_views

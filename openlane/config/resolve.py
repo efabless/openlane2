@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import UserString
 import re
 import os
 import glob
@@ -36,13 +37,11 @@ PROCESS_INFO_ALLOWLIST = [
 
 
 Scalar = Union[str, int, float, bool, None]
+Valid = Union[Scalar, dict, list]
 
 
 class InvalidConfig(Exception):
     pass
-
-
-State = dict
 
 
 class Expr(object):
@@ -212,7 +211,7 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def process_string(value: str, state: State) -> Optional[str]:
+def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
@@ -220,28 +219,31 @@ def process_string(value: str, state: State) -> Optional[str]:
     DIR_PREFIX = "dir::"
     PDK_DIR_PREFIX = "pdk_dir::"
 
-    if value.startswith(DIR_PREFIX):
-        value = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
-    elif value.startswith(PDK_DIR_PREFIX):
-        value = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
+    mutable: str = value
 
-    if value.startswith(EXPR_PREFIX):
+    if value.startswith(DIR_PREFIX):
+        mutable = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
+    elif value.startswith(PDK_DIR_PREFIX):
+        mutable = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
+
+    if mutable.startswith(EXPR_PREFIX):
         try:
-            value = f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
+            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
-    elif value.startswith(REF_PREFIX):
-        reference = value[len(REF_PREFIX) :]
+    elif mutable.startswith(REF_PREFIX):
+        reference = mutable[len(REF_PREFIX) :]
         match = ref_rx.match(reference)
         if match is None:
             raise InvalidConfig(f"Invalid reference string '{reference}'")
+
         reference_variable = match[1]
         try:
             found = state[reference_variable]
             if found is None:
                 return None
 
-            if type(found) != str:
+            if type(found) != str and not isinstance(found, UserString):
                 if type(found) in [int, float]:
                     raise InvalidConfig(
                         f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
@@ -251,29 +253,38 @@ def process_string(value: str, state: State) -> Optional[str]:
                         f"Referenced variable {reference_variable} is not a string: {type(found)}."
                     )
 
-            value = reference.replace(match[0], found)
+            found = str(found)
+
+            replaced = reference.replace(match[0], found)
 
             found_abs = os.path.abspath(found)
-            full_abspath = os.path.abspath(value)
+            full_abspath = os.path.abspath(replaced)
 
             # Resolve globs for paths that are inside the exposed directory
             if full_abspath.startswith(found_abs):
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
-                if len(files_escaped) != 0:
-                    value = " ".join(files_escaped)
+                files_escaped.sort()
+                if len(files_escaped) == 1:
+                    return files_escaped[0]
+                elif len(files_escaped) > 1:
+                    return files_escaped
+
+            return full_abspath
         except KeyError:
             raise InvalidConfig(
                 f"Referenced variable '{reference_variable}' not found."
             )
-    return value
+    else:
+        return mutable
 
 
-def process_scalar(key: str, value: Scalar, state: State) -> Scalar:
+def process_scalar(key: str, value: Scalar, state: dict) -> Valid:
+    result: Valid = value
     if isinstance(value, str):
-        value = process_string(value, state)
+        result = process_string(value, state)
     elif value is None:
-        value = ""
+        result = ""
     elif not (
         isinstance(value, bool)
         or isinstance(value, int)
@@ -282,10 +293,10 @@ def process_scalar(key: str, value: Scalar, state: State) -> Scalar:
     ):
         raise InvalidConfig(f"Invalid value type {type(value)} for key '{key}'.")
 
-    return value
+    return result
 
 
-def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
+def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
     PDK_PREFIX = "pdk::"
     SCL_PREFIX = "scl::"
 
@@ -294,21 +305,18 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
         if not isinstance(key, str):
             raise InvalidConfig(f"Invalid key {key}: must be a string.")
         if isinstance(value, dict):
-            withhold = True
             if key.startswith(PDK_PREFIX):
+                withhold = True
                 pdk_match = key[len(PDK_PREFIX) :]
                 if fnmatch.fnmatch(state[Keys.pdk], pdk_match):
                     process_config_dict_recursive(value, state)
             elif key.startswith(SCL_PREFIX):
+                withhold = True
                 scl_match = key[len(SCL_PREFIX) :]
                 if state[Keys.scl] is not None and fnmatch.fnmatch(
                     state[Keys.scl], scl_match
                 ):
                     process_config_dict_recursive(value, state)
-            else:
-                raise InvalidConfig(
-                    f"Invalid value type {type(value)} for key '{key}'."
-                )
         elif isinstance(value, list):
             valid = True
             processed = []
@@ -329,7 +337,7 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: State):
 
 
 def process_config_dict(config_in: dict, exposed_variables: Dict[str, str]):
-    state = State(exposed_variables)
+    state = dict(exposed_variables)
     process_config_dict_recursive(config_in, state)
     return state
 
