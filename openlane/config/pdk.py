@@ -546,26 +546,39 @@ def migrate_old_config(config: Config) -> Config:
     process_sta("LIB_SLOWEST")
     process_sta("LIB_FASTEST")
 
-    new["STA_CORNERS"] = [
-        "nom_tt_025C_1v80",
-        "nom_ss_100C_1v60",
-        "nom_ff_n40C_1v95",
-        "min_tt_025C_1v80",
-        "min_ss_100C_1v60",
-        "min_ff_n40C_1v95",
-        "max_tt_025C_1v80",
-        "max_ss_100C_1v60",
-        "max_ff_n40C_1v95",
-    ]
+    if new["PDK"].startswith("sky130"):
+        new["STA_CORNERS"] = [
+            "nom_tt_025C_1v80",
+            "nom_ss_100C_1v60",
+            "nom_ff_n40C_1v95",
+            "min_tt_025C_1v80",
+            "min_ss_100C_1v60",
+            "min_ff_n40C_1v95",
+            "max_tt_025C_1v80",
+            "max_ss_100C_1v60",
+            "max_ff_n40C_1v95",
+        ]
+    elif new["PDK"].startswith("gf180mcu"):
+        new["STA_CORNERS"] = [
+            "nom_tt_025C_5v00",
+            "nom_ss_125C_4v50",
+            "nom_ff_n40C_5v50",
+            "min_tt_025C_5v00",
+            "min_ss_125C_4v50",
+            "min_ff_n40C_5v50",
+            "max_tt_025C_5v00",
+            "max_ss_125C_4v50",
+            "max_ff_n40C_5v50",
+        ]
 
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIB"] = lib_sta
 
-    # 7a. Disconnected Modules (sky130)
+    # 7. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
-    # 7b. Invalid Variables (gf180mcu)
+    # 8. Invalid Variables (gf180mcu)
     if new["PDK"].startswith("gf180mcu"):
         del new["GPIO_PADS_LEF"]
         del new["GPIO_PADS_VERILOG"]
