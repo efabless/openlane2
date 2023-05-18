@@ -1,3 +1,8 @@
+# 2.0.0-a26
+
+* Yosys steps now read macro netlists as a black-box if applicable
+* Renamed STA steps to avoid ambiguity
+
 # 2.0.0-a25
 
 * Made optional/default handling more straightforward to fix issue where

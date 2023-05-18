@@ -307,12 +307,21 @@ class Synthesis(YosysStep):
         )
 
         env["SYNTH_LIBS"] = " ".join(lib_synth)
-        env["MACRO_LIBS"] = " ".join(
-            [
-                str(lib)
-                for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-            ]
+
+        macro_libs = self.toolbox.get_macro_views(
+            self.config,
+            DesignFormat.LIB,
         )
+        if len(macro_libs) != 0:
+            env["MACRO_LIBS"] = " ".join([str(lib) for lib in macro_libs])
+
+        macro_nls = self.toolbox.get_macro_views(
+            self.config,
+            DesignFormat.NETLIST,
+            unless_exist=DesignFormat.LIB,
+        )
+        if len(macro_nls) != 0:
+            env["MACRO_NLS"] = " ".join([str(nl) for nl in macro_nls])
         state_out = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")

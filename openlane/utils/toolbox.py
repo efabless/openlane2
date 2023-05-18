@@ -60,6 +60,7 @@ class Toolbox(object):
         config: Config,
         view: DesignFormat,
         timing_corner: Optional[str] = None,
+        unless_exist: Optional[DesignFormat] = None,
     ) -> List[Path]:
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         macros = config["MACROS"]
@@ -73,14 +74,24 @@ class Toolbox(object):
                 raise TypeError(
                     f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
                 )
+
             views = macro.view_by_df(view)
+            if views is None:
+                continue
+
+            if unless_exist is not None:
+                alt_views = macro.view_by_df(unless_exist)
+                if alt_views is not None and (
+                    isinstance(alt_views, list) and len(alt_views) != 0
+                ):
+                    continue
 
             if isinstance(views, dict):
                 views_filtered = self.filter_views(config, views, timing_corner)
                 result += views_filtered
             elif isinstance(views, list):
                 result += views
-            elif str(views) != "":
+            elif views is not None and str(views) != "":
                 result += [Path(views)]
         return result
 

@@ -183,19 +183,10 @@ class OpenROADStep(TclStep):
         return None
 
 
-@Step.factory.register()
-class STA(OpenROADStep):
+class STAStep(OpenROADStep):
     """
-    Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenROAD on the input netlist.
+    Abstract class for an STA step
     """
-
-    id = "OpenROAD.STA"
-    name = "STA"
-    long_name = "Static Timing Analysis"
-
-    inputs = [DesignFormat.ODB, DesignFormat.SDC]
-    outputs = []
 
     def layout_preview(self) -> Optional[str]:
         return None
@@ -205,24 +196,44 @@ class STA(OpenROADStep):
 
 
 @Step.factory.register()
-class HierarchicalSTA(STA):
+class STAMidPNR(STAStep):
     """
-    Performs hierchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenSTA on the input netlist and all available Verilog models.
+    Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenROAD on an OpenROAD database, mid-PNR.
+    """
+
+    id = "OpenROAD.STAMidPNR"
+    name = "STA (Mid-PNR)"
+    long_name = "Static Timing Analysis (Mid-PNR)"
+
+    inputs = [DesignFormat.ODB, DesignFormat.SDC]
+    outputs = []
+
+
+@Step.factory.register()
+class STAPrePNR(STAStep):
+    """
+    Performs hierarchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenSTA on the pre-PNR Verilog netlist, with all available timing information
+    for standard cells and macros for the default timing corner as specified in
+    the ``DEFAULT_CORNER`` variable.
+
+    If timing information is not available for macros, the macro in question
+    will be black-boxed.
     """
 
     inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
-    outputs = [DesignFormat.LIB, DesignFormat.SDF]
+    outputs = []
 
-    id = "OpenROAD.HierarchicalSTA"
-    name = "Hierarchical STA"
-    long_name = "Hierarchical Static Timing Analysis"
+    id = "OpenROAD.STAPrePNR"
+    name = "STA (Pre-PNR)"
+    long_name = "Static Timing Analysis"
 
-    config_vars = STA.config_vars + [
+    config_vars = STAStep.config_vars + [
         Variable(
-            "HSTA_MACRO_PRIORITIZE_NL",
+            "STA_MACRO_PRIORITIZE_NL",
             bool,
-            "Prioritize the use of Netlists + SPEF files over LIB files if available for macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
+            "Prioritize the use of Netlists + SPEF files over LIB files if available for Macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
             default=True,
         ),
     ]
@@ -235,7 +246,7 @@ class HierarchicalSTA(STA):
 
         timing_corner, timing_file_list = self.toolbox.get_timing_files(
             self.config,
-            prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
+            prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
         )
         env["TIMING_CORNER_0"] = timing_corner
         for view in timing_file_list:
@@ -245,26 +256,28 @@ class HierarchicalSTA(STA):
 
 
 @Step.factory.register()
-class ParasiticsSTA(HierarchicalSTA):
+class STAPostPNR(STAPrePNR):
     """
-    Performs accurate, hierarchical static timing analysis using estimated or
-    extracted parasitics using OpenSTA on the input netlist.
+    Performs multi-corner `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenSTA on the post-PNR Verilog netlist, with extracted parasitics for
+    both the top-level module and any associated macros.
     """
 
-    id = "OpenROAD.ParasiticsSTA"
-    name = "Parasitics STA"
-    long_name = "Parasitics-based Static Timing Analysis"
-    flow_control_variable = "RUN_SPEF_STA"
+    id = "OpenROAD.STAPostPNR"
+    name = "STA (Post-PNR)"
+    long_name = "Static Timing Analysis (Post-PNR)"
+    flow_control_variable = "RUN_MCSTA"
 
-    inputs = HierarchicalSTA.inputs + [DesignFormat.SPEF]
+    inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
     outputs = [DesignFormat.LIB, DesignFormat.SDF]
 
-    config_vars = HierarchicalSTA.config_vars + [
+    config_vars = STAPrePNR.config_vars + [
         Variable(
-            "RUN_SPEF_STA",
+            "RUN_MCSTA",
             bool,
             "Enables/disables this step.",
             default=True,
+            deprecated_names=["RUN_SPEF_STA"],
         ),
     ]
 
@@ -301,7 +314,7 @@ class ParasiticsSTA(HierarchicalSTA):
             _, timing_file_list = self.toolbox.get_timing_files(
                 self.config,
                 corner,
-                prioritize_nl=self.config["HSTA_MACRO_PRIORITIZE_NL"],
+                prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
             )
             timing_file_value = corner
             for view in timing_file_list:
