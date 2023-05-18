@@ -77,7 +77,7 @@ class Optimizing(Flow):
             sdc_future = self.start_step_async(sdc_step)
             step_list.append(sdc_step)
 
-            sta_step = OpenROAD.STA(
+            sta_step = OpenROAD.STAPrePNR(
                 config,
                 state_in=sdc_future,
                 id=f"sta-{strategy}",
