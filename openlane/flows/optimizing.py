@@ -35,7 +35,7 @@ class Optimizing(Flow):
     Steps = [
         Yosys.Synthesis,
         Misc.LoadBaseSDC,
-        OpenROAD.STA,
+        OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
         OpenROAD.IOPlacement,
         OpenROAD.GlobalPlacement,

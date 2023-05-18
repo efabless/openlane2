@@ -77,7 +77,7 @@ class Macro:
 
     def view_by_df(
         self, df: DesignFormat
-    ) -> Union[Path, List[Path], Dict[str, List[Path]]]:
+    ) -> Union[None, Path, List[Path], Dict[str, List[Path]]]:
         return getattr(self, df.value.id)
 
     def __post_init__(self):

@@ -44,14 +44,18 @@ proc read_deps {{power_defines "off"}} {
         }
     }
 
-    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-        set verilog_include_args [list]
-        if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-            foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-                lappend verilog_include_args "-I$dir"
-            }
+    set verilog_include_args [list]
+    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+            lappend verilog_include_args "-I$dir"
         }
-        log "$::env(EXTRA_VERILOG_MODELS)"
+    }
+
+    if { [info exists ::env(MACRO_NLS)] } {
+        read_verilog -sv -lib {*}$verilog_include_args $::env(MACRO_NLS)
+    }
+
+    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
         read_verilog -sv -lib {*}$verilog_include_args {*}$::env(EXTRA_VERILOG_MODELS)
     }
 

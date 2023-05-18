@@ -38,12 +38,3 @@ module manual_macro_placement_test(
     spm spm_inst_0 (.clk(clk1), .rst(rst1), .x(x1), .y(y1), .p(p1));
     spm spm_inst_1 (.clk(clk2), .rst(rst2), .x(x2), .y(y2), .p(p2));
 endmodule
-
-(* blackbox *)
-module spm(clk, rst, x, y, p);
-    parameter size = 32;
-    input clk, rst;
-    input y;
-    input[size-1:0] x;
-    output p;
-endmodule
