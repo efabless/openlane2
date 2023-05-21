@@ -68,6 +68,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
 
     # Python
     click
+    cloup
     pyyaml
     rich
     requests

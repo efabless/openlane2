@@ -5,11 +5,11 @@ dist: venv/manifest.txt
 
 .PHONY: mount
 mount:
-	@echo "make mount is not needed in OpenLane 2. You may simply call 'openlane --dockerized'."
+	@echo "make mount is not needed in OpenLane 2+. You may simply call 'openlane --dockerized'."
 
 .PHONY: pdk pull-openlane
 pdk pull-openlane:
-	@echo "This command is not needed in OpenLane 2."
+	@echo "OpenLane 2+ will automatically pull PDKs and/or Docker containers when it needs them."
 
 .PHONY: openlane
 openlane:
@@ -29,7 +29,7 @@ docs: venv
 lint: venv/manifest.txt
 	./venv/bin/black --check .
 	./venv/bin/flake8 .
-	./venv/bin/mypy .
+	./venv/bin/mypy --check-untyped-defs .
 
 .PHONY: test
 test: venv/manifest.txt
@@ -48,15 +48,18 @@ check-license: venv/manifest.txt
 		java -jar app.jar \
 		--requirements '/volume/requirements.frz.txt'
 
+REQ_FILES = ./requirements_dev.txt ./requirements.txt
+REQ_FILES_PFX = $(addprefix -r ,$(REQ_FILES))
+
 venv: venv/manifest.txt
-venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
+venv/manifest.txt: $(REQ_FILES) Makefile
 	rm -rf venv
 	python3 -m venv ./venv
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt -r ./requirements.txt
-	PYTHONPATH= ./venv/bin/mypy --install-types --non-interactive . || true
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade $(REQ_FILES_PFX)
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
+	@echo ">> Venv prepared. To install documentation dependencies, invoke './venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt'"
 
 .PHONY: veryclean
 veryclean: clean

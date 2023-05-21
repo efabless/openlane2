@@ -174,7 +174,7 @@ class Variable:
         Returns the type of a variable presuming it is not None.
 
         If a variable is not Optional, that is simply the type specified in the
-        :attr:`type` field.
+        :ivar:`type` field.
         """
         return some_of(self.type)
 

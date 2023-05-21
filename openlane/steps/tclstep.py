@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
+from abc import abstractmethod
 
 import os
 import re
@@ -320,11 +321,23 @@ class TclStep(Step):
     A subclass of :class:`Step` that primarily deals with running Tcl-based utilities,
     such as Yosys, OpenROAD and Magic.
 
-    A TclStep Step corresponds to running one Tcl script with such a utility.
+    A TclStep Step should ideally correspond to running one Tcl script with such
+    a utility.
     """
 
     @staticmethod
     def value_to_tcl(value: Any) -> str:
+        """
+        Converts an arbitrary python value to Tcl as follows:
+
+        * If the value is an instance of a dataclass, it is serialized as a JSON object.
+        * If the value is a list, it is joined using ``shlex``.
+        * If the value is a dict, it is converted to the Tcl ``key1 value1 key2 value2 …`` format then joined with shlex.
+        * If the value is an Enum, its name is returned.
+        * If the value is boolean, "1" is returned for True and "0" for False.
+        * If the value is numeric, it is converted to a string.
+        * Otherwise, the value is passed to ``str()``.
+        """
         if is_dataclass(value):
             return json.dumps(asdict(value), cls=ConfigEncoder)
         elif isinstance(value, list):
@@ -339,7 +352,7 @@ class TclStep(Step):
                 result.append(TclStep.value_to_tcl(v_value))
             return shlex.join(result)
         elif isinstance(value, Enum):
-            return value.value
+            return value.name
         elif isinstance(value, bool):
             return "1" if value else "0"
         elif isinstance(value, Decimal) or isinstance(value, int):
@@ -347,21 +360,33 @@ class TclStep(Step):
         else:
             return str(value)
 
-    def get_script_path(self):
+    @abstractmethod
+    def get_script_path(self) -> str:
         """
-        :returns: A Tcl script to be run by this step.
+        :returns: A path to the Tcl script to be run by this step.
         """
-        return os.path.join(get_script_dir(), "tclsh", "hello.tcl")
+        pass
 
     def get_command(self) -> List[str]:
         """
-        :returns: The command used to run the script.
+        :returns: A list of strings representing the command used to run the script,
+        including the result of :meth:`get_script_path`.
+
+        This command should be overridden by subclasses and replaced with the
+        appropriate tool: e.g. ``openroad``, ``yosys``, et cetera.
         """
         return ["tclsh", self.get_script_path()]
 
     def prepare_env(self, env: dict, state: State) -> dict:
         """
-        Creates a copy of the environment dictionary, then converts
+        Creates a copy of an environment dictionary, then converts all accessible
+        ``self.config`` variables and state inputs to environment variables so
+        they may be used as inputs to the scripts.
+
+        The values are converted to strings as per :meth:`value_to_tcl`.
+
+        :param env: The input environment dictionary
+        :param state: The input state
         """
         env = env.copy()
 
@@ -410,6 +435,8 @@ class TclStep(Step):
         Additionally, it logs the output to a ``.log`` file named after the script.
 
         When overriding in a subclass, you may find it useful to use this pattern:
+
+        .. code-block::
 
             kwargs, env = self.extract_env(kwargs)
             env["CUSTOM_ENV_VARIABLE"] = "1"

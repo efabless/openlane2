@@ -40,17 +40,17 @@ class MetricChecker(Step):
         return super().get_help_md(dynamic_docstring)
 
     @abstractmethod
-    def get_metric_name(self) -> str:
+    def get_metric_name(self: Optional["MetricChecker"]) -> str:
         raise NotImplementedError()
 
     @abstractmethod
-    def get_metric_description(self) -> str:
+    def get_metric_description(self: Optional["MetricChecker"]) -> str:
         raise NotImplementedError()
 
-    def get_threshold(self) -> Optional[Decimal]:
+    def get_threshold(self: Optional["MetricChecker"]) -> Optional[Decimal]:
         return Decimal(0)
 
-    def get_threshold_description(self) -> Optional[str]:
+    def get_threshold_description(self: Optional["MetricChecker"]) -> Optional[str]:
         return None
 
     def run(self, state_in: State, **kwargs) -> State:

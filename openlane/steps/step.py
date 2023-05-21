@@ -104,31 +104,47 @@ class Step(ABC):
 
         You may omit this argument as ``None`` if "flow" is specified.
 
-    :param name: An optional override name for the step. Useful in custom flows.
-    :param id: An optional override name for the ID. Useful in custom flows.
-    :param long_name: An optional override name for the long name. Useful in custom flows.
+    :param id: A string ID for the Step. The convention is f"{a}.{b}", where the
+        first is common between all Steps using the same tools.
 
-        If set to false, Step implementations are expected to
-        output nothing to the terminal.
+        The ID should be in ``UpperCamelCase``.
 
-    :attr flow_control_variable: An optional key for a configuration variable.
+        While this is technically an instance variable, it is expected for every
+        subclass to override this variable and instances are only to change it
+        to disambiguate when the same step is used multiple times in a flow.
+
+    :param name: A short name for the Step, used in progress bars and
+        the like.
+
+        While this is technically an instance variable, it is expected for every
+        subclass to override this variable and instances are only to change it
+        to disambiguate when the same step is used multiple times in a flow.
+
+    :param long_name: A longer descriptive for the Step, used to delimit
+        logs.
+
+        While this is technically an instance variable, it is expected for every
+        subclass to override this variable and instances are only to change it
+        to disambiguate when the same step is used multiple times in a flow.
+
+    :cvar inputs: A list of :class:`openlane.state.DesignFormat` objects that
+        are required for this step. These will be validated by the :meth:`start`
+        method.
+
+    :cvar outputs: A list of :class:`openlane.state.DesignFormat` objects that
+        may be emitted by this step. A step is not allowed to modify design
+        formats not declared in ``outputs``.
+
+    :cvar flow_control_variable: An optional key for a configuration variable.
 
         If running inside a Flow, and this exists, if this variable is "False"
         or "None", the step is skipped.
 
-    :attr flow_control_msg: If ``flow_control_variable`` causes the step to be
+    :cvar flow_control_msg: If ``flow_control_variable`` causes the step to be
         skipped and this variable is set, the value of this variable is
         printed.
 
-    :attr inputs: A list of :class:`openlane.state.DesignFormat` objects that
-        are required for this step. These will be validated by the :meth:`start`
-        method.
-
-    :attr outputs: A list of :class:`openlane.state.DesignFormat` objects that
-        may be emitted by this step. A step is not allowed to modify design
-        formats not declared in ``outputs``.
-
-    :attr config_vars: A list of configuration :class:`openlane.config.Variable` objects
+    :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
     """
 
@@ -478,6 +494,8 @@ class Step(ABC):
             similar to how you would use it in a shell.
         :param log_to: An optional override for the log path from ``get_log_path``.
             Useful for if you run multiple subprocesses within one step.
+        :param silent: If specified, the subprocess does not print anything to
+            the terminal. Useful when running multiple processes simultaneously.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :raises subprocess.CalledProcessError: If the process has a non-zero exit,
@@ -576,7 +594,7 @@ class Step(ABC):
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
-                Self._registry[cls.id] = cls
+                Self._registry[cls.id.lower()] = cls
                 return cls
 
             return decorator
@@ -586,17 +604,16 @@ class Step(ABC):
             """
             Retrieves a Step type from the registry using a lookup string.
 
-            :param name: The registered name of the Step. Case-sensitive.
+            :param name: The registered name of the Step. Case-insensitive.
             """
-            return Self._registry.get(name)
+            return Self._registry.get(name.lower())
 
         @classmethod
         def list(Self) -> List[str]:
             """
-            :returns: A list of strings representing Python names of all registered
-            steps.
+            :returns: A list of IDs of all registered names.
             """
-            return list(Self._registry.keys())
+            return [cls.id for cls in Self._registry.values()]
 
     factory = StepFactory
     get = StepFactory.get

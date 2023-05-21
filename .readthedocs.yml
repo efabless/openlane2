@@ -10,6 +10,6 @@ build:
   tools:
     python: "3.10"
   commands:
-    - pip3 install -r ./requirements_dev.txt -r ./requirements.txt
+    - pip3 install -r ./requirements_docs.txt -r ./requirements.txt
     - cd docs && python3 -m sphinx.cmd.build -M html "source" "_build"
     - mv docs/_build _readthedocs
