@@ -1,3 +1,15 @@
+# 2.0.0-a28
+
+* Added missing macro orientations
+* Added missing `PDN_CFG` configuration variable
+* Fixed crash when defining `SYNTH_READ_BLACKBOX_LIB`
+* Streamlined all `read` messages in OpenROAD scripts and macro-related `read`
+  messages in Yosys scripts.
+* Cleaned up `YosysStep` hierarchy
+* Cleaned up `synthesize.tcl`
+
+> Thanks [@smunaut](https://github.com/smunaut) for the bug reports!
+
 # 2.0.0-a27
 
 * Added `cloup` library for better argument grouping/prettier `--help` with click

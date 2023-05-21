@@ -15,7 +15,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Union[Literal["N"], Literal["S"]]
+    orientation: Union[Literal["N"], Literal["S"], Literal["FN"], Literal["FS"]]
 
 
 @dataclass

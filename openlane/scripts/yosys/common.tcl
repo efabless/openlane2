@@ -14,32 +14,35 @@
 proc read_deps {{power_defines "off"}} {
     if { [info exists ::env(SYNTH_DEFINES) ] } {
         foreach define $::env(SYNTH_DEFINES) {
-            log "Defining $define"
+            log "Defining ${define}…"
             verilog_defines -D$define
         }
     }
 
     if { $power_defines == "on" } {
         if { [info exists ::env(SYNTH_POWER_DEFINE)] } {
+            log "Defining $::env(SYNTH_POWER_DEFINE)…"
             verilog_defines -D$::env(SYNTH_POWER_DEFINE)
         }
     }
 
     if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-        log "Reading $::env(LIB) as a blackbox"
-        foreach lib $::env(LIB) {
+        foreach lib $::env(SYNTH_LIBS) {
+            log "Reading SCL library '$lib' as a blackbox…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }
     }
 
     if { [info exists ::env(MACRO_LIBS) ] } {
         foreach lib $::env(MACRO_LIBS) {
+            log "Reading macro library '$lib' as a black-box…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }
     }
 
     if { [info exists ::env(EXTRA_LIBS) ] } {
         foreach lib $::env(EXTRA_LIBS) {
+            log "Reading extra library '$lib' as a black-box…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }
     }
@@ -52,11 +55,17 @@ proc read_deps {{power_defines "off"}} {
     }
 
     if { [info exists ::env(MACRO_NLS)] } {
-        read_verilog -sv -lib {*}$verilog_include_args $::env(MACRO_NLS)
+        foreach nl $::env(MACRO_NLS) {
+            log "Reading macro netlist '$nl' as a black-box…"
+            read_verilog -sv -lib {*}$verilog_include_args $nl
+        }
     }
 
     if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-        read_verilog -sv -lib {*}$verilog_include_args {*}$::env(EXTRA_VERILOG_MODELS)
+        foreach nl $::env(EXTRA_VERILOG_MODELS) {
+            log "Reading extra model '$nl' as a black-box…"
+            read_verilog -sv -lib {*}$verilog_include_args $nl
+        }
     }
 
 }

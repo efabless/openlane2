@@ -199,12 +199,12 @@ class STAStep(OpenROADStep):
 class STAMidPNR(STAStep):
     """
     Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenROAD on an OpenROAD database, mid-PNR.
+    using OpenROAD on an OpenROAD database, mid-PnR.
     """
 
     id = "OpenROAD.STAMidPNR"
-    name = "STA (Mid-PNR)"
-    long_name = "Static Timing Analysis (Mid-PNR)"
+    name = "STA (Mid-PnR)"
+    long_name = "Static Timing Analysis (Mid-PnR)"
 
     inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = []
@@ -214,7 +214,7 @@ class STAMidPNR(STAStep):
 class STAPrePNR(STAStep):
     """
     Performs hierarchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenSTA on the pre-PNR Verilog netlist, with all available timing information
+    using OpenSTA on the pre-PnR Verilog netlist, with all available timing information
     for standard cells and macros for the default timing corner as specified in
     the ``DEFAULT_CORNER`` variable.
 
@@ -226,7 +226,7 @@ class STAPrePNR(STAStep):
     outputs = []
 
     id = "OpenROAD.STAPrePNR"
-    name = "STA (Pre-PNR)"
+    name = "STA (Pre-PnR)"
     long_name = "Static Timing Analysis"
 
     config_vars = STAStep.config_vars + [
@@ -259,13 +259,13 @@ class STAPrePNR(STAStep):
 class STAPostPNR(STAPrePNR):
     """
     Performs multi-corner `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenSTA on the post-PNR Verilog netlist, with extracted parasitics for
+    using OpenSTA on the post-PnR Verilog netlist, with extracted parasitics for
     both the top-level module and any associated macros.
     """
 
     id = "OpenROAD.STAPostPNR"
-    name = "STA (Post-PNR)"
-    long_name = "Static Timing Analysis (Post-PNR)"
+    name = "STA (Post-PnR)"
+    long_name = "Static Timing Analysis (Post-PnR)"
     flow_control_variable = "RUN_MCSTA"
 
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
@@ -515,7 +515,17 @@ class GeneratePDN(OpenROADStep):
     name = "Generate PDN"
     long_name = "Power Distribution Network Generation"
 
-    config_vars = OpenROADStep.config_vars + pdn_variables
+    config_vars = (
+        OpenROADStep.config_vars
+        + pdn_variables
+        + [
+            Variable(
+                "PDN_CFG",
+                Optional[Path],
+                "A custom PDN configuration file. If not provided, the default PDN config will be used.",
+            )
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
@@ -581,9 +591,8 @@ class GlobalPlacement(OpenROADStep):
         env[
             "PL_TARGET_DENSITY_PCT"
         ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
-        # Overriden by super if the value is not None
-        state_out = super().run(state_in, env=env, **kwargs)
-        return state_out
+
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
