@@ -82,32 +82,28 @@ class Flow(Step._FlowType):
     :param name: An optional string name for the Flow itself, and not a run of it.
 
         If not set, the Python class name will be used instead.
-    :param Steps:
+
+    :ivar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
 
         Subclasses of :class:`Step` are expected to override the default value
-        as a class member.
+        as a class member- but subclasses may allow mutating this value on a
+        per-instance basis.
     """
 
     name: str
     Steps: List[Type[Step]] = []  # Override
 
-    def __init__(
-        self,
-        config: Config,
-        design_dir: str,
-        name: Optional[str] = None,
-        Steps: Optional[List[Type[Step]]] = None,
-    ):
-        if Steps is not None:
-            self.Steps = Steps
+    ordinal: int
+    completed: int
+    max_stage: int
+    task_id: Optional[TaskID]
+    progress: Optional[Progress]
+    run_dir: Optional[str]
+    tmp_dir: Optional[str]
+    toolbox: Optional[Toolbox]
 
-        self.name = name or self.__class__.__name__
-        self.config: Config = config
-        self.design_dir = design_dir
-
-        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
-
+    def _reset_stateful_variables(self):
         self.ordinal: int = 1
         self.completed: int = 0
         self.max_stage: int = 0
@@ -116,6 +112,21 @@ class Flow(Step._FlowType):
         self.run_dir: Optional[str] = None
         self.tmp_dir: Optional[str] = None
         self.toolbox: Optional[Toolbox] = None
+
+    def __init__(
+        self,
+        config: Config,
+        design_dir: str,
+        name: Optional[str] = None,
+    ):
+        self.name = name or self.__class__.__name__
+        self.config: Config = config
+        self.design_dir = design_dir
+
+        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
+
+        self.Steps = self.Steps.copy()  # Break global reference
+        self._reset_stateful_variables()
 
     @classmethod
     def get_help_md(Self):
@@ -315,13 +326,7 @@ class Flow(Step._FlowType):
         self.progress.stop()
 
         # Reset stateful objects
-        self.progress = None
-        self.task_id = None
-        self.tmp_dir = None
-        self.toolbox = None
-        self.ordinal = 1
-        self.completed = 0
-        self.max_stage = 0
+        self._reset_stateful_variables()
 
         return result
 

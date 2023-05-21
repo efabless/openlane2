@@ -1,3 +1,19 @@
+# 2.0.0-a27
+
+* Added `cloup` library for better argument grouping/prettier `--help` with click
+* Added ability to substitute steps with a certain `id` in a `SequentialFlow`
+  with other Step classes
+* Added `--only`, `--skip` to commandline interface for `SequentialFlow`s
+* Changed processing of how `--from` and `--to` are done in `SequentialFlow`s
+* Better delineation of class vs. instance variables in documentation
+* Type checker now also checks functions without typed headers
+* Fixed minor bugs with `Decimal` serialization and deserialization
+* Class/step registry now case-insensitive
+* Moved documentation dependencies to separate requirements file
+* Removed `jupyter` from `requirements_dev.txt`- too many dependencies and can
+  just be installed with `pip install jupyter`
+* Various documentation improvements and fixes
+
 # 2.0.0-a26
 
 * Yosys steps now read macro netlists as a black-box if applicable

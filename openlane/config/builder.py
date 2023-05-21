@@ -67,13 +67,6 @@ class InvalidConfig(ValueError):
         super().__init__(message, *args, **kwargs)
 
 
-class DecimalDecoder(json.JSONDecoder):
-    def default(self, o):
-        if isinstance(o, float) or isinstance(o, int):
-            return Decimal(o)
-        return super(DecimalDecoder, self).default(o)
-
-
 class ConfigBuilder(object):
     """
     Various constructors for OpenLane configuration objects.
@@ -242,7 +235,7 @@ class ConfigBuilder(object):
         *args,
         **kwargs,
     ):
-        raw = json.loads(json_str, cls=DecimalDecoder)
+        raw = json.loads(json_str, parse_float=Decimal)
         kwargs["resolve_json"] = True
         return Self._load_dict(
             raw,

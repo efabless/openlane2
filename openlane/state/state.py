@@ -57,13 +57,6 @@ class StateEncoder(json.JSONEncoder):
         return super(StateEncoder, self).default(o)
 
 
-class StateDecoder(json.JSONDecoder):
-    def default(self, o):
-        if isinstance(o, float) or isinstance(o, int):
-            return Decimal(o)
-        return super(StateEncoder, self).default(o)
-
-
 VT = Union[Path, Dict[str, Path], None]
 
 
@@ -114,7 +107,9 @@ class State(Mapping[str, VT]):
     def __copy_recursive__(self, input: T) -> T:
         def resolve_value(value):
             value_final = value
-            if isinstance(value, dict) or isinstance(value, list):
+            if isinstance(value, dict):
+                value_final = self.__copy_recursive__(value)
+            elif isinstance(value, list):
                 value_final = self.__copy_recursive__(value)
             return value_final
 
@@ -274,7 +269,7 @@ class State(Mapping[str, VT]):
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":
-        raw = json.loads(json_in, cls=StateDecoder)
+        raw = json.loads(json_in, parse_float=Decimal)
 
         metrics = raw.get("metrics")
         if metrics is not None:

@@ -57,8 +57,6 @@ class ConfigEncoder(json.JSONEncoder):
         elif isinstance(o, Path):
             return str(o)
         elif isinstance(o, Enum):
-            return str(o)
-        elif isinstance(o, StringEnum):
             return o.value
         return super(ConfigEncoder, self).default(o)
 

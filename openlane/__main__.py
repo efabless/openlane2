@@ -24,6 +24,22 @@ import traceback
 from typing import Tuple, Type, Optional, List, Union
 
 import click
+from cloup import (
+    option,
+    option_group,
+    command,
+    version_option,
+    HelpFormatter,
+    HelpTheme,
+    Style,
+)
+from cloup.constraints import (
+    If,
+    IsSet,
+    accept_none,
+    require_one,
+    mutually_exclusive,
+)
 
 from .__version__ import __version__
 from .state import State
@@ -56,6 +72,8 @@ def run(
     last_run: bool,
     frm: Optional[str],
     to: Optional[str],
+    only: Optional[str],
+    skip: Tuple[str, ...],
     initial_state_json: Optional[str],
     config_override_strings: List[str],
     log_level: str,
@@ -66,6 +84,9 @@ def run(
         err(f"Invalid logging level: {log_level}.")
         click.echo(ctx.get_help())
         exit(-1)
+
+    if only is not None:
+        frm = to = only
 
     if use_volare:
         import volare
@@ -150,6 +171,7 @@ def run(
             tag=run_tag,
             frm=frm,
             to=to,
+            skip=list(skip),
             with_initial_state=initial_state,
         )
     except FlowException as e:
@@ -275,13 +297,23 @@ def print_plugins(
     ctx.exit(0)
 
 
-o = partial(click.option, show_default=True)
-
-
-@click.command(
-    no_args_is_help=True,
+formatter_settings = HelpFormatter.settings(
+    theme=HelpTheme(
+        invoked_command=Style(fg="bright_yellow"),
+        heading=Style(fg="bright_white", bold=True),
+        constraint=Style(fg="magenta"),
+        col1=Style(fg="bright_yellow"),
+    )
 )
-@click.version_option(
+
+o = partial(option, show_default=True)
+
+
+@command(
+    no_args_is_help=True,
+    formatter_settings=formatter_settings,
+)
+@version_option(
     __version__,
     prog_name="OpenLane",
     message=dedent(
@@ -313,79 +345,99 @@ o = partial(click.option, show_default=True)
     callback=print_plugins,
     help="List all detected plugins for OpenLane.",
 )
-@o(
-    "--dockerized/--native",
-    is_eager=True,
-    default=False,
-    help="Run OpenLane primarily using a Docker container. Some caveats apply.",
-)
-@o(
-    "--docker-mount",
-    "docker_mounts",
-    multiple=True,
-    is_eager=True,
-    default=[],
-    help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
-)
-@o(
-    "-f",
-    "--flow",
-    "flow_name",
-    type=click.Choice(Flow.factory.list(), case_sensitive=False),
-    default=None,
-    help="The built-in OpenLane flow to use",
-)
-@o(
-    "--volare-pdk/--manual-pdk",
-    "use_volare",
-    default=True,
-    help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
-)
-@o(
-    "--pdk-root",
-    is_eager=True,
-    default=os.environ.pop("PDK_ROOT", None),
-    help="Override volare PDK root folder. Required if Volare is not installed.",
-)
-@o(
-    "-p",
-    "--pdk",
-    type=str,
-    default=os.environ.pop("PDK", "sky130A"),
-    help="The process design kit to use.",
-)
-@o(
-    "-s",
-    "--scl",
-    type=str,
-    default=os.environ.pop("STD_CELL_LIBRARY", None),
-    help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
-)
-@o(
-    "--run-tag",
-    default=None,
-    type=str,
-    help="An optional name to use for this particular run of an OpenLane-based flow. Mutually exclusive with --last-run.",
-)
-@o(
-    "-I",
-    "--with-initial-state",
-    "initial_state_json",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
+@option_group(
+    "PDK options",
+    o(
+        "--volare-pdk/--manual-pdk",
+        "use_volare",
+        default=True,
+        help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
     ),
-    default=None,
-    help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
+    o(
+        "--pdk-root",
+        is_eager=True,
+        default=os.environ.pop("PDK_ROOT", None),
+        help="Override volare PDK root folder. Required if Volare is not installed.",
+    ),
+    o(
+        "-p",
+        "--pdk",
+        type=str,
+        default=os.environ.pop("PDK", "sky130A"),
+        help="The process design kit to use.",
+    ),
+    o(
+        "-s",
+        "--scl",
+        type=str,
+        default=os.environ.pop("STD_CELL_LIBRARY", None),
+        help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
+    ),
 )
-@o(
-    "-c",
-    "--override-config",
-    "config_override_strings",
-    type=str,
-    multiple=True,
-    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
+@option_group(
+    "Docker options",
+    o(
+        "--dockerized/--native",
+        is_eager=True,
+        default=False,
+        help="Run OpenLane primarily using a Docker container. Some caveats apply.",
+    ),
+    o(
+        "--docker-mount",
+        "docker_mounts",
+        multiple=True,
+        is_eager=True,
+        default=[],
+        help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
+    ),
+    constraint=If(~IsSet("dockerized"), accept_none),
+)
+@option_group(
+    "Run options",
+    o(
+        "-f",
+        "--flow",
+        "flow_name",
+        type=click.Choice(Flow.factory.list(), case_sensitive=False),
+        default=None,
+        help="The built-in OpenLane flow to use for this run",
+    ),
+    o(
+        "-i",
+        "--with-initial-state",
+        "initial_state_json",
+        type=click.Path(
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        ),
+        default=None,
+        help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
+    ),
+    o(
+        "-c",
+        "--override-config",
+        "config_override_strings",
+        type=str,
+        multiple=True,
+        help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
+    ),
+)
+@option_group(
+    "Run options - tag",
+    o(
+        "--run-tag",
+        default=None,
+        type=str,
+        help="An optional name to use for this particular run of an OpenLane-based flow.",
+    ),
+    o(
+        "--last-run",
+        is_flag=True,
+        default=False,
+        help="Use the last run as the run tag.",
+    ),
+    constraint=mutually_exclusive,
 )
 @o(
     "--smoke-test",
@@ -394,26 +446,37 @@ o = partial(click.option, show_default=True)
     expose_value=False,
     callback=run_smoke_test,
 )
-@o(
-    "--last-run",
-    is_flag=True,
-    default=False,
-    help="Attempt to resume the last run. Supported by sequential flows. Mutually exclusive with --run-tag.",
-)
-@o(
-    "-F",
-    "--from",
-    "frm",
-    type=str,
-    default=None,
-    help="Start from a step with this id. Supported by sequential flows.",
-)
-@o(
-    "-T",
-    "--to",
-    type=str,
-    default=None,
-    help="Stop at a step with this id. Supported by sequential flows.",
+@option_group(
+    "Run options - sequential flow control",
+    o(
+        "-F",
+        "--from",
+        "frm",
+        type=str,
+        default=None,
+        help="Start from a step with this id. Supported by sequential flows.",
+    ),
+    o(
+        "-T",
+        "--to",
+        type=str,
+        default=None,
+        help="Stop at a step with this id. Supported by sequential flows.",
+    ),
+    o(
+        "--only",
+        type=str,
+        default=None,
+        help="Shorthand to set both --from and --to to the same value.",
+    ),
+    o(
+        "-S",
+        "--skip",
+        type=str,
+        multiple=True,
+        help="Skip these steps. Supported by sequential flows.",
+    ),
+    constraint=If(IsSet("only"), require_one),
 )
 @o(
     "--log-level",

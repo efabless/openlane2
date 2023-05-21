@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import List, Tuple, Optional, Type
+from typing import List, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
@@ -35,7 +35,15 @@ class SequentialFlow(Flow):
     processing.
 
     All subclasses of this flow have to do is override the :attr:`.Steps` abstract property
-    and it would automatically handle the rest. See `Classic` for an example.
+    and it would automatically handle the rest. See `Classic` in Built-in Flows for an example.
+
+    :param Substitute: Substitute all instances of one `Step` type by another `Step`
+        type in the :attr:`.Steps` attribute for this instance only.
+
+        You may also use the string Step IDs in place of a `Step` type object.
+
+    :param args: Arguments for :class:`Flow`.
+    :param kwargs: Keyword arguments for :class:`Flow`.
     """
 
     @classmethod
@@ -53,26 +61,82 @@ class SequentialFlow(Flow):
 
         return CustomSequentialFlow
 
+    def __init__(
+        self,
+        Substitute: Optional[
+            Dict[str, Union[str, Type[Step]]],
+        ] = None,
+        *args,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+
+        if substitute := Substitute:
+            for key, item in substitute.items():
+                self._substitute_step(key, item)
+
+    def _substitute_step(
+        self,
+        id: str,
+        with_step: Union[str, Type[Step]],
+    ):
+        step_index: Optional[int] = None
+        for i, step in enumerate(self.Steps):
+            if step.id.lower() == id.lower():
+                step_index = i
+                break
+        if step_index is None:
+            raise FlowException(
+                f"Failed to process start step '{step}': no step with ID '{step}' found in flow."
+            )
+
+        if isinstance(with_step, str):
+            with_step_opt = Step.get(with_step)
+            if with_step_opt is None:
+                raise FlowException(
+                    f"Could not substitute '{step.id}' with '{with_step}': no step with ID '{with_step}' found."
+                )
+            with_step = with_step_opt
+
+        self.Steps[i] = with_step
+
     def run(
         self,
         initial_state: State,
         frm: Optional[str] = None,
         to: Optional[str] = None,
+        skip: Optional[List[str]] = None,
         **kwargs,
     ) -> Tuple[State, List[Step]]:
+        step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}
+        skipped_ids = []
+
         frm_resolved = None
+        if frm is not None:
+            if id := step_ids.get(frm.lower()):
+                frm_resolved = id
+            else:
+                raise FlowException(
+                    f"Failed to process start step '{frm}': no step with ID '{frm}' found in flow."
+                )
+
         to_resolved = None
-        for cls in self.Steps:
-            if frm is not None and frm.lower() == cls.id.lower():
-                frm_resolved = cls.id
-            if to is not None and to.lower() == cls.id.lower():
-                to_resolved = cls.id
+        if to is not None:
+            if id := step_ids.get(to.lower()):
+                to_resolved = id
+            else:
+                raise FlowException(
+                    f"Failed to process start step '{to}': no step with ID '{to}' found in flow."
+                )
 
-        if frm is not None and frm_resolved is None:
-            raise FlowException(f"Failed to process end step '{frm}': step not found")
-        if to is not None and to_resolved is None:
-            raise FlowException(f"Failed to process end step '{to}': step not found")
-
+        if skipped_steps := skip:
+            for skipped_step in skipped_steps:
+                if id := step_ids.get(skipped_step.lower()):
+                    skipped_ids.append(id)
+                else:
+                    raise FlowException(
+                        f"Failed to process skipped step '{skipped_step}': no step with ID '{skipped_step}' found in flow."
+                    )
         step_count = len(self.Steps)
         self.set_max_stage_count(step_count)
 
@@ -90,22 +154,22 @@ class SequentialFlow(Flow):
                 executing = True
 
             self.start_stage(step.name)
-            if not executing:
+            increment_ordinal = True
+            if not executing or cls.id in skipped_ids:
                 info(f"Skipping step '{step.name}'…")
-                self.end_stage(increment_ordinal=False)
-                continue
+                increment_ordinal = False
+            else:
+                step_list.append(step)
+                try:
+                    current_state = step.start()
+                except StepException as e:
+                    raise FlowException(str(e))
+                except DeferredStepError as e:
+                    deferred_errors.append(str(e))
+                except (StepError, subprocess.CalledProcessError) as e:
+                    raise FlowError(str(e))
 
-            step_list.append(step)
-            try:
-                current_state = step.start()
-            except StepException as e:
-                raise FlowException(str(e))
-            except DeferredStepError as e:
-                deferred_errors.append(str(e))
-            except (StepError, subprocess.CalledProcessError) as e:
-                raise FlowError(str(e))
-
-            self.end_stage()
+            self.end_stage(increment_ordinal=increment_ordinal)
 
             if to_resolved and to_resolved == step.id:
                 executing = False
