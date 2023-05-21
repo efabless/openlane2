@@ -15,21 +15,17 @@ yosys -import
 source $::env(SCRIPTS_DIR)/yosys/common.tcl
 
 # inputs expected as env vars
-set buffering $::env(SYNTH_BUFFERING)
-set sizing $::env(SYNTH_SIZING)
 set vtop $::env(DESIGN_NAME)
-set sclib $::env(SYNTH_LIBS)
 
 set lib_args [list]
-foreach lib $sclib {
+foreach lib $::env(SYNTH_LIBS) {
     lappend lib_args -liberty $lib
 }
-
 
 if {[info exists ::env(DFF_LIB_SYNTH)]} {
     set dfflib $::env(DFF_LIB_SYNTH)
 } else {
-    set dfflib $sclib
+    set dfflib $::env(SYNTH_LIBS)
 }
 
 set dfflib_args [list]
@@ -39,20 +35,13 @@ foreach lib $dfflib {
 
 read_deps
 
-# ns expected (in sdc as well)
-set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
-
-set driver  $::env(SYNTH_DRIVING_CELL)
-set cload   $::env(SYNTH_CAP_LOAD)
-# input pin cap of IN_3VX8
 set max_FO $::env(MAX_FANOUT_CONSTRAINT)
 if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
-    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1*$clock_period}]
-} else {
-    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
+    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1 * $::env(CLOCK_PERIOD)}]
 }
-set max_Tran $::env(MAX_TRANSITION_CONSTRAINT)
-
+# conversions from µs to ns
+set max_TR [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
+set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
 
 # Mapping parameters
 set A_factor  0.00
@@ -63,8 +52,8 @@ set F_factor  0.00
 # Create SDC File
 set sdc_file $::env(STEP_DIR)/synthesis.sdc
 set outfile [open ${sdc_file} w]
-puts $outfile "set_driving_cell ${driver}"
-puts $outfile "set_load ${cload}"
+puts $outfile "set_driving_cell $::env(SYNTH_DRIVING_CELL)"
+puts $outfile "set_load $::env(SYNTH_CAP_LOAD)"
 close $outfile
 
 
@@ -103,9 +92,9 @@ set abc_retime_area   	"retime,-D,{D},-M,5"
 set abc_retime_dly    	"retime,-D,{D},-M,6"
 set abc_map_new_area  	"amap,-m,-Q,0.1,-F,20,-A,20,-C,5000"
 
-if {$buffering==1} {
-    set abc_fine_tune		"buffer,-N,${max_FO},-S,${max_Tran};upsize,{D};dnsize,{D}"
-} elseif {$sizing} {
+if { $::env(SYNTH_BUFFERING) == 1 } {
+    set abc_fine_tune		"buffer,-N,${max_FO},-S,${max_TR};upsize,{D};dnsize,{D}"
+} elseif {$::env(SYNTH_SIZING)} {
     set abc_fine_tune       "upsize,{D};dnsize,{D}"
 } else {
     set abc_fine_tune       ""
@@ -210,21 +199,19 @@ hierarchy -check -top $vtop
 # Infer tri-state buffers.
 set tbuf_map false
 if { [info exists ::env(TRISTATE_BUFFER_MAP)] } {
-    if { [file exists $::env(TRISTATE_BUFFER_MAP)] } {
-        set tbuf_map true
-        tribuf
-    } else {
-        log "WARNING: TRISTATE_BUFFER_MAP is defined but could not be found: $::env(TRISTATE_BUFFER_MAP)"
-    }
+    set tbuf_map true
+    tribuf
 }
 
 # Handle technology mapping of RCS/CSA adders
 if { $adder_type == "RCA"} {
-    if { [info exists ::env(RIPPLE_CARRY_ADDER_MAP)] && [file exists $::env(RIPPLE_CARRY_ADDER_MAP)] } {
+    if { [info exists ::env(RIPPLE_CARRY_ADDER_MAP)] } {
+        log "\[INFO] Applying ripple carry adder mapping from '$::env(RIPPLE_CARRY_ADDER_MAP)'…"
         techmap -map $::env(RIPPLE_CARRY_ADDER_MAP)
     }
 } elseif { $adder_type == "CSA"} {
-    if { [info exists ::env(CARRY_SELECT_ADDER_MAP)] && [file exists $::env(CARRY_SELECT_ADDER_MAP)] } {
+    if { [info exists ::env(CARRY_SELECT_ADDER_MAP)] } {
+        log "\[INFO] Applying carry-select adder mapping from '$::env(CARRY_SELECT_ADDER_MAP)'…"
         techmap -map $::env(CARRY_SELECT_ADDER_MAP)
     }
 }
@@ -236,12 +223,8 @@ if { $::env(SYNTH_NO_FLAT) } {
 }
 
 if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
-    if { [file exists $::env(SYNTH_EXTRA_MAPPING_FILE)] } {
-        log "\[INFO\] applying mappings in $::env(SYNTH_EXTRA_MAPPING_FILE)"
-        techmap -map $::env(SYNTH_EXTRA_MAPPING_FILE)
-    } else {
-        log -stderr "\[ERROR] file not found $::env(SYNTH_EXTRA_MAPPING_FILE)."
-    }
+    log "\[INFO] Applying extra mappings from '$::env(SYNTH_EXTRA_MAPPING_FILE)'…"
+    techmap -map $::env(SYNTH_EXTRA_MAPPING_FILE)
 }
 
 show -format dot -prefix $::env(STEP_DIR)/post_techmap
@@ -252,7 +235,7 @@ if { $::env(SYNTH_SHARE_RESOURCES) } {
 
 set fa_map false
 if { $adder_type == "FA" } {
-    if { [info exists ::env(FULL_ADDER_MAP)] && [file exists $::env(FULL_ADDER_MAP)] } {
+    if { [info exists ::env(FULL_ADDER_MAP)] } {
         extract_fa -fa -v
         extract_fa -ha -v
         set fa_map true
@@ -270,17 +253,20 @@ tee -o "$report_dir/pre_techmap.json" stat -json
 # Map tri-state buffers
 if { $tbuf_map } {
     log {mapping tbuf}
+    log "\[INFO] Applying tri-state buffer mapping from '$::env(TRISTATE_BUFFER_MAP)'…"
     techmap -map $::env(TRISTATE_BUFFER_MAP)
     simplemap
 }
 
 # Map full adders
 if { $fa_map } {
+    log "\[INFO] Applying full-adder mapping from '$::env(FULL_ADDER_MAP)'…"
     techmap -map $::env(FULL_ADDER_MAP)
 }
 
 # Handle technology mapping of latches
-if { [info exists ::env(SYNTH_LATCH_MAP)] && [file exists $::env(SYNTH_LATCH_MAP)] } {
+if { [info exists ::env(SYNTH_LATCH_MAP)] } {
+    log "\[INFO] Applying latch mapping from '$::env(SYNTH_LATCH_MAP)'…"
     techmap -map $::env(SYNTH_LATCH_MAP)
     simplemap
 }
@@ -290,8 +276,7 @@ tee -o "$report_dir/post_dff.json" stat -json
 
 proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     upvar clock_period clock_period
-    upvar sdc_file sdc
-    upvar sclib libs
+    upvar sdc_file sdc_file
     upvar report_dir report_dir
     upvar lib_args lib_args
 
@@ -301,7 +286,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
 
     design -load checkpoint
     abc -D "$clock_period" \
-        -constr "$sdc" \
+        -constr "$sdc_file" \
         -script "$script" \
         -showtmp \
         {*}$lib_args
@@ -312,12 +297,15 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
 
     splitnets
     opt_clean -purge
-    insbuf -buf {*}[split $::env(SYNTH_BUFFER_CELL) "/"]
+
+    if { $::env(SYNTH_BUFFERING) } {
+        insbuf -buf {*}[split $::env(SYNTH_BUFFER_CELL) "/"]
+    }
 
     tee -o "$report_dir/chk.rpt" check
     tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(SYNTH_LIBS) 0] -json
 
-    if { [info exists ::env(SYNTH_AUTONAME)] && $::env(SYNTH_AUTONAME) } {
+    if { $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include
         # the full heirarchy, which is preferable to the internal names that are simply
         # sequential numbers such as `_000019_`. Renamed net names can be very long, such as:

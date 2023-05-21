@@ -45,7 +45,7 @@ proc read_current_sdc {} {
         set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
     }
 
-    puts "> read_sdc $::env(CURRENT_SDC)"
+    puts "Reading design constraints file at '$::env(CURRENT_SDC)'…"
     if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
         puts stderr $errmsg
         exit 1
@@ -58,14 +58,13 @@ proc read_current_netlist {args} {
         keys {}\
         flags {-powered -all}
 
-    set netlist $::env(CURRENT_NETLIST)
-    puts "> read_verilog $netlist"
-    if {[catch {read_verilog $netlist} errmsg]} {
+    puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
+    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
 
-    puts "> link_design $::env(DESIGN_NAME)"
+    puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
     link_design $::env(DESIGN_NAME)
 
     read_current_sdc
@@ -105,7 +104,7 @@ proc read_timing_info {args} {
             } elseif { [string match *.v $model] } {
                 lappend nl_bucket $model
             } else {
-                puts "> read_liberty -corner $corner_name $model"
+                puts "Reading timing library for the '$corner_name' corner at '$model'…"
                 read_liberty -corner $corner_name $model
             }
         }
@@ -113,7 +112,7 @@ proc read_timing_info {args} {
         if { [info exists ::env(EXTRA_LIBS) ] } {
             puts "Reading explicitly-specified extra libs for $corner_name…"
             foreach extra_lib $::env(EXTRA_LIBS) {
-                puts "> read_liberty -corner $corner_name $extra_lib"
+                puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
                 read_liberty -corner $corner_name $extra_lib
             }
         }
@@ -125,7 +124,7 @@ proc read_timing_info {args} {
         # OpenSTA
         set blackbox_wildcard {/// sta-blackbox}
         foreach nl $macro_nls {
-            puts "> read_verilog $nl"
+            puts "Reading macro netlist at '$nl'…"
             if { [catch {read_verilog $nl} err] } {
                 puts "Error while reading macro netlist '$nl':"
                 puts $err
@@ -137,7 +136,7 @@ proc read_timing_info {args} {
             foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
                 if { [string_in_file $verilog_file $blackbox_wildcard] } {
                     puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
-                } elseif { [catch {puts "> read_verilog $verilog_file"; read_verilog $verilog_file} err] } {
+                } elseif { [catch {puts "Reading Verilog model at '$verilog_file'…"; read_verilog $verilog_file} err] } {
                     puts "Error while reading $verilog_file:"
                     puts $err
                     puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
@@ -154,7 +153,7 @@ proc read_timing_info {args} {
 proc read_spefs {} {
     if { [info exists ::env(CURRENT_SPEF)] } {
         foreach {corner_name spef} $::env(CURRENT_SPEF) {
-            puts "> read_spef -corner $corner_name $spef"
+            puts "Reading top-level design parasitics for the '$corner_name' corner at '$spef'…"
             read_spef -corner $corner_name $spef
         }
     }
@@ -162,7 +161,7 @@ proc read_spefs {} {
         foreach {corner_name spef_info} $::macro_spefs {
             set fields [split $spef_info "@"]
             lassign $fields instance_path spef
-            puts "> read_spef -corner $corner_name -path $instance_path $spef"
+            puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
             read_spef -corner $corner_name -path $instance_path $spef
         }
     }
@@ -179,35 +178,42 @@ proc read_pnr_libs {args} {
     }
 
     foreach lib $::env(PNR_LIBS) {
-        puts "> read_liberty $lib"
+        puts "Reading library file at '$lib'…"
         read_liberty $lib
     }
     if { [info exists ::env(MACRO_LIBS) ] } {
-        foreach extra_lib $::env(MACRO_LIBS) {
-            puts "> read_liberty $extra_lib"
-            read_liberty $extra_lib
+        foreach macro_lib $::env(MACRO_LIBS) {
+            puts "Reading macro library file at '$macro_lib'…"
+            read_liberty $macro_lib
         }
     }
     if { [info exists ::env(EXTRA_LIBS) ] } {
         foreach extra_lib $::env(EXTRA_LIBS) {
-            puts "> read_liberty $extra_lib"
+            puts "Reading extra library file at '$extra_lib'…"
             read_liberty $extra_lib
         }
     }
 }
 
 proc read_lefs {{tlef_key "TECH_LEF"}} {
-    read_lef $::env($tlef_key)
+    set tlef $::env($tlef_key)
+
+    puts "Reading technology LEF file at '$tlef'…"
+    read_lef $tlef
+
     foreach lef $::env(CELL_LEFS) {
+        puts "Reading cell LEF file at '$lef'…"
         read_lef $lef
     }
     if { [info exist ::env(MACRO_LEFS)] } {
         foreach lef $::env(MACRO_LEFS) {
+            puts "Reading macro LEF file at '$lef'…"
             read_lef $lef
         }
     }
     if { [info exist ::env(EXTRA_LEFS)] } {
         foreach lef $::env(EXTRA_LEFS) {
+            puts "Reading extra LEF file at '$lef'…"
             read_lef $lef
         }
     }
@@ -218,6 +224,7 @@ proc read_current_odb {args} {
         keys {}\
         flags {}
 
+    puts "Reading OpenROAD database at '$::env(CURRENT_ODB)'…"
     if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
         puts stderr $errmsg
         exit 1
