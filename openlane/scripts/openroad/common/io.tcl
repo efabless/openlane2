@@ -104,7 +104,7 @@ proc read_timing_info {args} {
             } elseif { [string match *.v $model] } {
                 lappend nl_bucket $model
             } else {
-                puts "Reading timing library for the '$corner' corner at '$model'…"
+                puts "Reading timing library for the '$corner_name' corner at '$model'…"
                 read_liberty -corner $corner_name $model
             }
         }
@@ -112,7 +112,7 @@ proc read_timing_info {args} {
         if { [info exists ::env(EXTRA_LIBS) ] } {
             puts "Reading explicitly-specified extra libs for $corner_name…"
             foreach extra_lib $::env(EXTRA_LIBS) {
-                puts "Reading extra timing library for the '$corner' corner at '$extra_lib'…"
+                puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
                 read_liberty -corner $corner_name $extra_lib
             }
         }
@@ -153,7 +153,7 @@ proc read_timing_info {args} {
 proc read_spefs {} {
     if { [info exists ::env(CURRENT_SPEF)] } {
         foreach {corner_name spef} $::env(CURRENT_SPEF) {
-            puts "Reading top-level design parasitics for the '$corner' corner at '$spef'…"
+            puts "Reading top-level design parasitics for the '$corner_name' corner at '$spef'…"
             read_spef -corner $corner_name $spef
         }
     }
@@ -161,7 +161,7 @@ proc read_spefs {} {
         foreach {corner_name spef_info} $::macro_spefs {
             set fields [split $spef_info "@"]
             lassign $fields instance_path spef
-            puts "Reading '$instance_path' parasitics for the '$corner' corner at '$spef'…"
+            puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
             read_spef -corner $corner_name -path $instance_path $spef
         }
     }
