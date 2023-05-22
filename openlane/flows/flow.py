@@ -49,7 +49,7 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..logging import console, info, verbose
+from ..logging import console, info, verbose, warn
 from ..common import mkdirp, internal, final, slugify
 
 
@@ -76,12 +76,18 @@ class Flow(Step._FlowType):
     progress bar at the bottom of the terminal, which shows what stage the flow
     is currently in and the remaining stages.
 
-    :param config: A resolved OpenLane configuration object to be used as input
-        for this instance of a flow.
-    :param design_dir: A design directory
+    :param config: Either a resolved :class:`Config` object, or an input to
+        :meth:`ConfigBuilder.load`.
+
     :param name: An optional string name for the Flow itself, and not a run of it.
 
         If not set, the Python class name will be used instead.
+
+    :param config_override_strings: See :meth:`ConfigBuilder.load`
+    :param pdk: See :meth:`ConfigBuilder.load`
+    :param pdk_root: See :meth:`ConfigBuilder.load`
+    :param scl: See :meth:`ConfigBuilder.load`
+    :param design_dir: See :meth:`ConfigBuilder.load`
 
     :ivar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
@@ -115,18 +121,35 @@ class Flow(Step._FlowType):
 
     def __init__(
         self,
-        config: Config,
-        design_dir: str,
+        config: Union[Config, str, os.PathLike, Dict],
+        *,
         name: Optional[str] = None,
+        pdk: Optional[str] = None,
+        pdk_root: Optional[str] = None,
+        scl: Optional[str] = None,
+        design_dir: Optional[str] = None,
+        config_override_strings: Optional[Sequence[str]] = None,
     ):
         self.name = name or self.__class__.__name__
-        self.config: Config = config
-        self.design_dir = design_dir
 
         self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
 
         self.Steps = self.Steps.copy()  # Break global reference
         self._reset_stateful_variables()
+
+        if not isinstance(config, Config):
+            config, design_dir = ConfigBuilder.load(
+                config_in=config,
+                flow_config_vars=self.get_config_variables(),
+                config_override_strings=config_override_strings,
+                pdk=pdk,
+                pdk_root=pdk_root,
+                scl=scl,
+                design_dir=design_dir,
+            )
+
+        self.config: Config = config
+        self.design_dir: str = str(self.config["DESIGN_DIR"])
 
     @classmethod
     def get_help_md(Self):
@@ -170,13 +193,12 @@ class Flow(Step._FlowType):
 
         return result
 
-    @classmethod
-    def get_config_variables(Self) -> List[Variable]:
+    def get_config_variables(self) -> List[Variable]:
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
             variable.name: (variable, "Universal")
             for variable in universal_flow_config_variables
         }
-        for step_cls in Self.Steps:
+        for step_cls in self.Steps:
             for variable in step_cls.config_vars:
                 if flow_variables_by_name.get(variable.name) is not None:
                     existing_variable, existing_step = flow_variables_by_name[
@@ -193,43 +215,14 @@ class Flow(Step._FlowType):
     @classmethod
     def init_with_config(
         Self,
-        config_in: Union[str, os.PathLike, Dict],
-        pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
-        scl: Optional[str] = None,
-        design_dir: Optional[str] = None,
-        config_override_strings: Optional[Sequence[str]] = None,
+        config_in: Union[Config, str, os.PathLike, Dict],
         **kwargs,
     ):
-        """
-        Create a new instance of the :class:`Flow` object with a given
-        configuration file or object.
-
-        :param config_in: See :meth:`ConfigBuilder.load`
-        :param config_override_strings: See :meth:`ConfigBuilder.load`
-        :param pdk: See :meth:`ConfigBuilder.load`
-        :param pdk_root: See :meth:`ConfigBuilder.load`
-        :param scl: See :meth:`ConfigBuilder.load`
-        :param design_dir: See :meth:`ConfigBuilder.load`
-        """
-
-        flow_config_vars = Self.get_config_variables()
-
-        config_resolved, design_dir_resolved = ConfigBuilder.load(
-            config_in=config_in,
-            flow_config_vars=flow_config_vars,
-            config_override_strings=config_override_strings,
-            pdk=pdk,
-            pdk_root=pdk_root,
-            scl=scl,
-            design_dir=design_dir,
+        warn(
+            f"'init_with_config' is no longer needed- just call the '{Self.__name__}' constructor instead"
         )
-
-        return Self(
-            config=config_resolved,
-            design_dir=design_dir_resolved,
-            **kwargs,
-        )
+        kwargs["config"] = config_in
+        return Self(**kwargs)
 
     @final
     def start(

@@ -1,3 +1,10 @@
+# 2.0.0-a29
+
+* Added run-time type checkers for `SequentialFlow` `Substitute` dictionary
+* Folded `init_with_config` into constructor and deprecate it
+* Fixed `SequentialFlow` step substitution bug by moving variable compilation to
+  instance instead of class
+
 # 2.0.0-a28
 
 * Added missing macro orientations

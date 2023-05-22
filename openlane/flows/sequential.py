@@ -63,23 +63,32 @@ class SequentialFlow(Flow):
 
     def __init__(
         self,
+        *args,
         Substitute: Optional[
             Dict[str, Union[str, Type[Step]]],
         ] = None,
-        *args,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        self.Steps = self.Steps.copy()  # Break global reference
 
         if substitute := Substitute:
             for key, item in substitute.items():
                 self._substitute_step(key, item)
+
+        super().__init__(*args, **kwargs)
 
     def _substitute_step(
         self,
         id: str,
         with_step: Union[str, Type[Step]],
     ):
+        if not isinstance(id, str):
+            raise FlowException(
+                "Keys in the 'Substitute' dictionary must be string IDs."
+            )
+        if with_step is None:
+            raise FlowException(f"Invalid replacement step for {id}: 'None'")
+
         step_index: Optional[int] = None
         for i, step in enumerate(self.Steps):
             if step.id.lower() == id.lower():
