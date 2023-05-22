@@ -122,8 +122,8 @@ def run(
             exit(-1)
 
     try:
-        flow = TargetFlow.init_with_config(
-            config_in=config_file,
+        flow = TargetFlow(
+            config_file,
             pdk_root=pdk_root,
             pdk=pdk,
             scl=scl,

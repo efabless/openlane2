@@ -72,7 +72,7 @@ class MyFlow(SequentialFlow):
 You may then instantiate and start the flow as shown:
 
 ```python
-flow = MyFlow.init_with_config(
+flow = MyFlow(
     {
         "PDK": "sky130A",
         "DESIGN_NAME": "spm",
