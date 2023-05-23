@@ -97,7 +97,7 @@ jobs:
           nix-build
       - name: Create Image (Docker)
         run: |
-          $(nix-build --argstr name openlane --argstr tag intermediate docker.nix) | docker load
+          $(nix-build --argstr name openlane --argstr tag-override intermediate docker.nix) | docker load
       - name: Smoke Test (Docker)
         run: |
           docker run --rm\

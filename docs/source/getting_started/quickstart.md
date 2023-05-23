@@ -16,25 +16,25 @@ The entry point for using OpenLane with a configuration file is the Python `open
 In order to run the default flow on a given design, you need to execute the following command:
 
 ```sh
-python3 -m openlane --dockerized <path/to/design/config>
+python3 -m openlane <path/to/design/config>
 ```
 
-```{note}
-You will need to omit `--dockerized` if you're using a native installation method, such as Nix, Conda or just compiling your own tools from source.
+``````{note}
+You will need to add `--dockerized` at the beginning of the invocation if you're using Docker, for example:
+
+```sh
+python3 -m openlane --dockerized <path/to/design/config>
 ```
+``````
 
 For example, a design named `gcd` would have an invocation that looks something like this:
 
 ```sh
-python3 -m openlane --dockerized ./gcd/config.json
+python3 -m openlane ./gcd/config.json
 ```
 
 
 ## Using the API
-
-```{warning}
-The API cannot be used in dockerized mode, and is intended for native installation methods.
-```
 
 You may simply elect to write a Python script to configure and harden your design. For an SPM module with one file `./src/spm.v`, for example, you can use this script to place and route it.
 

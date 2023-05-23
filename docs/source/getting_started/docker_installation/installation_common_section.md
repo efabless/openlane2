@@ -72,14 +72,24 @@ sourcing an activate script in its bin directory.
 
 * Download OpenLane using PIP:
 
-```
+```sh
 python3 -m pip install openlane
 ```
 
 * Run a smoke test for OpenLane:
 
-```
-python3 -m openlane --smoke-test --dockerized
+```sh
+python3 -m openlane --dockerized --smoke-test
 ```
 
 If the smoke test finishes successfully, congratulations. You're ready to use OpenLane.
+
+```{note}
+You can run simply invoke `python3 -m openlane --dockerized` without any arguments
+to drop into an interactive shell inside the Docker environment, with your home
+directory and your PDK root directory mounted.
+```
+
+## Next steps
+
+See the [Quick-start Guide](../quickstart.md).
