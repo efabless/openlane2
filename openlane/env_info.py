@@ -18,6 +18,7 @@
 # environment surveys. Please ensure all code as compatible as possible
 # with ancient versions of Python.
 
+import os
 import re
 import sys
 import json
@@ -28,6 +29,8 @@ try:
     from typing import Optional  # noqa: F401
 except ImportError:
     pass
+
+CONTAINER_ENGINE = os.getenv("OPENLANE_CONTAINER_ENGINE", "docker")
 
 
 class StringRepresentable(object):
@@ -58,7 +61,7 @@ class ContainerInfo(StringRepresentable):
 
             try:
                 info_str = subprocess.check_output(
-                    ["docker", "info", "--format", "{{json .}}"]
+                    [CONTAINER_ENGINE, "info", "--format", "{{json .}}"]
                 ).decode("utf8")
             except Exception:
                 return None
@@ -87,7 +90,7 @@ class ContainerInfo(StringRepresentable):
                 # Get Version
                 try:
                     version_output = (
-                        subprocess.check_output(["docker", "--version"])
+                        subprocess.check_output([CONTAINER_ENGINE, "--version"])
                         .decode("utf8")
                         .strip()
                     )

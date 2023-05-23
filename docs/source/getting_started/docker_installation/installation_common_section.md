@@ -79,7 +79,11 @@ python3 -m pip install openlane
 * Run a smoke test for OpenLane:
 
 ```
-python3 -m openlane --smoke-test --dockerized
+python3 -m openlane --dockerized --smoke-test
 ```
 
 If the smoke test finishes successfully, congratulations. You're ready to use OpenLane.
+
+## Next steps
+
+See the [Quick-start Guide](../quickstart.md).
