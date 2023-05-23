@@ -1,3 +1,6 @@
+# 2.0.0-a31
+* Replace OpenSTA binary name check with an environment variable, `OPENSTA`
+
 # 2.0.0-a30
 
 * Added ability to use `--dockerized` without further arguments to drop into a shell

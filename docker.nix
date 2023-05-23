@@ -64,7 +64,7 @@ in dockerTools.streamLayeredImage rec {
     autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
     autoload -U colors && colors
 
-    export PS1=$'%{\033[31m%}OpenLane Container (${tag})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
+    export PS1=$'%{\033[31m%}OpenLane Container (${openlane-app.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
     HEREDOC
     '';
 }
