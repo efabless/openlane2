@@ -15,7 +15,7 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
 
 read_timing_info
-if { [file tail [info nameofexecutable]] == "openroad" } {
+if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
     read_current_odb
 
     # Internal API- brittle

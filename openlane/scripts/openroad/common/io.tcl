@@ -120,7 +120,7 @@ proc read_timing_info {args} {
 
     set macro_nls [lsort -unique $nl_bucket]
 
-    if { [file tail [info nameofexecutable]] == "sta" } {
+    if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
         # OpenSTA
         set blackbox_wildcard {/// sta-blackbox}
         foreach nl $macro_nls {
