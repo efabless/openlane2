@@ -1,3 +1,12 @@
+# 2.0.0-a30
+
+* Added ability to use `--dockerized` without further arguments to drop into a shell
+* Reimplemented `--dockerized` - needs to be the first argument provided
+* Reimplemented `--smoke-test` to not use a subprocess
+  * `--smoke-test` doesn't attempt to handle `--dockerized` on its own anymore
+* Fixed permissions bug when running a smoke test from a read-only filesystem
+* Fixed race condition for temporary directories on macOS (and presumably Windows)
+
 # 2.0.0-a29
 
 * Added run-time type checkers for `SequentialFlow` `Substitute` dictionary
