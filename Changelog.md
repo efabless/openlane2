@@ -1,4 +1,27 @@
+# 2.0.0-a32
+
+* Better adherence to class structure and mutability principles
+  * Create `GenericDict`, `GenericImmutableDict` to better handle immutable objects, i.e. `State`, `Config`
+  * `State`, `Config` made immutable post-construction
+    * Various rewrites to accomodate that
+  * `Step`:
+    * `.run`:
+      * No longer has any default implementation
+      * Is expected to return a tuple of **views updates** and **metrics updates** which are then applied to copies by `.start` to meet mutability requirements
+    * `.start`:
+      * Handles input checking
+      * Handles creating new `State` object based on deltas
+  * `Flow`
+    * Stateful variables for `.start`, `.run`, and other internal methods made private
+    * `.start` now only returns the final state object
+    * Intermediate steps stored in `self.step_dir`
+    * `self.step_dir` and other "mutations" to Flow object have 
+      no effect on future `.start()` invocations, which are (more or less) idempotent
+  * Remove `ConfigBuilder` and fold methods into `Config`
+* Added `make host-docs` to Makefile
+
 # 2.0.0-a31
+
 * Replace OpenSTA binary name check with an environment variable, `OPENSTA`
 
 # 2.0.0-a30
