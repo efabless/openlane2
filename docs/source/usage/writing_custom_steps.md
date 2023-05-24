@@ -10,14 +10,17 @@ Like flows, each Step subclass must:
 
 * Implement the {meth}`openlane.steps.Step.run` method.
     * This step is responsible for the core logic of the step, which is arbitrary.
-    * This method must return the final state generated after this step.
+    * This method must return two values:
+      * A `ViewsUpdate`, a dictionary from {class}`DesignFormat` objects to
+        Paths for all views altered.
+      * A `MetricsUpdate`, a dictionary with valid JSON values.
 
 ```{important}
 Do NOT call the `run` method of any `Step` from outside of `Step` and its
 subclasses- consider it a private method. `start` is class-independent and
 does some incredibly important processing.
 
-You should not be overriding `start` either.
+You should not be overriding `start` either, which is marked **final**.
 ```
 
 But also, each Step is required to:
@@ -33,22 +36,18 @@ But also, each Step is required to:
 
 ```{important}
 Don't forget the [`Step` strictures](../reference/architecture.md#step-strictures).
-Some of them are programmatically enforced, but some are not.
+Some of them are programmatically enforced, but are still not.
 ```
 
 ### Implementing `run`
 The run header should look like this:
 
 ```python
-def run(self, *args, **kwargs):
+def run(self, state_in: State, *args, **kwargs):
 ```
 
 The `*args` and `**kwargs` allow subclasses to pass arguments to subprocesses-
 more on that later.
-
-First, you want to start by cloning `self.state_in`. You can do this using:
-`state_out = super().run(*args, **kwargs)`. This is your output state, and
-it is mutable inside `run`, so feel free to issue (valid) modifications.
 
 You can access configuration variables- which are validated by this point- using
  `self.config[KEY]`. If you need to save files, you can get the step directory
@@ -62,7 +61,7 @@ output_path = os.path.join(self.step_dir, f"{design_name}.def")
 ```{note}
 A step has access to:
 
-* Its declared config_vars
+* Its declared `config_vars`
 * [All Common Flow Variables](../reference/flow_config_vars.md#universal-flow-configuration-variables)
 * [All PDK/SCL Variables](../reference/pdk_config_vars.md)
 
@@ -83,7 +82,9 @@ Otherwise, you're basically free to write any logic you desire, with one excepti
   I/O for the process, and allow the creation of report files straight from the
   logs- more on that later.
 
-Do note that this is your opportunity to also extract and update `openlane.state.State.metrics`.
+In the end, add any views updated to the first dictionary in the returned tuple,
+and any metrics updated to the second dictionary in the returned tuple.
+
 ## Creating Reports
 You can create report files manually in Python, but if you're running a subprocess,
 you can also write `%OL_CREATE_REPORT <name>.rpt` to stdout and everything until
