@@ -111,6 +111,9 @@ class DesignFormat(Enum):
         "Design JSON Header File",
     )
 
+    def __str__(self) -> str:
+        return self.value.id
+
     @staticmethod
     def by_id(id: str) -> Optional["DesignFormat"]:
         return _designformat_by_id.get(id)

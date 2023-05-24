@@ -15,10 +15,10 @@ import os
 import re
 import glob
 import json
-from typing import List, Dict
 from abc import abstractmethod
+from typing import List, Dict, Tuple
 
-from .step import Step
+from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
 from ..logging import info
@@ -137,7 +137,7 @@ class LVS(NetgenStep):
     def get_script_path(self):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["NETGEN_SETUP"] is None:
             info(f"Skipping {self.name}: Netgen is not supported for this PDK.")
             return Step.run(self, state_in, **kwargs)
@@ -176,10 +176,10 @@ class LVS(NetgenStep):
                 file=f,
             )
 
-        state_out = super().run(state_in, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
         stats_file = os.path.join(self.step_dir, "lvs.json")
         stats_string = open(stats_file).read()
         lvs_metrics = get_metrics(json.loads(stats_string))
-        state_out.metrics.update(lvs_metrics)
+        metrics_updates.update(lvs_metrics)
 
-        return state_out
+        return (views_updates, metrics_updates)

@@ -42,7 +42,6 @@ from rich.progress import (
 
 from ..config import (
     Config,
-    ConfigBuilder,
     Variable,
     universal_flow_config_variables,
 )
@@ -93,31 +92,45 @@ class Flow(Step._FlowType):
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
 
         Subclasses of :class:`Step` are expected to override the default value
-        as a class member- but subclasses may allow mutating this value on a
-        per-instance basis.
+        as a class member- but subclasses may allow this value to be further
+        overridden during construction (and only then.)
+
+    :ivar step_objects:
+        A list of :class:`Step` **objects** from the last run of the flow,
+        if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar run_dir:
+        The directory of the last run of the flow, if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar toolbox:
+        The :class:`Toolbox` of the last run of the flow, if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
     """
 
     name: str
     Steps: List[Type[Step]] = []  # Override
+    step_objects: Optional[List[Step]] = None
+    run_dir: Optional[str] = None
+    toolbox: Optional[Toolbox] = None
 
-    ordinal: int
-    completed: int
-    max_stage: int
-    task_id: Optional[TaskID]
-    progress: Optional[Progress]
-    run_dir: Optional[str]
-    tmp_dir: Optional[str]
-    toolbox: Optional[Toolbox]
+    # Private State Variables
+    _ordinal: int
+    _completed: int
+    _max_stage: int
+    _task_id: Optional[TaskID]
+    _progress: Optional[Progress]
 
-    def _reset_stateful_variables(self):
-        self.ordinal: int = 1
-        self.completed: int = 0
-        self.max_stage: int = 0
-        self.task_id: Optional[TaskID] = None
-        self.progress: Optional[Progress] = None
-        self.run_dir: Optional[str] = None
-        self.tmp_dir: Optional[str] = None
-        self.toolbox: Optional[Toolbox] = None
+    def _reset_private_state_variables(self):
+        self._ordinal = 1
+        self._completed = 0
+        self._max_stage = 0
+        self._task_id = None
+        self._progress = None
 
     def __init__(
         self,
@@ -135,10 +148,10 @@ class Flow(Step._FlowType):
         self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
 
         self.Steps = self.Steps.copy()  # Break global reference
-        self._reset_stateful_variables()
+        self._reset_private_state_variables()
 
         if not isinstance(config, Config):
-            config, design_dir = ConfigBuilder.load(
+            config, design_dir = Config.load(
                 config_in=config,
                 flow_config_vars=self.get_config_variables(),
                 config_override_strings=config_override_strings,
@@ -246,9 +259,10 @@ class Flow(Step._FlowType):
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
+        # Stored until next start()
         self.run_dir = os.path.join(self.design_dir, "runs", tag)
-        self.tmp_dir = os.path.join(self.run_dir, "tmp")
-        self.toolbox = Toolbox(self.tmp_dir)
+        # Stored until next start()
+        self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
         initial_state = with_initial_state or State()
 
@@ -267,7 +281,7 @@ class Flow(Step._FlowType):
                     current_ordinal = int(components[0])
                 except ValueError:
                     continue
-                self.ordinal = max(self.ordinal, current_ordinal + 1)
+                self._ordinal = max(self._ordinal, current_ordinal + 1)
 
             # Extract Maximum State
             if with_initial_state is None:
@@ -301,27 +315,29 @@ class Flow(Step._FlowType):
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
 
-        self.progress = Progress(
+        self._progress = Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             console=console,
         )
-        self.progress.start()
-        self.task_id = self.progress.add_task(
+        self._progress.start()
+        self._task_id = self._progress.add_task(
             f"{self.name}",
         )
-        result = self.run(
+        final_state, step_objects = self.run(
             initial_state=initial_state,
             **kwargs,
         )
-        self.progress.stop()
+        self._progress.stop()
 
-        # Reset stateful objects
-        self._reset_stateful_variables()
+        # Stored until next start()
+        self.step_objects = step_objects
 
-        return result
+        self._reset_private_state_variables()
+
+        return final_state
 
     @internal
     @abstractmethod
@@ -343,7 +359,6 @@ class Flow(Step._FlowType):
     def start_step_async(
         self,
         step: Step,
-        toolbox: Optional[Toolbox] = None,
         *args,
         **kwargs,
     ) -> Future[State]:
@@ -356,13 +371,11 @@ class Flow(Step._FlowType):
         See the Step initializer for more info.
 
         :param step: The step object to run
-        :param toolbox: An optional override for the flow's :class:`Toolbox`.
-            If you don't know what this means, just leave this as ``None``.
         :param args: Arguments to `step.start`
         :param kwargs: Keyword arguments to `step.start`
         """
 
-        kwargs["toolbox"] = toolbox or self.toolbox
+        kwargs["toolbox"] = self.toolbox
 
         return self.tpe.submit(step.start, *args, **kwargs)
 
@@ -374,10 +387,10 @@ class Flow(Step._FlowType):
 
         :param count: The total number of stages.
         """
-        if self.progress is None or self.task_id is None:
+        if self._progress is None or self._task_id is None:
             return
-        self.max_stage = count
-        self.progress.update(self.task_id, total=count)
+        self._max_stage = count
+        self._progress.update(self._task_id, total=count)
 
     @internal
     def start_stage(self, name: str):
@@ -386,11 +399,11 @@ class Flow(Step._FlowType):
 
         :param name: The name of the stage.
         """
-        if self.progress is None or self.task_id is None:
+        if self._progress is None or self._task_id is None:
             return
-        self.progress.update(
-            self.task_id,
-            description=f"{self.name} - Stage {self.completed + 1} - {name}",
+        self._progress.update(
+            self._task_id,
+            description=f"{self.name} - Stage {self._completed + 1} - {name}",
         )
 
     @internal
@@ -402,33 +415,35 @@ class Flow(Step._FlowType):
 
             You may want to set this to ``False`` if the stage is being skipped.
         """
-        self.completed += 1
+        self._completed += 1
         if increment_ordinal:
-            self.ordinal += 1
-        assert self.progress is not None and self.task_id is not None
-        self.progress.update(self.task_id, completed=float(self.completed))
+            self._ordinal += 1
+        assert self._progress is not None and self._task_id is not None
+        self._progress.update(self._task_id, completed=float(self._completed))
 
-    @internal
-    def current_stage_prefix(self) -> str:
+    def _current_stage_prefix(self) -> str:
         """
         Returns a prefix for a step ID with its stage number so it can be used
         to create a step directory.
         """
-        max_stage_digits = len(str(self.max_stage))
-        return f"%0{max_stage_digits}d-" % self.ordinal
+        max_stage_digits = len(str(self._max_stage))
+        return f"%0{max_stage_digits}d-" % self._ordinal
 
     def dir_for_step(self, step: Step) -> str:
         """
         Returns a directory within the run directory for a specific step,
         prefixed with the current progress bar stage number.
+
+        May only be called while :attr:`run_dir` is not None, i.e., the flow
+        has started.
         """
         if self.run_dir is None:
             raise FlowImplementationError(
-                "Attempted to call dir_for_step before starting flow."
+                "Attempted to call dir_for_step on a flow that has not been started."
             )
         return os.path.join(
             self.run_dir,
-            f"{self.current_stage_prefix()}{slugify(step.id)}",
+            f"{self._current_stage_prefix()}{slugify(step.id)}",
         )
 
     class FlowFactory(object):

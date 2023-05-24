@@ -16,11 +16,28 @@ Common Utilities
 
 A number of common utility functions used throughout the codebase.
 """
+from dataclasses import asdict, is_dataclass
+from decimal import Decimal
 import os
 import re
+import json
 import typing
 import pathlib
 import unicodedata
+from enum import Enum
+
+from typing import (
+    Dict,
+    Hashable,
+    Iterator,
+    List,
+    Mapping,
+    Sequence,
+    Type,
+    TypeVar,
+    Tuple,
+    Optional,
+)
 
 
 def mkdirp(path: typing.Union[str, os.PathLike]):
@@ -127,3 +144,178 @@ def internal(method):
         + method.__doc__
     )
     return method
+
+
+def StringEnum(name: str, values: Sequence[str]):
+    """
+    Creates a string enumeration where the keys and values are the same.
+    """
+    return Enum(name, [(value, value) for value in values])
+
+
+class GenericDictEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, GenericDict):
+            return o.to_raw_dict()
+        elif isinstance(o, os.PathLike):
+            return str(o)
+        elif is_dataclass(o):
+            return asdict(o)
+        elif isinstance(o, Enum):
+            return o.name
+        elif isinstance(o, Decimal):
+            if o.as_integer_ratio()[1] == 1:
+                return int(o)
+            else:
+                return float(o)
+        return o
+
+
+KT = TypeVar("KT", bound=Hashable)
+VT = TypeVar("VT")
+
+
+class GenericDict(Mapping[KT, VT]):
+    _data: Dict[KT, VT]
+
+    def __init__(
+        self,
+        copying: Optional[Mapping[KT, VT]] = None,
+        /,
+        *args,
+        overrides: Optional[Mapping[KT, VT]] = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._data = {}
+        copying = copying or {}
+        overrides = overrides or {}
+
+        for key, value in copying.items():
+            self._data[key] = value
+        for key, value in overrides.items():
+            self._data[key] = value
+
+    def __getitem__(self, key: KT) -> VT:
+        return self._data[key]
+
+    def __setitem__(self, key: KT, item: VT):
+        self._data[key] = item
+
+    def __delitem__(self, key: KT):
+        del self._data[key]
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        return self.to_raw_dict().__repr__()
+
+    def __iter__(self) -> Iterator[KT]:
+        return iter(self._data)
+
+    def pop(self, key: KT, /) -> VT:
+        value = self[key]
+        del self[key]
+        return value
+
+    T = TypeVar("T", bound="GenericDict")
+
+    def copy(self: T) -> T:
+        return self.__class__(self)
+
+    def to_raw_dict(self) -> dict:
+        return self._data.copy()
+
+    def get_encoder(self) -> Type[GenericDictEncoder]:
+        return GenericDictEncoder
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+    def dumps(self, **kwargs) -> str:
+        """
+        Dumps data as JSON.
+        """
+        if "indent" not in kwargs:
+            kwargs["indent"] = 4
+        return json.dumps(self.to_raw_dict(), cls=self.get_encoder(), **kwargs)
+
+    def check(self, key: KT, /) -> Tuple[Optional[KT], Optional[VT]]:
+        """
+        :returns: A tuple of the key if it exists (or None) and the value.
+
+            Do note ``None`` is a valid value for some keys, so simply
+            checking if the second element ``is not None`` is insufficient to check
+            whether a key exists.
+        """
+        return (key if key in self._data else None, self.get(key))
+
+    def update(self, incoming: "Mapping[KT, VT]"):
+        for key, value in incoming.items():
+            self[key] = value
+
+
+class GenericImmutableDict(GenericDict[KT, VT]):
+    _lock: bool
+
+    def __init__(
+        self,
+        copying: Optional[Mapping[KT, VT]] = None,
+        /,
+        *args,
+        overrides: Optional[Mapping[KT, VT]] = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(copying, *args, overrides=overrides, **kwargs)
+        self._lock = True
+
+    def __setitem__(self, key: KT, item: VT):
+        if self._lock:
+            raise TypeError(f"{self.__class__.__name__} is immutable")
+        return super().__setitem__(key, item)
+
+
+# Screw this, if you can figure out how to type hint mapping in dictionary out
+# and non-mapping in sequence out in Python, be my guest
+def copy_recursive(input):
+    """
+    :returns: an arbitrarily deep copy of a nested combination of Mappings and Sequences.
+    """
+
+    def resolve_value(value):
+        value_final = value
+        if isinstance(value, Dict):
+            value_final = copy_recursive(value)
+        elif isinstance(value, List):
+            value_final = copy_recursive(value)
+        return value_final
+
+    if isinstance(input, Mapping):  # Mappings are Sequences, but not vice versa
+        dict_result = {}
+        for key, value in input.items():
+            dict_result[key] = resolve_value(value)
+        return dict_result
+    elif isinstance(input, Sequence):
+        list_result = []
+        for value in input:
+            list_result.append(resolve_value(value))
+        return list_result
+    else:
+        return input
+
+
+T = TypeVar("T")
+
+
+def idem(obj: T, *args, **kwargs) -> T:
+    """
+    :returns: the parameter ``obj`` unchanged.
+    """
+    return obj

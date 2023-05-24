@@ -19,7 +19,7 @@ import fnmatch
 from enum import Enum
 from decimal import Decimal
 from types import SimpleNamespace
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import Any, Dict, List, Mapping, Tuple, Union, Optional
 
 Keys = SimpleNamespace(
     pdk_root="PDK_ROOT",
@@ -113,7 +113,7 @@ class Expr(object):
         return tokens
 
     @staticmethod
-    def evaluate(expression: str, vars: Dict[str, str]) -> float:
+    def evaluate(expression: str, values_so_far: Mapping[str, Any]) -> float:
         tokens: List["Expr.Token"] = Expr.tokenize(expression)
         ETT = Expr.Token.Type
 
@@ -165,7 +165,7 @@ class Expr(object):
                 eval_stack.append(float(token.value))
             elif token.type == ETT.VAR:
                 try:
-                    value = vars[token.value]
+                    value = values_so_far[token.value]
                     eval_stack.append(float(value))
                 except KeyError:
                     raise SyntaxError(
@@ -211,7 +211,9 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
+def process_string(
+    value: str, values_so_far: Mapping[str, Any]
+) -> Union[None, str, List[str]]:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
@@ -228,7 +230,7 @@ def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
 
     if mutable.startswith(EXPR_PREFIX):
         try:
-            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], state)}"
+            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], values_so_far)}"
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
     elif mutable.startswith(REF_PREFIX):
@@ -239,7 +241,7 @@ def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
 
         reference_variable = match[1]
         try:
-            found = state[reference_variable]
+            found = values_so_far[reference_variable]
             if found is None:
                 return None
 
@@ -279,10 +281,10 @@ def process_string(value: str, state: dict) -> Union[None, str, List[str]]:
         return mutable
 
 
-def process_scalar(key: str, value: Scalar, state: dict) -> Valid:
+def process_scalar(key: str, value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
     result: Valid = value
     if isinstance(value, str):
-        result = process_string(value, state)
+        result = process_string(value, values_so_far)
     elif value is None:
         result = ""
     elif not (
@@ -336,8 +338,10 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
             state[key] = value
 
 
-def process_config_dict(config_in: dict, exposed_variables: Dict[str, str]):
-    state = dict(exposed_variables)
+def process_config_dict(
+    config_in: dict, exposed_variables: Dict[str, str]
+) -> Dict[str, Any]:
+    state: Dict[str, Any] = dict(exposed_variables)
     process_config_dict_recursive(config_in, state)
     return state
 
@@ -358,7 +362,7 @@ def resolve(
     pdk: Optional[str] = None,
     pdkpath: Optional[str] = None,
     scl: Optional[str] = None,
-):
+) -> Dict[str, Any]:
     if exposing is None:
         exposing = []
 

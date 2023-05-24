@@ -15,9 +15,10 @@ import os
 import subprocess
 import sys
 from base64 import b64encode
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
-from .step import Step, StepError, StepException
+from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
+
 from ..logging import warn
 from ..state import DesignFormat, State, Path
 from ..config import Variable, Config
@@ -84,9 +85,7 @@ class StreamOut(Step):
         )
     ]
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
-
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         lyp = self.config["KLAYOUT_PROPERTIES"]
         lyt = self.config["KLAYOUT_TECH"]
         lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
@@ -98,7 +97,9 @@ class StreamOut(Step):
             warn(
                 "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset. Returning state unaltered…"
             )
-            return state_out
+            return {}, {}
+
+        views_updates: ViewsUpdate = {}
 
         klayout_gds_out = os.path.join(
             self.step_dir,
@@ -145,12 +146,12 @@ class StreamOut(Step):
             env=env,
         )
 
-        state_out[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
+        views_updates[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
 
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "klayout":
-            state_out[DesignFormat.GDS] = state_out[DesignFormat.KLAYOUT_GDS]
+            views_updates[DesignFormat.GDS] = views_updates[DesignFormat.KLAYOUT_GDS]
 
-        return state_out
+        return views_updates, {}
 
     def layout_preview(self) -> Optional[str]:
         if self.state_out is None:
@@ -182,6 +183,7 @@ class XOR(Step):
         DesignFormat.MAG_GDS,
         DesignFormat.KLAYOUT_GDS,
     ]
+    outputs = []
 
     config_vars = [
         Variable(
@@ -198,21 +200,19 @@ class XOR(Step):
         ),
     ]
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
-
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         ignored = ""
         if ignore_list := self.config["KLAYOUT_XOR_IGNORE_LAYERS"]:
             ignored = ";".join(ignore_list)
 
-        layout_a = state_out[DesignFormat.MAG_GDS]
+        layout_a = state_in[DesignFormat.MAG_GDS]
         if layout_a is None:
             warn("No Magic stream-out has been performed. Skipping XOR process…")
-            return state_out
-        layout_b = state_out[DesignFormat.KLAYOUT_GDS]
+            return {}, {}
+        layout_b = state_in[DesignFormat.KLAYOUT_GDS]
         if layout_b is None:
             warn("No KLayout stream-out has been performed. Skipping XOR process…")
-            return state_out
+            return {}, {}
 
         kwargs, env = self.extract_env(kwargs)
 
@@ -236,11 +236,11 @@ class XOR(Step):
             env=env,
         )
 
-        state_out.metrics["design__xor_difference__count"] = int(
+        difference_count = int(
             open(os.path.join(self.step_dir, "difference_count.rpt")).read().strip()
         )
 
-        return state_out
+        return {}, {"design__xor_difference__count": difference_count}
 
 
 @Step.factory.register()
@@ -256,9 +256,7 @@ class OpenGUI(Step):
     inputs = [DesignFormat.DEF]
     outputs = []
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
-
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         lyp = self.config["KLAYOUT_PROPERTIES"]
         lyt = self.config["KLAYOUT_TECH"]
         lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
@@ -283,7 +281,7 @@ class OpenGUI(Step):
             str(lyp),
             "--lym",
             str(lym),
-            str(state_out.get("def")),
+            str(state_in[DesignFormat.DEF]),
         ] + lefs
 
         print(" ".join(cmd))
@@ -293,4 +291,4 @@ class OpenGUI(Step):
             env=env,
         )
 
-        return state_out
+        return {}, {}

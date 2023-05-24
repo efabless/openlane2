@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
-from .step import Step
+from .step import ViewsUpdate, MetricsUpdate, Step
 from ..logging import info
 from ..common import get_script_dir
 from ..config import Variable
@@ -32,6 +32,7 @@ class LoadBaseSDC(Step):
     name = "Load Base SDC"
     long_name = "Load Base Design Constraints File"
 
+    inputs = []
     outputs = [DesignFormat.SDC]
 
     config_vars = [
@@ -43,18 +44,17 @@ class LoadBaseSDC(Step):
         ),
     ]
 
-    def run(self, state_in: State, **kwargs) -> State:
-        new_state = super().run(state_in, **kwargs)
-        new_state[DesignFormat.SDC] = Path(
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        path = Path(
             os.path.join(
                 get_script_dir(),
                 "base.sdc",
             )
         )
         if self.config.get("BASE_SDC_FILE") is not None:
-            info(f"Loaded SDC file at '{self.config['BASE_SDC_FILE']}'.")
-            new_state[DesignFormat.SDC] = self.config["BASE_SDC_FILE"]
+            info(f"Loading SDC file at '{self.config['BASE_SDC_FILE']}'.")
+            path = self.config["BASE_SDC_FILE"]
         else:
-            info("Loaded default SDC file.")
+            info("Loading default SDC file.")
 
-        return new_state
+        return {DesignFormat.SDC: path}, {}

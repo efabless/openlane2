@@ -31,9 +31,7 @@ from ..common import mkdirp, get_script_dir
 
 
 class Toolbox(object):
-    def __init__(self, tmp_dir: Optional[str] = None) -> None:
-        if tmp_dir is None:
-            tmp_dir = "./openlane_tmp"  # Temporary
+    def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
 
     def filter_views(

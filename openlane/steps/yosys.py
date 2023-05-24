@@ -15,17 +15,17 @@ import os
 import re
 import io
 import json
-from typing import List, Optional
 from abc import abstractmethod
+from typing import List, Optional, Tuple
 
-from .step import Step
 from .tclstep import TclStep
+from .step import ViewsUpdate, MetricsUpdate, Step
 from .common_variables import constraint_variables
 
+from ..config import Variable
 from ..logging import debug, verbose
-from ..common import get_script_dir
-from ..config import Variable, StringEnum
 from ..state import State, DesignFormat, Path
+from ..common import get_script_dir, StringEnum
 
 
 MULTIPLE_FAILURES = r"""
@@ -143,7 +143,7 @@ class YosysStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
@@ -311,27 +311,28 @@ class Synthesis(YosysStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metric_updates = super().run(state_in, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
         stats = json.loads(stats_str)
 
-        state_out.metrics["design__instance__count"] = stats["design"]["num_cells"]
+        metric_updates = {}
+        metric_updates["design__instance__count"] = stats["design"]["num_cells"]
         if chip_area := stats["design"].get("area"):  # needs nonzero area
-            state_out.metrics["design__instance__area"] = chip_area
+            metric_updates["design__instance__area"] = chip_area
 
         cells = stats["design"]["num_cells_by_type"]
         unmapped_keyword = "$"
         unmapped_cells = [
             cells[y] for y in cells.keys() if y.startswith(unmapped_keyword)
         ]
-        state_out.metrics["design__instance_unmapped__count"] = sum(unmapped_cells)
+        metric_updates["design__instance_unmapped__count"] = sum(unmapped_cells)
 
-        state_out.metrics["synthesis__check_error__count"] = parse_yosys_check(
+        metric_updates["synthesis__check_error__count"] = parse_yosys_check(
             open(os.path.join(self.step_dir, "reports", "chk.rpt")),
             self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
         )
 
-        return state_out
+        return views_updates, metric_updates
