@@ -25,7 +25,6 @@ from typing import (
     Any,
     List,
     Callable,
-    Mapping,
     Optional,
     Union,
     Tuple,
@@ -75,8 +74,8 @@ REPORT_END_LOCUS = "%OL_END_REPORT"
 GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "openlane_run", "tmp"))
 LastState: State = State()
 
-
-RunResult = Tuple[Mapping[str, StateElement], Mapping[str, Any]]
+ViewsUpdate = Dict[DesignFormat, StateElement]
+MetricsUpdate = Dict[str, Any]
 
 
 class Step(ABC):
@@ -471,13 +470,22 @@ class Step(ABC):
 
         self.start_time = time.time()
 
+        for input in self.inputs:
+            value = state_in_result[input]
+            if value is None:
+                raise StepException(
+                    f"{type(self).__name__}: missing required input '{input.name}'"
+                )
+
         views_updates, metrics_updates = self.run(state_in_result, **kwargs)
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates
         )
 
-        self.state_out = State(self.state_in, overrides=views_updates, metrics=metrics)
+        self.state_out = State(
+            state_in_result, overrides=views_updates, metrics=metrics
+        )
 
         try:
             self.state_out.validate()
@@ -494,13 +502,10 @@ class Step(ABC):
         return self.state_out
 
     @abstractmethod
-    def run(self, state_in: State, **kwargs) -> RunResult:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
         The "core" of a step.
 
-        When subclassing, override this function. You may call it first thing
-        via super().run(**kwargs) where it verifies the existence of inputs and
-        copies the input state.
         This step is considered per-object private, i.e., if a Step's run is
         called anywhere outside of the same object's :meth:`start`, its behavior
         is undefined.
@@ -515,15 +520,7 @@ class Step(ABC):
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-
-        for input in self.inputs:
-            value = state_in[input]
-            if value is None:
-                raise StepException(
-                    f"{type(self).__name__}: missing required input '{input.name}'"
-                )
-
-        return state_in.copy()
+        pass
 
     def get_log_path(self) -> str:
         return os.path.join(self.step_dir, f"{slugify(self.id)}.log")

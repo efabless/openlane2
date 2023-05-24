@@ -13,9 +13,9 @@
 # limitations under the License.
 import os
 from abc import abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-from .step import Step
+from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
@@ -74,7 +74,7 @@ class MagicStep(TclStep):
             str(self.config["MAGICRC"]),
         ]
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         # https://github.com/RTimothyEdwards/magic/issues/218
         kwargs, env = self.extract_env(kwargs)
         kwargs["stdin"] = open(
@@ -85,6 +85,7 @@ class MagicStep(TclStep):
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
+
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -182,15 +183,16 @@ class StreamOut(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "def", "mag_gds.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if diea_area := state_in.metrics.get("design__die__bbox"):
-            env["DIE_AREA"] = diea_area
+        if die_area := state_in.metrics.get("design__die__bbox"):
+            env["DIE_AREA"] = die_area
 
-        state_out = super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
-            state_out[DesignFormat.GDS] = state_out[DesignFormat.MAG_GDS]
-        return state_out
+            views_updates[DesignFormat.GDS] = views_updates[DesignFormat.MAG_GDS]
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -233,8 +235,8 @@ class DRC(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "drc.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
 
         reports_dir = os.path.join(self.step_dir, "reports")
         report_path = os.path.join(reports_dir, "drc.rpt")
@@ -248,12 +250,13 @@ class DRC(MagicStep):
             open(report_path, encoding="utf8"),
             db_file=drc_db_file,
         )
-        state_out.metrics["magic__drc_errors"] = bbox_count
 
         klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")
         drc.to_klayout_xml(open(klayout_db_path, "wb"))
 
-        return state_out
+        metrics_updates["magic__drc_errors"] = bbox_count
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -293,12 +296,13 @@ class SpiceExtraction(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()
-        state_out.metrics["magic__illegal__overlaps"] = feedback_string.count(
+        metrics_updates["magic__illegal__overlaps"] = feedback_string.count(
             "Illegal overlap"
         )
-        return state_out
+
+        return views_updates, metrics_updates

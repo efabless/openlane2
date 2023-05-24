@@ -27,14 +27,14 @@ from decimal import Decimal
 from collections import deque
 from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
-from typing import Any, List, Dict, Sequence, Union
+from typing import Any, List, Dict, Sequence, Union, Tuple
 
-from .step import Step, StepException
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
 from ..config import Keys
 from ..logging import info, warn
 from ..state import State, DesignFormat, Path
-from ..common import mkdirp, get_script_dir, get_openlane_root
+from ..common import GenericDictEncoder, mkdirp, get_script_dir, get_openlane_root
 
 
 def create_reproducible(
@@ -339,7 +339,7 @@ class TclStep(Step):
         * Otherwise, the value is passed to ``str()``.
         """
         if is_dataclass(value):
-            return json.dumps(asdict(value), cls=ConfigEncoder)
+            return json.dumps(asdict(value), cls=GenericDictEncoder)
         elif isinstance(value, list):
             result = []
             for item in value:
@@ -425,7 +425,7 @@ class TclStep(Step):
 
         return env
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
         This overriden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
@@ -449,12 +449,11 @@ class TclStep(Step):
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-        state_out = super().run(state_in, **kwargs)
         command = self.get_command()
 
         kwargs, env = self.extract_env(kwargs)
 
-        env = self.prepare_env(env, state_out)
+        env = self.prepare_env(env, state_in)
 
         try:
             self.run_subprocess(
@@ -475,7 +474,7 @@ class TclStep(Step):
             )
             raise
 
-        overrides: Dict[str, Path] = {}
+        overrides: ViewsUpdate = {}
         for output in self.outputs:
             if output.value.multiple:
                 # Too step-specific.
@@ -483,6 +482,6 @@ class TclStep(Step):
             path = Path(env[f"SAVE_{output.name}"])
             if not path.exists():
                 continue
-            overrides[output.value.id] = path
+            overrides[output] = path
 
-        return State(state_out, overrides=overrides)
+        return overrides, {}

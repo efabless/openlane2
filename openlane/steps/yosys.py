@@ -15,11 +15,11 @@ import os
 import re
 import io
 import json
-from typing import List, Optional
 from abc import abstractmethod
+from typing import List, Optional, Tuple
 
-from .step import Step
 from .tclstep import TclStep
+from .step import ViewsUpdate, MetricsUpdate, Step
 from .common_variables import constraint_variables
 
 from ..config import Variable
@@ -143,7 +143,7 @@ class YosysStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
@@ -311,8 +311,8 @@ class Synthesis(YosysStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metric_updates = super().run(state_in, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
@@ -335,4 +335,4 @@ class Synthesis(YosysStep):
             self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
         )
 
-        return NotImplemented
+        return views_updates, metric_updates

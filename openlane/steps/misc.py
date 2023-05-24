@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
-from .step import Step
+from .step import ViewsUpdate, MetricsUpdate, Step
 from ..logging import info
 from ..common import get_script_dir
 from ..config import Variable
@@ -44,8 +44,7 @@ class LoadBaseSDC(Step):
         ),
     ]
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         path = Path(
             os.path.join(
                 get_script_dir(),
@@ -58,4 +57,4 @@ class LoadBaseSDC(Step):
         else:
             info("Loading default SDC file.")
 
-        return State(state_out, overrides={DesignFormat.SDC: path})
+        return {DesignFormat.SDC: path}, {}

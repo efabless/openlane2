@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Tuple
 from decimal import Decimal
 from typing import Optional
 from abc import abstractmethod
 
-from .step import Step, StepError, DeferredStepError, State
+from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
 from ..config import Variable
 from ..logging import err, warn, info
@@ -56,9 +57,7 @@ class MetricChecker(Step):
     def get_threshold_description(self: Optional["MetricChecker"]) -> Optional[str]:
         return None
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
-
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metric_name = self.get_metric_name()
         metric_description = self.get_metric_description()
         threshold = self.get_threshold()
@@ -68,7 +67,7 @@ class MetricChecker(Step):
                 f"Threshold for {metric_description} is not set. The checker will be skipped."
             )
         else:
-            metric_value = state_out.metrics.get(metric_name)
+            metric_value = state_in.metrics.get(metric_name)
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {metric_description} found."
@@ -86,7 +85,7 @@ class MetricChecker(Step):
                     f"The {metric_description} metric was not found. Are you sure the relevant step was run?"
                 )
 
-        return state_out
+        return {}, {}
 
 
 @Step.factory.register()

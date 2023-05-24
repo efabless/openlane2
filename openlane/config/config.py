@@ -14,16 +14,14 @@
 import os
 import json
 import yaml
-from enum import Enum
 from glob import glob
 from decimal import Decimal
 from textwrap import dedent
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass
 from typing import (
     Any,
     ClassVar,
     Tuple,
-    Type,
     Union,
     List,
     Optional,
@@ -44,7 +42,7 @@ from .pdk import (
 
 from ..state import Path
 from ..logging import info, warn
-from ..common import GenericDict, GenericDictEncoder, GenericImmutableDict
+from ..common import GenericDict, GenericImmutableDict
 
 
 @dataclass

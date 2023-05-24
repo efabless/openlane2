@@ -24,7 +24,7 @@ from abc import abstractmethod
 from typing import List, Dict, Tuple, Optional
 from concurrent.futures import Future, ThreadPoolExecutor
 
-from .step import Step, StepException
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -141,7 +141,7 @@ class OpenROADStep(TclStep):
 
         return env
 
-    def run(self, state_in, **kwargs) -> State:
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
         The `run()` override for the OpenROADStep class handles two things:
 
@@ -154,15 +154,16 @@ class OpenROADStep(TclStep):
         """
         kwargs, env = self.extract_env(kwargs)
 
-        state_out = super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
             new_metrics = json.loads(metrics_str)
-            state_out.metrics.update(new_metrics)
-        return state_out
+            metrics_updates.update(new_metrics)
+
+        return views_updates, metrics_updates
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
@@ -241,7 +242,7 @@ class STAPrePNR(STAStep):
     def get_command(self) -> List[str]:
         return ["sta", "-exit", self.get_script_path()]
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         timing_corner, timing_file_list = self.toolbox.get_timing_files(
@@ -283,7 +284,7 @@ class STAPostPNR(STAPrePNR):
         ),
     ]
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         env["LIB_SAVE_DIR"] = self.step_dir
@@ -331,21 +332,22 @@ class STAPostPNR(STAPrePNR):
                 timing_file_value += f" {view}"
             env[tc_key] = timing_file_value
 
-        state_out = super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
-        lib_dict = state_out[DesignFormat.LIB] or {}
-
+        lib_dict = state_in[DesignFormat.LIB] or {}
         if not isinstance(lib_dict, dict):
             raise StepException(
                 "Malformed input state: value for LIB is not a dictionary."
             )
+
         libs = glob(os.path.join(self.step_dir, "*.lib"))
         for lib in libs:
             corner = lib[:-4]
             lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
 
-        state_out[DesignFormat.LIB] = lib_dict
-        return state_out
+        views_updates[DesignFormat.LIB] = lib_dict
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -415,7 +417,7 @@ class Floorplan(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         path = self.config["FP_TRACKS_INFO"]
         tracks_info_str = open(path).read()
         tracks_commands = old_to_new_tracks(tracks_info_str)
@@ -468,10 +470,10 @@ class IOPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             # Skip - Step just checks and copies
-            return Step.run(self, state_in, **kwargs)
+            return {}, {}
 
         return super().run(state_in, **kwargs)
 
@@ -596,7 +598,7 @@ class GlobalPlacement(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "gpl.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         env[
             "PL_TARGET_DENSITY_PCT"
@@ -723,7 +725,7 @@ class CTS(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "cts.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("CLOCK_NET") is None:
             if clock_port := self.config["CLOCK_PORT"]:
@@ -734,9 +736,10 @@ class CTS(OpenROADStep):
                 )
                 return Step.run(self, state_in, **kwargs)
 
-        state_out = super().run(state_in, env=env, **kwargs)
-        state_out.metrics["cts__run"] = True
-        return state_out
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+        metrics_updates["cts__run"] = True
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -801,8 +804,8 @@ class GlobalRouting(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
 
         antenna_rpt_path = os.path.join(self.step_dir, "antenna.rpt")
         net_count = get_antenna_nets(
@@ -833,9 +836,9 @@ class GlobalRouting(OpenROADStep):
                 )
             net_count = net_count_after
 
-        state_out.metrics["antenna__count"] = net_count
+        metrics_updates["antenna__count"] = net_count
 
-        return state_out
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -890,7 +893,7 @@ class DetailedRouting(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "drt.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("ROUTING_CORES") is None:
             env["ROUTING_CORES"] = str(os.cpu_count() or 1)
@@ -914,7 +917,7 @@ class LayoutSTA(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         env["RUN_STANDALONE"] = "1"
         return super().run(state_in, env=env, **kwargs)
@@ -990,14 +993,13 @@ class RCX(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         process_count = os.cpu_count()
         if cores := self.config.get("RCX_CORES"):
             process_count = cores
 
-        state_out = Step.run(self, state_in, **kwargs)
         kwargs, env = self.extract_env(kwargs)
-        env = self.prepare_env(env, state_out)
+        env = self.prepare_env(env, state_in)
 
         def run_corner(corner: str):
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
@@ -1060,7 +1062,10 @@ class RCX(OpenROADStep):
                     corner,
                 )
 
-        spef_dict = state_out[DesignFormat.SPEF] or {}
+        views_updates: ViewsUpdate = {}
+        metrics_updates: MetricsUpdate = {}
+
+        spef_dict = state_in[DesignFormat.SPEF] or {}
         if not isinstance(spef_dict, dict):
             raise StepException(
                 "Malformed input state: value for SPEF is not a dictionary."
@@ -1070,9 +1075,9 @@ class RCX(OpenROADStep):
             if result := future.result():
                 spef_dict[corner] = Path(result)
 
-        state_out[DesignFormat.SPEF] = spef_dict
+        views_updates[DesignFormat.SPEF] = spef_dict
 
-        return state_out
+        return views_updates, metrics_updates
 
 
 # Antennas
@@ -1110,15 +1115,15 @@ class CheckAntennas(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "check_antennas.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        state_out.metrics["antenna__count"] = get_antenna_nets(
+        metrics_updates["antenna__count"] = get_antenna_nets(
             open(os.path.join(self.step_dir, "antenna.rpt")),
             open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
         )
 
-        return state_out
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -1147,7 +1152,7 @@ class IRDropReport(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         from decimal import Decimal
 
         if state_in[DesignFormat.SPEF] is None:
@@ -1178,7 +1183,7 @@ class IRDropReport(OpenROADStep):
             raise StepException("No SPEF file found for the default corner.")
 
         env["CURRENT_SPEF"] = str(spefs_in[0])
-        state_out = super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
 
@@ -1189,7 +1194,7 @@ class IRDropReport(OpenROADStep):
         if m := voltage_rx.search(report):
             value_float = float(m[1])
             value_dec = Decimal(value_float)
-            state_out.metrics["ir__voltage__worst"] = value_dec
+            metrics_updates["ir__voltage__worst"] = value_dec
         else:
             raise Exception(
                 "OpenROAD IR Drop Log format has changed- please file an issue."
@@ -1198,7 +1203,7 @@ class IRDropReport(OpenROADStep):
         if m := avg_drop_rx.search(report):
             value_float = float(m[1])
             value_dec = Decimal(value_float)
-            state_out.metrics["ir__drop__avg"] = value_dec
+            metrics_updates["ir__drop__avg"] = value_dec
         else:
             raise Exception(
                 "OpenROAD IR Drop Log format has changed- please file an issue."
@@ -1207,13 +1212,13 @@ class IRDropReport(OpenROADStep):
         if m := worst_drop_rx.search(report):
             value_float = float(m[1])
             value_dec = Decimal(value_float)
-            state_out.metrics["ir__drop__worst"] = value_dec
+            metrics_updates["ir__drop__worst"] = value_dec
         else:
             raise Exception(
                 "OpenROAD IR Drop Log format has changed- please file an issue."
             )
 
-        return state_out
+        return views_updates, metrics_updates
 
 
 # Resizer Steps
@@ -1453,11 +1458,9 @@ class OpenGUI(Step):
     inputs = [DesignFormat.ODB]
     outputs = []
 
-    def run(self, state_in: State, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
-
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         with tempfile.NamedTemporaryFile("a+", suffix=".tcl") as f:
-            f.write(f"read_db \"{state_out['odb']}\"")
+            f.write(f"read_db \"{state_in['odb']}\"")
             f.flush()
 
             subprocess.check_call(
@@ -1469,4 +1472,4 @@ class OpenGUI(Step):
                 ]
             )
 
-        return state_out
+        return {}, {}

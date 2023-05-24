@@ -168,7 +168,7 @@ class GenericDictEncoder(json.JSONEncoder):
                 return int(o)
             else:
                 return float(o)
-        return super(json.JSONEncoder, self).default(o)
+        return o
 
 
 KT = TypeVar("KT", bound=Hashable)
@@ -282,14 +282,11 @@ class GenericImmutableDict(GenericDict[KT, VT]):
         return super().__setitem__(key, item)
 
 
-Nestable = TypeVar("Nestable", Dict, List)
-
-
-def copy_recursive(input: Nestable) -> Nestable:
+# Screw this, if you can figure out how to type hint mapping in dictionary out
+# and non-mapping in sequence out in Python, be my guest
+def copy_recursive(input):
     """
-    Returns a arbitrarily deep copy of a nested combination of Dicts and Lists.
-
-    :returns: The copy
+    :returns: an arbitrarily deep copy of a nested combination of Mappings and Sequences.
     """
 
     def resolve_value(value):
@@ -300,16 +297,18 @@ def copy_recursive(input: Nestable) -> Nestable:
             value_final = copy_recursive(value)
         return value_final
 
-    if isinstance(input, List):
+    if isinstance(input, Mapping):  # Mappings are Sequences, but not vice versa
+        dict_result = {}
+        for key, value in input.items():
+            dict_result[key] = resolve_value(value)
+        return dict_result
+    elif isinstance(input, Sequence):
         list_result = []
         for value in input:
             list_result.append(resolve_value(value))
         return list_result
     else:
-        dict_result = {}
-        for key, value in input.items():
-            dict_result[key] = resolve_value(value)
-        return dict_result
+        return input
 
 
 T = TypeVar("T")

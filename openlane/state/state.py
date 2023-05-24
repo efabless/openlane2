@@ -86,13 +86,13 @@ class State(GenericImmutableDict[str, StateElement]):
 
         overrides_resolved = {}
         if o_mapping := overrides:
-            for key, value in o_mapping.items():
-                if isinstance(key, DesignFormat):
+            for k, value in o_mapping.items():
+                if isinstance(k, DesignFormat):
                     assert isinstance(
-                        key.value, DesignFormatObject
+                        k.value, DesignFormatObject
                     )  # type checker shut up
-                    key = key.value.id
-                overrides_resolved[key] = value
+                    k = k.value.id
+                overrides_resolved[k] = value
 
         super().__init__(
             copying_resolved,
@@ -130,7 +130,7 @@ class State(GenericImmutableDict[str, StateElement]):
     def copy(self: "State") -> "State":
         new = State()
         new._data = copy_recursive(self._data)
-        new.metrics = copy_recursive(self.metrics)
+        new.metrics = GenericImmutableDict(copy_recursive(self.metrics))
         return new
 
     def _save_snapshot_recursive(

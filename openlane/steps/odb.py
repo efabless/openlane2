@@ -11,22 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from functools import reduce
 import os
 import re
 import shutil
 import sys
 import json
 from decimal import Decimal
+from functools import reduce
 from abc import abstractmethod
-from typing import Generic, List, Optional
+from typing import List, Optional, Tuple
 
-from .step import Step, StepException
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .common_variables import io_layer_variables
 from ..logging import warn
 from ..state import State, DesignFormat, Path
 from ..config import Variable, Macro
-from ..common import GenericImmutableDict, get_openlane_root, get_script_dir, StringEnum
+from ..common import get_openlane_root, get_script_dir, StringEnum
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -35,8 +35,7 @@ class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
-    def run(self, state_in, **kwargs) -> State:
-        state_out = super().run(state_in, **kwargs)
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         out_paths = {}
@@ -50,7 +49,7 @@ class OdbpyStep(Step):
             out_paths[output] = Path(file_path)
 
         command += [
-            str(state_out[DesignFormat.ODB]),
+            str(state_in[DesignFormat.ODB]),
         ]
 
         env["OPENLANE_ROOT"] = get_openlane_root()
@@ -63,21 +62,17 @@ class OdbpyStep(Step):
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_overrides = {}
+        metrics_updates: MetricsUpdate = {}
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            metrics_overrides = json.loads(metrics_str)
+            metrics_updates = json.loads(metrics_str)
 
-        final_metrics = GenericImmutableDict(
-            state_out.metrics, overrides=metrics_overrides
-        )
-
-        overrides = {}
+        views_updates: ViewsUpdate = {}
         for output in [DesignFormat.ODB, DesignFormat.DEF]:
-            overrides[output] = out_paths[output]
+            views_updates[output] = out_paths[output]
 
-        return State(state_out, overrides=overrides, metrics=final_metrics)
+        return views_updates, metrics_updates
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
@@ -199,7 +194,7 @@ class ManualMacroPlacement(OdbpyStep):
             "--fixed",
         ]
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
             warn(
@@ -224,7 +219,7 @@ class ManualMacroPlacement(OdbpyStep):
 
         if not cfg_file.exists():
             warn("No instances found, skipping…")
-            return Step.run(self, state_in, **kwargs)
+            return {}, {}
 
         return super().run(state_in, **kwargs)
 
@@ -378,10 +373,10 @@ class DiodesOnPorts(OdbpyStep):
             self.config["DIODE_ON_PORTS"].value,
         ]
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"].value == "none":
             warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
-            return Step.run(self, state_in, **kwargs)
+            return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
@@ -452,7 +447,7 @@ class HeuristicDiodeInsertion(OdbpyStep):
             + threshold_opts
         )
 
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
             warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
