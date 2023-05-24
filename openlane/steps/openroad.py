@@ -252,6 +252,8 @@ class STAPrePNR(STAStep):
         for view in timing_file_list:
             env["TIMING_CORNER_0"] += f" {view}"
 
+        env["OPENSTA"] = "1"
+
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -286,6 +288,7 @@ class STAPostPNR(STAPrePNR):
 
         env["LIB_SAVE_DIR"] = self.step_dir
         env["CURRENT_SPEF"] = ""
+        env["OPENSTA"] = "1"
         for i, corner in enumerate(self.config["STA_CORNERS"]):
             if state_in[DesignFormat.SPEF] is None:
                 raise StepException(

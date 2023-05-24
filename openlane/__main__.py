@@ -17,10 +17,10 @@ import glob
 import shutil
 import marshal
 import tempfile
+import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-import traceback
 from typing import Tuple, Type, Optional, List, Union
 
 import click
@@ -41,6 +41,7 @@ from cloup.constraints import (
     mutually_exclusive,
 )
 
+
 from .__version__ import __version__
 from .state import State
 from .logging import (
@@ -54,10 +55,10 @@ from .common import (
     get_opdks_rev,
     get_openlane_root,
 )
-from .container import run_in_container, sanitize_path
-from .flows import Flow, SequentialFlow, FlowException, FlowError
-from .config import Config, InvalidConfig
+from .container import run_in_container
 from .plugins import discovered_plugins
+from .config import Config, InvalidConfig
+from .flows import Flow, SequentialFlow, FlowException, FlowError
 
 
 def run(
@@ -67,7 +68,7 @@ def run(
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
-    config_files: str,
+    config_files: List[str],
     run_tag: Optional[str],
     last_run: bool,
     frm: Optional[str],
@@ -76,14 +77,14 @@ def run(
     skip: Tuple[str, ...],
     initial_state_json: Optional[str],
     config_override_strings: List[str],
-    log_level: str,
-):
+    log_level: Union[str, int],
+) -> int:
     try:
         set_log_level(log_level)
     except ValueError:
         err(f"Invalid logging level: {log_level}.")
         click.echo(ctx.get_help())
-        exit(-1)
+        return -1
 
     if only is not None:
         frm = to = only
@@ -100,7 +101,7 @@ def run(
     # Enforce Mutual Exclusion
     if run_tag is not None and last_run:
         err("--run-tag and --last-run are mutually exclusive.")
-        exit(-1)
+        return -1
 
     flow_description: Union[str, List[str]] = flow_name or "Classic"
 
@@ -119,11 +120,11 @@ def run(
             err(
                 f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
             )
-            exit(-1)
+            return -1
 
     try:
-        flow = TargetFlow.init_with_config(
-            config_in=config_file,
+        flow = TargetFlow(
+            config_file,
             pdk_root=pdk_root,
             pdk=pdk,
             scl=scl,
@@ -139,11 +140,11 @@ def run(
             for warning in e.warnings:
                 warn(warning)
         info("OpenLane will now quit. Please check your configuration.")
-        exit(1)
+        return 1
     except ValueError as e:
         err(e)
         info("OpenLane will now quit.")
-        exit(1)
+        return 1
 
     initial_state: Optional[State] = None
     if initial_state_json is not None:
@@ -162,7 +163,7 @@ def run(
 
         if latest_run is None:
             err("--last-run specified, but no runs found.")
-            exit(1)
+            return 1
 
         run_tag = os.path.basename(latest_run)
 
@@ -177,12 +178,14 @@ def run(
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
         err("OpenLane will now quit.")
-        exit(1)
+        return 1
     except FlowError as e:
         if "deferred" not in str(e):
             err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")
-        exit(2)
+        return 2
+
+    return 0
 
 
 def print_bare_version(
@@ -203,84 +206,95 @@ def run_smoke_test(
 ):
     if not value:
         return
-    dockerized = ctx.params["dockerized"]
 
-    with tempfile.TemporaryDirectory("_ol2design") as d:
-        final_path = os.path.join(d, "spm")
+    status = 0
+    d = tempfile.mkdtemp("openlane2")
+    try:
+        final_path = os.path.join(d, "smoke_test_design")
+
+        # 1. Copy the files
         shutil.copytree(
             os.path.join(get_openlane_root(), "smoke_test_design"),
             final_path,
+            symlinks=False,
         )
 
-        cmd = [
-            (sys.executable if not dockerized else "python3"),
-            "-m",
-            "openlane",
-            os.path.join(final_path, "config.json"),
-        ]
-        if pdk_root := ctx.params.get("pdk_root"):
-            cmd += ["--pdk-root", pdk_root]
+        # 2. Make files writable
+        if os.name == "posix":
+            subprocess.check_call(["chmod", "-R", "777", final_path])
 
-        if dockerized:
-            cmd += ["--dockerized", "--docker-mount", d]
-            if extra_mounts := ctx.params.get("docker_mounts"):
-                for mount in extra_mounts:
-                    cmd += ["--docker-mount", mount]
+        pdk_root = ctx.params.get("pdk_root")
+        config_file = os.path.join(final_path, "config.json")
 
-        try:
-            subprocess.check_call(cmd)
-        except subprocess.CalledProcessError:
-            print("")
-            err("Smoke test failed.")
-            ctx.exit(-1)
-
-    ctx.exit(0)
-
-
-def cli_in_container(ctx: click.Context, docker_mounts: Tuple[str], kwargs: dict):
-    f = None
-    status = 0
-    try:
-        if isj := kwargs.get("initial_state_json"):
-            _, kwargs["initial_state_json"] = sanitize_path(isj)
-
-        config_files: List[str] = []
-        for file in kwargs["config_files"]:
-            _, target = sanitize_path(file)
-            config_files.append(target)
-        kwargs["config_files"] = config_files
-
-        pdk_root = kwargs.pop("pdk_root")
-        pdk = kwargs.pop("pdk")
-        scl = kwargs.pop("scl")
-
-        f = tempfile.NamedTemporaryFile("wb", suffix=".marshalled", delete=False)
-        marshal.dump(kwargs, f, 4)
-        f.close()
-        _, binary = sanitize_path(f.name)
-
-        run_in_container(
-            f"ghcr.io/efabless/openlane2:{__version__}",
-            ["python3", "-m", "openlane", binary],
+        # 3. Run
+        status = run(
+            ctx,
+            flow_name=None,
+            use_volare=True,
             pdk_root=pdk_root,
-            pdk=pdk,
-            scl=scl,
-            other_mounts=docker_mounts + (os.path.dirname(f.name),),
+            pdk="sky130A",
+            scl=None,
+            config_files=[config_file],
+            run_tag=None,
+            last_run=False,
+            frm=None,
+            to=None,
+            only=None,
+            skip=(),
+            initial_state_json=None,
+            config_override_strings=[],
+            log_level="VERBOSE",
+        )
+        if status == 0:
+            info("Smoke test passed.")
+        else:
+            err("Smoke test failed.")
+    except KeyboardInterrupt:
+        info("Smoke test aborted.")
+        status = -1
+    finally:
+        try:
+            pass  # shutil.rmtree(d)
+        except FileNotFoundError:
+            pass
+
+    ctx.exit(status)
+
+
+def cli_in_container(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    if not value:
+        return
+
+    status = 0
+    docker_mounts = list(ctx.params.get("docker_mounts") or ())
+    pdk_root = ctx.params.get("pdk_root")
+    argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
+
+    interactive = True
+    final_argv = ["zsh"]
+    if len(argv) != 0:
+        final_argv = ["python3", "-m", "openlane"] + argv
+        interactive = False
+
+    try:
+        status = run_in_container(
+            f"ghcr.io/efabless/openlane2:{__version__}",
+            final_argv,
+            pdk_root=pdk_root,
+            other_mounts=docker_mounts,
+            interactive=interactive,
         )
     except ValueError as e:
         print(e)
         status = -1
-    except subprocess.CalledProcessError as e:
-        status = e.returncode
     except Exception:
         traceback.print_exc()
         status = -1
     finally:
-        if f is not None:
-            try:
-                os.unlink(f.name)
-            except FileNotFoundError:
-                pass
         ctx.exit(status)
 
 
@@ -329,6 +343,25 @@ o = partial(option, show_default=True)
         """
     ).strip(),
 )
+@option_group(
+    "Docker options",
+    o(
+        "--docker-mount",
+        "docker_mounts",
+        multiple=True,
+        is_eager=True,
+        default=[],
+        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. **Must be passed before --docker.**",
+    ),
+    o(
+        "--dockerized/--native",
+        default=False,
+        is_eager=True,
+        help="Run command primarily using a Docker container. Some caveats apply.",
+        callback=cli_in_container,
+    ),
+    constraint=If(~IsSet("dockerized"), accept_none),
+)
 @o(
     "--bare-version",
     is_flag=True,
@@ -345,6 +378,12 @@ o = partial(option, show_default=True)
     callback=print_plugins,
     help="List all detected plugins for OpenLane.",
 )
+@o(
+    "--smoke-test",
+    is_flag=True,
+    help="Runs a basic OpenLane smoke test.",
+    callback=run_smoke_test,
+)
 @option_group(
     "PDK options",
     o(
@@ -355,6 +394,11 @@ o = partial(option, show_default=True)
     ),
     o(
         "--pdk-root",
+        type=click.Path(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+        ),
         is_eager=True,
         default=os.environ.pop("PDK_ROOT", None),
         help="Override volare PDK root folder. Required if Volare is not installed.",
@@ -373,24 +417,6 @@ o = partial(option, show_default=True)
         default=os.environ.pop("STD_CELL_LIBRARY", None),
         help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
     ),
-)
-@option_group(
-    "Docker options",
-    o(
-        "--dockerized/--native",
-        is_eager=True,
-        default=False,
-        help="Run OpenLane primarily using a Docker container. Some caveats apply.",
-    ),
-    o(
-        "--docker-mount",
-        "docker_mounts",
-        multiple=True,
-        is_eager=True,
-        default=[],
-        help="Mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories.",
-    ),
-    constraint=If(~IsSet("dockerized"), accept_none),
 )
 @option_group(
     "Run options",
@@ -439,13 +465,6 @@ o = partial(option, show_default=True)
     ),
     constraint=mutually_exclusive,
 )
-@o(
-    "--smoke-test",
-    is_flag=True,
-    help="Runs a basic OpenLane smoke test.",
-    expose_value=False,
-    callback=run_smoke_test,
-)
 @option_group(
     "Run options - sequential flow control",
     o(
@@ -493,7 +512,6 @@ o = partial(option, show_default=True)
 )
 @click.argument(
     "config_files",
-    required=True,
     nargs=-1,
     type=click.Path(
         exists=True,
@@ -502,15 +520,19 @@ o = partial(option, show_default=True)
     ),
 )
 @click.pass_context
-def cli(ctx: click.Context, dockerized: bool, docker_mounts: Tuple[str], **kwargs):
-    if dockerized:
-        cli_in_container(ctx, docker_mounts, kwargs)
+def cli(ctx: click.Context, **kwargs):
     run_kwargs = kwargs
     args = kwargs["config_files"]
     if len(args) == 1 and args[0].endswith(".marshalled"):
         run_kwargs = marshal.load(open(args[0], "rb"))
         run_kwargs.update(**{k: kwargs[k] for k in ["pdk_root", "pdk", "scl"]})
-    run(ctx, **run_kwargs)
+    if "smoke_test" in run_kwargs:
+        del run_kwargs["smoke_test"]
+    if "docker_mounts" in run_kwargs:
+        del run_kwargs["docker_mounts"]
+    if "dockerized" in run_kwargs:
+        del run_kwargs["dockerized"]
+    ctx.exit(run(ctx, **run_kwargs))
 
 
 if __name__ == "__main__":

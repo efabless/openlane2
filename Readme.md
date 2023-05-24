@@ -17,14 +17,14 @@
 
 OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
 
-You can find the documentation [here](https://openlane2.readthedocs.io/) to get started.
+You can find the documentation [here](https://openlane2.readthedocs.io/en/latest/getting_started/) to get started.
 
 ```python
 from openlane import Flow
 
 Classic = Flow.get("Classic")
 
-flow = Classic.init_with_config(
+flow = Classic(
     {
         "PDK": "sky130A",
         "DESIGN_NAME": "spm",
@@ -40,39 +40,30 @@ flow.start()
 
 
 ## Installation
-### Binary Dependencies
 You'll need the following:
 * Python **3.8** or higher with PIP, Venv and Tkinter
-* Yosys 0.23+ (preferably 0.26+) from https://github.com/YosysHQ/Yosys
-* A reasonably modern version of OpenROAD from https://github.com/The-OpenROAD-Project/OpenROAD
-* A reasonably modern version of Magic from https://github.com/RTimothyEdwards/Magic
-* A reasonably modern version of Netgen from https://github.com/RTimothyEdwards/netgen
-* KLayout 0.28.5+ from https://github.com/KLayout/klayout
 
-### Docker
-Works for Windows, macOS and Linux. Easier to set up, but less integrated with your filesystem. Recommended for general users.
-
-See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
-
-Do note you'll need to add `--dockerized` to most CLI invocations of OpenLane.
-
-### Nix
-Works for macOS and Linux. A bit more complex to set up, but more integrated with your filesystem and overall less upload and download deltas.
+### Nix (Recommended)
+Works for macOS and Linux (x86-64). Recommended, as it is more integrated with your filesystem and overall has less upload and download deltas.
 
 See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
 
-### Conda
-TBA
+### Docker
+Works for Windows, macOS and Linux (x86-64, aarch64 with emulation).
 
-### Python-only Installation
-You'll need to bring your own compiled tools, but otherwise, simply install OpenLane as follows:
+See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
+
+Do note you'll need to add `--dockerized` right after `openlane` in most CLI invocations.
+
+### Python-only Installation (Advanced)
+You'll need to bring your own compiled utilities, but otherwise, simply install OpenLane as follows:
 
 ```sh
 python3 -m pip install --upgrade openlane
 ```
 
 ## Usage
-In the root folder of the repository with the `venv` activated, you may invoke:
+In the root folder of the repository, you may invoke:
 
 ```sh
 python3 -m openlane --pdk-root <path/to/pdk> </path/to/config.json>

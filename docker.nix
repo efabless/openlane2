@@ -15,14 +15,14 @@
     pkgs ? import ./nix/pkgs.nix,
     openlane-app ? import ./. {},
     name ? "ghcr.io/efabless/openlane2",
-    tag ? null
+    tag-override ? null
 }:
 
 with pkgs; let
     olenv = python3.withPackages(ps: with ps; [ openlane-app ]);
-in dockerTools.streamLayeredImage {
+in dockerTools.streamLayeredImage rec {
     inherit name;
-    tag = if tag == null then "${openlane-app.version}" else tag;
+    tag = if tag-override == null then "${openlane-app.version}" else tag-override;
 
     contents = [
         # Base OS
@@ -53,6 +53,18 @@ in dockerTools.streamLayeredImage {
             "LANG=C.UTF-8"
             "LC_ALL=C.UTF-8"
             "LC_CTYPE=C.UTF-8"
+            "EDITOR=nvim"
         ];
     };
+
+    extraCommands = ''
+    mkdir -p ./etc
+    cat <<HEREDOC > ./etc/zshrc
+    autoload -U compinit && compinit
+    autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
+    autoload -U colors && colors
+
+    export PS1=$'%{\033[31m%}OpenLane Container (${openlane-app.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
+    HEREDOC
+    '';
 }

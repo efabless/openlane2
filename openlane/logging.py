@@ -73,7 +73,7 @@ def print(*args, **kwargs):
     """
     if get_log_level() > LogLevels.INFO:
         return
-    console.print(*args, **kwargs)
+    console.print(*args, **kwargs, crop=False, style=None)
 
 
 def verbose(*args, **kwargs):

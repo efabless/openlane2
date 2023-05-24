@@ -13,12 +13,13 @@
 # limitations under the License.
 import os
 import re
+import shlex
 import pathlib
 import getpass
 import tempfile
 import requests
 import subprocess
-from typing import List, Sequence, Set, Optional, Union, Tuple
+from typing import List, Sequence, Optional, Union, Tuple
 
 from .logging import err, info, print, warn
 from .env_info import OSInfo
@@ -131,8 +132,6 @@ def ensure_image(image: str) -> bool:
     return True
 
 
-docker_ids: Set[str] = set()
-
 win_path_sep = re.compile(r"\\")
 
 
@@ -148,16 +147,15 @@ def sanitize_path(path: Union[str, os.PathLike]) -> Tuple[str, str]:
 def run_in_container(
     image: str,
     args: Sequence[str],
-    pdk_root: Optional[str],
-    pdk: Optional[str],
-    scl: Optional[str],
-    other_mounts: Optional[Sequence[str]],
-):
+    pdk_root: Optional[str] = None,
+    pdk: Optional[str] = None,
+    scl: Optional[str] = None,
+    other_mounts: Optional[Sequence[str]] = None,
+    interactive: bool = False,
+) -> int:
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
     import volare
-
-    global docker_ids
 
     osinfo = OSInfo.get()
     if not osinfo.supported:
@@ -198,9 +196,11 @@ def run_in_container(
         mount_args += ["-v", f"{from_cwd}:{to_cwd}"]
     mount_args += ["-w", to_cwd]
 
+    tempdir = tempfile.mkdtemp("openlane_docker")
+
     mount_args += [
         "-v",
-        f"{tempfile.gettempdir()}:/tmp",
+        f"{tempdir}:/tmp",
         "-e",
         "TMPDIR=/tmp",
     ]
@@ -215,7 +215,7 @@ def run_in_container(
             CONTAINER_ENGINE,
             "run",
             "--rm",
-            "-t",
+            "-ti" if interactive else "-t",
         ]
         + permission_args(osinfo)
         + mount_args
@@ -224,16 +224,12 @@ def run_in_container(
         + list(args)
     )
 
-    cmd_escaped = []
-    for el in cmd:
-        if " " in cmd:
-            cmd_escaped.append(f"'{cmd}'")
-        else:
-            cmd_escaped.append(el)
-
     info("Running containerized command:")
-    print(" ".join(cmd_escaped))
-    subprocess.check_call(
+    print(shlex.join(cmd))
+
+    result = subprocess.call(
         cmd,
         stderr=subprocess.STDOUT,
     )
+
+    return result

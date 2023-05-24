@@ -8,20 +8,20 @@ Or more simply, on Ubuntu, run the following in your Terminal:
 
 ```sh
 sudo apt-get install -y curl
-sh <(curl -L https://nixos.org/nix/install) --no-daemon
+sh <(curl -L https://nixos.org/nix/install) --daemon --yes
 ```
 
 ```{note}
-On systemd-based Linux systems, you can replace `--no-daemon` with `--daemon`.
+On not systemd-based Linux systems, you can replace `--daemon` with `--no-daemon`.
 ```
 
 Or on macOS:
 
 ```sh
-sh <(curl -L https://nixos.org/nix/install)
+sh <(curl -L https://nixos.org/nix/install) --yes
 ```
 
-And follow the instructions in your terminal. This should take around five minutes.
+Enter your password if prompted. This hsould take around 5 minutes.
 
 Make sure to close all terminals after you're done with this step.
 

@@ -1,3 +1,22 @@
+# 2.0.0-a31
+* Replace OpenSTA binary name check with an environment variable, `OPENSTA`
+
+# 2.0.0-a30
+
+* Added ability to use `--dockerized` without further arguments to drop into a shell
+* Reimplemented `--dockerized` - needs to be the first argument provided
+* Reimplemented `--smoke-test` to not use a subprocess
+  * `--smoke-test` doesn't attempt to handle `--dockerized` on its own anymore
+* Fixed permissions bug when running a smoke test from a read-only filesystem
+* Fixed race condition for temporary directories on macOS (and presumably Windows)
+
+# 2.0.0-a29
+
+* Added run-time type checkers for `SequentialFlow` `Substitute` dictionary
+* Folded `init_with_config` into constructor and deprecate it
+* Fixed `SequentialFlow` step substitution bug by moving variable compilation to
+  instance instead of class
+
 # 2.0.0-a28
 
 * Added missing macro orientations

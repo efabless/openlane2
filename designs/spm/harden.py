@@ -2,7 +2,7 @@ from openlane import Flow
 
 Classic = Flow.get("Classic")
 
-flow = Classic.init_with_config(
+flow = Classic(
     {
         "PDK": "sky130A",
         "DESIGN_NAME": "spm",
