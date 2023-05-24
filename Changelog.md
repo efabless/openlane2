@@ -1,3 +1,10 @@
+# 2.0.0-a33
+* Bump supported PDK to `af34855`
+* Rename 3 PDK variables to match OpenLane 1
+  * `FP_PDN_RAILS_LAYER` -> `FP_PDN_RAIL_LAYER`
+  * `FP_PDN_UPPER_LAYER` -> `FP_PDN_HORIZONTAL_LAYER`
+  * `FP_PDN_LOWER_LAYER` -> `FP_PDN_VERTICAL_LAYER`
+
 # 2.0.0-a32
 
 * Better adherence to class structure and mutability principles

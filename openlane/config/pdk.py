@@ -397,9 +397,10 @@ scl_variables = [
         "Defines so-called 'end-cap' cells- decap cells placed at either sides of a design.",
     ),
     Variable(
-        "FP_PDN_RAILS_LAYER",
+        "FP_PDN_RAIL_LAYER",
         str,
         "Defines the metal layer used for PDN rails.",
+        deprecated_names=["FP_PDN_RAILS_LAYER"],
     ),
     Variable(
         "FP_PDN_RAIL_WIDTH",
@@ -408,14 +409,16 @@ scl_variables = [
         units="µm",
     ),
     Variable(
-        "FP_PDN_UPPER_LAYER",
+        "FP_PDN_HORIZONTAL_LAYER",
         str,
-        "Defines the upper PDN layer.",
+        "Defines the horizontal PDN layer.",
+        deprecated_names=["FP_PDN_UPPER_LAYER"],
     ),
     Variable(
-        "FP_PDN_LOWER_LAYER",
+        "FP_PDN_VERTICAL_LAYER",
         str,
-        "Defines the lower PDN layer.",
+        "Defines the vertical PDN layer.",
+        deprecated_names=["FP_PDN_LOWER_LAYER"],
     ),
     Variable(
         "IGNORE_DISCONNECTED_MODULES",
