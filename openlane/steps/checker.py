@@ -25,6 +25,9 @@ from ..logging import err, warn, info
 class MetricChecker(Step):
     deferred = True
 
+    inputs = []
+    outputs = []
+
     @classmethod
     def get_help_md(Self):
         threshold_string = Self.get_threshold_description(None)

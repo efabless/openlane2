@@ -19,14 +19,14 @@ import sys
 import json
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Optional
+from typing import Generic, List, Optional
 
 from .step import Step, StepException
 from .common_variables import io_layer_variables
 from ..logging import warn
 from ..state import State, DesignFormat, Path
-from ..config import Variable, StringEnum, Macro
-from ..common import get_openlane_root, get_script_dir
+from ..config import Variable, Macro
+from ..common import GenericImmutableDict, get_openlane_root, get_script_dir, StringEnum
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -63,16 +63,21 @@ class OdbpyStep(Step):
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
+        metrics_overrides = {}
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            new_metrics = json.loads(metrics_str)
-            state_out.metrics.update(new_metrics)
+            metrics_overrides = json.loads(metrics_str)
 
+        final_metrics = GenericImmutableDict(
+            state_out.metrics, overrides=metrics_overrides
+        )
+
+        overrides = {}
         for output in [DesignFormat.ODB, DesignFormat.DEF]:
-            state_out[output] = out_paths[output]
+            overrides[output] = out_paths[output]
 
-        return state_out
+        return State(state_out, overrides=overrides, metrics=final_metrics)
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")

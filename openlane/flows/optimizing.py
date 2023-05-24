@@ -176,4 +176,5 @@ class Optimizing(Flow):
         self.end_stage()
 
         success("Flow complete.")
+        assert gpl.state_out is not None  # We should be done with the execution by now
         return (gpl.state_out, step_list)

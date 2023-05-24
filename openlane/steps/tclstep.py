@@ -31,7 +31,7 @@ from typing import Any, List, Dict, Sequence, Union
 
 from .step import Step, StepException
 
-from ..config import Keys, ConfigEncoder
+from ..config import Keys
 from ..logging import info, warn
 from ..state import State, DesignFormat, Path
 from ..common import mkdirp, get_script_dir, get_openlane_root
@@ -449,12 +449,12 @@ class TclStep(Step):
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
-        state = super().run(state_in, **kwargs)
+        state_out = super().run(state_in, **kwargs)
         command = self.get_command()
 
         kwargs, env = self.extract_env(kwargs)
 
-        env = self.prepare_env(env, state)
+        env = self.prepare_env(env, state_out)
 
         try:
             self.run_subprocess(
@@ -475,6 +475,7 @@ class TclStep(Step):
             )
             raise
 
+        overrides: Dict[str, Path] = {}
         for output in self.outputs:
             if output.value.multiple:
                 # Too step-specific.
@@ -482,6 +483,6 @@ class TclStep(Step):
             path = Path(env[f"SAVE_{output.name}"])
             if not path.exists():
                 continue
-            state[output] = path
+            overrides[output.value.id] = path
 
-        return state
+        return State(state_out, overrides=overrides)

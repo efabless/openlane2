@@ -17,13 +17,14 @@ import shlex
 import inspect
 from enum import Enum
 from decimal import Decimal, InvalidOperation
-from typing import Iterable, Literal, get_origin, get_args
+from typing import Iterable, Literal, Mapping, get_origin, get_args
+from typing import Union, Type, List, Optional, Tuple, Any, Callable
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
-from typing import Union, Type, List, Optional, Tuple, Any, Dict, Callable, Sequence
 
-from .config import Config
-from .resolve import process_string, Keys as SpecialKeys
+from .resolve import process_string
+
 from ..state import Path
+from ..common import GenericDict
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -194,7 +195,7 @@ class Variable:
         self,
         key_path: str,
         value: Any,
-        values_so_far: Dict[str, Any],
+        values_so_far: Mapping[str, Any],
         validating_type: Type[Any],
         default: Any = None,
         explicitly_specified: bool = True,
@@ -414,13 +415,13 @@ class Variable:
                     f"Value provided for variable {key_path} of type {validating_type} is invalid: '{value}' {e}"
                 )
 
-    def _compile(
+    def compile(
         self,
-        mutable_config: Config,
+        mutable_config: GenericDict[str, Any],
         warning_list_ref: List[str],
-        values_so_far: Dict[str, Any],
-    ) -> Any:
-        exists, value = mutable_config.extract(self.name)
+        values_so_far: Mapping[str, Any],
+    ) -> Tuple[Optional[str], Any]:
+        exists, value = mutable_config.check(self.name)
 
         i = 0
         while (
@@ -432,7 +433,7 @@ class Variable:
             deprecated_callable = lambda x: x
             if not isinstance(deprecated_name, str):
                 deprecated_name, deprecated_callable = deprecated_name
-            exists, value = mutable_config.extract(deprecated_name)
+            exists, value = mutable_config.check(deprecated_name)
             if exists:
                 warning_list_ref.append(
                     f"The configuration variable '{deprecated_name}' is deprecated. Please check the docs for the usage on the replacement variable '{self.name}'."
@@ -441,14 +442,16 @@ class Variable:
                 value = deprecated_callable(value)
             i = i + 1
 
-        return self._process(
+        processed = self._process(
             key_path=self.name,
             value=value,
             default=self.default,
             validating_type=self.type,
             values_so_far=values_so_far,
-            explicitly_specified=exists,
+            explicitly_specified=exists is not None,
         )
+
+        return (exists, processed)
 
     def __hash__(self) -> int:
         return hash((self.name, self.type, self.default))
@@ -461,124 +464,3 @@ class Variable:
             and self.type == rhs.type
             and self.default == rhs.default
         )
-
-    @classmethod
-    def process_config(
-        Self,
-        config: Config,
-        variables: Sequence["Variable"],
-        removed: Optional[Dict[str, str]] = None,
-    ) -> Tuple[Config, List[str], List[str]]:
-        """
-        Verifies a configuration object against a list of variables, returning
-        an object with the variables normalized according to their types.
-
-        :param config: The input, raw configuration object.
-        :param variables: A sequence or some other iterable of variables.
-        :param removed: A dictionary of variables that may have existed at a point in
-            time, but then have gotten removed. Useful to give feedback to the user.
-        :returns: A tuple of:
-            [0] A final, processed configuration.
-            [1] A list of warnings.
-            [2] A list of errors.
-
-            If the third element is non-empty, the first object is invalid.
-        """
-        if removed is None:
-            removed = {}
-
-        warnings: List[str] = []
-        errors = []
-        final = Config()._unlock()
-        mutable = config.copy()._unlock()
-
-        # Special Deprecation Behaviors
-        if (
-            mutable.get("DIODE_INSERTION_STRATEGY") is not None
-        ):  # Can't use := because 0 is a valid value
-            _, dis = mutable.extract("DIODE_INSERTION_STRATEGY")
-            try:
-                dis = int(dis)
-            except ValueError:
-                pass
-            if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
-                errors.append(
-                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
-                )
-            else:
-                warnings.append(
-                    "The DIODE_INSERTION_STRATEGY variable has been deprecated. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
-                )
-
-                final["GRT_REPAIR_ANTENNAS"] = False
-                final["RUN_HEURISTIC_DIODE_INSERTION"] = False
-                final["DIODE_ON_PORTS"] = "none"
-                if dis in [3, 6]:
-                    final["GRT_REPAIR_ANTENNAS"] = True
-                if dis in [5, 6]:
-                    final["RUN_HEURISTIC_DIODE_INSERTION"] = True
-                    final["DIODE_ON_PORTS"] = "in"
-
-        # Macros
-        translated_macros = False
-        if mutable.get("EXTRA_SPEFS") is not None:
-            mutable["MACROS"] = mutable.get("MACROS") or {}
-
-            _, extra_spef_list = mutable.extract("EXTRA_SPEFS")
-            if isinstance(extra_spef_list, str):
-                extra_spef_list = extra_spef_list.split(" ")
-
-            if not isinstance(extra_spef_list, list):
-                errors.append(
-                    f"Invalid type for 'EXTRA_SPEFS': {type(extra_spef_list)}. It is recommended that you update your configuration to use the Macro object."
-                )
-            elif len(extra_spef_list) % 4 != 0:
-                errors.append(
-                    "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
-                )
-            else:
-                translated_macros = True
-                warnings.append(
-                    "The configuration variable 'EXTRA_SPEFS' is deprecated. Check the docs on how to use the new 'MACROS' configuration variable."
-                )
-                for i in range(len(extra_spef_list) // 4):
-                    start = i * 4
-                    module, min, nom, max = (
-                        extra_spef_list[start],
-                        extra_spef_list[start + 1],
-                        extra_spef_list[start + 2],
-                        extra_spef_list[start + 3],
-                    )
-                    macro_dict = {"module": module, "gds": ["/dev/null"]}
-                    macro_dict["spef"] = {
-                        "min_*": [min],
-                        "nom_*": [nom],
-                        "max_*": [max],
-                    }
-                    mutable["MACROS"][module] = macro_dict
-
-        for variable in variables:
-            try:
-                value_processed = variable._compile(
-                    mutable_config=mutable,
-                    warning_list_ref=warnings,
-                    values_so_far=final.data,
-                )
-                final[variable.name] = value_processed
-            except ValueError as e:
-                errors.append(str(e))
-
-        for key in sorted(mutable.keys()):
-            if key in vars(SpecialKeys).values():
-                continue
-            if key in removed:
-                warnings.append(f"'{key}' has been removed: {removed[key]}")
-            elif "_OPT" not in key:
-                warnings.append(f"Unknown key '{key}' provided.")
-
-        if translated_macros:
-            for macro in final["MACROS"].values():
-                if macro.gds == "/dev/null":
-                    macro.gds = Path("")
-
-        return (final._lock(), warnings, errors)

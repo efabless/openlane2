@@ -17,12 +17,15 @@ import os
 import time
 import textwrap
 import subprocess
+from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import (
+    Any,
     List,
     Callable,
+    Mapping,
     Optional,
     Union,
     Tuple,
@@ -32,11 +35,14 @@ from typing import (
     Type,
 )
 
+from openlane.state.state import StateElement
+
 from ..state import State, InvalidState
 from ..state import DesignFormat
 from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import (
+    GenericImmutableDict,
     mkdirp,
     slugify,
     final,
@@ -68,6 +74,9 @@ REPORT_END_LOCUS = "%OL_END_REPORT"
 
 GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "openlane_run", "tmp"))
 LastState: State = State()
+
+
+RunResult = Tuple[Mapping[str, StateElement], Mapping[str, Any]]
 
 
 class Step(ABC):
@@ -146,6 +155,27 @@ class Step(ABC):
 
     :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
+
+    :ivar state_out:
+        The last output state from running this step object, if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar start_time:
+        The last starting time from running this step object, if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar end_time:
+        The last ending time from running this step object, if it exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar toolbox:
+        The last :class:`Toolbox` used while running this step object, if it
+        exists.
+
+        If :meth:`start` is called again, the reference is destroyed.
     """
 
     class _FlowType(ABC):
@@ -160,19 +190,24 @@ class Step(ABC):
         def dir_for_step(self, step: Step) -> str:
             pass
 
-    id: str = NotImplemented
-    name: str
-    long_name: str
-
-    inputs: ClassVar[List[DesignFormat]] = []
-    outputs: ClassVar[List[DesignFormat]] = []
+    # Class Variables
+    inputs: ClassVar[List[DesignFormat]]
+    outputs: ClassVar[List[DesignFormat]]
     flow_control_variable: ClassVar[Optional[str]] = None
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
 
+    # Instance Variables
+    id: str = NotImplemented
+    name: str
+    long_name: str
+    state_in: Future[State]
+
+    ## Stateful
+    toolbox: Toolbox = GlobalToolbox
+    state_out: Optional[State] = None
     start_time: Optional[float] = None
     end_time: Optional[float] = None
-    toolbox: Toolbox = GlobalToolbox
 
     # These are mutable class variables. However, they will only be used
     # when steps are run outside of a Flow, pretty much.
@@ -205,7 +240,7 @@ class Step(ABC):
                 raise TypeError("Missing required argument 'config'")
 
         if state_in is None:
-            if config.interactive is not None:
+            if config.is_interactive():
                 state_in = LastState
             else:
                 raise TypeError("Missing required argument 'state_in'")
@@ -220,10 +255,9 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if config.interactive:
+        if config.is_interactive():
             mutable = Config(**kwargs.copy())
-            overrides, warnings, errors = Variable.process_config(
-                mutable,
+            overrides, warnings, errors = mutable.process_variable_list(
                 variables=self.config_vars,
             )
             config = config.copy(**overrides)
@@ -245,7 +279,7 @@ class Step(ABC):
         if step_dir is None:
             if self.flow is not None:
                 self.step_dir = self.flow.dir_for_step(self)
-            elif not self.config.interactive:
+            elif not self.config.is_interactive():
                 raise TypeError("Missing required argument 'step_dir'")
             else:
                 self.step_dir = os.path.join(
@@ -263,6 +297,14 @@ class Step(ABC):
         else:
             state_in_future = state_in
         self.state_in = state_in_future
+
+    def __init_subclass__(cls):
+        if not isabstract(cls):
+            for attr in ["inputs", "outputs"]:
+                if not hasattr(cls, attr):
+                    raise NotImplementedError(
+                        f"{cls} must implement class attribute '{attr}'"
+                    )
 
     @classmethod
     def _get_desc(Self) -> str:
@@ -389,7 +431,7 @@ class Step(ABC):
                     raise StepException(
                         "Attempted to 'start' a step before its parent Flow."
                     )
-            elif not self.config.interactive:
+            elif not self.config.is_interactive():
                 raise TypeError(
                     "Missing argument 'toolbox' required when not running in a Flow"
                 )
@@ -428,7 +470,15 @@ class Step(ABC):
             f.write(state_in_result.dumps())
 
         self.start_time = time.time()
-        self.state_out = self.run(state_in_result, **kwargs)
+
+        views_updates, metrics_updates = self.run(state_in_result, **kwargs)
+
+        metrics = GenericImmutableDict(
+            state_in_result.metrics, overrides=metrics_updates
+        )
+
+        self.state_out = State(self.state_in, overrides=views_updates, metrics=metrics)
+
         try:
             self.state_out.validate()
         except InvalidState as e:
@@ -438,12 +488,13 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
 
-        if self.config.interactive:
+        if self.config.is_interactive():
             LastState = self.state_out
+
         return self.state_out
 
     @abstractmethod
-    def run(self, state_in: State, **kwargs) -> State:
+    def run(self, state_in: State, **kwargs) -> RunResult:
         """
         The "core" of a step.
 

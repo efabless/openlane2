@@ -15,9 +15,9 @@ from decimal import Decimal
 from typing import List, Optional, Dict
 
 from .macro import Macro
-from .config import StringEnum
 from .variable import Variable
 from ..state import Path
+from ..common import StringEnum
 
 all_variables = [
     # Common

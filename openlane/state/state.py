@@ -18,10 +18,11 @@ import json
 import shutil
 from decimal import Decimal
 from collections import UserString
-from typing import Iterator, List, Mapping, TypeVar, Union, Optional, Dict, Any
+from typing import List, Mapping, Union, Optional, Dict, Any
 
 from .design_format import DesignFormat, DesignFormatObject
-from ..common import mkdirp
+
+from ..common import GenericImmutableDict, mkdirp, copy_recursive
 
 
 class Path(UserString, os.PathLike):
@@ -45,24 +46,12 @@ class InvalidState(RuntimeError):
     pass
 
 
-class StateEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Decimal):
-            if o.as_integer_ratio()[1] == 1:
-                return int(o)
-            else:
-                return float(o)
-        elif isinstance(o, Path):
-            return str(o)
-        return super(StateEncoder, self).default(o)
+StateElement = Union[Path, List[Path], Dict[str, Union[Path, List[Path]]], None]
 
 
-VT = Union[Path, Dict[str, Path], None]
-
-
-class State(Mapping[str, VT]):
+class State(GenericImmutableDict[str, StateElement]):
     """
-    Basically, a dictionary with keys of type :class:`DesignFormat` and values
+    Basically, a dictionary from :class:`DesignFormat`s and values
     of (nested dictionaries of) :class:`Path`.
 
     The state is the only thing that can be altered by steps other than the
@@ -73,88 +62,76 @@ class State(Mapping[str, VT]):
         it passed a certain check or not.
     """
 
-    _data: dict
+    metrics: GenericImmutableDict[str, Any]
 
-    metrics: dict
+    def __init__(
+        self,
+        copying: Optional[Mapping[str, StateElement]] = None,
+        *args,
+        overrides: Optional[
+            Union[Mapping[str, StateElement], Mapping[DesignFormat, StateElement]]
+        ] = None,
+        metrics: Optional[Mapping[str, Any]] = None,
+        **kwargs,
+    ) -> None:
+        copying_resolved: Dict[str, StateElement] = {}
+        if c_mapping := copying:
+            for key, value in c_mapping.items():
+                copying_resolved[key] = value
 
-    def __init__(self, metrics: Optional[dict] = None) -> None:
-        super().__init__()
-        self._data = {}
         for format in DesignFormat:
-            self[format] = None
-        self.metrics = metrics or {}
+            assert isinstance(format.value, DesignFormatObject)  # type checker shut up
+            if format.value.id not in copying_resolved:
+                copying_resolved[format.value.id] = None
 
-    def __getitem__(self, key: Union[DesignFormat, str]) -> VT:
+        overrides_resolved = {}
+        if o_mapping := overrides:
+            for key, value in o_mapping.items():
+                if isinstance(key, DesignFormat):
+                    assert isinstance(
+                        key.value, DesignFormatObject
+                    )  # type checker shut up
+                    key = key.value.id
+                overrides_resolved[key] = value
+
+        super().__init__(
+            copying_resolved,
+            *args,
+            overrides=overrides_resolved,
+            **kwargs,
+        )
+
+        self.metrics = GenericImmutableDict(metrics or {})
+
+    def __getitem__(self, key: Union[DesignFormat, str]) -> StateElement:
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
-        return self._data[key]
+        return super().__getitem__(key)
 
-    def __setitem__(self, key: Union[DesignFormat, str], item: VT):
+    def __setitem__(self, key: Union[DesignFormat, str], item: StateElement):
         if isinstance(key, DesignFormat):
             id: str = key.value.id
             key = id
-        self._data[key] = item
+        return super().__setitem__(key, item)
 
-    def _as_dict(self, metrics: bool = True) -> Dict[str, Any]:
-        final: Dict[Any, Any] = dict(self)
+    def __delitem__(self, key: Union[DesignFormat, str]):
+        if isinstance(key, DesignFormat):
+            id: str = key.value.id
+            key = id
+        return super().__delitem__(key)
+
+    def to_raw_dict(self, metrics: bool = True) -> Dict[str, Any]:
+        final: Dict[Any, Any] = self._data.copy()
         if metrics:
             final["metrics"] = self.metrics
         return final
 
-    T = TypeVar("T", Dict, List)
-
-    def __copy_recursive__(self, input: T) -> T:
-        def resolve_value(value):
-            value_final = value
-            if isinstance(value, dict):
-                value_final = self.__copy_recursive__(value)
-            elif isinstance(value, list):
-                value_final = self.__copy_recursive__(value)
-            return value_final
-
-        if isinstance(input, list):
-            result = []
-            for value in input:
-                result.append(resolve_value(value))
-            return result
-        else:
-            result = {}
-            for key, value in input.items():
-                result[key] = resolve_value(value)
-            return result
-
     def copy(self: "State") -> "State":
         new = State()
-        new._data = self.__copy_recursive__(self._data)
-        new.metrics = self.__copy_recursive__(self.metrics)
+        new._data = copy_recursive(self._data)
+        new.metrics = copy_recursive(self.metrics)
         return new
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._data)
-
-    def keys(self):
-        return self._data.keys()
-
-    def values(self):
-        return self._data.values()
-
-    def items(self):
-        return self._data.items()
-
-    def __len__(self) -> int:
-        return len(self._data)
-
-    def __repr__(self) -> str:
-        return self._as_dict().__repr__()
-
-    def dumps(self, **kwargs) -> str:
-        """
-        Dumps data as JSON.
-        """
-        if "indent" not in kwargs:
-            kwargs["indent"] = 4
-        return json.dumps(self._as_dict(), cls=StateEncoder, **kwargs)
 
     def _save_snapshot_recursive(
         self,
@@ -235,16 +212,16 @@ class State(Mapping[str, VT]):
         """
         Ensures that all paths exist in a State.
         """
-        self._validate_recursive(self._as_dict(metrics=False))
+        self._validate_recursive(self.to_raw_dict(metrics=False))
 
     @classmethod
     def _loads_recursive(
         Self,
-        target: Union[Dict, "State"],
-        views: Union[Dict, "State"],
+        views: Dict,
         validate_path: bool = True,
         key_path: str = "",
-    ):
+    ) -> dict:
+        target: dict = {}
         for key, value in views.items():
             current_key_path = f"{key_path}.{key}"
             if value is None:
@@ -252,32 +229,31 @@ class State(Mapping[str, VT]):
                 continue
 
             if isinstance(value, dict):
-                all_values: Dict = {}
-                Self._loads_recursive(
-                    all_values,
+                target[key] = Self._loads_recursive(
                     value,
                     validate_path,
                     key_path=current_key_path,
                 )
-                target[key] = all_values
             else:
                 if validate_path and not os.path.exists(value):
                     raise ValueError(
                         f"Provided path '{value}' to design format '{current_key_path}' does not exist."
                     )
                 target[key] = Path(value)
+        return target
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":
         raw = json.loads(json_in, parse_float=Decimal)
+        if not isinstance(raw, dict):
+            raise InvalidState("Failed to load state: JSON result is a dictionary")
 
         metrics = raw.get("metrics")
         if metrics is not None:
             del raw["metrics"]
 
-        state = Self(metrics=metrics)
-
-        Self._loads_recursive(state, raw, validate_path)
+        views = Self._loads_recursive(raw, validate_path)
+        state = Self(views, metrics=metrics)
 
         return state
 
@@ -290,7 +266,7 @@ class State(Mapping[str, VT]):
                     <th>Path</th>
                 </tr>
         """
-        for id, value in self._as_dict(metrics=False).items():
+        for id, value in self.to_raw_dict(metrics=False).items():
             if value is None:
                 continue
 

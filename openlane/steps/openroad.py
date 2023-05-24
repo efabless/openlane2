@@ -35,10 +35,10 @@ from .common_variables import (
     constraint_variables,
 )
 
-from ..common import get_script_dir
+from ..config import Variable
 from ..logging import err, info, warn
-from ..config import Variable, StringEnum
 from ..state import State, DesignFormat, Path
+from ..common import get_script_dir, StringEnum
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -287,17 +287,24 @@ class STAPostPNR(STAPrePNR):
         env["LIB_SAVE_DIR"] = self.step_dir
         env["CURRENT_SPEF"] = ""
         for i, corner in enumerate(self.config["STA_CORNERS"]):
-            if state_in["spef"] is None:
+            if state_in[DesignFormat.SPEF] is None:
                 raise StepException(
                     "SPEF extraction was not performed before parasitics STA."
                 )
 
-            if not isinstance(state_in["spef"], dict):
+            if not isinstance(state_in[DesignFormat.SPEF], dict):
                 raise StepException(
                     "Malformed input state: value for SPEF is not a dictionary."
                 )
 
-            spefs = self.toolbox.filter_views(self.config, state_in["spef"], corner)
+            input_spef_dict = state_in[DesignFormat.SPEF]
+            assert input_spef_dict is not None  # Checked by start
+            if not isinstance(input_spef_dict, dict):
+                raise StepException(
+                    "Malformed input state: value for 'spef' is not a dictionary"
+                )
+
+            spefs = self.toolbox.filter_views(self.config, input_spef_dict, corner)
             if len(spefs) < 1:
                 raise StepException(
                     f"No SPEF file compatible with corner '{corner}' found."
@@ -985,9 +992,9 @@ class RCX(OpenROADStep):
         if cores := self.config.get("RCX_CORES"):
             process_count = cores
 
-        state = Step.run(self, state_in, **kwargs)
+        state_out = Step.run(self, state_in, **kwargs)
         kwargs, env = self.extract_env(kwargs)
-        env = self.prepare_env(env, state)
+        env = self.prepare_env(env, state_out)
 
         def run_corner(corner: str):
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
@@ -1050,7 +1057,7 @@ class RCX(OpenROADStep):
                     corner,
                 )
 
-        spef_dict = state[DesignFormat.SPEF] or {}
+        spef_dict = state_out[DesignFormat.SPEF] or {}
         if not isinstance(spef_dict, dict):
             raise StepException(
                 "Malformed input state: value for SPEF is not a dictionary."
@@ -1060,9 +1067,9 @@ class RCX(OpenROADStep):
             if result := future.result():
                 spef_dict[corner] = Path(result)
 
-        state[DesignFormat.SPEF] = spef_dict
+        state_out[DesignFormat.SPEF] = spef_dict
 
-        return state
+        return state_out
 
 
 # Antennas
@@ -1140,19 +1147,26 @@ class IRDropReport(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> State:
         from decimal import Decimal
 
-        if state_in["spef"] is None:
+        if state_in[DesignFormat.SPEF] is None:
             raise StepException(
                 "SPEF extraction was not performed before IR drop report."
             )
 
-        if not isinstance(state_in["spef"], dict):
+        if not isinstance(state_in[DesignFormat.SPEF], dict):
             raise StepException(
                 "Malformed input state: value for SPEF is not a dictionary."
             )
 
         kwargs, env = self.extract_env(kwargs)
 
-        spefs_in = self.toolbox.filter_views(self.config, state_in["spef"])
+        input_spef_dict = state_in[DesignFormat.SPEF]
+        assert input_spef_dict is not None  # Checked by start
+        if not isinstance(input_spef_dict, dict):
+            raise StepException(
+                "Malformed input state: value for 'spef' is not a dictionary"
+            )
+
+        spefs_in = self.toolbox.filter_views(self.config, input_spef_dict)
         if len(spefs_in) > 1:
             raise StepException(
                 "Found more than one input SPEF file for the default corner."

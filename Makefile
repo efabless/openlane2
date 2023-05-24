@@ -25,6 +25,10 @@ docker-image: venv
 docs: venv
 	$(MAKE) -C docs html
 
+.PHONY: host-docs
+host-docs: venv
+	./venv/bin/python3 -m http.server --directory ./docs/build/html
+
 .PHONY: lint
 lint: venv/manifest.txt
 	./venv/bin/black --check .
@@ -52,7 +56,7 @@ REQ_FILES = ./requirements_dev.txt ./requirements.txt
 REQ_FILES_PFX = $(addprefix -r ,$(REQ_FILES))
 
 venv: venv/manifest.txt
-venv/manifest.txt: $(REQ_FILES) Makefile
+venv/manifest.txt: $(REQ_FILES)
 	rm -rf venv
 	python3 -m venv ./venv
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip

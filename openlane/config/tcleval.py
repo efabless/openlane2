@@ -14,16 +14,19 @@
 import os
 import tkinter
 import tempfile
+from typing import TypeVar, Any
 from decimal import Decimal, InvalidOperation
 
-from .config import Config
+from ..common import GenericDict
+
+T = TypeVar("T", bound=GenericDict[str, Any])
 
 
-def env_from_tcl(env_in: Config, tcl_in: str) -> Config:
+def env_from_tcl(env_in: T, tcl_in: str) -> T:
     interpreter = tkinter.Tcl()
 
     initial_env = os.environ.copy()
-    env_out = env_in.copy()._unlock()
+    env_out = env_in.copy()
 
     with tempfile.NamedTemporaryFile("r+") as f:
         env_str = ""
@@ -58,4 +61,4 @@ def env_from_tcl(env_in: Config, tcl_in: str) -> Config:
             if initial_env.get(key) is None and env_in.get(key) != value:
                 env_out[key] = value
 
-    return env_out._lock()
+    return env_out

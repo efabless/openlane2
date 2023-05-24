@@ -14,11 +14,11 @@
 import os
 import re
 from decimal import Decimal
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict, TypeVar
 
 from .variable import Variable
-from .config import Config
 from ..state import Path
+from ..common import GenericDict
 
 # Note that values in this file do not take defaults.
 
@@ -477,9 +477,12 @@ scl_variables = [
     ),
 ]
 
+T = TypeVar("T", bound=GenericDict[str, Any])
 
-def migrate_old_config(config: Config) -> Config:
-    new = config.copy()._unlock()
+
+def migrate_old_config(config: T) -> T:
+    new = config.copy()
+
     # 1. Migrate SYNTH_DRIVING_CELL
     del new["SYNTH_DRIVING_CELL"]
     del new["SYNTH_DRIVING_CELL_PIN"]
@@ -594,7 +597,7 @@ def migrate_old_config(config: Config) -> Config:
         new[
             "SYNTH_CLK_DRIVING_CELL"
         ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
-    return new._lock()
+    return new
 
 
 all_variables: List[Variable] = pdk_variables + scl_variables

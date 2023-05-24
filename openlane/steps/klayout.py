@@ -182,6 +182,7 @@ class XOR(Step):
         DesignFormat.MAG_GDS,
         DesignFormat.KLAYOUT_GDS,
     ]
+    outputs = []
 
     config_vars = [
         Variable(

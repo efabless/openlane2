@@ -32,6 +32,7 @@ class LoadBaseSDC(Step):
     name = "Load Base SDC"
     long_name = "Load Base Design Constraints File"
 
+    inputs = []
     outputs = [DesignFormat.SDC]
 
     config_vars = [
@@ -44,17 +45,17 @@ class LoadBaseSDC(Step):
     ]
 
     def run(self, state_in: State, **kwargs) -> State:
-        new_state = super().run(state_in, **kwargs)
-        new_state[DesignFormat.SDC] = Path(
+        state_out = super().run(state_in, **kwargs)
+        path = Path(
             os.path.join(
                 get_script_dir(),
                 "base.sdc",
             )
         )
         if self.config.get("BASE_SDC_FILE") is not None:
-            info(f"Loaded SDC file at '{self.config['BASE_SDC_FILE']}'.")
-            new_state[DesignFormat.SDC] = self.config["BASE_SDC_FILE"]
+            info(f"Loading SDC file at '{self.config['BASE_SDC_FILE']}'.")
+            path = self.config["BASE_SDC_FILE"]
         else:
-            info("Loaded default SDC file.")
+            info("Loading default SDC file.")
 
-        return new_state
+        return State(state_out, overrides={DesignFormat.SDC: path})

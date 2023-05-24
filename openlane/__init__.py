@@ -24,7 +24,7 @@ Flows and/or custom Steps for the design of more sophisticated chips.
     no-imported-members
 """
 
-from .config import Variable, Config, ConfigBuilder, InvalidConfig
+from .config import Variable, Config, InvalidConfig
 from .flows import Flow, SequentialFlow
 from .state import State, DesignFormat
 from .steps import Step
