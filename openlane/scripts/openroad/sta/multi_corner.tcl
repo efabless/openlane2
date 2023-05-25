@@ -147,4 +147,5 @@ puts "==========================================================================
 report_worst_slack -min
 puts "%OL_END_REPORT"
 
+write_sdfs
 write_libs

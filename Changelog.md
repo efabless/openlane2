@@ -1,4 +1,11 @@
+# 2.0.0-a34
+
+* Added ability to disable reproducibles on a per-class level
+* Updated SDF to support N-corners
+* Fixed bug with writing LIB/SDF views
+
 # 2.0.0-a33
+
 * Bump supported PDK to `af34855`
 * Rename 3 PDK variables to match OpenLane 1
   * `FP_PDN_RAILS_LAYER` -> `FP_PDN_RAIL_LAYER`

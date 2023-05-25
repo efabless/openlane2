@@ -70,6 +70,7 @@ class DesignFormat(Enum):
         "sdf",
         "sdf",
         "Standard Delay Format",
+        multiple=True,
     )
     SPEF: DesignFormatObject = DesignFormatObject(
         "spef",

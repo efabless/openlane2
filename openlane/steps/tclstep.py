@@ -27,7 +27,7 @@ from decimal import Decimal
 from collections import deque
 from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
-from typing import Any, List, Dict, Sequence, Union, Tuple
+from typing import Any, ClassVar, List, Dict, Sequence, Union, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
@@ -323,7 +323,11 @@ class TclStep(Step):
 
     A TclStep Step should ideally correspond to running one Tcl script with such
     a utility.
+
+    :cvar reproducibles_allowed: Whether this class can generate reproducibles.
     """
+
+    reproducibles_allowed: ClassVar[bool] = True
 
     @staticmethod
     def value_to_tcl(value: Any) -> str:
@@ -412,8 +416,6 @@ class TclStep(Step):
 
         for input in self.inputs:
             key = f"CURRENT_{input.name}"
-            if input.value.multiple:
-                key = f"CURRENT_{input.name}_DICT"
             env[key] = TclStep.value_to_tcl(state[input])
 
         for output in self.outputs:
@@ -462,16 +464,17 @@ class TclStep(Step):
                 **kwargs,
             )
         except subprocess.CalledProcessError:
-            reproducible_folder = create_reproducible(
-                self.config["DESIGN_DIR"],
-                self.step_dir,
-                command,
-                env,
-                self.get_script_path(),
-            )
-            info(
-                f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
-            )
+            if self.reproducibles_allowed:
+                reproducible_folder = create_reproducible(
+                    self.config["DESIGN_DIR"],
+                    self.step_dir,
+                    command,
+                    env,
+                    self.get_script_path(),
+                )
+                info(
+                    f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
+                )
             raise
 
         overrides: ViewsUpdate = {}

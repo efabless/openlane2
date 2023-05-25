@@ -87,7 +87,6 @@ class OpenROADStep(TclStep):
     outputs = [
         DesignFormat.ODB,
         DesignFormat.DEF,
-        DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
     ]
@@ -224,7 +223,7 @@ class STAPrePNR(STAStep):
     """
 
     inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
-    outputs = []
+    outputs = [DesignFormat.SDF, DesignFormat.SDC]
 
     id = "OpenROAD.STAPrePNR"
     name = "STA (Pre-PnR)"
@@ -254,8 +253,24 @@ class STAPrePNR(STAStep):
             env["TIMING_CORNER_0"] += f" {view}"
 
         env["OPENSTA"] = "1"
+        env["SDF_SAVE_DIR"] = self.step_dir
 
-        return super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+
+        sdf_dict = state_in[DesignFormat.SDF] or {}
+        if not isinstance(sdf_dict, dict):
+            raise StepException(
+                "Malformed input state: value for LIB is not a dictionary."
+            )
+
+        sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
+        for sdf in sdfs:
+            corner = sdf[:-4]
+            sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
+
+        views_updates[DesignFormat.SDF] = sdf_dict
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -272,7 +287,7 @@ class STAPostPNR(STAPrePNR):
     flow_control_variable = "RUN_MCSTA"
 
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
-    outputs = [DesignFormat.LIB, DesignFormat.SDF]
+    outputs = STAPrePNR.outputs + [DesignFormat.LIB]
 
     config_vars = STAPrePNR.config_vars + [
         Variable(
@@ -288,6 +303,7 @@ class STAPostPNR(STAPrePNR):
         kwargs, env = self.extract_env(kwargs)
 
         env["LIB_SAVE_DIR"] = self.step_dir
+        env["SDF_SAVE_DIR"] = self.step_dir
         env["CURRENT_SPEF"] = ""
         env["OPENSTA"] = "1"
         for i, corner in enumerate(self.config["STA_CORNERS"]):
@@ -346,6 +362,19 @@ class STAPostPNR(STAPrePNR):
             lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
 
         views_updates[DesignFormat.LIB] = lib_dict
+
+        sdf_dict = state_in[DesignFormat.SDF] or {}
+        if not isinstance(sdf_dict, dict):
+            raise StepException(
+                "Malformed input state: value for LIB is not a dictionary."
+            )
+
+        sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
+        for sdf in sdfs:
+            corner = sdf[:-4]
+            sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
+
+        views_updates[DesignFormat.SDF] = sdf_dict
 
         return views_updates, metrics_updates
 

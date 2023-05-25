@@ -286,14 +286,6 @@ proc write_views {args} {
     if { [info exists ::env(SAVE_SDF)] } {
         set corners [sta::corners]
         if { [llength $corners] > 1 } {
-            puts "Writing SDF files for all corners…"
-            set prefix [file rootname $::env(SAVE_SDF)]
-            foreach corner $corners {
-                set corner_name [$corner name]
-                set target $prefix.$corner_name.sdf
-                puts "Writing SDF for the $corner_name corner to $target…"
-                write_sdf -include_typ -divider . -corner $corner_name $target
-            }
         } else {
             puts "Writing SDF to '$::env(SAVE_SDF)'…"
             write_sdf -include_typ -divider . $::env(SAVE_SDF)
@@ -301,13 +293,26 @@ proc write_views {args} {
     }
 }
 
+proc write_sdfs {} {
+    if { [info exists ::env(SDF_SAVE_DIR)] } {
+        set corners [sta::corners]
+
+        puts "Writing SDF files for all corners…"
+        foreach corner $corners {
+            set corner_name [$corner name]
+            set target $::env(SDF_SAVE_DIR)/$corner_name.sdf
+            write_sdf -include_typ -divider . -corner $corner_name $target
+        }
+    }
+}
+
 proc write_libs {} {
-    if { [info exists ::env(LIB_SAVE_PATH)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
+    if { [info exists ::env(LIB_SAVE_DIR)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
         set corners [sta::corners]
         puts "Writing timing models for all corners…"
         foreach corner $corners {
             set corner_name [$corner name]
-            set target $::env(LIB_SAVE_PATH)/$corner_name.lib
+            set target $::env(LIB_SAVE_DIR)/$corner_name.lib
             puts "Writing timing models for the $corner_name corner to $target…"
             write_timing_model -corner $corner_name $target
         }
