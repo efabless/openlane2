@@ -74,3 +74,28 @@ To start with, you can try:
 ```sh
 python3 -m openlane --pdk-root $HOME/.volare ./designs/spm/config.json
 ```
+
+## Publication
+If you use OpenLane in your research, please cite the following paper.
+
+* M. Shalan and T. Edwards, “Building OpenLANE: A 130nm OpenROAD-based Tapeout-Proven Flow: Invited Paper,” *2020 IEEE/ACM International Conference On Computer Aided Design (ICCAD)*, San Diego, CA, USA, 2020, pp. 1-6. [Paper](https://ieeexplore.ieee.org/document/9256623)
+
+```bibtex
+@INPROCEEDINGS{9256623,
+  author={Shalan, Mohamed and Edwards, Tim},
+  booktitle={2020 IEEE/ACM International Conference On Computer Aided Design (ICCAD)}, 
+  title={Building OpenLANE: A 130nm OpenROAD-based Tapeout- Proven Flow : Invited Paper}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={1-6},
+  doi={}}
+```
+
+## License
+[The Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt).
+
+Docker images distributed by Efabless Corporation under the same license.
+
+Binaries bundled with OpenLane either via Cachix or Docker are distributed by
+Efabless Corporation and may fall under stricter open source licenses.
