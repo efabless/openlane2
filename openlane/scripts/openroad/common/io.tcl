@@ -151,8 +151,8 @@ proc read_timing_info {args} {
 }
 
 proc read_spefs {} {
-    if { [info exists ::env(CURRENT_SPEF)] } {
-        foreach {corner_name spef} $::env(CURRENT_SPEF) {
+    if { [info exists ::env(CURRENT_SPEF_BY_CORNER)] } {
+        foreach {corner_name spef} $::env(CURRENT_SPEF_BY_CORNER) {
             puts "Reading top-level design parasitics for the '$corner_name' corner at '$spef'…"
             read_spef -corner $corner_name $spef
         }

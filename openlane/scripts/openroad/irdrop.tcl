@@ -18,7 +18,7 @@ read_current_odb
 source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
-read_spef $::env(CURRENT_SPEF)
+read_spef $::env(CURRENT_SPEF_DEFAULT_CORNER)
 
 puts "%OL_CREATE_REPORT irdrop.rpt"
 analyze_power_grid -net $::env(VDD_NET) -outfile $::env(STEP_DIR)/voltages.csv

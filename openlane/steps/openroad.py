@@ -265,7 +265,7 @@ class STAPrePNR(STAStep):
 
         sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
         for sdf in sdfs:
-            corner = sdf[:-4]
+            corner = os.path.basename(sdf)[:-4]
             sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
 
         views_updates[DesignFormat.SDF] = sdf_dict
@@ -304,9 +304,10 @@ class STAPostPNR(STAPrePNR):
 
         env["LIB_SAVE_DIR"] = self.step_dir
         env["SDF_SAVE_DIR"] = self.step_dir
-        env["CURRENT_SPEF"] = ""
+        env["CURRENT_SPEF_BY_CORNER"] = ""
         env["OPENSTA"] = "1"
         for i, corner in enumerate(self.config["STA_CORNERS"]):
+            print(i, corner)
             if state_in[DesignFormat.SPEF] is None:
                 raise StepException(
                     "SPEF extraction was not performed before parasitics STA."
@@ -334,8 +335,8 @@ class STAPostPNR(STAPrePNR):
                     f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
             spef = spefs[0]
-
-            env["CURRENT_SPEF"] += f" {corner} {spef}"
+            print(corner, spef)
+            env["CURRENT_SPEF_BY_CORNER"] += f" {corner} {spef}"
 
             tc_key = f"TIMING_CORNER_{i}"
             _, timing_file_list = self.toolbox.get_timing_files(
@@ -358,7 +359,7 @@ class STAPostPNR(STAPrePNR):
 
         libs = glob(os.path.join(self.step_dir, "*.lib"))
         for lib in libs:
-            corner = lib[:-4]
+            corner = os.path.basename(lib)[:-4]
             lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
 
         views_updates[DesignFormat.LIB] = lib_dict
@@ -371,7 +372,7 @@ class STAPostPNR(STAPrePNR):
 
         sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
         for sdf in sdfs:
-            corner = sdf[:-4]
+            corner = os.path.basename(sdf)[:-4]
             sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
 
         views_updates[DesignFormat.SDF] = sdf_dict
@@ -1211,7 +1212,7 @@ class IRDropReport(OpenROADStep):
         elif len(spefs_in) < 1:
             raise StepException("No SPEF file found for the default corner.")
 
-        env["CURRENT_SPEF"] = str(spefs_in[0])
+        env["CURRENT_SPEF_DEFAULT_CORNER"] = str(spefs_in[0])
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
