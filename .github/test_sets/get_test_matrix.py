@@ -60,7 +60,7 @@ def main(scls, use_json, test_sets):
                 {
                     "name": design,
                     "config": config_file,
-                    "run": run_folder,
+                    "run_folder": run_folder,
                     "pdk": pdk,
                     "scl": scl,
                 }
