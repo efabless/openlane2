@@ -1,3 +1,8 @@
+# 2.0.0-a35
+
+* Revert magic to [`a33d7b7`](https://github.com/RTimothyEdwards/magic/commit/a33d7b78b54d8456769d08236f91f9be31784267),
+  last known-good version before a LEF writing bug
+
 # 2.0.0-a34
 
 * Added ability to disable reproducibles on a per-class level
