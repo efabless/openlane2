@@ -105,12 +105,12 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
       - name: Run Test
-        run: >-
-          nix-shell --run "
-            python3 -m openlane
-            --run-tag CI
-            --pdk ${{ matrix.design.pdk }}
-            --scl ${{matrix.design.scl}} ${{ matrix.design.config }}
+        run: |
+          nix-shell --run "\
+            python3 -m openlane\
+            --run-tag CI\
+            --pdk ${{ matrix.design.pdk }}\
+            --scl ${{matrix.design.scl}} ${{ matrix.design.config }}\
           "
       - name: Upload Run Folder
         if: ${{ always() }}
