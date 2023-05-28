@@ -248,12 +248,15 @@ def run_smoke_test(
 
         pdk_root = ctx.params.get("pdk_root")
         config_file = os.path.join(final_path, "config.json")
+        use_volare = True
+        if use_volare_opt := ctx.params.get("use_volare"):
+            use_volare = use_volare_opt
 
         # 3. Run
         status = run(
             ctx,
             flow_name=None,
-            use_volare=ctx.params.get("use_volare"),
+            use_volare=use_volare,
             pdk_root=pdk_root,
             pdk="sky130A",
             scl=None,
