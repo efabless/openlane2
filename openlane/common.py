@@ -16,8 +16,6 @@ Common Utilities
 
 A number of common utility functions used throughout the codebase.
 """
-from dataclasses import asdict, is_dataclass
-from decimal import Decimal
 import os
 import re
 import json
@@ -25,6 +23,9 @@ import typing
 import pathlib
 import unicodedata
 from enum import Enum
+from decimal import Decimal
+from dataclasses import asdict, is_dataclass
+from concurrent.futures import ThreadPoolExecutor
 
 from typing import (
     Dict,
@@ -319,3 +320,16 @@ def idem(obj: T, *args, **kwargs) -> T:
     :returns: the parameter ``obj`` unchanged.
     """
     return obj
+
+
+TPE = ThreadPoolExecutor(max_workers=os.cpu_count())
+
+
+def set_tpe(tpe: ThreadPoolExecutor):
+    global TPE
+    TPE = tpe
+
+
+def get_tpe() -> ThreadPoolExecutor:
+    global TPE
+    return TPE

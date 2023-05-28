@@ -65,17 +65,6 @@ def get_log_level() -> int:
     return logging.getLogger().getEffectiveLevel()
 
 
-def print(*args, **kwargs):
-    """
-    Prints to the terminal without formatting.
-
-    See the Rich API for more info: https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
-    """
-    if get_log_level() > LogLevels.INFO:
-        return
-    console.print(*args, **kwargs, crop=False, style=None)
-
-
 def verbose(*args, **kwargs):
     """
     Prints to the terminal with automatic rich formatting.

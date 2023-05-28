@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import os
-import subprocess
 from typing import List, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
@@ -175,7 +174,7 @@ class SequentialFlow(Flow):
                     raise FlowException(str(e))
                 except DeferredStepError as e:
                     deferred_errors.append(str(e))
-                except (StepError, subprocess.CalledProcessError) as e:
+                except StepError as e:
                     raise FlowError(str(e))
 
             self.end_stage(increment_ordinal=increment_ordinal)

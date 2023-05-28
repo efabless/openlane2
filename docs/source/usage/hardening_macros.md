@@ -253,12 +253,12 @@ During global routing, you can set [`GRT_REPAIR_ANTENNAS`](../reference/step_con
 This will enable diode insertion during global routing for long nets, which will
 mitigate the effect. This is enabled by default.
 
-### `ROUTING_CORES`
+### `DRT_THREADS`
 
 By default, detailed routing, which is the most computationally expensive step
 in the flow, will use all available threads on your computer by default.
 You can decrease that by overriding the step variable
-[`ROUTING_CORES`](../reference/step_config_vars.md#OpenROAD.DetailedRouting.ROUTING_CORES).
+[`DRT_THREADS`](../reference/step_config_vars.md#OpenROAD.DetailedRouting.DRT_THREADS).
 
 Be advised that higher is always better for runtime.
 

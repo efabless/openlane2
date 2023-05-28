@@ -14,7 +14,7 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-set_thread_count $::env(ROUTING_CORES)
+set_thread_count $::env(DRT_THREADS)
 
 set min_layer $::env(RT_MIN_LAYER)
 if { [info exists ::env(DRT_MIN_LAYER)] } {

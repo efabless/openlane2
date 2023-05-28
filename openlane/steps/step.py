@@ -17,6 +17,7 @@ import os
 import time
 import textwrap
 import subprocess
+from signal import Signals
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
@@ -65,6 +66,10 @@ class DeferredStepError(StepError):
 
 
 class StepException(StepError):
+    pass
+
+
+class StepSignalled(StepException):
     pass
 
 
@@ -477,7 +482,15 @@ class Step(ABC):
                     f"{type(self).__name__}: missing required input '{input.name}'"
                 )
 
-        views_updates, metrics_updates = self.run(state_in_result, **kwargs)
+        try:
+            views_updates, metrics_updates = self.run(state_in_result, **kwargs)
+        except subprocess.CalledProcessError as e:
+            if e.returncode is not None and e.returncode < 0:
+                raise StepSignalled(
+                    f"{self.name}: Interrupted ({Signals(-e.returncode).name})"
+                )
+            else:
+                raise StepError(f"{self.name}: subprocess {e.args} failed")
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates
@@ -599,8 +612,9 @@ class Step(ABC):
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:
-            err("\n".join(split_lines[-10:]))
-            err(f"Log file: {log_path}")
+            if returncode > 0:
+                err("\n".join(split_lines[-10:]))
+                err(f"Log file: {log_path}")
             raise subprocess.CalledProcessError(returncode, process.args)
 
     @internal
