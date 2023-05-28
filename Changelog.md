@@ -4,7 +4,7 @@
 * Added a global ThreadPoolExecutor object for all subprocesses to `common`.
   * Accessible for external scripts and plugins via `openlane.get_tpe` and `openlane.set_tpe`
 * Folded `--list-plugins` into `--version`
-* Renamed `ROUTING_CORES` to `ROUTING_THREADS`
+* Renamed `ROUTING_CORES` to `DRT_THREADS`
 * Removed `RCX_CORES`, step now uses global ThreadPoolExecutor
 
 # 2.0.0-a35
