@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2020-2021 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,16 +20,13 @@ import json
 
 github_event_name = os.environ["EVENT_NAME"]
 
+gh.export_env("TEST_SETS", "fastest_test_set")
 if github_event_name in ["schedule", "workflow_dispatch"]:
-    gh.export_env("USE_ETS", "1")
+    gh.export_env("TEST_SETS", "fastest_test_set extended_test_set")
 elif github_event_name == "pull_request":
     gh_event_str = open(os.environ["GITHUB_EVENT_PATH"]).read()
     gh_event = json.loads(gh_event_str)
     pr_body = gh_event["pull_request"]["body"] or ""
 
     if "[ci ets]" in pr_body:
-        gh.export_env("USE_ETS", "1")
-    else:
-        gh.export_env("USE_ETS", "0")
-else:
-    gh.export_env("USE_ETS", "0")
+        gh.export_env("TEST_SETS", "fastest_test_set extended_test_set")
