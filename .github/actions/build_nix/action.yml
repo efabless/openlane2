@@ -25,6 +25,6 @@ runs:
         nix-build
     - name: Push
       shell: bash
-      if: ${{ inputs.cachix_token != "" }}
+      if: ${{ inputs.cachix_token != '' }}
       run: |
         nix-build | cachix push openlane
