@@ -25,6 +25,7 @@ jobs:
       - name: Set Matrix
         id: set-matrix
         run: |
+          python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
           echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
   lint:
     name: Lint
@@ -117,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
-          path: ${{ matrix.run_folder }}
+          path: ${{ matrix.design.run_folder }}
   publish:
     runs-on: ubuntu-22.04
     needs: [test, build-mac-amd64, build-py]
