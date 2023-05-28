@@ -21,6 +21,7 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
+from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, Type, Optional, List, Union
 
 import click
@@ -28,7 +29,6 @@ from cloup import (
     option,
     option_group,
     command,
-    version_option,
     HelpFormatter,
     HelpTheme,
     Style,
@@ -51,10 +51,7 @@ from .logging import (
     warn,
     info,
 )
-from .common import (
-    get_opdks_rev,
-    get_openlane_root,
-)
+from . import common
 from .container import run_in_container
 from .plugins import discovered_plugins
 from .config import Config, InvalidConfig
@@ -94,7 +91,7 @@ def run(
 
         pdk_root = volare.get_volare_home(pdk_root)
 
-        volare.enable(pdk_root, pdk[:-1], get_opdks_rev())
+        volare.enable(pdk_root, pdk[:-1], common.get_opdks_rev())
 
     config_file = config_files[0]
 
@@ -188,6 +185,33 @@ def run(
     return 0
 
 
+def print_version(ctx: click.Context, param: click.Parameter, value: bool):
+    if not value:
+        return
+
+    message = dedent(
+        f"""
+        OpenLane v{__version__}
+
+        Copyright ©2020-2023 Efabless Corporation and other contributors.
+
+        Available under the Apache License, version 2. Included with the source code,
+        but you can also get a copy at https://www.apache.org/licenses/LICENSE-2.0
+
+        Included tools and utilities may be distributed under stricter licenses.
+        """
+    ).strip()
+
+    print(message)
+
+    if len(discovered_plugins) > 0:
+        print("Discovered plugins:")
+        for name, module in discovered_plugins.items():
+            print(f"{name} -> {module.__version__}")
+
+    ctx.exit(0)
+
+
 def print_bare_version(
     ctx: click.Context,
     param: click.Parameter,
@@ -209,12 +233,11 @@ def run_smoke_test(
 
     status = 0
     d = tempfile.mkdtemp("openlane2")
+    final_path = os.path.join(d, "smoke_test_design")
     try:
-        final_path = os.path.join(d, "smoke_test_design")
-
         # 1. Copy the files
         shutil.copytree(
-            os.path.join(get_openlane_root(), "smoke_test_design"),
+            os.path.join(common.get_openlane_root(), "smoke_test_design"),
             final_path,
             symlinks=False,
         )
@@ -225,12 +248,15 @@ def run_smoke_test(
 
         pdk_root = ctx.params.get("pdk_root")
         config_file = os.path.join(final_path, "config.json")
+        use_volare = True
+        if use_volare_opt := ctx.params.get("use_volare"):
+            use_volare = use_volare_opt
 
         # 3. Run
         status = run(
             ctx,
             flow_name=None,
-            use_volare=True,
+            use_volare=use_volare,
             pdk_root=pdk_root,
             pdk="sky130A",
             scl=None,
@@ -254,7 +280,7 @@ def run_smoke_test(
         status = -1
     finally:
         try:
-            pass  # shutil.rmtree(d)
+            shutil.rmtree(final_path)
         except FileNotFoundError:
             pass
 
@@ -298,23 +324,10 @@ def cli_in_container(
         ctx.exit(status)
 
 
-def print_plugins(
-    ctx: click.Context,
-    param: click.Parameter,
-    value: bool,
-):
-    if not value:
-        return
-    print(f"openlane -> {__version__}")
-    for name, module in discovered_plugins.items():
-        print(f"{name} -> {module.__version__}")
-    ctx.exit(0)
-
-
 formatter_settings = HelpFormatter.settings(
     theme=HelpTheme(
         invoked_command=Style(fg="bright_yellow"),
-        heading=Style(fg="bright_white", bold=True),
+        heading=Style(fg="cyan", bold=True),
         constraint=Style(fg="magenta"),
         col1=Style(fg="bright_yellow"),
     )
@@ -327,68 +340,33 @@ o = partial(option, show_default=True)
     no_args_is_help=True,
     formatter_settings=formatter_settings,
 )
-@version_option(
-    __version__,
-    prog_name="OpenLane",
-    message=dedent(
-        """
-        %(prog)s v%(version)s
-
-        Copyright ©2020-2023 Efabless Corporation and other contributors.
-
-        Available under the Apache License, version 2. Included with the source code,
-        but you can also get a copy at https://www.apache.org/licenses/LICENSE-2.0
-
-        Included tools and utilities may be distributed under stricter licenses.
-        """
-    ).strip(),
-)
 @option_group(
-    "Docker options",
+    "Containerization options",
     o(
         "--docker-mount",
+        "-m",
         "docker_mounts",
         multiple=True,
-        is_eager=True,
+        is_eager=True,  # docker mount, dockerized should be processed before anything else
         default=[],
-        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. **Must be passed before --docker.**",
+        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. Must be passed before --dockerized.",
     ),
     o(
-        "--dockerized/--native",
+        "--dockerized",
         default=False,
-        is_eager=True,
-        help="Run command primarily using a Docker container. Some caveats apply.",
+        is_flag=True,
+        is_eager=True,  # docker mount, dockerized should be processed before anything else
+        help="Re-invoke using a Docker container. Some caveats apply. Must precede all options except --docker-mount.",
         callback=cli_in_container,
     ),
     constraint=If(~IsSet("dockerized"), accept_none),
-)
-@o(
-    "--bare-version",
-    is_flag=True,
-    is_eager=True,
-    expose_value=False,
-    callback=print_bare_version,
-    hidden=True,
-)
-@o(
-    "--list-plugins",
-    is_flag=True,
-    is_eager=True,
-    expose_value=False,
-    callback=print_plugins,
-    help="List all detected plugins for OpenLane.",
-)
-@o(
-    "--smoke-test",
-    is_flag=True,
-    help="Runs a basic OpenLane smoke test.",
-    callback=run_smoke_test,
 )
 @option_group(
     "PDK options",
     o(
         "--volare-pdk/--manual-pdk",
         "use_volare",
+        is_eager=True,
         default=True,
         help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
     ),
@@ -417,6 +395,30 @@ o = partial(option, show_default=True)
         default=os.environ.pop("STD_CELL_LIBRARY", None),
         help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
     ),
+)
+@option_group(
+    "Subcommands",
+    o(
+        "--version",
+        is_flag=True,
+        is_eager=True,
+        help="Prints version information and exits",
+        callback=print_version,
+    ),
+    o(
+        "--bare-version",
+        is_flag=True,
+        is_eager=True,
+        callback=print_bare_version,
+        hidden=True,
+    ),
+    o(
+        "--smoke-test",
+        is_flag=True,  # Cannot be eager- PDK options need to be processed
+        help="Runs a basic OpenLane smoke test.",
+        callback=run_smoke_test,
+    ),
+    constraint=mutually_exclusive,
 )
 @option_group(
     "Run options",
@@ -510,6 +512,13 @@ o = partial(option, show_default=True)
     )
     + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
 )
+@o(
+    "-j",
+    "--jobs",
+    type=int,
+    default=os.cpu_count(),
+    help="The maximum number of threads or processes that can be used by OpenLane.",
+)
 @click.argument(
     "config_files",
     nargs=-1,
@@ -520,18 +529,25 @@ o = partial(option, show_default=True)
     ),
 )
 @click.pass_context
-def cli(ctx: click.Context, **kwargs):
-    run_kwargs = kwargs
+def cli(ctx: click.Context, jobs: int, **kwargs):
+    common.set_tpe(ThreadPoolExecutor(max_workers=jobs))
     args = kwargs["config_files"]
+    run_kwargs = kwargs.copy()
+
     if len(args) == 1 and args[0].endswith(".marshalled"):
         run_kwargs = marshal.load(open(args[0], "rb"))
         run_kwargs.update(**{k: kwargs[k] for k in ["pdk_root", "pdk", "scl"]})
-    if "smoke_test" in run_kwargs:
-        del run_kwargs["smoke_test"]
-    if "docker_mounts" in run_kwargs:
-        del run_kwargs["docker_mounts"]
-    if "dockerized" in run_kwargs:
-        del run_kwargs["dockerized"]
+
+    for subcommand_flag in [
+        "docker_mounts",
+        "dockerized",
+        "version",
+        "bare_version",
+        "smoke_test",
+    ]:
+        if subcommand_flag in run_kwargs:
+            del run_kwargs[subcommand_flag]
+
     ctx.exit(run(ctx, **run_kwargs))
 
 

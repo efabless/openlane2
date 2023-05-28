@@ -18,7 +18,7 @@ import glob
 import datetime
 import textwrap
 from abc import abstractmethod
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future
 from typing import (
     List,
     Sequence,
@@ -49,7 +49,7 @@ from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
 from ..logging import console, info, verbose, warn
-from ..common import mkdirp, internal, final, slugify
+from ..common import get_tpe, mkdirp, internal, final, slugify
 
 
 class FlowException(RuntimeError):
@@ -144,8 +144,6 @@ class Flow(Step._FlowType):
         config_override_strings: Optional[Sequence[str]] = None,
     ):
         self.name = name or self.__class__.__name__
-
-        self.tpe: ThreadPoolExecutor = ThreadPoolExecutor()
 
         self.Steps = self.Steps.copy()  # Break global reference
         self._reset_private_state_variables()
@@ -377,7 +375,7 @@ class Flow(Step._FlowType):
 
         kwargs["toolbox"] = self.toolbox
 
-        return self.tpe.submit(step.start, *args, **kwargs)
+        return get_tpe().submit(step.start, *args, **kwargs)
 
     @internal
     def set_max_stage_count(self, count: int):

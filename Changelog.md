@@ -1,3 +1,12 @@
+# 2.0.0-a36
+
+* Added a commandline option `-j/--jobs` to add a maximum cap on subprocesses.
+* Added a global ThreadPoolExecutor object for all subprocesses to `common`.
+  * Accessible for external scripts and plugins via `openlane.get_tpe` and `openlane.set_tpe`
+* Folded `--list-plugins` into `--version`
+* Renamed `ROUTING_CORES` to `DRT_THREADS`
+* Removed `RCX_CORES`, step now uses global ThreadPoolExecutor
+
 # 2.0.0-a35
 
 * Revert magic to [`a33d7b7`](https://github.com/RTimothyEdwards/magic/commit/a33d7b78b54d8456769d08236f91f9be31784267),

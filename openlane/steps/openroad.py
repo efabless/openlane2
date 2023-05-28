@@ -21,8 +21,8 @@ from glob import glob
 from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
+from concurrent.futures import Future
 from typing import List, Dict, Tuple, Optional
-from concurrent.futures import Future, ThreadPoolExecutor
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
@@ -38,7 +38,7 @@ from .common_variables import (
 from ..config import Variable
 from ..logging import err, info, warn
 from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum
+from ..common import get_script_dir, StringEnum, get_tpe
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -335,7 +335,6 @@ class STAPostPNR(STAPrePNR):
                     f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
             spef = spefs[0]
-            print(corner, spef)
             env["CURRENT_SPEF_BY_CORNER"] += f" {corner} {spef}"
 
             tc_key = f"TIMING_CORNER_{i}"
@@ -898,9 +897,10 @@ class DetailedRouting(OpenROADStep):
             default=True,
         ),
         Variable(
-            "ROUTING_CORES",
+            "DRT_THREADS",
             Optional[int],
             "Specifies the number of threads to be used in OpenROAD Detailed Routing. If unset, this will be equal to your machine's thread count.",
+            deprecated_names=["ROUTING_CORES"],
         ),
         Variable(
             "DRT_MIN_LAYER",
@@ -925,8 +925,8 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config.get("ROUTING_CORES") is None:
-            env["ROUTING_CORES"] = str(os.cpu_count() or 1)
+        if self.config.get("DRT_THREADS") is None:
+            env["DRT_THREADS"] = str(os.cpu_count() or 1)
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -1010,11 +1010,6 @@ class RCX(OpenROADStep):
             Optional[Path],
             "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
         ),
-        Variable(
-            "RCX_CORES",
-            Optional[int],
-            "Specifies the number of processes to be used during Multi-Corner RCX. If unset or zero, this will be equal to your machine's thread count.",
-        ),
     ]
 
     inputs = [DesignFormat.DEF]
@@ -1024,10 +1019,6 @@ class RCX(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "rcx.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        process_count = os.cpu_count()
-        if cores := self.config.get("RCX_CORES"):
-            process_count = cores
-
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
@@ -1085,12 +1076,11 @@ class RCX(OpenROADStep):
             return out
 
         futures: Dict[str, Future[str]] = {}
-        with ThreadPoolExecutor(process_count) as tpe:
-            for corner in self.config["RCX_RULESETS"]:
-                futures[corner] = tpe.submit(
-                    run_corner,
-                    corner,
-                )
+        for corner in self.config["RCX_RULESETS"]:
+            futures[corner] = get_tpe().submit(
+                run_corner,
+                corner,
+            )
 
         views_updates: ViewsUpdate = {}
         metrics_updates: MetricsUpdate = {}

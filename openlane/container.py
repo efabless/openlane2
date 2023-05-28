@@ -21,7 +21,7 @@ import requests
 import subprocess
 from typing import List, Sequence, Optional, Union, Tuple
 
-from .logging import err, info, print, warn
+from .logging import err, info, warn
 from .env_info import OSInfo
 
 CONTAINER_ENGINE = os.getenv("OPENLANE_CONTAINER_ENGINE", "docker")
@@ -100,7 +100,6 @@ def remote_manifest_exists(image: str) -> bool:
         url = f"https://registry.hub.docker.com/v2/repositories/{repo}/tags/{tag}"
     elif registry == "ghcr.io":
         url = f"https://ghcr.io/v2/{repo}/manifests/{tag}"
-        print(url)
     else:
         err(f"Unknown registry '{registry}'.")
         return False

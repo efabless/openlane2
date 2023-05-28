@@ -463,8 +463,12 @@ class TclStep(Step):
                 env=env,
                 **kwargs,
             )
-        except subprocess.CalledProcessError:
-            if self.reproducibles_allowed:
+        except subprocess.CalledProcessError as e:
+            if (
+                e.returncode is not None
+                and e.returncode > 0
+                and self.reproducibles_allowed
+            ):
                 reproducible_folder = create_reproducible(
                     self.config["DESIGN_DIR"],
                     self.step_dir,
