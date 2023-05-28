@@ -7,12 +7,6 @@ runs:
       shell: bash
       run: echo "REPO_URL=https://github.com/${{ github.repository }}.git" >> $GITHUB_ENV
 
-    - name: Export PDK ROOT
-      shell: bash
-      run: |
-        mkdir -p /usr/local/pdk
-        echo "PDK_ROOT=/usr/local/pdk" >> $GITHUB_ENV
-
     - name: Export Branch Name
       shell: bash
       run: echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
