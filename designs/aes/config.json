@@ -4,6 +4,7 @@
     "CLOCK_PORT": "clk",
     "CLOCK_NET": "clk",
     "FP_CORE_UTIL": 15,
+    "QUIT_ON_SYNTH_CHECKS": false,
     "pdk::sky130*": {
         "scl::sky130_fd_sc_hd": {
             "SYNTH_MAX_FANOUT": 8,

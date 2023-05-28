@@ -8,6 +8,24 @@ on:
   pull_request:
 
 jobs:
+  prepare-test-matrices:
+    name: Prepare Test Matrices
+    runs-on: ubuntu-22.04
+    outputs:
+      design_matrix: ${{ steps.set-matrix.outputs.design_matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Python Dependencies
+        run: |
+          python3 -m pip install click pyyaml
+      - name: Determine If Running Extended Test Set
+        run: |
+          export EVENT_NAME=${{ github.event_name }};
+          python3 ./.github/scripts/determine_test_set.py
+      - name: Set Matrix
+        id: set-matrix
+        run: |
+          echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
   lint:
     name: Lint
     runs-on: ubuntu-22.04
@@ -26,33 +44,26 @@ jobs:
         run: make venv
       - name: Lint
         run: make lint
-  build-nix:
+  build-linux-amd64:
     needs: lint
-    strategy:
-      matrix:
-        os: ["ubuntu-22.04", "macos-12"]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    name: Build (Nix on ${{ matrix.os }})
+    runs-on: ubuntu-22.04
+    name: Build (Nix on Linux/amd64)
     steps:
-      - name: Check out repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Setup Environment
-        uses: ./.github/actions/setup_env
-      - name: Setup Nix
+      - name: Build with Nix
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
-          cachix_token: ${{ secrets.CACHIX_TOKEN }}
-      - name: Build
-        run: |
-          nix-build
-      - name: Push
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          nix-build | cachix push openlane
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+  build-mac-amd64:
+    needs: lint
+    runs-on: macos-12
+    name: Build (Nix on macOS/amd64)
+    steps:
+      - name: Build with Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
   build-py:
     runs-on: ubuntu-22.04
     needs: lint
@@ -76,9 +87,38 @@ jobs:
         run: |
           make venv
           ./venv/bin/python3 -m openlane --version
+  test:
+    runs-on: ubuntu-22.04
+    needs: [build-linux-amd64, prepare-test-matrices]
+    name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+      - name: Run Test
+        run: >-
+          nix-shell --run "
+            python3 -m openlane
+            --run-tag CI
+            --pdk ${{ matrix.design.pdk }}
+            --scl ${{matrix.design.scl}} ${{ matrix.design.config }}
+          "
+      - name: Upload Run Folder
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
+          path: ${{ matrix.run_folder }}
   publish:
     runs-on: ubuntu-22.04
-    needs: [build-py, build-nix]
+    needs: [test, build-mac-amd64, build-py]
     name: Test (and Publish, if applicable)
     steps:
       - name: Check out repo
@@ -91,7 +131,6 @@ jobs:
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
-          cachix_token: ${{ secrets.CACHIX_TOKEN }}
       - name: Build
         run: |
           nix-build

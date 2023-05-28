@@ -1,0 +1,34 @@
+name: Build/Cache Nix
+description: Builds `default.nix` for a platform, caching the results (if applicable)
+inputs:
+  cachix_cache:
+    description: "The name of the Cachix cache to download to and/or upload from"
+    required: true
+    default: "openlane"
+  cachix_token:
+    description: "An authentication token for Cachix"
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Check out repo
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Setup Environment
+      uses: ./.github/actions/setup_env
+    - name: Setup Nix
+      uses: ./.github/actions/setup_nix
+      with:
+        cachix_cache: ${{ inputs.cachix_cache }}
+        cachix_token: "${{ inputs.cachix_token }}"
+    - name: Build
+      shell: bash
+      run: |
+        nix-build
+    - name: Push
+      shell: bash
+      if: ${{ inputs.cachix_token != "" }}
+      run: |
+        nix-build | cachix push openlane
