@@ -14,14 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
-    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1 * $::env(CLOCK_PERIOD)}]
-} else {
-    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
-}
-set max_slew [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1e-9}]; # must convert to seconds
-set max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # must convert to farad
-
 # set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
@@ -31,9 +23,12 @@ estimate_parasitics -placement
 repair_clock_inverters
 
 puts "\[INFO\] Configuring cts characterization…"
-configure_cts_characterization\
-    -max_slew $max_slew\
-    -max_cap $max_cap
+set cts_characterization_args [list]
+lappend -max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # pF -> F
+if { [info exists ::env(MAX_FANOUT_CONSTRAINT)] } {
+    lappend -max_slew [expr {$::env(MAX_FANOUT_CONSTRAINT) * 1e-9}]; # ns -> S
+}
+configure_cts_characterization {*}$cts_characterization_args
 
 puts "\[INFO]: Performing clock tree synthesis…"
 puts "\[INFO]: Looking for the following net(s): $::env(CLOCK_NET)"

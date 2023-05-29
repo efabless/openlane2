@@ -36,12 +36,11 @@ foreach lib $dfflib {
 read_deps
 
 set max_FO $::env(MAX_FANOUT_CONSTRAINT)
-if {![info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
-    set ::env(MAX_TRANSITION_CONSTRAINT) [expr {0.1 * $::env(CLOCK_PERIOD)}]
+set max_TR 0
+if { [info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {
+    set max_TR [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]; # ns -> ps
 }
-# conversions from µs to ns
-set max_TR [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1000}]
-set clock_period [expr {$::env(CLOCK_PERIOD)*1000}]
+set clock_period [expr {$::env(CLOCK_PERIOD) * 1000}]; # ns -> ps
 
 # Mapping parameters
 set A_factor  0.00
@@ -93,7 +92,11 @@ set abc_retime_dly    	"retime,-D,{D},-M,6"
 set abc_map_new_area  	"amap,-m,-Q,0.1,-F,20,-A,20,-C,5000"
 
 if { $::env(SYNTH_BUFFERING) == 1 } {
-    set abc_fine_tune		"buffer,-N,${max_FO},-S,${max_TR};upsize,{D};dnsize,{D}"
+    set max_tr_arg ""
+    if { $max_TR != 0 } {
+        set max_tr_arg ",-S,${max_TR}"
+    }
+    set abc_fine_tune		"buffer,-N,${max_FO}${max_tr_arg};upsize,{D};dnsize,{D}"
 } elseif {$::env(SYNTH_SIZING)} {
     set abc_fine_tune       "upsize,{D};dnsize,{D}"
 } else {

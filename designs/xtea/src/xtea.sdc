@@ -6,6 +6,9 @@ puts "\[INFO\] Setting output delay to: $output_delay_value"
 puts "\[INFO\] Setting input delay to: $input_delay_value"
 
 set_max_fanout $::env(SYNTH_MAX_FANOUT) [current_design]
+if { [info exists ::env(SYNTH_MAX_TRAN)] } {
+    set_max_transition $::env(SYNTH_MAX_TRAN) [current_design]
+}
 
 set clk_indx [lsearch [all_inputs] [get_port $::env(CLOCK_PORT)]]
 set all_inputs_wo_clk [lreplace [all_inputs] $clk_indx $clk_indx]
