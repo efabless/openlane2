@@ -68,7 +68,7 @@ def main(scls, use_json, test_sets):
             )
 
     if use_json:
-        print(json.dumps({"design": designs}, indent=2), end="")
+        print(json.dumps({"design": designs}), end="")
     else:
         print(" ".join([design["name"] for design in designs]), end="")
 
