@@ -199,8 +199,8 @@ if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
         lappend verilog_include_args "-I$dir"
     }
 }
-for { set i 0 } { $i < [llength $::env(VERILOG_FILES)] } { incr i } {
-    read_verilog -sv {*}$verilog_include_args [lindex $::env(VERILOG_FILES) $i]
+foreach file $::env(VERILOG_FILES) {
+    read_verilog -sv {*}$verilog_include_args $file
 }
 
 if { [info exists ::env(SYNTH_PARAMETERS) ] } {

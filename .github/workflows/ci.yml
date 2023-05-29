@@ -111,7 +111,8 @@ jobs:
             python3 -m openlane\
             --run-tag CI\
             --pdk ${{ matrix.design.pdk }}\
-            --scl ${{matrix.design.scl}} ${{ matrix.design.config }}\
+            --scl ${{matrix.design.scl}}\
+            ${{ matrix.design.config }}\
           "
       - name: Upload Run Folder
         if: ${{ always() }}
