@@ -14,11 +14,11 @@
 import os
 import re
 from decimal import Decimal
-from typing import Any, List, Optional, Dict, TypeVar
+from typing import Any, List, Mapping, Optional, Dict
 
 from .variable import Variable
+
 from ..state import Path
-from ..common import GenericDict
 
 # Note that values in this file do not take defaults.
 
@@ -480,11 +480,9 @@ scl_variables = [
     ),
 ]
 
-T = TypeVar("T", bound=GenericDict[str, Any])
 
-
-def migrate_old_config(config: T) -> T:
-    new = config.copy()
+def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
+    new = dict(config)
 
     # 1. Migrate SYNTH_DRIVING_CELL
     del new["SYNTH_DRIVING_CELL"]

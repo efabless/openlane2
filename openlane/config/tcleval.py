@@ -14,19 +14,15 @@
 import os
 import tkinter
 import tempfile
-from typing import TypeVar, Any
+from typing import Dict, Mapping, Any
 from decimal import Decimal, InvalidOperation
 
-from ..common import GenericDict
 
-T = TypeVar("T", bound=GenericDict[str, Any])
-
-
-def env_from_tcl(env_in: T, tcl_in: str) -> T:
+def env_from_tcl(env_in: Mapping[str, Any], tcl_in: str) -> Dict[str, Any]:
     interpreter = tkinter.Tcl()
 
     initial_env = os.environ.copy()
-    env_out = env_in.copy()
+    env_out = dict(env_in)
 
     with tempfile.NamedTemporaryFile("r+") as f:
         env_str = ""

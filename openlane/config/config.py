@@ -455,13 +455,13 @@ class Config(GenericImmutableDict[str, Any]):
             }
         )
 
-        tcl_vars_in = config_in.copy()
+        tcl_vars_in = config_in.to_raw_dict()
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
 
         process_info = resolve(
-            tcl_config.to_raw_dict(),
+            tcl_config,
             only_extract_process_info=True,
             design_dir=design_dir,
         )
@@ -486,7 +486,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         design_config = env_from_tcl(tcl_vars_in, config)
 
-        config_in.update(design_config)
+        config_in = Config(config_in, overrides=design_config)
         for string in config_override_strings:
             key, value = string.split("=", 1)
             config_in[key] = value
