@@ -11,8 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+#  Parts of this file adapted from https://github.com/YosysHQ/yosys/blob/master/techlibs/common/synth.cc
+#
+#  Copyright (C) 2012  Claire Xenia Wolf <claire@yosyshq.com>
+#
+#  Permission to use, copy, modify, and/or distribute this software for any
+#  purpose with or without fee is hereby granted, provided that the above
+#  copyright notice and this permission notice appear in all copies.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+#  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+#  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+#  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+#  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+#  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+#  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
 yosys -import
+
 source $::env(SCRIPTS_DIR)/yosys/common.tcl
+
+set report_dir $::env(STEP_DIR)/reports
+file mkdir $report_dir
 
 # inputs expected as env vars
 set vtop $::env(DESIGN_NAME)
@@ -216,11 +237,47 @@ if { $adder_type == "RCA"} {
     }
 }
 
-if { $::env(SYNTH_NO_FLAT) } {
-    synth -top $vtop
-} else {
-    synth -top $vtop -flatten
+# <synth> split to run check -assert in the middle
+hierarchy -check -auto-top
+proc_clean
+proc_rmdead
+proc_prune
+proc_init
+proc_arst
+proc_rom
+proc_mux
+proc_dlatch
+proc_dff
+proc_memwr
+proc_clean
+opt_expr
+if { $::env(SYNTH_NO_FLAT) != 1 } {
+    flatten
 }
+opt_expr
+opt_clean
+tee -o "$report_dir/pre_synth_chk.rpt" check
+opt -nodffe -nosdff
+fsm
+opt
+wreduce
+peepopt
+opt_clean
+alumacc
+share
+opt
+memory -nomap
+opt_clean
+opt -fast -full
+memory_map
+opt -full
+techmap
+opt -fast
+abc -fast
+opt -fast
+hierarchy -check
+stat
+check
 
 if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
     log "\[INFO] Applying extra mappings from '$::env(SYNTH_EXTRA_MAPPING_FILE)'…"
@@ -244,9 +301,6 @@ if { $adder_type == "FA" } {
 
 opt
 opt_clean -purge
-
-set report_dir $::env(STEP_DIR)/reports
-file mkdir $report_dir
 
 tee -o "$report_dir/pre_techmap.json" stat -json
 

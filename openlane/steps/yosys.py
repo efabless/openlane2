@@ -331,7 +331,7 @@ class Synthesis(YosysStep):
         metric_updates["design__instance_unmapped__count"] = sum(unmapped_cells)
 
         metric_updates["synthesis__check_error__count"] = parse_yosys_check(
-            open(os.path.join(self.step_dir, "reports", "chk.rpt")),
+            open(os.path.join(self.step_dir, "reports", "pre_synth_chk.rpt")),
             self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
         )
 

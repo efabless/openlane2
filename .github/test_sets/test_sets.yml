@@ -6,7 +6,8 @@
     - APU
     - s44
     - zipdiv
-    - xtea
+    - name: xtea
+      config_file: config.tcl
     - usb
     - usb_cdc_core
     - manual_macro_placement_test

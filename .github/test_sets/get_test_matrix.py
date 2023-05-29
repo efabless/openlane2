@@ -51,14 +51,15 @@ def main(scls, use_json, test_sets):
         pdk, scl = test_set["scl"].split("/")
         for design in test_set["designs"]:
             design_name = design
-            config_file = os.path.join(ol_dir, "designs", design_name, "config.json")
-            run_folder = os.path.join(ol_dir, "designs", design_name, "runs", "CI")
+            config_filename = "config.json"
             if not isinstance(design, str):
                 design_name = design["name"]
-                config_file = design.get("config") or config_file
+                config_filename = design.get("config_file") or config_filename
+            config_file = os.path.join(ol_dir, "designs", design_name, config_filename)
+            run_folder = os.path.join(ol_dir, "designs", design_name, "runs", "CI")
             designs.append(
                 {
-                    "name": design,
+                    "name": design_name,
                     "config": config_file,
                     "run_folder": run_folder,
                     "pdk": pdk,
@@ -67,7 +68,7 @@ def main(scls, use_json, test_sets):
             )
 
     if use_json:
-        print(json.dumps({"design": designs}), end="")
+        print(json.dumps({"design": designs}, indent=2), end="")
     else:
         print(" ".join([design["name"] for design in designs]), end="")
 
