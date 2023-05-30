@@ -130,7 +130,7 @@ jobs:
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
-          docker load $IMAGE_PATH
+          cat $IMAGE_PATH | docker load
       - name: Smoke-Test Docker Image
         run: |
           docker run --rm\
