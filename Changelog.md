@@ -1,3 +1,18 @@
+# 2.0.0-a38
+
+* Added full test-suite added to CI
+  * Like OpenLane 1, a "fastest test set" runs with every PR and an "extended test set" runs daily
+* Added Nix building, intra-CI caching and installation as composite actions
+  * Nix derivation now cached intra-CI even if running without access to secrets
+  * Fixed issue where channel was mis-named
+  * Smoke test on all platforms using `nix-shell`
+* Docker image re-implemented: One layer with proper settings for PATH and
+  PYTHONPATH
+  * Docker image smoke-tested independently of Nix
+* Fixed bug with Tcl configurations
+* Fixed issue with `Yosys.Synthesis` producing false-positive checks
+* Updated various design configs
+
 # 2.0.0-a37
 
 * Added `MAX_TRANSITION_CONSTRAINT` to `base.sdc` (if set)

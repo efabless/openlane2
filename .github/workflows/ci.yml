@@ -2,10 +2,15 @@ name: CI
 
 # Events that trigger workflow
 on:
+  # Runs on all pushes to branches
   push:
-    branches:
-      - "*"
+  # Runs on all PRs
   pull_request:
+  # Runs every day at midnight UTC
+  schedule:
+    - cron: "0 0 * * *"
+  # Manual Dispatch
+  workflow_dispatch:
 
 jobs:
   prepare-test-matrices:
@@ -167,8 +172,7 @@ jobs:
           path: ${{ matrix.design.run_folder }}
   publish:
     runs-on: ubuntu-22.04
-    needs:
-      [test, build-linux-amd64, build-mac-amd64, build-docker-amd64, build-py]
+    needs: [build-linux-amd64, build-mac-amd64, build-docker-amd64, build-py]
     name: Publish (If Applicable)
     steps:
       - name: Check out repo
