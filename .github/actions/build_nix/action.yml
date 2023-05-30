@@ -30,6 +30,7 @@ runs:
     - name: Test
       shell: ${{ inputs.shell }}
       run: |
+        nix-env -iA bash
         nix-shell --run "openlane --smoke-test"
     - name: Push
       shell: ${{ inputs.shell }}
