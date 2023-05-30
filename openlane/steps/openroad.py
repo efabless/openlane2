@@ -688,7 +688,7 @@ class CTS(OpenROADStep):
     """
 
     id = "OpenROAD.CTS"
-    long_name = "Clock Tree Synthesis"
+    name = "Clock Tree Synthesis"
     flow_control_variable = "RUN_CTS"
 
     config_vars = (

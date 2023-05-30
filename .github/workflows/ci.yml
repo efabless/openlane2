@@ -2,12 +2,36 @@ name: CI
 
 # Events that trigger workflow
 on:
+  # Runs on all pushes to branches
   push:
-    branches:
-      - "*"
+  # Runs on all PRs
   pull_request:
+  # Runs every day at midnight UTC
+  schedule:
+    - cron: "0 0 * * *"
+  # Manual Dispatch
+  workflow_dispatch:
 
 jobs:
+  prepare-test-matrices:
+    name: Prepare Test Matrices
+    runs-on: ubuntu-22.04
+    outputs:
+      design_matrix: ${{ steps.set-matrix.outputs.design_matrix }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Python Dependencies
+        run: |
+          python3 -m pip install click pyyaml
+      - name: Determine If Running Extended Test Set
+        run: |
+          export EVENT_NAME=${{ github.event_name }};
+          python3 ./.github/scripts/determine_test_set.py
+      - name: Set Matrix
+        id: set-matrix
+        run: |
+          python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
+          echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
   lint:
     name: Lint
     runs-on: ubuntu-22.04
@@ -26,33 +50,33 @@ jobs:
         run: make venv
       - name: Lint
         run: make lint
-  build-nix:
+  build-linux-amd64:
     needs: lint
-    strategy:
-      matrix:
-        os: ["ubuntu-22.04", "macos-12"]
-      fail-fast: false
-    runs-on: ${{ matrix.os }}
-    name: Build (Nix on ${{ matrix.os }})
+    runs-on: ubuntu-22.04
+    name: Build (Nix on Linux/amd64)
     steps:
-      - name: Check out repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Setup Environment
-        uses: ./.github/actions/setup_env
-      - name: Setup Nix
-        uses: ./.github/actions/setup_nix
+      - uses: actions/checkout@v3
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
-          cachix_token: ${{ secrets.CACHIX_TOKEN }}
-      - name: Build
-        run: |
-          nix-build
-      - name: Push
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          nix-build | cachix push openlane
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+      - name: Derivation to Cache
+        uses: ./.github/actions/derivation_to_cache
+        with:
+          key: derivation-amd64
+  build-mac-amd64:
+    needs: lint
+    runs-on: macos-12
+    name: Build (Nix on macOS/amd64)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          shell: "zsh {0}"
   build-py:
     runs-on: ubuntu-22.04
     needs: lint
@@ -76,35 +100,85 @@ jobs:
         run: |
           make venv
           ./venv/bin/python3 -m openlane --version
-  publish:
+  build-docker-amd64:
     runs-on: ubuntu-22.04
-    needs: [build-py, build-nix]
-    name: Test (and Publish, if applicable)
+    needs: [build-linux-amd64]
+    name: Build Docker Image (amd64)
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Setup Environment
         uses: ./.github/actions/setup_env
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
-          cachix_token: ${{ secrets.CACHIX_TOKEN }}
-      - name: Build
+      - name: Derivation from Cache
+        uses: ./.github/actions/derivation_from_cache
+        with:
+          key: derivation-amd64
+          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+      - name: Build Docker Image
         run: |
-          nix-build
-      - name: Create Image (Docker)
-        run: |
-          $(nix-build --argstr name openlane --argstr tag-override intermediate docker.nix) | docker load
-      - name: Smoke Test (Docker)
+          IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
+          echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
+          cat $IMAGE_PATH | docker load
+      - name: Smoke-Test Docker Image
         run: |
           docker run --rm\
             -v /tmp:/tmp\
             -e TMPDIR=/tmp\
-            openlane:intermediate\
-            python3 -m openlane --smoke-test
+            openlane:tmp-amd64\
+            openlane --smoke-test
+      - name: Upload Docker Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image-amd64
+          path: ${{ env.IMAGE_PATH }}
+  test:
+    runs-on: ubuntu-22.04
+    needs: [build-linux-amd64, prepare-test-matrices]
+    name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+      - name: Derivation from Cache
+        uses: ./.github/actions/derivation_from_cache
+        with:
+          key: derivation-amd64
+          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+      - name: Run Test
+        run: |
+          nix-shell --run "\
+            python3 -m openlane\
+            --run-tag CI\
+            --pdk ${{ matrix.design.pdk }}\
+            --scl ${{matrix.design.scl}}\
+            ${{ matrix.design.config }}\
+          "
+      - name: Upload Run Folder
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
+          path: ${{ matrix.design.run_folder }}
+  publish:
+    runs-on: ubuntu-22.04
+    needs: [build-linux-amd64, build-mac-amd64, build-docker-amd64, build-py]
+    name: Publish (If Applicable)
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Auth (Docker)
         if: ${{ env.PUBLISH == '1' }}
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -112,10 +186,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
+      - name: Download Image (Docker)
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image-amd64
+          path: /tmp/docker
+      - name: Load Image (Docker)
+        run: |
+          cat /tmp/docker/* | docker load
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          docker tag openlane:intermediate ghcr.io/${{ github.repository }}:$NEW_TAG
+          docker tag openlane:tmp-amd64 ghcr.io/${{ github.repository }}:$NEW_TAG
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG
       - name: Set Up Python
         if: ${{ env.PUBLISH == '1' }}

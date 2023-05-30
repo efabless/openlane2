@@ -20,31 +20,47 @@
 
 with pkgs; let
     olenv = python3.withPackages(ps: with ps; [ openlane-app ]);
-in dockerTools.streamLayeredImage rec {
+in dockerTools.buildImage rec {
     inherit name;
     tag = if tag-override == null then "${openlane-app.version}" else tag-override;
 
-    contents = [
-        # Base OS
-        ## GNU
-        coreutils-full
-        bashInteractive
-        gnugrep
-        gnused
-        which
+    copyToRoot = pkgs.buildEnv {
+        name = "image-root";
+        paths = [
+            # Base OS
+            ## GNU
+            coreutils-full
+            findutils
+            bashInteractive
+            gnugrep
+            gnused
+            which
 
-        ## Networking
-        cacert
-        iana-etc
+            ## Networking
+            cacert
+            iana-etc
 
-        # OpenLane
-        olenv
+            # OpenLane
+            olenv
 
-        # Conveniences
-        git
-        neovim
-        zsh
-    ] ++ openlane-app.propagatedBuildInputs;
+            # Conveniences
+            git
+            neovim
+            zsh
+            silver-searcher
+        ];
+
+        postBuild = ''
+        mkdir -p $out/etc
+        cat <<HEREDOC > $out/etc/zshrc
+        autoload -U compinit && compinit
+        autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
+        autoload -U colors && colors
+
+        export PS1=$'%{\033[31m%}OpenLane Container (${openlane-app.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
+        HEREDOC
+        '';
+    };
 
     created = "now";
     config = {
@@ -54,17 +70,8 @@ in dockerTools.streamLayeredImage rec {
             "LC_ALL=C.UTF-8"
             "LC_CTYPE=C.UTF-8"
             "EDITOR=nvim"
+            "PYTHONPATH=${openlane-app.computed_PYTHONPATH}"
+            "PATH=${olenv}/bin:${openlane-app.computed_PATH}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         ];
     };
-
-    extraCommands = ''
-    mkdir -p ./etc
-    cat <<HEREDOC > ./etc/zshrc
-    autoload -U compinit && compinit
-    autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
-    autoload -U colors && colors
-
-    export PS1=$'%{\033[31m%}OpenLane Container (${openlane-app.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
-    HEREDOC
-    '';
 }

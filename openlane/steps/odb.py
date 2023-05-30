@@ -148,6 +148,11 @@ class ApplyDEFTemplate(OdbpyStep):
 
 
 class SetPowerConnections(OdbpyStep):
+    """
+    Uses JSON netlist and module information in Odb to add global power connections
+    for macros in a design.
+    """
+
     id = "Odb.SetPowerConnections"
     name = "Set Power Connections"
     inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]

@@ -114,5 +114,6 @@
     "RUN_TAP_ENDCAP_INSERTION": false,
     "RUN_CTS": false,
     "MAGIC_DEF_LABELS": false,
-    "QUIT_ON_SYNTH_CHECKS": false
+    "QUIT_ON_SYNTH_CHECKS": false,
+    "MAGIC_DRC_USE_GDS": true
 }

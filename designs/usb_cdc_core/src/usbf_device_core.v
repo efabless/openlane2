@@ -466,6 +466,9 @@ begin
     //-----------------------------------------
     STATE_RX_DATA :
     begin
+        // TODO: Exit data state handling?
+
+        // TODO: Sort out ISO data bit handling
         // Check for expected DATAx PID
         if ((token_pid_w == `PID_DATA0 &&  ep_data_bit_r && !ep_iso_r) ||
             (token_pid_w == `PID_DATA1 && !ep_data_bit_r && !ep_iso_r))
@@ -587,6 +590,7 @@ begin
                 else if (tx_ready_r)
                 begin
                     tx_valid_r = 1'b1;
+                    // TODO: Handle MDATA for ISOs
                     tx_pid_r   = ep_data_bit_r ? `PID_DATA1 : `PID_DATA0;
                 end
                 // No data to TX
@@ -657,6 +661,7 @@ begin
                 tx_valid_r = 1'b1;
                 tx_pid_r   = `PID_NAK;
             end
+            // TODO: USB 2.0, no more buffer space, return NYET
             else
             begin
                 tx_valid_r = 1'b1;
@@ -729,6 +734,7 @@ if (rst_i)
     addr_update_pending_q   <= 1'b0;
 else if (ep0_tx_zlp_w || usb_rst_w)
     addr_update_pending_q   <= 1'b0;
+// TODO: Use write strobe
 else if (reg_dev_addr_i != current_addr_q)
     addr_update_pending_q   <= 1'b1;
 
@@ -790,6 +796,7 @@ begin
                 ;
             // ISO endpoint, no response?
             else if (ep_iso_r)
+                ; // TODO: HS handling
             // STALL?
             else if (ep_stall_r)
                 ;

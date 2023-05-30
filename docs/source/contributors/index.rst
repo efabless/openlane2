@@ -6,4 +6,5 @@ Notes for Contributors
    
    code
    docs
+   ci
 
