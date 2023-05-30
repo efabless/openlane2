@@ -1,5 +1,5 @@
 name: Set up environment
-description: Sets up the repo and a number of environment variables that are useful for the CI.
+description: Sets up a number of environment variables that are useful for publishing
 runs:
   using: "composite"
   steps:
