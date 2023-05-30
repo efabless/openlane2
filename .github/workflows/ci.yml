@@ -56,6 +56,14 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+      - name: Export Derivation
+        run: |
+          nix --extra-experimental-features nix-command copy --to 'file:///tmp/ol_derivation?compression=zstd&parallel-compression=true' $(nix-build default.nix)
+      - name: Cache Derivation
+        uses: actions/cache@v3
+        with:
+          key: derivation-amd64
+          path: /tmp/ol_derivation
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
@@ -90,6 +98,48 @@ jobs:
         run: |
           make venv
           ./venv/bin/python3 -m openlane --version
+  build-docker-amd64:
+    runs-on: ubuntu-22.04
+    needs: [build-linux-amd64]
+    name: Build Docker Image (amd64)
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Setup Environment
+        uses: ./.github/actions/setup_env
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE }}
+      - name: Get Cached Derivation
+        id: get-cached-derivation
+        uses: actions/cache/restore@v3
+        with:
+          key: derivation-amd64
+          path: /tmp/ol_derivation
+      - name: Build Derivation (Again)
+        run: |
+          nix-build\
+            --verbose\
+            --option substituters 'file:///tmp/ol_derivation https://cache.nixos.org'\
+            --option require-sigs false
+      - name: Build Docker Image
+        run: |
+          IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
+          echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
+          docker load $IMAGE_PATH"
+      - name: Smoke-Test Docker Image
+        run: |
+          docker run --rm\
+            -v /tmp:/tmp\
+            -e TMPDIR=/tmp\
+            openlane:tmp-amd64\
+            openlane --smoke-test
+      - name: Upload Docker Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image-amd64
+          path: ${{ env.IMAGE_PATH }}
   test:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, prepare-test-matrices]
@@ -122,32 +172,14 @@ jobs:
           path: ${{ matrix.design.run_folder }}
   publish:
     runs-on: ubuntu-22.04
-    needs: [test, build-mac-amd64, build-py]
-    name: Test (and Publish, if applicable)
+    needs:
+      [test, build-linux-amd64, build-mac-amd64, build-docker-amd64, build-py]
+    name: Publish (If Applicable)
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Setup Environment
-        uses: ./.github/actions/setup_env
-      - name: Setup Nix
-        uses: ./.github/actions/setup_nix
-        with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
-      - name: Build
-        run: |
-          nix-build
-      - name: Create Image (Docker)
-        run: |
-          $(nix-build --argstr name openlane --argstr tag-override intermediate docker.nix) | docker load
-      - name: Smoke Test (Docker)
-        run: |
-          docker run --rm\
-            -v /tmp:/tmp\
-            -e TMPDIR=/tmp\
-            openlane:intermediate\
-            python3 -m openlane --smoke-test
       - name: Auth (Docker)
         if: ${{ env.PUBLISH == '1' }}
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -155,10 +187,20 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
+      - name: Download Image (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image-amd64
+          path: /tmp/docker
+      - name: Load Image (Docker)
+        if: ${{ env.PUBLISH == '1' }}
+        run: |
+          cat /tmp/docker/* | docker load
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          docker tag openlane:intermediate ghcr.io/${{ github.repository }}:$NEW_TAG
+          docker tag openlane:tmp-amd64 ghcr.io/${{ github.repository }}:$NEW_TAG
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG
       - name: Set Up Python
         if: ${{ env.PUBLISH == '1' }}

@@ -303,7 +303,7 @@ def cli_in_container(
     interactive = True
     final_argv = ["zsh"]
     if len(argv) != 0:
-        final_argv = ["python3", "-m", "openlane"] + argv
+        final_argv = ["openlane"] + argv
         interactive = False
 
     try:

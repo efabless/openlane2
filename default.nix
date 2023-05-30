@@ -77,4 +77,13 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     tkinter
     lxml
   ];
+
+  computed_PATH = lib.makeBinPath propagatedBuildInputs;
+  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" propagatedBuildInputs;
+
+  # Make PATH/PYTHONPATH available to OpenLane subprocesses
+  makeWrapperArgs = [
+    "--prefix PATH : ${computed_PATH}"
+    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"  
+  ];
 }

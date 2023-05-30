@@ -19,7 +19,7 @@ openlane:
 
 .PHONY: docker-image
 docker-image: venv
-	$(shell nix-build docker.nix) | docker load
+	cat $(shell nix-build docker.nix) | docker load
 
 .PHONY: docs
 docs: venv
