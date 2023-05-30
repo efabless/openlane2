@@ -16,8 +16,6 @@ runs:
       uses: cachix/install-nix-action@v20
       with:
         nix_path: nixpkgs=channel:22.11
-        extra_nix_config: |
-          trusted-users = 'root ${{ env.USER }}'
     - name: Setup Cachix
       uses: cachix/cachix-action@v12
       with:

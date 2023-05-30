@@ -58,7 +58,10 @@ jobs:
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
       - name: Export Derivation
         run: |
-          nix --extra-experimental-features nix-command copy --to 'file:///tmp/ol_derivation?compression=zstd&parallel-compression=true' $(nix-build default.nix)
+          nix --extra-experimental-features nix-command\
+            copy\
+            --to 'file:///tmp/ol_derivation?compression=zstd&parallel-compression=true'\
+            $(nix-build default.nix)
       - name: Cache Derivation
         uses: actions/cache@v3
         with:
@@ -119,10 +122,11 @@ jobs:
           path: /tmp/ol_derivation
       - name: Build Derivation (Again)
         run: |
-          nix-build\
+          sudo nix-build\
             --verbose\
             --option substituters 'file:///tmp/ol_derivation https://cache.nixos.org'\
             --option require-sigs false
+          sudo rm result
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
