@@ -56,10 +56,12 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          shell: bash
       - name: Derivation to Cache
         uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-amd64
+          shell: bash
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
@@ -71,6 +73,7 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          shell: "zsh {0}"
   build-py:
     runs-on: ubuntu-22.04
     needs: lint
@@ -106,10 +109,12 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
+          shell: bash
           cachix_cache: ${{ vars.CACHIX_CACHE }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivartion_from_cache
         with:
+          shell: bash
           key: derivation-amd64
           other-substitutors: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
       - name: Build Docker Image
@@ -143,12 +148,14 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
+          shell: bash
           cachix_cache: ${{ vars.CACHIX_CACHE }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivartion_from_cache
         with:
           key: derivation-amd64
           other-substitutors: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          shell: bash
       - name: Run Test
         run: |
           nix-shell --run "\

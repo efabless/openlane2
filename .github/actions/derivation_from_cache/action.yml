@@ -11,6 +11,10 @@ inputs:
   other-substituters:
     description: "Substitutors to use in addition to the cache and https://cache.nixos.org/"
     required: false
+  shell:
+    description: "Shell to use"
+    required: true
+    default: "bash"
 runs:
   using: "composite"
   steps:
@@ -21,7 +25,7 @@ runs:
         key: ${{ inputs.key }}
         path: /tmp/${{ inputs.key }}
     - name: Build Derivation (With Cache)
-      shell: zsh
+      shell: ${{ inputs.shell }}
       run: |
         nix-build ${{ inputs.file }}\
           --verbose\

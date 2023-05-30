@@ -8,11 +8,15 @@ inputs:
     description: "The file to use"
     required: true
     default: "default.nix"
+  shell:
+    description: "Shell to use"
+    required: true
+    default: "bash"
 runs:
   using: "composite"
   steps:
     - name: Export Derivation
-      shell: zsh
+      shell: ${{ inputs.shell }}
       run: |
         nix --extra-experimental-features nix-command\
           copy\

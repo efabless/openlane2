@@ -9,6 +9,10 @@ inputs:
     description: "An authentication token for Cachix"
     required: false
     default: ""
+  shell:
+    description: "Shell to use"
+    required: true
+    default: "bash"
 runs:
   using: "composite"
   steps:
@@ -20,15 +24,15 @@ runs:
         cachix_cache: ${{ inputs.cachix_cache }}
         cachix_token: "${{ inputs.cachix_token }}"
     - name: Build
-      shell: zsh
+      shell: ${{ inputs.shell }}
       run: |
         nix-build
     - name: Test
-      shell: zsh
+      shell: ${{ inputs.shell }}
       run: |
         nix-shell --run "openlane --smoke-test"
     - name: Push
-      shell: zsh
+      shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
       run: |
         nix-build | cachix push openlane
