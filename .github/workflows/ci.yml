@@ -124,13 +124,13 @@ jobs:
         run: |
           nix-build\
             --verbose\
-            --option substituters 'file:///tmp/ol_derivation https://cache.nixos.org'\
+            --option substituters 'file:///tmp/ol_derivation ${{ vars.CACHIX_CACHE }} https://cache.nixos.org'\
             --option require-sigs false
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
-          docker load $IMAGE_PATH"
+          docker load $IMAGE_PATH
       - name: Smoke-Test Docker Image
         run: |
           docker run --rm\
