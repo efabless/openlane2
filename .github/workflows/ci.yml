@@ -122,11 +122,10 @@ jobs:
           path: /tmp/ol_derivation
       - name: Build Derivation (Again)
         run: |
-          sudo nix-build\
+          nix-build\
             --verbose\
             --option substituters 'file:///tmp/ol_derivation https://cache.nixos.org'\
             --option require-sigs false
-          sudo rm result
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
