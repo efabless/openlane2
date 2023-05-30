@@ -56,17 +56,10 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-      - name: Export Derivation
-        run: |
-          nix --extra-experimental-features nix-command\
-            copy\
-            --to 'file:///tmp/ol_derivation?compression=zstd&parallel-compression=true'\
-            $(nix-build default.nix)
-      - name: Cache Derivation
-        uses: actions/cache@v3
+      - name: Derivation to Cache
+        uses: ./.github/actions/derivartion_to_cache
         with:
           key: derivation-amd64
-          path: /tmp/ol_derivation
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
@@ -114,18 +107,11 @@ jobs:
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
-      - name: Get Cached Derivation
-        id: get-cached-derivation
-        uses: actions/cache/restore@v3
+      - name: Derivation from Cache
+        uses: ./.github/actions/derivartion_from_cache
         with:
           key: derivation-amd64
-          path: /tmp/ol_derivation
-      - name: Build Derivation (Again)
-        run: |
-          nix-build\
-            --verbose\
-            --option substituters 'file:///tmp/ol_derivation ${{ vars.CACHIX_CACHE }} https://cache.nixos.org'\
-            --option require-sigs false
+          other-substitutors: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
@@ -158,6 +144,11 @@ jobs:
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
+      - name: Derivation from Cache
+        uses: ./.github/actions/derivartion_from_cache
+        with:
+          key: derivation-amd64
+          other-substitutors: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
       - name: Run Test
         run: |
           nix-shell --run "\
@@ -191,13 +182,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
       - name: Download Image (Docker)
-        if: ${{ env.PUBLISH == '1' }}
         uses: actions/download-artifact@v3
         with:
           name: docker-image-amd64
           path: /tmp/docker
       - name: Load Image (Docker)
-        if: ${{ env.PUBLISH == '1' }}
         run: |
           cat /tmp/docker/* | docker load
       - name: Push (Docker)
