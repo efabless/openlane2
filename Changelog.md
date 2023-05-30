@@ -1,3 +1,9 @@
+# 2.0.0-a37
+
+* Added `MAX_TRANSITION_CONSTRAINT` to `base.sdc` (if set)
+* Added `MAX_TRANSITION_CONSTRAINT` -> `SYNTH_MAX_TRAN` translation behavior in `base.sdc`
+* Removed attempt(s) to calculate a default value for `MAX_TRANSITION_CONSTRAINT` in `all.tcl`, `openroad/cts.tcl` and `yosys/synth.tcl`
+
 # 2.0.0-a36
 
 * Added a commandline option `-j/--jobs` to add a maximum cap on subprocesses.
