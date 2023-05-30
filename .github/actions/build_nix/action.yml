@@ -16,8 +16,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Environment
-      uses: ./.github/actions/setup_env
     - name: Setup Nix
       uses: ./.github/actions/setup_nix
       with:
