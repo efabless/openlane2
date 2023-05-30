@@ -57,7 +57,7 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
       - name: Derivation to Cache
-        uses: ./.github/actions/derivartion_to_cache
+        uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-amd64
   build-mac-amd64:

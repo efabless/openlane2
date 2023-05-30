@@ -21,7 +21,7 @@ runs:
         key: ${{ inputs.key }}
         path: /tmp/${{ inputs.key }}
     - name: Build Derivation (With Cache)
-      shell: bash
+      shell: zsh
       run: |
         nix-build ${{ inputs.file }}\
           --verbose\

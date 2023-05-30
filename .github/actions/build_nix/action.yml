@@ -20,15 +20,15 @@ runs:
         cachix_cache: ${{ inputs.cachix_cache }}
         cachix_token: "${{ inputs.cachix_token }}"
     - name: Build
-      shell: bash
+      shell: zsh
       run: |
         nix-build
     - name: Test
-      shell: bash
+      shell: zsh
       run: |
         nix-shell --run "openlane --smoke-test"
     - name: Push
-      shell: bash
+      shell: zsh
       if: ${{ inputs.cachix_token != '' }}
       run: |
         nix-build | cachix push openlane
