@@ -321,3 +321,60 @@ proc write_libs {} {
         }
     }
 }
+
+proc max {a b} {
+    if { $a > $b } {
+        return $a
+    } else {
+        return $b
+    }
+}
+
+set ::metric_count 0
+set ::metrics_file ""
+if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
+    proc start_metrics_file {args} {
+        set ::metrics_file [open $::env(STEP_DIR)/metrics.json "w"]
+        puts $::metrics_file "\{"
+    }
+    proc write_metric_num {metric value} {
+        if { $::metric_count > 0 } {
+            puts $::metrics_file ","
+        }
+        if { "$value" == "INF" } {
+            set value 1e30
+        }
+        puts $::metrics_file "\"$metric\": $value"
+        incr ::metric_count
+    }
+    proc write_metric_int {metric value} {
+        write_metric_num $metric $value
+    }
+    proc write_metric_str {metric value} {
+        if { $::metric_count > 0 } {
+            puts $::metrics_file ","
+        }
+        puts $::metrics_file "\"$metric\": \"$value\""
+        incr ::metric_count
+    }
+    proc end_metrics_file {args} {
+        puts $::metrics_file "\}"
+        close $::metrics_file
+        set ::metrics_file ""
+    }
+} else {
+    proc start_metrics_file {} {}
+    proc write_metric_str {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric $metric $value
+    }
+    proc write_metric_int {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric_int $metric $value
+    }
+    proc write_metric_num {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric_float $metric $value
+    }
+    proc end_metrics_file {} {}
+}

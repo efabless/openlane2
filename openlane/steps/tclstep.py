@@ -226,7 +226,6 @@ def create_reproducible(
         for potential_file in full_value.split():
             potential_file_abspath = os.path.abspath(potential_file)
             if potential_file_abspath.startswith(run_path):
-                final_env[key] = ""
                 relative = relpath(potential_file, run_path)
                 final_value = join(".", relative)
                 final_path = join(destination_folder, final_value)

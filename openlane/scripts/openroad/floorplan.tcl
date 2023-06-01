@@ -96,7 +96,7 @@ puts "\[INFO] Floorplanned on a core area of $::env(CORE_AREA) (µm)."
 
 source $::env(TRACKS_INFO_FILE_PROCESSED)
 
-utl::metric "design__die__bbox"  $::env(DIE_AREA)
-utl::metric "design__core__bbox" $::env(CORE_AREA)
+write_metric_str "design__die__bbox"  $::env(DIE_AREA)
+write_metric_str "design__core__bbox" $::env(CORE_AREA)
 
 write_views

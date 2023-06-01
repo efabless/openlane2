@@ -13,6 +13,16 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
+set_cmd_units\
+    -time ns\
+    -capacitance pF\
+    -current mA\
+    -voltage V\
+    -resistance kOhm\
+    -distance um
+
+set sta_report_default_digits 6
+
 
 read_timing_info
 if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
@@ -27,9 +37,9 @@ if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
 }
 read_spefs
 
-set_cmd_units -time ns -capacitance pF -current mA -voltage V -resistance kOhm -distance um
-
 set_propagated_clock [all_clocks]
+
+start_metrics_file
 
 puts "%OL_CREATE_REPORT min.rpt"
 puts "\n==========================================================================="
@@ -91,8 +101,11 @@ report_parasitic_annotation -report_unannotated
 
 puts "\n==========================================================================="
 puts "max slew violation count [sta::max_slew_violation_count]"
+write_metric_int "clock__max_slew_violation__count" [sta::max_slew_violation_count]
 puts "max fanout violation count [sta::max_fanout_violation_count]"
+write_metric_int "design__max_fanout_violation__count" [sta::max_fanout_violation_count]
 puts "max cap violation count [sta::max_capacitance_violation_count]"
+write_metric_int "design__max_cap_violation__count" [sta::max_capacitance_violation_count]
 puts "============================================================================"
 
 puts "\n==========================================================================="
@@ -114,38 +127,158 @@ foreach corner [sta::corners] {
 }
 puts "%OL_END_REPORT"
 
-# report clock skew if the clock port is defined
-# OR hangs if this command is run on clockless designs
-if { $::env(CLOCK_PORT) != "__VIRTUAL_CLK__" && $::env(CLOCK_PORT) != "" } {
-    puts "%OL_CREATE_REPORT skew.rpt"
-    puts "\n==========================================================================="
-    puts "report_clock_skew"
-    puts "============================================================================"
-    report_clock_skew
-    puts "%OL_END_REPORT"
+set clocks [sta::sort_by_name [sta::all_clocks]]
+set default_corner [sta::cmd_corner]
+
+puts "%OL_CREATE_REPORT skew.min.rpt"
+puts "\n==========================================================================="
+puts "Clock Skew (Hold)"
+puts "============================================================================"
+set skew_design -1e30
+foreach corner [sta::corners] {
+    sta::set_cmd_corner $corner
+    set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "min"] $sta_report_default_digits]
+    set skew_design [max $skew_design $skew_corner]
+
+    write_metric_num "clock__skew__worst_hold__corner:[$corner name]" $skew_corner
+
+    puts "======================= [$corner name] Corner ===================================\n"
+    report_clock_skew -corner [$corner name] -hold
 }
+sta::set_cmd_corner $default_corner
 
-puts "%OL_CREATE_REPORT summary.rpt"
-puts "\n==========================================================================="
-puts "report_tns"
-puts "============================================================================"
-report_tns
-
-puts "\n==========================================================================="
-puts "report_wns"
-puts "============================================================================"
-report_wns
-
-puts "\n==========================================================================="
-puts "report_worst_slack -max (Setup)"
-puts "============================================================================"
-report_worst_slack -max
-
-puts "\n==========================================================================="
-puts "report_worst_slack -min (Hold)"
-puts "============================================================================"
-report_worst_slack -min
+write_metric_num "clock__skew__worst_hold" $skew_design
+puts "worst overall skew: $skew_design"
 puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT skew.max.rpt"
+puts "\n==========================================================================="
+puts "Clock Skew (Setup)"
+puts "============================================================================"
+set skew_design -1e30
+foreach corner [sta::corners] {
+    sta::set_cmd_corner $corner
+    set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "max"] $sta_report_default_digits]
+    set skew_design [max $skew_design $skew_corner]
+
+    write_metric_num "clock__skew__worst_setup__corner:[$corner name]" $skew_corner
+
+    puts "======================= [$corner name] Corner ===================================\n"
+    report_clock_skew -corner [$corner name] -setup
+}
+sta::set_cmd_corner $default_corner
+
+write_metric_num "clock__skew__worst_setup" $skew_design
+puts "worst overall skew: $skew_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT ws.min.rpt"
+puts "\n==========================================================================="
+puts "Worst Slack (Hold)"
+puts "============================================================================"
+set ws_design 1e30
+foreach corner [sta::corners] {
+    set ws [sta::format_time [sta::worst_slack_corner $corner "min"] $sta_report_default_digits]
+    if { $ws < $ws_design } {
+        set ws_design $ws
+    }
+    write_metric_num "timing__hold__ws__corner:[$corner name]" $ws
+    puts "[$corner name]: $ws"
+}
+write_metric_num "timing__hold__ws" $ws_design
+puts "design: $ws_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT ws.max.rpt"
+puts "\n==========================================================================="
+puts "Worst Slack (Setup)"
+puts "============================================================================"
+set ws_design 1e30
+foreach corner [sta::corners] {
+    set ws [sta::format_time [sta::worst_slack_corner $corner "max"] $sta_report_default_digits]
+    if { $ws < $ws_design } {
+        set ws_design $ws
+    }
+    write_metric_num "timing__setup__ws__corner:[$corner name]" $ws
+    puts "[$corner name]: $ws"
+}
+write_metric_num "timing__setup__ws" $ws_design
+puts "design: $ws_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT tns.min.rpt"
+puts "\n==========================================================================="
+puts "Total Negative Slack (Hold)"
+puts "============================================================================"
+set tns_design 0
+foreach corner [sta::corners] {
+    set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "min"] $sta_report_default_digits]
+    set tns_design [expr {$tns + $tns_design}]
+    write_metric_num "timing__hold__tns__corner:[$corner name]" $tns
+    puts "[$corner name]: $tns"
+}
+write_metric_num "timing__hold__tns" $tns_design
+puts "design: $tns_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT tns.max.rpt"
+puts "\n==========================================================================="
+puts "Total Negative Slack (Setup)"
+puts "============================================================================"
+set tns_design 0
+foreach corner [sta::corners] {
+    set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "max"] $sta_report_default_digits]
+    set tns_design [expr {$tns + $tns_design}]
+    write_metric_num "timing__setup__tns__corner:[$corner name]" $tns
+    puts "[$corner name]: $tns"
+}
+write_metric_num "timing__setup__tns" $tns_design
+puts "design: $tns_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT wns.min.rpt"
+puts "\n==========================================================================="
+puts "Worst Negative Slack (Hold)"
+puts "============================================================================"
+set wns_design 0
+foreach corner [sta::corners] {
+    set ws [sta::format_time [sta::worst_slack_corner $corner "min"] $sta_report_default_digits]
+    set wns 0
+    if { $ws < 0 } {
+        set wns $ws
+    }
+    if { $wns < $wns_design } {
+        set wns_design $wns
+    }
+    write_metric_num "timing__hold__wns__corner:[$corner name]" $wns
+    puts "[$corner name]: $wns"
+}
+write_metric_num "timing__hold__wns" $wns_design
+puts "design: $wns_design"
+puts "%OL_END_REPORT"
+
+puts "%OL_CREATE_REPORT wns.max.rpt"
+puts "\n==========================================================================="
+puts "Worst Negative Slack (Setup)"
+puts "============================================================================"
+set wns_design 0
+foreach corner [sta::corners] {
+    set ws [sta::format_time [sta::worst_slack_corner $corner "max"] $sta_report_default_digits]
+    set wns 0.0
+    if { $ws < 0 } {
+        set wns ws
+    }
+    if { $wns < $wns_design } {
+        set wns_design $wns
+    }
+    write_metric_num "timing__setup__wns__corner:[$corner name]" $wns
+    puts "[$corner name]: $wns"
+}
+write_metric_num "timing__setup__wns" $wns_design
+puts "design: $wns_design"
+puts "%OL_END_REPORT"
+
+end_metrics_file
 
 write_sdfs
 write_libs
