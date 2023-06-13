@@ -22,7 +22,7 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
-from typing import List, Dict, Tuple, Optional
+from typing import Any, Callable, Iterable, List, Dict, Tuple, Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
@@ -38,7 +38,7 @@ from .common_variables import (
 from ..config import Variable
 from ..logging import err, info, warn
 from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum, get_tpe
+from ..common import get_script_dir, StringEnum, get_tpe, mkdirp, parse_metric_modifiers
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -54,6 +54,34 @@ met4 Y 0.46 0.92
 met5 X 1.70 3.40
 met5 Y 1.70 3.40
 """
+
+timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
+    "clock__max_slew_violation__count": (0, lambda x: sum(x)),
+    "design__max_fanout_violation__count": (0, lambda x: sum(x)),
+    "design__max_cap_violation__count": (0, lambda x: sum(x)),
+    "clock__skew__worst_hold": (1e30, min),
+    "clock__skew__worst_setup": (1e30, min),
+    "timing__hold__ws": (1e30, min),
+    "timing__setup__ws": (1e30, min),
+    "timing__hold__wns": (1e30, min),
+    "timing__setup__wns": (1e30, min),
+    "timing__hold__tns": (0, lambda x: sum(x)),
+    "timing__setup__tns": (0, lambda x: sum(x)),
+}
+
+
+# def generate_timing_summary(metrics: Dict[str, Any]):
+#     summary = {}
+#     for name, value in metrics.items():
+#         metric, modifiers = parse_metric_modifiers(name)
+#         if metric not in timing_metric_aggregation.keys():
+#             continue
+
+#         row_name = "overall"
+#         if len(modifiers) == 1 and modifiers.keys()[0] == "corners":
+#             row_name = modifiers.keys()[0]
+#         elif len(modifiers) != 0:
+#             continue
 
 
 def old_to_new_tracks(old_tracks: str) -> str:
@@ -159,10 +187,14 @@ class OpenROADStep(TclStep):
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            new_metrics = json.loads(metrics_str)
-            metrics_updates.update(new_metrics)
+            metrics_updates.update(json.loads(metrics_str))
 
-        return views_updates, metrics_updates
+        metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
+            metrics_updates,
+            timing_metric_aggregation,
+        )
+
+        return views_updates, metric_updates_with_aggregates
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
@@ -248,11 +280,10 @@ class STAPrePNR(STAStep):
             self.config,
             prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
         )
-        env["TIMING_CORNER_0"] = timing_corner
-        for view in timing_file_list:
-            env["TIMING_CORNER_0"] += f" {view}"
 
         env["OPENSTA"] = "1"
+        env["CURRENT_CORNER_NAME"] = timing_corner
+        env["CURRENT_CORNER_TIMING_VIEWS"] = " ".join(timing_file_list)
         env["SDF_SAVE_DIR"] = self.step_dir
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
@@ -265,7 +296,7 @@ class STAPrePNR(STAStep):
 
         sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
         for sdf in sdfs:
-            corner = os.path.basename(sdf)[:-4]
+            _, corner = os.path.basename(sdf)[:-4].split("__")
             sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
 
         views_updates[DesignFormat.SDF] = sdf_dict
@@ -302,16 +333,21 @@ class STAPostPNR(STAPrePNR):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
-        env["LIB_SAVE_DIR"] = self.step_dir
-        env["SDF_SAVE_DIR"] = self.step_dir
-        env["CURRENT_SPEF_BY_CORNER"] = ""
+        env = self.prepare_env(env, state_in)
+
         env["OPENSTA"] = "1"
-        for i, corner in enumerate(self.config["STA_CORNERS"]):
-            print(i, corner)
-            if state_in[DesignFormat.SPEF] is None:
-                raise StepException(
-                    "SPEF extraction was not performed before parasitics STA."
-                )
+
+        def run_corner(corner: str):
+            nonlocal env
+
+            current_env = env.copy()
+
+            corner_dir = os.path.join(self.step_dir, corner)
+            mkdirp(corner_dir)
+
+            current_env["CURRENT_CORNER_NAME"] = corner
+            current_env["LIB_SAVE_DIR"] = corner_dir
+            current_env["SDF_SAVE_DIR"] = corner_dir
 
             if not isinstance(state_in[DesignFormat.SPEF], dict):
                 raise StepException(
@@ -335,30 +371,57 @@ class STAPostPNR(STAPrePNR):
                     f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
             spef = spefs[0]
-            env["CURRENT_SPEF_BY_CORNER"] += f" {corner} {spef}"
+            current_env["CURRENT_SPEF_BY_CORNER"] = f"{corner} {spef}"
 
-            tc_key = f"TIMING_CORNER_{i}"
             _, timing_file_list = self.toolbox.get_timing_files(
                 self.config,
                 corner,
                 prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
             )
-            timing_file_value = corner
-            for view in timing_file_list:
-                timing_file_value += f" {view}"
-            env[tc_key] = timing_file_value
+            current_env["CURRENT_CORNER_TIMING_VIEWS"] = " ".join(timing_file_list)
 
-        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+            log_path = os.path.join(corner_dir, "sta.log")
 
+            try:
+                generated_metrics = self.run_subprocess(
+                    self.get_command(),
+                    log_to=log_path,
+                    env=current_env,
+                    silent=True,
+                    report_dir=corner_dir,
+                )
+                info(f"Finished STA for the {corner} timing corner.")
+            except subprocess.CalledProcessError as e:
+                err(f"Failed STA for the {corner} timing corner:")
+                raise e
+
+            return generated_metrics
+
+        futures: Dict[str, Future[MetricsUpdate]] = {}
+        for corner in self.config["STA_CORNERS"]:
+            futures[corner] = get_tpe().submit(
+                run_corner,
+                corner,
+            )
+
+        metrics_updates: MetricsUpdate = {}
+        for corner, updates_future in futures.items():
+            metrics_updates.update(updates_future.result())
+
+        metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
+            metrics_updates, timing_metric_aggregation
+        )
+
+        views_updates: ViewsUpdate = {}
         lib_dict = state_in[DesignFormat.LIB] or {}
         if not isinstance(lib_dict, dict):
             raise StepException(
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        libs = glob(os.path.join(self.step_dir, "*.lib"))
+        libs = glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True)
         for lib in libs:
-            corner = os.path.basename(lib)[:-4]
+            _, corner = os.path.basename(lib)[:-4].split("__")
             lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
 
         views_updates[DesignFormat.LIB] = lib_dict
@@ -369,14 +432,14 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
+        sdfs = glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True)
         for sdf in sdfs:
-            corner = os.path.basename(sdf)[:-4]
+            _, corner = os.path.basename(sdf)[:-4].split("__")
             sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
 
         views_updates[DesignFormat.SDF] = sdf_dict
 
-        return views_updates, metrics_updates
+        return views_updates, metric_updates_with_aggregates
 
 
 @Step.factory.register()

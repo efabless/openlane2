@@ -75,6 +75,7 @@ class StepSignalled(StepException):
 
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
+METRIC_LOCUS = "%OL_METRIC"
 
 GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "openlane_run", "tmp"))
 LastState: State = State()
@@ -542,10 +543,11 @@ class Step(ABC):
     def run_subprocess(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
-        log_to: Optional[str] = None,
+        log_to: Optional[Union[str, os.PathLike]] = None,
         silent: bool = False,
+        report_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
-    ):
+    ) -> Dict[str, Any]:
         """
         A helper function for :class:`Step` objects to run subprocesses.
 
@@ -562,6 +564,12 @@ class Step(ABC):
         :raises subprocess.CalledProcessError: If the process has a non-zero exit,
             this exception will be raised.
         """
+        if report_dir is None:
+            report_dir = self.step_dir
+        mkdirp(report_dir)
+
+        generated_metrics: Dict[str, Any] = {}
+
         log_path = log_to or self.get_log_path()
         log_file = open(log_path, "w")
         cmd_str = [str(arg) for arg in cmd]
@@ -589,26 +597,28 @@ class Step(ABC):
                 lines += line
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                    report_path = os.path.join(self.step_dir, report_name)
-                    report_dir = os.path.dirname(report_path)
-                    mkdirp(report_dir)
+                    report_path = os.path.join(report_dir, report_name)
                     current_rpt = open(report_path, "w")
                 elif line.startswith(REPORT_END_LOCUS):
                     if current_rpt is not None:
                         current_rpt.close()
                     current_rpt = None
-                elif current_rpt is not None:
-                    log_file.write(line)
-                    current_rpt.write(line)
-                    # No echo- the timing reports especially can be very large
-                    # and terminal emulators will slow the flow down.
                 else:
-                    log_file.write(line)
-                    # hack for sky130 ff libraries
-                    if "table template" in line:
-                        continue
-                    if not silent:
+                    if line.startswith(METRIC_LOCUS):
+                        command, name, value = line.split(" ", maxsplit=3)
+                        metric_type: Union[Type[str], Type[int], Type[float]] = str
+                        if command.endswith("_I"):
+                            metric_type = int
+                        elif command.endswith("_F"):
+                            metric_type = float
+                        generated_metrics[name] = metric_type(value)
+                    elif current_rpt is not None:
+                        # No echo- the timing reports especially can be very large
+                        # and terminal emulators will slow the flow down.
+                        current_rpt.write(line)
+                    elif not silent and "table template" not in line:  # sky130 ff hack
                         verbose(line.strip())
+                    log_file.write(line)
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:
@@ -616,6 +626,8 @@ class Step(ABC):
                 err("\n".join(split_lines[-10:]))
                 err(f"Log file: {log_path}")
             raise subprocess.CalledProcessError(returncode, process.args)
+
+        return generated_metrics
 
     @internal
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:

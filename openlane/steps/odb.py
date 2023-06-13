@@ -55,18 +55,18 @@ class OdbpyStep(Step):
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
 
-        self.run_subprocess(
+        generated_metrics = self.run_subprocess(
             command,
             env=env,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = {}
+        metrics_updates: MetricsUpdate = generated_metrics
         if os.path.exists(metrics_path):
             metrics_str = open(metrics_path).read()
             metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            metrics_updates = json.loads(metrics_str)
+            metrics_updates.update(json.loads(metrics_str))
 
         views_updates: ViewsUpdate = {}
         for output in [DesignFormat.ODB, DesignFormat.DEF]:

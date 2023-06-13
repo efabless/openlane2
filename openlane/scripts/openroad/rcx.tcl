@@ -14,7 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_lefs "RCX_LEF"
 read_def $::env(CURRENT_DEF)
-read_timing_info
 
 
 set_propagated_clock [all_clocks]

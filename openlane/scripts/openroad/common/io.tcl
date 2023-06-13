@@ -75,82 +75,60 @@ proc read_current_netlist {args} {
 }
 
 proc read_timing_info {args} {
-    set i "0"
-    set tc_key "TIMING_CORNER_$i"
-    while { [info exists ::env($tc_key)] } {
-        set corner_name [lindex $::env($tc_key) 0]
-        set corner_libs [lreplace $::env($tc_key) 0 0]
-
-        set corner($corner_name) $corner_libs
-
-        set i [expr $i + 1]
-        set tc_key "TIMING_CORNER_$i"
-    }
-
-    if { $i == "0" } {
-        puts "\[WARN] No timing information read."
+    if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
         return
     }
+    set corner_name $::env(CURRENT_CORNER_NAME)
+    define_corners $corner_name
 
-    set nl_bucket [list]
-    set spef_bucket [list]
+    puts "Reading timing models for corner $corner_name…"
 
-    define_corners {*}[array name corner]
-
-    foreach corner_name [array name corner] {
-        puts "Reading timing models for corner $corner_name…"
-
-        set corner_models $corner($corner_name)
-        foreach model $corner_models {
-            if { [string match *.spef $model]} {
-                lappend spef_bucket $corner_name $model
-            } elseif { [string match *.v $model] } {
-                lappend nl_bucket $model
-            } else {
-                puts "Reading timing library for the '$corner_name' corner at '$model'…"
-                read_liberty -corner $corner_name $model
-            }
-        }
-
-        if { [info exists ::env(EXTRA_LIBS) ] } {
-            puts "Reading explicitly-specified extra libs for $corner_name…"
-            foreach extra_lib $::env(EXTRA_LIBS) {
-                puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
-                read_liberty -corner $corner_name $extra_lib
-            }
+    set macro_spefs [list]
+    set macro_nls [list]
+    set corner_models $::env(CURRENT_CORNER_TIMING_VIEWS)
+    foreach model $corner_models {
+        if { [string match *.spef $model]} {
+            lappend macro_spefs $corner_name $model
+        } elseif { [string match *.v $model] } {
+            lappend macro_nls $model
+        } else {
+            puts "Reading timing library for the '$corner_name' corner at '$model'…"
+            read_liberty -corner $corner_name $model
         }
     }
 
-    set macro_nls [lsort -unique $nl_bucket]
+    if { [info exists ::env(EXTRA_LIBS) ] } {
+        puts "Reading explicitly-specified extra libs for $corner_name…"
+        foreach extra_lib $::env(EXTRA_LIBS) {
+            puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
+            read_liberty -corner $corner_name $extra_lib
+        }
+    }
 
-    if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
-        # OpenSTA
-        set blackbox_wildcard {/// sta-blackbox}
-        foreach nl $macro_nls {
-            puts "Reading macro netlist at '$nl'…"
-            if { [catch {read_verilog $nl} err] } {
-                puts "Error while reading macro netlist '$nl':"
+    set blackbox_wildcard {/// sta-blackbox}
+    foreach nl $macro_nls {
+        puts "Reading macro netlist at '$nl'…"
+        if { [catch {read_verilog $nl} err] } {
+            puts "Error while reading macro netlist '$nl':"
+            puts $err
+            puts "Make sure that this a gate-level netlist and not an RTL file."
+            exit 1
+        }
+    }
+    if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
+        foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
+            if { [string_in_file $verilog_file $blackbox_wildcard] } {
+                puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
+            } elseif { [catch {puts "Reading Verilog model at '$verilog_file'…"; read_verilog $verilog_file} err] } {
+                puts "Error while reading $verilog_file:"
                 puts $err
-                puts "Make sure that this a gate-level netlist and not an RTL file."
+                puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
                 exit 1
             }
         }
-        if { [info exists ::env(EXTRA_VERILOG_MODELS)] } {
-            foreach verilog_file $::env(EXTRA_VERILOG_MODELS) {
-                if { [string_in_file $verilog_file $blackbox_wildcard] } {
-                    puts "Found '$blackbox_wildcard' in '$verilog_file', skipping…"
-                } elseif { [catch {puts "Reading Verilog model at '$verilog_file'…"; read_verilog $verilog_file} err] } {
-                    puts "Error while reading $verilog_file:"
-                    puts $err
-                    puts "Make sure that this a gate-level netlist and not an RTL file, otherwise, you can add the following comment '$blackbox_wildcard' in the file to skip it and blackbox the modules inside if needed."
-                    exit 1
-                }
-            }
-        }
-        read_current_netlist
     }
-
-    set ::macro_spefs $spef_bucket
+    read_current_netlist
+    set ::macro_spefs $macro_spefs
 }
 
 proc read_spefs {} {
@@ -179,6 +157,8 @@ proc read_pnr_libs {args} {
     if { [get_libs -quiet *] != {} } {
         return
     }
+
+    define_corners $::env(DEFAULT_CORNER)
 
     foreach lib $::env(PNR_LIBS) {
         puts "Reading library file at '$lib'…"
@@ -303,7 +283,7 @@ proc write_sdfs {} {
         puts "Writing SDF files for all corners…"
         foreach corner $corners {
             set corner_name [$corner name]
-            set target $::env(SDF_SAVE_DIR)/$corner_name.sdf
+            set target $::env(SDF_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.sdf
             write_sdf -include_typ -divider . -corner $corner_name $target
         }
     }
@@ -315,7 +295,7 @@ proc write_libs {} {
         puts "Writing timing models for all corners…"
         foreach corner $corners {
             set corner_name [$corner name]
-            set target $::env(LIB_SAVE_DIR)/$corner_name.lib
+            set target $::env(LIB_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.lib
             puts "Writing timing models for the $corner_name corner to $target…"
             write_timing_model -corner $corner_name $target
         }
@@ -333,37 +313,16 @@ proc max {a b} {
 set ::metric_count 0
 set ::metrics_file ""
 if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
-    proc start_metrics_file {args} {
-        set ::metrics_file [open $::env(STEP_DIR)/metrics.json "w"]
-        puts $::metrics_file "\{"
-    }
     proc write_metric_num {metric value} {
-        if { $::metric_count > 0 } {
-            puts $::metrics_file ","
-        }
-        if { "$value" == "INF" } {
-            set value 1e30
-        }
-        puts $::metrics_file "\"$metric\": $value"
-        incr ::metric_count
+        puts "%OL_METRIC_F $metric $value"
     }
     proc write_metric_int {metric value} {
-        write_metric_num $metric $value
+        puts "%OL_METRIC_I $metric $value"
     }
     proc write_metric_str {metric value} {
-        if { $::metric_count > 0 } {
-            puts $::metrics_file ","
-        }
-        puts $::metrics_file "\"$metric\": \"$value\""
-        incr ::metric_count
-    }
-    proc end_metrics_file {args} {
-        puts $::metrics_file "\}"
-        close $::metrics_file
-        set ::metrics_file ""
+        puts "%OL_METRIC $metric $value"
     }
 } else {
-    proc start_metrics_file {} {}
     proc write_metric_str {metric value} {
         puts "Writing metric $metric: $value"
         utl::metric $metric $value
@@ -376,5 +335,4 @@ if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
         puts "Writing metric $metric: $value"
         utl::metric_float $metric $value
     }
-    proc end_metrics_file {} {}
 }

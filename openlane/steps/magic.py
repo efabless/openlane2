@@ -203,7 +203,7 @@ class DRC(MagicStep):
 
     This also converts the results to a KLayout database, which can be loaded.
 
-    The metrics will be updated with ``magic__drc_errors``. You can use
+    The metrics will be updated with ``magic__drc_error__count``. You can use
     `the relevant checker <#Checker.MagicDRC>`_ to quit if that number is
     nonzero.
     """
@@ -254,7 +254,7 @@ class DRC(MagicStep):
         klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")
         drc.to_klayout_xml(open(klayout_db_path, "wb"))
 
-        metrics_updates["magic__drc_errors"] = bbox_count
+        metrics_updates["magic__drc_error__count"] = bbox_count
 
         return views_updates, metrics_updates
 
@@ -265,7 +265,7 @@ class SpiceExtraction(MagicStep):
     Extracts a SPICE netlist from the GDSII stream. Used in Layout vs. Schematic
     checks.
 
-    Also, the metrics will be updated with ``magic__illegal__overlaps``. You can use
+    Also, the metrics will be updated with ``magic__illegal_overlap__count``. You can use
     `the relevant checker <#Checker.IllegalOverlap>`_ to quit if that number is
     nonzero.
     """
@@ -301,7 +301,7 @@ class SpiceExtraction(MagicStep):
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()
-        metrics_updates["magic__illegal__overlaps"] = feedback_string.count(
+        metrics_updates["magic__illegal_overlap__count"] = feedback_string.count(
             "Illegal overlap"
         )
 

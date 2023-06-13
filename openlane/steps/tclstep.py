@@ -457,7 +457,7 @@ class TclStep(Step):
         env = self.prepare_env(env, state_in)
 
         try:
-            self.run_subprocess(
+            generated_metrics = self.run_subprocess(
                 command,
                 env=env,
                 **kwargs,
@@ -490,4 +490,4 @@ class TclStep(Step):
                 continue
             overrides[output] = path
 
-        return overrides, {}
+        return overrides, generated_metrics

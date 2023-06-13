@@ -23,8 +23,6 @@ set_cmd_units\
 
 set sta_report_default_digits 6
 
-
-read_timing_info
 if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
     read_current_odb
 
@@ -34,12 +32,12 @@ if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
     } elseif { [rsz::check_corner_wire_cap] } {
         estimate_parasitics -placement
     }
+} else {
+    read_timing_info
 }
 read_spefs
 
 set_propagated_clock [all_clocks]
-
-start_metrics_file
 
 puts "%OL_CREATE_REPORT min.rpt"
 puts "\n==========================================================================="
@@ -100,12 +98,16 @@ puts "==========================================================================
 report_parasitic_annotation -report_unannotated
 
 puts "\n==========================================================================="
+set corner_postfix ""
+if { [info exists ::env(CURRENT_CORNER_NAME)] } {
+    set corner_postfix "__corner:$::env(CURRENT_CORNER_NAME)"
+}
 puts "max slew violation count [sta::max_slew_violation_count]"
-write_metric_int "clock__max_slew_violation__count" [sta::max_slew_violation_count]
+write_metric_int "clock__max_slew_violation__count$corner_postfix" [sta::max_slew_violation_count]
 puts "max fanout violation count [sta::max_fanout_violation_count]"
-write_metric_int "design__max_fanout_violation__count" [sta::max_fanout_violation_count]
+write_metric_int "design__max_fanout_violation__count$corner_postfix" [sta::max_fanout_violation_count]
 puts "max cap violation count [sta::max_capacitance_violation_count]"
-write_metric_int "design__max_cap_violation__count" [sta::max_capacitance_violation_count]
+write_metric_int "design__max_cap_violation__count$corner_postfix" [sta::max_capacitance_violation_count]
 puts "============================================================================"
 
 puts "\n==========================================================================="
@@ -147,8 +149,10 @@ foreach corner [sta::corners] {
 }
 sta::set_cmd_corner $default_corner
 
-write_metric_num "clock__skew__worst_hold" $skew_design
-puts "worst overall skew: $skew_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "clock__skew__worst_hold" $skew_design
+    puts "worst overall skew: $skew_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT skew.max.rpt"
@@ -168,8 +172,10 @@ foreach corner [sta::corners] {
 }
 sta::set_cmd_corner $default_corner
 
-write_metric_num "clock__skew__worst_setup" $skew_design
-puts "worst overall skew: $skew_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "clock__skew__worst_setup" $skew_design
+    puts "worst overall skew: $skew_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT ws.min.rpt"
@@ -185,8 +191,10 @@ foreach corner [sta::corners] {
     write_metric_num "timing__hold__ws__corner:[$corner name]" $ws
     puts "[$corner name]: $ws"
 }
-write_metric_num "timing__hold__ws" $ws_design
-puts "design: $ws_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__hold__ws" $ws_design
+    puts "design: $ws_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT ws.max.rpt"
@@ -202,8 +210,10 @@ foreach corner [sta::corners] {
     write_metric_num "timing__setup__ws__corner:[$corner name]" $ws
     puts "[$corner name]: $ws"
 }
-write_metric_num "timing__setup__ws" $ws_design
-puts "design: $ws_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__setup__ws" $ws_design
+    puts "design: $ws_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT tns.min.rpt"
@@ -217,8 +227,10 @@ foreach corner [sta::corners] {
     write_metric_num "timing__hold__tns__corner:[$corner name]" $tns
     puts "[$corner name]: $tns"
 }
-write_metric_num "timing__hold__tns" $tns_design
-puts "design: $tns_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__hold__tns" $tns_design
+    puts "design: $tns_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT tns.max.rpt"
@@ -232,8 +244,10 @@ foreach corner [sta::corners] {
     write_metric_num "timing__setup__tns__corner:[$corner name]" $tns
     puts "[$corner name]: $tns"
 }
-write_metric_num "timing__setup__tns" $tns_design
-puts "design: $tns_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__setup__tns" $tns_design
+    puts "design: $tns_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT wns.min.rpt"
@@ -253,8 +267,10 @@ foreach corner [sta::corners] {
     write_metric_num "timing__hold__wns__corner:[$corner name]" $wns
     puts "[$corner name]: $wns"
 }
-write_metric_num "timing__hold__wns" $wns_design
-puts "design: $wns_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__hold__wns" $wns_design
+    puts "design: $wns_design"
+}
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT wns.max.rpt"
@@ -274,11 +290,11 @@ foreach corner [sta::corners] {
     write_metric_num "timing__setup__wns__corner:[$corner name]" $wns
     puts "[$corner name]: $wns"
 }
-write_metric_num "timing__setup__wns" $wns_design
-puts "design: $wns_design"
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    write_metric_num "timing__setup__wns" $wns_design
+    puts "design: $wns_design"
+}
 puts "%OL_END_REPORT"
-
-end_metrics_file
 
 write_sdfs
 write_libs
