@@ -10,6 +10,7 @@ flow = Classic(
         "CLOCK_PORT": "clk",
         "CLOCK_PERIOD": 10,
     },
+    spm="sky130_fd_sc_hd",
     design_dir=".",
 )
 
