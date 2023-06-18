@@ -314,7 +314,13 @@ set ::metric_count 0
 set ::metrics_file ""
 if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
     proc write_metric_num {metric value} {
-        puts "%OL_METRIC_F $metric $value"
+        if { $value == 1e30 } {
+            write_metric_str $metric Infinity
+        } elseif { $value == -1e30 } {
+            write_metric_str $metric -Infinity
+        } else {
+            puts "%OL_METRIC_F $metric $value"
+        }
     }
     proc write_metric_int {metric value} {
         puts "%OL_METRIC_I $metric $value"

@@ -17,6 +17,7 @@ import re
 import json
 import tempfile
 import subprocess
+from math import inf
 from glob import glob
 from decimal import Decimal
 from base64 import b64encode
@@ -66,12 +67,12 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "clock__max_slew_violation__count": (0, lambda x: sum(x)),
     "design__max_fanout_violation__count": (0, lambda x: sum(x)),
     "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (1e30, min),
-    "clock__skew__worst_setup": (1e30, min),
-    "timing__hold__ws": (1e30, min),
-    "timing__setup__ws": (1e30, min),
-    "timing__hold__wns": (1e30, min),
-    "timing__setup__wns": (1e30, min),
+    "clock__skew__worst_hold": (inf, min),
+    "clock__skew__worst_setup": (inf, min),
+    "timing__hold__ws": (inf, min),
+    "timing__setup__ws": (inf, min),
+    "timing__hold__wns": (inf, min),
+    "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
 }
@@ -98,9 +99,6 @@ def old_to_new_tracks(old_tracks: str) -> str:
         final_str += f"make_tracks {layer} -x_offset {x_offset} -x_pitch {x_pitch} -y_offset {y_offset} -y_pitch {y_pitch}\n"
 
     return final_str
-
-
-inf_rx = re.compile(r"\b(-?)inf\b")
 
 
 class OpenROADStep(TclStep):
@@ -178,9 +176,13 @@ class OpenROADStep(TclStep):
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
-            metrics_str = open(metrics_path).read()
-            metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            metrics_updates.update(json.loads(metrics_str))
+            or_metrics_out = json.loads(open(metrics_path).read())
+            for key, value in or_metrics_out.items():
+                if value == "Infinity":
+                    or_metrics_out[key] = inf
+                elif value == "-Infinity":
+                    or_metrics_out[key] = -inf
+            metrics_updates.update(or_metrics_out)
 
         metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
             metrics_updates,

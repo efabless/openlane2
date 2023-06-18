@@ -1,3 +1,13 @@
+# 2.0.0-a39
+* Added mechanism for subprocesses to write metrics via stdout, `%OL_METRIC{,_I,_F}`, used for OpenSTA
+* Added violation summary table to post-PNR STA
+* Reworked multi-corner STA: now run across N processes with the step being responsible for aggregation
+* Made handling `Infinity` metrics more robust
+* Fixed names of various metrics to abide with conventions:
+  * `magic__drc_errors` -> `magic__drc_error__count`
+  * `magic__illegal__overlaps` -> `magic__illegal_overlap__count`
+* Removed splash messages from OpenROAD, OpenSTA
+
 # 2.0.0-a38
 
 * Added full test-suite added to CI
