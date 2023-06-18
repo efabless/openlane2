@@ -455,7 +455,7 @@ class Config(GenericImmutableDict[str, Any]):
             }
         )
 
-        tcl_vars_in = config_in.to_raw_dict()
+        tcl_vars_in = dict(config_in)
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
