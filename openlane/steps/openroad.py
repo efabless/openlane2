@@ -224,7 +224,7 @@ class STAStep(OpenROADStep):
         return None
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "sta", "multi_corner.tcl")
+        return os.path.join(get_script_dir(), "openroad", "sta", "corner.tcl")
 
 
 @Step.factory.register()

@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# This file supports multiple defined corners per-process.
+# It should not be used and is left as a reference.
+
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 
 set_cmd_units\
