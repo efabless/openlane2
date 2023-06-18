@@ -175,7 +175,7 @@ class MagicDRC(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "magic__drc_errors"
+        return "magic__drc_error__count"
 
     def get_metric_description(self) -> str:
         return "Magic DRC errors"
@@ -198,7 +198,7 @@ class IllegalOverlap(MetricChecker):
     ]
 
     def get_metric_name(self) -> str:
-        return "magic__illegal__overlaps"
+        return "magic__illegal_overlap__count"
 
     def get_metric_description(self) -> str:
         return "Magic Illegal Overlap errors"

@@ -39,7 +39,10 @@ import rich
 from rich.table import Table
 from openlane.state.design_format import DesignFormat, DesignFormatObject
 
-click  # Re-export now that the environment actually works properly
+# Re-export now that the environment actually works properly
+rich
+click
+Table
 
 write_fn: Dict[DesignFormat, Callable] = {
     DesignFormat.DEF: lambda reader, file: odb.write_def(reader.block, file),

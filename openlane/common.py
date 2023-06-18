@@ -333,3 +333,19 @@ def set_tpe(tpe: ThreadPoolExecutor):
 def get_tpe() -> ThreadPoolExecutor:
     global TPE
     return TPE
+
+
+## Metrics
+
+modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)$")
+
+
+def parse_metric_modifiers(metric_name: str) -> Tuple[str, Dict[str, str]]:
+    mn_mut = metric_name.split("__")
+    modifiers = {}
+    i = len(mn_mut) - 1
+    while match := modifier_rx.match(mn_mut[i]):
+        mn_mut.pop()
+        modifiers[match[1]] = match[2]
+        i = i - 1
+    return "__".join(mn_mut), modifiers

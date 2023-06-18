@@ -226,7 +226,6 @@ def create_reproducible(
         for potential_file in full_value.split():
             potential_file_abspath = os.path.abspath(potential_file)
             if potential_file_abspath.startswith(run_path):
-                final_env[key] = ""
                 relative = relpath(potential_file, run_path)
                 final_value = join(".", relative)
                 final_path = join(destination_folder, final_value)
@@ -458,7 +457,7 @@ class TclStep(Step):
         env = self.prepare_env(env, state_in)
 
         try:
-            self.run_subprocess(
+            generated_metrics = self.run_subprocess(
                 command,
                 env=env,
                 **kwargs,
@@ -491,4 +490,4 @@ class TclStep(Step):
                 continue
             overrides[output] = path
 
-        return overrides, {}
+        return overrides, generated_metrics

@@ -20,19 +20,52 @@ import tempfile
 import subprocess
 from enum import IntEnum
 from shutil import which
-from typing import FrozenSet, Mapping, Optional, Tuple, List, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Mapping,
+    Optional,
+    Tuple,
+    List,
+    Union,
+)
 
 from .memoize import memoize
 
 from ..logging import debug, warn
 from ..config import Config, Macro
 from ..state import DesignFormat, Path
-from ..common import mkdirp, get_script_dir
+from ..common import mkdirp, get_script_dir, parse_metric_modifiers
 
 
 class Toolbox(object):
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
+
+    def aggregate_metrics(
+        self,
+        input: Dict[str, Any],
+        aggregator_by_metric: Dict[str, Tuple[Any, Callable[[Iterable], Any]]],
+    ) -> Dict[str, Any]:
+        aggregated: Dict[str, Any] = {}
+        for name, value in input.items():
+            metric_name, modifiers = parse_metric_modifiers(name)
+            if len(modifiers) == 0:
+                # No modifiers = final aggregate, don't double-represent in sums
+                continue
+            entry = aggregator_by_metric.get(metric_name)
+            if entry is None:
+                continue
+            start, aggregator = entry
+            current = aggregated.get(metric_name) or start
+            aggregated[metric_name] = aggregator([current, value])
+
+        final_values = input.copy()
+        final_values.update(aggregated)
+        return final_values
 
     def filter_views(
         self,

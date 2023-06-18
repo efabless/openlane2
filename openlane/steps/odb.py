@@ -13,9 +13,10 @@
 # limitations under the License.
 import os
 import re
-import shutil
 import sys
 import json
+import shutil
+from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
@@ -55,18 +56,22 @@ class OdbpyStep(Step):
         env["OPENLANE_ROOT"] = get_openlane_root()
         env["ODB_PYTHONPATH"] = ":".join(sys.path)
 
-        self.run_subprocess(
+        generated_metrics = self.run_subprocess(
             command,
             env=env,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = {}
+        metrics_updates: MetricsUpdate = generated_metrics
         if os.path.exists(metrics_path):
-            metrics_str = open(metrics_path).read()
-            metrics_str = inf_rx.sub(lambda m: f"{m[1] or ''}\"Infinity\"", metrics_str)
-            metrics_updates = json.loads(metrics_str)
+            or_metrics_out = json.loads(open(metrics_path).read())
+            for key, value in or_metrics_out.items():
+                if value == "Infinity":
+                    or_metrics_out[key] = inf
+                elif value == "-Infinity":
+                    or_metrics_out[key] = -inf
+            metrics_updates.update(or_metrics_out)
 
         views_updates: ViewsUpdate = {}
         for output in [DesignFormat.ODB, DesignFormat.DEF]:
@@ -95,6 +100,7 @@ class OdbpyStep(Step):
             [
                 "openroad",
                 "-exit",
+                "-no_splash",
                 "-metrics",
                 metrics_path,
                 "-python",
@@ -368,8 +374,6 @@ class DiodesOnPorts(OdbpyStep):
         cell, pin = self.config["DIODE_CELL"].split("/")
 
         return super().get_command() + [
-            "--threshold",
-            "Infinity",
             "--diode-cell",
             cell,
             "--diode-pin",
