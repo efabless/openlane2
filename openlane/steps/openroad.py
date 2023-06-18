@@ -299,7 +299,7 @@ class STAPrePNR(STAStep):
         sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
         for sdf in sdfs:
             _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
+            sdf_dict[corner] = Path(sdf)
 
         views_updates[DesignFormat.SDF] = sdf_dict
 
@@ -465,7 +465,7 @@ class STAPostPNR(STAPrePNR):
         libs = glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True)
         for lib in libs:
             _, corner = os.path.basename(lib)[:-4].split("__")
-            lib_dict[corner] = Path(os.path.join(self.step_dir, lib))
+            lib_dict[corner] = Path(lib)
 
         views_updates[DesignFormat.LIB] = lib_dict
 
@@ -478,7 +478,7 @@ class STAPostPNR(STAPrePNR):
         sdfs = glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True)
         for sdf in sdfs:
             _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(os.path.join(self.step_dir, sdf))
+            sdf_dict[corner] = Path(sdf)
 
         views_updates[DesignFormat.SDF] = sdf_dict
 

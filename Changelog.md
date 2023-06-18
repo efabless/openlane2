@@ -1,3 +1,8 @@
+# 2.0.0-a40
+* Fixed a bug with extracting variables from Tcl config files when the variable
+  is already set in the environment
+* Fixed a bug with saving lib and SDF files
+
 # 2.0.0-a39
 * Added mechanism for subprocesses to write metrics via stdout, `%OL_METRIC{,_I,_F}`, used for OpenSTA
 * Added violation summary table to post-PNR STA

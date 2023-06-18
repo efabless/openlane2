@@ -11,19 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
+import re
 import tkinter
 import tempfile
 from typing import Dict, Mapping, Any
-from decimal import Decimal, InvalidOperation
+
+setter_rx = re.compile(r"set\s+(?:\:\:)?env\(\s*(\w+)\s*\)")
 
 
 def env_from_tcl(env_in: Mapping[str, Any], tcl_in: str) -> Dict[str, Any]:
     interpreter = tkinter.Tcl()
-
-    initial_env = os.environ.copy()
     env_out = dict(env_in)
-
+    keys_modified = setter_rx.findall(tcl_in)
     with tempfile.NamedTemporaryFile("r+") as f:
         env_str = ""
         unset_env_str = ""
@@ -50,11 +49,7 @@ def env_from_tcl(env_in: Mapping[str, Any], tcl_in: str) -> Dict[str, Any]:
             if line.strip() == "":
                 continue
             key, value = line.split(" ", 1)
-            try:
-                value = Decimal(value)
-            except InvalidOperation:
-                pass
-            if initial_env.get(key) is None and env_in.get(key) != value:
+            if key in keys_modified:
                 env_out[key] = value
 
     return env_out
