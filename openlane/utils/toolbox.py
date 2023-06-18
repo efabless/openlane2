@@ -50,7 +50,7 @@ class Toolbox(object):
         input: Dict[str, Any],
         aggregator_by_metric: Dict[str, Tuple[Any, Callable[[Iterable], Any]]],
     ) -> Dict[str, Any]:
-        final_values = input.copy()
+        aggregated: Dict[str, Any] = {}
         for name, value in input.items():
             metric_name, modifiers = parse_metric_modifiers(name)
             if len(modifiers) == 0:
@@ -60,8 +60,11 @@ class Toolbox(object):
             if entry is None:
                 continue
             start, aggregator = entry
-            current = final_values.get(metric_name) or start
-            final_values[metric_name] = aggregator([current, value])
+            current = aggregated.get(metric_name) or start
+            aggregated[metric_name] = aggregator([current, value])
+
+        final_values = input.copy()
+        final_values.update(aggregated)
         return final_values
 
     def filter_views(

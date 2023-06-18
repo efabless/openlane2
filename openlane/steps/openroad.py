@@ -22,7 +22,10 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
-from typing import Any, Callable, Iterable, List, Dict, Tuple, Optional
+from typing import Any, Callable, Iterable, List, Dict, Tuple, Optional, Union
+
+import rich
+import rich.table
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
@@ -38,7 +41,7 @@ from .common_variables import (
 from ..config import Variable
 from ..logging import err, info, warn
 from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum, get_tpe, mkdirp, parse_metric_modifiers
+from ..common import get_script_dir, StringEnum, get_tpe, mkdirp
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -56,6 +59,10 @@ met5 Y 1.70 3.40
 """
 
 timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
+    "timing__hold_vio__count": (0, lambda x: sum(x)),
+    "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
+    "timing__setup_vio__count": (0, lambda x: sum(x)),
+    "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
     "clock__max_slew_violation__count": (0, lambda x: sum(x)),
     "design__max_fanout_violation__count": (0, lambda x: sum(x)),
     "design__max_cap_violation__count": (0, lambda x: sum(x)),
@@ -68,20 +75,6 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
 }
-
-
-# def generate_timing_summary(metrics: Dict[str, Any]):
-#     summary = {}
-#     for name, value in metrics.items():
-#         metric, modifiers = parse_metric_modifiers(name)
-#         if metric not in timing_metric_aggregation.keys():
-#             continue
-
-#         row_name = "overall"
-#         if len(modifiers) == 1 and modifiers.keys()[0] == "corners":
-#             row_name = modifiers.keys()[0]
-#         elif len(modifiers) != 0:
-#             continue
 
 
 def old_to_new_tracks(old_tracks: str) -> str:
@@ -198,7 +191,14 @@ class OpenROADStep(TclStep):
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        return ["openroad", "-exit", "-metrics", metrics_path, self.get_script_path()]
+        return [
+            "openroad",
+            "-exit",
+            "-no_splash",
+            "-metrics",
+            metrics_path,
+            self.get_script_path(),
+        ]
 
     def layout_preview(self) -> Optional[str]:
         if self.state_out is None:
@@ -271,7 +271,7 @@ class STAPrePNR(STAStep):
     ]
 
     def get_command(self) -> List[str]:
-        return ["sta", "-exit", self.get_script_path()]
+        return ["sta", "-no_splash", "-exit", self.get_script_path()]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -411,6 +411,47 @@ class STAPostPNR(STAPrePNR):
         metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
             metrics_updates, timing_metric_aggregation
         )
+
+        def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
+            if count is None:
+                return "[gray]?"
+            count = int(count)
+            if count == 0:
+                return f"[green]{count}"
+            else:
+                return f"[red]{count}"
+
+        table = rich.table.Table()
+        table.add_column("Corner/Group")
+        table.add_column("Hold Violations")
+        table.add_column("of which reg-to-reg")
+        table.add_column("Setup Violations")
+        table.add_column("of which reg-to-reg")
+        table.add_column("Max Cap Violations")
+        table.add_column("Max Slew Violations")
+        for corner in ["Overall"] + self.config["STA_CORNERS"]:
+            modifier = ""
+            if corner != "Overall":
+                modifier = f"__corner:{corner}"
+            row = [corner]
+            for metric in [
+                "timing__hold_vio__count",
+                "timing__hold_r2r_vio__count",
+                "timing__setup_vio__count",
+                "timing__setup_r2r_vio__count",
+                "design__max_cap_violation__count",
+                "clock__max_slew_violation__count",
+            ]:
+                row.append(
+                    format_count(
+                        metric_updates_with_aggregates.get(f"{metric}{modifier}")
+                    )
+                )
+            table.add_row(*row)
+
+        info(table)
+        with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
+            rich.print(table, file=f)
 
         views_updates: ViewsUpdate = {}
         lib_dict = state_in[DesignFormat.LIB] or {}
@@ -829,7 +870,6 @@ class CTS(OpenROADStep):
                 return Step.run(self, state_in, **kwargs)
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
-        metrics_updates["cts__run"] = True
 
         return views_updates, metrics_updates
 

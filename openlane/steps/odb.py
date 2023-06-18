@@ -95,6 +95,7 @@ class OdbpyStep(Step):
             [
                 "openroad",
                 "-exit",
+                "-no_splash",
                 "-metrics",
                 metrics_path,
                 "-python",

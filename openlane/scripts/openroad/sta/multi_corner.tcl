@@ -282,7 +282,7 @@ foreach corner [sta::corners] {
     set ws [sta::format_time [sta::worst_slack_corner $corner "max"] $sta_report_default_digits]
     set wns 0.0
     if { $ws < 0 } {
-        set wns ws
+        set wns $ws
     }
     if { $wns < $wns_design } {
         set wns_design $wns
@@ -295,6 +295,126 @@ if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
     puts "design: $wns_design"
 }
 puts "%OL_END_REPORT"
+
+proc traverse_buffers {pin_object} {
+    set last_pin $pin_object
+    set cell [get_cells -of_objects $pin_object]
+    while { [get_property [get_property $cell liberty_cell] is_buffer] } {
+        set cell_pins [get_pins -of_object $cell]
+        set antipode ""
+        foreach pin $cell_pins {
+            if { $pin != $last_pin && [get_property $pin direction] != [get_property $last_pin direction] } {
+                set antipode $pin
+                break
+            }
+        }
+        if { $antipode == "" } {
+            break
+        }
+        puts "[get_name $last_pin] // [get_name $antipode]"
+        set antipode_net [get_nets -of_object $antipode]
+        if { [llength $antipode_net] != 1 } {
+            break
+        }
+        set predecessor_pins [get_pins -of_object $antipode_net]
+        set predecessor_pin ""
+        foreach pin $predecessor_pins {
+            if { $pin != $antipode && [get_property $pin direction] != [get_property $antipode direction] } {
+                set predecessor_pin $pin
+                break
+            }
+        }
+        if { $predecessor_pin == "" } {
+            break
+        }
+        set predecessor_cell [get_cells -of_objects $predecessor_pin]
+        if { [llength $predecessor_cell] != 1 } {
+            break
+        }
+        set cell $predecessor_cell
+        set last_pin $predecessor_pin
+    }
+    return $cell
+
+}
+
+proc check_if_terminal {pin_object} {
+    set net [get_nets -of_object $pin_object]
+    if { "$net" == "NULL" } {
+        return 1
+    }
+    return 0
+}
+
+puts "%OL_CREATE_REPORT violating_paths.rpt"
+puts "\n==========================================================================="
+puts "Final Summary"
+puts "============================================================================"
+foreach corner [sta::corners] {
+    set total_hold_vios 0
+    set r2r_hold_vios 0
+    set total_setup_vios 0
+    set r2r_setup_vios 0
+
+    set hold_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
+    foreach path $hold_timing_paths {
+        set from "reg"
+        set to "reg"
+
+        set start_pin [get_property $path startpoint]
+        set end_pin [get_property $path endpoint]
+
+        if { [check_if_terminal $start_pin] } {
+            set from "in"
+        }
+        if { [check_if_terminal $end_pin] } {
+            set to "out"
+        }
+        set kind "$from-$to"
+
+        incr total_hold_vios
+        if { "$kind" == "reg-reg" } {
+            incr r2r_hold_vios
+        }
+
+        puts "\[hold $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
+    }
+
+    set setup_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
+    foreach path $setup_timing_paths {
+        set from "reg"
+        set to "reg"
+
+        set start_pin [get_property $path startpoint]
+        set end_pin [get_property $path endpoint]
+
+        if { [check_if_terminal $start_pin] } {
+            set from "in"
+        }
+        if { [check_if_terminal $end_pin] } {
+            set to "out"
+        }
+
+        set kind "$from-$to"
+
+        incr total_setup_vios
+        if { "$kind" == "reg-reg" } {
+            incr r2r_setup_vios
+        }
+
+        puts "\[setup $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
+    }
+
+    write_metric_int "timing__hold_vio__count__corner:[$corner name]" $total_hold_vios
+    write_metric_int "timing__hold_r2r_vio__count__corner:[$corner name]" $r2r_hold_vios
+    write_metric_int "timing__setup_vio__count__corner:[$corner name]" $total_setup_vios
+    write_metric_int "timing__setup_r2r_vio__count__corner:[$corner name]" $r2r_setup_vios
+}
+if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    # TODO: mc aggregate
+}
+puts "%OL_END_REPORT"
+
 
 write_sdfs
 write_libs
