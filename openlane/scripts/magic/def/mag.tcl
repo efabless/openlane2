@@ -16,4 +16,4 @@ source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 
 save $::env(SAVE_MAG)
 
-puts "[INFO]: Done exporting $::env(SAVE_MAG)."
+puts "[INFO] Done exporting $::env(SAVE_MAG)."

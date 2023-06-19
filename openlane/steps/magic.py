@@ -114,7 +114,7 @@ class WriteLEF(MagicStep):
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
             "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
-            default=True,
+            default=False,
         ),
         Variable(
             "MAGIC_WRITE_FULL_LEF",

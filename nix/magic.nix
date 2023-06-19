@@ -38,18 +38,17 @@
 
 with pkgs; clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "a33d7b78b54d8456769d08236f91f9be31784267";
+  rev = "9b131fa96c00e2243febc207f642f7db22843922";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-gWJ2A934vrQRscP/dTzmW2pW0sZYXusXHZ417SozlEQ=";
+    sha256 = "sha256-7RuuN0uYQ+5zrGJmcpfGipWx7LU1qDSinqKbXDshBXU=";
   };
 
   patches = [
     ./patches/magic/csh.patch
-    # ./patches/magic/efbuild_void_return.patch
   ];
 
   nativeBuildInputs = [ python3 tcsh gnused ];
