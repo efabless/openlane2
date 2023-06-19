@@ -16,7 +16,7 @@ if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
     # they both must exist and be equal in length
     # current assumption: they cannot have a common ground
     if { ! [info exists ::env(VDD_NETS)] || ! [info exists ::env(GND_NETS)] } {
-        puts_err "VDD_NETS and GND_NETS must *both* either be defined or undefined"
+        puts "\[ERROR] VDD_NETS and GND_NETS must *both* either be defined or undefined"
         exit -1
     }
     set ::env(VDD_NET) [lindex $::env(VDD_NETS) 0]

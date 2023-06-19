@@ -1,3 +1,8 @@
+# 2.0.0-a41
+* Updated Magic to `9b131fa`
+* Updated Magic LEF writing script
+* Ensured consistency of Tcl script logging prefixes
+
 # 2.0.0-a40
 * Fixed a bug with extracting variables from Tcl config files when the variable
   is already set in the environment
