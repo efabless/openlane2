@@ -194,9 +194,15 @@ rsz_variables = dpl_variables + [
     Variable(
         "RSZ_DONT_TOUCH_RX",
         str,
-        'A single regular expression designating nets as "don\'t touch" by resizer optimizations.',
+        'A single regular expression designating nets or instances as "don\'t touch" by resizer optimizations.',
         default="$^",
         deprecated_names=["UNBUFFER_NETS"],
+    ),
+    Variable(
+        "RSZ_DONT_TOUCH_LIST",
+        Optional[List[str]],
+        'A list of nets and instances as "don\'t touch" by resizer optimizations.',
+        default=None,
     ),
     Variable(
         "RSZ_DONT_USE_CELLS",

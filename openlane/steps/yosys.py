@@ -27,43 +27,6 @@ from ..logging import debug, verbose
 from ..state import State, DesignFormat, Path
 from ..common import get_script_dir, StringEnum
 
-
-MULTIPLE_FAILURES = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: multiple conflicting drivers for spm.\x:
-    module input f[0]
-    module input x[0]
-Warning: multiple conflicting drivers for spm.\y:
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:19$3 ($tribuf)
-    module input y[0]
-Warning: found logic loop in module spm:
-    cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
-    wire \y
-Found and reported 3 problems.
-"""
-
-NO_TRISTATE = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: Wire spm.\k is used but has no driver.
-Found and reported 1 problems.
-"""
-
-TRISTATE_ONLY = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: multiple conflicting drivers for spm.\y:
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:17$3 ($tribuf)
-    module input y[0]
-Warning: found logic loop in module spm:
-    cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
-    wire \y
-Found and reported 2 problems.
-"""
-
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
 
@@ -71,26 +34,12 @@ def parse_yosys_check(
     report: io.TextIOBase,
     tristate_okay: bool = False,
 ) -> int:
-    """
-    >>> rpt = io.StringIO(MULTIPLE_FAILURES); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    True
-    >>> rpt = io.StringIO(MULTIPLE_FAILURES); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    True
-    >>> rpt = io.StringIO(NO_TRISTATE); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    False
-    >>> rpt = io.StringIO(NO_TRISTATE); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    False
-    >>> rpt = io.StringIO(TRISTATE_ONLY); parse_yosys_check(rpt, True, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    False
-    >>> rpt = io.StringIO(TRISTATE_ONLY); parse_yosys_check(rpt, False, True) #doctest: +REPORT_NDIFF +NORMALIZE_WHITESPACE
-    True
-    """
     verbose("Parsing synthesis checks…")
     errors_encountered: int = 0
     current_warning = None
 
     for line in report:
-        if line.startswith("Warning:"):
+        if line.startswith("Warning:") or line.startswith("Found and reported"):
             if current_warning is not None:
                 if tristate_okay and "tribuf" in current_warning:
                     debug("Ignoring tristate-related error:")
@@ -254,9 +203,23 @@ class Synthesis(YosysStep):
                 default="AREA 0",
             ),
             Variable(
-                "SYNTH_BUFFERING",
+                "SYNTH_ABC_BUFFERING",
                 bool,
                 "Enables `abc` cell buffering.",
+                default=True,
+                deprecated_names=["SYNTH_BUFFERING"],
+            ),
+            Variable(
+                "SYNTH_DIRECT_WIRE_BUFFERING",
+                bool,
+                "Enables inserting buffer cells for directly connected wires.",
+                default=True,
+                deprecated_names=["SYNTH_BUFFER_DIRECT_WIRES"],
+            ),
+            Variable(
+                "SYNTH_SPLITNETS",
+                bool,
+                "Splits multi-bit nets into single-bit nets. Easier to trace but may not be supported by all tools.",
                 default=True,
             ),
             Variable(

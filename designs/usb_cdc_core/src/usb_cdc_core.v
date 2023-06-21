@@ -252,7 +252,7 @@ wire        ep2_tx_data_strb_w;
 wire [7:0]  ep2_tx_data_w;
 wire        ep2_tx_data_last_w;
 wire        ep2_tx_data_accept_w;
-wire        ep2_tx_stall_w;
+wire        ep2_tx_stall_w = 1'b0;
 // EP3 Rx SIE Interface
 wire        ep3_rx_space_w;
 wire        ep3_rx_valid_w;

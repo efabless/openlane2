@@ -14,6 +14,7 @@
 
 # Power nets
 proc set_global_connections {} {
+    puts "\[INFO] Setting global connections..."
     if { [info exists ::env(PDN_ENABLE_GLOBAL_CONNECTIONS) ] } {
         if { $::env(PDN_ENABLE_GLOBAL_CONNECTIONS) == 1 } {
             foreach power_pin $::env(SCL_POWER_PINS) {
@@ -40,6 +41,7 @@ proc set_global_connections {} {
                 $::env(PDN_MACRO_CONNECTIONS) \
                 {list $a $b $c $d $e} \
             ]
+        puts "$pdn_hooks"
 
         foreach pdn_hook $pdn_hooks {
             set instance_name [lindex $pdn_hook 0]

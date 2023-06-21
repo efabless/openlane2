@@ -711,7 +711,7 @@ class Config(GenericImmutableDict[str, Any]):
                 continue
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
-            elif "_OPT" not in key:
+            elif "_OPT" not in key and key != "//":
                 warnings.append(f"Unknown key '{key}' provided.")
 
         if translated_macros:
