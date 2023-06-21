@@ -11,33 +11,58 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-proc set_dont_touch_rx {net_pattern} {
-    if { $net_pattern == {^$} } {
-        # Save some compute
-        return
-    }
-    variable odb_block [[[::ord::get_db] getChip] getBlock]
-    set odb_nets [odb::dbBlock_getNets $::odb_block]
-    foreach net $odb_nets {
-        set net_name [odb::dbNet_getName $net]
-        if { [regexp "$net_pattern" $net_name full] } {
-            puts "\[INFO\] Net '$net_name' matched don't touch regular expression, setting as don't touch…"
-            set_dont_touch "$net_name"
+proc set_dont_touch_objects {args} {
+    set rx $::env(RSZ_DONT_TOUCH_RX)
+    if { $rx != {^$} } {
+        variable odb_block [[[::ord::get_db] getChip] getBlock]
+
+        set odb_nets [odb::dbBlock_getNets $::odb_block]
+        foreach net $odb_nets {
+            set net_name [odb::dbNet_getName $net]
+            if { [regexp "$rx" $net_name full] } {
+                puts "\[INFO\] Net '$net_name' matched don't touch regular expression, setting as don't touch…"
+                set_dont_touch "$net_name"
+            }
         }
+
+        set odb_insts [odb::dbBlock_getInsts $::odb_block]
+        foreach inst $odb_insts {
+            set inst_name [odb::dbInst_getName $inst]
+            if { [regexp "$rx" $inst_name full] } {
+                puts "\[INFO\] Instance '$inst_name' matched don't touch regular expression, setting as don't touch..."
+                set_dont_touch "$inst_name"
+            }
+        }
+    }
+
+    if { [info exists ::env(RSZ_DONT_TOUCH_LIST)] } {
+        set_dont_touch $::env(RSZ_DONT_TOUCH_LIST)
     }
 }
 
-proc unset_dont_touch_rx {net_pattern} {
-    if { $net_pattern == {^$} } {
-        # Save some compute
-        return
-    }
-    variable odb_block [[[::ord::get_db] getChip] getBlock]
-    set odb_nets [odb::dbBlock_getNets $::odb_block]
-    foreach net $odb_nets {
-        set net_name [odb::dbNet_getName $net]
-        if { [regexp "$net_pattern" $net_name full] } {
-            unset_dont_touch "$net_name"
+proc unset_dont_touch_objects {args} {
+    set rx $::env(RSZ_DONT_TOUCH_RX)
+    if { $rx != {^$} } {
+        variable odb_block [[[::ord::get_db] getChip] getBlock]
+
+        set odb_nets [odb::dbBlock_getNets $::odb_block]
+        foreach net $odb_nets {
+            set net_name [odb::dbNet_getName $net]
+            if { [regexp "$rx" $net_name full] } {
+                unset_dont_touch "$net_name"
+            }
         }
+
+        set odb_insts [odb::dbBlock_getInsts $::odb_block]
+        foreach inst $odb_insts {
+            set inst_name [odb::dbInst_getName $inst]
+            if { [regexp "$rx" $inst_name full] } {
+                unset_dont_touch "$inst_name"
+            }
+        }
+    }
+
+    if { [info exists ::env(RSZ_DONT_TOUCH_LIST)] } {
+        unset_dont_touch $::env(RSZ_DONT_TOUCH_LIST)
     }
 }

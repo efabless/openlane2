@@ -112,7 +112,7 @@ set abc_retime_area   	"retime,-D,{D},-M,5"
 set abc_retime_dly    	"retime,-D,{D},-M,6"
 set abc_map_new_area  	"amap,-m,-Q,0.1,-F,20,-A,20,-C,5000"
 
-if { $::env(SYNTH_BUFFERING) == 1 } {
+if { $::env(SYNTH_ABC_BUFFERING) == 1 } {
     set max_tr_arg ""
     if { $max_TR != 0 } {
         set max_tr_arg ",-S,${max_TR}"
@@ -352,10 +352,12 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
 
     hilomap -hicell $::env(SYNTH_TIEHI_CELL) -locell $::env(SYNTH_TIELO_CELL)
 
-    splitnets
-    opt_clean -purge
+    if { $::env(SYNTH_SPLITNETS) } {
+        splitnets
+        opt_clean -purge
+    }
 
-    if { $::env(SYNTH_BUFFERING) } {
+    if { $::env(SYNTH_DIRECT_WIRE_BUFFERING) } {
         insbuf -buf {*}[split $::env(SYNTH_BUFFER_CELL) "/"]
     }
 
