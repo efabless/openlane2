@@ -4,6 +4,8 @@
 * `inverter` design used to configure the above two
 * Added ignore for `//` key in JSON config files
 * Added two new variables for `Yosys.Synthesis`; `SYNTH_DIRECT_WIRE_BUFFERING` and `SYNTH_SPLITNETS`
+* Fixed bug with Yosys report parsing
+* Fixed issue in `usb_cdc_core` masked by aforementioned bug
 
 # 2.0.0-a41
 * Updated Magic to `9b131fa`

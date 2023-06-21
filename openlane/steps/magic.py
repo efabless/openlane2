@@ -127,11 +127,6 @@ class WriteLEF(MagicStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "lef.tcl")
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        kwargs, env = self.extract_env(kwargs)
-        env["MAGTYPE"] = "mag"
-        return super().run(state_in, **kwargs)
-
 
 @Step.factory.register()
 class StreamOut(MagicStep):

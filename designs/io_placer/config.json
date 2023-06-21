@@ -23,23 +23,49 @@
     "FP_PDN_HWIDTH": 3.1,
     "FP_PDN_VSPACING": 15.5,
     "FP_PDN_HSPACING": 15.5,
-    "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
-    "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"],
-    "SYNTH_USE_PG_PINS_DEFINES)": "USE_POWER_PINS",
+    "VDD_NETS": [
+        "vccd1",
+        "vccd2",
+        "vdda1",
+        "vdda2"
+    ],
+    "GND_NETS": [
+        "vssd1",
+        "vssd2",
+        "vssa1",
+        "vssa2"
+    ],
+    "SYNTH_POWER_DEFINE": "USE_POWER_PINS",
     "FP_PDN_VPITCH": 180,
     "FP_PDN_HPITCH": 180,
     "FP_PDN_VOFFSET": 5,
     "FP_PDN_HOFFSET": 5,
     "DESIGN_NAME": "user_project_wrapper",
-    "VERILOG_FILES": ["dir::src/defines.v", "dir::src/user_project_wrapper.v"],
+    "VERILOG_FILES": [
+        "dir::src/defines.v",
+        "dir::src/user_project_wrapper.v"
+    ],
     "CLOCK_PORT": "user_clock2",
     "CLOCK_NET": "mprj1.clk",
     "CLOCK_PERIOD": "10",
-    "FP_PDN_MACRO_HOOKS": ["mprj1 vccd1 vssd1 vccd1 vssd1", "prj2 vccd2 vssd2 vccd2 vssd2"],
+    "PDN_MACRO_CONNECTIONS": [
+        "mprj* vccd1 vssd1 vccd1 vssd1",
+        "prj2 vccd2 vssd2 vccd2 vssd2"
+    ],
     "MACRO_PLACEMENT_CFG": "dir::macro.cfg",
-    "VERILOG_FILES_BLACKBOX": ["dir::src/defines.v", "dir::src/user_proj_example.v", "dir::src/user_proj_example2.v"],
-    "EXTRA_LEFS": ["dir::macros/user_proj_example.lef", "dir::macros/user_proj_example2.lef"],
-    "EXTRA_GDS_FILES": ["dir::macros/user_proj_example.gds", "dir::macros/user_proj_example2.gds"],
+    "VERILOG_FILES_BLACKBOX": [
+        "dir::src/defines.v",
+        "dir::src/user_proj_example.v",
+        "dir::src/user_proj_example2.v"
+    ],
+    "EXTRA_LEFS": [
+        "dir::macros/user_proj_example.lef",
+        "dir::macros/user_proj_example2.lef"
+    ],
+    "EXTRA_GDS_FILES": [
+        "dir::macros/user_proj_example.gds",
+        "dir::macros/user_proj_example2.gds"
+    ],
     "RT_MAX_LAYER": "met4",
     "FP_PDN_CHECK_NODES": 0,
     "SYNTH_ELABORATE_ONLY": 1,
@@ -52,5 +78,8 @@
     "DIODE_INSERTION_STRATEGY": 0,
     "FILL_INSERTION": 0,
     "TAP_DECAP_INSERTION": 0,
-    "CLOCK_TREE_SYNTH": 0
+    "CLOCK_TREE_SYNTH": 0,
+    "QUIT_ON_SYNTH_CHECKS": false,
+    "//": "Takes too long",
+    "RUN_MAGIC_WRITE_LEF": false
 }

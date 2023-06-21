@@ -27,43 +27,6 @@ from ..logging import debug, verbose
 from ..state import State, DesignFormat, Path
 from ..common import get_script_dir, StringEnum
 
-
-MULTIPLE_FAILURES = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: multiple conflicting drivers for spm.\x:
-    module input f[0]
-    module input x[0]
-Warning: multiple conflicting drivers for spm.\y:
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:19$3 ($tribuf)
-    module input y[0]
-Warning: found logic loop in module spm:
-    cell $ternary$/openlane/designs/spm/src/spm.v:18$1 ($tribuf)
-    wire \y
-Found and reported 3 problems.
-"""
-
-NO_TRISTATE = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: Wire spm.\k is used but has no driver.
-Found and reported 1 problems.
-"""
-
-TRISTATE_ONLY = r"""
-21. Executing CHECK pass (checking for obvious problems).
-Checking module spm...
-Warning: multiple conflicting drivers for spm.\y:
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
-    port Y[0] of cell $ternary$/openlane/designs/spm/src/spm.v:17$3 ($tribuf)
-    module input y[0]
-Warning: found logic loop in module spm:
-    cell $ternary$/openlane/designs/spm/src/spm.v:16$1 ($tribuf)
-    wire \y
-Found and reported 2 problems.
-"""
-
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
 
