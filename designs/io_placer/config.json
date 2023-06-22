@@ -76,10 +76,9 @@
     "PL_RESIZER_BUFFER_OUTPUT_PORTS": 0,
     "FP_PDN_ENABLE_RAILS": 0,
     "DIODE_INSERTION_STRATEGY": 0,
-    "FILL_INSERTION": 0,
+    "RUN_FILL_INSERTION": 0,
     "TAP_DECAP_INSERTION": 0,
     "CLOCK_TREE_SYNTH": 0,
     "QUIT_ON_SYNTH_CHECKS": false,
-    "//": "Takes too long",
-    "RUN_MAGIC_WRITE_LEF": false
+    "QUIT_ON_MAGIC_DRC": false
 }

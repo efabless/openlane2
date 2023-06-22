@@ -10,10 +10,11 @@
       config_file: config.tcl
     - usb
     - usb_cdc_core
-    # - manual_macro_placement_test
+    - manual_macro_placement_test
     - spm
     - gcd
     - caravel_upw
+    - io_placer
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
