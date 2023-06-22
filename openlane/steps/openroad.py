@@ -15,6 +15,7 @@ import io
 import os
 import re
 import json
+import shlex
 import tempfile
 import subprocess
 from math import inf
@@ -40,7 +41,7 @@ from .common_variables import (
 )
 
 from ..config import Variable
-from ..logging import err, info, warn
+from ..logging import debug, err, info, warn
 from ..state import State, DesignFormat, Path
 from ..common import get_script_dir, StringEnum, get_tpe, mkdirp
 
@@ -1348,9 +1349,31 @@ class IRDropReport(OpenROADStep):
 
 # Resizer Steps
 
+## ABC
+class ResizerStep(OpenROADStep):
+    config_vars = OpenROADStep.config_vars + rsz_variables
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        corners = self.config["RSZ_CORNERS"] or self.config["STA_CORNERS"]
+        lib_set_set = set()
+        count = 0
+        for corner in corners:
+            _, libs = self.toolbox.get_timing_files(self.config, corner)
+            lib_set = frozenset(libs)
+            if lib_set in lib_set_set:
+                debug(f"Liberty files for '{corner}' already accounted for- skipped")
+                continue
+            lib_set_set.add(lib_set)
+            env[f"RSZ_CORNER_{count}"] = f"{corner} {shlex.join(libs)}"
+            count += 1
+
+        return super().run(state_in, env=env, **kwargs)
+
 
 @Step.factory.register()
-class RepairDesign(OpenROADStep):
+class RepairDesign(ResizerStep):
     """
     Runs a number of design "repairs" on a global-placed ODB file.
     """
@@ -1359,78 +1382,74 @@ class RepairDesign(OpenROADStep):
     name = "Repair Design (Post-Global Placement)"
     flow_control_variable = "RUN_REPAIR_DESIGN"
 
-    config_vars = (
-        OpenROADStep.config_vars
-        + rsz_variables
-        + [
-            Variable(
-                "RUN_REPAIR_DESIGN",
-                bool,
-                "Enables/disables this step.",
-                default=True,
-                deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_BUFFER_INPUT_PORTS",
-                bool,
-                "Specifies whether or not to insert buffers on input ports when design repairs are run.",
-                default=True,
-                deprecated_names=["PL_RESIZER_BUFFER_INPUT_PORTS"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS",
-                bool,
-                "Specifies whether or not to insert buffers on input ports when design repairs are run.",
-                default=True,
-                deprecated_names=["PL_RESIZER_BUFFER_OUTPUT_PORTS"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_TIE_FANOUT",
-                bool,
-                "Specifies whether or not to repair tie cells fanout when design repairs are run.",
-                default=True,
-                deprecated_names=["PL_RESIZER_REPAIR_TIE_FANOUT"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_TIE_SEPARATION",
-                bool,
-                "Allows tie separation when performing design repairs.",
-                default=False,
-                deprecated_names=["PL_RESIZER_TIE_SEPERATION"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_MAX_WIRE_LENGTH",
-                Decimal,
-                "Specifies the maximum wire length cap used by resizer to insert buffers. If set to 0, no buffers will be inserted.",
-                default=0,
-                units="µm",
-                deprecated_names=["PL_RESIZER_MAX_WIRE_LENGTH"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_MAX_SLEW_PCT",
-                Decimal,
-                "Specifies a margin for the slews during design repair.",
-                default=20,
-                units="%",
-                deprecated_names=["PL_RESIZER_MAX_SLEW_MARGIN"],
-            ),
-            Variable(
-                "DESIGN_REPAIR_MAX_CAP_PCT",
-                Decimal,
-                "Specifies a margin for the capacitances during design repair.",
-                default=20,
-                units="%",
-                deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
-            ),
-        ]
-    )
+    config_vars = ResizerStep.config_vars + [
+        Variable(
+            "RUN_REPAIR_DESIGN",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_BUFFER_INPUT_PORTS",
+            bool,
+            "Specifies whether or not to insert buffers on input ports when design repairs are run.",
+            default=True,
+            deprecated_names=["PL_RESIZER_BUFFER_INPUT_PORTS"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS",
+            bool,
+            "Specifies whether or not to insert buffers on input ports when design repairs are run.",
+            default=True,
+            deprecated_names=["PL_RESIZER_BUFFER_OUTPUT_PORTS"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_TIE_FANOUT",
+            bool,
+            "Specifies whether or not to repair tie cells fanout when design repairs are run.",
+            default=True,
+            deprecated_names=["PL_RESIZER_REPAIR_TIE_FANOUT"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_TIE_SEPARATION",
+            bool,
+            "Allows tie separation when performing design repairs.",
+            default=False,
+            deprecated_names=["PL_RESIZER_TIE_SEPERATION"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_MAX_WIRE_LENGTH",
+            Decimal,
+            "Specifies the maximum wire length cap used by resizer to insert buffers. If set to 0, no buffers will be inserted.",
+            default=0,
+            units="µm",
+            deprecated_names=["PL_RESIZER_MAX_WIRE_LENGTH"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_MAX_SLEW_PCT",
+            Decimal,
+            "Specifies a margin for the slews during design repair.",
+            default=20,
+            units="%",
+            deprecated_names=["PL_RESIZER_MAX_SLEW_MARGIN"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_MAX_CAP_PCT",
+            Decimal,
+            "Specifies a margin for the capacitances during design repair.",
+            default=20,
+            units="%",
+            deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
+        ),
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
 
 
 @Step.factory.register()
-class ResizerTimingPostCTS(OpenROADStep):
+class ResizerTimingPostCTS(ResizerStep):
     """
     First attempt to meet timing requirements for a cell based on basic timing
     information after clock tree synthesis.
@@ -1444,61 +1463,57 @@ class ResizerTimingPostCTS(OpenROADStep):
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
     flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
-    config_vars = (
-        OpenROADStep.config_vars
-        + rsz_variables
-        + [
-            Variable(
-                "RUN_POST_CTS_RESIZER_TIMING",
-                bool,
-                "Enables/disables this step.",
-                default=True,
-                deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
-            ),
-            Variable(
-                "PL_RESIZER_HOLD_SLACK_MARGIN",
-                Decimal,
-                "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
-                default=0.1,
-                units="ns",
-            ),
-            Variable(
-                "PL_RESIZER_SETUP_SLACK_MARGIN",
-                Decimal,
-                "Specifies a time margin for the slack when fixing setup violations.",
-                default=0.05,
-                units="ns",
-            ),
-            Variable(
-                "PL_RESIZER_HOLD_MAX_BUFFER_PCT",
-                Decimal,
-                "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
-                default=50,
-                deprecated_names=["PL_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
-            ),
-            Variable(
-                "PL_RESIZER_SETUP_MAX_BUFFER_PCT",
-                Decimal,
-                "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
-                default=50,
-                units="%",
-                deprecated_names=["PL_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
-            ),
-            Variable(
-                "PL_RESIZER_ALLOW_SETUP_VIOS",
-                bool,
-                "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
-                default=False,
-            ),
-        ]
-    )
+    config_vars = ResizerStep.config_vars + [
+        Variable(
+            "RUN_POST_CTS_RESIZER_TIMING",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+            deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_SLACK_MARGIN",
+            Decimal,
+            "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
+            default=0.1,
+            units="ns",
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_SLACK_MARGIN",
+            Decimal,
+            "Specifies a time margin for the slack when fixing setup violations.",
+            default=0.05,
+            units="ns",
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_MAX_BUFFER_PCT",
+            Decimal,
+            "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
+            default=50,
+            deprecated_names=["PL_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_MAX_BUFFER_PCT",
+            Decimal,
+            "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
+            default=50,
+            units="%",
+            deprecated_names=["PL_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
+        ),
+        Variable(
+            "PL_RESIZER_ALLOW_SETUP_VIOS",
+            bool,
+            "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
+            default=False,
+        ),
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postcts.tcl")
 
 
 @Step.factory.register()
-class ResizerTimingPostGRT(OpenROADStep):
+class ResizerTimingPostGRT(ResizerStep):
     """
     Second attempt to meet timing requirements for a cell based on timing
     information after estimating resistance and capacitance values based on
@@ -1513,58 +1528,54 @@ class ResizerTimingPostGRT(OpenROADStep):
     name = "Resizer Timing Optimizations (Post-Global Routing)"
     flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
 
-    config_vars = (
-        OpenROADStep.config_vars
-        + rsz_variables
-        + [
-            Variable(
-                "RUN_POST_GRT_RESIZER_TIMING",
-                bool,
-                "Enables/disables this step.",
-                default=True,
-                deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
-            ),
-            Variable(
-                "GRT_RESIZER_HOLD_SLACK_MARGIN",
-                str,
-                "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
-                default=0.05,
-                units="ns",
-                deprecated_names=["GLB_RESIZER_HOLD_SLACK_MARGIN"],
-            ),
-            Variable(
-                "GRT_RESIZER_SETUP_SLACK_MARGIN",
-                str,
-                "Specifies a time margin for the slack when fixing setup violations.",
-                default=0.025,
-                units="ns",
-                deprecated_names=["GLB_RESIZER_SETUP_SLACK_MARGIN"],
-            ),
-            Variable(
-                "GRT_RESIZER_HOLD_MAX_BUFFER_PCT",
-                Decimal,
-                "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
-                default=50,
-                units="%",
-                deprecated_names=["GLB_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
-            ),
-            Variable(
-                "GRT_RESIZER_SETUP_MAX_BUFFER_PCT",
-                Decimal,
-                "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
-                default=50,
-                units="%",
-                deprecated_names=["GLB_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
-            ),
-            Variable(
-                "GRT_RESIZER_ALLOW_SETUP_VIOS",
-                bool,
-                "Allows setup violations when fixing hold.",
-                default=False,
-                deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
-            ),
-        ]
-    )
+    config_vars = ResizerStep.config_vars + [
+        Variable(
+            "RUN_POST_GRT_RESIZER_TIMING",
+            bool,
+            "Enables/disables this step.",
+            default=True,
+            deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_SLACK_MARGIN",
+            str,
+            "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
+            default=0.05,
+            units="ns",
+            deprecated_names=["GLB_RESIZER_HOLD_SLACK_MARGIN"],
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_SLACK_MARGIN",
+            str,
+            "Specifies a time margin for the slack when fixing setup violations.",
+            default=0.025,
+            units="ns",
+            deprecated_names=["GLB_RESIZER_SETUP_SLACK_MARGIN"],
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_MAX_BUFFER_PCT",
+            Decimal,
+            "Specifies a max number of buffers to insert to fix hold violations. This number is calculated as a percentage of the number of instances in the design.",
+            default=50,
+            units="%",
+            deprecated_names=["GLB_RESIZER_HOLD_MAX_BUFFER_PERCENT"],
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_MAX_BUFFER_PCT",
+            Decimal,
+            "Specifies a max number of buffers to insert to fix setup violations. This number is calculated as a percentage of the number of instances in the design.",
+            default=50,
+            units="%",
+            deprecated_names=["GLB_RESIZER_SETUP_MAX_BUFFER_PERCENT"],
+        ),
+        Variable(
+            "GRT_RESIZER_ALLOW_SETUP_VIOS",
+            bool,
+            "Allows setup violations when fixing hold.",
+            default=False,
+            deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")

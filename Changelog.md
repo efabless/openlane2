@@ -1,3 +1,7 @@
+# 2.0.0-a44
+* Added support for multiplecorners during resizer steps using `RSZ_CORNERS` variable
+* Internally reworked resizer steps to share a common base class
+
 # 2.0.0-a43
 * Added `io_placer` and `manual_macro_placemnt_test` to CI
 * Fixed `MAGTYPE` for `Magic.WriteLEF`

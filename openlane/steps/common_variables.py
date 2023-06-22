@@ -210,6 +210,11 @@ rsz_variables = dpl_variables + [
         "An optional list of cells to not use during resizer optimizations.",
         deprecated_names=["DONT_USE_CELLS"],
     ),
+    Variable(
+        "RSZ_CORNERS",
+        Optional[List[str]],
+        "A list of fully-qualifiedd IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+    ),
 ]
 
 constraint_variables = [
