@@ -1,3 +1,8 @@
+# 2.0.0-a43
+* Added `io_placer` and `manual_macro_placemnt_test` to CI
+* Fixed `MAGTYPE` for `Magic.WriteLEF`
+* Fixed bug with reading `EXTRA_LEFS` in Magic steps 
+
 # 2.0.0-a42
 * Added support for instances to `RSZ_DONT_TOUCH_RX`
 * Added support for `RSZ_DONT_TOUCH_LIST` to resizer steps

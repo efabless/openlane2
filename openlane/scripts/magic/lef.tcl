@@ -30,7 +30,7 @@ if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
     set ::env(GND_NETS) $::env(GND_PIN)
 }
 
-
+puts "\[INFO] Ignoring '$::env(VDD_NETS) $::env(GND_NETS)'"
 lef nocheck $::env(VDD_NETS) $::env(GND_NETS)
 
 # Write LEF

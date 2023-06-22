@@ -22,9 +22,8 @@ if { [info exist ::env(MACRO_LEFS)] } {
     }
 }
 if { [info exist ::env(EXTRA_LEFS)] } {
-    puts "> lef read $lef_file"
-    lef read $lef_file
     foreach lef_file $::env(EXTRA_LEFS) {
+        puts "> lef read $lef_file"
         lef read $lef_file
     }
 }
