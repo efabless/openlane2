@@ -1,3 +1,8 @@
+# 2.0.0-a44
+* Added support for multiple corners during CTS using the `CTS_CORNERS` variable
+* Added support for multiple corners during resizer steps using the `RSZ_CORNERS` variable
+* Internally reworked OpenROAD resizer and CTS steps to share a common base class
+
 # 2.0.0-a43
 * Added `io_placer` and `manual_macro_placemnt_test` to CI
 * Fixed `MAGTYPE` for `Magic.WriteLEF`

@@ -142,6 +142,8 @@ class Toolbox(object):
             be used.
         :param prioritize_nl: Do not return lib files for macros that have
             Gate-Level Netlists and SPEF views.
+
+            If set to ``false``, only lib files are returned.
         :returns: A tuple:
             - \\[0\\] being the name of the timing corner
             - \\[1\\] being a heterogenous list of files
