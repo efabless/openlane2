@@ -13,9 +13,13 @@
 # limitations under the License.
 """
 Common Utilities
+----------------
 
 A number of common utility functions used throughout the codebase.
+
+.. no-imported-members
 """
+from collections import UserString
 import os
 import re
 import json
@@ -39,18 +43,6 @@ from typing import (
     Tuple,
     Optional,
 )
-
-
-def mkdirp(path: typing.Union[str, os.PathLike]):
-    """
-    Attempts to create a directory and all of its parents.
-
-    Does not fail if the directory already exists, however, it does fail
-    if it is unable to create any of the components and/or if
-
-    :param path: A filesystem path for the directory
-    """
-    return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
 openlane_root = os.path.dirname(os.path.abspath(__file__))
@@ -127,14 +119,11 @@ def slugify(value: str) -> str:
     return re.sub(r"[-\s\.]+", "-", value)
 
 
-final = typing.final
-
-
 def internal(method):
     """A decorator to indicate internal methods.
 
-    It dynamically adds a statement to the effect in the docstring, but has no
-    other runtime effects.
+    It dynamically adds a statement to the effect in the docstring as well
+    as setting an attribute, ``is_internal``, to ``True``, but has no other effects.
 
     :param f: Method to mark as internal
     """
@@ -144,7 +133,24 @@ def internal(method):
         "**This method is considered internal and should only be called by this class or its subclass hierarchy.**\n"
         + method.__doc__
     )
+
+    setattr(method, "is_internal", True)
     return method
+
+
+final = typing.final
+
+
+def mkdirp(path: typing.Union[str, os.PathLike]):
+    """
+    Attempts to create a directory and all of its parents.
+
+    Does not fail if the directory already exists, however, it does fail
+    if it is unable to create any of the components and/or if
+
+    :param path: A filesystem path for the directory
+    """
+    return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
 def StringEnum(name: str, values: Sequence[str]):
@@ -155,10 +161,19 @@ def StringEnum(name: str, values: Sequence[str]):
 
 
 class GenericDictEncoder(json.JSONEncoder):
+    """
+    A JSON encoder for :class:`GenericDict` objects. Also handles some types not
+    necessarily handled by the default JSON encoder, i.e., UserString, os.PathLike,
+    Decimals, etcetera.
+
+    It is recommended to use :meth:`GenericDict.to_json` unless you know what
+    you're doing.
+    """
+
     def default(self, o):
         if isinstance(o, GenericDict):
             return o.to_raw_dict()
-        elif isinstance(o, os.PathLike):
+        elif isinstance(o, os.PathLike) or isinstance(o, UserString):
             return str(o)
         elif is_dataclass(o):
             return asdict(o)
@@ -177,17 +192,23 @@ VT = TypeVar("VT")
 
 
 class GenericDict(Mapping[KT, VT]):
+    """
+    A dictionary with generic keys and values that is compatible with Python 3.8.
+
+    :param copying: A base Mapping object to copy values from.
+    :param overrides: Another mapping object to override the value from `copying`
+        with.
+    """
+
     _data: Dict[KT, VT]
 
     def __init__(
         self,
         copying: Optional[Mapping[KT, VT]] = None,
         /,
-        *args,
         overrides: Optional[Mapping[KT, VT]] = None,
-        **kwargs,
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self._data = {}
         copying = copying or {}
         overrides = overrides or {}
@@ -216,6 +237,11 @@ class GenericDict(Mapping[KT, VT]):
         return iter(self._data)
 
     def pop(self, key: KT, /) -> VT:
+        """
+        :param key: The key to pop the value for.
+        :returns: The value for key. Raises ``IndexError`` if the key does not
+            exist. The key/value pair is then deleted from the dictionary.
+        """
         value = self[key]
         del self[key]
         return value
@@ -223,26 +249,48 @@ class GenericDict(Mapping[KT, VT]):
     T = TypeVar("T", bound="GenericDict")
 
     def copy(self: T) -> T:
+        """
+        Convenience replacement for `object.__class__(object)`, which would
+        create a copy of the ``GenericDict`` object.
+
+        :returns: The copy
+        """
         return self.__class__(self)
 
     def to_raw_dict(self) -> dict:
+        """
+        :returns: A copy of the underlying Python built-in ``dict`` for this class.
+        """
         return self._data.copy()
 
     def get_encoder(self) -> Type[GenericDictEncoder]:
+        """
+        :returns: A JSON encoder handling GenericDict objects.
+        """
         return GenericDictEncoder
 
     def keys(self):
+        """
+        :returns: A set-like object providing a view of the keys of the GenericDict object.
+        """
         return self._data.keys()
 
     def values(self):
+        """
+        :returns: A set-like object providing a view of the values of the GenericDict object.
+        """
         return self._data.values()
 
     def items(self):
+        """
+        :returns: A set-like object providing a view of the GenericDict object as (key, value) tuples.
+        """
         return self._data.items()
 
     def dumps(self, **kwargs) -> str:
         """
-        Dumps data as JSON.
+        :param kwargs: Passed to ``json.dumps``.
+        :returns: A JSON string representing the the GenericDict object.
         """
         if "indent" not in kwargs:
             kwargs["indent"] = 4
@@ -250,7 +298,13 @@ class GenericDict(Mapping[KT, VT]):
 
     def check(self, key: KT, /) -> Tuple[Optional[KT], Optional[VT]]:
         """
-        :returns: A tuple of the key if it exists (or None) and the value.
+        Checks if a key exists and returns a tuple in the form ``(key, value)``.
+
+        :param key: The key in question
+        :returns: If the key does not exist, the value of ``key`` will be ``None`` and so will
+            ``value``. If the key exists, ``key`` will be the key being checked for
+            existence and ``value`` will be the value assigned to said key in the
+            GenericDict object.
 
             Do note ``None`` is a valid value for some keys, so simply
             checking if the second element ``is not None`` is insufficient to check
@@ -259,6 +313,11 @@ class GenericDict(Mapping[KT, VT]):
         return (key if key in self._data else None, self.get(key))
 
     def update(self, incoming: "Mapping[KT, VT]"):
+        """
+        A convenience function to update multiple values in the GenericDict object
+        at the same time.
+        :param
+        """
         for key, value in incoming.items():
             self[key] = value
 
@@ -287,7 +346,12 @@ class GenericImmutableDict(GenericDict[KT, VT]):
 # and non-mapping in sequence out in Python, be my guest
 def copy_recursive(input):
     """
-    :returns: an arbitrarily deep copy of a nested combination of Mappings and Sequences.
+    Copies any arbitrarily-deep nested structure of Mappings and/or Sequences.
+
+    :returns: The copy.
+
+        All sequences will become built-in ``list``s and all mappings will
+        become built-in ``dict``s.
     """
 
     def resolve_value(value):
@@ -317,7 +381,7 @@ T = TypeVar("T")
 
 def idem(obj: T, *args, **kwargs) -> T:
     """
-    :returns: the parameter ``obj`` unchanged.
+    :returns: the parameter ``obj`` unchanged. Useful for some lambdas.
     """
     return obj
 
@@ -326,11 +390,20 @@ TPE = ThreadPoolExecutor(max_workers=os.cpu_count())
 
 
 def set_tpe(tpe: ThreadPoolExecutor):
+    """
+    Allows replacing OpenLane's global ``ThreadPoolExecutor`` with a customized
+    one.
+
+    :param tpe: The replacemend ThreadPoolExecutor
+    """
     global TPE
     TPE = tpe
 
 
 def get_tpe() -> ThreadPoolExecutor:
+    """
+    :returns: OpenLane's global ``ThreadPoolExecutor``
+    """
     global TPE
     return TPE
 
@@ -340,7 +413,15 @@ def get_tpe() -> ThreadPoolExecutor:
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)$")
 
 
-def parse_metric_modifiers(metric_name: str) -> Tuple[str, Dict[str, str]]:
+def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
+    """
+    Parses a metric name into a base and modifiers as specified in
+    the `Metrics4ML standard <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_.
+
+    :param metric_name: The name of the metric as generated by a utility.
+    :returns: A tuple of the base part as a string, then the modifiers as
+        a key-value mapping.
+    """
     mn_mut = metric_name.split("__")
     modifiers = {}
     i = len(mn_mut) - 1

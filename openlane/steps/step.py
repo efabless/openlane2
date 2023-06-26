@@ -57,15 +57,35 @@ from ..logging import (
 )
 
 
-class StepError(ValueError):
+class StepError(RuntimeError):
+    """
+    A ``RuntimeError`` that occurs when a Step fails to finish execution
+    properly.
+    """
+
     pass
 
 
 class DeferredStepError(StepError):
+    """
+    A variant of :class:`StepError` where parent Flows are encouraged to continue
+    execution of subsequent steps regardless and then finally flag the Error
+    at the very end.
+    """
+
     pass
 
 
 class StepException(StepError):
+    """
+    A variant of :class:`StepError` for unexpected failures or failures due
+    to misconfiguration, such as:
+
+    * Invalid inputs
+    * Mis-use of class interfaces of the :class:`Step`
+    * Other unexpected failures
+    """
+
     pass
 
 
@@ -245,7 +265,7 @@ class Step(ABC):
                 raise TypeError("Missing required argument 'config'")
 
         if state_in is None:
-            if config.is_interactive():
+            if config._interactive:
                 state_in = LastState
             else:
                 raise TypeError("Missing required argument 'state_in'")
@@ -260,7 +280,7 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if config.is_interactive():
+        if config._interactive:
             mutable = Config(**kwargs.copy())
             overrides, warnings, errors = mutable.process_variable_list(
                 variables=self.config_vars,
@@ -284,7 +304,7 @@ class Step(ABC):
         if step_dir is None:
             if self.flow is not None:
                 self.step_dir = self.flow.dir_for_step(self)
-            elif not self.config.is_interactive():
+            elif not self.config._interactive:
                 raise TypeError("Missing required argument 'step_dir'")
             else:
                 self.step_dir = os.path.join(
@@ -436,7 +456,7 @@ class Step(ABC):
                     raise StepException(
                         "Attempted to 'start' a step before its parent Flow."
                     )
-            elif not self.config.is_interactive():
+            elif not self.config._interactive:
                 raise TypeError(
                     "Missing argument 'toolbox' required when not running in a Flow"
                 )
@@ -510,11 +530,12 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
 
-        if self.config.is_interactive():
+        if self.config._interactive:
             LastState = self.state_out
 
         return self.state_out
 
+    @internal
     @abstractmethod
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """

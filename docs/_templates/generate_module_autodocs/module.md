@@ -1,4 +1,8 @@
-${"#"} ${short_desc}
+```{eval-rst}
+.. automodule:: ${full_name}
+   :members:${ "\n   :imported-members:" if include_imported_members else ""}
+   :show-inheritance:
+```
 
 %if submodules:
 | Submodule | Short Description |
@@ -9,11 +13,6 @@ ${"#"} ${short_desc}
 %endif
 
 
-```{eval-rst}
-.. automodule:: ${full_name}
-   :members:${ "\n   :imported-members:" if include_imported_members else ""}
-   :show-inheritance:
-```
 
 %if submodules:
 ```{toctree}

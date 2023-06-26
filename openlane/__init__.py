@@ -15,19 +15,21 @@
 # flake8: noqa
 """
 The OpenLane API
+----------------
 
 These modules serve as the infrastructure for OpenLane-based flows.
+
 Using these functions, users may either utilize built-in flows, or build custom
 Flows and/or custom Steps for the design of more sophisticated chips.
 
-..
-    no-imported-members
-"""
+.. no-imported-members
 
-from .config import Variable, Config, InvalidConfig
-from .flows import Flow, SequentialFlow
-from .state import State, DesignFormat
-from .steps import Step
-from .common import *
+<!--
+.. data:: discovered_plugins
+
+    A dictionary of detected OpenLane plugins, with the module name as a key and
+    the module version as a version.
+-->
+"""
 from .plugins import discovered_plugins
 from .__version__ import __version__

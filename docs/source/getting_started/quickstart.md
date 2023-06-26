@@ -39,7 +39,7 @@ python3 -m openlane ./gcd/config.json
 You may simply elect to write a Python script to configure and harden your design. For an SPM module with one file `./src/spm.v`, for example, you can use this script to place and route it.
 
 ```python
-from openlane import Flow
+from openlane.flows import Flow
 
 Classic = Flow.get("Classic")
 

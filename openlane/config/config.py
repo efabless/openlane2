@@ -108,14 +108,6 @@ class Config(GenericImmutableDict[str, Any]):
 
         self.meta = meta
 
-    def is_interactive(self) -> bool:
-        """
-        :returns: Whether the configuration is for interactive mode or not.
-
-        See :meth:`interactive` for more info on interactive mode.
-        """
-        return self._interactive
-
     def copy(self, **overrides) -> "Config":
         """
         Produces a shallow copy of the configuration object.
@@ -127,15 +119,16 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(self, overrides=overrides)
 
     def to_raw_dict(self) -> Dict[str, Any]:
+        """
+        :returns: A raw dictionary representation including the ``meta`` object.
+        """
         final: Dict[Any, Any] = self._data.copy()
         final["meta"] = self.meta
         return final
 
     def _repr_markdown_(self) -> str:
-        title = (
-            "Interactive Configuration" if self.is_interactive() else "Configuration"
-        )
-        values_title = "Initial Values" if self.is_interactive() else "Values"
+        title = "Interactive Configuration" if self._interactive else "Configuration"
+        values_title = "Initial Values" if self._interactive else "Values"
         return (
             dedent(
                 f"""

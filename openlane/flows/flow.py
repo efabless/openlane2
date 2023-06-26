@@ -52,15 +52,26 @@ from ..logging import console, info, verbose, warn
 from ..common import get_tpe, mkdirp, internal, final, slugify
 
 
-class FlowException(RuntimeError):
-    pass
-
-
 class FlowError(RuntimeError):
+    """
+    A ``RuntimeError`` that occurs when a Flow, or one of its underlying Steps,
+    fails to finish execution properly.
+    """
+
     pass
 
 
-class FlowImplementationError(RuntimeError):
+class FlowException(FlowError):
+    """
+    A variant of :class:`FlowError` for unexpected failures or failures due
+    to misconfiguration, such as:
+
+    * A :class:`StepException` raised by an underlying Step
+    * Invalid inputs
+    * Mis-use of class interfaces of the :class:`Flow`
+    * Other unexpected failures
+    """
+
     pass
 
 
@@ -76,17 +87,17 @@ class Flow(Step._FlowType):
     is currently in and the remaining stages.
 
     :param config: Either a resolved :class:`Config` object, or an input to
-        :meth:`ConfigBuilder.load`.
+        :meth:`Config.load`.
 
     :param name: An optional string name for the Flow itself, and not a run of it.
 
         If not set, the Python class name will be used instead.
 
-    :param config_override_strings: See :meth:`ConfigBuilder.load`
-    :param pdk: See :meth:`ConfigBuilder.load`
-    :param pdk_root: See :meth:`ConfigBuilder.load`
-    :param scl: See :meth:`ConfigBuilder.load`
-    :param design_dir: See :meth:`ConfigBuilder.load`
+    :param config_override_strings: See :meth:`Config.load`
+    :param pdk: See :meth:`Config.load`
+    :param pdk_root: See :meth:`Config.load`
+    :param scl: See :meth:`Config.load`
+    :param design_dir: See :meth:`Config.load`
 
     :ivar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
@@ -436,7 +447,7 @@ class Flow(Step._FlowType):
         has started.
         """
         if self.run_dir is None:
-            raise FlowImplementationError(
+            raise FlowException(
                 "Attempted to call dir_for_step on a flow that has not been started."
             )
         return os.path.join(

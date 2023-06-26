@@ -24,6 +24,9 @@ from sphinx.config import Config
 from sphinx.application import Sphinx
 
 import openlane
+import openlane.flows
+import openlane.steps
+import openlane.config
 
 
 def setup(app: Sphinx):
@@ -72,7 +75,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
 
         # 2. Flows
         template = env.get_template("flows.md")
-        flow_factory = openlane.Flow.factory
+        flow_factory = openlane.flows.Flow.factory
 
         module = openlane.config.flow
         with open(
@@ -91,7 +94,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
 
         # 3. Steps
         template = env.get_template("steps.md")
-        step_factory = openlane.Step.factory
+        step_factory = openlane.steps.Step.factory
 
         # Pre-processing
         by_category = {}

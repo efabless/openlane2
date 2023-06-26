@@ -13,6 +13,7 @@
 # limitations under the License.
 """
 The Configuration Module
+------------------------
 
 This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.

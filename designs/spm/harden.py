@@ -1,4 +1,4 @@
-from openlane import Flow
+from openlane.flows import Flow
 
 Classic = Flow.get("Classic")
 
