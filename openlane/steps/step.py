@@ -546,6 +546,7 @@ class Step(ABC):
         log_to: Optional[Union[str, os.PathLike]] = None,
         silent: bool = False,
         report_dir: Optional[Union[str, os.PathLike]] = None,
+        env: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -585,9 +586,21 @@ class Step(ABC):
             kwargs["stdout"] = subprocess.PIPE
         if "stderr" not in kwargs:
             kwargs["stderr"] = subprocess.STDOUT
+
+        if env_dict := env:
+            for key, value in env_dict.items():
+                if not (
+                    isinstance(value, str)
+                    or isinstance(value, bytes)
+                    or isinstance(value, os.PathLike)
+                ):
+                    raise StepException(
+                        f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
+                    )
         process = subprocess.Popen(
             cmd_str,
             encoding="utf8",
+            env=env,
             **kwargs,
         )
         lines = ""

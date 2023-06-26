@@ -157,6 +157,13 @@ class OpenROADStep(TclStep):
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
+        env["PNR_EXCLUDED_CELLS"] = shlex.join(
+            [
+                cell.strip()
+                for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
+                if cell.strip() != ""
+            ]
+        )
 
         return env
 
@@ -1364,7 +1371,7 @@ class CTS(ResizerStep):
             Variable(
                 "CTS_CORNERS",
                 Optional[List[str]],
-                "A list of fully-qualifiedd IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+                "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
             ),
         ]
     )
