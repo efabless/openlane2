@@ -105,3 +105,11 @@ proc unset_dont_touch_objects {args} {
         unset_dont_touch $::env(RSZ_DONT_TOUCH_LIST)
     }
 }
+
+
+proc set_dont_use_cells {} {
+    set_dont_use $::env(PNR_EXCLUDED_CELLS)
+    if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
+        set_dont_use $::env(RSZ_DONT_USE_CELLS)
+    }
+}

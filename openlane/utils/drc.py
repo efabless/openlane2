@@ -19,15 +19,24 @@ from decimal import Decimal
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Tuple, Dict
 
+from ..logging import debug
+
 BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
 
 @dataclass
 class Violation:
-    layer: str
-    rule: str
+    rules: List[Tuple[str, str]]
     description: str
     bounding_boxes: List[BoundingBox] = field(default_factory=list)
+
+    @property
+    def layer(self) -> str:
+        return self.rules[0][0]
+
+    @property
+    def rule(self) -> str:
+        return self.rules[0][1]
 
     @property
     def category_name(self) -> str:
@@ -51,7 +60,8 @@ class DRC:
             header = 10
 
         MAGIC_SPLIT_LINE = "-" * 40
-        MAGIC_RULE_PARSER = re.compile(r"\s*(.+)\s*\((\w+)\.(\w+)\)\s*")
+        MAGIC_RULE_LINE_PARSER = re.compile(r"^(.+?)(?:\s*\((.+)\))?$")
+        MAGIC_RULE_RX = re.compile(r"([\w\-]+)\.([\w\-]+)")
 
         violations: Dict[str, Violation] = {}
 
@@ -74,12 +84,20 @@ class DRC:
             elif state == State.header:
                 module = line
             elif state == State.drc:
-                if match := MAGIC_RULE_PARSER.match(line):
-                    description = match[1]
-                    layer = match[2]
-                    rule = match[3]
-                    violation = Violation(layer, rule, description)
+                if match := MAGIC_RULE_LINE_PARSER.match(line):
+                    description = match[0]
+                    rules = []
+                    if rules_raw := match[2]:
+                        for match in MAGIC_RULE_RX.finditer(rules_raw):
+                            layer = match[1]
+                            rule = match[2]
+                            rules.append((layer, rule))
+                    else:
+                        rules = [("UNKNOWN", "UNKNOWN")]
+                    violation = Violation(rules, description)
                     counter += 1
+                else:
+                    debug(f"Line '{line}' didn't match rule regex.")
             elif state == State.data:
                 coord_list = [Decimal(coord[:-2]) for coord in line.split()]
                 bounding_box: BoundingBox = (

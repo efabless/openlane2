@@ -1,14 +1,23 @@
+# 2.0.0-a45
+
+* Made Magic DRC report parser more robust, handling multiple rules, etc
+* Updated documentation for various related variables
+* Fixed bug causing PNR-excluded cells being used during resizer-based OpenROAD steps 
+
 # 2.0.0-a44
+
 * Added support for multiple corners during CTS using the `CTS_CORNERS` variable
 * Added support for multiple corners during resizer steps using the `RSZ_CORNERS` variable
 * Internally reworked OpenROAD resizer and CTS steps to share a common base class
 
 # 2.0.0-a43
+
 * Added `io_placer` and `manual_macro_placemnt_test` to CI
 * Fixed `MAGTYPE` for `Magic.WriteLEF`
 * Fixed bug with reading `EXTRA_LEFS` in Magic steps 
 
 # 2.0.0-a42
+
 * Added support for instances to `RSZ_DONT_TOUCH_RX`
 * Added support for `RSZ_DONT_TOUCH_LIST` to resizer steps
 * `inverter` design used to configure the above two
@@ -18,17 +27,20 @@
 * Fixed issue in `usb_cdc_core` masked by aforementioned bug
 
 # 2.0.0-a41
+
 * Updated Magic to `9b131fa`
 * Updated Magic LEF writing script
 * Ensured consistency of Tcl script logging prefixes
 
 # 2.0.0-a40
+
 * Fixed a bug with extracting variables from Tcl config files when the variable
   is already set in the environment
 * Fixed a bug with saving lib and SDF files
 * Fixed `check_antennas.tcl` being mis-named
 
 # 2.0.0-a39
+
 * Added mechanism for subprocesses to write metrics via stdout, `%OL_METRIC{,_I,_F}`, used for OpenSTA
 * Added violation summary table to post-PNR STA
 * Reworked multi-corner STA: now run across N processes with the step being responsible for aggregation

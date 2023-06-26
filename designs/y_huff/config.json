@@ -6,6 +6,7 @@
     "GPL_CELL_PADDING": 4,
     "DPL_CELL_PADDING": 4,
     "FP_CORE_UTIL": 25,
+    "QUIT_ON_SYNTH_CHECKS": false,
     "pdk::sky130*": {
         "FP_SIZING": "absolute",
         "DIE_AREA": "0 0 700 700",
