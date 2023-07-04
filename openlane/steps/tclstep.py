@@ -372,11 +372,12 @@ class TclStep(Step):
 
     def get_command(self) -> List[str]:
         """
+        This command should be overridden by subclasses and replaced with a
+        command incorporating the  appropriate tool: e.g. ``openroad``,
+        ``yosys``, et cetera.
+
         :returns: A list of strings representing the command used to run the script,
         including the result of :meth:`get_script_path`.
-
-        This command should be overridden by subclasses and replaced with the
-        appropriate tool: e.g. ``openroad``, ``yosys``, et cetera.
         """
         return ["tclsh", self.get_script_path()]
 
@@ -437,7 +438,7 @@ class TclStep(Step):
 
         When overriding in a subclass, you may find it useful to use this pattern:
 
-        .. code-block::
+        .. code-block:: python
 
             kwargs, env = self.extract_env(kwargs)
             env["CUSTOM_ENV_VARIABLE"] = "1"

@@ -121,8 +121,6 @@ class Step(ABC):
         If running in interactive mode, you can set this to ``None``, but it is
         otherwise required.
 
-    :param flow: The parent flow, if applicable.
-
     :param state_in: The state object this step will use as an input.
 
         The state may also be a ``Future[State]``, in which case,
@@ -160,6 +158,8 @@ class Step(ABC):
         While this is technically an instance variable, it is expected for every
         subclass to override this variable and instances are only to change it
         to disambiguate when the same step is used multiple times in a flow.
+
+    :param flow: Deprecated: the parent flow. Ignored if passed.
 
     :cvar inputs: A list of :class:`openlane.state.DesignFormat` objects that
         are required for this step. These will be validated by the :meth:`start`
@@ -203,18 +203,6 @@ class Step(ABC):
         If :meth:`start` is called again, the reference is destroyed.
     """
 
-    class _FlowType(ABC):
-        """
-        "Forward declaration" for the methods a step uses to interact with its
-        parent Flow.
-        """
-
-        toolbox: Optional[Toolbox] = None
-
-        @abstractmethod
-        def dir_for_step(self, step: Step) -> str:
-            pass
-
     # Class Variables
     inputs: ClassVar[List[DesignFormat]]
     outputs: ClassVar[List[DesignFormat]]
@@ -243,16 +231,21 @@ class Step(ABC):
         self,
         config: Optional[Config] = None,
         state_in: Union[Optional[State], Future[State]] = None,
-        step_dir: Optional[str] = None,
+        *,
         id: Optional[str] = None,
         name: Optional[str] = None,
         long_name: Optional[str] = None,
-        flow: Optional[_FlowType] = None,
+        flow: Optional[Any] = None,
         **kwargs,
     ):
         if self.id == NotImplemented:
             raise NotImplementedError(
                 "All subclasses of Step must override the value of id."
+            )
+
+        if flow is not None:
+            warn(
+                f"Passing 'flow' to a Step class's initializer is deprecated. Please update the flow '{type(flow).__name__}'."
             )
 
         if id is not None:
@@ -299,22 +292,6 @@ class Step(ABC):
             )
 
         self.config = config.copy()
-
-        self.flow = flow
-        if step_dir is None:
-            if self.flow is not None:
-                self.step_dir = self.flow.dir_for_step(self)
-            elif not self.config._interactive:
-                raise TypeError("Missing required argument 'step_dir'")
-            else:
-                self.step_dir = os.path.join(
-                    os.getcwd(),
-                    "openlane_run",
-                    f"{Step.counter}-{slugify(self.id)}",
-                )
-                Step.counter += 1
-        else:
-            self.step_dir = step_dir
 
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):
@@ -426,6 +403,7 @@ class Step(ABC):
     def start(
         self,
         toolbox: Optional[Toolbox] = None,
+        step_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
         """
@@ -449,14 +427,7 @@ class Step(ABC):
         global LastState
 
         if toolbox is None:
-            if self.flow is not None:
-                if toolbox := self.flow.toolbox:
-                    self.toolbox = toolbox
-                else:
-                    raise StepException(
-                        "Attempted to 'start' a step before its parent Flow."
-                    )
-            elif not self.config._interactive:
+            if not self.config._interactive:
                 raise TypeError(
                     "Missing argument 'toolbox' required when not running in a Flow"
                 )
@@ -466,11 +437,24 @@ class Step(ABC):
         else:
             self.toolbox = toolbox
 
+        if step_dir is None:
+            if not self.config._interactive:
+                raise TypeError("Missing required argument 'step_dir'")
+            else:
+                self.step_dir = os.path.join(
+                    os.getcwd(),
+                    "openlane_run",
+                    f"{Step.counter}-{slugify(self.id)}",
+                )
+                Step.counter += 1
+        else:
+            self.step_dir = step_dir
+
         state_in_result = self.state_in.result()
 
         rule(f"{self.long_name}")
 
-        if self.flow is not None and self.flow_control_variable is not None:
+        if not self.config._interactive and self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if isinstance(flow_control_value, bool):
                 if not flow_control_value:
@@ -547,11 +531,12 @@ class Step(ABC):
 
         :param state_in: The input state.
 
-            Note that `self.state_in` is stored as a future and would need to be
+            Note that ``self.state_in`` is stored as a future and would need to be
             resolved before use first otherwise.
 
-            For reference, `start()` is responsible for resolving it
-            for `.run()`.
+            For reference, ``start()`` is responsible for resolving it
+            for ``.run()``.
+
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """

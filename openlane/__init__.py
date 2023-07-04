@@ -17,19 +17,23 @@
 The OpenLane API
 ----------------
 
-These modules serve as the infrastructure for OpenLane-based flows.
+Documented elements of this API represent the primary programming interface for
+the OpenLane infrastructure.
 
-Using these functions, users may either utilize built-in flows, or build custom
-Flows and/or custom Steps for the design of more sophisticated chips.
+The various elements of OpenLane are organized into modules. You may import them
+using their module name as follows:
+
+.. code-block:: python
+
+    import openlane.common
 
 .. no-imported-members
 
-<!--
-.. data:: discovered_plugins
+.. comment
+    .. data:: discovered_plugins
 
-    A dictionary of detected OpenLane plugins, with the module name as a key and
-    the module version as a version.
--->
+        A dictionary of detected OpenLane plugins, with the module name as a key and
+        the module version as a version.
 """
 from .plugins import discovered_plugins
 from .__version__ import __version__

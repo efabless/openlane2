@@ -743,10 +743,12 @@ class GlobalPlacement(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        env[
-            "PL_TARGET_DENSITY_PCT"
-        ] = f"{self.config['FP_CORE_UTIL'] + (5 * self.config['GPL_CELL_PADDING']) + 10}"
-
+        if os.getenv("PL_TARGET_DENSITY_PCT") is None:
+            expr = (
+                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
+            )
+            expr = min(expr, 100)
+            env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
         return super().run(state_in, env=env, **kwargs)
 
 

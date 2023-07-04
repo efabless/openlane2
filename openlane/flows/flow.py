@@ -17,7 +17,7 @@ import os
 import glob
 import datetime
 import textwrap
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from typing import (
     List,
@@ -75,7 +75,7 @@ class FlowException(FlowError):
     pass
 
 
-class Flow(Step._FlowType):
+class Flow(ABC):
     """
     An abstract base class for a flow.
 
@@ -365,19 +365,26 @@ class Flow(Step._FlowType):
         pass
 
     @internal
-    def start_step_async(
+    def start_step(
         self,
         step: Step,
         *args,
         **kwargs,
-    ) -> Future[State]:
+    ) -> State:
         """
-        A helper function that may run a step asynchronously.
+        A helper function that handles passing parameters to :mod:`Step.start`.'
 
-        It returns a `Future` encapsulating a State object, which can then be
-        used as an input to the next step or inspected to await it.
+        It is essentially equivalent to:
 
-        See the Step initializer for more info.
+        .. code-block:: python
+
+            step.start(
+                toolbox=self.toolbox,
+                step_dir=self.dir_for_step(step),
+            )
+
+
+        See :meth:`Step.start` for more info.
 
         :param step: The step object to run
         :param args: Arguments to `step.start`
@@ -385,6 +392,30 @@ class Flow(Step._FlowType):
         """
 
         kwargs["toolbox"] = self.toolbox
+        kwargs["step_dir"] = self.dir_for_step(step)
+
+        return step.start(*args, **kwargs)
+
+    @internal
+    def start_step_async(
+        self,
+        step: Step,
+        *args,
+        **kwargs,
+    ) -> Future[State]:
+        """
+        An asynchronous equivalent to :meth:`start_step`.
+
+        It returns a ``Future`` encapsulating a State object, which can then be
+        used as an input to the next step or inspected to await it.
+
+        :param step: The step object to run
+        :param args: Arguments to `step.start`
+        :param kwargs: Keyword arguments to `step.start`
+        """
+
+        kwargs["toolbox"] = self.toolbox
+        kwargs["step_dir"] = self.dir_for_step(step)
 
         return get_tpe().submit(step.start, *args, **kwargs)
 

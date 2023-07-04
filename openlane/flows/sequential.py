@@ -157,7 +157,7 @@ class SequentialFlow(Flow):
 
         current_state = initial_state
         for cls in self.Steps:
-            step = cls(config=self.config, state_in=current_state, flow=self)
+            step = cls(config=self.config, state_in=current_state)
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
@@ -169,7 +169,10 @@ class SequentialFlow(Flow):
             else:
                 step_list.append(step)
                 try:
-                    current_state = step.start()
+                    current_state = step.start(
+                        toolbox=self.toolbox,
+                        step_dir=self.dir_for_step(step),
+                    )
                 except StepException as e:
                     raise FlowException(str(e))
                 except DeferredStepError as e:

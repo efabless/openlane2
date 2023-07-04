@@ -5,7 +5,7 @@ Each Flow's list configuration variables is essentially a sum of its included st
 
 Additionally, the [PDK Configuration Variables](./pdk_config_vars.md) are exposed to all steps.
 
-If you're looking for documentation for the `Flow` Python classes themselves, check the API reference [here](./api/flows/index.md).
+If you're looking for documentation for the `Flow` Python classes themselves, check the API reference [here](./api/flows/index).
 
 ${"##"} Flows
 

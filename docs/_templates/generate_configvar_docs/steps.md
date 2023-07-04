@@ -5,7 +5,7 @@ This page documents these steps, how to get them and their configuration variabl
 
 Additionally, the [PDK Configuration Variables](./pdk_config_vars.md) are exposed to all steps.
 
-If you're looking for documentation for the `Step` Python classes themselves, check the API reference [here](./api/steps/index.md).
+If you're looking for documentation for the `Step` Python classes themselves, check the API reference [here](./api/steps/index).
 
 ```{warning}
 * Two steps in a given Flow may share a configuration variable name if-and-only-if the variables are otherwise identical, i.e., the name, type, and default value all match. Otherwise, the flow will not compile.

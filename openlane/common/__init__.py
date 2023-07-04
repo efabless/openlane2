@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Common Utilities
-----------------
+Common Utilities Module
+-----------------------
 
-A number of common utility functions used throughout the codebase.
+A number of common utility functions and classes used throughout the codebase.
 
 .. no-imported-members
 """
@@ -45,7 +45,7 @@ from typing import (
 )
 
 
-openlane_root = os.path.dirname(os.path.abspath(__file__))
+openlane_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def get_openlane_root() -> str:
@@ -59,6 +59,8 @@ def get_openlane_root() -> str:
 def get_script_dir() -> str:
     """
     Gets the OpenLane tool `scripts` directory.
+
+    :meta private:
     """
     return os.path.join(
         openlane_root,
@@ -68,7 +70,7 @@ def get_script_dir() -> str:
 
 def get_opdks_rev() -> str:
     """
-    Gets the Open_PDKs revision.
+    Gets the Open_PDKs revision confirmed compatible with this version of OpenLane.
     """
     return open(os.path.join(openlane_root, "open_pdks_rev"), encoding="utf8").read()
 
@@ -146,7 +148,8 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     Attempts to create a directory and all of its parents.
 
     Does not fail if the directory already exists, however, it does fail
-    if it is unable to create any of the components and/or if
+    if it is unable to create any of the components and/or if the path
+    already exists as a file.
 
     :param path: A filesystem path for the directory
     """
@@ -155,7 +158,7 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
 
 def StringEnum(name: str, values: Sequence[str]):
     """
-    Creates a string enumeration where the keys and values are the same.
+    Creates a string enumeration class where the keys and values are the same.
     """
     return Enum(name, [(value, value) for value in values])
 
@@ -330,10 +333,9 @@ class GenericImmutableDict(GenericDict[KT, VT]):
         copying: Optional[Mapping[KT, VT]] = None,
         /,
         *args,
-        overrides: Optional[Mapping[KT, VT]] = None,
         **kwargs,
     ) -> None:
-        super().__init__(copying, *args, overrides=overrides, **kwargs)
+        super().__init__(copying, *args, **kwargs)
         self._lock = True
 
     def __setitem__(self, key: KT, item: VT):
