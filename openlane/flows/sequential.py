@@ -49,7 +49,7 @@ class SequentialFlow(Flow):
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
         Step_list = []
         for name in step_ids:
-            step = Step.get(name)
+            step = Step.factory.get(name)
             if step is None:
                 raise TypeError(f"No step found with id '{name}'")
             Step_list.append(step)
@@ -99,7 +99,7 @@ class SequentialFlow(Flow):
             )
 
         if isinstance(with_step, str):
-            with_step_opt = Step.get(with_step)
+            with_step_opt = Step.factory.get(with_step)
             if with_step_opt is None:
                 raise FlowException(
                     f"Could not substitute '{step.id}' with '{with_step}': no step with ID '{with_step}' found."
@@ -146,7 +146,7 @@ class SequentialFlow(Flow):
                         f"Failed to process skipped step '{skipped_step}': no step with ID '{skipped_step}' found in flow."
                     )
         step_count = len(self.Steps)
-        self.set_max_stage_count(step_count)
+        self.progress_bar.set_max_stage_count(step_count)
 
         step_list = []
 
@@ -161,7 +161,7 @@ class SequentialFlow(Flow):
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
-            self.start_stage(step.name)
+            self.progress_bar.start_stage(step.name)
             increment_ordinal = True
             if not executing or cls.id in skipped_ids:
                 info(f"Skipping step '{step.name}'…")
@@ -180,7 +180,7 @@ class SequentialFlow(Flow):
                 except StepError as e:
                     raise FlowError(str(e))
 
-            self.end_stage(increment_ordinal=increment_ordinal)
+            self.progress_bar.end_stage(increment_ordinal=increment_ordinal)
 
             if to_resolved and to_resolved == step.id:
                 executing = False

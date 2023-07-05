@@ -121,22 +121,19 @@ def slugify(value: str) -> str:
     return re.sub(r"[-\s\.]+", "-", value)
 
 
-def internal(method):
-    """A decorator to indicate internal methods.
+def protected(method):
+    """A decorator to indicate protected methods.
 
     It dynamically adds a statement to the effect in the docstring as well
     as setting an attribute, ``is_internal``, to ``True``, but has no other effects.
 
-    :param f: Method to mark as internal
+    :param f: Method to mark as protected
     """
     if method.__doc__ is None:
         method.__doc__ = ""
-    method.__doc__ = (
-        "**This method is considered internal and should only be called by this class or its subclass hierarchy.**\n"
-        + method.__doc__
-    )
+    method.__doc__ = "**protected**\n" + method.__doc__
 
-    setattr(method, "is_internal", True)
+    setattr(method, "protected", True)
     return method
 
 

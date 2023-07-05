@@ -111,7 +111,7 @@ def run(
     if not isinstance(flow_description, str):
         TargetFlow = SequentialFlow.make(flow_description)
     else:
-        if FlowClass := Flow.get(flow_description):
+        if FlowClass := Flow.factory.get(flow_description):
             TargetFlow = FlowClass
         else:
             err(

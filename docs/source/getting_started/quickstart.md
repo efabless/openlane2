@@ -41,7 +41,7 @@ You may simply elect to write a Python script to configure and harden your desig
 ```python
 from openlane.flows import Flow
 
-Classic = Flow.get("Classic")
+Classic = Flow.factory.get("Classic")
 
 flow = Classic(
     {

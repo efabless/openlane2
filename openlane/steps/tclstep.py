@@ -34,7 +34,13 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..config import Keys
 from ..logging import info, warn
 from ..state import State, DesignFormat, Path
-from ..common import GenericDictEncoder, mkdirp, get_script_dir, get_openlane_root
+from ..common import (
+    GenericDictEncoder,
+    mkdirp,
+    get_script_dir,
+    get_openlane_root,
+    protected,
+)
 
 
 def create_reproducible(
@@ -363,6 +369,7 @@ class TclStep(Step):
         else:
             return str(value)
 
+    @protected
     @abstractmethod
     def get_script_path(self) -> str:
         """
@@ -370,6 +377,7 @@ class TclStep(Step):
         """
         pass
 
+    @protected
     def get_command(self) -> List[str]:
         """
         This command should be overridden by subclasses and replaced with a
@@ -381,6 +389,7 @@ class TclStep(Step):
         """
         return ["tclsh", self.get_script_path()]
 
+    @protected
     def prepare_env(self, env: dict, state: State) -> dict:
         """
         Creates a copy of an environment dictionary, then converts all accessible
@@ -427,6 +436,7 @@ class TclStep(Step):
 
         return env
 
+    @protected
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
         This overriden :meth:`run` function prepares configuration variables and

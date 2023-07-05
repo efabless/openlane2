@@ -46,7 +46,7 @@ from ..common import (
     mkdirp,
     slugify,
     final,
-    internal,
+    protected,
 )
 from ..logging import (
     rule,
@@ -346,7 +346,7 @@ class Step(ABC):
                 
                 from openlane.steps import Step
 
-                {Self.__name__} = Step.get("{Self.id}")
+                {Self.__name__} = Step.factory.get("{Self.id}")
                 ```
                 """
             )
@@ -398,6 +398,54 @@ class Step(ABC):
         import IPython.display
 
         IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
+
+    def _repr_markdown_(self) -> str:
+        if self.state_out is None:
+            return """
+                ### Step not yet executed.
+            """
+        state_in = self.state_in.result()
+        assert self.start_time is not None and self.end_time is not None
+
+        result = ""
+        time_elapsed = self.end_time - self.start_time
+
+        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
+
+        views_updated = []
+        for id, value in dict(self.state_out).items():
+            if value is None:
+                continue
+
+            if state_in.get(id) != value:
+                df = DesignFormat.by_id(id)
+                assert df is not None
+                views_updated.append(df.value.name)
+
+        if len(views_updated):
+            result += "#### Views updated:\n"
+            for view in views_updated:
+                result += f"* {view}\n"
+
+        if preview := self.layout_preview():
+            result += "#### Preview:\n"
+            result += preview
+
+        return result
+
+    def layout_preview(self) -> Optional[str]:
+        """
+        Returns an HTML tag that could act as a preview for a specific stage.
+        """
+        return None
+
+    def display_result(self):
+        """
+        IPython-only. Displays the results of a given step.
+        """
+        import IPython.display
+
+        IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
     @final
     def start(
@@ -519,7 +567,7 @@ class Step(ABC):
 
         return self.state_out
 
-    @internal
+    @protected
     @abstractmethod
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
@@ -542,10 +590,17 @@ class Step(ABC):
         """
         pass
 
+    @protected
     def get_log_path(self) -> str:
+        """
+        :returns: the default value for :meth:`run_subprocess`'s "log_to"
+        parameter.
+
+            Override it to change the default log path.
+        """
         return os.path.join(self.step_dir, f"{slugify(self.id)}.log")
 
-    @internal
+    @protected
     def run_subprocess(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
@@ -562,7 +617,7 @@ class Step(ABC):
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional override for the log path from ``get_log_path``.
+        :param log_to: An optional override for the log path from :meth:`get_log_path`.
             Useful for if you run multiple subprocesses within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
@@ -648,7 +703,7 @@ class Step(ABC):
 
         return generated_metrics
 
-    @internal
+    @protected
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
         An assisting function: Given a ``kwargs`` object, it does the following:
@@ -709,52 +764,3 @@ class Step(ABC):
             return [cls.id for cls in Self._registry.values()]
 
     factory = StepFactory
-    get = StepFactory.get
-
-    def layout_preview(self) -> Optional[str]:
-        """
-        Returns an HTML tag that could act as a preview for a specific stage.
-        """
-        return None
-
-    def _repr_markdown_(self) -> str:
-        if self.state_out is None:
-            return """
-                ### Step not yet executed.
-            """
-        state_in = self.state_in.result()
-        assert self.start_time is not None and self.end_time is not None
-
-        result = ""
-        time_elapsed = self.end_time - self.start_time
-
-        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
-
-        views_updated = []
-        for id, value in dict(self.state_out).items():
-            if value is None:
-                continue
-
-            if state_in.get(id) != value:
-                df = DesignFormat.by_id(id)
-                assert df is not None
-                views_updated.append(df.value.name)
-
-        if len(views_updated):
-            result += "#### Views updated:\n"
-            for view in views_updated:
-                result += f"* {view}\n"
-
-        if preview := self.layout_preview():
-            result += "#### Preview:\n"
-            result += preview
-
-        return result
-
-    def display_result(self):
-        """
-        IPython-only. Displays the results of a given step.
-        """
-        import IPython.display
-
-        IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))

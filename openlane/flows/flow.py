@@ -19,6 +19,7 @@ import datetime
 import textwrap
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
+from functools import wraps
 from typing import (
     List,
     Sequence,
@@ -39,6 +40,7 @@ from rich.progress import (
     TimeElapsedColumn,
     TaskID,
 )
+from deprecated.sphinx import deprecated
 
 from ..config import (
     Config,
@@ -48,8 +50,8 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..utils import Toolbox
-from ..logging import console, info, verbose, warn
-from ..common import get_tpe, mkdirp, internal, final, slugify
+from ..logging import console, info, verbose
+from ..common import get_tpe, mkdirp, protected, final, slugify
 
 
 class FlowError(RuntimeError):
@@ -73,6 +75,112 @@ class FlowException(FlowError):
     """
 
     pass
+
+
+class FlowProgressBar(object):
+    """
+    A wrapper for a flow's progress bar, rendered using Rich at the bottom of
+    interactive terminals.
+    """
+
+    def __init__(self, flow_name: str, starting_ordinal: int = 1) -> None:
+        self._flow_name: str = flow_name
+        self._stages_completed: int = 0
+        self._max_stage: int = 0
+        self._task_id: Optional[TaskID] = None
+        self._ordinal: int = starting_ordinal
+        self._progress = Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=console,
+        )
+
+    def start(self):
+        """
+        Starts rendering the progress bar.
+        """
+        self._progress.start()
+        self._task_id = self._progress.add_task(
+            f"{self._flow_name}",
+        )
+
+    def end(self):
+        """
+        Stops rendering the progress bar.
+        """
+        self._progress.stop()
+        self._task_id = None
+
+    @staticmethod
+    def ensure_started(method):
+        @wraps(method)
+        def _impl(self, *method_args, **method_kwargs):
+            if self._task_id is None:
+                raise FlowException(
+                    f"Attempted to call method '{method}' before initializing progress bar"
+                )
+            return method(self, *method_args, **method_kwargs)
+
+        if method.__doc__ is None:
+            method.__doc__ = ""
+
+        method.__doc__ = (
+            "This method may not be called before the progress bar is started.\n"
+            + method.__doc__
+        )
+
+        return _impl
+
+    @ensure_started
+    def set_max_stage_count(self, count: int):
+        """
+        A helper function, used to set the total number of stages the progress
+        bar is expected to keep tally of.
+
+        :param count: The total number of stages.
+        """
+        self._max_stage = count
+        self._progress.update(self._task_id, total=count)
+
+    @ensure_started
+    def start_stage(self, name: str):
+        """
+        Starts a new stage, updating the progress bar appropriately.
+
+        :param name: The name of the stage.
+        """
+        self._progress.update(
+            self._task_id,
+            description=f"{self._flow_name} - Stage {self._stages_completed + 1} - {name}",
+        )
+
+    @ensure_started
+    def end_stage(self, *, increment_ordinal: bool = True):
+        """
+        Ends the current stage, updating the progress bar appropriately.
+
+        :param increment_ordinal: Increment the step ordinal, which is used in the creation of step directories.
+
+            You may want to set this to ``False`` if the stage is being skipped.
+
+            Please note that step ordinal is not equal to stages- a skipped step
+            increments the stage but not the step ordinal.
+        """
+        self._stages_completed += 1
+        if increment_ordinal:
+            self._ordinal += 1
+        self._progress.update(self._task_id, completed=float(self._stages_completed))
+
+    @ensure_started
+    def get_ordinal_prefix(self) -> str:
+        """
+        Returns a string with the current step ordinal, which can be used to
+        create a step directory.
+        """
+        max_stage_digits = len(str(self._max_stage))
+        return f"%0{max_stage_digits}d-" % self._ordinal
 
 
 class Flow(ABC):
@@ -129,20 +237,6 @@ class Flow(ABC):
     run_dir: Optional[str] = None
     toolbox: Optional[Toolbox] = None
 
-    # Private State Variables
-    _ordinal: int
-    _completed: int
-    _max_stage: int
-    _task_id: Optional[TaskID]
-    _progress: Optional[Progress]
-
-    def _reset_private_state_variables(self):
-        self._ordinal = 1
-        self._completed = 0
-        self._max_stage = 0
-        self._task_id = None
-        self._progress = None
-
     def __init__(
         self,
         config: Union[Config, str, os.PathLike, Dict],
@@ -157,7 +251,6 @@ class Flow(ABC):
         self.name = name or self.__class__.__name__
 
         self.Steps = self.Steps.copy()  # Break global reference
-        self._reset_private_state_variables()
 
         if not isinstance(config, Config):
             config, design_dir = Config.load(
@@ -172,6 +265,7 @@ class Flow(ABC):
 
         self.config: Config = config
         self.design_dir: str = str(self.config["DESIGN_DIR"])
+        self.progress_bar = FlowProgressBar(self.name)
 
     @classmethod
     def get_help_md(Self):
@@ -202,7 +296,7 @@ class Flow(ABC):
                 ```python
                 from openlane.flows import Flow
 
-                {Self.__name__} = Flow.get("{Self.__name__}")
+                {Self.__name__} = Flow.factory.get("{Self.__name__}")
                 ```
                 """
             )
@@ -235,14 +329,16 @@ class Flow(ABC):
         return [variable for variable, _ in flow_variables_by_name.values()]
 
     @classmethod
+    @deprecated(
+        version="2.0.0-a29",
+        reason="Use the constructor for the class instead",
+        action="once",
+    )
     def init_with_config(
         Self,
         config_in: Union[Config, str, os.PathLike, Dict],
         **kwargs,
     ):
-        warn(
-            f"'init_with_config' is deprecated- just call the '{Self.__name__}' constructor instead"
-        )
         kwargs["config"] = config_in
         return Self(**kwargs)
 
@@ -278,6 +374,7 @@ class Flow(ABC):
 
         initial_state = with_initial_state or State()
 
+        starting_ordinal = 1
         try:
             entries = os.listdir(self.run_dir)
             if len(entries) == 0:
@@ -290,10 +387,10 @@ class Flow(ABC):
                 if len(components) < 2:
                     continue
                 try:
-                    current_ordinal = int(components[0])
+                    extracted_ordinal = int(components[0])
                 except ValueError:
                     continue
-                self._ordinal = max(self._ordinal, current_ordinal + 1)
+                starting_ordinal = max(starting_ordinal, extracted_ordinal + 1)
 
             # Extract Maximum State
             if with_initial_state is None:
@@ -327,31 +424,21 @@ class Flow(ABC):
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
 
-        self._progress = Progress(
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TimeElapsedColumn(),
-            console=console,
-        )
-        self._progress.start()
-        self._task_id = self._progress.add_task(
-            f"{self.name}",
-        )
+        self.progress_bar: FlowProgressBar = FlowProgressBar(self.name)
+        self.progress_bar.start()
         final_state, step_objects = self.run(
             initial_state=initial_state,
+            starting_ordinal=starting_ordinal,
             **kwargs,
         )
-        self._progress.stop()
+        self.progress_bar.end()
 
         # Stored until next start()
         self.step_objects = step_objects
 
-        self._reset_private_state_variables()
-
         return final_state
 
-    @internal
+    @protected
     @abstractmethod
     def run(
         self,
@@ -367,7 +454,25 @@ class Flow(ABC):
         """
         pass
 
-    @internal
+    @protected
+    def dir_for_step(self, step: Step) -> str:
+        """
+        Returns a directory within the run directory for a specific step,
+        prefixed with the current progress bar stage number.
+
+        May only be called while :attr:`run_dir` is not None, i.e., the flow
+        has started.
+        """
+        if self.run_dir is None:
+            raise FlowException(
+                "Attempted to call dir_for_step on a flow that has not been started."
+            )
+        return os.path.join(
+            self.run_dir,
+            f"{self.progress_bar.get_ordinal_prefix()}{slugify(step.id)}",
+        )
+
+    @protected
     def start_step(
         self,
         step: Step,
@@ -399,7 +504,7 @@ class Flow(ABC):
 
         return step.start(*args, **kwargs)
 
-    @internal
+    @protected
     def start_step_async(
         self,
         step: Step,
@@ -422,72 +527,33 @@ class Flow(ABC):
 
         return get_tpe().submit(step.start, *args, **kwargs)
 
-    @internal
+    @deprecated(
+        version="2.0.0b1", reason="Use .progress_bar.set_max_stage_count", action="once"
+    )
+    @protected
     def set_max_stage_count(self, count: int):
         """
-        A helper function, used to set the total number of stages a flow is
-        expected to go through. Used to set the progress bar.
-
-        :param count: The total number of stages.
+        Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.set_max_stage_count`.
         """
-        if self._progress is None or self._task_id is None:
-            return
-        self._max_stage = count
-        self._progress.update(self._task_id, total=count)
+        self.progress_bar.set_max_stage_count(count)
 
-    @internal
+    @deprecated(
+        version="2.0.0b1", reason="Use .progress_bar.start_stage", action="once"
+    )
+    @protected
     def start_stage(self, name: str):
         """
-        Starts a new stage, updating the progress bar appropriately.
-
-        :param name: The name of the stage.
+        Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.start_stage`.
         """
-        if self._progress is None or self._task_id is None:
-            return
-        self._progress.update(
-            self._task_id,
-            description=f"{self.name} - Stage {self._completed + 1} - {name}",
-        )
+        self.progress_bar.start_stage(name)
 
-    @internal
+    @deprecated(version="2.0.0b1", reason="Use .progress_bar.end_stage", action="once")
+    @protected
     def end_stage(self, increment_ordinal: bool = True):
         """
-        Ends the current stage, updating the progress bar appropriately.
-
-        :param increment_ordinal: Increment the step ordinal.
-
-            You may want to set this to ``False`` if the stage is being skipped.
+        Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.end_stage`.
         """
-        self._completed += 1
-        if increment_ordinal:
-            self._ordinal += 1
-        assert self._progress is not None and self._task_id is not None
-        self._progress.update(self._task_id, completed=float(self._completed))
-
-    def _current_stage_prefix(self) -> str:
-        """
-        Returns a prefix for a step ID with its stage number so it can be used
-        to create a step directory.
-        """
-        max_stage_digits = len(str(self._max_stage))
-        return f"%0{max_stage_digits}d-" % self._ordinal
-
-    def dir_for_step(self, step: Step) -> str:
-        """
-        Returns a directory within the run directory for a specific step,
-        prefixed with the current progress bar stage number.
-
-        May only be called while :attr:`run_dir` is not None, i.e., the flow
-        has started.
-        """
-        if self.run_dir is None:
-            raise FlowException(
-                "Attempted to call dir_for_step on a flow that has not been started."
-            )
-        return os.path.join(
-            self.run_dir,
-            f"{self._current_stage_prefix()}{slugify(step.id)}",
-        )
+        self.progress_bar.end_stage(increment_ordinal=increment_ordinal)
 
     class FlowFactory(object):
         """
@@ -539,4 +605,3 @@ class Flow(ABC):
             return list(Self._registry.keys())
 
     factory = FlowFactory
-    get = FlowFactory.get

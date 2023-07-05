@@ -44,7 +44,7 @@ class MetricChecker(Step):
             dynamic_docstring += " a deferred error"
         else:
             dynamic_docstring += " an immediate error"
-        dynamic_docstring += f" if {Self.get_metric_description(None)} (metric: ``{Self.get_metric_name(None)}``) are >= {threshold_string}."
+        dynamic_docstring += f" if {Self.metric_description} (metric: ``{Self.metric_name}``) are >= {threshold_string}."
 
         return super().get_help_md(dynamic_docstring)
 

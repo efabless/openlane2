@@ -22,7 +22,7 @@ You can find the documentation [here](https://openlane2.readthedocs.io/en/latest
 ```python
 from openlane.flows import Flow
 
-Classic = Flow.get("Classic")
+Classic = Flow.factory.get("Classic")
 
 flow = Classic(
     {
