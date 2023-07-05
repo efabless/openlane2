@@ -501,7 +501,7 @@ class Step(ABC):
             state_in_result.metrics, overrides=metrics_updates
         )
 
-        self.state_out = State(
+        self.state_out = state_in_result.__class__(
             state_in_result, overrides=views_updates, metrics=metrics
         )
 

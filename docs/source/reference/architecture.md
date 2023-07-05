@@ -70,7 +70,7 @@ implies, run its declared steps in sequence with the same configuration object
 and a consecutive states, i.e.
 
 ```{math}
-    State_{i} = Step_{i}(State_{i - 1}, Config)
+  State_{i} = Step_{i}(State_{i - 1}, Config)
 ```
 
 So, for a flow of {math}`n` steps, the final state, {math}`State_{n}` will be

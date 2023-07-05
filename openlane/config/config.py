@@ -301,7 +301,7 @@ class Config(GenericImmutableDict[str, Any]):
             else:
                 if os.path.isdir(config_in):
                     raise ValueError(
-                        "Passing design folders as arguments is unsupported in OpenLane 2.0+: please pass the JSON configuration file directly."
+                        "Passing design folders as arguments is unsupported in OpenLane 2 or higher: please pass the JSON configuration file directly."
                     )
                 _, ext = os.path.splitext(config_in)
                 raise ValueError(
@@ -629,7 +629,7 @@ class Config(GenericImmutableDict[str, Any]):
                 pass
             if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
                 errors.append(
-                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2 or higher. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
                 )
             else:
                 warnings.append(

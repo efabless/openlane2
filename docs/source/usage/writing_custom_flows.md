@@ -35,8 +35,7 @@ a flow entirely in the `config.json` file, with no API access needed:
             "Magic.SpiceExtraction",
             "Netgen.LVS"
         ]
-    },
-    ...
+    }
 }
 ```
 
@@ -85,7 +84,7 @@ flow = MyFlow(
 flow.start()
 ```
 
-The {meth}`openlane.flows.Flow.start` method will return a tuple comprised of:
+The {py:meth}`openlane.flows.Flow.start` method will return a tuple comprised of:
 * The final output state ({math}`State_{n}`).
 * A list of all step objects created during the running of this flow object.
 
@@ -130,7 +129,7 @@ sdc_load = Misc.LoadBaseSDC(
 
 While you may not modify the configuration object (in `self.config`),
 you can slightly modify the configuration used by each step using the config object's
-{meth}`openlane.config.Config.copy` method, which allows you to supply overrides as follows:
+{py:meth}`openlane.config.Config.copy` method, which allows you to supply overrides as follows:
 
 ```python3
 config_altered = config.copy(FP_CORE_UTIL=9)
@@ -153,9 +152,9 @@ Classic - Stage 17 - CTS ━━━━━━━━━━━━━━━━━╺�
 
 The Flow object has methods to manage this progress bar:
 
-* {meth}`openlane.flows.Flow.set_max_stage_count`
-* {meth}`openlane.flows.Flow.start_stage`
-* {meth}`openlane.flows.Flow.end_stage`.
+* {py:meth}`openlane.flows.Flow.set_max_stage_count`
+* {py:meth}`openlane.flows.Flow.start_stage`
+* {py:meth}`openlane.flows.Flow.end_stage`.
 
 They are to be called from inside the `run` method. In Sequential Flows,
 {math}`|Steps| = |Stages| = n`, but in custom flows, stages can incorporate any
