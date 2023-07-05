@@ -241,7 +241,7 @@ class Flow(ABC):
         **kwargs,
     ):
         warn(
-            f"'init_with_config' is no longer needed- just call the '{Self.__name__}' constructor instead"
+            f"'init_with_config' is deprecated- just call the '{Self.__name__}' constructor instead"
         )
         kwargs["config"] = config_in
         return Self(**kwargs)
@@ -258,12 +258,15 @@ class Flow(ABC):
 
         :param with_initial_state: An optional initial state object to use.
             If not provided:
-            * If resuming a previous run, the latest `state_out.json` (by filesystem modification date)
+            * If resuming a previous run, the latest ``state_out.json`` (by filesystem modification date)
             * If not, an empty state object is created.
         :param tag: A name for this invocation of the flow. If not provided,
             one based on a date string will be created.
 
-        :returns: `(success, state_list)`
+            This tag is used to create the "run directory", which will be placed
+            under the directory ``runs/`` in the design directory.
+
+        :returns: ``(success, state_list)``
         """
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
