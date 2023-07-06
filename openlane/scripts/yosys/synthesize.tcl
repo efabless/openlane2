@@ -221,7 +221,7 @@ hierarchy -check -top $vtop
 
 if { $::env(SYNTH_ELABORATE_ONLY) } {
     yosys proc
-    if { $::env(SYNTH_FLAT_TOP) } {
+    if { $::env(SYNTH_ELABORATE_FLATTEN) } {
         flatten
     }
 

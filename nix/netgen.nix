@@ -15,7 +15,7 @@
   pkgs ? import ./pkgs.nix,
 }:
 
-with pkgs; stdenv.mkDerivation {
+with pkgs; clangStdenv.mkDerivation {
   name = "netgen";
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
@@ -34,10 +34,5 @@ with pkgs; stdenv.mkDerivation {
     tk
     m4
     python3
-  ];
-
-  nativeBuildInputs = [
-    clang
-    clang-tools
   ];
 }

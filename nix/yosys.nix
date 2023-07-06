@@ -17,9 +17,8 @@
 
 with pkgs; let
   abc = import ./yosys-abc.nix { inherit pkgs; };
-in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
+in clangStdenv.mkDerivation rec {
   name = "yosys";
-  version = null;
 
   src = fetchFromGitHub {
     owner = "YosysHQ";
@@ -28,14 +27,31 @@ in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
     sha256 = "sha256-qhMcXJFEuBPl7vh+gYTu7PnSWi+L3YMLrBMQyYqfc0w=";
   };
 
-  patches = [];
-
   nativeBuildInputs = [ pkg-config bison flex ];
-  propagatedBuildInputs = [
+  propagatedBuildInputs = [ tcl ];
+
+  buildInputs = [
     tcl
+    readline
+    libffi
+    zlib
+    (python3.withPackages (pp: with pp; [
+      click
+    ]))
   ];
 
-  doCheck = false;
+  patches = [
+    ./patches/yosys/fix-clang-build.patch
+  ];
+
+  postPatch = ''
+    substituteInPlace ./Makefile \
+      --replace 'echo UNKNOWN' 'echo ${builtins.substring 0 10 src.rev}'
+
+    chmod +x ./misc/yosys-config.in
+    patchShebangs tests ./misc/yosys-config.in
+  '';
+
   preBuild = ''
     cp -r ${abc} abc/
     chmod -R 777 .
@@ -45,9 +61,13 @@ in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
     sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
     # Compile ABC First (Common Build Point of Failure)
     sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
-    make config-${if stdenv.cc.isClang or false then "clang" else "gcc"} VERBOSE=1
+    make config-clang VERBOSE=1
   '';
+
+  makeFlags = [ "PREFIX=${placeholder "out"}"];
 
   postBuild = "";
   postInstall = "";
-})
+
+  doCheck = false;
+}
