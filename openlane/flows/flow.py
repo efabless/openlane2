@@ -78,6 +78,39 @@ class FlowException(FlowError):
     pass
 
 
+T = TypeVar("T", bound=Callable)
+
+
+@staticmethod
+def ensure_progress_started(method: T) -> Callable:
+    """
+    If a method is decorated with `ensure_started` and :meth:`start` had
+    not bee called yet, a :class:`FlowException` will be thrown.
+
+    The docstring will also be amended to reflect that fact.
+
+    :param method: The method of :class:`FlowProgressBar` in question.
+    """
+
+    @wraps(method)
+    def _impl(self: FlowProgressBar, *method_args, **method_kwargs):
+        if not self.started:
+            raise FlowException(
+                f"Attempted to call method '{method}' before initializing progress bar"
+            )
+        return method(self, *method_args, **method_kwargs)
+
+    if method.__doc__ is None:
+        method.__doc__ = ""
+
+    method.__doc__ = (
+        "This method may not be called before the progress bar is started.\n"
+        + method.__doc__
+    )
+
+    return _impl
+
+
 class FlowProgressBar(object):
     """
     A wrapper for a flow's progress bar, rendered using Rich at the bottom of
@@ -114,38 +147,14 @@ class FlowProgressBar(object):
         self.__progress.stop()
         self.__task_id = TaskID(-1)
 
-    T = TypeVar("T", bound=Callable)
-
-    @staticmethod
-    def ensure_started(method: T) -> Callable:
+    @property
+    def started(self) -> bool:
         """
-        If a method is decorated with `ensure_started` and :meth:`start` had
-        not bee called yet, a :class:`FlowException` will be thrown.
-
-        The docstring will also be amended to reflect that fact.
-
-        :param method: The method of :class:`FlowProgressBar` in question.
+        :returns: If the progress bar has started or not
         """
+        return self.__task_id != TaskID(-1)
 
-        @wraps(method)
-        def _impl(self, *method_args, **method_kwargs):
-            if self.__task_id == TaskID(-1):
-                raise FlowException(
-                    f"Attempted to call method '{method}' before initializing progress bar"
-                )
-            return method(self, *method_args, **method_kwargs)
-
-        if method.__doc__ is None:
-            method.__doc__ = ""
-
-        method.__doc__ = (
-            "This method may not be called before the progress bar is started.\n"
-            + method.__doc__
-        )
-
-        return _impl
-
-    @ensure_started
+    @ensure_progress_started
     def set_max_stage_count(self, count: int):
         """
         A helper function, used to set the total number of stages the progress
@@ -156,7 +165,7 @@ class FlowProgressBar(object):
         self.__max_stage = count
         self.__progress.update(self.__task_id, total=count)
 
-    @ensure_started
+    @ensure_progress_started
     def start_stage(self, name: str):
         """
         Starts a new stage, updating the progress bar appropriately.
@@ -168,7 +177,7 @@ class FlowProgressBar(object):
             description=f"{self.__flow_name} - Stage {self.__stages_completed + 1} - {name}",
         )
 
-    @ensure_started
+    @ensure_progress_started
     def end_stage(self, *, increment_ordinal: bool = True):
         """
         Ends the current stage, updating the progress bar appropriately.
@@ -185,7 +194,7 @@ class FlowProgressBar(object):
             self.__ordinal += 1
         self.__progress.update(self.__task_id, completed=float(self.__stages_completed))
 
-    @ensure_started
+    @ensure_progress_started
     def get_ordinal_prefix(self) -> str:
         """
         Returns a string with the current step ordinal, which can be used to
@@ -540,7 +549,9 @@ class Flow(ABC):
         return get_tpe().submit(step.start, *args, **kwargs)
 
     @deprecated(
-        version="2.0.0b1", reason="Use .progress_bar.set_max_stage_count", action="once"
+        version="2.0.0a46",
+        reason="Use .progress_bar.set_max_stage_count",
+        action="once",
     )
     @protected
     def set_max_stage_count(self, count: int):
@@ -550,7 +561,7 @@ class Flow(ABC):
         self.progress_bar.set_max_stage_count(count)
 
     @deprecated(
-        version="2.0.0b1", reason="Use .progress_bar.start_stage", action="once"
+        version="2.0.0a46", reason="Use .progress_bar.start_stage", action="once"
     )
     @protected
     def start_stage(self, name: str):
@@ -559,7 +570,7 @@ class Flow(ABC):
         """
         self.progress_bar.start_stage(name)
 
-    @deprecated(version="2.0.0b1", reason="Use .progress_bar.end_stage", action="once")
+    @deprecated(version="2.0.0a46", reason="Use .progress_bar.end_stage", action="once")
     @protected
     def end_stage(self, increment_ordinal: bool = True):
         """
