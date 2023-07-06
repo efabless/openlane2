@@ -38,13 +38,13 @@
 
 with pkgs; clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "9b131fa96c00e2243febc207f642f7db22843922";
+  rev = "cc4eef4eb1491576f03e0b2bf4db1a7a1e8dc4bc";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-7RuuN0uYQ+5zrGJmcpfGipWx7LU1qDSinqKbXDshBXU=";
+    sha256 = "sha256-AX1yyHUmRdGWIbarSXu2lw1DbTDvfyti3wcc/AQAHKQ=";
   };
 
   patches = [

@@ -11,29 +11,69 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Copyright (c) 2003-2023 Eelco Dolstra and the Nixpkgs/NixOS contributors
+
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 {
   pkgs ? import ./pkgs.nix,
 }:
 
 with pkgs; let
   abc = import ./yosys-abc.nix { inherit pkgs; };
-in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
+in clangStdenv.mkDerivation rec {
   name = "yosys";
-  version = null;
 
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "yosys";
-    rev = "7e588664e7efa36ff473f0497feacaad57f5e90c";
-    sha256 = "sha256-0xV+323YTK+VhnD05SmvGv8uT4TzqA9IZ/iKl1as1Kc=";
+    rev = "f7a8284c7b095bca4bc2c65032144c4e3264ee4d";
+    sha256 = "sha256-qhMcXJFEuBPl7vh+gYTu7PnSWi+L3YMLrBMQyYqfc0w=";
   };
 
   nativeBuildInputs = [ pkg-config bison flex ];
-  propagatedBuildInputs = [
+  propagatedBuildInputs = [ tcl ];
+
+  buildInputs = [
     tcl
+    readline
+    libffi
+    zlib
+    (python3.withPackages (pp: with pp; [
+      click
+    ]))
   ];
 
-  doCheck = false;
+  patches = [
+    ./patches/yosys/fix-clang-build.patch
+  ];
+
+  postPatch = ''
+    substituteInPlace ./Makefile \
+      --replace 'echo UNKNOWN' 'echo ${builtins.substring 0 10 src.rev}'
+
+    chmod +x ./misc/yosys-config.in
+    patchShebangs tests ./misc/yosys-config.in
+  '';
+
   preBuild = ''
     cp -r ${abc} abc/
     chmod -R 777 .
@@ -43,9 +83,13 @@ in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
     sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
     # Compile ABC First (Common Build Point of Failure)
     sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
-    make config-${if stdenv.cc.isClang or false then "clang" else "gcc"} VERBOSE=1
+    make config-clang VERBOSE=1
   '';
+
+  makeFlags = [ "PREFIX=${placeholder "out"}"];
 
   postBuild = "";
   postInstall = "";
-})
+
+  doCheck = false;
+}

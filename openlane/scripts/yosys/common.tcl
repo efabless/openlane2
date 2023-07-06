@@ -67,5 +67,4 @@ proc read_deps {{power_defines "off"}} {
             read_verilog -sv -lib {*}$verilog_include_args $nl
         }
     }
-
 }

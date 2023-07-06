@@ -74,14 +74,7 @@ def run(
     skip: Tuple[str, ...],
     initial_state_json: Optional[str],
     config_override_strings: List[str],
-    log_level: Union[str, int],
 ) -> int:
-    try:
-        set_log_level(log_level)
-    except ValueError:
-        err(f"Invalid logging level: {log_level}.")
-        click.echo(ctx.get_help())
-        return -1
 
     if only is not None:
         frm = to = only
@@ -270,7 +263,6 @@ def run_smoke_test(
             skip=(),
             initial_state_json=None,
             config_override_strings=[],
-            log_level="VERBOSE",
         )
         if status == 0:
             info("Smoke test passed.")
@@ -325,6 +317,19 @@ def cli_in_container(
         ctx.exit(status)
 
 
+def set_log_level_cb(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: bool,
+):
+    try:
+        set_log_level(value)
+    except ValueError:
+        err(f"Invalid logging level: {value}.")
+        click.echo(ctx.get_help())
+        ctx.exit(-1)
+
+
 formatter_settings = HelpFormatter.settings(
     theme=HelpTheme(
         invoked_command=Style(fg="bright_yellow"),
@@ -333,6 +338,15 @@ formatter_settings = HelpFormatter.settings(
         col1=Style(fg="bright_yellow"),
     )
 )
+
+
+def set_worker_count_cb(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: int,
+):
+    common.set_tpe(ThreadPoolExecutor(max_workers=value))
+
 
 o = partial(option, show_default=True)
 
@@ -512,6 +526,8 @@ o = partial(option, show_default=True)
         """
     )
     + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
+    callback=set_log_level_cb,
+    expose_value=False,
 )
 @o(
     "-j",
@@ -519,6 +535,8 @@ o = partial(option, show_default=True)
     type=int,
     default=os.cpu_count(),
     help="The maximum number of threads or processes that can be used by OpenLane.",
+    callback=set_worker_count_cb,
+    expose_value=False,
 )
 @click.argument(
     "config_files",
@@ -530,8 +548,7 @@ o = partial(option, show_default=True)
     ),
 )
 @click.pass_context
-def cli(ctx: click.Context, jobs: int, **kwargs):
-    common.set_tpe(ThreadPoolExecutor(max_workers=jobs))
+def cli(ctx: click.Context, **kwargs):
     args = kwargs["config_files"]
     run_kwargs = kwargs.copy()
 

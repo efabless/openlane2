@@ -26,6 +26,15 @@ if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
 foreach file $::env(VERILOG_FILES) {
     read_verilog -sv {*}$verilog_include_args $file
 }
+
+if { [info exists ::env(SYNTH_PARAMETERS) ] } {
+    foreach define $::env(SYNTH_PARAMETERS) {
+        set param_and_value [split $define "="]
+        lassign $param_and_value param value
+        chparam -set $param $value $vtop
+    }
+}
+
 select -module $vtop
 yosys proc
 json -o $::env(SAVE_JSON_HEADER)
