@@ -20,9 +20,9 @@ OpenLane is a RTL to GDSII infrastructure library based on several components in
 You can find the documentation [here](https://openlane2.readthedocs.io/en/latest/getting_started/) to get started.
 
 ```python
-from openlane import Flow
+from openlane.flows import Flow
 
-Classic = Flow.get("Classic")
+Classic = Flow.factory.get("Classic")
 
 flow = Classic(
     {

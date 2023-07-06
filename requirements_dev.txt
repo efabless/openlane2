@@ -21,6 +21,7 @@ types-commonmark
 types-colorama
 types-requests
 types-Pygments
+types-Deprecated
 
 # ide
 pylance

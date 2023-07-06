@@ -1,3 +1,26 @@
+# 2.0.0-a46
+
+* Start on API cleanup in preparation for beta
+* Common and Logging isolated into own modules
+* Improved documentation on various parts of the codebase.
+* Delineated `public`, `private` and `protected` class members:
+  * If undocumented or starts with `__`, private
+  * If decorated with `@openlane.common.protected`, protected
+  * Else public
+* Class members renamed to reflect the above
+* Adjusted documentation generation to use RST and proper titles
+* Flow progress bar hooks encapsulated in new `FlowProgressBar` object
+  * Old methods still exist, issue a `DeprecationWarning`
+
+## API Breaks
+
+* Top level `import openlane` now only has the version. To get access to `Flow` or `Step`, try `from openlane.flows import Flow`
+* `Flow.get`/`Step.get` no longer exist: use `Flow.factory.get`/`Step.factory.get` instead
+* `openlane.common.internal` decorator replaced with `openlane.common.protected`
+* `Step` objects no longer hold a reference to parent flow
+  * `Step.start` now takes `self.step_dir` as a required argument when running non-interactive flows
+  * A faster migration method inside a Flow is  `step.start()` -> `self.start_step(step)`
+
 # 2.0.0-a45
 
 * Made Magic DRC report parser more robust, handling multiple rules, etc

@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple
+from typing import ClassVar, Tuple
 from decimal import Decimal
 from typing import Optional
-from abc import abstractmethod
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
@@ -24,10 +23,16 @@ from ..logging import err, warn, info
 
 
 class MetricChecker(Step):
-    deferred = True
+    """
+    Raises a (deferred) error if a Decimal metric exceeds a ccertain threshold.
+    """
 
     inputs = []
     outputs = []
+
+    metric_name: ClassVar[str] = NotImplemented
+    metric_description: ClassVar[str] = NotImplemented
+    deferred: ClassVar[bool] = True
 
     @classmethod
     def get_help_md(Self):
@@ -39,17 +44,9 @@ class MetricChecker(Step):
             dynamic_docstring += " a deferred error"
         else:
             dynamic_docstring += " an immediate error"
-        dynamic_docstring += f" if {Self.get_metric_description(None)} (metric: ``{Self.get_metric_name(None)}``) are >= {threshold_string}."
+        dynamic_docstring += f" if {Self.metric_description} (metric: ``{Self.metric_name}``) are >= {threshold_string}."
 
         return super().get_help_md(dynamic_docstring)
-
-    @abstractmethod
-    def get_metric_name(self: Optional["MetricChecker"]) -> str:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_metric_description(self: Optional["MetricChecker"]) -> str:
-        raise NotImplementedError()
 
     def get_threshold(self: Optional["MetricChecker"]) -> Optional[Decimal]:
         return Decimal(0)
@@ -58,19 +55,17 @@ class MetricChecker(Step):
         return None
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        metric_name = self.get_metric_name()
-        metric_description = self.get_metric_description()
         threshold = self.get_threshold()
 
         if threshold is None:
             warn(
-                f"Threshold for {metric_description} is not set. The checker will be skipped."
+                f"Threshold for {self.metric_description} is not set. The checker will be skipped."
             )
         else:
-            metric_value = state_in.metrics.get(metric_name)
+            metric_value = state_in.metrics.get(self.metric_name)
             if metric_value is not None:
                 if metric_value > threshold:
-                    error_msg = f"{metric_value} {metric_description} found."
+                    error_msg = f"{metric_value} {self.metric_description} found."
                     if self.deferred:
                         err(f"{error_msg} - deferred")
                         raise DeferredStepError(error_msg)
@@ -79,10 +74,10 @@ class MetricChecker(Step):
                         raise StepError(error_msg)
 
                 else:
-                    info(f"Check for {metric_description} clear.")
+                    info(f"Check for {self.metric_description} clear.")
             else:
                 warn(
-                    f"The {metric_description} metric was not found. Are you sure the relevant step was run?"
+                    f"The {self.metric_description} metric was not found. Are you sure the relevant step was run?"
                 )
 
         return {}, {}
@@ -95,6 +90,9 @@ class YosysUnmappedCells(MetricChecker):
     name = "Unmapped Cells Checker"
     deferred = False
 
+    metric_name = "design__instance_unmapped__count"
+    metric_description = "Unmapped Yosys instances"
+
     config_vars = [
         Variable(
             "QUIT_ON_UNMAPPED_CELLS",
@@ -105,12 +103,6 @@ class YosysUnmappedCells(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "design__instance_unmapped__count"
-
-    def get_metric_description(self) -> str:
-        return "Unmapped Yosys instances"
-
 
 @Step.factory.register()
 class YosysSynthChecks(MetricChecker):
@@ -118,6 +110,9 @@ class YosysSynthChecks(MetricChecker):
     flow_control_variable = "QUIT_ON_SYNTH_CHECKS"
     name = "Yosys Synth Checks"
     deferred = False
+
+    metric_name = "synthesis__check_error__count"
+    metric_description = "Yosys check errors"
 
     config_vars = [
         Variable(
@@ -128,12 +123,6 @@ class YosysSynthChecks(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "synthesis__check_error__count"
-
-    def get_metric_description(self) -> str:
-        return "Yosys check errors"
-
 
 @Step.factory.register()
 class TrDRC(MetricChecker):
@@ -141,6 +130,9 @@ class TrDRC(MetricChecker):
     flow_control_variable = "QUIT_ON_TR_DRC"
     name = "Routing DRC Checker"
     long_name = "Routing Design Rule Checker"
+
+    metric_name = "route__drc_errors"
+    metric_description = "Routing DRC errors"
 
     config_vars = [
         Variable(
@@ -151,12 +143,6 @@ class TrDRC(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "route__drc_errors"
-
-    def get_metric_description(self) -> str:
-        return "Routing DRC errors"
-
 
 @Step.factory.register()
 class MagicDRC(MetricChecker):
@@ -164,6 +150,9 @@ class MagicDRC(MetricChecker):
     flow_control_variable = "QUIT_ON_MAGIC_DRC"
     name = "Magic DRC Checker"
     long_name = "Magic Design Rule Checker"
+
+    metric_name = "magic__drc_error__count"
+    metric_description = "Magic DRC errors"
 
     config_vars = [
         Variable(
@@ -174,12 +163,6 @@ class MagicDRC(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "magic__drc_error__count"
-
-    def get_metric_description(self) -> str:
-        return "Magic DRC errors"
-
 
 @Step.factory.register()
 class IllegalOverlap(MetricChecker):
@@ -187,6 +170,9 @@ class IllegalOverlap(MetricChecker):
     flow_control_variable = "QUIT_ON_ILLEGAL_OVERLAPS"
     name = "Illegal Overlap Checker"
     long_name = "Spice Extraction-based Illegal Overlap Checker"
+
+    metric_name = "magic__illegal_overlap__count"
+    metric_description = "Magic Illegal Overlap errors"
 
     config_vars = [
         Variable(
@@ -197,12 +183,6 @@ class IllegalOverlap(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "magic__illegal_overlap__count"
-
-    def get_metric_description(self) -> str:
-        return "Magic Illegal Overlap errors"
-
 
 @Step.factory.register()
 class DisconnectedPins(MetricChecker):
@@ -210,6 +190,10 @@ class DisconnectedPins(MetricChecker):
     flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
     name = "Disconnected Pins Checker"
     deferred = False
+
+    metric_name = "design__disconnected_pins__count"
+    metric_description = "Disconnected pins count"
+
     config_vars = [
         Variable(
             "QUIT_ON_DISCONNECTED_PINS",
@@ -219,18 +203,15 @@ class DisconnectedPins(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "design__disconnected_pins__count"
-
-    def get_metric_description(self) -> str:
-        return "Disconnected pins count"
-
 
 @Step.factory.register()
 class WireLength(MetricChecker):
     id = "Checker.WireLength"
     flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
+
+    metric_name = "route__wirelength__max"
+    metric_description = "Threshold-surpassing long wires"
 
     config_vars = [
         Variable(
@@ -240,12 +221,6 @@ class WireLength(MetricChecker):
             default=False,
         ),
     ]
-
-    def get_metric_name(self) -> str:
-        return "route__wirelength__max"
-
-    def get_metric_description(self) -> str:
-        return "Threshold-surpassing long wires"
 
     def get_threshold(self) -> Optional[Decimal]:
         threshold = self.config["WIRE_LENGTH_THRESHOLD"]
@@ -263,6 +238,9 @@ class XOR(MetricChecker):
     name = "XOR Difference Checker"
     long_name = "Magic vs. KLayout XOR Difference Checker"
 
+    metric_name = "design__xor_difference__count"
+    metric_description = "XOR differences"
+
     config_vars = [
         Variable(
             "QUIT_ON_XOR_ERROR",
@@ -272,12 +250,6 @@ class XOR(MetricChecker):
         ),
     ]
 
-    def get_metric_name(self) -> str:
-        return "design__xor_difference__count"
-
-    def get_metric_description(self) -> str:
-        return "XOR differences"
-
 
 @Step.factory.register()
 class LVS(MetricChecker):
@@ -285,6 +257,9 @@ class LVS(MetricChecker):
     flow_control_variable = "QUIT_ON_LVS_ERROR"
     name = "LVS Error Checker"
     long_name = "Layout vs. Schematic Error Checker"
+
+    metric_name = "design__lvs_errors__count"
+    metric_description = "LVS errors"
 
     config_vars = [
         Variable(
@@ -294,9 +269,3 @@ class LVS(MetricChecker):
             default=True,
         ),
     ]
-
-    def get_metric_name(self) -> str:
-        return "design__lvs_errors__count"
-
-    def get_metric_description(self) -> str:
-        return "LVS errors"

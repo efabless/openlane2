@@ -191,7 +191,7 @@ class Variable:
         """
         return newline_rx.sub("<br />", self.description)
 
-    def _process(
+    def __process(
         self,
         key_path: str,
         value: Any,
@@ -212,7 +212,7 @@ class Variable:
         elif not explicitly_specified and value is None:
             # User did not specify a value for this variable: couple outcomes
             if default is not None:
-                return self._process(
+                return self.__process(
                     key_path=key_path,
                     value=default,
                     validating_type=validating_type,
@@ -264,7 +264,7 @@ class Variable:
                 zip_first(raw, type_args, fillvalue=type_args[0])
             ):
                 return_value.append(
-                    self._process(
+                    self.__process(
                         key_path=f"{key_path}[{i}]",
                         value=item,
                         validating_type=value_type,
@@ -300,13 +300,13 @@ class Variable:
 
             processed = {}
             for key, val in raw.items():
-                key_validated = self._process(
+                key_validated = self.__process(
                     key_path=key_path,
                     value=key,
                     validating_type=key_type,
                     values_so_far=values_so_far,
                 )
-                value_validated = self._process(
+                value_validated = self.__process(
                     key_path=f"{key_path}.{key_validated}",
                     value=val,
                     validating_type=value_type,
@@ -320,7 +320,7 @@ class Variable:
             errors = []
             for arg in type_args:
                 try:
-                    final_value = self._process(
+                    final_value = self.__process(
                         key_path=key_path,
                         value=value,
                         validating_type=arg,
@@ -367,7 +367,7 @@ class Variable:
                     field_default = current_field.default
                 if current_field.default_factory != MISSING:
                     field_default = current_field.default_factory()
-                value_processed = self._process(
+                value__processed = self.__process(
                     key_path=f"{key_path}.{key}",
                     value=field_value,
                     explicitly_specified=explicitly_specified,
@@ -375,7 +375,7 @@ class Variable:
                     validating_type=subtype,
                     values_so_far=values_so_far,
                 )
-                kwargs_dict[key] = value_processed
+                kwargs_dict[key] = value__processed
             return validating_type(**kwargs_dict)
         elif validating_type == Path:
             if not os.path.exists(str(value)):
@@ -442,7 +442,7 @@ class Variable:
                 value = deprecated_callable(value)
             i = i + 1
 
-        processed = self._process(
+        processed = self.__process(
             key_path=self.name,
             value=value,
             default=self.default,

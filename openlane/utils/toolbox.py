@@ -209,7 +209,7 @@ class Toolbox(object):
 
         return (timing_corner, [str(path) for path in result])
 
-    def _render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
+    def __render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
         klayout_bin = which("klayout")
         if klayout_bin is None:
             warn("This PDK does not support KLayout; previews cannot be rendered.")
@@ -224,7 +224,7 @@ class Toolbox(object):
         return (str(lyp), str(lyt), str(lym))
 
     def render_png(self, config: Config, input: str) -> Optional[bytes]:
-        files = self._render_common(config)
+        files = self.__render_common(config)
         if files is None:
             return None
         lyp, lyt, lym = files

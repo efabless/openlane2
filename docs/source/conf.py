@@ -30,7 +30,7 @@ project = "OpenLane"
 copyright = "2020-2023 Efabless Corporation and contributors"
 author = "Efabless Corporation"
 repo = "https://github.com/The-OpenROAD-Project/OpenLane"
-branch = "master"
+branch = "main"
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,10 +39,12 @@ branch = "master"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
-    "myst_parser",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.mathjax",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
 ]
@@ -68,9 +70,9 @@ source_suffix = {
     ".md": "markdown",
 }
 
-autodoc_member_order = "bysource"
+root_doc = "index"
 
-# Add any paths that contain templates here, relative to this directory.
+# Templates
 templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
@@ -79,7 +81,7 @@ templates_path = ["_templates"]
 exclude_patterns = [
     "_build",
     "Thumbs.db",
-    "scripts/tcl_commands/README.md",
+    ".DS_Store",
     "venv",
     "install",
     "pdks",
@@ -96,6 +98,8 @@ exclude_patterns = [
 html_title = "OpenLane Documentation"
 
 html_theme = "furo"
+
+html_static_path = ["../_static"]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -118,37 +122,23 @@ html_theme_options = {
     ],
 }
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["../_static"]
-
-todo_include_todos = True
 numfig = True
 
-markdown_code_links_githubrepo = repo
-markdown_code_links_githubbranch = f"blob/{branch}"
-markdown_code_links_codefileextensions = [
-    ".tcl",
-    ".sh",
-    ".cfg",
-    ".gds",
-    ".sdc",
-    "/",
-    ".json",
-    "Makefile",
-]
+
+# Autodoc
+generate_module_autodocs = [("openlane", "reference/api")]
+autodoc_typehints = "both"
+autodoc_member_order = "bysource"
 autosectionlabel_prefix_document = True
 
-suppress_warnings = ["misc.highlighting_failure"]  # supress json highlight warnings
-
+# MyST
 myst_heading_anchors = 3
-
 myst_enable_extensions = [
     "colon_fence",
 ]
 
-root_doc = "index"
+# GraphViz
+graphviz_output_format = "svg"
 
-generate_module_autodocs = [("openlane", "reference/api")]
-autodoc_typehints = "both"
+# MathJax
+mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/latest.min.js"

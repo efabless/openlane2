@@ -14,15 +14,16 @@
 
 """
 The Step Module
+---------------
 
 This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.
 """
 from .step import (
-    Step,
-    DeferredStepError,
     StepError,
+    DeferredStepError,
     StepException,
+    Step,
 )
 from .tclstep import TclStep
 from . import checker as Checker
@@ -39,12 +40,10 @@ from . import magic as Magic
 from .magic import MagicStep
 
 from . import odb as Odb
-
-# from .odb import OdbpyStep
+from .odb import OdbpyStep
 
 from . import netgen as Netgen
-
-# from .netgen import NetgenStep
+from .netgen import NetgenStep
 
 from . import klayout as KLayout
 from . import misc as Misc

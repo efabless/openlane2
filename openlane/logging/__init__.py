@@ -11,6 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+The Logging Module
+------------------
+
+As the name implies, this handles OpenLane's logging using the ``logging``
+module and the ``rich`` library.
+"""
+
 import atexit
 import click
 import typing

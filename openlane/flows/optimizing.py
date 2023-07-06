@@ -13,18 +13,17 @@
 # limitations under the License.
 from __future__ import annotations
 
-import subprocess
 from typing import List, Tuple
 from concurrent.futures import Future
 
 from .flow import Flow
-from ..logging import get_log_level, set_log_level, LogLevels, success, info
 from ..state import State
-from ..steps import Step, Yosys, OpenROAD, Misc
 from ..config import Config
+from ..steps import Step, Yosys, OpenROAD, Misc, StepError
+from ..logging import get_log_level, set_log_level, LogLevels, success, info
 
 
-#   "Optimizing" is a custom demo flow to show what's possible with non-sequential Flows in OpenLane 2.
+#   "Optimizing" is a custom demo flow to show what's possible with non-sequential Flows in OpenLane 2+.
 #   It works across two steps:
 #   * The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
 #       The best-performing strategy in terms of minimizing the area makes it to the next stage.
@@ -121,7 +120,7 @@ class Optimizing(Flow):
             long_name="Floorplanning (High Util)",
             flow=self,
         )
-        fp.start()
+        self.start_step(fp)
         step_list.append(fp)
         try:
             io = OpenROAD.IOPlacement(
@@ -131,7 +130,7 @@ class Optimizing(Flow):
                 long_name="I/O Placement (High Util)",
                 flow=self,
             )
-            io.start()
+            self.start_step(io)
             step_list.append(io)
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
@@ -140,9 +139,9 @@ class Optimizing(Flow):
                 long_name="Global Placement (High Util)",
                 flow=self,
             )
-            gpl.start()
+            self.start_step(gpl)
             step_list.append(gpl)
-        except subprocess.CalledProcessError:
+        except StepError:
             info("High utilization failed- attempting low utilization…")
             fp_config = min_config.copy(FP_CORE_UTIL=40)
             fp = OpenROAD.Floorplan(
@@ -152,7 +151,7 @@ class Optimizing(Flow):
                 long_name="Floorplanning (Low Util)",
                 flow=self,
             )
-            fp.start()
+            self.start_step(fp)
             step_list.append(fp)
             io = OpenROAD.IOPlacement(
                 fp_config,
@@ -161,7 +160,7 @@ class Optimizing(Flow):
                 long_name="I/O Placement (Low Util)",
                 flow=self,
             )
-            io.start()
+            self.start_step(io)
             step_list.append(io)
             gpl = OpenROAD.GlobalPlacement(
                 fp_config,
@@ -170,7 +169,7 @@ class Optimizing(Flow):
                 long_name="Global Placement (Low Util)",
                 flow=self,
             )
-            gpl.start()
+            self.start_step(gpl)
             step_list.append(gpl)
 
         self.end_stage()

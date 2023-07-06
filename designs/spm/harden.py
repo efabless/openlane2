@@ -1,6 +1,6 @@
-from openlane import Flow
+from openlane.flows import Flow
 
-Classic = Flow.get("Classic")
+Classic = Flow.factory.get("Classic")
 
 flow = Classic(
     {

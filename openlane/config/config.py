@@ -98,7 +98,7 @@ class Config(GenericImmutableDict[str, Any]):
 
     current_interactive: ClassVar[Optional["Config"]] = None
     meta: Meta
-    _interactive: bool = False
+    __interactive: bool = False
 
     def __init__(self, *args, meta: Optional[Meta] = None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,14 +107,6 @@ class Config(GenericImmutableDict[str, Any]):
             meta = Meta(version=1)
 
         self.meta = meta
-
-    def is_interactive(self) -> bool:
-        """
-        :returns: Whether the configuration is for interactive mode or not.
-
-        See :meth:`interactive` for more info on interactive mode.
-        """
-        return self._interactive
 
     def copy(self, **overrides) -> "Config":
         """
@@ -127,15 +119,16 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(self, overrides=overrides)
 
     def to_raw_dict(self) -> Dict[str, Any]:
-        final: Dict[Any, Any] = self._data.copy()
+        """
+        :returns: A raw dictionary representation including the ``meta`` object.
+        """
+        final = super().to_raw_dict()
         final["meta"] = self.meta
         return final
 
     def _repr_markdown_(self) -> str:
-        title = (
-            "Interactive Configuration" if self.is_interactive() else "Configuration"
-        )
-        values_title = "Initial Values" if self.is_interactive() else "Values"
+        title = "Interactive Configuration" if self.__interactive else "Configuration"
+        values_title = "Initial Values" if self.__interactive else "Values"
         return (
             dedent(
                 f"""
@@ -212,9 +205,9 @@ class Config(GenericImmutableDict[str, Any]):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
-        PDK_ROOT = Self._resolve_pdk_root(PDK_ROOT)
+        PDK_ROOT = Self.__resolve_pdk_root(PDK_ROOT)
 
-        config_in, _, _ = Self._get_pdk_config(
+        config_in, _, _ = Self.__get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
             PDK_ROOT,
@@ -239,7 +232,7 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-        config_in._interactive = True
+        config_in.__interactive = True
         Config.current_interactive = config_in
 
         return config_in
@@ -289,7 +282,7 @@ class Config(GenericImmutableDict[str, Any]):
         :returns: A tuple containing a Config object and the design directory.
         """
 
-        loader: Callable = Self._loads
+        loader: Callable = Self.__loads
         raw: Union[str, dict] = ""
         if not isinstance(config_in, dict):
             if design_dir is not None:
@@ -304,11 +297,11 @@ class Config(GenericImmutableDict[str, Any]):
                 raw = open(config_in, encoding="utf8").read()
             elif config_in.endswith(".tcl"):
                 raw = open(config_in, encoding="utf8").read()
-                loader = Self._loads_tcl
+                loader = Self.__loads_tcl
             else:
                 if os.path.isdir(config_in):
                     raise ValueError(
-                        "Passing design folders as arguments is unsupported in OpenLane 2.0+: please pass the JSON configuration file directly."
+                        "Passing design folders as arguments is unsupported in OpenLane 2 or higher: please pass the JSON configuration file directly."
                     )
                 _, ext = os.path.splitext(config_in)
                 raise ValueError(
@@ -320,9 +313,9 @@ class Config(GenericImmutableDict[str, Any]):
                     "The argument design_dir is required when using attempting to load a Config with a dictionary."
                 )
             raw = config_in
-            loader = Self._load_dict
+            loader = Self.__load_dict
 
-        pdk_root = Self._resolve_pdk_root(pdk_root)
+        pdk_root = Self.__resolve_pdk_root(pdk_root)
 
         loaded = loader(
             raw,
@@ -337,7 +330,7 @@ class Config(GenericImmutableDict[str, Any]):
         return (loaded, design_dir)
 
     @classmethod
-    def _loads(
+    def __loads(
         Self,
         json_str: str,
         *args,
@@ -346,14 +339,14 @@ class Config(GenericImmutableDict[str, Any]):
         raw = json.loads(json_str, parse_float=Decimal)
         if "resolve_json" not in kwargs:
             kwargs["resolve_json"] = True
-        return Self._load_dict(
+        return Self.__load_dict(
             raw,
             *args,
             **kwargs,
         )
 
     @classmethod
-    def _load_dict(
+    def __load_dict(
         Self,
         raw: Dict[str, Any],
         design_dir: str,
@@ -387,7 +380,7 @@ class Config(GenericImmutableDict[str, Any]):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in, pdkpath, scl = Self._get_pdk_config(
+        config_in, pdkpath, scl = Self.__get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
@@ -431,7 +424,7 @@ class Config(GenericImmutableDict[str, Any]):
         return config_in
 
     @classmethod
-    def _loads_tcl(
+    def __loads_tcl(
         Self,
         config: str,
         design_dir: str,
@@ -446,7 +439,7 @@ class Config(GenericImmutableDict[str, Any]):
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
         )
 
-        pdk_root = Self._resolve_pdk_root(pdk_root)
+        pdk_root = Self.__resolve_pdk_root(pdk_root)
 
         config_in = Config(
             {
@@ -473,7 +466,7 @@ class Config(GenericImmutableDict[str, Any]):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in, _, scl = Self._get_pdk_config(
+        config_in, _, scl = Self.__get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
@@ -511,7 +504,7 @@ class Config(GenericImmutableDict[str, Any]):
         return config_in
 
     @classmethod
-    def _resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:
+    def __resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:
         try:
             import volare
 
@@ -524,7 +517,7 @@ class Config(GenericImmutableDict[str, Any]):
         return os.path.abspath(pdk_root)
 
     @classmethod
-    def _get_pdk_config(
+    def __get_pdk_config(
         Self,
         pdk: str,
         scl: Optional[str],
@@ -636,7 +629,7 @@ class Config(GenericImmutableDict[str, Any]):
                 pass
             if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
                 errors.append(
-                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
+                    f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2 or higher. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
                 )
             else:
                 warnings.append(

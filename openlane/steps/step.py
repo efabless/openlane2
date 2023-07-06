@@ -46,7 +46,7 @@ from ..common import (
     mkdirp,
     slugify,
     final,
-    internal,
+    protected,
 )
 from ..logging import (
     rule,
@@ -57,15 +57,35 @@ from ..logging import (
 )
 
 
-class StepError(ValueError):
+class StepError(RuntimeError):
+    """
+    A ``RuntimeError`` that occurs when a Step fails to finish execution
+    properly.
+    """
+
     pass
 
 
 class DeferredStepError(StepError):
+    """
+    A variant of :class:`StepError` where parent Flows are encouraged to continue
+    execution of subsequent steps regardless and then finally flag the Error
+    at the very end.
+    """
+
     pass
 
 
 class StepException(StepError):
+    """
+    A variant of :class:`StepError` for unexpected failures or failures due
+    to misconfiguration, such as:
+
+    * Invalid inputs
+    * Mis-use of class interfaces of the :class:`Step`
+    * Other unexpected failures
+    """
+
     pass
 
 
@@ -100,8 +120,6 @@ class Step(ABC):
 
         If running in interactive mode, you can set this to ``None``, but it is
         otherwise required.
-
-    :param flow: The parent flow, if applicable.
 
     :param state_in: The state object this step will use as an input.
 
@@ -140,6 +158,8 @@ class Step(ABC):
         While this is technically an instance variable, it is expected for every
         subclass to override this variable and instances are only to change it
         to disambiguate when the same step is used multiple times in a flow.
+
+    :param flow: Deprecated: the parent flow. Ignored if passed.
 
     :cvar inputs: A list of :class:`openlane.state.DesignFormat` objects that
         are required for this step. These will be validated by the :meth:`start`
@@ -183,18 +203,6 @@ class Step(ABC):
         If :meth:`start` is called again, the reference is destroyed.
     """
 
-    class _FlowType(ABC):
-        """
-        "Forward declaration" for the methods a step uses to interact with its
-        parent Flow.
-        """
-
-        toolbox: Optional[Toolbox] = None
-
-        @abstractmethod
-        def dir_for_step(self, step: Step) -> str:
-            pass
-
     # Class Variables
     inputs: ClassVar[List[DesignFormat]]
     outputs: ClassVar[List[DesignFormat]]
@@ -223,16 +231,21 @@ class Step(ABC):
         self,
         config: Optional[Config] = None,
         state_in: Union[Optional[State], Future[State]] = None,
-        step_dir: Optional[str] = None,
+        *,
         id: Optional[str] = None,
         name: Optional[str] = None,
         long_name: Optional[str] = None,
-        flow: Optional[_FlowType] = None,
+        flow: Optional[Any] = None,
         **kwargs,
     ):
         if self.id == NotImplemented:
             raise NotImplementedError(
                 "All subclasses of Step must override the value of id."
+            )
+
+        if flow is not None:
+            warn(
+                f"Passing 'flow' to a Step class's initializer is deprecated. Please update the flow '{type(flow).__name__}'."
             )
 
         if id is not None:
@@ -245,7 +258,7 @@ class Step(ABC):
                 raise TypeError("Missing required argument 'config'")
 
         if state_in is None:
-            if config.is_interactive():
+            if Config.current_interactive:
                 state_in = LastState
             else:
                 raise TypeError("Missing required argument 'state_in'")
@@ -260,7 +273,7 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if config.is_interactive():
+        if Config.current_interactive:
             mutable = Config(**kwargs.copy())
             overrides, warnings, errors = mutable.process_variable_list(
                 variables=self.config_vars,
@@ -280,22 +293,6 @@ class Step(ABC):
 
         self.config = config.copy()
 
-        self.flow = flow
-        if step_dir is None:
-            if self.flow is not None:
-                self.step_dir = self.flow.dir_for_step(self)
-            elif not self.config.is_interactive():
-                raise TypeError("Missing required argument 'step_dir'")
-            else:
-                self.step_dir = os.path.join(
-                    os.getcwd(),
-                    "openlane_run",
-                    f"{Step.counter}-{slugify(self.id)}",
-                )
-                Step.counter += 1
-        else:
-            self.step_dir = step_dir
-
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):
             state_in_future.set_result(state_in)
@@ -312,10 +309,7 @@ class Step(ABC):
                     )
 
     @classmethod
-    def _get_desc(Self) -> str:
-        """
-        Used for documentation. Use externally at your own peril.
-        """
+    def __get_desc(Self) -> str:
         if hasattr(Self, "long_name"):
             return Self.long_name
         elif hasattr(Self, "name"):
@@ -334,7 +328,7 @@ class Step(ABC):
         result = (
             textwrap.dedent(
                 f"""\
-                ### <a name="{Self.id}"></a> {Self._get_desc()}
+                ### <a name="{Self.id}"></a> {Self.__get_desc()}
 
                 ```{{eval-rst}}
                 %s
@@ -349,7 +343,7 @@ class Step(ABC):
                 
                 from openlane.steps import Step
 
-                {Self.__name__} = Step.get("{Self.id}")
+                {Self.__name__} = Step.factory.get("{Self.id}")
                 ```
                 """
             )
@@ -402,10 +396,62 @@ class Step(ABC):
 
         IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
 
+    def _repr_markdown_(self) -> str:
+        """
+        Only one _ because this is used by IPython.
+        """
+        if self.state_out is None:
+            return """
+                ### Step not yet executed.
+            """
+        state_in = self.state_in.result()
+        assert self.start_time is not None and self.end_time is not None
+
+        result = ""
+        time_elapsed = self.end_time - self.start_time
+
+        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
+
+        views_updated = []
+        for id, value in dict(self.state_out).items():
+            if value is None:
+                continue
+
+            if state_in.get(id) != value:
+                df = DesignFormat.by_id(id)
+                assert df is not None
+                views_updated.append(df.value.name)
+
+        if len(views_updated):
+            result += "#### Views updated:\n"
+            for view in views_updated:
+                result += f"* {view}\n"
+
+        if preview := self.layout_preview():
+            result += "#### Preview:\n"
+            result += preview
+
+        return result
+
+    def layout_preview(self) -> Optional[str]:
+        """
+        Returns an HTML tag that could act as a preview for a specific stage.
+        """
+        return None
+
+    def display_result(self):
+        """
+        IPython-only. Displays the results of a given step.
+        """
+        import IPython.display
+
+        IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
+
     @final
     def start(
         self,
         toolbox: Optional[Toolbox] = None,
+        step_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
         """
@@ -429,14 +475,7 @@ class Step(ABC):
         global LastState
 
         if toolbox is None:
-            if self.flow is not None:
-                if toolbox := self.flow.toolbox:
-                    self.toolbox = toolbox
-                else:
-                    raise StepException(
-                        "Attempted to 'start' a step before its parent Flow."
-                    )
-            elif not self.config.is_interactive():
+            if not Config.current_interactive:
                 raise TypeError(
                     "Missing argument 'toolbox' required when not running in a Flow"
                 )
@@ -446,11 +485,24 @@ class Step(ABC):
         else:
             self.toolbox = toolbox
 
+        if step_dir is None:
+            if not Config.current_interactive:
+                raise TypeError("Missing required argument 'step_dir'")
+            else:
+                self.step_dir = os.path.join(
+                    os.getcwd(),
+                    "openlane_run",
+                    f"{Step.counter}-{slugify(self.id)}",
+                )
+                Step.counter += 1
+        else:
+            self.step_dir = step_dir
+
         state_in_result = self.state_in.result()
 
         rule(f"{self.long_name}")
 
-        if self.flow is not None and self.flow_control_variable is not None:
+        if not Config.current_interactive and self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if isinstance(flow_control_value, bool):
                 if not flow_control_value:
@@ -497,7 +549,7 @@ class Step(ABC):
             state_in_result.metrics, overrides=metrics_updates
         )
 
-        self.state_out = State(
+        self.state_out = state_in_result.__class__(
             state_in_result, overrides=views_updates, metrics=metrics
         )
 
@@ -510,11 +562,12 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
 
-        if self.config.is_interactive():
+        if Config.current_interactive:
             LastState = self.state_out
 
         return self.state_out
 
+    @protected
     @abstractmethod
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
@@ -526,20 +579,28 @@ class Step(ABC):
 
         :param state_in: The input state.
 
-            Note that `self.state_in` is stored as a future and would need to be
+            Note that ``self.state_in`` is stored as a future and would need to be
             resolved before use first otherwise.
 
-            For reference, `start()` is responsible for resolving it
-            for `.run()`.
+            For reference, ``start()`` is responsible for resolving it
+            for ``.run()``.
+
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
         pass
 
+    @protected
     def get_log_path(self) -> str:
+        """
+        :returns: the default value for :meth:`run_subprocess`'s "log_to"
+        parameter.
+
+            Override it to change the default log path.
+        """
         return os.path.join(self.step_dir, f"{slugify(self.id)}.log")
 
-    @internal
+    @protected
     def run_subprocess(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
@@ -556,7 +617,7 @@ class Step(ABC):
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional override for the log path from ``get_log_path``.
+        :param log_to: An optional override for the log path from :meth:`get_log_path`.
             Useful for if you run multiple subprocesses within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
@@ -642,7 +703,7 @@ class Step(ABC):
 
         return generated_metrics
 
-    @internal
+    @protected
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
         """
         An assisting function: Given a ``kwargs`` object, it does the following:
@@ -672,7 +733,7 @@ class Step(ABC):
         a primer.
         """
 
-        _registry: ClassVar[Dict[str, Type[Step]]] = {}
+        __registry: ClassVar[Dict[str, Type[Step]]] = {}
 
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:
@@ -681,7 +742,7 @@ class Step(ABC):
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
-                Self._registry[cls.id.lower()] = cls
+                Self.__registry[cls.id.lower()] = cls
                 return cls
 
             return decorator
@@ -693,62 +754,13 @@ class Step(ABC):
 
             :param name: The registered name of the Step. Case-insensitive.
             """
-            return Self._registry.get(name.lower())
+            return Self.__registry.get(name.lower())
 
         @classmethod
         def list(Self) -> List[str]:
             """
             :returns: A list of IDs of all registered names.
             """
-            return [cls.id for cls in Self._registry.values()]
+            return [cls.id for cls in Self.__registry.values()]
 
     factory = StepFactory
-    get = StepFactory.get
-
-    def layout_preview(self) -> Optional[str]:
-        """
-        Returns an HTML tag that could act as a preview for a specific stage.
-        """
-        return None
-
-    def _repr_markdown_(self) -> str:
-        if self.state_out is None:
-            return """
-                ### Step not yet executed.
-            """
-        state_in = self.state_in.result()
-        assert self.start_time is not None and self.end_time is not None
-
-        result = ""
-        time_elapsed = self.end_time - self.start_time
-
-        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
-
-        views_updated = []
-        for id, value in dict(self.state_out).items():
-            if value is None:
-                continue
-
-            if state_in.get(id) != value:
-                df = DesignFormat.by_id(id)
-                assert df is not None
-                views_updated.append(df.value.name)
-
-        if len(views_updated):
-            result += "#### Views updated:\n"
-            for view in views_updated:
-                result += f"* {view}\n"
-
-        if preview := self.layout_preview():
-            result += "#### Preview:\n"
-            result += preview
-
-        return result
-
-    def display_result(self):
-        """
-        IPython-only. Displays the results of a given step.
-        """
-        import IPython.display
-
-        IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))

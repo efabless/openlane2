@@ -31,6 +31,7 @@ with pkgs; mkShell {
     # Docs + Testing
     enchant
     jupyter
+    graphviz
   ];
 
   shellHook = ''
