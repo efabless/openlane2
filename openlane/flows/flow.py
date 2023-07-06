@@ -81,11 +81,11 @@ class FlowException(FlowError):
 T = TypeVar("T", bound=Callable)
 
 
-@staticmethod
 def ensure_progress_started(method: T) -> Callable:
     """
-    If a method is decorated with `ensure_started` and :meth:`start` had
-    not bee called yet, a :class:`FlowException` will be thrown.
+    If a method of :class:`FlowProgressBar`decorated with `ensure_started`
+    and :meth:`start` had not been called yet, a :class:`FlowException` will be
+    thrown.
 
     The docstring will also be amended to reflect that fact.
 
@@ -93,12 +93,12 @@ def ensure_progress_started(method: T) -> Callable:
     """
 
     @wraps(method)
-    def _impl(self: FlowProgressBar, *method_args, **method_kwargs):
-        if not self.started:
+    def _impl(obj: FlowProgressBar, *method_args, **method_kwargs):
+        if not obj.started:
             raise FlowException(
                 f"Attempted to call method '{method}' before initializing progress bar"
             )
-        return method(self, *method_args, **method_kwargs)
+        return method(obj, *method_args, **method_kwargs)
 
     if method.__doc__ is None:
         method.__doc__ = ""
