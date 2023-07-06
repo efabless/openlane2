@@ -217,8 +217,25 @@ if { [info exists ::env(SYNTH_PARAMETERS) ] } {
 select -module $vtop
 show -format dot -prefix $::env(STEP_DIR)/hierarchy
 select -clear
-
 hierarchy -check -top $vtop
+
+if { $::env(SYNTH_ELABORATE_ONLY) } {
+    yosys proc
+    if { $::env(SYNTH_FLAT_TOP) } {
+        flatten
+    }
+
+    setattr -set keep 1
+
+    splitnets
+    opt_clean -purge
+
+    tee -o "$report_dir/chk.rpt" check
+    tee -o "$report_dir/stat.json" stat -top $vtop -json
+
+    write_verilog -noattr -noexpr -nohex -nodec -defparam "$::env(SAVE_NETLIST)"
+    exit 0
+}
 
 # Infer tri-state buffers.
 set tbuf_map false
@@ -253,13 +270,13 @@ proc_dlatch
 proc_dff
 proc_memwr
 proc_clean
+tee -o "$report_dir/pre_synth_chk.rpt" check
 opt_expr
 if { $::env(SYNTH_NO_FLAT) != 1 } {
     flatten
 }
 opt_expr
 opt_clean
-tee -o "$report_dir/pre_synth_chk.rpt" check
 opt -nodffe -nosdff
 fsm
 opt
@@ -362,7 +379,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     }
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -liberty [lindex $::env(SYNTH_LIBS) 0] -json
+    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -json
 
     if { $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include

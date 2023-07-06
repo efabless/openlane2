@@ -24,9 +24,11 @@ in yosys.overrideAttrs (finalAttrs: previousAttrs: rec {
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "yosys";
-    rev = "7e588664e7efa36ff473f0497feacaad57f5e90c";
-    sha256 = "sha256-0xV+323YTK+VhnD05SmvGv8uT4TzqA9IZ/iKl1as1Kc=";
+    rev = "f7a8284c7b095bca4bc2c65032144c4e3264ee4d";
+    sha256 = "sha256-qhMcXJFEuBPl7vh+gYTu7PnSWi+L3YMLrBMQyYqfc0w=";
   };
+
+  patches = [];
 
   nativeBuildInputs = [ pkg-config bison flex ];
   propagatedBuildInputs = [

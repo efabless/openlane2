@@ -1,3 +1,9 @@
+# 2.0.0-a47
+
+* Update Magic, Netgen, and Yosys
+* Made `SYNTH_ELABORATE_ONLY` functional
+* Minor internal rearchitecture of `common` and commandline options
+
 # 2.0.0-a46
 
 * Start on API cleanup in preparation for beta

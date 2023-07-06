@@ -18,6 +18,6 @@
 with pkgs; fetchFromGitHub {
   owner = "YosysHQ";
   repo = "abc";
-  rev = "a8f0ef2368aa56b3ad20a52298a02e63b2a93e2d";
-  sha256 = "sha256-48i6AKQhMG5hcnkS0vejOy1PqFbeb6FpU7Yx0rEvHDI=";
+  rev = "bb64142b07794ee685494564471e67365a093710";
+  sha256 = "sha256-Qkk61Lh84ervtehWskSB9GKh+JPB7mI1IuG32OSZMdg=";
 }

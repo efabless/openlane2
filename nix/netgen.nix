@@ -20,8 +20,8 @@ with pkgs; stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "netgen";
-    rev = "e12883037c9844fb1bd61f861b264fc7e1028237";
-    sha256 = "sha256-uSOem6zNRTZkT2OFgP80PJuLmsewPuyzPAvJWmTPQ44=";
+    rev = "1efa054ac1302a2b8b03a41e90420fc055d5796e";
+    sha256 = "sha256-k3Ke6z2mW6BmpefgraEBBH4VHVX2v59rv8Pz3JKuEcU=";
   };
 
   configureFlags = [

@@ -60,6 +60,8 @@ def parse_yosys_check(
 
 
 class YosysStep(TclStep):
+    reproducibles_allowed = False
+
     config_vars = [
         Variable(
             "VERILOG_FILES",
@@ -263,10 +265,11 @@ class Synthesis(YosysStep):
                 default=False,
             ),
             Variable(
-                "SYNTH_FLAT_TOP",
+                "SYNTH_ELABORATE_FLATTEN",
                 bool,
-                "Specifies whether or not the top level should be flattened during elaboration.",
-                default=False,
+                "If `SYNTH_ELABORATE_ONLY` is specified, this variable controls whether or not the top level should be flattened.",
+                default=True,
+                deprecated_names=["SYNTH_FLAT_TOP"],
             ),
         ]
     )
@@ -293,9 +296,14 @@ class Synthesis(YosysStep):
         ]
         metric_updates["design__instance_unmapped__count"] = sum(unmapped_cells)
 
-        metric_updates["synthesis__check_error__count"] = parse_yosys_check(
-            open(os.path.join(self.step_dir, "reports", "pre_synth_chk.rpt")),
-            self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
+        check_error_count_file = os.path.join(
+            self.step_dir, "reports", "pre_synth_chk.rpt"
         )
+        metric_updates["synthesis__check_error__count"] = 0
+        if os.path.exists(check_error_count_file):
+            metric_updates["synthesis__check_error__count"] = parse_yosys_check(
+                open(check_error_count_file),
+                self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
+            )
 
         return views_updates, metric_updates
