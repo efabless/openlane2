@@ -209,32 +209,32 @@ class GenericDict(Mapping[KT, VT]):
         overrides: Optional[Mapping[KT, VT]] = None,
     ) -> None:
         super().__init__()
-        self._data = {}
+        self.__data = {}
         copying = copying or {}
         overrides = overrides or {}
 
         for key, value in copying.items():
-            self._data[key] = value
+            self.__data[key] = value
         for key, value in overrides.items():
-            self._data[key] = value
+            self.__data[key] = value
 
     def __getitem__(self, key: KT) -> VT:
-        return self._data[key]
+        return self.__data[key]
 
     def __setitem__(self, key: KT, item: VT):
-        self._data[key] = item
+        self.__data[key] = item
 
     def __delitem__(self, key: KT):
-        del self._data[key]
+        del self.__data[key]
 
     def __len__(self) -> int:
-        return len(self._data)
+        return len(self.__data)
 
     def __repr__(self) -> str:
         return self.to_raw_dict().__repr__()
 
     def __iter__(self) -> Iterator[KT]:
-        return iter(self._data)
+        return iter(self.__data)
 
     def pop(self, key: KT, /) -> VT:
         """
@@ -261,7 +261,7 @@ class GenericDict(Mapping[KT, VT]):
         """
         :returns: A copy of the underlying Python built-in ``dict`` for this class.
         """
-        return self._data.copy()
+        return self.__data.copy()
 
     def get_encoder(self) -> Type[GenericDictEncoder]:
         """
@@ -273,19 +273,19 @@ class GenericDict(Mapping[KT, VT]):
         """
         :returns: A set-like object providing a view of the keys of the GenericDict object.
         """
-        return self._data.keys()
+        return self.__data.keys()
 
     def values(self):
         """
         :returns: A set-like object providing a view of the values of the GenericDict object.
         """
-        return self._data.values()
+        return self.__data.values()
 
     def items(self):
         """
         :returns: A set-like object providing a view of the GenericDict object as (key, value) tuples.
         """
-        return self._data.items()
+        return self.__data.items()
 
     def dumps(self, **kwargs) -> str:
         """
@@ -310,7 +310,7 @@ class GenericDict(Mapping[KT, VT]):
             checking if the second element ``is not None`` is insufficient to check
             whether a key exists.
         """
-        return (key if key in self._data else None, self.get(key))
+        return (key if key in self.__data else None, self.get(key))
 
     def update(self, incoming: "Mapping[KT, VT]"):
         """
@@ -333,10 +333,10 @@ class GenericImmutableDict(GenericDict[KT, VT]):
         **kwargs,
     ) -> None:
         super().__init__(copying, *args, **kwargs)
-        self._lock = True
+        self.__lock = True
 
     def __setitem__(self, key: KT, item: VT):
-        if self._lock:
+        if self.__lock:
             raise TypeError(f"{self.__class__.__name__} is immutable")
         return super().__setitem__(key, item)
 

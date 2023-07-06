@@ -122,18 +122,19 @@ class State(GenericImmutableDict[str, StateElement]):
         return super().__delitem__(key)
 
     def to_raw_dict(self, metrics: bool = True) -> Dict[str, Any]:
-        final: Dict[Any, Any] = self._data.copy()
+        final = super().to_raw_dict()
         if metrics:
             final["metrics"] = self.metrics
         return final
 
     def copy(self: "State") -> "State":
-        new = State()
-        new._data = copy_recursive(self._data)
-        new.metrics = GenericImmutableDict(copy_recursive(self.metrics))
+        metrics: GenericImmutableDict[str, Any] = GenericImmutableDict(
+            copy_recursive(self.metrics)
+        )
+        new = State(self, metrics=metrics)
         return new
 
-    def _save_snapshot_recursive(
+    def __save_snapshot_recursive(
         self,
         path: Union[str, os.PathLike],
         views: Union[Dict, "State"],
@@ -152,7 +153,7 @@ class State(GenericImmutableDict[str, StateElement]):
 
             if isinstance(value, dict):
                 subdirectory = os.path.join(path, current_folder)
-                self._save_snapshot_recursive(
+                self.__save_snapshot_recursive(
                     subdirectory,
                     value,
                     key_path=current_key_path,
@@ -174,14 +175,14 @@ class State(GenericImmutableDict[str, StateElement]):
         :param path: The folder that would contain other folders.
         """
         self.validate()
-        self._save_snapshot_recursive(path, self)
+        self.__save_snapshot_recursive(path, self)
         metrics_path = os.path.join(path, "metrics.csv")
         with open(metrics_path, "w") as f:
             f.write("Metric,Value\n")
             for metric in self.metrics:
                 f.write(f"{metric}, {self.metrics[metric]}\n")
 
-    def _validate_recursive(
+    def __validate_recursive(
         self,
         views: Dict,
         key_path: str = "",
@@ -200,7 +201,7 @@ class State(GenericImmutableDict[str, StateElement]):
                             f"Path for format {current_key_path} does not exist: '{value}'."
                         )
                 elif isinstance(value, dict):
-                    self._validate_recursive(
+                    self.__validate_recursive(
                         value, key_path=current_key_path, depth=depth + 1
                     )
                 else:
@@ -212,10 +213,10 @@ class State(GenericImmutableDict[str, StateElement]):
         """
         Ensures that all paths exist in a State.
         """
-        self._validate_recursive(self.to_raw_dict(metrics=False))
+        self.__validate_recursive(self.to_raw_dict(metrics=False))
 
     @classmethod
-    def _loads_recursive(
+    def __loads_recursive(
         Self,
         views: Dict,
         validate_path: bool = True,
@@ -229,7 +230,7 @@ class State(GenericImmutableDict[str, StateElement]):
                 continue
 
             if isinstance(value, dict):
-                target[key] = Self._loads_recursive(
+                target[key] = Self.__loads_recursive(
                     value,
                     validate_path,
                     key_path=current_key_path,
@@ -252,7 +253,7 @@ class State(GenericImmutableDict[str, StateElement]):
         if metrics is not None:
             del raw["metrics"]
 
-        views = Self._loads_recursive(raw, validate_path)
+        views = Self.__loads_recursive(raw, validate_path)
         state = Self(views, metrics=metrics)
 
         return state

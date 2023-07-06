@@ -76,6 +76,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     volare
     tkinter
     lxml
+    deprecated
   ];
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;

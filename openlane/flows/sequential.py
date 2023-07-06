@@ -72,11 +72,11 @@ class SequentialFlow(Flow):
 
         if substitute := Substitute:
             for key, item in substitute.items():
-                self._substitute_step(key, item)
+                self.__substitute_step(key, item)
 
         super().__init__(*args, **kwargs)
 
-    def _substitute_step(
+    def __substitute_step(
         self,
         id: str,
         with_step: Union[str, Type[Step]],

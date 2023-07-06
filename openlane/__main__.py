@@ -174,6 +174,7 @@ def run(
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
+        traceback.print_exc()
         err("OpenLane will now quit.")
         return 1
     except FlowError as e:

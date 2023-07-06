@@ -29,6 +29,7 @@ from typing import (
     Optional,
     Dict,
     Callable,
+    TypeVar,
     Union,
 )
 
@@ -84,12 +85,12 @@ class FlowProgressBar(object):
     """
 
     def __init__(self, flow_name: str, starting_ordinal: int = 1) -> None:
-        self._flow_name: str = flow_name
-        self._stages_completed: int = 0
-        self._max_stage: int = 0
-        self._task_id: Optional[TaskID] = None
-        self._ordinal: int = starting_ordinal
-        self._progress = Progress(
+        self.__flow_name: str = flow_name
+        self.__stages_completed: int = 0
+        self.__max_stage: int = 0
+        self.__task_id: TaskID = TaskID(-1)
+        self.__ordinal: int = starting_ordinal
+        self.__progress = Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
             MofNCompleteColumn(),
@@ -101,23 +102,34 @@ class FlowProgressBar(object):
         """
         Starts rendering the progress bar.
         """
-        self._progress.start()
-        self._task_id = self._progress.add_task(
-            f"{self._flow_name}",
+        self.__progress.start()
+        self.__task_id = self.__progress.add_task(
+            f"{self.__flow_name}",
         )
 
     def end(self):
         """
         Stops rendering the progress bar.
         """
-        self._progress.stop()
-        self._task_id = None
+        self.__progress.stop()
+        self.__task_id = TaskID(-1)
+
+    T = TypeVar("T", bound=Callable)
 
     @staticmethod
-    def ensure_started(method):
+    def ensure_started(method: T) -> Callable:
+        """
+        If a method is decorated with `ensure_started` and :meth:`start` had
+        not bee called yet, a :class:`FlowException` will be thrown.
+
+        The docstring will also be amended to reflect that fact.
+
+        :param method: The method of :class:`FlowProgressBar` in question.
+        """
+
         @wraps(method)
         def _impl(self, *method_args, **method_kwargs):
-            if self._task_id is None:
+            if self.__task_id == TaskID(-1):
                 raise FlowException(
                     f"Attempted to call method '{method}' before initializing progress bar"
                 )
@@ -141,8 +153,8 @@ class FlowProgressBar(object):
 
         :param count: The total number of stages.
         """
-        self._max_stage = count
-        self._progress.update(self._task_id, total=count)
+        self.__max_stage = count
+        self.__progress.update(self.__task_id, total=count)
 
     @ensure_started
     def start_stage(self, name: str):
@@ -151,9 +163,9 @@ class FlowProgressBar(object):
 
         :param name: The name of the stage.
         """
-        self._progress.update(
-            self._task_id,
-            description=f"{self._flow_name} - Stage {self._stages_completed + 1} - {name}",
+        self.__progress.update(
+            self.__task_id,
+            description=f"{self.__flow_name} - Stage {self.__stages_completed + 1} - {name}",
         )
 
     @ensure_started
@@ -168,10 +180,10 @@ class FlowProgressBar(object):
             Please note that step ordinal is not equal to stages- a skipped step
             increments the stage but not the step ordinal.
         """
-        self._stages_completed += 1
+        self.__stages_completed += 1
         if increment_ordinal:
-            self._ordinal += 1
-        self._progress.update(self._task_id, completed=float(self._stages_completed))
+            self.__ordinal += 1
+        self.__progress.update(self.__task_id, completed=float(self.__stages_completed))
 
     @ensure_started
     def get_ordinal_prefix(self) -> str:
@@ -179,8 +191,8 @@ class FlowProgressBar(object):
         Returns a string with the current step ordinal, which can be used to
         create a step directory.
         """
-        max_stage_digits = len(str(self._max_stage))
-        return f"%0{max_stage_digits}d-" % self._ordinal
+        max_stage_digits = len(str(self.__max_stage))
+        return f"%0{max_stage_digits}d-" % self.__ordinal
 
 
 class Flow(ABC):
@@ -424,7 +436,7 @@ class Flow(ABC):
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
 
-        self.progress_bar: FlowProgressBar = FlowProgressBar(self.name)
+        self.progress_bar = FlowProgressBar(self.name)
         self.progress_bar.start()
         final_state, step_objects = self.run(
             initial_state=initial_state,
@@ -564,7 +576,7 @@ class Flow(ABC):
         a primer.
         """
 
-        _registry: ClassVar[Dict[str, Type[Flow]]] = {}
+        __registry: ClassVar[Dict[str, Type[Flow]]] = {}
 
         @classmethod
         def register(
@@ -583,7 +595,7 @@ class Flow(ABC):
                 name = cls.__name__
                 if registered_name is not None:
                     name = registered_name
-                Self._registry[name] = cls
+                Self.__registry[name] = cls
                 return cls
 
             return decorator
@@ -595,13 +607,13 @@ class Flow(ABC):
 
             :param name: The registered name of the Flow. Case-sensitive.
             """
-            return Self._registry.get(name)
+            return Self.__registry.get(name)
 
         @classmethod
         def list(Self) -> List[str]:
             """
             :returns: A list of strings representing all registered flows.
             """
-            return list(Self._registry.keys())
+            return list(Self.__registry.keys())
 
     factory = FlowFactory

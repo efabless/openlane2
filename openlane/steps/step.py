@@ -258,7 +258,7 @@ class Step(ABC):
                 raise TypeError("Missing required argument 'config'")
 
         if state_in is None:
-            if config._interactive:
+            if Config.current_interactive:
                 state_in = LastState
             else:
                 raise TypeError("Missing required argument 'state_in'")
@@ -273,7 +273,7 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if config._interactive:
+        if Config.current_interactive:
             mutable = Config(**kwargs.copy())
             overrides, warnings, errors = mutable.process_variable_list(
                 variables=self.config_vars,
@@ -309,10 +309,7 @@ class Step(ABC):
                     )
 
     @classmethod
-    def _get_desc(Self) -> str:
-        """
-        Used for documentation. Use externally at your own peril.
-        """
+    def __get_desc(Self) -> str:
         if hasattr(Self, "long_name"):
             return Self.long_name
         elif hasattr(Self, "name"):
@@ -331,7 +328,7 @@ class Step(ABC):
         result = (
             textwrap.dedent(
                 f"""\
-                ### <a name="{Self.id}"></a> {Self._get_desc()}
+                ### <a name="{Self.id}"></a> {Self.__get_desc()}
 
                 ```{{eval-rst}}
                 %s
@@ -400,6 +397,9 @@ class Step(ABC):
         IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
 
     def _repr_markdown_(self) -> str:
+        """
+        Only one _ because this is used by IPython.
+        """
         if self.state_out is None:
             return """
                 ### Step not yet executed.
@@ -475,7 +475,7 @@ class Step(ABC):
         global LastState
 
         if toolbox is None:
-            if not self.config._interactive:
+            if not Config.current_interactive:
                 raise TypeError(
                     "Missing argument 'toolbox' required when not running in a Flow"
                 )
@@ -486,7 +486,7 @@ class Step(ABC):
             self.toolbox = toolbox
 
         if step_dir is None:
-            if not self.config._interactive:
+            if not Config.current_interactive:
                 raise TypeError("Missing required argument 'step_dir'")
             else:
                 self.step_dir = os.path.join(
@@ -502,7 +502,7 @@ class Step(ABC):
 
         rule(f"{self.long_name}")
 
-        if not self.config._interactive and self.flow_control_variable is not None:
+        if not Config.current_interactive and self.flow_control_variable is not None:
             flow_control_value = self.config[self.flow_control_variable]
             if isinstance(flow_control_value, bool):
                 if not flow_control_value:
@@ -562,7 +562,7 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
 
-        if self.config._interactive:
+        if Config.current_interactive:
             LastState = self.state_out
 
         return self.state_out
@@ -733,7 +733,7 @@ class Step(ABC):
         a primer.
         """
 
-        _registry: ClassVar[Dict[str, Type[Step]]] = {}
+        __registry: ClassVar[Dict[str, Type[Step]]] = {}
 
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:
@@ -742,7 +742,7 @@ class Step(ABC):
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
-                Self._registry[cls.id.lower()] = cls
+                Self.__registry[cls.id.lower()] = cls
                 return cls
 
             return decorator
@@ -754,13 +754,13 @@ class Step(ABC):
 
             :param name: The registered name of the Step. Case-insensitive.
             """
-            return Self._registry.get(name.lower())
+            return Self.__registry.get(name.lower())
 
         @classmethod
         def list(Self) -> List[str]:
             """
             :returns: A list of IDs of all registered names.
             """
-            return [cls.id for cls in Self._registry.values()]
+            return [cls.id for cls in Self.__registry.values()]
 
     factory = StepFactory
