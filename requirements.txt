@@ -1,5 +1,5 @@
 click>=8,<9
-cloup>=1,<2
+cloup>=1.0.1,<2
 pyyaml>=5,<7
 rich>=12,<13
 requests>=2.27,<3
