@@ -202,8 +202,13 @@ def run_smoke_test(
             subprocess.check_call(["chmod", "-R", "777", final_path])
 
         pdk_root = ctx.params.get("pdk_root")
-        if pdk_root is not None:
+        if ctx.obj["use_volare"]:
+            import volare
+
+            pdk_root = volare.get_volare_home(ctx.params.get("pdk_root"))
             common.mkdirp(pdk_root)
+            volare.enable(pdk_root, "sky130", common.get_opdks_rev())
+
         config_file = os.path.join(final_path, "config.json")
 
         # 3. Run
