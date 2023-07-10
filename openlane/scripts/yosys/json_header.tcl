@@ -34,7 +34,7 @@ if { [info exists ::env(SYNTH_PARAMETERS) ] } {
         chparam -set $param $value $vtop
     }
 }
-
-select -module $vtop
+hierarchy -check -top $vtop
+yosys rename -top $vtop
 yosys proc
 json -o $::env(SAVE_JSON_HEADER)
