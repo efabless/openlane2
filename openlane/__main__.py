@@ -22,11 +22,10 @@ from textwrap import dedent
 from functools import partial
 from typing import Tuple, Type, Optional, List, Union
 
-from click import Parameter, pass_context
+from click import Parameter, pass_context, command
 from cloup import (
     option,
     option_group,
-    command,
     HelpFormatter,
     HelpTheme,
     Style,
