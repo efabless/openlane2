@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import os
-from typing import List, Tuple, Optional, Type, Dict, Union
+from typing import Iterable, List, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
@@ -113,7 +113,7 @@ class SequentialFlow(Flow):
         initial_state: State,
         frm: Optional[str] = None,
         to: Optional[str] = None,
-        skip: Optional[List[str]] = None,
+        skip: Optional[Iterable[str]] = None,
         **kwargs,
     ) -> Tuple[State, List[Step]]:
         step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}

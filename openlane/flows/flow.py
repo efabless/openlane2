@@ -368,6 +368,7 @@ class Flow(ABC):
         self,
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
+        last_run: bool = False,
         **kwargs,
     ) -> Tuple[State, List[Step]]:
         """
@@ -385,6 +386,25 @@ class Flow(ABC):
 
         :returns: ``(success, state_list)``
         """
+        if last_run:
+            if tag is not None:
+                raise FlowException(
+                    "tag and last_run cannot be defined simultaneously."
+                )
+
+            runs = glob.glob(os.path.join(self.design_dir, "runs", "*"))
+
+            latest_time: float = 0
+            latest_run: Optional[str] = None
+            for run in runs:
+                time = os.path.getmtime(run)
+                if time > latest_time:
+                    latest_time = time
+                    latest_run = run
+
+            if latest_run is not None:
+                tag = os.path.basename(latest_run)
+
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
@@ -415,7 +435,7 @@ class Flow(ABC):
 
             # Extract Maximum State
             if with_initial_state is None:
-                latest_time: float = 0
+                latest_time = 0
                 latest_json: Optional[str] = None
                 state_out_jsons = glob.glob(
                     os.path.join(self.run_dir, "**", "state_out.json"), recursive=True

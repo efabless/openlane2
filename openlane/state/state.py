@@ -245,7 +245,11 @@ class State(GenericImmutableDict[str, StateElement]):
 
     @classmethod
     def loads(Self, json_in: str, validate_path: bool = True) -> "State":
-        raw = json.loads(json_in, parse_float=Decimal)
+        try:
+            raw = json.loads(json_in, parse_float=Decimal)
+        except json.JSONDecodeError as e:
+            raise InvalidState(f"Invalid JSON string provided for state: {e}")
+
         if not isinstance(raw, dict):
             raise InvalidState("Failed to load state: JSON result is a dictionary")
 
