@@ -149,8 +149,8 @@ def warn(printable, *args, **kwargs):
 
 def err(printable, *args, **kwargs):
     """
-    Logs an item to the terminal with a warning unicode character and
-    gold/bold formatting.
+    Logs an item to the terminal with an error unicode character and
+    red/bold formatting.
     """
     if get_log_level() > LogLevels.ERROR:
         return

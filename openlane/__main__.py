@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import sys
-import glob
 import shutil
 import marshal
 import tempfile
@@ -21,10 +20,9 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple, Type, Optional, List, Union
 
-import click
+from click import Parameter, pass_context
 from cloup import (
     option,
     option_group,
@@ -32,12 +30,12 @@ from cloup import (
     HelpFormatter,
     HelpTheme,
     Style,
+    Context,
 )
 from cloup.constraints import (
     If,
     IsSet,
     accept_none,
-    require_one,
     mutually_exclusive,
 )
 
@@ -45,8 +43,6 @@ from cloup.constraints import (
 from .__version__ import __version__
 from .state import State
 from .logging import (
-    LogLevelsDict,
-    set_log_level,
     err,
     warn,
     info,
@@ -55,43 +51,28 @@ from . import common
 from .container import run_in_container
 from .plugins import discovered_plugins
 from .config import Config, InvalidConfig
-from .flows import Flow, SequentialFlow, FlowException, FlowError
+from .flows import Flow, SequentialFlow, FlowException, FlowError, cloup_flow_opts
 
 
 def run(
-    ctx: click.Context,
+    ctx: Context,
     flow_name: Optional[str],
-    use_volare: bool,
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
     config_files: List[str],
-    run_tag: Optional[str],
+    tag: Optional[str],
     last_run: bool,
     frm: Optional[str],
     to: Optional[str],
-    only: Optional[str],
     skip: Tuple[str, ...],
-    initial_state_json: Optional[str],
+    with_initial_state: Optional[State],
     config_override_strings: List[str],
 ) -> int:
-
-    if only is not None:
-        frm = to = only
-
-    if use_volare:
-        import volare
-
-        pdk_root = volare.get_volare_home(pdk_root)
-
-        volare.enable(pdk_root, pdk[:-1], common.get_opdks_rev())
 
     config_file = config_files[0]
 
     # Enforce Mutual Exclusion
-    if run_tag is not None and last_run:
-        err("--run-tag and --last-run are mutually exclusive.")
-        return -1
 
     flow_description: Union[str, List[str]] = flow_name or "Classic"
 
@@ -136,34 +117,14 @@ def run(
         info("OpenLane will now quit.")
         return 1
 
-    initial_state: Optional[State] = None
-    if initial_state_json is not None:
-        initial_state = State.loads(open(initial_state_json).read())
-
-    if last_run:
-        runs = glob.glob(os.path.join(flow.design_dir, "runs", "*"))
-
-        latest_time: float = 0
-        latest_run: Optional[str] = None
-        for run in runs:
-            time = os.path.getmtime(run)
-            if time > latest_time:
-                latest_time = time
-                latest_run = run
-
-        if latest_run is None:
-            err("--last-run specified, but no runs found.")
-            return 1
-
-        run_tag = os.path.basename(latest_run)
-
     try:
         flow.start(
-            tag=run_tag,
+            tag=tag,
+            last_run=last_run,
             frm=frm,
             to=to,
-            skip=list(skip),
-            with_initial_state=initial_state,
+            skip=skip,
+            with_initial_state=with_initial_state,
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
@@ -179,7 +140,7 @@ def run(
     return 0
 
 
-def print_version(ctx: click.Context, param: click.Parameter, value: bool):
+def print_version(ctx: Context, param: Parameter, value: bool):
     if not value:
         return
 
@@ -207,8 +168,8 @@ def print_version(ctx: click.Context, param: click.Parameter, value: bool):
 
 
 def print_bare_version(
-    ctx: click.Context,
-    param: click.Parameter,
+    ctx: Context,
+    param: Parameter,
     value: bool,
 ):
     if not value:
@@ -218,8 +179,8 @@ def print_bare_version(
 
 
 def run_smoke_test(
-    ctx: click.Context,
-    param: click.Parameter,
+    ctx: Context,
+    param: Parameter,
     value: bool,
 ):
     if not value:
@@ -241,27 +202,29 @@ def run_smoke_test(
             subprocess.check_call(["chmod", "-R", "777", final_path])
 
         pdk_root = ctx.params.get("pdk_root")
+        if ctx.obj["use_volare"]:
+            import volare
+
+            pdk_root = volare.get_volare_home(ctx.params.get("pdk_root"))
+            common.mkdirp(pdk_root)
+            volare.enable(pdk_root, "sky130", common.get_opdks_rev())
+
         config_file = os.path.join(final_path, "config.json")
-        use_volare = True
-        if use_volare_opt := ctx.params.get("use_volare"):
-            use_volare = use_volare_opt
 
         # 3. Run
         status = run(
             ctx,
             flow_name=None,
-            use_volare=use_volare,
             pdk_root=pdk_root,
             pdk="sky130A",
             scl=None,
             config_files=[config_file],
-            run_tag=None,
+            tag=None,
             last_run=False,
             frm=None,
             to=None,
-            only=None,
             skip=(),
-            initial_state_json=None,
+            with_initial_state=None,
             config_override_strings=[],
         )
         if status == 0:
@@ -281,8 +244,8 @@ def run_smoke_test(
 
 
 def cli_in_container(
-    ctx: click.Context,
-    param: click.Parameter,
+    ctx: Context,
+    param: Parameter,
     value: bool,
 ):
     if not value:
@@ -317,18 +280,7 @@ def cli_in_container(
         ctx.exit(status)
 
 
-def set_log_level_cb(
-    ctx: click.Context,
-    param: click.Parameter,
-    value: bool,
-):
-    try:
-        set_log_level(value)
-    except ValueError:
-        err(f"Invalid logging level: {value}.")
-        click.echo(ctx.get_help())
-        ctx.exit(-1)
-
+o = partial(option, show_default=True)
 
 formatter_settings = HelpFormatter.settings(
     theme=HelpTheme(
@@ -338,17 +290,6 @@ formatter_settings = HelpFormatter.settings(
         col1=Style(fg="bright_yellow"),
     )
 )
-
-
-def set_worker_count_cb(
-    ctx: click.Context,
-    param: click.Parameter,
-    value: int,
-):
-    common.set_tpe(ThreadPoolExecutor(max_workers=value))
-
-
-o = partial(option, show_default=True)
 
 
 @command(
@@ -377,41 +318,6 @@ o = partial(option, show_default=True)
     constraint=If(~IsSet("dockerized"), accept_none),
 )
 @option_group(
-    "PDK options",
-    o(
-        "--volare-pdk/--manual-pdk",
-        "use_volare",
-        is_eager=True,
-        default=True,
-        help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
-    ),
-    o(
-        "--pdk-root",
-        type=click.Path(
-            exists=True,
-            file_okay=False,
-            dir_okay=True,
-        ),
-        is_eager=True,
-        default=os.environ.pop("PDK_ROOT", None),
-        help="Override volare PDK root folder. Required if Volare is not installed.",
-    ),
-    o(
-        "-p",
-        "--pdk",
-        type=str,
-        default=os.environ.pop("PDK", "sky130A"),
-        help="The process design kit to use.",
-    ),
-    o(
-        "-s",
-        "--scl",
-        type=str,
-        default=os.environ.pop("STD_CELL_LIBRARY", None),
-        help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
-    ),
-)
-@option_group(
     "Subcommands",
     o(
         "--version",
@@ -435,120 +341,9 @@ o = partial(option, show_default=True)
     ),
     constraint=mutually_exclusive,
 )
-@option_group(
-    "Run options",
-    o(
-        "-f",
-        "--flow",
-        "flow_name",
-        type=click.Choice(Flow.factory.list(), case_sensitive=False),
-        default=None,
-        help="The built-in OpenLane flow to use for this run",
-    ),
-    o(
-        "-i",
-        "--with-initial-state",
-        "initial_state_json",
-        type=click.Path(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-        ),
-        default=None,
-        help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
-    ),
-    o(
-        "-c",
-        "--override-config",
-        "config_override_strings",
-        type=str,
-        multiple=True,
-        help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
-    ),
-)
-@option_group(
-    "Run options - tag",
-    o(
-        "--run-tag",
-        default=None,
-        type=str,
-        help="An optional name to use for this particular run of an OpenLane-based flow.",
-    ),
-    o(
-        "--last-run",
-        is_flag=True,
-        default=False,
-        help="Use the last run as the run tag.",
-    ),
-    constraint=mutually_exclusive,
-)
-@option_group(
-    "Run options - sequential flow control",
-    o(
-        "-F",
-        "--from",
-        "frm",
-        type=str,
-        default=None,
-        help="Start from a step with this id. Supported by sequential flows.",
-    ),
-    o(
-        "-T",
-        "--to",
-        type=str,
-        default=None,
-        help="Stop at a step with this id. Supported by sequential flows.",
-    ),
-    o(
-        "--only",
-        type=str,
-        default=None,
-        help="Shorthand to set both --from and --to to the same value.",
-    ),
-    o(
-        "-S",
-        "--skip",
-        type=str,
-        multiple=True,
-        help="Skip these steps. Supported by sequential flows.",
-    ),
-    constraint=If(IsSet("only"), require_one),
-)
-@o(
-    "--log-level",
-    type=str,
-    default="VERBOSE",
-    help=dedent(
-        """
-        A logging level. Set to INFO or higher to silence subprocess logs.
-
-        You can provide either a number or a string out of the following (higher is more silent):
-        """
-    )
-    + ",".join([f"{name}={value}" for name, value in LogLevelsDict.items()]),
-    callback=set_log_level_cb,
-    expose_value=False,
-)
-@o(
-    "-j",
-    "--jobs",
-    type=int,
-    default=os.cpu_count(),
-    help="The maximum number of threads or processes that can be used by OpenLane.",
-    callback=set_worker_count_cb,
-    expose_value=False,
-)
-@click.argument(
-    "config_files",
-    nargs=-1,
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=True,
-    ),
-)
-@click.pass_context
-def cli(ctx: click.Context, **kwargs):
+@cloup_flow_opts()
+@pass_context
+def cli(ctx, /, **kwargs):
     args = kwargs["config_files"]
     run_kwargs = kwargs.copy()
 
