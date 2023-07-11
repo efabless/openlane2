@@ -64,7 +64,7 @@ class Lint(Step):
         Variable(
             "LINTER_DEFINES",
             Optional[List[str]],
-            "Linter defines",
+            "Linter defines overriding SYNTH_DEFINES",
         ),
         Variable(
             "QUIT_ON_LINTER_ERRORS",
@@ -87,6 +87,21 @@ class Lint(Step):
         views_updates: ViewsUpdate = {}
         metrics_updates: MetricsUpdate = {}
         extra_args = []
+
+        if not self.config["QUIT_ON_LINTER_WARNINGS"]:
+            extra_args.append("--Wno-fatal")
+
+        if self.config["LINTER_RELATIVE_INCLUDES"]:
+            extra_args.append("--relative-includes")
+
+        defines = []
+        if self.config["LINTER_DEFINES"]:
+            for define in self.config["LINTER_DEFINES"]:
+                defines.append(f"+define+{define}")
+        elif self.config["SYNTH_DEFINES"]:
+            for define in self.config["SYNTH_DEFINES"]:
+                defines.append(f"+define+{define}")
+        extra_args += defines
 
         self.run_subprocess(
             [
