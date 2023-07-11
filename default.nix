@@ -19,6 +19,8 @@
 
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
 
+  verilator ? import ./nix/verilator.nix { inherit pkgs; },
+
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
   },
@@ -63,6 +65,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     netgen
     yosys
     magic
+    verilator
     ruby
     tcl
 

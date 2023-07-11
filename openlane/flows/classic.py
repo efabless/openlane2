@@ -24,6 +24,7 @@ from ..steps import (
     Odb,
     Netgen,
     Checker,
+    Linter,
 )
 from .flow import Flow
 from .sequential import SequentialFlow
@@ -41,6 +42,7 @@ class Classic(SequentialFlow):
 
     Steps: List[Type[Step]] = [
         Yosys.JsonHeader,
+        Linter.Lint,
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
