@@ -1,10 +1,13 @@
+# 2.0.0-a49
+
+* Made designs synthesized by Yosys keep their name after `chparam`
+
 # 2.0.0-a48
 
 * Created `openlane.flows.cloup_flow_opts`, which assigns a number of `cloup`
   commandline options to an external function for convenience.
 * Moved handling of `last_run` inside `Flow.start`
 * Moved handling of volare, setting log level and threadpool count to `cloup_flow_opts`
-
 
 # 2.0.0-a47
 

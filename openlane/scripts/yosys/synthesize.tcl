@@ -218,6 +218,7 @@ select -module $vtop
 show -format dot -prefix $::env(STEP_DIR)/hierarchy
 select -clear
 hierarchy -check -top $vtop
+yosys rename -top $vtop
 
 if { $::env(SYNTH_ELABORATE_ONLY) } {
     yosys proc
@@ -231,7 +232,7 @@ if { $::env(SYNTH_ELABORATE_ONLY) } {
     opt_clean -purge
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -top $vtop -json
+    tee -o "$report_dir/stat.json" stat -json
 
     write_verilog -noattr -noexpr -nohex -nodec -defparam "$::env(SAVE_NETLIST)"
     exit 0
@@ -379,7 +380,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     }
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -top $::env(DESIGN_NAME) -json
+    tee -o "$report_dir/stat.json" stat -json
 
     if { $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include
@@ -408,7 +409,7 @@ if { $::env(SYNTH_NO_FLAT) } {
 
     file copy -force $::env(SAVE_NETLIST) $::env(synthesis_results)/$::env(DESIGN_NAME).hierarchy.nl.v
     read_verilog -sv $::env(SAVE_NETLIST)
-    synth -top $vtop -flatten
+    synth -flatten
 
     design -save checkpoint
     run_strategy\
