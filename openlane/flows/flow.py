@@ -370,7 +370,7 @@ class Flow(ABC):
         tag: Optional[str] = None,
         last_run: bool = False,
         **kwargs,
-    ) -> Tuple[State, List[Step]]:
+    ) -> State:
         """
         The entry point for a flow.
 

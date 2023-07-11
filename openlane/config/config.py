@@ -28,6 +28,7 @@ from typing import (
     Sequence,
     Callable,
     Dict,
+    Set,
 )
 
 from .variable import Variable
@@ -125,6 +126,24 @@ class Config(GenericImmutableDict[str, Any]):
         final = super().to_raw_dict()
         final["meta"] = self.meta
         return final
+
+    def copy_filtered(
+        self,
+        config_vars: List[Variable],
+        include_pdk_variables: bool = True,
+        include_common_variables: bool = True,
+    ) -> "Config":
+        variables: Set[str] = set([variable.name for variable in config_vars])
+        if include_pdk_variables:
+            variables = variables.union(
+                set([variable.name for variable in pdk_variables])
+            )
+        if include_common_variables:
+            variables = variables.union(
+                set([variable.name for variable in flow_common_variables])
+            )
+
+        return Config({variable: self[variable] for variable in variables})
 
     def _repr_markdown_(self) -> str:
         title = "Interactive Configuration" if self.__interactive else "Configuration"

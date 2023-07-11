@@ -291,7 +291,11 @@ class Step(ABC):
                 "Variables may not be passed as keyword arguments unless the Config object is per-step."
             )
 
-        self.config = config.copy()
+        self.config = config.copy_filtered(
+            self.config_vars,
+            include_pdk_variables=True,
+            include_common_variables=True,
+        )
 
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):

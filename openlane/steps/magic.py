@@ -222,7 +222,7 @@ class DRC(MagicStep):
     inputs = [DesignFormat.DEF, DesignFormat.GDS]
     outputs = []
 
-    config_vars = [
+    config_vars = MagicStep.config_vars + [
         Variable(
             "RUN_MAGIC_DRC",
             bool,

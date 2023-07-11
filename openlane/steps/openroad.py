@@ -36,6 +36,7 @@ from .common_variables import (
     pdn_variables,
     rsz_variables,
     dpl_variables,
+    grt_variables,
     routing_layer_variables,
     constraint_variables,
 )
@@ -814,44 +815,7 @@ class GlobalRouting(OpenROADStep):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    config_vars = (
-        OpenROADStep.config_vars
-        + routing_layer_variables
-        + [
-            Variable(
-                "DIODE_PADDING",
-                int,
-                "Diode cell padding; increases the width of diode cells during placement checks..",
-                default=2,
-                units="sites",
-            ),
-            Variable(
-                "GRT_ALLOW_CONGESTION",
-                bool,
-                "Allow congestion during global routing",
-                default=False,
-            ),
-            Variable(
-                "GRT_REPAIR_ANTENNAS",
-                bool,
-                "Specifies the insertion strategy of diodes to be used in the flow.",
-                default=True,
-            ),
-            Variable(
-                "GRT_ANTENNA_ITERS",
-                int,
-                "The maximum number of iterations for global antenna repairs.",
-                default=3,
-                deprecated_names=["GRT_ANT_ITERS"],
-            ),
-            Variable(
-                "GRT_OVERFLOW_ITERS",
-                int,
-                "The maximum number of iterations waiting for the overflow to reach the desired value.",
-                default=50,
-            ),
-        ]
-    )
+    config_vars = OpenROADStep.config_vars + grt_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
@@ -1268,7 +1232,7 @@ class IRDropReport(OpenROADStep):
 
 ## ABC
 class ResizerStep(OpenROADStep):
-    config_vars = OpenROADStep.config_vars + rsz_variables
+    config_vars = OpenROADStep.config_vars + grt_variables + rsz_variables
 
     def run(
         self,
