@@ -298,16 +298,16 @@ def process_list_recursive(
     ref: List[Any],
     symbols: Dict[str, Any],
     key_path: str = "",
-) -> List:
+):
     for i, value in enumerate(input):
         current_key_path = f"{key_path}[{i}]"
-        processed = None
+        processed: Any = None
         if isinstance(value, dict):
             processed = {}
-            process_dict_recursive(value, ref, key_path=current_key_path)
+            process_dict_recursive(value, processed, symbols, key_path=current_key_path)
         elif isinstance(value, list):
             processed = []
-            process_list_recursive(value, ref, key_path=current_key_path)
+            process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
             processed = process_scalar(value, symbols)
         ref.append(processed)
@@ -324,7 +324,7 @@ def process_dict_recursive(
         current_key_path = key
         if key_path != "":
             current_key_path = f"{key_path}.{key}"
-        processed = None
+        processed: Any = None
         if isinstance(value, dict):
             if key.startswith(PDK_PREFIX):
                 pdk_match = key[len(PDK_PREFIX) :]
