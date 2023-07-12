@@ -266,10 +266,7 @@ def process_string(
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
                 files_escaped.sort()
-                if len(files_escaped) == 1:
-                    return files_escaped[0]
-                elif len(files_escaped) > 1:
-                    return files_escaped
+                return files_escaped
 
             return full_abspath
         except KeyError:
@@ -310,8 +307,10 @@ def process_list_recursive(
             process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
             processed = process_scalar(value, symbols)
-        ref.append(processed)
-        symbols[current_key_path] = processed
+
+        if processed is not None:
+            ref.append(processed)
+            symbols[current_key_path] = processed
 
 
 def process_dict_recursive(
@@ -346,8 +345,9 @@ def process_dict_recursive(
         else:
             processed = process_scalar(value, symbols)
 
-        ref[key] = processed
-        symbols[current_key_path] = processed
+        if processed is not None:
+            ref[key] = processed
+            symbols[current_key_path] = processed
 
 
 def process_config_dict(
@@ -355,6 +355,7 @@ def process_config_dict(
 ) -> Dict[str, Any]:
     state: Dict[str, Any] = dict(exposed_variables)
     process_dict_recursive(config_in, state, state.copy())
+    print(state)
     return state
 
 
