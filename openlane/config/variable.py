@@ -76,9 +76,9 @@ def some_of(t: Type[Any]) -> Type[Any]:
         return args_without_none[0]
 
     new_union = Union[int, str]
-    new_union.__args__ = tuple(args_without_none)
+    new_union.__args__ = tuple(args_without_none)  # type: ignore
 
-    return new_union
+    return new_union  # type: ignore
 
 
 def repr_type(t: Type[Any]) -> str:

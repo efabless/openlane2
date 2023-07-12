@@ -387,7 +387,9 @@ class Config(GenericImmutableDict[str, Any]):
             try:
                 meta = Meta(**meta_raw)
             except TypeError as e:
-                design_errors.append(f"'meta' object is invalid: {e}")
+                raise InvalidConfig(
+                    "design configuration file", [], [f"'meta' object is invalid: {e}"]
+                )
 
         if meta is None:
             meta = Meta(version=default_meta_version)

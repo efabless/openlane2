@@ -9,6 +9,7 @@ extend-ignore =
     E5
     W5
     E731
+    E721
 exclude =
     .git,
     __pycache__,

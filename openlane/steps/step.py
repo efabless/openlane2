@@ -275,8 +275,9 @@ class Step(ABC):
 
         if Config.current_interactive:
             mutable = Config(**kwargs.copy())
-            overrides, warnings, errors = mutable.process_variable_list(
-                variables=self.config_vars,
+            overrides, warnings, errors = mutable.__process_variable_list(
+                [],
+                self.config_vars,
             )
             config = config.copy(**overrides)
             for warning in warnings:
