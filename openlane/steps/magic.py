@@ -162,7 +162,7 @@ class StreamOut(MagicStep):
             "DIE_AREA",
             Optional[str],
             'Specific die area to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
-            units="μm",
+            units="µm",
         ),
         Variable(
             "MAGIC_ZEROIZE_ORIGIN",

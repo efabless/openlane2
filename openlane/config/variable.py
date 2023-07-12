@@ -149,7 +149,7 @@ class Variable:
         modified.
 
     :param units: Used only in documentation: the unit corresponding to this
-        object, i.e., μm, pF, etc. Can be any string, but for consistency, SI units
+        object, i.e., µm, pF, etc. Can be any string, but for consistency, SI units
         must be represented in terms of their official symbols.
     """
 

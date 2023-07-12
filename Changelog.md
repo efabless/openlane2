@@ -1,3 +1,24 @@
+# 2.0.0-a50
+
+* JSON configuration files with `.meta.version: 2` and dictionary configurations
+  now both subject to stricter validation
+    * Strings no longer automatically converted to lists, dicts, numbers, booleans, et cetera
+    * Numbers no longer automatically converted to
+    booleans
+    * Unrecognized keys throw an error instead of a warning
+* Steps now only keep a copy of configuration variables that are either common
+  or explicitly declared
+    * Explicitly declare global routing variables for resizer steps
+    * Explicitly declare MagicStep variables for DRC step
+* `CLOCK_PORT` type changed from `Optional[List[str]]` to `Union[str, List[str], None]`
+* JSON globs that return multiple files for a string variable raise errors,
+  and properly return a single-element list for list variables
+* Fixed issue where scalars and lists are double-processed
+* Fixed internal issue where `some_of` of a Union with more than two variables of which one is `None` just returns the same Union
+* Uniformity of `µ`s, now all use `U+00B5 MICRO SIGN` 
+* Removed `ref::/expr::` default values
+* Removed unused variable
+
 # 2.0.0-a49
 
 * Made designs synthesized by Yosys keep their name after `chparam`

@@ -530,7 +530,7 @@ class Floorplan(OpenROADStep):
             "CORE_AREA",
             Optional[str],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
-            units="μm",
+            units="µm",
         ),
         Variable(
             "BOTTOM_MARGIN_MULT",
@@ -764,14 +764,14 @@ class BasicMacroPlacement(OpenROADStep):
             str,
             "Macro placement halo. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            units="μm",
+            units="µm",
         ),
         Variable(
             "PL_MACRO_CHANNEL",
             str,
             "Channel widths between macros. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            units="μm",
+            units="µm",
         ),
     ]
 
@@ -1289,13 +1289,6 @@ class CTS(ResizerStep):
                 deprecated_names=["CLOCK_TREE_SYNTH"],
             ),
             Variable(
-                "CTS_TARGET_SKEW",
-                Decimal,
-                "The target clock skew in picoseconds.",
-                default=200,
-                units="ps",
-            ),
-            Variable(
                 "CTS_TOLERANCE",
                 int,
                 "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
@@ -1312,7 +1305,7 @@ class CTS(ResizerStep):
                 Decimal,
                 "Specifies maximum diameter of the sink cluster.",
                 default=50,
-                units="μm",
+                units="µm",
             ),
             Variable(
                 "CTS_CLK_MAX_WIRE_LENGTH",
