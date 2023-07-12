@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 import sys
 
 from typing import List, Optional, Tuple
@@ -67,13 +68,6 @@ class Lint(Step):
             "Linter defines overriding SYNTH_DEFINES",
         ),
         Variable(
-            "QUIT_ON_LINTER_ERRORS",
-            bool,
-            "Quit on linter errors.",
-            default=True,
-            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
-        ),
-        Variable(
             "QUIT_ON_LINTER_WARNINGS",
             bool,
             "Quit on linter warnings.",
@@ -103,19 +97,42 @@ class Lint(Step):
                 defines.append(f"+define+{define}")
         extra_args += defines
 
-        self.run_subprocess(
-            [
-                "verilator",
-                "--lint-only",
-                "--Wall",
-                "--Wno-DECLFILENAME",
-                "--top-module",
-                self.config["DESIGN_NAME"],
-            ] +
-            self.config["VERILOG_FILES"] +
-            extra_args,
-            env=env,
-        )
+        clean_exit = True
+        try:
+            self.run_subprocess(
+                [
+                    "verilator",
+                    "--lint-only",
+                    "--Wall",
+                    "--Wno-DECLFILENAME",
+                    "--top-module",
+                    self.config["DESIGN_NAME"],
+                ] +
+                self.config["VERILOG_FILES"] +
+                extra_args,
+                env=env,
+            )
+        except:
+            clean_exit = False
+
+        warnings_count = 0
+        errors_count = 0
+
+        error_pattern = re.compile(r"\s*\%Error: Exiting due to (\d+) error\(s\)")
+        with open(self.get_log_path(), "r") as f:
+            line = ""
+            for line in f:
+                if "%Warning-" in line:
+                    warnings_count += 1
+            if not clean_exit:
+                matched_errors = error_pattern.match(line)
+                if matched_errors:
+                    errors_count = matched_errors.group(1)
+                else:
+                    raise StepError("Linter exited non-cleanly")
+
+        metrics_updates.update({"design__lint_errors": errors_count})
+        metrics_updates.update({"design__lint_warnings": warnings_count})
         return views_updates, metrics_updates
 
     def layout_preview(self) -> Optional[str]:

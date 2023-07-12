@@ -269,3 +269,45 @@ class LVS(MetricChecker):
             default=True,
         ),
     ]
+
+@Step.factory.register()
+class LintErrors(MetricChecker):
+    id = "Checker.LintErrors"
+    flow_control_variable = "QUIT_ON_LINTER_ERRORS"
+    name = "Lint Errors Checker"
+    long_name = "Lint Errors Checker"
+
+    metric_name = "design__lint_errors"
+    metric_description = "Lint errors"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_LINTER_ERRORS",
+            bool,
+            "Quit on linter errors.",
+            default=True,
+            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
+        ),
+    ]
+
+
+@Step.factory.register()
+class LintWarnings(MetricChecker):
+    id = "Checker.LintWarnings"
+    flow_control_variable = "QUIT_ON_LINTER_WARNINGS"
+    name = "Lint Warnings Checker"
+    long_name = "Lint Warnings Checker"
+
+    metric_name = "design__lint_warnings"
+    metric_description = "Lint warnings"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_LINTER_WARNINGS",
+            bool,
+            "Quit on linter warnings.",
+            default=False,
+            deprecated_names=["QUIT_ON_LINTER_ERRORS"],
+        ),
+    ]
+
