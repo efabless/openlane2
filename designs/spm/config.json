@@ -1,4 +1,7 @@
 {
+    "meta": {
+        "version": 2
+    },
     "DESIGN_NAME": "spm",
     "VERILOG_FILES": "dir::src/*.v",
     "CLOCK_PERIOD": 10,

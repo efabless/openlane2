@@ -70,14 +70,15 @@ def some_of(t: Type[Any]) -> Type[Any]:
     # t must be a Union with None if we're here
 
     type_args = get_args(t)
-    if len(type_args) == 2:
-        # Either (Type | None) or (None | Type)
-        if type_args[0] != Type[None]:
-            return type_args[0]
-        else:
-            return type_args[1]
-    else:
-        return t
+
+    args_without_none = [arg for arg in type_args if arg != type(None)]
+    if len(args_without_none) == 1:
+        return args_without_none[0]
+
+    new_union = Union[int, str]
+    new_union.__args__ = tuple(args_without_none)
+
+    return new_union
 
 
 def repr_type(t: Type[Any]) -> str:
@@ -199,6 +200,7 @@ class Variable:
         validating_type: Type[Any],
         default: Any = None,
         explicitly_specified: bool = True,
+        permissive_typing: bool = False,
     ):
         if explicitly_specified and value is None:
             # User explicitly specified "null" for this value: only error if
@@ -217,6 +219,7 @@ class Variable:
                     value=default,
                     validating_type=validating_type,
                     values_so_far=values_so_far,
+                    permissive_typing=permissive_typing,
                 )
             elif not is_optional(validating_type):
                 raise ValueError(
@@ -232,17 +235,26 @@ class Variable:
         if is_optional(validating_type):
             validating_type = some_of(validating_type)
 
-        if type(value) == str:
-            value = process_string(value, values_so_far)
-
         type_origin = get_origin(validating_type)
         type_args = get_args(validating_type)
+
+        if type(value) == str:
+            value = process_string(
+                value,
+                values_so_far,
+                expecting_list=(type_origin in [list, tuple]),
+            )
+
         if type_origin in [list, tuple]:
             return_value = list()
             raw = value
             if isinstance(raw, list):
                 pass
             elif isinstance(raw, str):
+                if not permissive_typing:
+                    raise ValueError(
+                        f"Refusing to automatically convert string at {key_path} to list"
+                    )
                 if "," in raw:
                     raw = raw.split(",")
                 elif ";" in raw:
@@ -269,6 +281,7 @@ class Variable:
                         value=item,
                         validating_type=value_type,
                         values_so_far=values_so_far,
+                        permissive_typing=permissive_typing,
                     )
                 )
 
@@ -282,6 +295,10 @@ class Variable:
             if isinstance(raw, dict):
                 pass
             elif isinstance(raw, str):
+                if not permissive_typing:
+                    raise ValueError(
+                        f"Refusing to automatically convert string at {key_path} to dict"
+                    )
                 # Assuming Tcl format:
                 components = shlex.split(value)
                 if len(components) % 2 != 0:
@@ -305,12 +322,14 @@ class Variable:
                     value=key,
                     validating_type=key_type,
                     values_so_far=values_so_far,
+                    permissive_typing=permissive_typing,
                 )
                 value_validated = self.__process(
                     key_path=f"{key_path}.{key_validated}",
                     value=val,
                     validating_type=value_type,
                     values_so_far=values_so_far,
+                    permissive_typing=permissive_typing,
                 )
                 processed[key_validated] = value_validated
 
@@ -325,6 +344,7 @@ class Variable:
                         value=value,
                         validating_type=arg,
                         values_so_far=values_so_far,
+                        permissive_typing=permissive_typing,
                     )
                 except ValueError as e:
                     errors.append(f"\t{str(e)}")
@@ -374,6 +394,7 @@ class Variable:
                     default=field_default,
                     validating_type=subtype,
                     values_so_far=values_so_far,
+                    permissive_typing=permissive_typing,
                 )
                 kwargs_dict[key] = value__processed
             return validating_type(**kwargs_dict)
@@ -384,27 +405,39 @@ class Variable:
                 )
             return Path(value)
         elif validating_type == bool:
-            if value in ["1", "true", True]:
+            if not permissive_typing and not isinstance(value, bool):
+                raise ValueError(
+                    f"Refusing to automatically convert '{value}' to a boolean"
+                )
+            if value in ["1", "true", 1, True]:
                 return True
-            elif value in ["0", "false", False]:
+            elif value in ["0", "false", 0, False]:
                 return False
             else:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type} is invalid: '{value}'"
+                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
             try:
                 return validating_type[value]
             except KeyError:
                 raise ValueError(
-                    f"Variable provided for variable {key_path} of enumerated type {validating_type} is invalid: '{value}'"
+                    f"Variable provided for variable {key_path} of enumerated type {validating_type.__name__} is invalid: '{value}'"
                 )
-        elif issubclass(validating_type, Decimal):
+        elif issubclass(validating_type, Decimal) or issubclass(validating_type, int):
+            if not permissive_typing and not (
+                isinstance(value, int)
+                or isinstance(value, float)
+                or isinstance(value, Decimal)
+            ):
+                raise ValueError(
+                    f"Refusing to automatically convert value at '{key_path}' to a {validating_type.__name__}"
+                )
             try:
-                return Decimal(value)
+                return validating_type(value)
             except InvalidOperation:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type} is invalid: '{value}'"
+                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}'"
                 )
 
         else:
@@ -412,7 +445,7 @@ class Variable:
                 return validating_type(value)
             except ValueError as e:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type} is invalid: '{value}' {e}"
+                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}' {e}"
                 )
 
     def compile(
@@ -420,6 +453,7 @@ class Variable:
         mutable_config: GenericDict[str, Any],
         warning_list_ref: List[str],
         values_so_far: Mapping[str, Any],
+        permissive_typing: bool = False,
     ) -> Tuple[Optional[str], Any]:
         exists, value = mutable_config.check(self.name)
 
@@ -449,6 +483,7 @@ class Variable:
             validating_type=self.type,
             values_so_far=values_so_far,
             explicitly_specified=exists is not None,
+            permissive_typing=permissive_typing,
         )
 
         return (exists, processed)

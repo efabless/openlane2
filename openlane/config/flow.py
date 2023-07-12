@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from decimal import Decimal
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 from .macro import Macro
 from .variable import Variable
@@ -52,12 +52,12 @@ all_variables = [
     ),
     Variable(
         "CLOCK_PORT",
-        Optional[List[str]],
+        Union[None, str, List[str]],
         "The name(s) of the design's clock port(s).",
     ),
     Variable(
         "CLOCK_NET",
-        Optional[List[str]],
+        Union[None, str, List[str]],
         "The name of the net input to root clock buffer. If unset, it is presumed to be equal to CLOCK_PORT.",
     ),
     Variable(

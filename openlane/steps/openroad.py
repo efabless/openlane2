@@ -652,7 +652,7 @@ class TapEndcapInsertion(OpenROADStep):
             "FP_TAP_VERTICAL_HALO",
             Decimal,
             "Specify the vertical halo size around macros during tap insertion.",
-            default="expr::$FP_TAP_HORIZONTAL_HALO",
+            default=10,
             units="µm",
         ),
     ]
@@ -1349,7 +1349,10 @@ class CTS(ResizerStep):
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("CLOCK_NET") is None:
             if clock_port := self.config["CLOCK_PORT"]:
-                env["CLOCK_NET"] = " ".join(clock_port)
+                if isinstance(clock_port, list):
+                    env["CLOCK_NET"] = " ".join(clock_port)
+                else:
+                    env["CLOCK_NET"] = clock_port
             else:
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"

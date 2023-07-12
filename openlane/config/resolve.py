@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import UserString
 import re
 import os
 import glob
 import fnmatch
 from enum import Enum
-from decimal import Decimal
 from types import SimpleNamespace
+from collections import UserString
 from typing import Any, Dict, List, Mapping, Tuple, Union, Optional
 
 Keys = SimpleNamespace(
@@ -212,7 +211,9 @@ ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
 def process_string(
-    value: str, values_so_far: Mapping[str, Any]
+    value: str,
+    values_so_far: Mapping[str, Any],
+    expecting_list: bool = False,
 ) -> Union[None, str, List[str]]:
     global ref_rx
     EXPR_PREFIX = "expr::"
@@ -267,10 +268,15 @@ def process_string(
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
                 files_escaped.sort()
-                if len(files_escaped) == 1:
-                    return files_escaped[0]
-                elif len(files_escaped) > 1:
+                if expecting_list:
                     return files_escaped
+                else:
+                    if len(files_escaped) == 1:
+                        return files_escaped[0]
+                    else:
+                        raise InvalidConfig(
+                            f"Glob for scalar variable returned multiple paths: '{value}'"
+                        )
 
             return full_abspath
         except KeyError:
@@ -279,23 +285,6 @@ def process_string(
             )
     else:
         return mutable
-
-
-def process_scalar(key: str, value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
-    result: Valid = value
-    if isinstance(value, str):
-        result = process_string(value, values_so_far)
-    elif value is None:
-        result = ""
-    elif not (
-        isinstance(value, bool)
-        or isinstance(value, int)
-        or isinstance(value, float)
-        or isinstance(value, Decimal)
-    ):
-        raise InvalidConfig(f"Invalid value type {type(value)} for key '{key}'.")
-
-    return result
 
 
 def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
@@ -319,20 +308,8 @@ def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
                     state[Keys.scl], scl_match
                 ):
                     process_config_dict_recursive(value, state)
-        elif isinstance(value, list):
-            valid = True
-            processed = []
-            for i, item in enumerate(value):
-                current_key = f"{key}[{i}]"
-                processed.append(f"{process_scalar(current_key, item, state)}")
-
-            if not valid:
-                raise InvalidConfig(
-                    f"Invalid value for key '{key}': Arrays must consist only of strings."
-                )
-            value = " ".join(processed)
         else:
-            value = process_scalar(key, value, state)
+            pass
 
         if not withhold:
             state[key] = value
