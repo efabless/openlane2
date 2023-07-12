@@ -207,13 +207,11 @@ class Expr(object):
         return eval_stack[0]
 
 
-ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
+ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)")
 
 
 def process_string(
-    value: str,
-    values_so_far: Mapping[str, Any],
-    expecting_list: bool = False,
+    value: str, values_so_far: Mapping[str, Any]
 ) -> Union[None, str, List[str]]:
     global ref_rx
     EXPR_PREFIX = "expr::"
@@ -268,15 +266,10 @@ def process_string(
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
                 files_escaped.sort()
-                if expecting_list:
+                if len(files_escaped) == 1:
+                    return files_escaped[0]
+                elif len(files_escaped) > 1:
                     return files_escaped
-                else:
-                    if len(files_escaped) == 1:
-                        return files_escaped[0]
-                    else:
-                        raise InvalidConfig(
-                            f"Glob for scalar variable returned multiple paths: '{value}'"
-                        )
 
             return full_abspath
         except KeyError:
@@ -287,39 +280,81 @@ def process_string(
         return mutable
 
 
-def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
-    PDK_PREFIX = "pdk::"
-    SCL_PREFIX = "scl::"
+def process_scalar(value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
+    result: Valid = value
 
+    if isinstance(value, str):
+        result = process_string(value, values_so_far)
+
+    return result
+
+
+PDK_PREFIX = "pdk::"
+SCL_PREFIX = "scl::"
+
+
+def process_list_recursive(
+    input: List[Any],
+    ref: List[Any],
+    symbols: Dict[str, Any],
+    key_path: str = "",
+) -> List:
+    for i, value in enumerate(input):
+        current_key_path = f"{key_path}[{i}]"
+        processed = None
+        if isinstance(value, dict):
+            processed = {}
+            process_dict_recursive(value, ref, key_path=current_key_path)
+        elif isinstance(value, list):
+            processed = []
+            process_list_recursive(value, ref, key_path=current_key_path)
+        else:
+            processed = process_scalar(value, symbols)
+        ref.append(processed)
+        symbols[current_key_path] = processed
+
+
+def process_dict_recursive(
+    config_in: Dict[str, Any],
+    ref: Dict[str, Any],
+    symbols: Dict[str, Any],
+    key_path: str = "",
+):
     for key, value in config_in.items():
-        withhold = False
-        if not isinstance(key, str):
-            raise InvalidConfig(f"Invalid key {key}: must be a string.")
+        current_key_path = key
+        if key_path != "":
+            current_key_path = f"{key_path}.{key}"
+        processed = None
         if isinstance(value, dict):
             if key.startswith(PDK_PREFIX):
-                withhold = True
                 pdk_match = key[len(PDK_PREFIX) :]
-                if fnmatch.fnmatch(state[Keys.pdk], pdk_match):
-                    process_config_dict_recursive(value, state)
+                if fnmatch.fnmatch(ref[Keys.pdk], pdk_match):
+                    process_dict_recursive(value, ref, symbols, key_path=key_path)
             elif key.startswith(SCL_PREFIX):
-                withhold = True
                 scl_match = key[len(SCL_PREFIX) :]
-                if state[Keys.scl] is not None and fnmatch.fnmatch(
-                    state[Keys.scl], scl_match
+                if ref[Keys.scl] is not None and fnmatch.fnmatch(
+                    ref[Keys.scl], scl_match
                 ):
-                    process_config_dict_recursive(value, state)
-        else:
-            pass
+                    process_dict_recursive(value, ref, symbols, key_path=key_path)
+            else:
+                processed = {}
+                process_dict_recursive(value, processed, symbols, key_path=key_path)
 
-        if not withhold:
-            state[key] = value
+        elif isinstance(value, list):
+            processed = []
+            process_list_recursive(value, processed, symbols, key_path=current_key_path)
+        else:
+            processed = process_scalar(value, symbols)
+
+        ref[key] = processed
+        symbols[current_key_path] = processed
 
 
 def process_config_dict(
     config_in: dict, exposed_variables: Dict[str, str]
 ) -> Dict[str, Any]:
     state: Dict[str, Any] = dict(exposed_variables)
-    process_config_dict_recursive(config_in, state)
+    process_dict_recursive(config_in, state, state.copy())
     return state
 
 
@@ -331,7 +366,7 @@ def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:
     }
 
 
-def resolve(
+def preprocess_dict(
     config_dict: Dict[str, Any],
     design_dir: str,
     only_extract_process_info: bool = False,
@@ -391,9 +426,9 @@ def resolve(
                 f"{key} environment variable must be set.",
             )
 
-    resolved = process_config_dict(config_dict, exposed_dict)
+    preprocessed = process_config_dict(config_dict, exposed_dict)
     if only_extract_process_info:
-        resolved = extract_process_vars(resolved)
+        preprocessed = extract_process_vars(preprocessed)
 
-    resolved.update(base_vars_clean)
-    return resolved
+    preprocessed.update(base_vars_clean)
+    return preprocessed

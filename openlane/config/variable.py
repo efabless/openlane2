@@ -21,7 +21,7 @@ from typing import Iterable, Literal, Mapping, get_origin, get_args
 from typing import Union, Type, List, Optional, Tuple, Any, Callable
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
 
-from .resolve import process_string
+from .preprocessor import process_string
 
 from ..state import Path
 from ..common import GenericDict
@@ -239,11 +239,7 @@ class Variable:
         type_args = get_args(validating_type)
 
         if type(value) == str:
-            value = process_string(
-                value,
-                values_so_far,
-                expecting_list=(type_origin in [list, tuple]),
-            )
+            value = process_string(value, values_so_far)
 
         if type_origin in [list, tuple]:
             return_value = list()
@@ -399,6 +395,9 @@ class Variable:
                 kwargs_dict[key] = value__processed
             return validating_type(**kwargs_dict)
         elif validating_type == Path:
+            # Handle one-file globs
+            if isinstance(value, list) and len(value) == 1:
+                value = value[0]
             if not os.path.exists(str(value)):
                 raise ValueError(
                     f"Path provided for variable {key_path} does not exist: '{value}'"

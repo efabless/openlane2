@@ -33,7 +33,7 @@ from typing import (
 
 from .variable import Variable
 from .tcleval import env_from_tcl
-from .resolve import resolve, Keys as SpecialKeys
+from .preprocessor import preprocess_dict, Keys as SpecialKeys
 from .flow import removed_variables, all_variables as flow_common_variables
 from .pdk import (
     all_variables as pdk_variables,
@@ -398,7 +398,7 @@ class Config(GenericImmutableDict[str, Any]):
             key, value = string.split("=", 1)
             raw[key] = value
 
-        process_info = resolve(
+        process_info = preprocess_dict(
             raw,
             only_extract_process_info=True,
             design_dir=design_dir,
@@ -419,7 +419,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         config_in = Config(
             config_in,
-            overrides=resolve(
+            overrides=preprocess_dict(
                 raw,
                 pdk=pdk,
                 pdkpath=pdkpath,
@@ -488,7 +488,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
 
-        process_info = resolve(
+        process_info = preprocess_dict(
             tcl_config,
             only_extract_process_info=True,
             design_dir=design_dir,
