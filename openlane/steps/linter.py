@@ -23,7 +23,7 @@ from ..state import State, Path
 
 @Step.factory.register()
 class Lint(Step):
-    """ """
+    """Lint design verilog source files"""
 
     id = "Linter.Lint"
     inputs = []  # The input RTL is part of the configuration
