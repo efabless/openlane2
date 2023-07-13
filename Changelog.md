@@ -1,3 +1,7 @@
+# 2.0.0-a51
+
+* Updated Netgen to `87d8759`
+
 # 2.0.0-a50
 
 * JSON configuration files with `meta.version: 2` and dictionary configurations
