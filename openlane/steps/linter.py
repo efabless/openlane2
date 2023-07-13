@@ -107,9 +107,9 @@ class Lint(Step):
                     "--Wno-DECLFILENAME",
                     "--top-module",
                     self.config["DESIGN_NAME"],
-                ] +
-                self.config["VERILOG_FILES"] +
-                extra_args,
+                ]
+                + self.config["VERILOG_FILES"]
+                + extra_args,
                 env=env,
             )
         except:

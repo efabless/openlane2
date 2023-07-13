@@ -270,6 +270,7 @@ class LVS(MetricChecker):
         ),
     ]
 
+
 @Step.factory.register()
 class LintErrors(MetricChecker):
     id = "Checker.LintErrors"
@@ -310,4 +311,3 @@ class LintWarnings(MetricChecker):
             deprecated_names=["QUIT_ON_LINTER_ERRORS"],
         ),
     ]
-
