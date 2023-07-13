@@ -107,7 +107,7 @@ micrometre → micron (or, micrometer)
 ```
 
 :::{note}
-Also, when documenting micrometer-based variables, use the actual unicode character "μ", not "u", to avoid potential confusion. It's Alt+230 on Windows, Alt+M on macOS and on Linux, press the Compose Key then type `mu`.
+Also, when documenting micrometer-based variables, use the actual unicode character "µ", not "u", to avoid potential confusion. It's Alt+230 on Windows, Alt+M on macOS and on Linux, press the Compose Key then type `mu`.
 :::
 
 ### Taking screenshots

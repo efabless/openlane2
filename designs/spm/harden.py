@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from openlane.flows import Flow
 
 Classic = Flow.factory.get("Classic")

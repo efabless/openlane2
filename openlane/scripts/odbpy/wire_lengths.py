@@ -22,7 +22,7 @@ from reader import click, click_odb, OdbReader
 
 
 def to_si(microns: Decimal) -> str:
-    units = ["μm", "mm", "m"]
+    units = ["µm", "mm", "m"]
     unit = 0
     value = microns
     while value >= 1000 and unit < len(units):
@@ -86,7 +86,7 @@ def main(
 
     for net, length_microns in above_threshold:
         print(
-            f"Net {net.getName()} is above the length threshold ({length_microns}/{threshold} μm)."
+            f"Net {net.getName()} is above the length threshold ({length_microns}/{threshold} µm)."
         )
 
     utl.metric_float("route__wirelength__max", float(max_wire_length))

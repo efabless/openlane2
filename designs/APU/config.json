@@ -1,4 +1,7 @@
 {
+    "meta": {
+        "version": 2
+    },
     "DESIGN_NAME": "APU",
     "VERILOG_FILES": "dir::src/APU.v",
     "CLOCK_PORT": "clk",

@@ -28,11 +28,12 @@ from typing import (
     Sequence,
     Callable,
     Dict,
+    Set,
 )
 
 from .variable import Variable
 from .tcleval import env_from_tcl
-from .resolve import resolve, Keys as SpecialKeys
+from .preprocessor import preprocess_dict, Keys as SpecialKeys
 from .flow import removed_variables, all_variables as flow_common_variables
 from .pdk import (
     all_variables as pdk_variables,
@@ -126,6 +127,24 @@ class Config(GenericImmutableDict[str, Any]):
         final["meta"] = self.meta
         return final
 
+    def copy_filtered(
+        self,
+        config_vars: List[Variable],
+        include_pdk_variables: bool = True,
+        include_common_variables: bool = True,
+    ) -> "Config":
+        variables: Set[str] = set([variable.name for variable in config_vars])
+        if include_pdk_variables:
+            variables = variables.union(
+                set([variable.name for variable in pdk_variables])
+            )
+        if include_common_variables:
+            variables = variables.union(
+                set([variable.name for variable in flow_common_variables])
+            )
+
+        return Config({variable: self[variable] for variable in variables})
+
     def _repr_markdown_(self) -> str:
         title = "Interactive Configuration" if self.__interactive else "Configuration"
         values_title = "Initial Values" if self.__interactive else "Values"
@@ -217,9 +236,11 @@ class Config(GenericImmutableDict[str, Any]):
 
         config_in = Config(config_in, overrides=kwargs)
 
-        config_in, design_warnings, design_errors = config_in.process_variable_list(
-            pdk_variables + list(flow_common_variables),
+        config_in, design_warnings, design_errors = config_in.__process_variable_list(
+            pdk_variables,
+            list(flow_common_variables),
             removed_variables,
+            unknown_key_warn=False,
         )
 
         if len(design_errors) != 0:
@@ -284,6 +305,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         loader: Callable = Self.__loads
         raw: Union[str, dict] = ""
+        default_meta_version = 1
         if not isinstance(config_in, dict):
             if design_dir is not None:
                 raise TypeError(
@@ -308,6 +330,7 @@ class Config(GenericImmutableDict[str, Any]):
                     f"Unsupported configuration file extension '{ext}' for '{config_in}'."
                 )
         else:
+            default_meta_version = 2
             if design_dir is None:
                 raise TypeError(
                     "The argument design_dir is required when using attempting to load a Config with a dictionary."
@@ -325,6 +348,7 @@ class Config(GenericImmutableDict[str, Any]):
             pdk=pdk,
             scl=scl,
             config_override_strings=(config_override_strings or []),
+            default_meta_version=default_meta_version,
         )
 
         return (loaded, design_dir)
@@ -337,8 +361,6 @@ class Config(GenericImmutableDict[str, Any]):
         **kwargs,
     ):
         raw = json.loads(json_str, parse_float=Decimal)
-        if "resolve_json" not in kwargs:
-            kwargs["resolve_json"] = True
         return Self.__load_dict(
             raw,
             *args,
@@ -356,19 +378,27 @@ class Config(GenericImmutableDict[str, Any]):
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
-        resolve_json: bool = False,
+        default_meta_version: int = 1,
     ) -> "Config":
-
-        meta_raw: Optional[dict] = None
+        meta: Optional[Meta] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
             del raw["meta"]
+            try:
+                meta = Meta(**meta_raw)
+            except TypeError as e:
+                raise InvalidConfig(
+                    "design configuration file", [], [f"'meta' object is invalid: {e}"]
+                )
+
+        if meta is None:
+            meta = Meta(version=default_meta_version)
 
         for string in config_override_strings:
             key, value = string.split("=", 1)
             raw[key] = value
 
-        process_info = resolve(
+        process_info = preprocess_dict(
             raw,
             only_extract_process_info=True,
             design_dir=design_dir,
@@ -389,7 +419,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         config_in = Config(
             config_in,
-            overrides=resolve(
+            overrides=preprocess_dict(
                 raw,
                 pdk=pdk,
                 pdkpath=pdkpath,
@@ -398,16 +428,20 @@ class Config(GenericImmutableDict[str, Any]):
             ),
         )
 
-        config_in, design_warnings, design_errors = config_in.process_variable_list(
-            pdk_variables + list(flow_config_vars),
-            removed_variables,
-        )
+        permissive_variables = pdk_variables
+        strict_variables = list(flow_config_vars)
+        unknown_key_warn = False
+        if meta.version < 2:
+            permissive_variables = permissive_variables + strict_variables
+            strict_variables = []
+            unknown_key_warn = True
 
-        if meta_raw is not None:
-            try:
-                config_in.meta = Meta(**meta_raw)
-            except TypeError as e:
-                design_errors.append(f"'meta' object is invalid: {e}")
+        config_in, design_warnings, design_errors = config_in.__process_variable_list(
+            permissive_variables,
+            strict_variables,
+            removed_variables,
+            unknown_key_warn,
+        )
 
         if len(design_errors) != 0:
             raise InvalidConfig(
@@ -434,6 +468,7 @@ class Config(GenericImmutableDict[str, Any]):
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
+        default_meta_version: int = 1,  # Unused, kept for API consistency
     ) -> "Config":
         warn(
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
@@ -453,7 +488,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
         tcl_config = env_from_tcl(tcl_vars_in, config)
 
-        process_info = resolve(
+        process_info = preprocess_dict(
             tcl_config,
             only_extract_process_info=True,
             design_dir=design_dir,
@@ -484,8 +519,9 @@ class Config(GenericImmutableDict[str, Any]):
             key, value = string.split("=", 1)
             config_in[key] = value
 
-        config_in, design_warnings, design_errors = config_in.process_variable_list(
+        config_in, design_warnings, design_errors = config_in.__process_variable_list(
             pdk_variables + list(flow_config_vars),
+            [],
             removed_variables,
         )
 
@@ -571,8 +607,9 @@ class Config(GenericImmutableDict[str, Any]):
         )
 
         config_in = Config(scl_env)
-        config_in, pdk_warnings, pdk_errors = config_in.process_variable_list(
+        config_in, pdk_warnings, pdk_errors = config_in.__process_variable_list(
             pdk_variables,
+            [],
             pdk_removed_variables,
         )
 
@@ -589,10 +626,12 @@ class Config(GenericImmutableDict[str, Any]):
 
         return (config_in, pdkpath, scl)
 
-    def process_variable_list(
+    def __process_variable_list(
         self,
         variables: Sequence["Variable"],
+        strict_variables: Sequence["Variable"],
         removed: Optional[Dict[str, str]] = None,
+        unknown_key_warn: bool = True,
     ) -> Tuple["Config", List[str], List[str]]:
         """
         Verifies a configuration object against a list of variables, returning
@@ -690,12 +729,31 @@ class Config(GenericImmutableDict[str, Any]):
                     mutable_config=mutable,
                     warning_list_ref=warnings,
                     values_so_far=final,
+                    permissive_typing=True,
                 )
                 if key is not None:
                     del mutable[key]
                 final[variable.name] = value_processed
             except ValueError as e:
                 errors.append(str(e))
+            if variable.name in mutable:
+                del mutable[variable.name]
+
+        for variable in strict_variables:
+            try:
+                key, value_processed = variable.compile(
+                    mutable_config=mutable,
+                    warning_list_ref=warnings,
+                    values_so_far=final,
+                    permissive_typing=False,
+                )
+                if key is not None:
+                    del mutable[key]
+                final[variable.name] = value_processed
+            except ValueError as e:
+                errors.append(str(e))
+            if variable.name in mutable:
+                del mutable[variable.name]
 
         for key in sorted(mutable.keys()):
             assert isinstance(key, str)
@@ -705,7 +763,10 @@ class Config(GenericImmutableDict[str, Any]):
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
             elif "_OPT" not in key and key != "//":
-                warnings.append(f"Unknown key '{key}' provided.")
+                if unknown_key_warn:
+                    warnings.append(f"Unknown key '{key}' provided.")
+                else:
+                    errors.append(f"Unknown key '{key}' provided.")
 
         if translated_macros:
             for macro in final["MACROS"].values():
