@@ -58,5 +58,6 @@
     "RUN_IRDROP_REPORT": false,
     "RUN_FILL_INSERTION": true,
     "QUIT_ON_XOR_ERROR": false,
-    "QUIT_ON_SYNTH_CHECKS": false
+    "QUIT_ON_SYNTH_CHECKS": false,
+    "RUN_LINTER": false
 }

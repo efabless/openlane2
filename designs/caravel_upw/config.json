@@ -115,5 +115,6 @@
     "RUN_CTS": false,
     "MAGIC_DEF_LABELS": false,
     "QUIT_ON_SYNTH_CHECKS": false,
-    "MAGIC_DRC_USE_GDS": true
+    "MAGIC_DRC_USE_GDS": true,
+    "RUN_LINTER": false
 }

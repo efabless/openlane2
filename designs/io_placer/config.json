@@ -80,5 +80,6 @@
     "TAP_DECAP_INSERTION": 0,
     "CLOCK_TREE_SYNTH": 0,
     "QUIT_ON_SYNTH_CHECKS": false,
-    "QUIT_ON_MAGIC_DRC": false
+    "QUIT_ON_MAGIC_DRC": false,
+    "RUN_LINTER": false
 }
