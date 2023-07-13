@@ -207,7 +207,7 @@ class Variable:
             # value is not optional
             if not is_optional(validating_type):
                 raise ValueError(
-                    f"Non-optional variable {key_path} received a null value."
+                    f"Non-optional variable '{key_path}' received a null value."
                 )
             else:
                 return None
@@ -223,7 +223,7 @@ class Variable:
                 )
             elif not is_optional(validating_type):
                 raise ValueError(
-                    f"Required variable {key_path} did not get a specified value."
+                    f"Required variable '{key_path}' did not get a specified value."
                 )
             else:
                 return None
@@ -249,7 +249,7 @@ class Variable:
             elif isinstance(raw, str):
                 if not permissive_typing:
                     raise ValueError(
-                        f"Refusing to automatically convert string at {key_path} to list"
+                        f"Refusing to automatically convert string at '{key_path}' to list"
                     )
                 if "," in raw:
                     raw = raw.split(",")
@@ -259,13 +259,13 @@ class Variable:
                     raw = raw.split()
             else:
                 raise ValueError(
-                    f"Invalid List provided for variable {key_path}: {value}"
+                    f"Invalid List provided for variable '{key_path}': {value}"
                 )
 
             if type_origin == tuple:
                 if len(raw) != len(type_args):
                     raise ValueError(
-                        f"Invalid {validating_type} provided for variable {key_path}: ({len(raw)}/{len(type_args)}) tuple entries provided"
+                        f"Invalid {validating_type} provided for variable '{key_path}': ({len(raw)}/{len(type_args)}) tuple entries provided"
                     )
 
             for i, (item, value_type) in enumerate(
@@ -293,13 +293,13 @@ class Variable:
             elif isinstance(raw, str):
                 if not permissive_typing:
                     raise ValueError(
-                        f"Refusing to automatically convert string at {key_path} to dict"
+                        f"Refusing to automatically convert string at '{key_path}' to dict"
                     )
                 # Assuming Tcl format:
                 components = shlex.split(value)
                 if len(components) % 2 != 0:
                     raise ValueError(
-                        f"Tcl-style flat dictionary provided for variable {key_path} is invalid: uneven number of components ({len(components)})"
+                        f"Tcl-style flat dictionary provided for variable '{key_path}' is invalid: uneven number of components ({len(components)})"
                     )
                 raw = {}
                 for i in range(0, len(components) // 2):
@@ -308,7 +308,7 @@ class Variable:
                     raw[key] = val
             else:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type} is not a dictionary: '{value}'"
+                    f"Value provided for variable '{key_path}' of type {validating_type} is not a dictionary: '{value}'"
                 )
 
             processed = {}
@@ -350,7 +350,7 @@ class Variable:
                 raise ValueError(
                     "\n".join(
                         [
-                            f"Value for {key_path} is invalid for union {repr_type(validating_type)}:"
+                            f"Value for '{key_path}' is invalid for union {repr_type(validating_type)}:"
                         ]
                         + errors
                     )
@@ -360,12 +360,12 @@ class Variable:
             if value == arg:
                 return value
             else:
-                raise ValueError(f"Value for {key_path} is not '{arg}': '{value}'")
+                raise ValueError(f"Value for '{key_path}' is not '{arg}': '{value}'")
         elif is_dataclass(validating_type):
             raw = value
             if not isinstance(raw, dict):
                 raise ValueError(
-                    f"Value provided for deserializable path {validating_type} at {key_path} is not a dictionary."
+                    f"Value provided for deserializable path {validating_type} at '{key_path}' is not a dictionary."
                 )
             kwargs_dict = {}
             for current_field in fields(validating_type):
@@ -400,13 +400,13 @@ class Variable:
                 value = value[0]
             if not os.path.exists(str(value)):
                 raise ValueError(
-                    f"Path provided for variable {key_path} does not exist: '{value}'"
+                    f"Path provided for variable '{key_path}' does not exist: '{value}'"
                 )
             return Path(value)
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):
                 raise ValueError(
-                    f"Refusing to automatically convert '{value}' to a boolean"
+                    f"Refusing to automatically convert '{value}' at '{key_path}' to a boolean"
                 )
             if value in ["1", "true", 1, True]:
                 return True
@@ -414,14 +414,14 @@ class Variable:
                 return False
             else:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}'"
+                    f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
             try:
                 return validating_type[value]
             except KeyError:
                 raise ValueError(
-                    f"Variable provided for variable {key_path} of enumerated type {validating_type.__name__} is invalid: '{value}'"
+                    f"Variable provided for variable '{key_path}' of enumerated type {validating_type.__name__} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, str):
             if not is_string(value):
@@ -442,7 +442,7 @@ class Variable:
                 return validating_type(value)
             except InvalidOperation:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}'"
+                    f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
                 )
 
         else:
@@ -450,7 +450,7 @@ class Variable:
                 return validating_type(value)
             except ValueError as e:
                 raise ValueError(
-                    f"Value provided for variable {key_path} of type {validating_type.__name__} is invalid: '{value}' {e}"
+                    f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}' {e}"
                 )
 
     def compile(
