@@ -308,10 +308,10 @@ def process_list_recursive(
             process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
             processed = process_scalar(value, symbols)
-            symbols[current_key_path] = processed
 
         if processed is not None:
             ref.append(processed)
+            symbols[current_key_path] = processed
 
 
 def process_dict_recursive(
@@ -347,10 +347,10 @@ def process_dict_recursive(
             process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
             processed = process_scalar(value, symbols)
-            symbols[current_key_path] = processed
 
         if processed is not None:
             ref[key] = processed
+            symbols[current_key_path] = processed
 
 
 def process_config_dict(
