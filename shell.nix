@@ -33,8 +33,4 @@ with pkgs; mkShell {
     jupyter
     graphviz
   ];
-
-  shellHook = ''
-    LD_LIBRARY_PATH="${enchant}/lib:$LD_LIBRARY_PATH"
-  '';
 }

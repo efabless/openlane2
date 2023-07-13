@@ -36,6 +36,7 @@ from .common_variables import (
     pdn_variables,
     rsz_variables,
     dpl_variables,
+    grt_variables,
     routing_layer_variables,
     constraint_variables,
 )
@@ -529,7 +530,7 @@ class Floorplan(OpenROADStep):
             "CORE_AREA",
             Optional[str],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
-            units="μm",
+            units="µm",
         ),
         Variable(
             "BOTTOM_MARGIN_MULT",
@@ -651,7 +652,7 @@ class TapEndcapInsertion(OpenROADStep):
             "FP_TAP_VERTICAL_HALO",
             Decimal,
             "Specify the vertical halo size around macros during tap insertion.",
-            default="expr::$FP_TAP_HORIZONTAL_HALO",
+            default=10,
             units="µm",
         ),
     ]
@@ -763,14 +764,14 @@ class BasicMacroPlacement(OpenROADStep):
             str,
             "Macro placement halo. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            units="μm",
+            units="µm",
         ),
         Variable(
             "PL_MACRO_CHANNEL",
             str,
             "Channel widths between macros. Format: `{Horizontal} {Vertical}`.",
             default="0 0",
-            units="μm",
+            units="µm",
         ),
     ]
 
@@ -814,44 +815,7 @@ class GlobalRouting(OpenROADStep):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    config_vars = (
-        OpenROADStep.config_vars
-        + routing_layer_variables
-        + [
-            Variable(
-                "DIODE_PADDING",
-                int,
-                "Diode cell padding; increases the width of diode cells during placement checks..",
-                default=2,
-                units="sites",
-            ),
-            Variable(
-                "GRT_ALLOW_CONGESTION",
-                bool,
-                "Allow congestion during global routing",
-                default=False,
-            ),
-            Variable(
-                "GRT_REPAIR_ANTENNAS",
-                bool,
-                "Specifies the insertion strategy of diodes to be used in the flow.",
-                default=True,
-            ),
-            Variable(
-                "GRT_ANTENNA_ITERS",
-                int,
-                "The maximum number of iterations for global antenna repairs.",
-                default=3,
-                deprecated_names=["GRT_ANT_ITERS"],
-            ),
-            Variable(
-                "GRT_OVERFLOW_ITERS",
-                int,
-                "The maximum number of iterations waiting for the overflow to reach the desired value.",
-                default=50,
-            ),
-        ]
-    )
+    config_vars = OpenROADStep.config_vars + grt_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
@@ -1268,7 +1232,7 @@ class IRDropReport(OpenROADStep):
 
 ## ABC
 class ResizerStep(OpenROADStep):
-    config_vars = OpenROADStep.config_vars + rsz_variables
+    config_vars = OpenROADStep.config_vars + grt_variables + rsz_variables
 
     def run(
         self,
@@ -1325,13 +1289,6 @@ class CTS(ResizerStep):
                 deprecated_names=["CLOCK_TREE_SYNTH"],
             ),
             Variable(
-                "CTS_TARGET_SKEW",
-                Decimal,
-                "The target clock skew in picoseconds.",
-                default=200,
-                units="ps",
-            ),
-            Variable(
                 "CTS_TOLERANCE",
                 int,
                 "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
@@ -1348,7 +1305,7 @@ class CTS(ResizerStep):
                 Decimal,
                 "Specifies maximum diameter of the sink cluster.",
                 default=50,
-                units="μm",
+                units="µm",
             ),
             Variable(
                 "CTS_CLK_MAX_WIRE_LENGTH",
@@ -1385,7 +1342,10 @@ class CTS(ResizerStep):
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("CLOCK_NET") is None:
             if clock_port := self.config["CLOCK_PORT"]:
-                env["CLOCK_NET"] = " ".join(clock_port)
+                if isinstance(clock_port, list):
+                    env["CLOCK_NET"] = " ".join(clock_port)
+                else:
+                    env["CLOCK_NET"] = clock_port
             else:
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
@@ -1565,7 +1525,7 @@ class ResizerTimingPostGRT(ResizerStep):
         ),
         Variable(
             "GRT_RESIZER_HOLD_SLACK_MARGIN",
-            str,
+            Decimal,
             "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
             default=0.05,
             units="ns",
@@ -1573,7 +1533,7 @@ class ResizerTimingPostGRT(ResizerStep):
         ),
         Variable(
             "GRT_RESIZER_SETUP_SLACK_MARGIN",
-            str,
+            Decimal,
             "Specifies a time margin for the slack when fixing setup violations.",
             default=0.025,
             units="ns",

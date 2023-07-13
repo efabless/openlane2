@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import UserString
 import re
 import os
 import glob
 import fnmatch
 from enum import Enum
-from decimal import Decimal
 from types import SimpleNamespace
-from typing import Any, Dict, List, Mapping, Tuple, Union, Optional
+from collections import UserString
+from typing import Any, Dict, List, Mapping, Sequence, Tuple, Union, Optional
+
+from ..common import is_string
 
 Keys = SimpleNamespace(
     pdk_root="PDK_ROOT",
@@ -82,7 +83,7 @@ class Expr(object):
     @staticmethod
     def tokenize(expr: str) -> List["Expr.Token"]:
         rx_list = [
-            (re.compile(r"^\$(\w+)"), Expr.Token.Type.VAR),
+            (re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)"), Expr.Token.Type.VAR),
             (re.compile(r"^(-?\d+\.?\d*)"), Expr.Token.Type.NUMBER),
             (re.compile(r"^(\*\*)"), Expr.Token.Type.OP),
             (re.compile(r"^(\+|\-|\*|\/)"), Expr.Token.Type.OP),
@@ -208,12 +209,10 @@ class Expr(object):
         return eval_stack[0]
 
 
-ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_]*)")
+ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)")
 
 
-def process_string(
-    value: str, values_so_far: Mapping[str, Any]
-) -> Union[None, str, List[str]]:
+def process_string(value: str, values_so_far: Mapping[str, Any]) -> Valid:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
@@ -230,7 +229,7 @@ def process_string(
 
     if mutable.startswith(EXPR_PREFIX):
         try:
-            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], values_so_far)}"
+            return Expr.evaluate(value[len(EXPR_PREFIX) :], values_so_far)
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
     elif mutable.startswith(REF_PREFIX):
@@ -245,7 +244,7 @@ def process_string(
             if found is None:
                 return None
 
-            if type(found) != str and not isinstance(found, UserString):
+            if not is_string(found):
                 if type(found) in [int, float]:
                     raise InvalidConfig(
                         f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
@@ -267,10 +266,7 @@ def process_string(
                 files = glob.glob(full_abspath)
                 files_escaped = [file.replace("$", r"\$") for file in files]
                 files_escaped.sort()
-                if len(files_escaped) == 1:
-                    return files_escaped[0]
-                elif len(files_escaped) > 1:
-                    return files_escaped
+                return files_escaped
 
             return full_abspath
         except KeyError:
@@ -281,68 +277,87 @@ def process_string(
         return mutable
 
 
-def process_scalar(key: str, value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
+def process_scalar(value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
     result: Valid = value
-    if isinstance(value, str):
+
+    if is_string(value):
+        assert isinstance(value, str) or isinstance(value, UserString)
         result = process_string(value, values_so_far)
-    elif value is None:
-        result = ""
-    elif not (
-        isinstance(value, bool)
-        or isinstance(value, int)
-        or isinstance(value, float)
-        or isinstance(value, Decimal)
-    ):
-        raise InvalidConfig(f"Invalid value type {type(value)} for key '{key}'.")
 
     return result
 
 
-def process_config_dict_recursive(config_in: Dict[str, Any], state: dict):
-    PDK_PREFIX = "pdk::"
-    SCL_PREFIX = "scl::"
+PDK_PREFIX = "pdk::"
+SCL_PREFIX = "scl::"
 
-    for key, value in config_in.items():
-        withhold = False
-        if not isinstance(key, str):
-            raise InvalidConfig(f"Invalid key {key}: must be a string.")
-        if isinstance(value, dict):
-            if key.startswith(PDK_PREFIX):
-                withhold = True
-                pdk_match = key[len(PDK_PREFIX) :]
-                if fnmatch.fnmatch(state[Keys.pdk], pdk_match):
-                    process_config_dict_recursive(value, state)
-            elif key.startswith(SCL_PREFIX):
-                withhold = True
-                scl_match = key[len(SCL_PREFIX) :]
-                if state[Keys.scl] is not None and fnmatch.fnmatch(
-                    state[Keys.scl], scl_match
-                ):
-                    process_config_dict_recursive(value, state)
-        elif isinstance(value, list):
-            valid = True
+
+def process_list_recursive(
+    input: Sequence[Any],
+    ref: List[Any],
+    symbols: Dict[str, Any],
+    key_path: str = "",
+):
+    for i, value in enumerate(input):
+        current_key_path = f"{key_path}[{i}]"
+        processed: Any = None
+        if isinstance(value, Mapping):
+            processed = {}
+            process_dict_recursive(value, processed, symbols, key_path=current_key_path)
+        elif isinstance(value, Sequence) and not is_string(value):
             processed = []
-            for i, item in enumerate(value):
-                current_key = f"{key}[{i}]"
-                processed.append(f"{process_scalar(current_key, item, state)}")
-
-            if not valid:
-                raise InvalidConfig(
-                    f"Invalid value for key '{key}': Arrays must consist only of strings."
-                )
-            value = " ".join(processed)
+            process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
-            value = process_scalar(key, value, state)
+            processed = process_scalar(value, symbols)
 
-        if not withhold:
-            state[key] = value
+        if processed is not None:
+            ref.append(processed)
+            symbols[current_key_path] = processed
+
+
+def process_dict_recursive(
+    config_in: Mapping[str, Any],
+    ref: Dict[str, Any],
+    symbols: Dict[str, Any],
+    key_path: str = "",
+):
+    for key, value in config_in.items():
+        current_key_path = key
+        if key_path != "":
+            current_key_path = f"{key_path}.{key}"
+        processed: Any = None
+        if isinstance(value, Mapping):
+            if key.startswith(PDK_PREFIX):
+                pdk_match = key[len(PDK_PREFIX) :]
+                if fnmatch.fnmatch(ref[Keys.pdk], pdk_match):
+                    process_dict_recursive(value, ref, symbols, key_path=key_path)
+            elif key.startswith(SCL_PREFIX):
+                scl_match = key[len(SCL_PREFIX) :]
+                if ref[Keys.scl] is not None and fnmatch.fnmatch(
+                    ref[Keys.scl], scl_match
+                ):
+                    process_dict_recursive(value, ref, symbols, key_path=key_path)
+            else:
+                processed = {}
+                process_dict_recursive(
+                    value, processed, symbols, key_path=current_key_path
+                )
+
+        elif isinstance(value, Sequence) and not is_string(value):
+            processed = []
+            process_list_recursive(value, processed, symbols, key_path=current_key_path)
+        else:
+            processed = process_scalar(value, symbols)
+
+        if processed is not None:
+            ref[key] = processed
+            symbols[current_key_path] = processed
 
 
 def process_config_dict(
     config_in: dict, exposed_variables: Dict[str, str]
 ) -> Dict[str, Any]:
     state: Dict[str, Any] = dict(exposed_variables)
-    process_config_dict_recursive(config_in, state)
+    process_dict_recursive(config_in, state, state.copy())
     return state
 
 
@@ -354,7 +369,7 @@ def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:
     }
 
 
-def resolve(
+def preprocess_dict(
     config_dict: Dict[str, Any],
     design_dir: str,
     only_extract_process_info: bool = False,
@@ -414,9 +429,9 @@ def resolve(
                 f"{key} environment variable must be set.",
             )
 
-    resolved = process_config_dict(config_dict, exposed_dict)
+    preprocessed = process_config_dict(config_dict, exposed_dict)
     if only_extract_process_info:
-        resolved = extract_process_vars(resolved)
+        preprocessed = extract_process_vars(preprocessed)
 
-    resolved.update(base_vars_clean)
-    return resolved
+    preprocessed.update(base_vars_clean)
+    return preprocessed

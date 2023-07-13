@@ -18,7 +18,7 @@ The Configuration Module
 This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.
 """
-from .resolve import Keys
+from .preprocessor import Keys
 from .variable import Variable
 from .macro import Macro, Instance
 from .config import Config, InvalidConfig

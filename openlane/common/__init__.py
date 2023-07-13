@@ -25,9 +25,11 @@ import typing
 import pathlib
 import unicodedata
 from enum import Enum
+from collections import UserString
 from concurrent.futures import ThreadPoolExecutor
 
 from typing import (
+    Any,
     Mapping,
     Sequence,
     TypeVar,
@@ -165,6 +167,12 @@ def idem(obj: T, *args, **kwargs) -> T:
     """
     return obj
 
+
+def is_string(obj: Any) -> bool:
+    return isinstance(obj, str) or isinstance(obj, UserString)
+
+
+## TPE
 
 TPE = ThreadPoolExecutor(max_workers=os.cpu_count())
 
