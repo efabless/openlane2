@@ -24,7 +24,7 @@ from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dat
 from .preprocessor import process_string
 
 from ..state import Path
-from ..common import GenericDict
+from ..common import GenericDict, is_string
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -423,6 +423,12 @@ class Variable:
                 raise ValueError(
                     f"Variable provided for variable {key_path} of enumerated type {validating_type.__name__} is invalid: '{value}'"
                 )
+        elif issubclass(validating_type, str):
+            if not is_string(value):
+                raise ValueError(
+                    f"Refusing to automatically convert value at '{key_path}' to a string"
+                )
+            return str(value)
         elif issubclass(validating_type, Decimal) or issubclass(validating_type, int):
             if not permissive_typing and not (
                 isinstance(value, int)

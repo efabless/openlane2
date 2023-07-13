@@ -1525,7 +1525,7 @@ class ResizerTimingPostGRT(ResizerStep):
         ),
         Variable(
             "GRT_RESIZER_HOLD_SLACK_MARGIN",
-            str,
+            Decimal,
             "Specifies a time margin for the slack when fixing hold violations. Normally the resizer will stop when it reaches zero slack. This option allows you to overfix.",
             default=0.05,
             units="ns",
@@ -1533,7 +1533,7 @@ class ResizerTimingPostGRT(ResizerStep):
         ),
         Variable(
             "GRT_RESIZER_SETUP_SLACK_MARGIN",
-            str,
+            Decimal,
             "Specifies a time margin for the slack when fixing setup violations.",
             default=0.025,
             units="ns",

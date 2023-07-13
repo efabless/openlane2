@@ -18,7 +18,9 @@ import fnmatch
 from enum import Enum
 from types import SimpleNamespace
 from collections import UserString
-from typing import Any, Dict, List, Mapping, Tuple, Union, Optional
+from typing import Any, Dict, List, Mapping, Sequence, Tuple, Union, Optional
+
+from ..common import is_string
 
 Keys = SimpleNamespace(
     pdk_root="PDK_ROOT",
@@ -244,7 +246,7 @@ def process_string(
             if found is None:
                 return None
 
-            if type(found) != str and not isinstance(found, UserString):
+            if not is_string(found):
                 if type(found) in [int, float]:
                     raise InvalidConfig(
                         f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
@@ -280,7 +282,8 @@ def process_string(
 def process_scalar(value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
     result: Valid = value
 
-    if isinstance(value, str):
+    if is_string(value):
+        assert isinstance(value, str) or isinstance(value, UserString)
         result = process_string(value, values_so_far)
 
     return result
@@ -291,7 +294,7 @@ SCL_PREFIX = "scl::"
 
 
 def process_list_recursive(
-    input: List[Any],
+    input: Sequence[Any],
     ref: List[Any],
     symbols: Dict[str, Any],
     key_path: str = "",
@@ -299,10 +302,10 @@ def process_list_recursive(
     for i, value in enumerate(input):
         current_key_path = f"{key_path}[{i}]"
         processed: Any = None
-        if isinstance(value, dict):
+        if isinstance(value, Mapping):
             processed = {}
             process_dict_recursive(value, processed, symbols, key_path=current_key_path)
-        elif isinstance(value, list):
+        elif isinstance(value, Sequence) and not is_string(value):
             processed = []
             process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
@@ -314,7 +317,7 @@ def process_list_recursive(
 
 
 def process_dict_recursive(
-    config_in: Dict[str, Any],
+    config_in: Mapping[str, Any],
     ref: Dict[str, Any],
     symbols: Dict[str, Any],
     key_path: str = "",
@@ -324,7 +327,7 @@ def process_dict_recursive(
         if key_path != "":
             current_key_path = f"{key_path}.{key}"
         processed: Any = None
-        if isinstance(value, dict):
+        if isinstance(value, Mapping):
             if key.startswith(PDK_PREFIX):
                 pdk_match = key[len(PDK_PREFIX) :]
                 if fnmatch.fnmatch(ref[Keys.pdk], pdk_match):
@@ -339,7 +342,7 @@ def process_dict_recursive(
                 processed = {}
                 process_dict_recursive(value, processed, symbols, key_path=key_path)
 
-        elif isinstance(value, list):
+        elif isinstance(value, Sequence) and not is_string(value):
             processed = []
             process_list_recursive(value, processed, symbols, key_path=current_key_path)
         else:
@@ -355,7 +358,6 @@ def process_config_dict(
 ) -> Dict[str, Any]:
     state: Dict[str, Any] = dict(exposed_variables)
     process_dict_recursive(config_in, state, state.copy())
-    print(state)
     return state
 
 

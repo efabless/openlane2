@@ -120,7 +120,7 @@ pdn_variables = [
     ),
     Variable(
         "FP_PDN_HORIZONTAL_HALO",
-        str,
+        Decimal,
         "Sets the horizontal halo around the macros during power grid insertion.",
         default=10,
         units="µm",
