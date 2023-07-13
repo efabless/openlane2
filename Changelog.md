@@ -1,6 +1,6 @@
 # 2.0.0-a50
 
-* JSON configuration files with `.meta.version: 2` and dictionary configurations
+* JSON configuration files with `meta.version: 2` and dictionary configurations
   now both subject to stricter validation
     * Strings no longer automatically converted to lists, dicts, numbers, booleans, et cetera
     * Numbers no longer automatically converted to
@@ -11,12 +11,14 @@
     * Explicitly declare global routing variables for resizer steps
     * Explicitly declare MagicStep variables for DRC step
 * `CLOCK_PORT` type changed from `Optional[List[str]]` to `Union[str, List[str], None]`
-* JSON globs that return multiple files for a string variable raise errors,
-  and properly return a single-element list for list variables
-* Fixed issue where scalars and lists are double-processed
+* JSON globs behavior adjusted, now always returns `List` - conversion handled after preprocessing
+* Rewrote `resolve.py` as a proper preprocessor
+   * Proper recursion into Mappings and Sequences (so refs:: may be resolved in arbitrarily deep objects)
+   * Defer most validation and conversion to `Config` object
 * Fixed internal issue where `some_of` of a Union with more than two variables of which one is `None` just returns the same Union
-* Uniformity of `µ`s, now all use `U+00B5 MICRO SIGN` 
-* Removed `ref::/expr::` default values
+* Fixed issue where `expr::` turns results into strings
+* `µ`niformity, now all use `U+00B5 MICRO SIGN` 
+* Removed default values that `ref::`/`expr::` other variables
 * Removed unused variable
 
 # 2.0.0-a49

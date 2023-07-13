@@ -231,7 +231,7 @@ def process_string(
 
     if mutable.startswith(EXPR_PREFIX):
         try:
-            return f"{Expr.evaluate(value[len(EXPR_PREFIX):], values_so_far)}"
+            return Expr.evaluate(value[len(EXPR_PREFIX):], values_so_far)
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
     elif mutable.startswith(REF_PREFIX):
