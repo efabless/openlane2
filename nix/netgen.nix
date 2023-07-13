@@ -20,8 +20,8 @@ with pkgs; clangStdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "netgen";
-    rev = "1efa054ac1302a2b8b03a41e90420fc055d5796e";
-    sha256 = "sha256-k3Ke6z2mW6BmpefgraEBBH4VHVX2v59rv8Pz3JKuEcU=";
+    rev = "87d8759a6980d297edcb9be6f8661867e4726f9a";
+    sha256 = "sha256-wTreP/hVlXuo+SOC+jdROeC53o3tOF2M9eQIgX15zRo=";
   };
 
   configureFlags = [
