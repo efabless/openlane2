@@ -1,3 +1,6 @@
+# 2.0.0-a50
+* Updated versions of `magic` and `netgen`
+
 # 2.0.0-a49
 
 * Made designs synthesized by Yosys keep their name after `chparam`
