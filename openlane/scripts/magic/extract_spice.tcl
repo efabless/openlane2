@@ -38,6 +38,7 @@ if { ! $::env(MAGIC_NO_EXT_UNIQUE) } {
 extract
 
 ext2spice lvs
+ext2spice short resistor
 ext2spice -o $netlist $::env(DESIGN_NAME).ext
 feedback save $feedback_file
 # exec cp $::env(DESIGN_NAME).spice $::env(signoff_results)/$::env(DESIGN_NAME).spice
