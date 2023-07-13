@@ -212,9 +212,7 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)")
 
 
-def process_string(
-    value: str, values_so_far: Mapping[str, Any]
-) -> Union[None, str, List[str]]:
+def process_string(value: str, values_so_far: Mapping[str, Any]) -> Valid:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
