@@ -83,7 +83,7 @@ class Expr(object):
     @staticmethod
     def tokenize(expr: str) -> List["Expr.Token"]:
         rx_list = [
-            (re.compile(r"^\$(\w+)"), Expr.Token.Type.VAR),
+            (re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)"), Expr.Token.Type.VAR),
             (re.compile(r"^(-?\d+\.?\d*)"), Expr.Token.Type.NUMBER),
             (re.compile(r"^(\*\*)"), Expr.Token.Type.OP),
             (re.compile(r"^(\+|\-|\*|\/)"), Expr.Token.Type.OP),
@@ -231,7 +231,7 @@ def process_string(
 
     if mutable.startswith(EXPR_PREFIX):
         try:
-            return Expr.evaluate(value[len(EXPR_PREFIX):], values_so_far)
+            return Expr.evaluate(value[len(EXPR_PREFIX) :], values_so_far)
         except SyntaxError as e:
             raise InvalidConfig(f"Invalid expression '{value}': {e}")
     elif mutable.startswith(REF_PREFIX):
