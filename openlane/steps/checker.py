@@ -310,7 +310,7 @@ class LintWarnings(MetricChecker):
             bool,
             "Quit on linter warnings.",
             default=False,
-            deprecated_names=["QUIT_ON_LINTER_ERRORS"],
+            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
         ),
     ]
 
@@ -332,7 +332,6 @@ class LintTimingConstructs(MetricChecker):
             bool,
             "Quit on linter timing errors.",
             default=True,
-            deprecated_names=["QUIT_ON_LINTER_ERRORS"],
         ),
     ]
 
