@@ -37,7 +37,7 @@
         "vssa1",
         "vssa2"
     ],
-    "SYNTH_USE_PG_PINS_DEFINES": "USE_POWER_PINS",
+    "SYNTH_POWER_DEFINE": "USE_POWER_PINS",
     "FP_PDN_VPITCH": 180,
     "FP_PDN_HPITCH": "expr::$FP_PDN_VPITCH",
     "FP_PDN_VOFFSET": 5,

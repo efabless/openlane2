@@ -275,8 +275,9 @@ class Step(ABC):
 
         if Config.current_interactive:
             mutable = Config(**kwargs.copy())
-            overrides, warnings, errors = mutable.process_variable_list(
-                variables=self.config_vars,
+            overrides, warnings, errors = mutable.__process_variable_list(
+                [],
+                self.config_vars,
             )
             config = config.copy(**overrides)
             for warning in warnings:
@@ -291,7 +292,11 @@ class Step(ABC):
                 "Variables may not be passed as keyword arguments unless the Config object is per-step."
             )
 
-        self.config = config.copy()
+        self.config = config.copy_filtered(
+            self.config_vars,
+            include_pdk_variables=True,
+            include_common_variables=True,
+        )
 
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):

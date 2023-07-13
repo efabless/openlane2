@@ -22,14 +22,14 @@ io_layer_variables = [
         Decimal,
         "Extends the vertical io pins outside of the die by the specified units.",
         default=0,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_IO_HEXTEND",
         Decimal,
         "Extends the horizontal io pins outside of the die by the specified units.",
         default=0,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_IO_VLENGTH",
@@ -65,28 +65,28 @@ pdn_variables = [
         Decimal,
         "The offset of the vertical power stripes on the metal layer 4 in the power distribution network.",
         default=16.32,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_PDN_VPITCH",
         Decimal,
         "The pitch of the vertical power stripes on the metal layer 4 in the power distribution network.",
         default=153.6,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_PDN_HOFFSET",
         Decimal,
         "The offset of the horizontal power stripes on the metal layer 5 in the power distribution network.",
         default=16.65,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_PDN_HPITCH",
         Decimal,
         "The pitch of the horizontal power stripes on the metal layer 5 in the power distribution network.",
         default=153.18,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "FP_PDN_AUTO_ADJUST",
@@ -120,7 +120,7 @@ pdn_variables = [
     ),
     Variable(
         "FP_PDN_HORIZONTAL_HALO",
-        str,
+        Decimal,
         "Sets the horizontal halo around the macros during power grid insertion.",
         default=10,
         units="µm",
@@ -129,7 +129,7 @@ pdn_variables = [
         "FP_PDN_VERTICAL_HALO",
         Decimal,
         "Sets the vertical halo around the macros during power grid insertion.",
-        default="expr::$FP_PDN_HORIZONTAL_HALO",
+        default=10,
         units="µm",
     ),
     Variable(
@@ -178,17 +178,51 @@ dpl_variables = [
         Decimal,
         "Specifies how far an instance can be moved along the X-axis when finding a site where it can be placed during detailed placement.",
         default=500,
-        units="μm",
+        units="µm",
     ),
     Variable(
         "PL_MAX_DISPLACEMENT_Y",
         Decimal,
         "Specifies how far an instance can be moved along the Y-axis when finding a site where it can be placed during detailed placement.",
         default=100,
-        units="μm",
+        units="µm",
     ),
 ]
 
+grt_variables = routing_layer_variables + [
+    Variable(
+        "DIODE_PADDING",
+        int,
+        "Diode cell padding; increases the width of diode cells during placement checks..",
+        default=2,
+        units="sites",
+    ),
+    Variable(
+        "GRT_ALLOW_CONGESTION",
+        bool,
+        "Allow congestion during global routing",
+        default=False,
+    ),
+    Variable(
+        "GRT_REPAIR_ANTENNAS",
+        bool,
+        "Specifies the insertion strategy of diodes to be used in the flow.",
+        default=True,
+    ),
+    Variable(
+        "GRT_ANTENNA_ITERS",
+        int,
+        "The maximum number of iterations for global antenna repairs.",
+        default=3,
+        deprecated_names=["GRT_ANT_ITERS"],
+    ),
+    Variable(
+        "GRT_OVERFLOW_ITERS",
+        int,
+        "The maximum number of iterations waiting for the overflow to reach the desired value.",
+        default=50,
+    ),
+]
 
 rsz_variables = dpl_variables + [
     Variable(

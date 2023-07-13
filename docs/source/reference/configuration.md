@@ -19,7 +19,7 @@ configuration files, it can be referenced via the environment variable
 ```{note}
 When using the API, you can provide the inputs directly as a Python dictionary,
 enabling you to do complex pre-processing far beyond the capacity of either
-JSON or Tcl files.
+JSON or Tcl files. You can still use `ref::` and such like JSON files though.
 ```
 
 ## JSON
@@ -52,11 +52,11 @@ An minimal demonstrative configuration file would look as follows:
 }
 ```
 
-### Processing
+### Pre-processing
 
-The JSON files are processed at runtime to conditional execution, a way to
-reference the design directory, other variables, and a basic ***mathematical***
-expression engine.
+The JSON files are pre-processed at runtime. Features include conditional
+execution, a way to reference the design directory, other variables,
+and a basic numeric expression engine.
 
 #### Conditional Execution
 
@@ -68,6 +68,8 @@ The value for this key would be a `dict` that is only evaluated if the PDK or
 SCL matches those in the key, i.e., for `pdk::sky130A` as shown above, this
 particular `dict` will be evaluated and its values used if and only if the PDK
 is set to `sky130A`, meanwhile with say, `asap7`, it will not be evaluated.
+
+
 
 The match is evaluated using [`fnmatch`](https://docs.python.org/3.6/library/fnmatch.html),
 giving it limited wildcard support: meaning that `pdk::sky130*` would match both
@@ -95,6 +97,17 @@ declared value later in the code would end up overwriting it:
 > In the first example, the final value for A would always be 4 given the order
 > of declarations. In the second example, it would be 40 is the PDK is sky130A
 > and 4 otherwise.
+
+It is worth nothing that the final resolved configuration would have the
+symbol in the parent object with no trace left of the conditionally-executed,
+dict i.e., the second example with the
+sky130A PDK simply becomes:
+
+```json
+{
+    "A": 40
+}
+```
 
 #### Variable Reference
 

@@ -43,6 +43,7 @@ from cloup.constraints import (
 from .__version__ import __version__
 from .state import State
 from .logging import (
+    debug,
     err,
     warn,
     info,
@@ -114,6 +115,7 @@ def run(
         return 1
     except ValueError as e:
         err(e)
+        debug(traceback.format_exc())
         info("OpenLane will now quit.")
         return 1
 
