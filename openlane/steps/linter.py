@@ -136,7 +136,9 @@ class Lint(Step):
                     raise StepError("Linter exited non-cleanly")
 
         metrics_updates.update({"design__lint_errors__count": errors_count})
-        metrics_updates.update({"design__lint_timing_constructs__count": timing_constructs})
+        metrics_updates.update(
+            {"design__lint_timing_constructs__count": timing_constructs}
+        )
         metrics_updates.update({"design__lint_warnings__count": warnings_count})
         return views_updates, metrics_updates
 
