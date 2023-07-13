@@ -43,6 +43,7 @@ class Classic(SequentialFlow):
     Steps: List[Type[Step]] = [
         Yosys.JsonHeader,
         Linter.Lint,
+        Checker.LintTimingConstructs,
         Checker.LintErrors,
         Checker.LintWarnings,
         Yosys.Synthesis,

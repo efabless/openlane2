@@ -117,6 +117,7 @@ class Lint(Step):
 
         warnings_count = 0
         errors_count = 0
+        timing_constructs = 0
 
         error_pattern = re.compile(r"\s*\%Error: Exiting due to (\d+) error\(s\)")
         with open(self.get_log_path(), "r") as f:
@@ -124,15 +125,19 @@ class Lint(Step):
             for line in f:
                 if "%Warning-" in line:
                     warnings_count += 1
+                if "Error-NEEDTIMINGOPT" in line:
+                    timing_constructs = 1
+
             if not clean_exit:
                 matched_errors = error_pattern.match(line)
                 if matched_errors:
-                    errors_count = matched_errors.group(1)
+                    errors_count = int(matched_errors.group(1))
                 else:
                     raise StepError("Linter exited non-cleanly")
 
-        metrics_updates.update({"design__lint_errors": errors_count})
-        metrics_updates.update({"design__lint_warnings": warnings_count})
+        metrics_updates.update({"design__lint_errors__count": errors_count})
+        metrics_updates.update({"design__lint_timing_constructs__count": timing_constructs})
+        metrics_updates.update({"design__lint_warnings__count": warnings_count})
         return views_updates, metrics_updates
 
     def layout_preview(self) -> Optional[str]:
