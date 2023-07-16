@@ -460,7 +460,8 @@ class Variable:
         values_so_far: Mapping[str, Any],
         permissive_typing: bool = False,
     ) -> Tuple[Optional[str], Any]:
-        exists, value = False, None
+        exists: Optional[str] = None
+        value: Optional[Any] = None
 
         i = 0
         while (
