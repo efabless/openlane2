@@ -4,8 +4,9 @@ wheel
 # lint
 black>=22.3.0,<23
 black[jupyter]
-flake8>=4.0.1
+flake8>=4
 flake8-no-implicit-concat==0.3.3
+flake8-pytest-style
 
 ## mypy
 mypy
@@ -22,6 +23,9 @@ types-colorama
 types-requests
 types-Pygments
 types-Deprecated
+
+# test
+pytest
 
 # ide
 pylance

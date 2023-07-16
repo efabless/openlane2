@@ -202,35 +202,32 @@ class Variable:
         explicitly_specified: bool = True,
         permissive_typing: bool = False,
     ):
-        if explicitly_specified and value is None:
-            # User explicitly specified "null" for this value: only error if
-            # value is not optional
-            if not is_optional(validating_type):
-                raise ValueError(
-                    f"Non-optional variable '{key_path}' received a null value."
-                )
+        if value is None:
+            if explicitly_specified:
+                # User explicitly specified "null" for this value: only error if
+                # value is not optional
+                if not is_optional(validating_type):
+                    raise ValueError(
+                        f"Non-optional variable '{key_path}' received a null value."
+                    )
+                else:
+                    return None
             else:
-                return None
-        elif not explicitly_specified and value is None:
-            # User did not specify a value for this variable: couple outcomes
-            if default is not None:
-                return self.__process(
-                    key_path=key_path,
-                    value=default,
-                    validating_type=validating_type,
-                    values_so_far=values_so_far,
-                    permissive_typing=permissive_typing,
-                )
-            elif not is_optional(validating_type):
-                raise ValueError(
-                    f"Required variable '{key_path}' did not get a specified value."
-                )
-            else:
-                return None
-
-        assert (
-            explicitly_specified and value is not None
-        ), "Configurator has built an inconsistent state."
+                # User did not specify a value for this variable: couple outcomes
+                if default is not None:
+                    return self.__process(
+                        key_path=key_path,
+                        value=default,
+                        validating_type=validating_type,
+                        values_so_far=values_so_far,
+                        permissive_typing=permissive_typing,
+                    )
+                elif not is_optional(validating_type):
+                    raise ValueError(
+                        f"Required variable '{key_path}' did not get a specified value."
+                    )
+                else:
+                    return None
 
         if is_optional(validating_type):
             validating_type = some_of(validating_type)
