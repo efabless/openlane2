@@ -3,7 +3,6 @@
     "VERILOG_FILES": "dir::src/*.v",
     "CLOCK_PORT": "i_clk",
     "CLOCK_NET": "i_clk",
-    "DIODE_INSERTION_STRATEGY": 6,
     "GPL_CELL_PADDING": 2,
     "DPL_CELL_PADDING": 2,
     "pdk::sky130*": {

@@ -295,13 +295,57 @@ scl_variables = [
         "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
         deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
     ),
-    # Synthesis
+    # Constraints
     Variable(
-        "SYNTH_CAP_LOAD",
+        "OUTPUT_CAP_LOAD",
         Decimal,
         "Defines the capacitive load on the output ports.",
         units="fF",
+        deprecated_names=["SYNTH_CAP_LOAD"],
     ),
+    Variable(
+        "MAX_FANOUT_CONSTRAINT",
+        int,
+        "The max load that the output ports can drive to be used as a constraint on Synthesis and CTS.",
+        units="cells",
+        deprecated_names=["SYNTH_MAX_FANOUT"],
+    ),
+    Variable(
+        "MAX_TRANSITION_CONSTRAINT",
+        Optional[Decimal],
+        "The max transition time (slew) from high to low or low to high on cell inputs in ns to be used as a constraint on Synthesis and CTS. If not provided, it is calculated at runtime as `10%` of the provided clock period, unless that exceeds the PDK's `DEFAULT_MAX_TRAN` value.",
+        units="ns",
+        deprecated_names=["SYNTH_MAX_TRAN"],
+    ),
+    Variable(
+        "CLOCK_UNCERTAINTY_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock uncertainty/jitter for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_UNCERTAINTY"],
+    ),
+    Variable(
+        "CLOCK_TRANSITION_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock transition/slew for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_TRANSITION"],
+    ),
+    Variable(
+        "TIME_DERATING_CONSTRAINT",
+        Decimal,
+        "Specifies a derating factor to multiply the path delays with. It specifies the upper and lower ranges of timing.",
+        units="%",
+        deprecated_names=["SYNTH_TIMING_DERATE"],
+    ),
+    Variable(
+        "IO_DELAY_CONSTRAINT",
+        Decimal,
+        "Specifies the percentage of the clock period used in the input/output delays.",
+        units="%",
+        deprecated_names=["IO_PCT"],
+    ),
+    # Synthesis
     Variable(
         "SYNTH_DRIVING_CELL",
         str,
@@ -578,11 +622,22 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIB"] = lib_sta
 
-    # 7. Disconnected Modules (sky130)
+    # 7. capacitance and such
+    if "SYNTH_CAP_LOAD" in config:
+        new["OUTPUT_CAP_LOAD"] = config["SYNTH_CAP_LOAD"]
+        del new["SYNTH_CAP_LOAD"]
+
+    new["MAX_FANOUT_CONSTRAINT"] = 10
+    new["CLOCK_UNCERTAINTY_CONSTRAINT"] = 0.25
+    new["CLOCK_TRANSITION_CONSTRAINT"] = 0.15
+    new["TIME_DERATING_CONSTRAINT"] = 5
+    new["IO_DELAY_CONSTRAINT"] = 20
+
+    # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
-    # 8. Invalid Variables (gf180mcu)
+    # x2. Invalid Variables (gf180mcu)
     if new["PDK"].startswith("gf180mcu"):
         del new["GPIO_PADS_LEF"]
         del new["GPIO_PADS_VERILOG"]

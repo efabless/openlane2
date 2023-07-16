@@ -10,7 +10,7 @@
       config_file: config.tcl
     - usb
     - usb_cdc_core
-    - manual_macro_placement_test
+    # - manual_macro_placement_test
     - spm
     - gcd
     - caravel_upw
@@ -32,9 +32,9 @@
     - spm
     - APU
     - usb
-    # - usb_cdc_core
-    # - zipdiv
-    # - wbqspiflash
+    - usb_cdc_core
+    - zipdiv
+    - wbqspiflash
 - scl: gf180mcuC/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set
   designs:

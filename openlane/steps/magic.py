@@ -15,7 +15,7 @@ import os
 from abc import abstractmethod
 from typing import List, Optional, Tuple
 
-from .step import ViewsUpdate, MetricsUpdate, Step
+from .step import StepError, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
@@ -193,9 +193,20 @@ class StreamOut(MagicStep):
         if die_area := state_in.metrics.get("design__die__bbox"):
             env["DIE_AREA"] = die_area
 
-        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+        magic_log_dir = os.path.join(self.step_dir, "magic.log")
+
+        views_updates, metrics_updates = super().run(
+            state_in,
+            env=env,
+            log_to=magic_log_dir,
+            **kwargs,
+        )
         if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
             views_updates[DesignFormat.GDS] = views_updates[DesignFormat.MAG_GDS]
+
+        for line in open(magic_log_dir, encoding="utf8"):
+            if "Calma output error" in line:
+                raise StepError("Magic GDS was written with errors.")
 
         return views_updates, metrics_updates
 

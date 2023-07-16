@@ -39,6 +39,7 @@ proc read_current_sdc {} {
     set ::env(SYNTH_MAX_FANOUT) $::env(MAX_FANOUT_CONSTRAINT)
     set ::env(SYNTH_CLOCK_UNCERTAINTY) $::env(CLOCK_UNCERTAINTY_CONSTRAINT)
     set ::env(SYNTH_CLOCK_TRANSITION) $::env(CLOCK_TRANSITION_CONSTRAINT)
+    set ::env(SYNTH_CAP_LOAD) $::env(OUTPUT_CAP_LOAD)
     if { [info exists ::env(MAX_TRANSITION_CONSTRAINT)] } {
         set ::env(SYNTH_MAX_TRAN) $::env(MAX_TRANSITION_CONSTRAINT)
     }

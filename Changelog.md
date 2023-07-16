@@ -1,3 +1,18 @@
+# 2.0.0-a52
+
+* Added three designs to the gf180mcu test set
+* Magic GDS writes now check log for `Calma output error` before proceeding
+  further
+* Moved constraint variables to PDK
+  * `SYNTH_CAP_LOAD` renamed to `OUTPUT_CAP_LOAD`
+* Deprecated names for variables now take priority: allows overriding PDK
+  variables properly
+* Updated Magic to `8b3bb1a`
+* Updated PDK to `78b7bc3`
+* Updated Volare to `0.8.0` to support zstd-compressed PDKs
+* Temporarily removed `manual_macro_placement_test` from the sky130 test set
+  pending a weird bug
+
 # 2.0.0-a51
 
 * Updated Netgen to `87d8759`

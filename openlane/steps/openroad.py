@@ -38,7 +38,6 @@ from .common_variables import (
     dpl_variables,
     grt_variables,
     routing_layer_variables,
-    constraint_variables,
 )
 
 from ..config import Variable
@@ -112,7 +111,7 @@ class OpenROADStep(TclStep):
         DesignFormat.POWERED_NETLIST,
     ]
 
-    config_vars = constraint_variables + [
+    config_vars = [
         Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
             bool,

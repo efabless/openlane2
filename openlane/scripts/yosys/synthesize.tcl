@@ -73,7 +73,7 @@ set F_factor  0.00
 set sdc_file $::env(STEP_DIR)/synthesis.sdc
 set outfile [open ${sdc_file} w]
 puts $outfile "set_driving_cell $::env(SYNTH_DRIVING_CELL)"
-puts $outfile "set_load $::env(SYNTH_CAP_LOAD)"
+puts $outfile "set_load $::env(OUTPUT_CAP_LOAD)"
 close $outfile
 
 

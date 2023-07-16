@@ -460,7 +460,8 @@ class Variable:
         values_so_far: Mapping[str, Any],
         permissive_typing: bool = False,
     ) -> Tuple[Optional[str], Any]:
-        exists, value = mutable_config.check(self.name)
+        exists: Optional[str] = None
+        value: Optional[Any] = None
 
         i = 0
         while (
@@ -480,6 +481,9 @@ class Variable:
             if value is not None:
                 value = deprecated_callable(value)
             i = i + 1
+
+        if not exists:
+            exists, value = mutable_config.check(self.name)
 
         processed = self.__process(
             key_path=self.name,
