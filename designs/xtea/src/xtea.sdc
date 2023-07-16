@@ -18,7 +18,7 @@ set_input_delay $input_delay_value  -clock [get_clocks $::env(CLOCK_PORT)] $all_
 set_output_delay $output_delay_value  -clock [get_clocks $::env(CLOCK_PORT)] [all_outputs]
 
 set_driving_cell -lib_cell $::env(SYNTH_DRIVING_CELL) -pin $::env(SYNTH_DRIVING_CELL_PIN) [all_inputs]
-set cap_load [expr $::env(SYNTH_CAP_LOAD) / 1000.0]
+set cap_load [expr $::env(OUTPUT_CAP_LOAD) / 1000.0]
 puts "\[INFO\] Setting load to: $cap_load"
 set_load  $cap_load [all_outputs]
 
