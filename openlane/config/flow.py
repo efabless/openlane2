@@ -14,10 +14,8 @@
 from decimal import Decimal
 from typing import List, Optional, Dict, Union
 
-from .macro import Macro
-from .variable import Variable
-from ..state import Path
-from ..common import StringEnum
+from .variable import Variable, Macro
+from ..common import StringEnum, Path
 
 all_variables = [
     # Common

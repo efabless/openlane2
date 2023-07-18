@@ -35,10 +35,10 @@ from typing import (
 
 from .memoize import memoize
 
+from ..state import DesignFormat
 from ..logging import debug, warn
 from ..config import Config, Macro
-from ..state import DesignFormat, Path
-from ..common import mkdirp, get_script_dir, parse_metric_modifiers
+from ..common import Path, mkdirp, get_script_dir, parse_metric_modifiers
 
 
 class Toolbox(object):

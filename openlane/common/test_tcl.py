@@ -43,7 +43,7 @@ def test_escape():
     ), ".escape neglected backslash"
 
 
-@pytest.mark.usefixtures(_mock_fs)
+@pytest.mark.usefixtures("_mock_fs")
 def test_join():
     from .tcl import TclUtils
 

@@ -17,6 +17,7 @@ import typing
 import pathlib
 import unicodedata
 from enum import Enum
+from collections import UserString
 
 from typing import (
     Sequence,
@@ -146,3 +147,20 @@ def StringEnum(name: str, values: Sequence[str]):
     Creates a string enumeration class where the keys and values are the same.
     """
     return Enum(name, [(value, value) for value in values])
+
+
+class Path(UserString, os.PathLike):
+    """
+    A Path type for OpenLane configuration variables.
+
+    Basically just a string.
+    """
+
+    def __fspath__(self) -> str:
+        return str(self)
+
+    def exists(self) -> bool:
+        """
+        A convenience method calling :meth:`os.path.exists`
+        """
+        return os.path.exists(self)

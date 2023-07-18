@@ -23,8 +23,8 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..config import Variable
 from ..logging import debug, verbose
-from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum
+from ..state import State, DesignFormat
+from ..common import Path, get_script_dir, StringEnum
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 

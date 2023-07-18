@@ -39,10 +39,8 @@ from .pdk import (
     removed_variables as pdk_removed_variables,
     migrate_old_config,
 )
-
-from ..state import Path
 from ..logging import info, warn
-from ..common import GenericDict, GenericImmutableDict, TclUtils
+from ..common import GenericDict, GenericImmutableDict, TclUtils, Path
 
 
 @dataclass

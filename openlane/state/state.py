@@ -17,29 +17,11 @@ import os
 import json
 import shutil
 from decimal import Decimal
-from collections import UserString
 from typing import List, Mapping, Union, Optional, Dict, Any
 
 from .design_format import DesignFormat, DesignFormatObject
 
-from ..common import GenericImmutableDict, mkdirp, copy_recursive
-
-
-class Path(UserString, os.PathLike):
-    """
-    A Path type for OpenLane configuration variables.
-
-    Basically just a string.
-    """
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def exists(self) -> bool:
-        """
-        A convenience method calling :meth:`os.path.exists`
-        """
-        return os.path.exists(self)
+from ..common import Path, GenericImmutableDict, mkdirp, copy_recursive
 
 
 class InvalidState(RuntimeError):

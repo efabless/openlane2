@@ -17,8 +17,7 @@ from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Dict
 
 from .variable import Variable
-
-from ..state import Path
+from ..common import Path
 
 # Note that values in this file do not take defaults.
 

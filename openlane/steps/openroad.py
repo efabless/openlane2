@@ -41,9 +41,9 @@ from .common_variables import (
 )
 
 from ..config import Variable
+from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn
-from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum, get_tpe, mkdirp, TclUtils
+from ..common import Path, get_script_dir, StringEnum, get_tpe, mkdirp, TclUtils
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46

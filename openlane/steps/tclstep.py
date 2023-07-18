@@ -33,8 +33,9 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
 from ..config import Keys
 from ..logging import info, warn
-from ..state import State, DesignFormat, Path
+from ..state import State, DesignFormat
 from ..common import (
+    Path,
     TclUtils,
     GenericDictEncoder,
     mkdirp,
