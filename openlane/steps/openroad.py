@@ -157,7 +157,7 @@ class OpenROADStep(TclStep):
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
-        env["PNR_EXCLUDED_CELLS"] = shlex.join(
+        env["PNR_EXCLUDED_CELLS"] = self.join(
             [
                 cell.strip()
                 for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
