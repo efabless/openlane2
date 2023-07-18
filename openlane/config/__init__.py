@@ -22,7 +22,4 @@ from .preprocessor import Keys
 from .variable import Variable
 from .macro import Macro, Instance
 from .config import Config, InvalidConfig
-
-
-from .tcleval import env_from_tcl
 from .flow import all_variables as universal_flow_config_variables

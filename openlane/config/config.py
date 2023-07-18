@@ -32,7 +32,6 @@ from typing import (
 )
 
 from .variable import Variable
-from .tcleval import env_from_tcl
 from .preprocessor import preprocess_dict, Keys as SpecialKeys
 from .flow import removed_variables, all_variables as flow_common_variables
 from .pdk import (
@@ -43,7 +42,7 @@ from .pdk import (
 
 from ..state import Path
 from ..logging import info, warn
-from ..common import GenericDict, GenericImmutableDict
+from ..common import GenericDict, GenericImmutableDict, TclUtils
 
 
 @dataclass
@@ -490,7 +489,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in = dict(config_in)
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
-        tcl_config = env_from_tcl(tcl_vars_in, config)
+        tcl_config = dict(TclUtils._eval_env(tcl_vars_in, config))
 
         process_info = preprocess_dict(
             tcl_config,
@@ -516,7 +515,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in[SpecialKeys.scl] = scl
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
 
-        design_config = env_from_tcl(tcl_vars_in, config)
+        design_config = TclUtils._eval_env(tcl_vars_in, config)
 
         config_in = Config(config_in, overrides=design_config)
         for string in config_override_strings:
@@ -589,7 +588,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
 
-        pdk_env = env_from_tcl(
+        pdk_env = TclUtils._eval_env(
             pdk_config,
             open(pdk_config_path, encoding="utf8").read(),
         )
@@ -604,7 +603,7 @@ class Config(GenericImmutableDict[str, Any]):
         )
 
         scl_env = migrate_old_config(
-            env_from_tcl(
+            TclUtils._eval_env(
                 pdk_env,
                 open(scl_config_path, encoding="utf8").read(),
             )

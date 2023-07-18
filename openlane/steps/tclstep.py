@@ -27,7 +27,7 @@ from decimal import Decimal
 from collections import deque
 from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
-from typing import Any, ClassVar, Iterable, List, Dict, Sequence, Union, Tuple
+from typing import Any, ClassVar, List, Dict, Sequence, Union, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
@@ -35,6 +35,7 @@ from ..config import Keys
 from ..logging import info, warn
 from ..state import State, DesignFormat, Path
 from ..common import (
+    TclUtils,
     GenericDictEncoder,
     mkdirp,
     get_script_dir,
@@ -321,10 +322,6 @@ def create_reproducible(
     return destination_folder
 
 
-_find_unsafe = re.compile(r"[^\w@%+=:,./-]", re.ASCII).search
-_escapes_in_quotes = re.compile(r"([\\\$\"\[])")
-
-
 class TclStep(Step):
     """
     A subclass of :class:`Step` that primarily deals with running Tcl-based utilities,
@@ -337,22 +334,6 @@ class TclStep(Step):
     """
 
     reproducibles_allowed: ClassVar[bool] = True
-
-    @staticmethod
-    def escape(s: str) -> str:
-        """
-        :returns: If the string can be parsed by Tcl as a single token, the string
-            is returned verbatim.
-
-            Otherwise
-        """
-        if not _find_unsafe(s):
-            return s
-        return '"' + _escapes_in_quotes.sub(r"\\\1", s) + '"'
-
-    @staticmethod
-    def join(ss: Iterable[str]) -> str:
-        return " ".join(TclStep.escape(arg) for arg in ss)
 
     @staticmethod
     def value_to_tcl(value: Any) -> str:
@@ -373,13 +354,13 @@ class TclStep(Step):
             result = []
             for item in value:
                 result.append(TclStep.value_to_tcl(item))
-            return TclStep.join(result)
+            return TclUtils.join(result)
         elif isinstance(value, dict):
             result = []
             for v_key, v_value in value.items():
                 result.append(TclStep.value_to_tcl(v_key))
                 result.append(TclStep.value_to_tcl(v_value))
-            return TclStep.join(result)
+            return TclUtils.join(result)
         elif isinstance(value, Enum):
             return value.name
         elif isinstance(value, bool):

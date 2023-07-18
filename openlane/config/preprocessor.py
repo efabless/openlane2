@@ -180,7 +180,7 @@ class Expr(object):
                     eval_stack.pop()
                     eval_stack.pop()
 
-                    result = 0.0
+                    result = Decimal(0.0)
                     if token.value == "**":
                         result = number1**number2
                     elif token.value == "*":
@@ -241,7 +241,7 @@ def process_string(
             raise SyntaxError(f"Invalid reference string '{reference}'") from None
 
         reference_variable = match[1]
-        if not reference_variable in symbols:
+        if reference_variable not in symbols:
             raise KeyError(
                 f"Referenced variable '{reference_variable}' not found"
             ) from None
@@ -277,7 +277,6 @@ def process_string(
             raise PermissionError(
                 f"'{concatenated}' is not located any path readable to OpenLane"
             )
-        print(final_abspath, flush=True)
         files = glob.glob(final_abspath)
         files_escaped = [file.replace("$", r"\$") for file in files]
         files_escaped.sort()
@@ -333,7 +332,7 @@ def process_dict_recursive(
     input: Mapping[str, Any],
     ref: Dict[str, Any],
     symbols: Dict[str, Any],
-    readable_paths: Optional[Dict[str, Any]],
+    readable_paths: Optional[List[str]],
     /,
     key_path: str = "",
 ):
@@ -395,12 +394,12 @@ def process_dict_recursive(
 
 
 def process_config_dict(
-    config_in: dict,
+    config_in: Mapping[str, Any],
     exposed_variables: Dict[str, Any],
-    readable_paths: Optional[Dict[str, Any]],
+    readable_paths: Optional[List[str]],
 ) -> Dict[str, Any]:
-    state = exposed_variables.copy()
-    symbols = exposed_variables.copy()
+    state = dict(exposed_variables)
+    symbols = dict(exposed_variables)
     process_dict_recursive(config_in, state, symbols, readable_paths)
     return state
 
@@ -414,7 +413,7 @@ def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:
 
 
 def preprocess_dict(
-    config_dict: Dict[str, Any],
+    config_dict: Mapping[str, Any],
     design_dir: str,
     only_extract_process_info: bool = False,
     pdk: Optional[str] = None,
