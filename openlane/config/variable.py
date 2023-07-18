@@ -21,8 +21,6 @@ from typing import Iterable, Literal, Mapping, get_origin, get_args
 from typing import Union, Type, List, Optional, Tuple, Any, Callable
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
 
-from .preprocessor import process_string
-
 from ..state import Path
 from ..common import GenericDict, is_string
 
@@ -234,9 +232,6 @@ class Variable:
 
         type_origin = get_origin(validating_type)
         type_args = get_args(validating_type)
-
-        if type(value) == str:
-            value = process_string(value, values_so_far)
 
         if type_origin in [list, tuple]:
             return_value = list()

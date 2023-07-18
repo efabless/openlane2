@@ -18,10 +18,10 @@ from decimal import Decimal
 from collections import UserString
 from dataclasses import asdict, is_dataclass
 from typing import (
+    Any,
     Dict,
     Hashable,
     Iterator,
-    List,
     Mapping,
     Sequence,
     Type,
@@ -194,7 +194,7 @@ class GenericDict(Mapping[KT, VT]):
 
 
 class GenericImmutableDict(GenericDict[KT, VT]):
-    _lock: bool
+    __lock: bool
 
     def __init__(
         self,
@@ -212,6 +212,10 @@ class GenericImmutableDict(GenericDict[KT, VT]):
         return super().__setitem__(key, item)
 
 
+def is_string(obj: Any) -> bool:
+    return isinstance(obj, str) or isinstance(obj, UserString)
+
+
 # Screw this, if you can figure out how to type hint mapping in dictionary out
 # and non-mapping in sequence out in Python, be my guest
 def copy_recursive(input):
@@ -224,23 +228,24 @@ def copy_recursive(input):
         become built-in ``dict``s.
     """
 
-    def resolve_value(value):
-        value_final = value
-        if isinstance(value, Dict):
-            value_final = copy_recursive(value)
-        elif isinstance(value, List):
-            value_final = copy_recursive(value)
-        return value_final
+    def recursive(input, visit_stack: list, *, sequence_cls=list, mapping_cls=dict):
+        if id(input) in visit_stack:
+            raise ValueError("Circular reference found in target object")
 
-    if isinstance(input, Mapping):  # Mappings are Sequences, but not vice versa
-        dict_result = {}
-        for key, value in input.items():
-            dict_result[key] = resolve_value(value)
-        return dict_result
-    elif isinstance(input, Sequence):
-        list_result = []
-        for value in input:
-            list_result.append(resolve_value(value))
-        return list_result
-    else:
-        return input
+        visit_stack.append(id(input))
+
+        result: Any = input
+
+        if isinstance(input, Mapping):  # Mappings are Sequences, but not vice versa
+            result = mapping_cls()
+            for key, value in input.items():
+                result[key] = recursive(value, visit_stack)
+        elif not is_string(input) and isinstance(input, Sequence):
+            result = sequence_cls()
+            for value in input:
+                result.append(recursive(value, visit_stack))
+
+        visit_stack.pop()
+        return result
+
+    return recursive(input, [])

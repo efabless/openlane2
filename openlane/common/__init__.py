@@ -25,11 +25,9 @@ import typing
 import pathlib
 import unicodedata
 from enum import Enum
-from collections import UserString
 from concurrent.futures import ThreadPoolExecutor
 
 from typing import (
-    Any,
     Mapping,
     Sequence,
     TypeVar,
@@ -41,6 +39,7 @@ from .generic_dict import (
     GenericDict,
     GenericImmutableDict,
     copy_recursive,
+    is_string,
 )
 
 
@@ -106,9 +105,9 @@ def get_opdks_rev() -> str:
 def slugify(value: str) -> str:
     """
     :param value: Input string
-    :returns: The input string converted to lower case, with non-word
-        (alphanumeric/underscore) characters removed, and spaces converted
-        into hyphens.
+    :returns: The input string converted to lower case, with all characters
+        except alphanumerics, underscores and hyphens removed, and spaces and\
+        dots converted into hyphens.
 
         Leading and trailing whitespace is stripped.
     """
@@ -116,7 +115,7 @@ def slugify(value: str) -> str:
         unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     )
     value = re.sub(r"[^\w\s\-\.]", "", value).strip().lower()
-    return re.sub(r"[-\s\.]+", "-", value)
+    return re.sub(r"[\s\.]+", "-", value)
 
 
 def protected(method):
@@ -168,10 +167,6 @@ def idem(obj: T, *args, **kwargs) -> T:
     return obj
 
 
-def is_string(obj: Any) -> bool:
-    return isinstance(obj, str) or isinstance(obj, UserString)
-
-
 ## TPE
 
 TPE = ThreadPoolExecutor(max_workers=os.cpu_count())
@@ -198,7 +193,7 @@ def get_tpe() -> ThreadPoolExecutor:
 
 ## Metrics
 
-modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)$")
+modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
 
 
 def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
@@ -213,8 +208,10 @@ def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
     mn_mut = metric_name.split("__")
     modifiers = {}
     i = len(mn_mut) - 1
-    while match := modifier_rx.match(mn_mut[i]):
-        mn_mut.pop()
-        modifiers[match[1]] = match[2]
-        i = i - 1
+    if ":" in mn_mut[i]:
+        modifier_list = mn_mut[i].split(":")
+        if len(modifier_list) % 2 == 0:
+            for i in range(0, len(modifier_list) - 1, 2):
+                modifiers[modifier_list[i]] = modifier_list[i + 1]
+            mn_mut.pop()
     return "__".join(mn_mut), modifiers

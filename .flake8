@@ -16,5 +16,6 @@ exclude =
     build/,
     pdk/,
     venv/,
+    openlane/__init__.py,
     openlane/**/__init__.py,
     examples

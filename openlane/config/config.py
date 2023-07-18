@@ -425,6 +425,10 @@ class Config(GenericImmutableDict[str, Any]):
                 pdkpath=pdkpath,
                 scl=config_in[SpecialKeys.scl],
                 design_dir=design_dir,
+                readable_paths=[
+                    os.path.abspath(pdkpath),
+                    os.path.abspath(design_dir),
+                ],
             ),
         )
 
