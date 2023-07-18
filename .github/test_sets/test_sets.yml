@@ -15,6 +15,7 @@
     - gcd
     - caravel_upw
     - io_placer
+    - test_sram_macro
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:

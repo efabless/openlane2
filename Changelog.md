@@ -1,3 +1,7 @@
+# 2.0.0-a53
+* Reworked Tcl unsafe string escaping to use home-cooked functions instead of
+  "shlex"
+
 # 2.0.0-a52
 
 * Added three designs to the gf180mcu test set
