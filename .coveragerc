@@ -1,0 +1,12 @@
+[run]
+source = openlane
+
+[report]
+include =
+    openlane/*
+omit =
+    /nix/*
+    venv/
+    test_*.py
+    __version__.py
+    __main__.py

@@ -26,6 +26,7 @@ types-Deprecated
 
 # test
 pytest
+coverage
 pyfakefs>=5.2.3,<6
 
 # ide

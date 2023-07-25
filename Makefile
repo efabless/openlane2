@@ -37,7 +37,8 @@ lint: venv/manifest.txt
 
 .PHONY: test
 test: venv/manifest.txt
-	./venv/bin/python3 -m openlane ./designs/spm/config.json
+	./venv/bin/coverage run -m pytest && coverage report
+	./venv/bin/coverage html
 
 .PHONY: test-opt
 test-opt: venv/manifest.txt

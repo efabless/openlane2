@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import re
 import os
 import shlex
 import inspect
@@ -23,7 +22,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Iterable,
     Tuple,
     Union,
     Mapping,
@@ -34,7 +32,7 @@ from typing import (
     get_args,
 )
 from ..state import DesignFormat
-from ..common import GenericDict, Path, is_string
+from ..common import GenericDict, Path, is_string, zip_first
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -126,34 +124,6 @@ class Macro:
             )
 
 
-class zip_first(object):
-    """
-    Works like ``zip_longest`` but always stops when the first iterant stops.
-    """
-
-    def __init__(self, a: Iterable, b: Iterable, fillvalue: Any) -> None:
-        self.a = a
-        self.b = b
-        self.fillvalue = fillvalue
-
-    def __iter__(self):
-        self.iter_a = iter(self.a)
-        self.iter_b = iter(self.b)
-        return self
-
-    def __next__(self):
-        a = next(self.iter_a)
-        b = self.fillvalue
-        try:
-            b = next(self.iter_b)
-        except StopIteration:
-            pass
-        return (a, b)
-
-
-newline_rx = re.compile(r"\n")
-
-
 def is_optional(t: Type[Any]) -> bool:
     type_args = get_args(t)
     return get_origin(t) is Union and type(None) in type_args
@@ -171,9 +141,7 @@ def some_of(t: Type[Any]) -> Type[Any]:
     if len(args_without_none) == 1:
         return args_without_none[0]
 
-    new_union = Union[int, str]
-    new_union.__args__ = tuple(args_without_none)  # type: ignore
-
+    new_union = Union[tuple(args_without_none)]  # type: ignore
     return new_union  # type: ignore
 
 
@@ -286,7 +254,7 @@ class Variable:
         """
         Prints the description, but with newlines escaped for Markdown.
         """
-        return newline_rx.sub("<br />", self.description)
+        return self.description.replace("\n", "<br />")
 
     def __process(
         self,
@@ -331,6 +299,8 @@ class Variable:
         type_origin = get_origin(validating_type)
         type_args = get_args(validating_type)
 
+        print(type_origin)
+        print(type_args)
         if type_origin in [list, tuple]:
             return_value = list()
             raw = value

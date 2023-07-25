@@ -40,6 +40,7 @@ from .misc import (
     mkdirp,
     StringEnum,
     Path,
+    zip_first,
 )
 
 

@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from concurrent.futures import ThreadPoolExecutor
+import os
 import enum
-import pytest
-
 from decimal import Decimal
 from collections import UserString
+
+import pytest
 
 
 class MyString(UserString):
@@ -167,3 +169,15 @@ def test_copy_recursive():
 
     with pytest.raises(ValueError, match="Circular"):
         copy_recursive(deep_dict_copy)
+
+
+def test_tpe():
+    from . import get_tpe, set_tpe
+
+    tpe = get_tpe()
+    assert tpe._max_workers == os.cpu_count(), "TPE was not initialized properly"
+
+    tpe = ThreadPoolExecutor(1)
+    set_tpe(tpe)
+
+    assert get_tpe() == tpe, "Failed to set TPE properly"

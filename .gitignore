@@ -25,3 +25,7 @@ result
 /*.def
 logs/
 /openlane_run
+
+# Testing
+.coverage
+htmlcov/
