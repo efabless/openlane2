@@ -38,7 +38,7 @@
 
 with pkgs; clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "8b3bb1ae771da1673ac148987466ff31c63513cd";
+  rev = "0afe4d87d4aacfbbb2659129a1858a22d216a920";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
