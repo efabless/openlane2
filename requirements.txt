@@ -3,6 +3,6 @@ cloup>=1.0.1,<2
 pyyaml>=5,<7
 rich>=12,<13
 requests>=2.27,<3
-volare>=0.8.0
+volare>=0.9.2
 lxml>=4.9.0
 deprecated>=1.2.10,<2

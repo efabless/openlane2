@@ -8,4 +8,5 @@ Notes for Contributors
    docs
    ci
    classes
+   updating_tools
 

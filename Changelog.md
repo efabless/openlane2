@@ -1,6 +1,12 @@
+# 2.0.0-a55
+
+* Updated OpenROAD to `02ea75b`
+* Updated Volare to `0.9.2`
+* Added guide on updating utilities with Nix
+
 # 2.0.0-a54
 
-* Update Magic to `0afe4d8`:
+* Updated Magic to `0afe4d8`:
 ```
 Corrected an error introduced by the code added recently for support
 
