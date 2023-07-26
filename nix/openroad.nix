@@ -27,13 +27,13 @@ with pkgs; let
   });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "71a707440d5db5c0d0ec83f86b4a3d797e39c678";
+  rev = "02ea75b45216ba4f8e889f6e7fc44285a1a5bc05";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-CcDUKS/fkEMHCB4Gz6B3fHZdu089wGRv2Fzj7VRb2v8=";
+    sha256 = "sha256-zQVs4u0x1Lh1gs0xm9eJHc36LQNzlWFMpLVRzOOdhmU=";
     fetchSubmodules = true;
   };
 

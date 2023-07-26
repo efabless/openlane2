@@ -23,6 +23,7 @@ docker-image: venv
 
 .PHONY: docs
 docs: venv
+	./venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt
 	$(MAKE) -C docs html
 
 .PHONY: host-docs
