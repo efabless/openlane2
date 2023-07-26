@@ -108,7 +108,7 @@ class Config(GenericImmutableDict[str, Any]):
 
     def copy(self, **overrides) -> "Config":
         """
-        Produces a shallow copy of the configuration object.
+        Produces a *shallow* copy of the configuration object.
 
         :param overrides: A series of configuration overrides as key-value pairs.
             These values are NOT validated and you should not be overriding these
@@ -651,7 +651,6 @@ class Config(GenericImmutableDict[str, Any]):
         """
         if removed is None:
             removed = {}
-
         warnings: List[str] = []
         errors = []
         final: GenericDict[str, Any] = GenericDict()

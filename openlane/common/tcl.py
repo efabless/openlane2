@@ -14,7 +14,6 @@
 import os
 import re
 import tkinter
-import tempfile
 from typing import Mapping, Any, Iterable
 
 _setter_rx = re.compile(r"set\s+(?:\:\:)?env\(\s*(\w+)\s*\)")
@@ -55,40 +54,43 @@ class TclUtils(object):
 
     @staticmethod
     def _eval_env(env_in: Mapping[str, Any], tcl_in: str) -> Mapping[str, Any]:
-        """ """
         interpreter = tkinter.Tcl()
         env_out = dict(env_in)
         keys_modified = _setter_rx.findall(tcl_in)
-        with tempfile.NamedTemporaryFile("r+") as f:
-            rollback = {}
-            for key, value in env_in.items():
-                rollback[key] = os.getenv(key)
+        rollback = {}
+        for key, value in env_in.items():
+            rollback[key] = os.getenv(key)
+            os.environ[key] = value
+
+        tcl_script = f"""
+        {tcl_in}
+        set counter 0
+        foreach key [array names ::env] {{
+            set "key$counter" $key
+            set "value$counter" $::env($key)
+            incr counter
+        }}
+        """
+        interpreter.eval(tcl_script)
+
+        for key, value in rollback.items():
+            if value is not None:
                 os.environ[key] = value
+            else:
+                del os.environ[key]
 
-            tcl_script = f"""
-            {tcl_in}
-            set f [open {f.name} WRONLY]
-            foreach key [array names ::env] {{
-                puts $f "$key $::env($key)\\0"
-            }}
-            close $f
-            """
-            interpreter.eval(tcl_script)
+        counter = 0
+        while True:
+            key_var = f"key{counter}"
+            value_var = f"value{counter}"
 
-            for key, value in rollback.items():
-                if value is not None:
-                    os.environ[key] = value
-                else:
-                    del os.environ[key]
-
-            f.seek(0)
-            env_strings = f.read()
-
-            for line in env_strings.split("\0\n"):
-                if line.strip() == "":
-                    continue
-                key, value = line.split(" ", 1)
-                if key in keys_modified:
-                    env_out[key] = value
+            try:
+                key = interpreter.getvar(key_var)
+            except tkinter.TclError:
+                break
+            value = interpreter.getvar(value_var)
+            if key in keys_modified:
+                env_out[key] = value
+            counter += 1
 
         return env_out

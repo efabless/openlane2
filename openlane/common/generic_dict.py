@@ -107,6 +107,26 @@ class GenericDict(Mapping[KT, VT]):
     def __iter__(self) -> Iterator[KT]:
         return iter(self.__data)
 
+    def __eq__(self, __o: object) -> bool:
+        if not (isinstance(__o, GenericDict) or isinstance(__o, dict)):
+            raise NotImplementedError()
+
+        rhs = __o
+        if isinstance(__o, GenericDict):
+            rhs = __o.to_raw_dict()
+
+        lhs = self.to_raw_dict()
+
+        return rhs == lhs
+
+        # ---
+        for key in set(self.keys()).union(__o.keys()):
+            if key not in self or key not in __o:
+                return False
+            if self[key] != __o[key]:
+                return False
+        return True
+
     def pop(self, key: KT, /) -> VT:
         """
         :param key: The key to pop the value for.

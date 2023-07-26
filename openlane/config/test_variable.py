@@ -14,8 +14,9 @@
 import os
 import pytest
 from decimal import Decimal
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from dataclasses import dataclass
 from pyfakefs.fake_filesystem_unittest import Patcher
+from typing import Dict, List, Literal, Optional, Tuple, Type, Union
 
 
 from .variable import Variable
@@ -73,7 +74,7 @@ def test_some_of():
     ), "some of failed to properly handle flattened optional union"
 
 
-def test_variable_general():
+def test_variable_construction():
     from . import Variable
 
     variable = Variable(
@@ -98,10 +99,12 @@ def test_variable_general():
 
     variable_union = Variable(
         "UNION_VAR",
-        Union[int, str],
+        Union[int, Dict[str, str]],
         description="x",
     )
-    assert variable_union.type == Union[int, str], "Union magically switched types"
+    assert (
+        variable_union.type == Union[int, Dict[str, str]]
+    ), "Union magically switched types"
 
 
 @pytest.fixture()
@@ -125,7 +128,6 @@ def test_compile(variable: Variable):
     used_name, paths = variable.compile(
         valid_input,
         warning_list,
-        {},
     )
     assert used_name == "EXAMPLE", "valid input returned incorrect used name"
     assert paths == [
@@ -133,6 +135,35 @@ def test_compile(variable: Variable):
         "/cwd/b",
     ], "valid input resolved paths incorrectly"
     assert len(warning_list) == 0, "valid input generated warning"
+
+
+def test_compile_dataclass():
+    from ..common import GenericDict
+
+    @dataclass
+    class MyClass:
+        a: int
+        b: str
+
+    variable = Variable("MY_VARIABLE", MyClass, description="x")
+
+    _, value = variable.compile(
+        GenericDict({"MY_VARIABLE": {"a": 4, "b": "potato"}}), []
+    )
+
+    assert value == MyClass(a=4, b="potato"), "Failed to deserialize dataclass"
+
+
+def test_compile_required():
+    from ..common import GenericDict
+
+    variable = Variable("MY_VARIABLE", int, description="x")
+
+    with pytest.raises(
+        ValueError,
+        match=r"Required variable 'MY_VARIABLE' did not get a specified value",
+    ):
+        variable.compile(GenericDict({}), [])
 
 
 @pytest.mark.usefixtures("_mock_fs")
@@ -151,7 +182,6 @@ def test_compile_deprecated(variable: Variable):
     used_name, paths = variable.compile(
         deprecated_valid_input,
         warning_list,
-        {},
     )
     assert (
         used_name == "OLD_EXAMPLE"
@@ -164,9 +194,14 @@ def test_compile_deprecated(variable: Variable):
 
 
 @pytest.fixture()
-def variable_set(variable):
+def test_enum():
     from ..common import StringEnum
 
+    return StringEnum("x", ["AValue", "AnotherValue"])
+
+
+@pytest.fixture()
+def variable_set(variable, test_enum):
     return [
         variable,
         Variable(
@@ -196,13 +231,14 @@ def variable_set(variable):
         ),
         Variable(
             "UNION_VAR",
-            Union[int, str],
+            Union[int, Dict[str, str]],
             description="x",
         ),
         Variable(
             "LITERAL_VAR",
             Literal["yes"],
             description="x",
+            default="yes",
         ),
         Variable(
             "BOOL_VAR",
@@ -210,13 +246,8 @@ def variable_set(variable):
             description="x",
         ),
         Variable(
-            "LITERAL_VAR",
-            Literal["yes"],
-            description="x",
-        ),
-        Variable(
             "ENUM_VAR",
-            StringEnum("x", ["AValue", "AnotherValue"]),
+            test_enum,
             description="x",
         ),
         Variable(
@@ -241,7 +272,7 @@ def test_compile_invalid(variable_set: List[Variable]):
             "TUPLE_2_VAR": [1, {}],
             "TUPLE_3_VAR": [1, 4],
             "DICT_VAR": [],
-            "OTHER_DICT_VAR": "invalid tcl dictionary",
+            "OTHER_DICT_VAR": "bad tcl dictionary",
             "UNION_VAR": [],
             "LITERAL_VAR": "no",
             "BOOL_VAR": "No",
@@ -253,9 +284,65 @@ def test_compile_invalid(variable_set: List[Variable]):
 
     for variable in variable_set:
         print(f"* Testing {variable.name} ({variable.type})…")
-        with pytest.raises(ValueError):  # noqa: PT011
+        with pytest.raises(
+            ValueError, match="(invalid)|(does not exist)|(is not 'yes')"
+        ):
             variable.compile(
                 invalid_input,
                 warning_list,
-                {},
+                permissive_typing=True,
+            )
+
+
+@pytest.mark.usefixtures("_mock_fs")
+def test_compile_permissive(variable_set: List[Variable], test_enum: Type):
+    from ..common import GenericDict
+
+    permissive_valid_input = GenericDict(
+        {
+            "EXAMPLE": "/cwd/a /cwd/b",
+            "LIST_VAR": "4,5,6",
+            "TUPLE_2_VAR": "1 2",
+            "TUPLE_3_VAR": "1;2;3",
+            "DICT_VAR": "key1 value1 key2 value2",
+            "OTHER_DICT_VAR": "key1 value1 key2 value2",
+            "UNION_VAR": "4",
+            "BOOL_VAR": "0",
+            "ENUM_VAR": "AValue",
+            "NUMBER_VAR": "90123",
+        }
+    )
+
+    final = {}
+
+    for variable in variable_set:
+        _, value = variable.compile(
+            permissive_valid_input,
+            [],
+            permissive_typing=True,
+        )
+        final[variable.name] = value
+
+    assert final == {
+        "EXAMPLE": ["/cwd/a", "/cwd/b"],
+        "LIST_VAR": [4, 5, 6],
+        "TUPLE_2_VAR": ("1", "2"),
+        "TUPLE_3_VAR": ("1", "2", "3"),
+        "DICT_VAR": {"key1": "value1", "key2": "value2"},
+        "OTHER_DICT_VAR": {"key1": "value1", "key2": "value2"},
+        "UNION_VAR": 4,
+        "BOOL_VAR": False,
+        "ENUM_VAR": test_enum("AValue"),
+        "NUMBER_VAR": Decimal("90123"),
+        "LITERAL_VAR": "yes",
+    }, "Permissive parsing mode returned an unexpected result"
+
+    for variable in variable_set:
+        if variable.name in ["LITERAL_VAR", "ENUM_VAR"]:
+            continue
+        print(f"* Testing {variable.name} ({variable.type})…")
+        with pytest.raises(ValueError, match="Refusing"):
+            variable.compile(
+                permissive_valid_input,
+                [],
             )

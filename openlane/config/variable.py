@@ -116,11 +116,11 @@ class Macro:
     def __post_init__(self):
         if len(self.gds) < 1:
             raise ValueError(
-                "Invalid Macro definition- at least one GDSII file must be specified."
+                "Macro definition invalid- at least one GDSII file must be specified."
             )
         if len(self.lef) < 1:
             raise ValueError(
-                "Invalid Macro definition- at least one LEF file must be specified."
+                "Macro definition invalid- at least one LEF file must be specified."
             )
 
 
@@ -260,7 +260,6 @@ class Variable:
         self,
         key_path: str,
         value: Any,
-        values_so_far: Mapping[str, Any],
         validating_type: Type[Any],
         default: Any = None,
         explicitly_specified: bool = True,
@@ -283,7 +282,6 @@ class Variable:
                         key_path=key_path,
                         value=default,
                         validating_type=validating_type,
-                        values_so_far=values_so_far,
                         permissive_typing=permissive_typing,
                     )
                 elif not is_optional(validating_type):
@@ -299,8 +297,6 @@ class Variable:
         type_origin = get_origin(validating_type)
         type_args = get_args(validating_type)
 
-        print(type_origin)
-        print(type_args)
         if type_origin in [list, tuple]:
             return_value = list()
             raw = value
@@ -319,13 +315,13 @@ class Variable:
                     raw = raw.split()
             else:
                 raise ValueError(
-                    f"Invalid List provided for variable '{key_path}': {value}"
+                    f"List provided for variable '{key_path}' is invalid: {value}"
                 )
 
             if type_origin == tuple:
                 if len(raw) != len(type_args):
                     raise ValueError(
-                        f"Invalid {validating_type} provided for variable '{key_path}': ({len(raw)}/{len(type_args)}) tuple entries provided"
+                        f"Value provided for variable '{key_path}' of type {validating_type} is invalid: ({len(raw)}/{len(type_args)}) tuple entries provided"
                     )
 
             for i, (item, value_type) in enumerate(
@@ -336,7 +332,6 @@ class Variable:
                         key_path=f"{key_path}[{i}]",
                         value=item,
                         validating_type=value_type,
-                        values_so_far=values_so_far,
                         permissive_typing=permissive_typing,
                     )
                 )
@@ -368,7 +363,7 @@ class Variable:
                     raw[key] = val
             else:
                 raise ValueError(
-                    f"Value provided for variable '{key_path}' of type {validating_type} is not a dictionary: '{value}'"
+                    f"Value provided for variable '{key_path}' of type {validating_type} is invalid: '{value}'"
                 )
 
             processed = {}
@@ -377,14 +372,12 @@ class Variable:
                     key_path=key_path,
                     value=key,
                     validating_type=key_type,
-                    values_so_far=values_so_far,
                     permissive_typing=permissive_typing,
                 )
                 value_validated = self.__process(
                     key_path=f"{key_path}.{key_validated}",
                     value=val,
                     validating_type=value_type,
-                    values_so_far=values_so_far,
                     permissive_typing=permissive_typing,
                 )
                 processed[key_validated] = value_validated
@@ -399,22 +392,20 @@ class Variable:
                         key_path=key_path,
                         value=value,
                         validating_type=arg,
-                        values_so_far=values_so_far,
                         permissive_typing=permissive_typing,
                     )
+                    if final_value is not None:
+                        return final_value
                 except ValueError as e:
                     errors.append(f"\t{str(e)}")
-            if final_value is not None:
-                return final_value
-            else:
-                raise ValueError(
-                    "\n".join(
-                        [
-                            f"Value for '{key_path}' is invalid for union {repr_type(validating_type)}:"
-                        ]
-                        + errors
-                    )
+            raise ValueError(
+                "\n".join(
+                    [
+                        f"Value for '{key_path}' is invalid for union {repr_type(validating_type)}:"
+                    ]
+                    + errors
                 )
+            )
         elif type_origin == Literal:
             arg = type_args[0]
             if value == arg:
@@ -449,7 +440,6 @@ class Variable:
                     explicitly_specified=explicitly_specified,
                     default=field_default,
                     validating_type=subtype,
-                    values_so_far=values_so_far,
                     permissive_typing=permissive_typing,
                 )
                 kwargs_dict[key] = value__processed
@@ -490,6 +480,12 @@ class Variable:
                 )
             return str(value)
         elif issubclass(validating_type, Decimal) or issubclass(validating_type, int):
+            try:
+                final = validating_type(value)
+            except (InvalidOperation, TypeError):
+                raise ValueError(
+                    f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
+                )
             if not permissive_typing and not (
                 isinstance(value, int)
                 or isinstance(value, float)
@@ -498,12 +494,7 @@ class Variable:
                 raise ValueError(
                     f"Refusing to automatically convert value at '{key_path}' to a {validating_type.__name__}"
                 )
-            try:
-                return validating_type(value)
-            except InvalidOperation:
-                raise ValueError(
-                    f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
-                )
+            return final
 
         else:
             try:
@@ -517,7 +508,7 @@ class Variable:
         self,
         mutable_config: GenericDict[str, Any],
         warning_list_ref: List[str],
-        values_so_far: Mapping[str, Any],
+        values_so_far: Optional[Mapping[str, Any]] = None,
         permissive_typing: bool = False,
     ) -> Tuple[Optional[str], Any]:
         exists: Optional[str] = None
@@ -550,7 +541,6 @@ class Variable:
             value=value,
             default=self.default,
             validating_type=self.type,
-            values_so_far=values_so_far,
             explicitly_specified=exists is not None,
             permissive_typing=permissive_typing,
         )

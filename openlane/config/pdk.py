@@ -555,23 +555,31 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         del new["DIODE_CELL_PIN"]
 
     # 5. Interconnect Corners
-    if "RCX_RULESETS" not in new:
+    if "RCX_RULESETS" not in new and config.get("RCX_RULES") is not None:
         new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
         if config.get("RCX_RULES_MIN") is not None:
             new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
         if config.get("RCX_RULES_MAX") is not None:
             new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
-    del new["RCX_RULES"]
-    del new["RCX_RULES_MIN"]
-    del new["RCX_RULES_MAX"]
+    if "RCX_RULES" in new:
+        del new["RCX_RULES"]
+    if "RCX_RULES_MIN" in new:
+        del new["RCX_RULES_MIN"]
+    if "RCX_RULES_MAX" in new:
+        del new["RCX_RULES_MAX"]
 
-    if "TECH_LEFS" not in new:
+    if "TECH_LEFS" not in new and config.get("TECH_LEFS") is not None:
         new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
-        new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
-        new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
-    del new["TECH_LEF"]
-    del new["TECH_LEF_MIN"]
-    del new["TECH_LEF_MAX"]
+        if config.get("TECH_LEF_MIN") is not None:
+            new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
+        if config.get("TECH_LEF_MAX") is not None:
+            new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
+    if "TECH_LEF" in new:
+        del new["TECH_LEF"]
+    if "TECH_LEF_MIN" in new:
+        del new["TECH_LEF_MIN"]
+    if "TECH_LEF_MAX" in new:
+        del new["TECH_LEF_MAX"]
 
     # 6. Timing Corners
     lib_sta: Dict[str, List[str]] = {}
