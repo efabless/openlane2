@@ -108,12 +108,15 @@ class Toolbox(object):
                 continue
 
             if unless_exist is not None:
-                alt_views = macro.view_by_df(unless_exist)
-                if alt_views is not None and (
-                    isinstance(alt_views, list) and len(alt_views) != 0
-                ):
-                    continue
-
+                entry = macro.view_by_df(unless_exist)
+                if entry is not None:
+                    alt_views = entry
+                    if isinstance(alt_views, dict):
+                        alt_views = self.filter_views(config, alt_views, timing_corner)
+                    elif not isinstance(alt_views, list):
+                        alt_views = [alt_views]
+                    if len(alt_views) != 0:
+                        continue
             if isinstance(views, dict):
                 views_filtered = self.filter_views(config, views, timing_corner)
                 result += views_filtered
@@ -206,7 +209,9 @@ class Toolbox(object):
 
         return (timing_corner, [str(path) for path in result])
 
-    def __render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
+    def __render_common(
+        self, config: Config
+    ) -> Optional[Tuple[str, str, str]]:  # pragma: no cover
         klayout_bin = which("klayout")
         if klayout_bin is None:
             warn("This PDK does not support KLayout; previews cannot be rendered.")
@@ -220,7 +225,9 @@ class Toolbox(object):
             return None
         return (str(lyp), str(lyt), str(lym))
 
-    def render_png(self, config: Config, input: str) -> Optional[bytes]:
+    def render_png(
+        self, config: Config, input: str
+    ) -> Optional[bytes]:  # pragma: no cover
         files = self.__render_common(config)
         if files is None:
             return None
@@ -327,7 +334,7 @@ class Toolbox(object):
                         cell_name = cell_m[2]
                         if cell_name in excluded_cells:
                             state = State.excluded_cell
-                            write(f"{whitespace}/* removed {cell_name} */")
+                            write(f"{whitespace}/* removed {cell_name} */\n")
                         else:
                             state = State.cell
                             write(line)

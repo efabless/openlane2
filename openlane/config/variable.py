@@ -111,7 +111,10 @@ class Macro:
     def view_by_df(
         self, df: DesignFormat
     ) -> Union[None, Path, List[Path], Dict[str, List[Path]]]:
-        return getattr(self, df.value.id)
+        try:
+            return getattr(self, df.value.id)
+        except AttributeError:
+            pass
 
     def __post_init__(self):
         if len(self.gds) < 1:
