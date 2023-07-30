@@ -1,4 +1,23 @@
+# 2.0.0-a55
+
+* Updated OpenROAD to `02ea75b`
+* Updated Volare to `0.9.2`
+* Added guide on updating utilities with Nix
+
+# 2.0.0-a54
+
+* Updated Magic to `0afe4d8`:
+```
+Corrected an error introduced by the code added recently for support
+
+of command logging, which caused the "select cell <instance>" command
+option to become invalid;  this command option is used by the
+parameterized cell generator and makes it impossible to edit the
+parameterized cells.
+```
+
 # 2.0.0-a53
+
 * Reworked Tcl unsafe string escaping to use home-cooked functions instead of
   "shlex"
 

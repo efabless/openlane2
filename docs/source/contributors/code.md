@@ -45,7 +45,12 @@ Binary utilities used by OpenLane must utilize Nix derivations. We do have some 
     * https://nix.dev/tutorials/towards-reproducibility-pinning-nixpkgs
 * All packages must use `fetchFromGitHub` with a commit-based `rev` and `sha256`, in addition to using `name` instead of `pname`.
     * We don't keep track of versions, only commits, so it doesn't matter. In other words, `version` should (in most cases) be `null`.
-    * This will ultimately help us implement automatic tool update checks.
+    * This will ultimately help us implement automatic tool update checks
+* Packages must not enable tests.
+    * OpenLane should be unit-testing everything it needs separately, and unlike
+      the nixpkgs repo proper, we make no guarantees that the actual tools fully
+      runs beyond what not OpenLane needs.
+    * Therefore, running tests would essentially just be a waste of compute.
 
 ## Submissions
 Make your changes and then submit them as a pull requests to the `master` branch.
