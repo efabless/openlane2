@@ -90,7 +90,6 @@ class State(GenericImmutableDict[str, StateElement]):
             **kwargs,
         )
 
-
     def __getitem__(self, key: Union[DesignFormat, str]) -> StateElement:
         if isinstance(key, DesignFormat):
             id: str = key.value.id

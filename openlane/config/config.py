@@ -115,7 +115,7 @@ class Config(GenericImmutableDict[str, Any]):
             These values are NOT validated and you should not be overriding these
             haphazardly.
         """
-        return Config(self, overrides=overrides)
+        return Config(self, meta=self.meta, overrides=overrides)
 
     def to_raw_dict(self) -> Dict[str, Any]:
         """
@@ -461,7 +461,6 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-
         return config_in
 
     @classmethod
@@ -795,4 +794,4 @@ class Config(GenericImmutableDict[str, Any]):
                 if "/dev/null" in macro.lef:
                     macro.lef = [Path("")]
 
-        return (Config(final), warnings, errors)
+        return (Config(final, meta=self.meta), warnings, errors)

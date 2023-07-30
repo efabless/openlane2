@@ -114,7 +114,7 @@ class Macro:
         try:
             return getattr(self, df.value.id)
         except AttributeError:
-            pass
+            return None
 
     def __post_init__(self):
         if len(self.gds) < 1:

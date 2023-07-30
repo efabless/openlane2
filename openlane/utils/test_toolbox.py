@@ -76,59 +76,6 @@ def example_config() -> Config:
     )
 
 
-@pytest.fixture()
-def example_config() -> Config:
-    from ..config import Instance
-
-    return Config(
-        {
-            "DEFAULT_CORNER": "nom_tt_025C_1v80",
-            "LIB": {
-                "*": "/pdk/my.lib",
-            },
-            "MACROS": {
-                "a": Macro(
-                    gds=[""],
-                    lef=[""],
-                    instances={"instance_a": Instance((0, 10), "N")},
-                    nl=[],
-                    spef={},
-                    lib={
-                        "nom_tt_025C_1v80": ["/cwd/a/lib/tt.lib"],
-                        "nom_ss_n40C_1v80": ["/cwd/a/lib/ss.lib"],
-                        "min_ff_025C_5v00": ["/cwd/a/lib/ff.lib"],
-                    },
-                    spice=[],
-                    sdf={},
-                    json_h=None,
-                ),
-                "b": Macro(
-                    gds=[""],
-                    lef=[""],
-                    instances={"instance_b": Instance((0, 10), "FS")},
-                    nl=[
-                        "/cwd/b/spef/nl1.v",
-                        "/cwd/b/spef/nl2.v",
-                    ],
-                    spef={
-                        "min_*": ["/cwd/b/spef/min.spef"],
-                        "nom_*": ["/cwd/b/spef/nom.spef"],
-                        "max_*": ["/cwd/b/spef/max.spef"],
-                    },
-                    lib={
-                        "nom_tt_025C_1v80": ["/cwd/b/lib/tt.lib"],
-                        "nom_ss_n40C_1v80": ["/cwd/b/lib/ss.lib"],
-                        "min_ff_025C_5v00": ["/cwd/b/lib/ff.lib"],
-                    },
-                    spice=[],
-                    sdf={},
-                    json_h=None,
-                ),
-            },
-        }
-    )
-
-
 @pytest.mark.parametrize(
     ("corner", "expected"),
     [

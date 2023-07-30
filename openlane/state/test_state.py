@@ -131,7 +131,7 @@ def test_empty():
 
     assert state.metrics == test_metrics
     for format in DesignFormat:
-        assert state[format.value.id] == None
+        assert state[format.value.id] is None, "new state has non-none value"
 
 
 def test_path_fail_exists():
@@ -197,12 +197,14 @@ def test_save():
     save_metrics_path = os.path.join(save_path, "metrics.json")
     save_nl_path = os.path.join(save_path, "nl", test_file)
     save_spef_path = os.path.join(save_path, "spef", "nom", test_file)
-    assert os.path.exists(save_path) == True
-    assert os.path.exists(save_metrics_path) == True
-    assert os.path.exists(save_nl_path) == True
-    assert os.path.exists(save_spef_path) == True
+    assert os.path.exists(save_path), "save_snapshot failed to create directory"
+    assert os.path.exists(save_metrics_path), "save_snapshot failed to create metrics"
+    assert os.path.exists(save_nl_path), "save_snapshot failed to create netlist"
+    assert os.path.exists(save_spef_path), "save_snapshot failed to create spef"
 
-    assert json.load(open(save_metrics_path, encoding="utf8")) == test_metrics
+    assert (
+        json.load(open(save_metrics_path, encoding="utf8")) == test_metrics
+    ), "serialized metrics does not match previous object"
 
     f = open(save_nl_path, encoding="utf8")
     save_nl_contents = f.read()
