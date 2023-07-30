@@ -568,7 +568,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     if "RCX_RULES_MAX" in new:
         del new["RCX_RULES_MAX"]
 
-    if "TECH_LEFS" not in new and config.get("TECH_LEFS") is not None:
+    if "TECH_LEFS" not in new and config.get("TECH_LEF") is not None:
         new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
         if config.get("TECH_LEF_MIN") is not None:
             new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
