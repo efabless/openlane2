@@ -351,7 +351,7 @@ class Flow(ABC):
 
     @classmethod
     @deprecated(
-        version="2.0.0-a29",
+        version="2.0.0a29",
         reason="Use the constructor for the class instead",
         action="once",
     )
@@ -581,7 +581,9 @@ class Flow(ABC):
         self.progress_bar.set_max_stage_count(count)
 
     @deprecated(
-        version="2.0.0a46", reason="Use .progress_bar.start_stage", action="once"
+        version="2.0.0a46",
+        reason="Use .progress_bar.start_stage",
+        action="once",
     )
     @protected
     def start_stage(self, name: str):
@@ -590,7 +592,11 @@ class Flow(ABC):
         """
         self.progress_bar.start_stage(name)
 
-    @deprecated(version="2.0.0a46", reason="Use .progress_bar.end_stage", action="once")
+    @deprecated(
+        version="2.0.0a46",
+        reason="Use .progress_bar.end_stage",
+        action="once",
+    )
     @protected
     def end_stage(self, increment_ordinal: bool = True):
         """

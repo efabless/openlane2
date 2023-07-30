@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import pytest
 from decimal import Decimal
+
+import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 

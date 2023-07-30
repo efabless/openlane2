@@ -74,6 +74,8 @@ def test_join():
 def test_eval_env():
     from .tcl import TclUtils
 
+    env_backup = os.environ.copy()
+
     result = TclUtils._eval_env(
         {"DESIGN_DIR": "/cwd", "PDK": "sky130A", "TMPDIR": "/cwd"},
         """
@@ -98,9 +100,7 @@ def test_eval_env():
 
     assert result == expected, "conditional evaluation test failed"
 
-    assert (
-        os.environ.get("WHATEVER") is None
-    ), "env_from_tcl leaked an environment variable"
+    assert os.environ == env_backup, "_eval_env leaked environment changes"
 
     os.environ["STD_CELL_LIBRARY"] = "sky130_fd_sc_hd"
 
@@ -114,5 +114,7 @@ def test_eval_env():
     assert (
         os.getenv("STD_CELL_LIBRARY") == "sky130_fd_sc_hd"
     ), "env_from_tcl unset a previously set environment variable"
+
+    del os.environ["STD_CELL_LIBRARY"]
 
     assert result == expected

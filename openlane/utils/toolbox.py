@@ -38,34 +38,31 @@ from .memoize import memoize
 from ..state import DesignFormat
 from ..logging import debug, warn
 from ..config import Config, Macro
-from ..common import Path, mkdirp, get_script_dir, parse_metric_modifiers
+from ..common import (
+    Path,
+    mkdirp,
+    get_script_dir,
+    aggregate_metrics,
+)
+
+from deprecated.sphinx import deprecated
 
 
 class Toolbox(object):
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
 
+    @deprecated(
+        version="2.0.0b1",
+        reason="Use 'aggregate_metrics' from 'openlane.common'",
+        action="once",
+    )
     def aggregate_metrics(
         self,
         input: Dict[str, Any],
         aggregator_by_metric: Dict[str, Tuple[Any, Callable[[Iterable], Any]]],
     ) -> Dict[str, Any]:
-        aggregated: Dict[str, Any] = {}
-        for name, value in input.items():
-            metric_name, modifiers = parse_metric_modifiers(name)
-            if len(modifiers) == 0:
-                # No modifiers = final aggregate, don't double-represent in sums
-                continue
-            entry = aggregator_by_metric.get(metric_name)
-            if entry is None:
-                continue
-            start, aggregator = entry
-            current = aggregated.get(metric_name) or start
-            aggregated[metric_name] = aggregator([current, value])
-
-        final_values = input.copy()
-        final_values.update(aggregated)
-        return final_values
+        return aggregate_metrics(input, aggregator_by_metric)
 
     def filter_views(
         self,

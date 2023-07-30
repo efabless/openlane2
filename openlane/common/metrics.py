@@ -13,10 +13,7 @@
 # limitations under the License.
 import re
 
-from typing import (
-    Mapping,
-    Tuple,
-)
+from typing import Mapping, Tuple, Dict, Any, Callable, Iterable
 
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
 
@@ -40,3 +37,25 @@ def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
                 modifiers[modifier_list[i]] = modifier_list[i + 1]
             mn_mut.pop()
     return "__".join(mn_mut), modifiers
+
+
+def aggregate_metrics(
+    input: Dict[str, Any],
+    aggregator_by_metric: Dict[str, Tuple[Any, Callable[[Iterable], Any]]],
+) -> Dict[str, Any]:
+    aggregated: Dict[str, Any] = {}
+    for name, value in input.items():
+        metric_name, modifiers = parse_metric_modifiers(name)
+        if len(modifiers) == 0:
+            # No modifiers = final aggregate, don't double-represent in sums
+            continue
+        entry = aggregator_by_metric.get(metric_name)
+        if entry is None:
+            continue
+        start, aggregator = entry
+        current = aggregated.get(metric_name) or start
+        aggregated[metric_name] = aggregator([current, value])
+
+    final_values = input.copy()
+    final_values.update(aggregated)
+    return final_values

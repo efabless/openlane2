@@ -145,7 +145,7 @@ def some_of(t: Type[Any]) -> Type[Any]:
     return new_union  # type: ignore
 
 
-def repr_type(t: Type[Any]) -> str:
+def repr_type(t: Type[Any]) -> str:  # pragma: no cover
     optional = is_optional(t)
     some = some_of(t)
 
@@ -244,13 +244,13 @@ class Variable:
         """
         return some_of(self.type)
 
-    def type_repr_md(self) -> str:
+    def type_repr_md(self) -> str:  # pragma: no cover
         """
         Prints a pretty Markdown string representation of the Variable's type.
         """
         return repr_type(self.type)
 
-    def desc_repr_md(self) -> str:
+    def desc_repr_md(self) -> str:  # pragma: no cover
         """
         Prints the description, but with newlines escaped for Markdown.
         """

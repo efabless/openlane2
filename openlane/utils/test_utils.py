@@ -76,7 +76,6 @@ def test_magic_drc_badrule():
     """
 
     drc_object, _ = DRC.from_magic(io.StringIO(magic_bad_rule_example))
-    print(drc_object.violations)
     assert (
         drc_object.violations["UNKNOWN.UNKNOWN0"].description == description
     ), "bad rule name improperly handled"

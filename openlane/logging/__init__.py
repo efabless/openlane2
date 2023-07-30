@@ -73,7 +73,7 @@ def get_log_level() -> int:
     return logging.getLogger().getEffectiveLevel()
 
 
-def verbose(*args, **kwargs):
+def verbose(*args, **kwargs):  # pragma: no cover
     """
     Prints to the terminal with automatic rich formatting.
 
@@ -86,7 +86,7 @@ def verbose(*args, **kwargs):
     console.print(*args, **kwargs)
 
 
-def debug(*args, **kwargs):
+def debug(*args, **kwargs):  # pragma: no cover
     """
     Prints to the terminal with automatic rich formatting.
 
@@ -99,7 +99,7 @@ def debug(*args, **kwargs):
     console.print(*args, **kwargs)
 
 
-def info(*args, **kwargs):
+def info(*args, **kwargs):  # pragma: no cover
     """
     Prints to the terminal with automatic rich formatting.
 
@@ -112,7 +112,7 @@ def info(*args, **kwargs):
     console.log(*args, **kwargs)
 
 
-def rule(*args, **kwargs):
+def rule(*args, **kwargs):  # pragma: no cover
     """
     Prints a horizontal line on the terminal.
 
@@ -123,7 +123,7 @@ def rule(*args, **kwargs):
     console.rule(*args, **kwargs)
 
 
-def success(printable, *args, **kwargs):
+def success(printable, *args, **kwargs):  # pragma: no cover
     """
     Logs an item to the terminal with a success unicode character and
     green/bold formatting.
@@ -135,7 +135,7 @@ def success(printable, *args, **kwargs):
     console.log(f"⭕ [green][bold] {printable}", *args, **kwargs)
 
 
-def warn(printable, *args, **kwargs):
+def warn(printable, *args, **kwargs):  # pragma: no cover
     """
     Logs an item to the terminal with a warning unicode character and
     gold/bold formatting.
@@ -147,7 +147,7 @@ def warn(printable, *args, **kwargs):
     console.log(f"⚠️ [gold][bold] {printable}", *args, **kwargs)
 
 
-def err(printable, *args, **kwargs):
+def err(printable, *args, **kwargs):  # pragma: no cover
     """
     Logs an item to the terminal with an error unicode character and
     red/bold formatting.

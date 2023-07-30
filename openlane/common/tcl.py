@@ -55,8 +55,9 @@ class TclUtils(object):
     @staticmethod
     def _eval_env(env_in: Mapping[str, Any], tcl_in: str) -> Mapping[str, Any]:
         interpreter = tkinter.Tcl()
-        env_out = dict(env_in)
         keys_modified = _setter_rx.findall(tcl_in)
+
+        env_out = dict(env_in)
         rollback = {}
         for key, value in env_in.items():
             rollback[key] = os.getenv(key)

@@ -21,7 +21,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 
 from .tcl import TclUtils
-from .metrics import parse_metric_modifiers
+from .metrics import parse_metric_modifiers, aggregate_metrics
 from .generic_dict import (
     GenericDictEncoder,
     GenericDict,

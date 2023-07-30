@@ -181,3 +181,19 @@ def test_tpe():
     set_tpe(tpe)
 
     assert get_tpe() == tpe, "Failed to set TPE properly"
+
+
+def test_immutable_dict():
+    from . import GenericImmutableDict
+
+    immutable_dict = GenericImmutableDict({"a": "d", "p": 4})
+
+    with pytest.raises(TypeError, match="is immutable") as e:
+        immutable_dict["p"] = 9
+
+    assert e is not None, "Was able to mutate immutable dict"
+
+    with pytest.raises(TypeError, match="is immutable") as e:
+        del immutable_dict["a"]
+
+    assert e is not None, "Was able to delete from immutable dict"

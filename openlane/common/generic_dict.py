@@ -231,6 +231,14 @@ class GenericImmutableDict(GenericDict[KT, VT]):
             raise TypeError(f"{self.__class__.__name__} is immutable")
         return super().__setitem__(key, item)
 
+    def __delitem__(self, key: KT):
+        if self.__lock:
+            raise TypeError(f"{self.__class__.__name__} is immutable")
+        return super().__delitem__(key)
+
+    def copy_mut(self) -> GenericDict[KT, VT]:
+        return GenericDict(self)
+
 
 def is_string(obj: Any) -> bool:
     return isinstance(obj, str) or isinstance(obj, UserString)
