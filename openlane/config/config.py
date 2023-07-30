@@ -100,12 +100,12 @@ class Config(GenericImmutableDict[str, Any]):
     __interactive: bool = False
 
     def __init__(self, *args, meta: Optional[Meta] = None, **kwargs):
-        super().__init__(*args, **kwargs)
-
         if meta is None:
             meta = Meta(version=1)
 
         self.meta = meta
+
+        super().__init__(*args, **kwargs)
 
     def copy(self, **overrides) -> "Config":
         """
@@ -431,6 +431,7 @@ class Config(GenericImmutableDict[str, Any]):
                     os.path.abspath(design_dir),
                 ],
             ),
+            meta=meta,
         )
 
         permissive_variables = pdk_variables
@@ -460,7 +461,6 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-        config_in.meta = meta
 
         return config_in
 

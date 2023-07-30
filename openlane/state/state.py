@@ -48,7 +48,9 @@ class State(GenericImmutableDict[str, StateElement]):
 
     def __init__(
         self,
-        copying: Optional[Mapping[str, StateElement]] = None,
+        copying: Optional[
+            Union[Mapping[str, StateElement], Mapping[DesignFormat, StateElement]]
+        ] = None,
         *args,
         overrides: Optional[
             Union[Mapping[str, StateElement], Mapping[DesignFormat, StateElement]]
@@ -59,7 +61,10 @@ class State(GenericImmutableDict[str, StateElement]):
         copying_resolved: Dict[str, StateElement] = {}
         if c_mapping := copying:
             for key, value in c_mapping.items():
-                copying_resolved[key] = value
+                if isinstance(key, DesignFormat):
+                    copying_resolved[key.value.id] = value
+                else:
+                    copying_resolved[key] = value
 
         for format in DesignFormat:
             assert isinstance(format.value, DesignFormatObject)  # type checker shut up
@@ -76,6 +81,8 @@ class State(GenericImmutableDict[str, StateElement]):
                     k = k.value.id
                 overrides_resolved[k] = value
 
+        self.metrics = GenericImmutableDict(metrics or {})
+
         super().__init__(
             copying_resolved,
             *args,
@@ -83,7 +90,6 @@ class State(GenericImmutableDict[str, StateElement]):
             **kwargs,
         )
 
-        self.metrics = GenericImmutableDict(metrics or {})
 
     def __getitem__(self, key: Union[DesignFormat, str]) -> StateElement:
         if isinstance(key, DesignFormat):

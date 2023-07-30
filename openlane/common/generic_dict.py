@@ -236,6 +236,19 @@ class GenericImmutableDict(GenericDict[KT, VT]):
             raise TypeError(f"{self.__class__.__name__} is immutable")
         return super().__delitem__(key)
 
+    def __delattr__(self, attr: str):
+        if self.__lock:
+            raise TypeError(f"{self.__class__.__name__} is immutable")
+        return super().__delattr__(attr)
+
+    def __setattr__(self, attr: str, value: Any):
+        try:
+            if self.__lock:
+                raise TypeError(f"{self.__class__.__name__} is immutable")
+        except AttributeError:
+            pass
+        return super().__setattr__(attr, value)
+
     def copy_mut(self) -> GenericDict[KT, VT]:
         return GenericDict(self)
 
