@@ -55,8 +55,12 @@ def main(scls, use_json, test_sets):
             if not isinstance(design, str):
                 design_name = design["name"]
                 config_filename = design.get("config_file") or config_filename
-            config_file = os.path.join(ol_dir, "designs", design_name, config_filename)
-            run_folder = os.path.join(ol_dir, "designs", design_name, "runs", "CI")
+            config_file = os.path.join(
+                ol_dir, "test_data", "designs", design_name, config_filename
+            )
+            run_folder = os.path.join(
+                ol_dir, "test_data", "designs", design_name, "runs", "CI"
+            )
             designs.append(
                 {
                     "name": design_name,

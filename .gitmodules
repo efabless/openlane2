@@ -1,0 +1,3 @@
+[submodule "test_data/designs"]
+	path = test_data/designs
+	url = https://github.com/efabless/openlane2-ci-designs

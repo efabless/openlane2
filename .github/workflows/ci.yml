@@ -134,6 +134,8 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
