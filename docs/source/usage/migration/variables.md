@@ -17,7 +17,7 @@ The mapping for the strategies is as follows:
     * Both flags are set to `false`.
 * Strategy 3:
     * `GRT_REPAIR_ANTENNAS` is set to `true`.
-* Strategy 5:
+* Strategy 4:
     * `RUN_HEURISTIC_DIODE_INSERTION` is set to `true`.
 * Strategy 6:
     * Both flags are set to `true`.

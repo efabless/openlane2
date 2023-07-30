@@ -671,7 +671,7 @@ class Config(GenericImmutableDict[str, Any]):
                 dis = int(dis)
             except ValueError:
                 pass
-            if not isinstance(dis, int) or dis in [1, 2, 4] or dis > 6:
+            if not isinstance(dis, int) or dis in [1, 2, 5] or dis > 6:
                 errors.append(
                     f"DIODE_INSERTION_STRATEGY '{dis}' is not available in OpenLane 2 or higher. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
                 )
@@ -685,7 +685,7 @@ class Config(GenericImmutableDict[str, Any]):
                 mutable["DIODE_ON_PORTS"] = "none"
                 if dis in [3, 6]:
                     mutable["GRT_REPAIR_ANTENNAS"] = True
-                if dis in [5, 6]:
+                if dis in [4, 6]:
                     mutable["RUN_HEURISTIC_DIODE_INSERTION"] = True
                     mutable["DIODE_ON_PORTS"] = "in"
 
