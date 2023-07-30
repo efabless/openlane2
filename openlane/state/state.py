@@ -112,7 +112,7 @@ class State(GenericImmutableDict[str, StateElement]):
     def to_raw_dict(self, metrics: bool = True) -> Dict[str, Any]:
         final = super().to_raw_dict()
         if metrics:
-            final["metrics"] = self.metrics
+            final["metrics"] = self.metrics.to_raw_dict()
         return final
 
     def copy(self: "State") -> "State":
@@ -164,11 +164,15 @@ class State(GenericImmutableDict[str, StateElement]):
         """
         self.validate()
         self.__save_snapshot_recursive(path, self)
-        metrics_path = os.path.join(path, "metrics.csv")
-        with open(metrics_path, "w") as f:
+        metrics_csv_path = os.path.join(path, "metrics.csv")
+        with open(metrics_csv_path, "w", encoding="utf8") as f:
             f.write("Metric,Value\n")
             for metric in self.metrics:
-                f.write(f"{metric}, {self.metrics[metric]}\n")
+                f.write(f"{metric},{self.metrics[metric]}\n")
+
+        metrics_json_path = os.path.join(path, "metrics.json")
+        with open(metrics_json_path, "w", encoding="utf8") as f:
+            f.write(self.metrics.dumps())
 
     def __validate_recursive(
         self,
