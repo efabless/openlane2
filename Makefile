@@ -37,7 +37,7 @@ lint: venv/manifest.txt
 
 .PHONY: test
 test: venv/manifest.txt
-	./venv/bin/coverage run -m pytest && coverage report
+	./venv/bin/coverage run -m pytest && ./venv/bin/coverage report
 	./venv/bin/coverage html
 
 .PHONY: test-opt
