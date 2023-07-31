@@ -14,6 +14,10 @@
 
 import pytest
 
+from typing import Tuple
+from .step import Step, ViewsUpdate, MetricsUpdate
+from ..state import State
+
 
 @pytest.fixture()
 def test_step_run():
@@ -25,42 +29,36 @@ def test_step_run():
     return run
 
 
-from typing import Tuple
-from .step import Step, ViewsUpdate, MetricsUpdate
-from ..state import State, StateElement
-
-
-def test_step_init_fail(test_step_run):
+def test_step_init_empty(test_step_run):
     with pytest.raises(TypeError, match="Can't instantiate abstract class Step"):
-        test_step = Step()
+        Step()
+
+
+def test_step_init_missing_id(test_step_run):
+    class TestStep(Step):
+        inputs = []
+        outputs = []
+        run = test_step_run
 
     with pytest.raises(
         NotImplementedError,
         match="All subclasses of Step must override the value of id",
     ):
-
-        class TestStep(Step):
-            inputs = []
-            outputs = []
-            run = test_step_run
-
-        test_step = TestStep()
-
-    with pytest.raises(
-        TypeError,
-        match="Missing required argument 'config'"
-    ):
-
-        class TestStep(Step):
-            inputs = []
-            outputs = []
-            run = test_step_run
-            id = "id"
-
-        test_step = TestStep()
+        TestStep()
 
 
-def test_step_not_implemented(test_step_run):
+def test_step_init_missing_config(test_step_run):
+    class TestStep(Step):
+        inputs = []
+        outputs = []
+        run = test_step_run
+        id = "id"
+
+    with pytest.raises(TypeError, match="Missing required argument 'config'"):
+        TestStep()
+
+
+def test_step_inputs_not_implemented(test_step_run):
     with pytest.raises(
         NotImplementedError, match="must implement class attribute 'inputs'"
     ):
@@ -68,6 +66,8 @@ def test_step_not_implemented(test_step_run):
         class TestStep(Step):
             run = test_step_run
 
+
+def test_step_outputs_not_implemented(test_step_run):
     with pytest.raises(
         NotImplementedError, match="must implement class attribute 'outputs'"
     ):
@@ -75,7 +75,3 @@ def test_step_not_implemented(test_step_run):
         class TestStep(Step):
             inputs = []
             run = test_step_run
-
-def test_step_init_empty(test_step_run):
-    return
-
