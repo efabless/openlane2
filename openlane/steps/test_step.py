@@ -93,10 +93,10 @@ def test_step_missing_state_in(step_run):
 
 @pytest.fixture()
 @mock_variables()
-def test_config():
+def mock_config():
     from ..config import config
 
-    test_config, _ = Config.load(
+    mock_config, _ = Config.load(
         {"DESIGN_NAME": "whatever", "VERILOG_FILES": "dir::src/*.v"},
         config.flow_common_variables,
         design_dir="/cwd",
@@ -104,12 +104,12 @@ def test_config():
         scl="dummy_scl",
         pdk_root="/pdk",
     )
-    return test_config
+    return mock_config
 
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_create(step_run, test_config):
+def test_step_create(step_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
@@ -121,17 +121,17 @@ def test_step_create(step_run, test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=State({DesignFormat.NETLIST: "abc"}),
     )
     assert step.id == "TestStep", "Wrong step id"
     assert step.long_name == "longname", "Wrong step longname"
-    assert step.config == test_config, "Wrong step config"
+    assert step.config == mock_config, "Wrong step config"
 
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_run(step_run, test_config):
+def test_step_run(step_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
@@ -144,7 +144,7 @@ def test_step_run(step_run, test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=state_in,
     )
     views_update, metrics_update = step.run(state_in)
@@ -152,14 +152,14 @@ def test_step_run(step_run, test_config):
     assert (
         step.long_name == "longname"
     ), "Wrong step long_name, declared via constructor"
-    assert step.config == test_config, "Wrong step config"
+    assert step.config == mock_config, "Wrong step config"
     assert views_update == {}, "Wrong step run -- tainted views_update"
     assert metrics_update == {}, "Wrong step run -- tainted metrics_update"
 
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_missing_toolbox(step_run, test_config):
+def test_step_start_missing_toolbox(step_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
@@ -172,7 +172,7 @@ def test_step_start_missing_toolbox(step_run, test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=state_in,
     )
     with pytest.raises(TypeError, match="Missing argument 'toolbox' required"):
@@ -181,7 +181,7 @@ def test_step_start_missing_toolbox(step_run, test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_missing_step_dir(step_run, test_config):
+def test_step_start_missing_step_dir(step_run, mock_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
 
@@ -195,7 +195,7 @@ def test_step_start_missing_step_dir(step_run, test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=state_in,
     )
     with pytest.raises(TypeError, match="Missing required argument 'step_dir'"):
@@ -204,7 +204,7 @@ def test_step_start_missing_step_dir(step_run, test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_invalid_state(step_run, test_config):
+def test_step_start_invalid_state(step_run, mock_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
     from .step import StepException
@@ -219,7 +219,7 @@ def test_step_start_invalid_state(step_run, test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=state_in,
     )
     with pytest.raises(StepException, match="generated invalid state"):
@@ -228,7 +228,7 @@ def test_step_start_invalid_state(step_run, test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start(test_config):
+def test_step_start(mock_config):
     from ..common import Path
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
@@ -257,7 +257,7 @@ def test_step_start(test_config):
     step = TestStep(
         id="TestStep",
         long_name="longname",
-        config=test_config,
+        config=mock_config,
         state_in=state_in,
     )
     state_out = step.start(toolbox=Toolbox(tmp_dir="/cwd"), step_dir="/cwd")
@@ -270,7 +270,7 @@ def test_step_start(test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_longname(step_run, test_config):
+def test_step_longname(step_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
@@ -282,7 +282,7 @@ def test_step_longname(step_run, test_config):
 
     step = TestStep(
         id="TestStep",
-        config=test_config,
+        config=mock_config,
         state_in=State({DesignFormat.NETLIST: "abc"}),
     )
     assert step.long_name == "longname2", "Wrong long_name declared via class"
