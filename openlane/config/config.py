@@ -303,7 +303,6 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
-
         loader: Callable = Self.__loads
         raw: Union[str, dict] = ""
         default_meta_version = 1
@@ -762,7 +761,6 @@ class Config(GenericImmutableDict[str, Any]):
                     values_so_far=final,
                     permissive_typing=False,
                 )
-                print(variable.name, key, value_processed)
                 if key is not None:
                     del mutable[key]
                 final[variable.name] = value_processed

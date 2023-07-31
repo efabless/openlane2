@@ -10,3 +10,7 @@ omit =
     test_*.py
     __version__.py
     __main__.py
+    flows/builtins.py
+    flows/classic.py
+    flows/misc.py
+    flows/optimizing.py

@@ -42,7 +42,7 @@ from .common_variables import (
 
 from ..config import Variable
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn
+from ..logging import debug, err, info, warn, console
 from ..common import Path, get_script_dir, StringEnum, get_tpe, mkdirp, TclUtils
 
 EXAMPLE_INPUT = """
@@ -459,7 +459,7 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        info(table)
+        console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 

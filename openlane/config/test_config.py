@@ -15,14 +15,13 @@ import os
 from shutil import rmtree
 from unittest import mock
 from decimal import Decimal
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 from . import config
-from .. import common
-from .. import logging
+from ..common import Path, StringEnum
 
 
 @pytest.fixture()
@@ -64,85 +63,115 @@ def _mock_fs():
         yield
 
 
-DiodeOnPortsEnum = common.StringEnum("Ports", ["none", "in"])
+DiodeOnPortsEnum = StringEnum("Ports", ["none", "in"])
+MOCK_PDK_VARS = [
+    config.Variable(
+        "PDK",
+        str,
+        description="x",
+    ),
+    config.Variable(
+        "STD_CELL_LIBRARY",
+        str,
+        description="x",
+    ),
+    config.Variable(
+        "EXAMPLE_PDK_VAR",
+        Decimal,
+        description="x",
+        default=10.0,
+    ),
+]
+MOCK_FLOW_VARS = [
+    config.Variable(
+        "DESIGN_DIR",
+        Path,
+        "The directory of the design. Does not need to be provided explicitly.",
+    ),
+    config.Variable(
+        "DESIGN_NAME",
+        str,
+        description="x",
+    ),
+    config.Variable(
+        "VERILOG_FILES",
+        List[Path],
+        description="x",
+    ),
+    config.Variable(
+        "GRT_REPAIR_ANTENNAS",
+        bool,
+        description="x",
+        default=True,
+    ),
+    config.Variable(
+        "RUN_HEURISTIC_DIODE_INSERTION",
+        bool,
+        description="x",
+        default=False,
+    ),
+    config.Variable(
+        "DIODE_ON_PORTS",
+        DiodeOnPortsEnum,
+        description="x",
+        default="none",
+    ),
+    config.Variable(
+        "MACROS",
+        Optional[Dict[str, config.Macro]],
+        description="x",
+        default=None,
+    ),
+]
 
 
-def mock_variables(f: Callable):
-    from ..common import Path
-    from . import Variable, Macro
+def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
+    from . import config
 
-    f = mock.patch.object(
-        config,
-        "pdk_variables",
-        [
-            config.Variable(
-                "PDK",
-                str,
-                description="x",
-            ),
-            config.Variable(
-                "STD_CELL_LIBRARY",
-                str,
-                description="x",
-            ),
-            config.Variable(
-                "EXAMPLE_PDK_VAR",
-                Decimal,
-                description="x",
-                default=10.0,
-            ),
-        ],
-    )(f)
-    f = mock.patch.object(
-        config,
-        "flow_common_variables",
-        [
-            Variable(
-                "DESIGN_NAME",
-                str,
-                description="x",
-            ),
-            Variable(
-                "VERILOG_FILES",
-                List[Path],
-                description="x",
-            ),
-            Variable(
-                "GRT_REPAIR_ANTENNAS",
-                bool,
-                description="x",
-                default=True,
-            ),
-            Variable(
-                "RUN_HEURISTIC_DIODE_INSERTION",
-                bool,
-                description="x",
-                default=False,
-            ),
-            Variable(
-                "DIODE_ON_PORTS",
-                DiodeOnPortsEnum,
-                description="x",
-                default="none",
-            ),
-            Variable(
-                "MACROS",
-                Optional[Dict[str, Macro]],
-                description="x",
-                default=None,
-            ),
-        ],
-    )(f)
-    f = mock.patch.object(
-        config,
-        "removed_variables",
-        {"REMOVED_VARIABLE": "Variable sucked"},
-    )(f)
-    return f
+    if patch_in_objects is None:
+        patch_in_objects = []
+    patch_in_objects = patch_in_objects + [config]
+
+    def decorator(f: Callable):
+        for o in patch_in_objects:
+            if hasattr(o, "pdk_variables"):
+                f = mock.patch.object(
+                    o,
+                    "pdk_variables",
+                    MOCK_PDK_VARS,
+                )(f)
+            if hasattr(o, "flow_common_variables"):
+                f = mock.patch.object(
+                    o,
+                    "flow_common_variables",
+                    MOCK_FLOW_VARS,
+                )(f)
+            if hasattr(o, "removed_variables"):
+                f = mock.patch.object(
+                    o,
+                    "removed_variables",
+                    {"REMOVED_VARIABLE": "Variable sucked"},
+                )(f)
+            if hasattr(o, "universal_flow_config_variables"):
+                f = mock.patch.object(
+                    o,
+                    "universal_flow_config_variables",
+                    MOCK_FLOW_VARS,
+                )(f)
+            if hasattr(o, "all_variables"):
+                f = mock.patch.object(
+                    o,
+                    "all_variables",
+                    MOCK_FLOW_VARS,
+                )(f)
+
+        return f
+
+    return decorator
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_dict_config():
     from . import Meta, Config
 
@@ -157,6 +186,7 @@ def test_dict_config():
 
     assert cfg == Config(
         {
+            "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
@@ -172,7 +202,7 @@ def test_dict_config():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_json_config():
     from . import Meta, Config
 
@@ -200,6 +230,7 @@ def test_json_config():
 
     assert cfg == Config(
         {
+            "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
@@ -219,7 +250,7 @@ def test_json_config():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_tcl_config():
     from . import Meta, Config
 
@@ -245,6 +276,7 @@ def test_tcl_config():
 
     assert cfg == Config(
         {
+            "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
@@ -260,7 +292,7 @@ def test_tcl_config():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_copy_filtered():
     from . import Config, Variable
 
@@ -296,6 +328,7 @@ def test_copy_filtered():
     step1_cfg = cfg.copy_filtered(step1_variables, include_pdk_variables=False)
 
     assert step1_cfg == {
+        "DESIGN_DIR": "/cwd",
         "DESIGN_NAME": "whatever",
         "STEP1_VAR": 3,
         "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
@@ -318,7 +351,7 @@ def test_copy_filtered():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_automatic_conversion():
     from . import Config
 
@@ -373,7 +406,7 @@ def test_automatic_conversion():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_pdk():
     from . import InvalidConfig, Config
 
@@ -387,7 +420,6 @@ def test_pdk():
         design_dir="/cwd",
         pdk_root="/pdk",
     )
-    print(cfg1)
     assert cfg1["PDK"] == "dummy", "PDK in argument failed to load"
 
     cfg1, _ = Config.load(
@@ -460,13 +492,8 @@ def test_pdk():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
-@mock.patch.object(
-    logging,
-    "warn",
-    print,
-)
-def test_invalid_keys(capsys: pytest.CaptureFixture):
+@mock_variables()
+def test_invalid_keys(caplog: pytest.LogCaptureFixture):
     from . import InvalidConfig, Config
 
     with open("/cwd/config.json", "w") as f:
@@ -494,7 +521,7 @@ def test_invalid_keys(capsys: pytest.CaptureFixture):
         ), "unknown variable triggered an error when loading from a meta.version: 1 JSON file"
 
     assert (
-        "Unknown key" in capsys.readouterr().out
+        "Unknown key" in caplog.text
     ), "unknown variable did not trigger a warning when loading from a meta.version: 1 JSON file"
 
     with pytest.raises(InvalidConfig, match="Unknown key") as e:
@@ -529,18 +556,13 @@ def test_invalid_keys(capsys: pytest.CaptureFixture):
     )
 
     assert (
-        "has been removed" in capsys.readouterr().out
+        "has been removed" in caplog.text
     ), "removed variable did not trigger a warning when loading from a meta.version: 1 JSON file"
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
-@mock.patch.object(
-    logging,
-    "warn",
-    print,
-)
-def test_dis_migration(capsys: pytest.CaptureFixture):
+@mock_variables()
+def test_dis_migration(caplog: pytest.LogCaptureFixture):
     from . import Config, InvalidConfig
 
     def set_dis(dis: int):
@@ -555,7 +577,7 @@ def test_dis_migration(capsys: pytest.CaptureFixture):
                 """
             )
 
-    for dis in [1, 2, 4, 7, '"cat"']:
+    for dis in [1, 2, 5, 7, '"cat"']:
         set_dis(dis)
         with pytest.raises(InvalidConfig, match="not available in OpenLane") as e:
             Config.load(
@@ -596,7 +618,7 @@ def test_dis_migration(capsys: pytest.CaptureFixture):
         cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum.none
     ), "failed to migrate dis 3 properly"
 
-    set_dis(5)
+    set_dis(4)
     cfg, _ = Config.load(
         "/cwd/config.json",
         config.flow_common_variables,
@@ -604,11 +626,11 @@ def test_dis_migration(capsys: pytest.CaptureFixture):
         scl="dummy_scl",
         pdk_root="/pdk",
     )
-    assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 5 properly"
-    assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 5 properly"
+    assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 4 properly"
+    assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 4 properly"
     assert (
         cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum["in"]
-    ), "failed to migrate dis 5 properly"
+    ), "failed to migrate dis 4 properly"
 
     set_dis(6)
     cfg, _ = Config.load(
@@ -625,18 +647,15 @@ def test_dis_migration(capsys: pytest.CaptureFixture):
     ), "failed to migrate dis 6 properly"
 
     assert (
-        "See 'Migrating DIODE_INSERTION_STRATEGY'" in capsys.readouterr().out
+        "See 'Migrating DIODE_INSERTION_STRATEGY'" in caplog.text
     ), "diode insertion strategy did not trigger a warning"
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
-@mock.patch.object(
-    logging,
-    "warn",
-    print,
-)
-def test_macro_migration(capsys: pytest.CaptureFixture):
+@mock_variables()
+def test_macro_migration(
+    caplog: pytest.LogCaptureFixture,
+):
     from . import Config, Macro, InvalidConfig
 
     cfg, _ = Config.load(
@@ -671,7 +690,7 @@ def test_macro_migration(capsys: pytest.CaptureFixture):
     }, "Macro migration yielded unexpected result"
 
     assert (
-        "deprecated" in capsys.readouterr().out
+        "deprecated" in caplog.text
     ), "configuration variable 'EXTRA_SPEFS' is deprecated"
 
     with pytest.raises(InvalidConfig, match="not divisible by four") as e:

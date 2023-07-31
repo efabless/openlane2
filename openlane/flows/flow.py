@@ -289,7 +289,7 @@ class Flow(ABC):
         self.progress_bar = FlowProgressBar(self.name)
 
     @classmethod
-    def get_help_md(Self):
+    def get_help_md(Self):  # pragma: no cover
         """
         Renders Markdown help for this flow to a string.
         """
@@ -359,7 +359,7 @@ class Flow(ABC):
         Self,
         config_in: Union[Config, str, os.PathLike, Dict],
         **kwargs,
-    ):
+    ):  # pragma: no cover
         kwargs["config"] = config_in
         return Self(**kwargs)
 
@@ -465,7 +465,9 @@ class Flow(ABC):
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
 
-        self.progress_bar = FlowProgressBar(self.name)
+        self.progress_bar = FlowProgressBar(
+            self.name, starting_ordinal=starting_ordinal
+        )
         self.progress_bar.start()
         final_state, step_objects = self.run(
             initial_state=initial_state,
@@ -574,7 +576,7 @@ class Flow(ABC):
         action="once",
     )
     @protected
-    def set_max_stage_count(self, count: int):
+    def set_max_stage_count(self, count: int):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.set_max_stage_count`.
         """
@@ -586,7 +588,7 @@ class Flow(ABC):
         action="once",
     )
     @protected
-    def start_stage(self, name: str):
+    def start_stage(self, name: str):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.start_stage`.
         """
@@ -598,7 +600,7 @@ class Flow(ABC):
         action="once",
     )
     @protected
-    def end_stage(self, increment_ordinal: bool = True):
+    def end_stage(self, increment_ordinal: bool = True):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.end_stage`.
         """

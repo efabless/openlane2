@@ -13,12 +13,10 @@
 # limitations under the License.
 import os
 import textwrap
-from unittest import mock
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from . import toolbox
 from ..state import DesignFormat
 from ..config import Config, Macro
 
@@ -237,13 +235,8 @@ def test_get_timing_files(timing_corner, prioritize_nl, expected, example_config
     ), "get_timing_files returned unexpected result"
 
 
-@mock.patch.object(
-    toolbox,
-    "warn",
-    print,
-)
 def test_get_timing_files_warnings(
-    capsys: pytest.CaptureFixture, example_config: Config
+    caplog: pytest.LogCaptureFixture, example_config: Config
 ):
     from . import Toolbox
 
@@ -261,7 +254,7 @@ def test_get_timing_files_warnings(
     ), "get_timing_files returned unexpected result"
 
     assert (
-        "but no netlist found" in capsys.readouterr().out
+        "but no netlist found" in caplog.text
     ), "get_timing_files did not warn about missing netlists"
 
     cfg["MACROS"]["b"].nl = netlist_bk
@@ -276,7 +269,7 @@ def test_get_timing_files_warnings(
     ), "get_timing_files returned unexpected result"
 
     assert (
-        "but no parasitics extraction found" in capsys.readouterr().out
+        "but no parasitics extraction found" in caplog.text
     ), "get_timing_files did not warn about missing spefs"
 
     cfg["MACROS"]["b"].spef = spefs_bk
@@ -295,7 +288,7 @@ def test_get_timing_files_warnings(
     ), "get_timing_files returned unexpected result"
 
     assert (
-        "No SCL lib files" in capsys.readouterr().out
+        "No SCL lib files" in caplog.text
     ), "get_timing_files did not warn about missing SCL liberty"
 
 

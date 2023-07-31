@@ -92,7 +92,7 @@ def test_step_missing_state_in(step_run):
 
 
 @pytest.fixture()
-@mock_variables
+@mock_variables()
 def test_config():
     from ..config import config
 
@@ -108,7 +108,7 @@ def test_config():
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_create(step_run, test_config):
     from ..state.design_format import DesignFormat
 
@@ -130,7 +130,7 @@ def test_step_create(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_run(step_run, test_config):
     from ..state.design_format import DesignFormat
 
@@ -158,7 +158,7 @@ def test_step_run(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_start_missing_toolbox(step_run, test_config):
     from ..state.design_format import DesignFormat
 
@@ -180,7 +180,7 @@ def test_step_start_missing_toolbox(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_start_missing_step_dir(step_run, test_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
@@ -203,7 +203,7 @@ def test_step_start_missing_step_dir(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_start_invalid_state(step_run, test_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
@@ -227,7 +227,7 @@ def test_step_start_invalid_state(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_start(test_config):
     from ..common import Path
     from ..state.design_format import DesignFormat
@@ -269,7 +269,7 @@ def test_step_start(test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_longname(step_run, test_config):
     from ..state.design_format import DesignFormat
 
@@ -289,7 +289,7 @@ def test_step_longname(step_run, test_config):
 
 
 @pytest.mark.usefixtures("_mock_fs")
-@mock_variables
+@mock_variables()
 def test_step_factory(step_run):
     @Step.factory.register()
     class TestStep(Step):
