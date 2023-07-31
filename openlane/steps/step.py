@@ -314,7 +314,7 @@ class Step(ABC):
                     )
 
     @classmethod
-    def __get_desc(Self) -> str:
+    def __get_desc(Self) -> str:  # pragma: no cover
         if hasattr(Self, "long_name"):
             return Self.long_name
         elif hasattr(Self, "name"):
@@ -322,7 +322,7 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self, docstring_override: str = ""):
+    def get_help_md(Self, docstring_override: str = ""):  # pragma: no cover
         """
         Renders Markdown help for this step to a string.
         """
@@ -393,7 +393,7 @@ class Step(ABC):
         return result
 
     @classmethod
-    def display_help(Self):
+    def display_help(Self):  # pragma: no cover
         """
         IPython-only. Displays Markdown help for a given step.
         """
@@ -401,7 +401,7 @@ class Step(ABC):
 
         IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self) -> str:  # pragma: no cover
         """
         Only one _ because this is used by IPython.
         """
@@ -443,13 +443,13 @@ class Step(ABC):
 
         return result
 
-    def layout_preview(self) -> Optional[str]:
+    def layout_preview(self) -> Optional[str]:  # pragma: no cover
         """
         Returns an HTML tag that could act as a preview for a specific stage.
         """
         return None
 
-    def display_result(self):
+    def display_result(self):  # pragma: no cover
         """
         IPython-only. Displays the results of a given step.
         """
