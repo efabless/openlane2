@@ -31,7 +31,7 @@ def step_run():
     return run
 
 
-def test_step_init_empty(step_run):
+def test_step_init_empty():
     with pytest.raises(TypeError, match="Can't instantiate abstract class Step"):
         Step()
 
@@ -228,7 +228,7 @@ def test_step_start_invalid_state(step_run, test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables
-def test_step_start(step_run, test_config):
+def test_step_start(test_config):
     from ..common import Path
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
@@ -290,7 +290,7 @@ def test_step_longname(step_run, test_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables
-def test_step_factory(step_run, test_config):
+def test_step_factory(step_run):
     @Step.factory.register()
     class TestStep(Step):
         inputs = []
