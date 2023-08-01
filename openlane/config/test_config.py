@@ -40,6 +40,8 @@ def _mock_fs():
             if { ![info exists ::env(STD_CELL_LIBRARY)] } {
                 set ::env(STD_CELL_LIBRARY) "dummy_scl"
             }
+            set ::env(TECH_LEF) "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+            set ::env(LIB_SYNTH) "sky130_fd_sc_hd__tt_025C_1v80.lib"
             """,
         )
         patcher.fs.create_file(
@@ -48,10 +50,15 @@ def _mock_fs():
             if { ![info exists ::env(STD_CELL_LIBRARY)] } {
                 set ::env(STD_CELL_LIBRARY) "dummy2_scl"
             }
+            set ::env(TECH_LEF) "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+            set ::env(LIB_SYNTH) "sky130_fd_sc_hd__tt_025C_1v80.lib"
             """,
         )
         patcher.fs.create_file(
             "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
+        )
+        patcher.fs.create_file(
+            "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
         )
         patcher.fs.create_file(
             "/pdk/dummy/libs.tech/openlane/dummy_scl/config.tcl",
@@ -88,15 +95,12 @@ MOCK_PDK_VARS = [
         "TECH_LEFS",
         Dict[str, Path],
         description="x",
-        default={
-            "nom*": Path("/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef")
-        },
     ),
     config.Variable(
         "DEFAULT_CORNER",
         str,
         description="x",
-        default="nom",
+        default="nom_tt_025C_1v80",
     ),
 ]
 MOCK_FLOW_VARS = [
@@ -201,7 +205,7 @@ def test_dict_config():
         pdk_root="/pdk",
     )
 
-    assert cfg == Config(
+    assert_cfg = Config(
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
@@ -213,9 +217,16 @@ def test_dict_config():
             "RUN_HEURISTIC_DIODE_INSERTION": False,
             "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
             "MACROS": None,
+            "TECH_LEFS": {
+                "nom_*": Path(
+                    "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+                )
+            },
+            "DEFAULT_CORNER": "nom_tt_025C_1v80",
         },
         meta=Meta(version=2, flow="Classic"),
-    ), "Generated configuration does not match expected value"
+    )
+    assert cfg == assert_cfg, "Generated configuration does not match expected value"
 
 
 @pytest.mark.usefixtures("_mock_fs")
@@ -257,6 +268,12 @@ def test_json_config():
             "RUN_HEURISTIC_DIODE_INSERTION": False,
             "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
             "MACROS": None,
+            "TECH_LEFS": {
+                "nom_*": Path(
+                    "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+                )
+            },
+            "DEFAULT_CORNER": "nom_tt_025C_1v80",
         },
         meta=Meta(version=2, flow="Whatever"),
     ), "Generated configuration does not match expected value"
@@ -303,6 +320,12 @@ def test_tcl_config():
             "RUN_HEURISTIC_DIODE_INSERTION": False,
             "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
             "MACROS": None,
+            "TECH_LEFS": {
+                "nom_*": Path(
+                    "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+                )
+            },
+            "DEFAULT_CORNER": "nom_tt_025C_1v80",
         },
         meta=Meta(version=1, flow="Classic"),
     ), "Generated configuration does not match expected value"
@@ -364,6 +387,10 @@ def test_copy_filtered():
         "STD_CELL_LIBRARY": "dummy_scl",
         "EXAMPLE_PDK_VAR": Decimal("10"),
         "meta": cfg.meta,
+        "TECH_LEFS": {
+            "nom_*": Path("/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef")
+        },
+        "DEFAULT_CORNER": "nom_tt_025C_1v80",
     }, "copy_filtered for step 2 did not work properly"
 
 

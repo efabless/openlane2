@@ -31,7 +31,7 @@ def test_tclstep_missing_get_script_path():
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_tclstep_init(mock_config):
+def test_tclstep_init(mock_config):  # noqa: F811
     from ..state.design_format import DesignFormat
 
     class TclStepTest(TclStep):
@@ -47,7 +47,7 @@ def test_tclstep_init(mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_tclstep_get_command(mock_config):
+def test_tclstep_get_command(mock_config):  # noqa: F811
     from ..state.design_format import DesignFormat
 
     class TclStepTest(TclStep):
@@ -129,7 +129,7 @@ def test_tcl_step_value_to_tcl():
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_env(mock_config):
+def test_env(mock_config):  # noqa: F811
     from ..state.design_format import DesignFormat
 
     script_path = "/dummy_path"
