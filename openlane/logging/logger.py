@@ -78,6 +78,10 @@ def set_log_level(lv: Union[str, int]):
     __openlane_logger.setLevel(lv)
 
 
+def reset_log_level():
+    set_log_level("VERBOSE")
+
+
 def get_log_level() -> int:
     return __openlane_logger.getEffectiveLevel()
 

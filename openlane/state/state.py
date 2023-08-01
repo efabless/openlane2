@@ -242,7 +242,7 @@ class State(GenericImmutableDict[str, StateElement]):
             raise InvalidState(f"Invalid JSON string provided for state: {e}")
 
         if not isinstance(raw, dict):
-            raise InvalidState("Failed to load state: JSON result is a dictionary")
+            raise InvalidState("Failed to load state: JSON result is not a dictionary")
 
         metrics = raw.get("metrics")
         if metrics is not None:

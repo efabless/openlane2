@@ -38,7 +38,7 @@ def test_tclstep_init(mock_config):  # noqa: F811
     class TclStepTest(TclStep):
         inputs = []
         outputs = []
-        id = "TclStepTest"
+        id = "Test.TclStep"
 
         def get_script_path(self):
             return "/dummy_path"
@@ -54,7 +54,7 @@ def test_tclstep_get_command(mock_config):  # noqa: F811
     class TclStepTest(TclStep):
         inputs = []
         outputs = []
-        id = "TclStepTest"
+        id = "Test.TclStep"
 
         def get_script_path(self):
             return "/dummy_path"
@@ -169,7 +169,7 @@ def test_env(mock_config):  # noqa: F811
     class TclStepTest(TclStep):
         inputs = [DesignFormat.NETLIST]
         outputs = [DesignFormat.NETLIST]
-        id = "TclStepTest"
+        id = "Test.TclStep"
         step_dir = "/dummy_step_dir"
 
         def get_script_path(self):

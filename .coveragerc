@@ -10,7 +10,17 @@ omit =
     test_*.py
     __version__.py
     __main__.py
-    flows/builtins.py
-    flows/classic.py
-    flows/misc.py
-    flows/optimizing.py
+    container.py
+    env_info.py
+    */flows/builtins.py
+    */flows/classic.py
+    */flows/misc.py
+    */flows/optimizing.py
+    */steps/checker.py
+    */steps/klayout.py
+    */steps/magic.py
+    */steps/misc.py
+    */steps/netgen.py
+    */steps/magic.py
+    */steps/openroad.py
+    */steps/yosys.py

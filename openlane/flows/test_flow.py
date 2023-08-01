@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Callable, Optional, Type
 from unittest import mock
+from typing import Callable, Optional, Type
 
 import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
 
+from . import flow
 from ..config import Variable
 from ..config.test_config import (  # noqa: F401
     MOCK_FLOW_VARS,
     mock_variables,
     _mock_fs,
 )
-from . import flow
 
 
 @pytest.fixture()

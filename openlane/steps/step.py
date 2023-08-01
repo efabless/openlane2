@@ -680,7 +680,10 @@ class Step(ABC):
             current_rpt = None
             while line := process_stdout.readline():
                 lines += line
+                log_file.write(line)
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
+                    if current_rpt is not None:
+                        current_rpt.close()
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                     report_path = os.path.join(report_dir, report_name)
                     current_rpt = open(report_path, "w")
@@ -688,22 +691,20 @@ class Step(ABC):
                     if current_rpt is not None:
                         current_rpt.close()
                     current_rpt = None
-                else:
-                    if line.startswith(METRIC_LOCUS):
-                        command, name, value = line.split(" ", maxsplit=3)
-                        metric_type: Union[Type[str], Type[int], Type[float]] = str
-                        if command.endswith("_I"):
-                            metric_type = int
-                        elif command.endswith("_F"):
-                            metric_type = float
-                        generated_metrics[name] = metric_type(value)
-                    elif current_rpt is not None:
-                        # No echo- the timing reports especially can be very large
-                        # and terminal emulators will slow the flow down.
-                        current_rpt.write(line)
-                    elif not silent and "table template" not in line:  # sky130 ff hack
-                        verbose(line.strip())
-                    log_file.write(line)
+                elif line.startswith(METRIC_LOCUS):
+                    command, name, value = line.split(" ", maxsplit=3)
+                    metric_type: Union[Type[str], Type[int], Type[float]] = str
+                    if command.endswith("_I"):
+                        metric_type = int
+                    elif command.endswith("_F"):
+                        metric_type = float
+                    generated_metrics[name] = metric_type(value)
+                elif current_rpt is not None:
+                    # No echo- the timing reports especially can be very large
+                    # and terminal emulators will slow the flow down.
+                    current_rpt.write(line)
+                elif not silent and "table template" not in line:  # sky130 ff hack
+                    verbose(line.strip())
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:

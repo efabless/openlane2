@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
 import os
-
+import textwrap
 from typing import Tuple
+
+import pytest
+
 from .step import Step, ViewsUpdate, MetricsUpdate
 from ..state import State
 from ..config import Config
@@ -333,7 +335,6 @@ def test_run_subprocess(mock_run):
     from ..config.config import Config
     from ..config.config import Meta
     from ..state.design_format import DesignFormat
-    from .step import REPORT_END_LOCUS, REPORT_START_LOCUS, METRIC_LOCUS
 
     with tempfile.TemporaryDirectory() as dir, chdir(dir):
 
@@ -368,11 +369,19 @@ def test_run_subprocess(mock_run):
         )
         out_file = "out.txt"
         report_file = "test.rpt"
-        report_data = "Hello World\n"
-        extra_data = "Bye World\n"
-        new_metric = {"new_metric": 1}
-        metric_data = f"{METRIC_LOCUS}_I new_metric {new_metric['new_metric']}\n"
-        out_data = f"{REPORT_START_LOCUS} {report_file}\n{report_data}{REPORT_END_LOCUS}\n{extra_data}{metric_data}"
+        report_data = "Hello World"
+        extra_data = "Bye World"
+        new_metric = {"new_metric": 1, "new_float_metric": 2.0}
+        out_data = textwrap.dedent(
+            f"""
+            %OL_CREATE_REPORT {report_file}
+            {report_data}
+            %OL_END_REPORT
+            {extra_data}
+            %OL_METRIC_I new_metric {new_metric['new_metric']}
+            %OL_METRIC_F new_float_metric {new_metric['new_float_metric']}
+            """
+        ).strip()
 
         with open(out_file, "w") as f:
             f.write(out_data)
@@ -388,13 +397,13 @@ def test_run_subprocess(mock_run):
         with open(report_file) as f:
             actual_report_data = f.read()
 
-        assert out_metrics == new_metric, "Bad metrics captured by run_subprocess"
+        assert out_metrics == new_metric, ".run_subprocess() generated invalid metrics"
         assert (
-            actual_out_data == report_data + extra_data + metric_data
-        ), "Bad log file generated run_subprocess"
+            actual_report_data.strip() == report_data
+        ), ".run_subprocess() generated invalid report"
         assert (
-            actual_report_data == report_data
-        ), "Bad report file generated run_subprocess"
+            actual_out_data == out_data
+        ), ".run_subprocess() generated mis-matched log file"
 
     with pytest.raises(subprocess.CalledProcessError):
         step.run_subprocess(["false"])

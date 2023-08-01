@@ -15,7 +15,7 @@ import os
 from textwrap import dedent
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Union
 
 
 from click import Parameter, echo
@@ -44,12 +44,17 @@ from ..state import State
 def set_log_level_cb(
     ctx: Context,
     param: Parameter,
-    value: bool,
+    value: str,
 ):
+    level: Union[str, int] = value
     try:
-        set_log_level(value)
-    except ValueError:
-        err(f"Invalid logging level: {value}.")
+        try:
+            level = int(value)
+        except ValueError:
+            pass
+        set_log_level(level)
+    except ValueError as e:
+        err(f"Invalid logging level {value}: {e}.")
         echo(ctx.get_help())
         ctx.exit(-1)
 

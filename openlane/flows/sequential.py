@@ -36,14 +36,24 @@ class SequentialFlow(Flow):
     All subclasses of this flow have to do is override the :attr:`.Steps` abstract property
     and it would automatically handle the rest. See `Classic` in Built-in Flows for an example.
 
+    It should be noted, for duplicate Steps, all Steps other than the first one
+    will technically be subclassed with no change other than to simply set
+    the ID to the previous step's ID with a suffix: i.e. the second instance of
+    ``Test.MyStep`` will have an ID of ``Test.MyStep1``, and so on.
+
     :param Substitute: Substitute all instances of one `Step` type by another `Step`
         type in the :attr:`.Steps` attribute for this instance only.
 
         You may also use the string Step IDs in place of a `Step` type object.
 
+        Duplicate steps are
+
     :param args: Arguments for :class:`Flow`.
     :param kwargs: Keyword arguments for :class:`Flow`.
     """
+
+    def __init_subclass__(cls, scm_type=None, name=None, **kwargs):
+        cls.__normalize_step_ids(cls)
 
     @classmethod
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
@@ -60,6 +70,19 @@ class SequentialFlow(Flow):
 
         return CustomSequentialFlow
 
+    @staticmethod
+    def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):
+        id_uses: Dict[str, int] = {}
+        for i, step in enumerate(target.Steps):
+            id = step.id
+            id_uses[id] = id_uses.get(id, 0)
+            if id_uses[id] > 0:
+                new_name = f"{step.__name__}{id_uses[id]}"
+                new_id = f"{id}{id_uses[id]}"
+                new_step = type(new_name, (step,), {"id": new_id})
+                target.Steps[i] = new_step
+            id_uses[id] += 1
+
     def __init__(
         self,
         *args,
@@ -74,6 +97,8 @@ class SequentialFlow(Flow):
             for key, item in substitute.items():
                 self.__substitute_step(key, item)
 
+        self.__normalize_step_ids(self)
+
         super().__init__(*args, **kwargs)
 
     def __substitute_step(
@@ -81,32 +106,26 @@ class SequentialFlow(Flow):
         id: str,
         with_step: Union[str, Type[Step]],
     ):
-        if not isinstance(id, str):
-            raise FlowException(
-                "Keys in the 'Substitute' dictionary must be string IDs."
-            )
-        if with_step is None:
-            raise FlowException(f"Invalid replacement step for {id}: 'None'")
-
-        step_index: Optional[int] = None
+        step_indices: List[int] = []
         for i, step in enumerate(self.Steps):
             if step.id.lower() == id.lower():
-                step_index = i
-                break
-        if step_index is None:
+                step_indices.append(i)
+
+        if len(step_indices) == 0:
             raise FlowException(
-                f"Failed to process start step '{step}': no step with ID '{step}' found in flow."
+                f"Could not substitute '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
             )
 
         if isinstance(with_step, str):
             with_step_opt = Step.factory.get(with_step)
             if with_step_opt is None:
                 raise FlowException(
-                    f"Could not substitute '{step.id}' with '{with_step}': no step with ID '{with_step}' found."
+                    f"Could not substitute '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
                 )
             with_step = with_step_opt
 
-        self.Steps[i] = with_step
+        for i in step_indices:
+            self.Steps[i] = with_step
 
     def run(
         self,
