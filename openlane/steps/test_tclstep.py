@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import tkinter
 
 import pytest
 
 from .tclstep import TclStep
+from .test_step import mock_config  # noqa: F401
 from ..state import State
 from ..config.test_config import _mock_fs, mock_variables  # noqa: F401
-from .test_step import mock_config  # noqa: F401
+from ..common import TclUtils
 
 
 def test_tclstep_missing_get_script_path():
@@ -118,13 +120,43 @@ def test_tcl_step_value_to_tcl():
         "h": [1, 2, 3],
         "[g]": alphanumerical_list_value,
     }
-    dict_value_string = (
-        'abc 1 cde 123 f "\\[hello]" h "1 2 3" "\\[g]" '
-        + alphanumerical_list_value_string
+
+    interpreter = tkinter.Tcl()
+    interpreter.eval(
+        f"""
+        set test_dict {TclUtils.escape(TclStep.value_to_tcl(dict_value))}
+        set counter 0
+        dict for {{k v}} $test_dict {{
+            set "key$counter" $k
+            set "value$counter" $v
+            incr counter
+        }}
+        """
     )
-    assert (
-        TclStep.value_to_tcl(dict_value) == dict_value_string
-    ), "Wrong complex dict to tcl conversion"
+
+    expected_dict_value = {
+        "abc": "1",
+        "cde": "123",
+        "f": "[hello]",
+        "h": "1 2 3",
+        "[g]": alphanumerical_list_value_string,
+    }
+
+    out = {}
+    counter = 0
+    while True:
+        key_var = f"key{counter}"
+        value_var = f"value{counter}"
+
+        try:
+            key = interpreter.getvar(key_var)
+        except tkinter.TclError:
+            break
+        value = interpreter.getvar(value_var)
+        out[key] = value
+        counter += 1
+
+    assert out == expected_dict_value, "failed to convert dictionary"
 
 
 @pytest.mark.usefixtures("_mock_fs")
