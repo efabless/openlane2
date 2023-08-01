@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
+import os
 
 from typing import Tuple
 from .step import Step, ViewsUpdate, MetricsUpdate
@@ -20,8 +21,23 @@ from ..config import Config
 from ..config.test_config import _mock_fs, mock_variables  # noqa: F401
 
 
+class chdir(object):
+    def __init__(self, path):
+        self.path = path
+        self.previous = None
+
+    def __enter__(self):
+        self.previous = os.getcwd()
+        os.chdir(self.path)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        os.chdir(self.previous)
+        if exc_type is not None:
+            raise exc_value
+
+
 @pytest.fixture()
-def step_run():
+def mock_run():
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_update: ViewsUpdate = {}
         metrics: MetricsUpdate = {}
@@ -35,11 +51,11 @@ def test_step_init_empty():
         Step()
 
 
-def test_step_init_missing_id(step_run):
+def test_step_init_missing_id(mock_run):
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
 
     with pytest.raises(
         NotImplementedError,
@@ -48,41 +64,41 @@ def test_step_init_missing_id(step_run):
         TestStep()
 
 
-def test_step_inputs_not_implemented(step_run):
+def test_step_inputs_not_implemented(mock_run):
     with pytest.raises(
         NotImplementedError, match="must implement class attribute 'inputs'"
     ):
 
         class TestStep(Step):
-            run = step_run
+            run = mock_run
 
 
-def test_step_outputs_not_implemented(step_run):
+def test_step_outputs_not_implemented(mock_run):
     with pytest.raises(
         NotImplementedError, match="must implement class attribute 'outputs'"
     ):
 
         class TestStep(Step):
             inputs = []
-            run = step_run
+            run = mock_run
 
 
-def test_step_missing_config(step_run):
+def test_step_missing_config(mock_run):
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     with pytest.raises(TypeError, match="Missing required argument 'config'"):
         TestStep()
 
 
-def test_step_missing_state_in(step_run):
+def test_step_missing_state_in(mock_run):
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     with pytest.raises(TypeError, match="Missing required argument 'state_in'"):
@@ -111,13 +127,13 @@ def mock_config():
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_create(step_run, mock_config):
+def test_step_create(mock_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     step = TestStep(
@@ -133,13 +149,13 @@ def test_step_create(step_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_run(step_run, mock_config):
+def test_mock_run(mock_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -161,13 +177,13 @@ def test_step_run(step_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_missing_toolbox(step_run, mock_config):
+def test_step_start_missing_toolbox(mock_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -183,14 +199,14 @@ def test_step_start_missing_toolbox(step_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_missing_step_dir(step_run, mock_config):
+def test_step_start_missing_step_dir(mock_run, mock_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
 
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -206,7 +222,7 @@ def test_step_start_missing_step_dir(step_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_start_invalid_state(step_run, mock_config):
+def test_step_start_invalid_state(mock_run, mock_config):
     from ..state.design_format import DesignFormat
     from ..utils import Toolbox
     from .step import StepException
@@ -214,7 +230,7 @@ def test_step_start_invalid_state(step_run, mock_config):
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -272,13 +288,13 @@ def test_step_start(mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_longname(step_run, mock_config):
+def test_step_longname(mock_run, mock_config):
     from ..state.design_format import DesignFormat
 
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
         long_name = "longname2"
 
@@ -292,12 +308,12 @@ def test_step_longname(step_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables()
-def test_step_factory(step_run):
+def test_step_factory(mock_run):
     @Step.factory.register()
     class TestStep(Step):
         inputs = []
         outputs = []
-        run = step_run
+        run = mock_run
         id = "TestStep"
         long_name = "longname2"
 
@@ -307,3 +323,78 @@ def test_step_factory(step_run):
     assert (
         Step.factory.get("TestStep") == TestStep
     ), "Wrong type registered by StepFactor"
+
+
+@mock_variables()
+def test_run_subprocess(mock_run):
+    import tempfile
+    import subprocess
+
+    from ..config.config import Config
+    from ..config.config import Meta
+    from ..state.design_format import DesignFormat
+    from .step import REPORT_END_LOCUS, REPORT_START_LOCUS, METRIC_LOCUS
+
+    with tempfile.TemporaryDirectory() as dir, chdir(dir):
+
+        state_in = State({DesignFormat.NETLIST: "abc"})
+
+        class StepTest(Step):
+            inputs = [DesignFormat.NETLIST]
+            outputs = [DesignFormat.NETLIST]
+            id = "TclStepTest"
+            step_dir = dir
+            run = mock_run
+
+        config_dict = {
+            "DESIGN_NAME": "whatever",
+            "DESIGN_DIR": dir,
+            "EXAMPLE_PDK_VAR": "bla",
+            "PDK": "dummy",
+            "STD_CELL_LIBRARY": "dummy_scl",
+            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "GRT_REPAIR_ANTENNAS": True,
+            "RUN_HEURISTIC_DIODE_INSERTION": False,
+            "MACROS": None,
+            "DIODE_ON_PORTS": None,
+            "TECH_LEFS": {
+                "nom_*": "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+            },
+            "DEFAULT_CORNER": "nom_tt_025C_1v80",
+        }
+        step = StepTest(
+            config=Config(config_dict, meta=Meta(version=2, flow="n/a")),
+            state_in=state_in,
+        )
+        out_file = "out.txt"
+        report_file = "test.rpt"
+        report_data = "Hello World\n"
+        extra_data = "Bye World\n"
+        new_metric = {"new_metric": 1}
+        metric_data = f"{METRIC_LOCUS}_I new_metric {new_metric['new_metric']}\n"
+        out_data = f"{REPORT_START_LOCUS} {report_file}\n{report_data}{REPORT_END_LOCUS}\n{extra_data}{metric_data}"
+
+        with open(out_file, "w") as f:
+            f.write(out_data)
+
+        subprocess_log_file = "test.log"
+        out_metrics = step.run_subprocess(
+            ["cat", out_file], silent=True, log_to=subprocess_log_file
+        )
+        actual_out_data = ""
+        with open(subprocess_log_file) as f:
+            actual_out_data = f.read()
+        actual_report_data = ""
+        with open(report_file) as f:
+            actual_report_data = f.read()
+
+        assert out_metrics == new_metric, "Bad metrics captured by run_subprocess"
+        assert (
+            actual_out_data == report_data + extra_data + metric_data
+        ), "Bad log file generated run_subprocess"
+        assert (
+            actual_report_data == report_data
+        ), "Bad report file generated run_subprocess"
+
+    with pytest.raises(subprocess.CalledProcessError):
+        step.run_subprocess(["false"])

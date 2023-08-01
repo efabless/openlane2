@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import tkinter
-
 import pytest
+import tkinter
 
 from .tclstep import TclStep
 from .test_step import mock_config  # noqa: F401
@@ -101,7 +100,7 @@ def test_tcl_step_value_to_tcl():
     assert TclStep.value_to_tcl({}) == ""
     assert TclStep.value_to_tcl([]) == ""
     assert TclStep.value_to_tcl("") == ""
-    assert TclStep.value_to_tcl(" ") == " "  # or should it be empty?
+    assert TclStep.value_to_tcl(" ") == " "
 
     class Color(Enum):
         RED = 1
