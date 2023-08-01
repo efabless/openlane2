@@ -117,7 +117,7 @@ def test_custom_seqflow(MetricIncrementer):
 def test_custom_seqflow_bad_id(MetricIncrementer):
     from . import SequentialFlow
 
-    with pytest.raises(TypeError, "No step found with id"):
+    with pytest.raises(TypeError, match="No step found with id"):
         SequentialFlow.make(
             [
                 "Test.MetricIncrementer",

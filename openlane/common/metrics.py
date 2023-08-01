@@ -46,8 +46,9 @@ def aggregate_metrics(
     aggregated: Dict[str, Any] = {}
     for name, value in input.items():
         metric_name, modifiers = parse_metric_modifiers(name)
-        if len(modifiers) == 0:
+        if len(modifiers) != 1:
             # No modifiers = final aggregate, don't double-represent in sums
+            # >1 modifiers = n-level nesting, not supported atm
             continue
         entry = aggregator_by_metric.get(metric_name)
         if entry is None:

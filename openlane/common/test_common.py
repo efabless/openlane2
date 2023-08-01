@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import math
 import enum
 from decimal import Decimal
 from collections import UserString
@@ -87,6 +88,40 @@ def test_parse_metric_modifiers():
         "category__name__optional_name_modifier__etc:etc:etc",
         {},
     ), "Improperly parsed metric with improper modifier syntax"
+
+
+@pytest.mark.parametrize(
+    ("input", "aggregators", "expected"),
+    [
+        (
+            {
+                "flower__count__type:roses": 12,
+                "flower__max__height__type:roses": Decimal("7.0"),
+                "flower__count__type:tulips": 21,
+                "flower__max__height__type:tulips": Decimal("8.0"),
+                "flower__count": 0,
+            },
+            {
+                "flower__count": (0, lambda x: sum(x)),
+                "flower__max__height": (-math.inf, lambda x: max(x)),
+            },
+            {
+                "flower__count__type:roses": 12,
+                "flower__count__type:tulips": 21,
+                "flower__count": 33,
+                "flower__max__height__type:roses": Decimal("7.0"),
+                "flower__max__height__type:tulips": Decimal("8.0"),
+                "flower__max__height": Decimal("8.0"),
+            },
+        ),
+    ],
+)
+def test_aggregate_metrics(input, aggregators, expected):
+    from . import aggregate_metrics
+
+    assert (
+        aggregate_metrics(input, aggregators) == expected
+    ), "aggregate_metrics() returned unexpected output"
 
 
 def test_generic_dict():
