@@ -152,7 +152,10 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
     optional = is_optional(t)
     some = some_of(t)
 
-    type_string = some.__name__
+    if hasattr(some, "__name__"): # Python 3.10+
+        type_string = some.__name__
+    else:  
+        type_string = str(some)
     if inspect.isclass(some) and issubclass(some, Enum):
         type_string = "｜".join([str(e.name) for e in some])
         type_string = f"`{type_string}`"

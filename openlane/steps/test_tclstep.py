@@ -25,7 +25,7 @@ def test_tclstep_missing_get_script_path():
     class TclStepTest(TclStep):
         pass
 
-    error = "Can't instantiate abstract class TclStepTest with abstract method get_script_path"
+    error = "Can't instantiate abstract class TclStepTest with abstract methods? get_script_path"  # Python 3.8 says "methods" even if there is one method
     with pytest.raises(TypeError, match=error):
         TclStepTest()
 
