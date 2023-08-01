@@ -56,10 +56,10 @@ def main(scls, use_json, test_sets):
                 design_name = design["name"]
                 config_filename = design.get("config_file") or config_filename
             config_file = os.path.join(
-                ol_dir, "test_data", "designs", design_name, config_filename
+                ol_dir, "test", "designs", design_name, config_filename
             )
             run_folder = os.path.join(
-                ol_dir, "test_data", "designs", design_name, "runs", "CI"
+                ol_dir, "test", "designs", design_name, "runs", "CI"
             )
             designs.append(
                 {
