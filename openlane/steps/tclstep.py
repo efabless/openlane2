@@ -339,11 +339,12 @@ class TclStep(Step):
     @staticmethod
     def value_to_tcl(value: Any) -> str:
         """
-        Converts an arbitrary python value to Tcl as follows:
+        Converts an arbitrary Python value to Tcl as follows:
 
         * If the value is an instance of a dataclass, it is serialized as a JSON object.
-        * If the value is a list, it is joined using ``shlex``.
-        * If the value is a dict, it is converted to the Tcl ``key1 value1 key2 value2 …`` format then joined with shlex.
+        * If the value is a list, it is joined using :meth:`TclUtils.join`.
+        * If the value is a dict, the keys and values are escaped recursively using:
+            joined using :meth:`TclUtils.join`.
         * If the value is an Enum, its name is returned.
         * If the value is boolean, "1" is returned for True and "0" for False.
         * If the value is numeric, it is converted to a string.
@@ -387,7 +388,7 @@ class TclStep(Step):
         ``yosys``, et cetera.
 
         :returns: A list of strings representing the command used to run the script,
-        including the result of :meth:`get_script_path`.
+            including the result of :meth:`get_script_path`.
         """
         return ["tclsh", self.get_script_path()]
 
@@ -398,10 +399,19 @@ class TclStep(Step):
         ``self.config`` variables and state inputs to environment variables so
         they may be used as inputs to the scripts.
 
+        Inputs are assigned the keys ``CURRENT_{ID}`` where ID is
+        the relevant :class:`DesignFormat`'s enum name.
+
+        Outputs are assigned the keys ``CURRENT_{ID}`` where ID is
+        the relevant :class:`DesignFormat`'s enum name, although outputs with
+        multiple values (SPEF, etc) will be skipped and a step is expected to
+        handle creating variables for them on its own.
+
         The values are converted to strings as per :meth:`value_to_tcl`.
 
         :param env: The input environment dictionary
         :param state: The input state
+        :returns: a copy of the environment dictionary where ``self.config`` variables
         """
         env = env.copy()
 
@@ -462,6 +472,7 @@ class TclStep(Step):
         :param state_in: See superclass.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
+        :returns: see superclass
         """
         command = self.get_command()
 

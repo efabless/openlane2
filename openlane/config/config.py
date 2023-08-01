@@ -271,7 +271,7 @@ class Config(GenericImmutableDict[str, Any]):
         design_dir: Optional[str] = None,
     ) -> Tuple["Config", str]:
         """
-        Returns a new Config object based on a Tcl file, a JSON file, or a
+        Creates a new Config object based on a Tcl file, a JSON file, or a
         dictionary.
 
         The returned config object is locked and cannot be modified.

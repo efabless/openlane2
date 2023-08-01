@@ -78,7 +78,7 @@ def MockStepTuple(variable: Variable):
             )
             return {
                 DesignFormat.JSON_HEADER: Path(out_file),
-            }, {"whatever": 0}
+            }, {"step": 0}
 
     class StepC(Step):
         id = "Test.StepC"
@@ -100,7 +100,7 @@ def MockStepTuple(variable: Variable):
             )
             return {
                 DesignFormat.JSON_HEADER: Path(out_file),
-            }, {"whatever": 0}
+            }, {"step": 1}
 
     return (StepA, StepB, StepC)
 
@@ -311,10 +311,12 @@ def test_progress_bar(DummyFlow: Type[flow.Flow]):
 @pytest.mark.usefixtures("_mock_fs")
 @mock_variables([flow])
 @mock.patch.object(flow, "Progress", MockProgress)
-def test_last_run(
+def test_run_tags(
     fs: FakeFilesystem, DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture
 ):
-    fs.create_dir("/cwd/runs/MY_TAG")
+    from . import FlowException
+    from ..state import State
+
     flow = DummyFlow(
         {
             "DESIGN_NAME": "WHATEVER",
@@ -327,7 +329,47 @@ def test_last_run(
         pdk_root="/pdk",
     )
 
+    with pytest.raises(
+        FlowException, match="tag and last_run cannot be used simultaneously"
+    ):
+        flow.start(tag="NotNone", last_run=True)
+
+    with pytest.raises(FlowException, match="last_run used without any existing runs"):
+        flow.start(last_run=True)
+
+    fs.create_dir("/cwd/runs/MY_TAG")
     flow.start(tag="MY_TAG")
     assert (
         "Starting a new run of the" in caplog.text
     ), ".start() with an empty folder did not print a message about a new run"
+    caplog.clear()
+
+    fs.create_dir("/cwd/runs/MY_TAG2")
+    fs.create_file(
+        "/cwd/runs/MY_TAG2/01-step_a/state_out.json",
+        contents=State({}, metrics={"step": 0}).dumps(),
+    )
+    fs.create_file(
+        "/cwd/runs/MY_TAG2/02-step_b/state_out.json",
+        contents=State({}, metrics={"step": 1}).dumps(),
+    )
+
+    state = flow.start(tag="MY_TAG2")
+    assert (
+        "Using existing run at" in caplog.text
+    ), ".start() with a non-empty folder did not print a message about an existing run"
+    assert (
+        state.metrics["step"] == 1
+    ), ".start() using existing run failed to return latest state"
+    caplog.clear()
+
+    flow.start(last_run=True)
+    assert flow.run_dir.endswith(
+        "MY_TAG2"
+    ), ".start() with last_run failed to return latest run"
+
+    fs.create_file("/cwd/runs/MY_TAG3", contents="")
+    with pytest.raises(
+        FlowException, match="already exists as a file and not a directory"
+    ):
+        flow.start(tag="MY_TAG3")

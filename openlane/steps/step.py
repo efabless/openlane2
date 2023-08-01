@@ -445,7 +445,8 @@ class Step(ABC):
 
     def layout_preview(self) -> Optional[str]:  # pragma: no cover
         """
-        Returns an HTML tag that could act as a preview for a specific stage.
+        :returns: An HTML tag that could act as a preview for a specific stage
+            or ``None`` if a preview is unavailable for this step.
         """
         return None
 

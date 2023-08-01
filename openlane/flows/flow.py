@@ -197,8 +197,8 @@ class FlowProgressBar(object):
     @ensure_progress_started
     def get_ordinal_prefix(self) -> str:
         """
-        Returns a string with the current step ordinal, which can be used to
-        create a step directory.
+        :returns: A string with the current step ordinal, which can be
+        used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
         return f"%0{max_stage_digits}d-" % self.__ordinal
@@ -383,14 +383,18 @@ class Flow(ABC):
 
             This tag is used to create the "run directory", which will be placed
             under the directory ``runs/`` in the design directory.
+        :param last_run: Use the latest run (by modification time) as the tag.
+
+            If no runs exist, a :class:`FlowException` will be raised.
+
+            If ``last_run`` and ``tag`` are both set, a :class:`FlowException` will
+            also be raised.
 
         :returns: ``(success, state_list)``
         """
         if last_run:
             if tag is not None:
-                raise FlowException(
-                    "tag and last_run cannot be defined simultaneously."
-                )
+                raise FlowException("tag and last_run cannot be used simultaneously.")
 
             runs = glob.glob(os.path.join(self.design_dir, "runs", "*"))
 
@@ -404,6 +408,8 @@ class Flow(ABC):
 
             if latest_run is not None:
                 tag = os.path.basename(latest_run)
+            else:
+                raise FlowException("last_run used without any existing runs")
 
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
@@ -440,15 +446,16 @@ class Flow(ABC):
                 state_out_jsons = glob.glob(
                     os.path.join(self.run_dir, "**", "state_out.json"), recursive=True
                 )
+                print(self.run_dir, state_out_jsons)
                 for state_out_json in state_out_jsons:
                     time = os.path.getmtime(state_out_json)
                     if time > latest_time:
                         latest_time = time
                         latest_json = state_out_json
 
-                verbose(f"Using state at '{latest_json}'.")
-
                 if latest_json is not None:
+                    verbose(f"Using state at '{latest_json}'.")
+
                     initial_state = State.loads(
                         open(latest_json, encoding="utf8").read()
                     )
@@ -500,11 +507,11 @@ class Flow(ABC):
     @protected
     def dir_for_step(self, step: Step) -> str:
         """
-        Returns a directory within the run directory for a specific step,
-        prefixed with the current progress bar stage number.
-
         May only be called while :attr:`run_dir` is not None, i.e., the flow
-        has started.
+        has started. Otherwise, a :class:`FlowException` is raised.
+
+        :returns: A directory within the run directory for a specific step,
+            prefixed with the current progress bar stage number.
         """
         if self.run_dir is None:
             raise FlowException(
@@ -557,12 +564,14 @@ class Flow(ABC):
         """
         An asynchronous equivalent to :meth:`start_step`.
 
-        It returns a ``Future`` encapsulating a State object, which can then be
-        used as an input to the next step or inspected to await it.
-
         :param step: The step object to run
         :param args: Arguments to `step.start`
         :param kwargs: Keyword arguments to `step.start`
+        :returns: A ``Future`` encapsulating a State object, which can be used
+            as an input to the next step (where the next step will wait for the
+            ``Future`` to be realized before calling :meth:`Step.run`).
+
+
         """
 
         kwargs["toolbox"] = self.toolbox

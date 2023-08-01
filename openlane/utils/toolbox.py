@@ -280,7 +280,7 @@ class Toolbox(object):
         as_cell_lists: bool = False,
     ) -> List[str]:
         """
-        Returns a path to a new lib file without specific cells.
+        Creates a new lib file with some cells removed.
 
         This function is memoized, i.e., results are cached for a specific set
         of inputs.
@@ -291,7 +291,7 @@ class Toolbox(object):
         :param as_cell_lists: If set to true, `excluded_cells` is treated as a
             list of files that are themselves lists of cells. Otherwise, it is
             treated as a list of cells.
-        :returns: A path to a lib file with the removed cells.
+        :returns: A path to the lib file with the removed cells.
         """
         if as_cell_lists:  # Paths to files
             excluded_cells_str = ""

@@ -567,6 +567,7 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
     assert (
         "Unknown key" in caplog.text
     ), "unknown variable did not trigger a warning when loading from a meta.version: 1 JSON file"
+    caplog.clear()
 
     with pytest.raises(InvalidConfig, match="Unknown key") as e:
         Config.load(
@@ -602,6 +603,7 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
     assert (
         "has been removed" in caplog.text
     ), "removed variable did not trigger a warning when loading from a meta.version: 1 JSON file"
+    caplog.clear()
 
 
 @pytest.mark.usefixtures("_mock_fs")
@@ -693,6 +695,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     assert (
         "See 'Migrating DIODE_INSERTION_STRATEGY'" in caplog.text
     ), "diode insertion strategy did not trigger a warning"
+    caplog.clear()
 
 
 @pytest.mark.usefixtures("_mock_fs")
@@ -736,6 +739,7 @@ def test_macro_migration(
     assert (
         "deprecated" in caplog.text
     ), "configuration variable 'EXTRA_SPEFS' is deprecated"
+    caplog.clear()
 
     with pytest.raises(InvalidConfig, match="not divisible by four") as e:
         Config.load(

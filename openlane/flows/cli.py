@@ -150,7 +150,7 @@ def cloup_flow_opts(
     volare_by_default: bool = True,
 ) -> Decorator:
     """
-    Returns a wrapper that appends a number of OpenLane flow-related flags to a
+    Creates a wrapper that appends a number of OpenLane flow-related flags to a
     function decorated with `@cloup.command https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command`_.
 
     The following keyword arguments will be passed to the decorated function.
@@ -185,6 +185,7 @@ def cloup_flow_opts(
     :param accept_config_files: Accepts configuration file paths as CLI arguments
     :param volare_by_default: If ``pdk_options`` is ``True``, this changes whether
         Volare is used by default for this CLI or not.
+    :returns: The wrapper
     """
     o = partial(option, show_default=True)
 
