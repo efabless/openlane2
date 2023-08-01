@@ -28,8 +28,6 @@ from ..common import Path, StringEnum
 def _mock_fs():
     with Patcher() as patcher:
         rmtree("/run", ignore_errors=True)
-        patcher.fs.add_real_directory("/bin")
-        patcher.fs.add_real_directory("/usr/bin")
         patcher.fs.add_real_directory(os.getenv("TMPDIR"))
         patcher.fs.create_dir("/cwd/src")
         patcher.fs.create_file("/cwd/src/a.v")
@@ -51,6 +49,9 @@ def _mock_fs():
                 set ::env(STD_CELL_LIBRARY) "dummy2_scl"
             }
             """,
+        )
+        patcher.fs.create_file(
+            "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
         )
         patcher.fs.create_file(
             "/pdk/dummy/libs.tech/openlane/dummy_scl/config.tcl",
@@ -82,6 +83,20 @@ MOCK_PDK_VARS = [
         Decimal,
         description="x",
         default=10.0,
+    ),
+    config.Variable(
+        "TECH_LEFS",
+        Dict[str, Path],
+        description="x",
+        default={
+            "nom*": Path("/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef")
+        },
+    ),
+    config.Variable(
+        "DEFAULT_CORNER",
+        str,
+        description="x",
+        default="nom",
     ),
 ]
 MOCK_FLOW_VARS = [

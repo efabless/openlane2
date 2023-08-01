@@ -125,3 +125,35 @@ def test_tcl_step_value_to_tcl():
     assert (
         TclStep.value_to_tcl(dict_value) == dict_value_string
     ), "Wrong complex dict to tcl conversion"
+
+
+@pytest.mark.usefixtures("_mock_fs")
+@mock_variables()
+def test_env(mock_config):
+    from ..state.design_format import DesignFormat
+
+    script_path = "/dummy_path"
+    state_in = State({DesignFormat.NETLIST: "abc"})
+
+    class TclStepTest(TclStep):
+        inputs = [DesignFormat.NETLIST]
+        outputs = [DesignFormat.NETLIST]
+        id = "TclStepTest"
+        step_dir = "/dummy_step_dir"
+
+        def get_script_path(self):
+            return script_path
+
+    step = TclStepTest(config=mock_config, state_in=state_in)
+    env = step.prepare_env({}, state_in)
+    assert (
+        env["STEP_DIR"] == TclStepTest.step_dir
+    ), "Wrong prepared env. Bad STEP_DIR value"
+    assert env["CURRENT_NETLIST"] == "abc", "Wrong prepared env. Bad CURRENT_ input"
+    assert "SAVE_NETLIST" in env, "Wrong prepared env. SAVE_NETLIST missing"
+    for var in mock_config:
+        if mock_config[var] is not None:
+            assert var in env, "Wrong prepared env. Missing config variable"
+            assert env[var] == TclStep.value_to_tcl(
+                mock_config[var]
+            ), "Wrong prepared env. Mismatching configuration variable"

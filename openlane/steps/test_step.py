@@ -97,7 +97,10 @@ def mock_config():
     from ..config import config
 
     mock_config, _ = Config.load(
-        {"DESIGN_NAME": "whatever", "VERILOG_FILES": "dir::src/*.v"},
+        {
+            "DESIGN_NAME": "whatever",
+            "VERILOG_FILES": "dir::src/*.v",
+        },
         config.flow_common_variables,
         design_dir="/cwd",
         pdk="dummy",
