@@ -1,3 +1,9 @@
+# 2.0.0-b2
+
+* Updated Magic to `952b20d`
+* Added new variable, `MAGIC_EXT_SHORT_RESISTOR` to `Magic.SpiceExtraction`,
+  disabled by default
+
 # 2.0.0-b1
 
 * Added unit testing and coverage reporting for core infrastructure features (80%+)
@@ -5,7 +11,8 @@
 * Moved CI designs out-of-tree
 * Various documentation improvements
 * Common Module
-  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the environment and testing
+  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the
+    environment and testing
   * Made Tcl environment evaluation no longer rely on the filesystem
   * Made Tcl environment evaluation restore the environment after the fact
   * Moved `Path` from State module to common
@@ -17,7 +24,8 @@
 * Flow Module
   * Sequential flows now handle duplicate Step IDs by adding a suffix
 * Logging Module
-  * Logging rewritten to use Python logger with rich handler, the latter of which suppressed during unit testing
+  * Logging rewritten to use Python logger with rich handler, the latter of
+  which suppressed during unit testing
  * State Module
   * `.save_snapshot()` now also saves a JSON representation of metrics
   * Fixed metric cloning
