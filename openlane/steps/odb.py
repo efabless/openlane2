@@ -22,12 +22,12 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Optional, Tuple
 
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .common_variables import io_layer_variables
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..logging import warn
-from ..state import State, DesignFormat, Path
 from ..config import Variable, Macro
-from ..common import get_openlane_root, get_script_dir, StringEnum
+from ..state import State, DesignFormat
+from ..common import Path, get_openlane_root, get_script_dir, StringEnum
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 

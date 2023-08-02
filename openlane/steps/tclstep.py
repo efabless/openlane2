@@ -27,14 +27,16 @@ from decimal import Decimal
 from collections import deque
 from dataclasses import is_dataclass, asdict
 from os.path import join, dirname, isdir, relpath
-from typing import Any, ClassVar, Iterable, List, Dict, Sequence, Union, Tuple
+from typing import Any, ClassVar, List, Dict, Sequence, Union, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
 from ..config import Keys
 from ..logging import info, warn
-from ..state import State, DesignFormat, Path
+from ..state import State, DesignFormat
 from ..common import (
+    Path,
+    TclUtils,
     GenericDictEncoder,
     mkdirp,
     get_script_dir,
@@ -321,10 +323,6 @@ def create_reproducible(
     return destination_folder
 
 
-_find_unsafe = re.compile(r"[^\w@%+=:,./-]", re.ASCII).search
-_escapes_in_quotes = re.compile(r"([\\\$\"\[])")
-
-
 class TclStep(Step):
     """
     A subclass of :class:`Step` that primarily deals with running Tcl-based utilities,
@@ -339,29 +337,14 @@ class TclStep(Step):
     reproducibles_allowed: ClassVar[bool] = True
 
     @staticmethod
-    def escape(s: str) -> str:
-        """
-        :returns: If the string can be parsed by Tcl as a single token, the string
-            is returned verbatim.
-
-            Otherwise
-        """
-        if not _find_unsafe(s):
-            return s
-        return '"' + _escapes_in_quotes.sub(r"\\\1", s) + '"'
-
-    @staticmethod
-    def join(ss: Iterable[str]) -> str:
-        return " ".join(TclStep.escape(arg) for arg in ss)
-
-    @staticmethod
     def value_to_tcl(value: Any) -> str:
         """
-        Converts an arbitrary python value to Tcl as follows:
+        Converts an arbitrary Python value to Tcl as follows:
 
         * If the value is an instance of a dataclass, it is serialized as a JSON object.
-        * If the value is a list, it is joined using ``shlex``.
-        * If the value is a dict, it is converted to the Tcl ``key1 value1 key2 value2 …`` format then joined with shlex.
+        * If the value is a list, it is joined using :meth:`TclUtils.join`.
+        * If the value is a dict, the keys and values are escaped recursively using:
+            joined using :meth:`TclUtils.join`.
         * If the value is an Enum, its name is returned.
         * If the value is boolean, "1" is returned for True and "0" for False.
         * If the value is numeric, it is converted to a string.
@@ -373,13 +356,13 @@ class TclStep(Step):
             result = []
             for item in value:
                 result.append(TclStep.value_to_tcl(item))
-            return TclStep.join(result)
+            return TclUtils.join(result)
         elif isinstance(value, dict):
             result = []
             for v_key, v_value in value.items():
                 result.append(TclStep.value_to_tcl(v_key))
                 result.append(TclStep.value_to_tcl(v_value))
-            return TclStep.join(result)
+            return TclUtils.join(result)
         elif isinstance(value, Enum):
             return value.name
         elif isinstance(value, bool):
@@ -405,7 +388,7 @@ class TclStep(Step):
         ``yosys``, et cetera.
 
         :returns: A list of strings representing the command used to run the script,
-        including the result of :meth:`get_script_path`.
+            including the result of :meth:`get_script_path`.
         """
         return ["tclsh", self.get_script_path()]
 
@@ -416,10 +399,19 @@ class TclStep(Step):
         ``self.config`` variables and state inputs to environment variables so
         they may be used as inputs to the scripts.
 
+        Inputs are assigned the keys ``CURRENT_{ID}`` where ID is
+        the relevant :class:`DesignFormat`'s enum name.
+
+        Outputs are assigned the keys ``CURRENT_{ID}`` where ID is
+        the relevant :class:`DesignFormat`'s enum name, although outputs with
+        multiple values (SPEF, etc) will be skipped and a step is expected to
+        handle creating variables for them on its own.
+
         The values are converted to strings as per :meth:`value_to_tcl`.
 
         :param env: The input environment dictionary
         :param state: The input state
+        :returns: a copy of the environment dictionary where ``self.config`` variables
         """
         env = env.copy()
 
@@ -480,6 +472,7 @@ class TclStep(Step):
         :param state_in: See superclass.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
+        :returns: see superclass
         """
         command = self.get_command()
 

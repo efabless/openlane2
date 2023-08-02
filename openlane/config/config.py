@@ -14,6 +14,7 @@
 import os
 import json
 import yaml
+import dataclasses
 from glob import glob
 from decimal import Decimal
 from textwrap import dedent
@@ -31,8 +32,7 @@ from typing import (
     Set,
 )
 
-from .variable import Variable
-from .tcleval import env_from_tcl
+from .variable import Macro, Variable
 from .preprocessor import preprocess_dict, Keys as SpecialKeys
 from .flow import removed_variables, all_variables as flow_common_variables
 from .pdk import (
@@ -40,10 +40,8 @@ from .pdk import (
     removed_variables as pdk_removed_variables,
     migrate_old_config,
 )
-
-from ..state import Path
 from ..logging import info, warn
-from ..common import GenericDict, GenericImmutableDict
+from ..common import GenericDict, GenericImmutableDict, TclUtils, Path
 
 
 @dataclass
@@ -102,22 +100,22 @@ class Config(GenericImmutableDict[str, Any]):
     __interactive: bool = False
 
     def __init__(self, *args, meta: Optional[Meta] = None, **kwargs):
-        super().__init__(*args, **kwargs)
-
         if meta is None:
             meta = Meta(version=1)
 
         self.meta = meta
 
+        super().__init__(*args, **kwargs)
+
     def copy(self, **overrides) -> "Config":
         """
-        Produces a shallow copy of the configuration object.
+        Produces a *shallow* copy of the configuration object.
 
         :param overrides: A series of configuration overrides as key-value pairs.
             These values are NOT validated and you should not be overriding these
             haphazardly.
         """
-        return Config(self, overrides=overrides)
+        return Config(self, meta=self.meta, overrides=overrides)
 
     def to_raw_dict(self) -> Dict[str, Any]:
         """
@@ -143,9 +141,12 @@ class Config(GenericImmutableDict[str, Any]):
                 set([variable.name for variable in flow_common_variables])
             )
 
-        return Config({variable: self[variable] for variable in variables})
+        return Config(
+            {variable: self[variable] for variable in variables},
+            meta=dataclasses.replace(self.meta),
+        )
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self) -> str:  # pragma: no cover
         title = "Interactive Configuration" if self.__interactive else "Configuration"
         values_title = "Initial Values" if self.__interactive else "Values"
         return (
@@ -270,7 +271,7 @@ class Config(GenericImmutableDict[str, Any]):
         design_dir: Optional[str] = None,
     ) -> Tuple["Config", str]:
         """
-        Returns a new Config object based on a Tcl file, a JSON file, or a
+        Creates a new Config object based on a Tcl file, a JSON file, or a
         dictionary.
 
         The returned config object is locked and cannot be modified.
@@ -302,7 +303,6 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
-
         loader: Callable = Self.__loads
         raw: Union[str, dict] = ""
         default_meta_version = 1
@@ -425,7 +425,12 @@ class Config(GenericImmutableDict[str, Any]):
                 pdkpath=pdkpath,
                 scl=config_in[SpecialKeys.scl],
                 design_dir=design_dir,
+                readable_paths=[
+                    os.path.abspath(pdkpath),
+                    os.path.abspath(design_dir),
+                ],
             ),
+            meta=meta,
         )
 
         permissive_variables = pdk_variables
@@ -486,7 +491,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in = dict(config_in)
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
-        tcl_config = env_from_tcl(tcl_vars_in, config)
+        tcl_config = dict(TclUtils._eval_env(tcl_vars_in, config))
 
         process_info = preprocess_dict(
             tcl_config,
@@ -512,7 +517,7 @@ class Config(GenericImmutableDict[str, Any]):
         tcl_vars_in[SpecialKeys.scl] = scl
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
 
-        design_config = env_from_tcl(tcl_vars_in, config)
+        design_config = TclUtils._eval_env(tcl_vars_in, config)
 
         config_in = Config(config_in, overrides=design_config)
         for string in config_override_strings:
@@ -585,7 +590,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         pdk_config_path = os.path.join(pdkpath, "libs.tech", "openlane", "config.tcl")
 
-        pdk_env = env_from_tcl(
+        pdk_env = TclUtils._eval_env(
             pdk_config,
             open(pdk_config_path, encoding="utf8").read(),
         )
@@ -600,7 +605,7 @@ class Config(GenericImmutableDict[str, Any]):
         )
 
         scl_env = migrate_old_config(
-            env_from_tcl(
+            TclUtils._eval_env(
                 pdk_env,
                 open(scl_config_path, encoding="utf8").read(),
             )
@@ -650,11 +655,10 @@ class Config(GenericImmutableDict[str, Any]):
         """
         if removed is None:
             removed = {}
-
         warnings: List[str] = []
         errors = []
         final: GenericDict[str, Any] = GenericDict()
-        mutable = self.copy()
+        mutable = self.copy_mut()
 
         # Special Deprecation Behaviors
         if (
@@ -675,19 +679,19 @@ class Config(GenericImmutableDict[str, Any]):
                     "The DIODE_INSERTION_STRATEGY variable has been deprecated. See 'Migrating DIODE_INSERTION_STRATEGY' in the docs for more info."
                 )
 
-                final["GRT_REPAIR_ANTENNAS"] = False
-                final["RUN_HEURISTIC_DIODE_INSERTION"] = False
-                final["DIODE_ON_PORTS"] = "none"
+                mutable["GRT_REPAIR_ANTENNAS"] = False
+                mutable["RUN_HEURISTIC_DIODE_INSERTION"] = False
+                mutable["DIODE_ON_PORTS"] = "none"
                 if dis in [3, 6]:
-                    final["GRT_REPAIR_ANTENNAS"] = True
-                if dis in [5, 6]:
-                    final["RUN_HEURISTIC_DIODE_INSERTION"] = True
-                    final["DIODE_ON_PORTS"] = "in"
+                    mutable["GRT_REPAIR_ANTENNAS"] = True
+                if dis in [4, 6]:
+                    mutable["RUN_HEURISTIC_DIODE_INSERTION"] = True
+                    mutable["DIODE_ON_PORTS"] = "in"
 
         # Macros
         translated_macros = False
-        if mutable.get("EXTRA_SPEFS") is not None:
-            mutable["MACROS"] = mutable.get("MACROS") or {}
+        if mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is None:
+            mutable["MACROS"] = {}
 
             extra_spef_list = mutable["EXTRA_SPEFS"]
             del mutable["EXTRA_SPEFS"]
@@ -715,13 +719,23 @@ class Config(GenericImmutableDict[str, Any]):
                         extra_spef_list[start + 2],
                         extra_spef_list[start + 3],
                     )
-                    macro_dict = {"module": module, "gds": ["/dev/null"]}
+                    macro_dict = {
+                        "module": module,
+                        "gds": ["/dev/null"],
+                        "lef": ["/dev/null"],
+                    }
                     macro_dict["spef"] = {
                         "min_*": [min],
                         "nom_*": [nom],
                         "max_*": [max],
                     }
                     mutable["MACROS"][module] = macro_dict
+        elif (
+            mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is not None
+        ):
+            errors.append(
+                "EXTRA_SPEFS cannot be defined simultaneously with its successor variable, MACROS"
+            )
 
         for variable in variables:
             try:
@@ -768,9 +782,14 @@ class Config(GenericImmutableDict[str, Any]):
                 else:
                     errors.append(f"Unknown key '{key}' provided.")
 
-        if translated_macros:
+        if (
+            translated_macros and final.get("MACROS") is not None
+        ):  # Second check in case an error was generated
             for macro in final["MACROS"].values():
-                if macro.gds == "/dev/null":
-                    macro.gds = Path("")
+                assert isinstance(macro, Macro)
+                if "/dev/null" in macro.gds:
+                    macro.gds = [Path("")]
+                if "/dev/null" in macro.lef:
+                    macro.lef = [Path("")]
 
-        return (Config(final), warnings, errors)
+        return (Config(final, meta=self.meta), warnings, errors)

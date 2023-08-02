@@ -17,29 +17,11 @@ import os
 import json
 import shutil
 from decimal import Decimal
-from collections import UserString
 from typing import List, Mapping, Union, Optional, Dict, Any
 
 from .design_format import DesignFormat, DesignFormatObject
 
-from ..common import GenericImmutableDict, mkdirp, copy_recursive
-
-
-class Path(UserString, os.PathLike):
-    """
-    A Path type for OpenLane configuration variables.
-
-    Basically just a string.
-    """
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def exists(self) -> bool:
-        """
-        A convenience method calling :meth:`os.path.exists`
-        """
-        return os.path.exists(self)
+from ..common import Path, GenericImmutableDict, mkdirp, copy_recursive
 
 
 class InvalidState(RuntimeError):
@@ -66,7 +48,9 @@ class State(GenericImmutableDict[str, StateElement]):
 
     def __init__(
         self,
-        copying: Optional[Mapping[str, StateElement]] = None,
+        copying: Optional[
+            Union[Mapping[str, StateElement], Mapping[DesignFormat, StateElement]]
+        ] = None,
         *args,
         overrides: Optional[
             Union[Mapping[str, StateElement], Mapping[DesignFormat, StateElement]]
@@ -77,7 +61,10 @@ class State(GenericImmutableDict[str, StateElement]):
         copying_resolved: Dict[str, StateElement] = {}
         if c_mapping := copying:
             for key, value in c_mapping.items():
-                copying_resolved[key] = value
+                if isinstance(key, DesignFormat):
+                    copying_resolved[key.value.id] = value
+                else:
+                    copying_resolved[key] = value
 
         for format in DesignFormat:
             assert isinstance(format.value, DesignFormatObject)  # type checker shut up
@@ -94,14 +81,14 @@ class State(GenericImmutableDict[str, StateElement]):
                     k = k.value.id
                 overrides_resolved[k] = value
 
+        self.metrics = GenericImmutableDict(metrics or {})
+
         super().__init__(
             copying_resolved,
             *args,
             overrides=overrides_resolved,
             **kwargs,
         )
-
-        self.metrics = GenericImmutableDict(metrics or {})
 
     def __getitem__(self, key: Union[DesignFormat, str]) -> StateElement:
         if isinstance(key, DesignFormat):
@@ -124,7 +111,7 @@ class State(GenericImmutableDict[str, StateElement]):
     def to_raw_dict(self, metrics: bool = True) -> Dict[str, Any]:
         final = super().to_raw_dict()
         if metrics:
-            final["metrics"] = self.metrics
+            final["metrics"] = self.metrics.to_raw_dict()
         return final
 
     def copy(self: "State") -> "State":
@@ -176,11 +163,15 @@ class State(GenericImmutableDict[str, StateElement]):
         """
         self.validate()
         self.__save_snapshot_recursive(path, self)
-        metrics_path = os.path.join(path, "metrics.csv")
-        with open(metrics_path, "w") as f:
+        metrics_csv_path = os.path.join(path, "metrics.csv")
+        with open(metrics_csv_path, "w", encoding="utf8") as f:
             f.write("Metric,Value\n")
             for metric in self.metrics:
-                f.write(f"{metric}, {self.metrics[metric]}\n")
+                f.write(f"{metric},{self.metrics[metric]}\n")
+
+        metrics_json_path = os.path.join(path, "metrics.json")
+        with open(metrics_json_path, "w", encoding="utf8") as f:
+            f.write(self.metrics.dumps())
 
     def __validate_recursive(
         self,
@@ -251,7 +242,7 @@ class State(GenericImmutableDict[str, StateElement]):
             raise InvalidState(f"Invalid JSON string provided for state: {e}")
 
         if not isinstance(raw, dict):
-            raise InvalidState("Failed to load state: JSON result is a dictionary")
+            raise InvalidState("Failed to load state: JSON result is not a dictionary")
 
         metrics = raw.get("metrics")
         if metrics is not None:

@@ -38,7 +38,9 @@ lint: venv/manifest.txt
 
 .PHONY: test
 test: venv/manifest.txt
-	./venv/bin/python3 -m openlane ./designs/spm/config.json
+	./venv/bin/coverage run -m pytest
+	./venv/bin/coverage report
+	./venv/bin/coverage html
 
 .PHONY: test-opt
 test-opt: venv/manifest.txt
@@ -78,3 +80,4 @@ clean:
 	rm -rf dist/
 	rm -rf *.egg-info
 	rm -rf designs/*/runs
+	rm -rf test_data/designs/*/runs

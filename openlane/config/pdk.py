@@ -17,8 +17,7 @@ from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Dict
 
 from .variable import Variable
-
-from ..state import Path
+from ..common import Path
 
 # Note that values in this file do not take defaults.
 
@@ -529,46 +528,58 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new = dict(config)
 
     # 1. Migrate SYNTH_DRIVING_CELL
-    del new["SYNTH_DRIVING_CELL"]
-    del new["SYNTH_DRIVING_CELL_PIN"]
-    new[
-        "SYNTH_DRIVING_CELL"
-    ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+    if "SYNTH_DRIVING_CELL_PIN" in new:
+        del new["SYNTH_DRIVING_CELL"]
+        del new["SYNTH_DRIVING_CELL_PIN"]
+        new[
+            "SYNTH_DRIVING_CELL"
+        ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
 
     # 2. Migrate SYNTH_TIE{HI,LO}_CELL
-    del new["SYNTH_TIEHI_PORT"]
-    new["SYNTH_TIEHI_CELL"] = "/".join(config["SYNTH_TIEHI_PORT"].split(" "))
+    if "SYNTH_TIEHI_PORT" in new:
+        del new["SYNTH_TIEHI_PORT"]
+        new["SYNTH_TIEHI_CELL"] = "/".join(config["SYNTH_TIEHI_PORT"].split(" "))
 
-    del new["SYNTH_TIELO_PORT"]
-    new["SYNTH_TIELO_CELL"] = "/".join(config["SYNTH_TIELO_PORT"].split(" "))
+    if "SYNTH_TIELO_PORT" in new:
+        del new["SYNTH_TIELO_PORT"]
+        new["SYNTH_TIELO_CELL"] = "/".join(config["SYNTH_TIELO_PORT"].split(" "))
 
     # 3. Migrate SYNTH_BUFFER_CELL
-    del new["SYNTH_MIN_BUF_PORT"]
-    new["SYNTH_BUFFER_CELL"] = "/".join(config["SYNTH_MIN_BUF_PORT"].split(" "))
+    if "SYNTH_MIN_BUF_PORT" in new:
+        del new["SYNTH_MIN_BUF_PORT"]
+        new["SYNTH_BUFFER_CELL"] = "/".join(config["SYNTH_MIN_BUF_PORT"].split(" "))
 
     # 4. Migrate DIODE_CELL
-    del new["DIODE_CELL"]
-    del new["DIODE_CELL_PIN"]
-    new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
+    if "DIODE_CELL_PIN" in new:
+        new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
+        del new["DIODE_CELL_PIN"]
 
     # 5. Interconnect Corners
-    del new["RCX_RULES"]
-    new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
-    if config.get("RCX_RULES_MIN") is not None:
+    if "RCX_RULESETS" not in new and config.get("RCX_RULES") is not None:
+        new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
+        if config.get("RCX_RULES_MIN") is not None:
+            new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
+        if config.get("RCX_RULES_MAX") is not None:
+            new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
+    if "RCX_RULES" in new:
+        del new["RCX_RULES"]
+    if "RCX_RULES_MIN" in new:
         del new["RCX_RULES_MIN"]
-        new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
-    if config.get("RCX_RULES_MAX") is not None:
+    if "RCX_RULES_MAX" in new:
         del new["RCX_RULES_MAX"]
-        new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
 
-    del new["TECH_LEF"]
-    new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
-    if config.get("TECH_LEF_MIN") is not None:
+    if "TECH_LEFS" not in new and config.get("TECH_LEF") is not None:
+        new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
+        if config.get("TECH_LEF_MIN") is not None:
+            new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
+        if config.get("TECH_LEF_MAX") is not None:
+            new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
+    if "TECH_LEF" in new:
+        del new["TECH_LEF"]
+    if "TECH_LEF_MIN" in new:
         del new["TECH_LEF_MIN"]
-        new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
-    if config.get("TECH_LEF_MAX") is not None:
+    if "TECH_LEF_MAX" in new:
         del new["TECH_LEF_MAX"]
-        new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
 
     # 6. Timing Corners
     lib_sta: Dict[str, List[str]] = {}
@@ -578,7 +589,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
     def process_sta(key: str):
         nonlocal new, default_pvt
-        lib_raw = new.pop(key)
+        lib_raw = new.pop(key, None)
         if lib_raw is None:
             return
         lib = lib_raw.strip()

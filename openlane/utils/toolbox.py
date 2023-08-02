@@ -35,37 +35,34 @@ from typing import (
 
 from .memoize import memoize
 
+from ..state import DesignFormat
 from ..logging import debug, warn
 from ..config import Config, Macro
-from ..state import DesignFormat, Path
-from ..common import mkdirp, get_script_dir, parse_metric_modifiers
+from ..common import (
+    Path,
+    mkdirp,
+    get_script_dir,
+    aggregate_metrics,
+)
+
+from deprecated.sphinx import deprecated
 
 
 class Toolbox(object):
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
 
+    @deprecated(
+        version="2.0.0b1",
+        reason="Use 'aggregate_metrics' from 'openlane.common'",
+        action="once",
+    )
     def aggregate_metrics(
         self,
         input: Dict[str, Any],
         aggregator_by_metric: Dict[str, Tuple[Any, Callable[[Iterable], Any]]],
     ) -> Dict[str, Any]:
-        aggregated: Dict[str, Any] = {}
-        for name, value in input.items():
-            metric_name, modifiers = parse_metric_modifiers(name)
-            if len(modifiers) == 0:
-                # No modifiers = final aggregate, don't double-represent in sums
-                continue
-            entry = aggregator_by_metric.get(metric_name)
-            if entry is None:
-                continue
-            start, aggregator = entry
-            current = aggregated.get(metric_name) or start
-            aggregated[metric_name] = aggregator([current, value])
-
-        final_values = input.copy()
-        final_values.update(aggregated)
-        return final_values
+        return aggregate_metrics(input, aggregator_by_metric)
 
     def filter_views(
         self,
@@ -111,12 +108,15 @@ class Toolbox(object):
                 continue
 
             if unless_exist is not None:
-                alt_views = macro.view_by_df(unless_exist)
-                if alt_views is not None and (
-                    isinstance(alt_views, list) and len(alt_views) != 0
-                ):
-                    continue
-
+                entry = macro.view_by_df(unless_exist)
+                if entry is not None:
+                    alt_views = entry
+                    if isinstance(alt_views, dict):
+                        alt_views = self.filter_views(config, alt_views, timing_corner)
+                    elif not isinstance(alt_views, list):
+                        alt_views = [alt_views]
+                    if len(alt_views) != 0:
+                        continue
             if isinstance(views, dict):
                 views_filtered = self.filter_views(config, views, timing_corner)
                 result += views_filtered
@@ -209,7 +209,9 @@ class Toolbox(object):
 
         return (timing_corner, [str(path) for path in result])
 
-    def __render_common(self, config: Config) -> Optional[Tuple[str, str, str]]:
+    def __render_common(
+        self, config: Config
+    ) -> Optional[Tuple[str, str, str]]:  # pragma: no cover
         klayout_bin = which("klayout")
         if klayout_bin is None:
             warn("This PDK does not support KLayout; previews cannot be rendered.")
@@ -223,7 +225,9 @@ class Toolbox(object):
             return None
         return (str(lyp), str(lyt), str(lym))
 
-    def render_png(self, config: Config, input: str) -> Optional[bytes]:
+    def render_png(
+        self, config: Config, input: str
+    ) -> Optional[bytes]:  # pragma: no cover
         files = self.__render_common(config)
         if files is None:
             return None
@@ -276,7 +280,7 @@ class Toolbox(object):
         as_cell_lists: bool = False,
     ) -> List[str]:
         """
-        Returns a path to a new lib file without specific cells.
+        Creates a new lib file with some cells removed.
 
         This function is memoized, i.e., results are cached for a specific set
         of inputs.
@@ -287,7 +291,7 @@ class Toolbox(object):
         :param as_cell_lists: If set to true, `excluded_cells` is treated as a
             list of files that are themselves lists of cells. Otherwise, it is
             treated as a list of cells.
-        :returns: A path to a lib file with the removed cells.
+        :returns: A path to the lib file with the removed cells.
         """
         if as_cell_lists:  # Paths to files
             excluded_cells_str = ""
@@ -330,7 +334,7 @@ class Toolbox(object):
                         cell_name = cell_m[2]
                         if cell_name in excluded_cells:
                             state = State.excluded_cell
-                            write(f"{whitespace}/* removed {cell_name} */")
+                            write(f"{whitespace}/* removed {cell_name} */\n")
                         else:
                             state = State.cell
                             write(line)

@@ -1,3 +1,31 @@
+# 2.0.0-b1
+
+* Added unit testing and coverage reporting for core infrastructure features (80%+)
+* Added running unit tests in the CI for different Python versions
+* Moved CI designs out-of-tree
+* Various documentation improvements
+* Common Module
+  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the environment and testing
+  * Made Tcl environment evaluation no longer rely on the filesystem
+  * Made Tcl environment evaluation restore the environment after the fact
+  * Moved `Path` from State module to common
+  * Moved parsing metric modifiers and such from Toolbox
+* Config Module
+  * Updated PDK migration script to be a bit more resilient
+  * Fixed bug where `meta` did not get copied properly with `Config` copies
+  * Rewrote configuration dictionary preprocessor again
+* Flow Module
+  * Sequential flows now handle duplicate Step IDs by adding a suffix
+* Logging Module
+  * Logging rewritten to use Python logger with rich handler, the latter of which suppressed during unit testing
+ * State Module
+  * `.save_snapshot()` now also saves a JSON representation of metrics
+  * Fixed metric cloning
+  * Step Module
+  * Report start/end locii also end up in the log file
+  * Utils
+  * DRC module now uses `.` to separate category layer and rule in name
+
 # 2.0.0-a55
 
 * Updated OpenROAD to `02ea75b`

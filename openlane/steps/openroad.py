@@ -41,9 +41,9 @@ from .common_variables import (
 )
 
 from ..config import Variable
-from ..logging import debug, err, info, warn
-from ..state import State, DesignFormat, Path
-from ..common import get_script_dir, StringEnum, get_tpe, mkdirp
+from ..state import State, DesignFormat
+from ..logging import debug, err, info, warn, console
+from ..common import Path, get_script_dir, StringEnum, get_tpe, mkdirp, TclUtils
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -157,7 +157,7 @@ class OpenROADStep(TclStep):
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
-        env["PNR_EXCLUDED_CELLS"] = self.join(
+        env["PNR_EXCLUDED_CELLS"] = TclUtils.join(
             [
                 cell.strip()
                 for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
@@ -459,7 +459,7 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        info(table)
+        console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 
