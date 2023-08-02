@@ -392,7 +392,11 @@ def power_route(
         print("Added", rule.getName())
 
     def create_custom_via(layer1, layer2, width, height, reorient="R0"):
-        assert width > 0 and height > 0
+        if not width > 0:
+            raise ValueError(f"width must be greater than 0: {width} provided")
+
+        if not height > 0:
+            raise ValueError(f"height must be greater than 0: {height} provided")
 
         if layer1.getRoutingLevel() < layer2.getRoutingLevel():
             lower_layer_name = layer1.getName()
@@ -401,7 +405,7 @@ def power_route(
             lower_layer_name = layer2.getName()
             upper_layer_name = layer1.getName()
         else:
-            raise Exception("Cannot create a custom via between two identical layers")
+            raise ValueError("Cannot create a custom via between two identical layers")
 
         if reorient in ["R90", "R270"]:
             width, height = height, width

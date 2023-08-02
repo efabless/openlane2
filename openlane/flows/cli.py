@@ -15,7 +15,7 @@ import os
 from textwrap import dedent
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Union
 
 
 from click import Parameter, echo
@@ -44,12 +44,17 @@ from ..state import State
 def set_log_level_cb(
     ctx: Context,
     param: Parameter,
-    value: bool,
+    value: str,
 ):
+    level: Union[str, int] = value
     try:
-        set_log_level(value)
-    except ValueError:
-        err(f"Invalid logging level: {value}.")
+        try:
+            level = int(value)
+        except ValueError:
+            pass
+        set_log_level(level)
+    except ValueError as e:
+        err(f"Invalid logging level {value}: {e}.")
         echo(ctx.get_help())
         ctx.exit(-1)
 
@@ -150,7 +155,7 @@ def cloup_flow_opts(
     volare_by_default: bool = True,
 ) -> Decorator:
     """
-    Returns a wrapper that appends a number of OpenLane flow-related flags to a
+    Creates a wrapper that appends a number of OpenLane flow-related flags to a
     function decorated with `@cloup.command https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command`_.
 
     The following keyword arguments will be passed to the decorated function.
@@ -185,6 +190,7 @@ def cloup_flow_opts(
     :param accept_config_files: Accepts configuration file paths as CLI arguments
     :param volare_by_default: If ``pdk_options`` is ``True``, this changes whether
         Volare is used by default for this CLI or not.
+    :returns: The wrapper
     """
     o = partial(option, show_default=True)
 

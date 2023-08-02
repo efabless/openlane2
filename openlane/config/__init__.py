@@ -19,10 +19,6 @@ This modules includes various functions for importing and/or generating OpenLane
 configuration objects. Configuration objects are the primary input to a flow.
 """
 from .preprocessor import Keys
-from .variable import Variable
-from .macro import Macro, Instance
-from .config import Config, InvalidConfig
-
-
-from .tcleval import env_from_tcl
+from .variable import Instance, Macro, Variable
+from .config import Meta, Config, InvalidConfig
 from .flow import all_variables as universal_flow_config_variables

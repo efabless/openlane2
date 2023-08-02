@@ -15,11 +15,9 @@ import io
 import re
 import json
 from enum import IntEnum
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Tuple, Dict
-
-from ..logging import debug
 
 BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
@@ -40,7 +38,7 @@ class Violation:
 
     @property
     def category_name(self) -> str:
-        return f"{self.layer}_{self.rule}"
+        return f"{self.layer}.{self.rule}"
 
 
 @dataclass
@@ -70,7 +68,7 @@ class DRC:
         module = "UNKNOWN"
         counter = 0
         bbox_count = 0
-        for line in report:
+        for i, line in enumerate(report):
             line = line.strip()
             if ("[INFO]" in line) or (line == ""):
                 continue
@@ -84,34 +82,43 @@ class DRC:
             elif state == State.header:
                 module = line
             elif state == State.drc:
-                if match := MAGIC_RULE_LINE_PARSER.match(line):
-                    description = match[0]
-                    rules = []
-                    if rules_raw := match[2]:
-                        for match in MAGIC_RULE_RX.finditer(rules_raw):
-                            layer = match[1]
-                            rule = match[2]
-                            rules.append((layer, rule))
-                    else:
-                        rules = [("UNKNOWN", "UNKNOWN")]
-                    violation = Violation(rules, description)
-                    counter += 1
-                else:
-                    debug(f"Line '{line}' didn't match rule regex.")
+                match = MAGIC_RULE_LINE_PARSER.match(line)
+                assert match is not None, "universal regex did not match string"
+                description = match[0]
+                rules = []
+                if rules_raw := match[2]:
+                    for match in MAGIC_RULE_RX.finditer(rules_raw):
+                        layer = match[1]
+                        rule = match[2]
+                        rules.append((layer, rule))
+                if len(rules) == 0:
+                    rules = [("UNKNOWN", f"UNKNOWN{counter}")]
+                violation = Violation(rules, description)
+                counter += 1
             elif state == State.data:
-                coord_list = [Decimal(coord[:-2]) for coord in line.split()]
+                assert violation is not None, "Parser reached an inconsistent state"
+                try:
+                    coord_list = [Decimal(coord[:-2]) for coord in line.split()]
+                except InvalidOperation:
+                    raise ValueError(
+                        f"invalid bounding box at line {i}: number is invalid"
+                    )
+
+                if len(coord_list) != 4:
+                    raise ValueError(
+                        f"invalid bounding box at line {i}: bounding box has {len(coord_list)}/4 elements"
+                    )
+
                 bounding_box: BoundingBox = (
                     coord_list[0],
                     coord_list[1],
                     coord_list[2],
                     coord_list[3],
                 )
-                if violation is None:
-                    raise ValueError("Malformed Magic report")
-                else:
-                    violation.bounding_boxes.append(bounding_box)
-                    violations[violation.category_name] = violation
-                    bbox_count += 1
+
+                violation.bounding_boxes.append(bounding_box)
+                violations[violation.category_name] = violation
+                bbox_count += 1
 
         return (Self(module, violations), bbox_count)
 

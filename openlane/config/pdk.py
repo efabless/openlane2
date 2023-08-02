@@ -17,8 +17,7 @@ from decimal import Decimal
 from typing import Any, List, Mapping, Optional, Dict
 
 from .variable import Variable
-
-from ..state import Path
+from ..common import Path
 
 # Note that values in this file do not take defaults.
 
@@ -295,13 +294,57 @@ scl_variables = [
         "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
         deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
     ),
-    # Synthesis
+    # Constraints
     Variable(
-        "SYNTH_CAP_LOAD",
+        "OUTPUT_CAP_LOAD",
         Decimal,
         "Defines the capacitive load on the output ports.",
         units="fF",
+        deprecated_names=["SYNTH_CAP_LOAD"],
     ),
+    Variable(
+        "MAX_FANOUT_CONSTRAINT",
+        int,
+        "The max load that the output ports can drive to be used as a constraint on Synthesis and CTS.",
+        units="cells",
+        deprecated_names=["SYNTH_MAX_FANOUT"],
+    ),
+    Variable(
+        "MAX_TRANSITION_CONSTRAINT",
+        Optional[Decimal],
+        "The max transition time (slew) from high to low or low to high on cell inputs in ns to be used as a constraint on Synthesis and CTS. If not provided, it is calculated at runtime as `10%` of the provided clock period, unless that exceeds the PDK's `DEFAULT_MAX_TRAN` value.",
+        units="ns",
+        deprecated_names=["SYNTH_MAX_TRAN"],
+    ),
+    Variable(
+        "CLOCK_UNCERTAINTY_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock uncertainty/jitter for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_UNCERTAINTY"],
+    ),
+    Variable(
+        "CLOCK_TRANSITION_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock transition/slew for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_TRANSITION"],
+    ),
+    Variable(
+        "TIME_DERATING_CONSTRAINT",
+        Decimal,
+        "Specifies a derating factor to multiply the path delays with. It specifies the upper and lower ranges of timing.",
+        units="%",
+        deprecated_names=["SYNTH_TIMING_DERATE"],
+    ),
+    Variable(
+        "IO_DELAY_CONSTRAINT",
+        Decimal,
+        "Specifies the percentage of the clock period used in the input/output delays.",
+        units="%",
+        deprecated_names=["IO_PCT"],
+    ),
+    # Synthesis
     Variable(
         "SYNTH_DRIVING_CELL",
         str,
@@ -485,46 +528,58 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new = dict(config)
 
     # 1. Migrate SYNTH_DRIVING_CELL
-    del new["SYNTH_DRIVING_CELL"]
-    del new["SYNTH_DRIVING_CELL_PIN"]
-    new[
-        "SYNTH_DRIVING_CELL"
-    ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+    if "SYNTH_DRIVING_CELL_PIN" in new:
+        del new["SYNTH_DRIVING_CELL"]
+        del new["SYNTH_DRIVING_CELL_PIN"]
+        new[
+            "SYNTH_DRIVING_CELL"
+        ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
 
     # 2. Migrate SYNTH_TIE{HI,LO}_CELL
-    del new["SYNTH_TIEHI_PORT"]
-    new["SYNTH_TIEHI_CELL"] = "/".join(config["SYNTH_TIEHI_PORT"].split(" "))
+    if "SYNTH_TIEHI_PORT" in new:
+        del new["SYNTH_TIEHI_PORT"]
+        new["SYNTH_TIEHI_CELL"] = "/".join(config["SYNTH_TIEHI_PORT"].split(" "))
 
-    del new["SYNTH_TIELO_PORT"]
-    new["SYNTH_TIELO_CELL"] = "/".join(config["SYNTH_TIELO_PORT"].split(" "))
+    if "SYNTH_TIELO_PORT" in new:
+        del new["SYNTH_TIELO_PORT"]
+        new["SYNTH_TIELO_CELL"] = "/".join(config["SYNTH_TIELO_PORT"].split(" "))
 
     # 3. Migrate SYNTH_BUFFER_CELL
-    del new["SYNTH_MIN_BUF_PORT"]
-    new["SYNTH_BUFFER_CELL"] = "/".join(config["SYNTH_MIN_BUF_PORT"].split(" "))
+    if "SYNTH_MIN_BUF_PORT" in new:
+        del new["SYNTH_MIN_BUF_PORT"]
+        new["SYNTH_BUFFER_CELL"] = "/".join(config["SYNTH_MIN_BUF_PORT"].split(" "))
 
     # 4. Migrate DIODE_CELL
-    del new["DIODE_CELL"]
-    del new["DIODE_CELL_PIN"]
-    new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
+    if "DIODE_CELL_PIN" in new:
+        new["DIODE_CELL"] = f"{config['DIODE_CELL']}/{config['DIODE_CELL_PIN']}"
+        del new["DIODE_CELL_PIN"]
 
     # 5. Interconnect Corners
-    del new["RCX_RULES"]
-    new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
-    if config.get("RCX_RULES_MIN") is not None:
+    if "RCX_RULESETS" not in new and config.get("RCX_RULES") is not None:
+        new["RCX_RULESETS"] = f"nom_* \"{config['RCX_RULES']}\""
+        if config.get("RCX_RULES_MIN") is not None:
+            new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
+        if config.get("RCX_RULES_MAX") is not None:
+            new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
+    if "RCX_RULES" in new:
+        del new["RCX_RULES"]
+    if "RCX_RULES_MIN" in new:
         del new["RCX_RULES_MIN"]
-        new["RCX_RULESETS"] += f" min_* \"{config['RCX_RULES_MIN']}\""
-    if config.get("RCX_RULES_MAX") is not None:
+    if "RCX_RULES_MAX" in new:
         del new["RCX_RULES_MAX"]
-        new["RCX_RULESETS"] += f" max_* \"{config['RCX_RULES_MAX']}\""
 
-    del new["TECH_LEF"]
-    new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
-    if config.get("TECH_LEF_MIN") is not None:
+    if "TECH_LEFS" not in new and config.get("TECH_LEF") is not None:
+        new["TECH_LEFS"] = f"nom_* \"{config['TECH_LEF']}\""
+        if config.get("TECH_LEF_MIN") is not None:
+            new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
+        if config.get("TECH_LEF_MAX") is not None:
+            new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
+    if "TECH_LEF" in new:
+        del new["TECH_LEF"]
+    if "TECH_LEF_MIN" in new:
         del new["TECH_LEF_MIN"]
-        new["TECH_LEFS"] += f" min_* \"{config['TECH_LEF_MIN']}\""
-    if config.get("TECH_LEF_MAX") is not None:
+    if "TECH_LEF_MAX" in new:
         del new["TECH_LEF_MAX"]
-        new["TECH_LEFS"] += f" max_* \"{config['TECH_LEF_MAX']}\""
 
     # 6. Timing Corners
     lib_sta: Dict[str, List[str]] = {}
@@ -534,7 +589,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
     def process_sta(key: str):
         nonlocal new, default_pvt
-        lib_raw = new.pop(key)
+        lib_raw = new.pop(key, None)
         if lib_raw is None:
             return
         lib = lib_raw.strip()
@@ -578,11 +633,22 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
     new["LIB"] = lib_sta
 
-    # 7. Disconnected Modules (sky130)
+    # 7. capacitance and such
+    if "SYNTH_CAP_LOAD" in config:
+        new["OUTPUT_CAP_LOAD"] = config["SYNTH_CAP_LOAD"]
+        del new["SYNTH_CAP_LOAD"]
+
+    new["MAX_FANOUT_CONSTRAINT"] = 10
+    new["CLOCK_UNCERTAINTY_CONSTRAINT"] = 0.25
+    new["CLOCK_TRANSITION_CONSTRAINT"] = 0.15
+    new["TIME_DERATING_CONSTRAINT"] = 5
+    new["IO_DELAY_CONSTRAINT"] = 20
+
+    # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
 
-    # 8. Invalid Variables (gf180mcu)
+    # x2. Invalid Variables (gf180mcu)
     if new["PDK"].startswith("gf180mcu"):
         del new["GPIO_PADS_LEF"]
         del new["GPIO_PADS_VERILOG"]

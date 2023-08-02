@@ -16,7 +16,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import re
 import traceback
 
 import jinja2
@@ -32,9 +31,6 @@ import openlane.config
 def setup(app: Sphinx):
     app.connect("config-inited", generate_module_docs)
     return {"version": "1.0"}
-
-
-newline_rx = re.compile("\n")
 
 
 def generate_module_docs(app: Sphinx, conf: Config):

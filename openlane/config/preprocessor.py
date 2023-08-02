@@ -16,8 +16,8 @@ import os
 import glob
 import fnmatch
 from enum import Enum
+from decimal import Decimal
 from types import SimpleNamespace
-from collections import UserString
 from typing import Any, Dict, List, Mapping, Sequence, Tuple, Union, Optional
 
 from ..common import is_string
@@ -37,18 +37,11 @@ PROCESS_INFO_ALLOWLIST = [
 ]
 
 
-Scalar = Union[str, int, float, bool, None]
+Scalar = Union[str, int, Decimal, float, bool, None]
 Valid = Union[Scalar, dict, list]
 
 
-class InvalidConfig(Exception):
-    pass
-
-
 class Expr(object):
-    class SyntaxError(Exception):
-        pass
-
     class Token(object):
         class Type(Enum):
             VAR = 0
@@ -114,7 +107,7 @@ class Expr(object):
         return tokens
 
     @staticmethod
-    def evaluate(expression: str, values_so_far: Mapping[str, Any]) -> float:
+    def evaluate(expression: str, symbols: Mapping[str, Any]) -> Decimal:
         tokens: List["Expr.Token"] = Expr.tokenize(expression)
         ETT = Expr.Token.Type
 
@@ -163,18 +156,22 @@ class Expr(object):
         eval_stack = []
         for token in postfix:
             if token.type == ETT.NUMBER:
-                eval_stack.append(float(token.value))
+                eval_stack.append(Decimal(token.value))
             elif token.type == ETT.VAR:
                 try:
-                    value = values_so_far[token.value]
-                    eval_stack.append(float(value))
+                    value = symbols[token.value]
+                    if not (
+                        isinstance(value, int)
+                        or isinstance(value, float)
+                        or isinstance(value, Decimal)
+                    ):
+                        raise TypeError(
+                            f"Referenced variable {token.value} is not of a valid numeric type: f{type(value)}"
+                        )
+                    eval_stack.append(Decimal(value))
                 except KeyError:
-                    raise SyntaxError(
+                    raise TypeError(
                         f"Configuration variable '{token.value}' not found."
-                    )
-                except Exception:
-                    raise SyntaxError(
-                        f"Invalid non-numeric value '{value}' for variable ${token.value}."
                     )
             elif token.type == ETT.OP:
                 try:
@@ -183,7 +180,7 @@ class Expr(object):
                     eval_stack.pop()
                     eval_stack.pop()
 
-                    result = 0.0
+                    result = Decimal(0.0)
                     if token.value == "**":
                         result = number1**number2
                     elif token.value == "*":
@@ -198,13 +195,13 @@ class Expr(object):
                     eval_stack.append(result)
                 except IndexError:
                     raise SyntaxError(
-                        f"Not enough operands for operator '{token.value}'."
+                        f"not enough operands for operator '{token.value}'"
                     )
 
         if len(eval_stack) > 1:
-            raise SyntaxError("Expression does not reduce to one value.")
+            raise ValueError("expression reduces to multiple values")
         elif len(eval_stack) == 0:
-            raise SyntaxError("Expression is empty.")
+            raise ValueError("expression is empty")
 
         return eval_stack[0]
 
@@ -212,10 +209,15 @@ class Expr(object):
 ref_rx = re.compile(r"^\$([A-Za-z_][A-Za-z0-9_\.\[\]]*)")
 
 
-def process_string(value: str, values_so_far: Mapping[str, Any]) -> Valid:
+def process_string(
+    value: str,
+    symbols: Mapping[str, Any],
+    readable_paths: Optional[List[str]] = None,
+) -> Valid:
     global ref_rx
     EXPR_PREFIX = "expr::"
     REF_PREFIX = "ref::"
+    REFG_PREFIX = "refg::"
 
     DIR_PREFIX = "dir::"
     PDK_DIR_PREFIX = "pdk_dir::"
@@ -223,68 +225,64 @@ def process_string(value: str, values_so_far: Mapping[str, Any]) -> Valid:
     mutable: str = value
 
     if value.startswith(DIR_PREFIX):
-        mutable = value.replace(DIR_PREFIX, f"ref::${Keys.design_dir}/")
+        mutable = value.replace(DIR_PREFIX, f"refg::${Keys.design_dir}/")
     elif value.startswith(PDK_DIR_PREFIX):
-        mutable = value.replace(PDK_DIR_PREFIX, f"ref::${Keys.pdkpath}/")
+        mutable = value.replace(PDK_DIR_PREFIX, f"refg::${Keys.pdkpath}/")
 
     if mutable.startswith(EXPR_PREFIX):
         try:
-            return Expr.evaluate(value[len(EXPR_PREFIX) :], values_so_far)
+            return Expr.evaluate(value[len(EXPR_PREFIX) :], symbols)
         except SyntaxError as e:
-            raise InvalidConfig(f"Invalid expression '{value}': {e}")
-    elif mutable.startswith(REF_PREFIX):
-        reference = mutable[len(REF_PREFIX) :]
+            raise SyntaxError(f"Invalid expression '{value}': {e}") from None
+    elif mutable.startswith(REF_PREFIX) or mutable.startswith(REFG_PREFIX):
+        reference = mutable[mutable.index("::") + 2 :]
         match = ref_rx.match(reference)
         if match is None:
-            raise InvalidConfig(f"Invalid reference string '{reference}'")
+            raise SyntaxError(f"Invalid reference string '{reference}'") from None
 
         reference_variable = match[1]
-        try:
-            found = values_so_far[reference_variable]
-            if found is None:
-                return None
+        if reference_variable not in symbols:
+            raise KeyError(
+                f"Referenced variable '{reference_variable}' not found"
+            ) from None
 
-            if not is_string(found):
-                if type(found) in [int, float]:
-                    raise InvalidConfig(
-                        f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
-                    )
-                else:
-                    raise InvalidConfig(
-                        f"Referenced variable {reference_variable} is not a string: {type(found)}."
-                    )
+        target = symbols[reference_variable]
+        if target is None:
+            return None
 
-            found = str(found)
+        if not is_string(target):
+            if type(target) in [int, float, Decimal]:
+                raise TypeError(
+                    f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
+                ) from None
+            else:
+                raise TypeError(
+                    f"Referenced variable {reference_variable} is not a valid string: {type(target)}."
+                ) from None
 
-            replaced = reference.replace(match[0], found)
+        target = str(target)
+        concatenated = reference.replace(match[0], target)
 
-            found_abs = os.path.abspath(found)
-            full_abspath = os.path.abspath(replaced)
+        # Glob only if Refg
+        if not mutable.startswith(REFG_PREFIX):
+            return concatenated
 
-            # Resolve globs for paths that are inside the exposed directory
-            if full_abspath.startswith(found_abs):
-                files = glob.glob(full_abspath)
-                files_escaped = [file.replace("$", r"\$") for file in files]
-                files_escaped.sort()
-                return files_escaped
+        # Glob only if readable_paths isn't null
+        if readable_paths is None:
+            return target
 
-            return full_abspath
-        except KeyError:
-            raise InvalidConfig(
-                f"Referenced variable '{reference_variable}' not found."
+        final_abspath = os.path.abspath(concatenated)
+        in_exposed = [final_abspath.startswith(p) for p in readable_paths]
+        if True not in in_exposed:
+            raise PermissionError(
+                f"'{concatenated}' is not located any path readable to OpenLane"
             )
+        files = glob.glob(final_abspath)
+        files_escaped = [file.replace("$", r"\$") for file in files]
+        files_escaped.sort()
+        return files_escaped
     else:
         return mutable
-
-
-def process_scalar(value: Scalar, values_so_far: Mapping[str, Any]) -> Valid:
-    result: Valid = value
-
-    if is_string(value):
-        assert isinstance(value, str) or isinstance(value, UserString)
-        result = process_string(value, values_so_far)
-
-    return result
 
 
 PDK_PREFIX = "pdk::"
@@ -295,6 +293,8 @@ def process_list_recursive(
     input: Sequence[Any],
     ref: List[Any],
     symbols: Dict[str, Any],
+    readable_paths: Optional[List[str]],
+    /,
     key_path: str = "",
 ):
     for i, value in enumerate(input):
@@ -302,12 +302,26 @@ def process_list_recursive(
         processed: Any = None
         if isinstance(value, Mapping):
             processed = {}
-            process_dict_recursive(value, processed, symbols, key_path=current_key_path)
+            process_dict_recursive(
+                value,
+                processed,
+                symbols,
+                readable_paths,
+                key_path=current_key_path,
+            )
         elif isinstance(value, Sequence) and not is_string(value):
             processed = []
-            process_list_recursive(value, processed, symbols, key_path=current_key_path)
+            process_list_recursive(
+                value,
+                processed,
+                symbols,
+                readable_paths,
+                key_path=current_key_path,
+            )
+        elif is_string(value):
+            processed = process_string(value, symbols, readable_paths)
         else:
-            processed = process_scalar(value, symbols)
+            processed = value
 
         if processed is not None:
             ref.append(processed)
@@ -315,12 +329,14 @@ def process_list_recursive(
 
 
 def process_dict_recursive(
-    config_in: Mapping[str, Any],
+    input: Mapping[str, Any],
     ref: Dict[str, Any],
     symbols: Dict[str, Any],
+    readable_paths: Optional[List[str]],
+    /,
     key_path: str = "",
 ):
-    for key, value in config_in.items():
+    for key, value in input.items():
         current_key_path = key
         if key_path != "":
             current_key_path = f"{key_path}.{key}"
@@ -329,24 +345,48 @@ def process_dict_recursive(
             if key.startswith(PDK_PREFIX):
                 pdk_match = key[len(PDK_PREFIX) :]
                 if fnmatch.fnmatch(ref[Keys.pdk], pdk_match):
-                    process_dict_recursive(value, ref, symbols, key_path=key_path)
+                    process_dict_recursive(
+                        value,
+                        ref,
+                        symbols,
+                        readable_paths,
+                        key_path=key_path,
+                    )
             elif key.startswith(SCL_PREFIX):
                 scl_match = key[len(SCL_PREFIX) :]
                 if ref[Keys.scl] is not None and fnmatch.fnmatch(
                     ref[Keys.scl], scl_match
                 ):
-                    process_dict_recursive(value, ref, symbols, key_path=key_path)
+                    process_dict_recursive(
+                        value,
+                        ref,
+                        symbols,
+                        readable_paths,
+                        key_path=key_path,
+                    )
             else:
                 processed = {}
                 process_dict_recursive(
-                    value, processed, symbols, key_path=current_key_path
+                    value,
+                    processed,
+                    symbols,
+                    readable_paths,
+                    key_path=current_key_path,
                 )
 
         elif isinstance(value, Sequence) and not is_string(value):
             processed = []
-            process_list_recursive(value, processed, symbols, key_path=current_key_path)
+            process_list_recursive(
+                value,
+                processed,
+                symbols,
+                readable_paths,
+                key_path=current_key_path,
+            )
+        elif is_string(value):
+            processed = process_string(value, symbols, readable_paths)
         else:
-            processed = process_scalar(value, symbols)
+            processed = value
 
         if processed is not None:
             ref[key] = processed
@@ -354,10 +394,13 @@ def process_dict_recursive(
 
 
 def process_config_dict(
-    config_in: dict, exposed_variables: Dict[str, str]
+    config_in: Mapping[str, Any],
+    exposed_variables: Dict[str, Any],
+    readable_paths: Optional[List[str]],
 ) -> Dict[str, Any]:
-    state: Dict[str, Any] = dict(exposed_variables)
-    process_dict_recursive(config_in, state, state.copy())
+    state = dict(exposed_variables)
+    symbols = dict(exposed_variables)
+    process_dict_recursive(config_in, state, symbols, readable_paths)
     return state
 
 
@@ -370,42 +413,26 @@ def extract_process_vars(config_in: Dict[str, str]) -> Dict[str, str]:
 
 
 def preprocess_dict(
-    config_dict: Dict[str, Any],
+    config_dict: Mapping[str, Any],
     design_dir: str,
     only_extract_process_info: bool = False,
-    exposing: Optional[List[str]] = None,
     pdk: Optional[str] = None,
     pdkpath: Optional[str] = None,
     scl: Optional[str] = None,
+    readable_paths: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    if exposing is None:
-        exposing = []
-
-    exposed_dict = {}
-
-    implicitly_exposed = [
-        Keys.pdk,
-        Keys.pdkpath,
-        Keys.scl,
-        Keys.design_dir,
-    ]
-    if only_extract_process_info:
-        implicitly_exposed = [Keys.design_dir]
-
-        # So we don't crash on conditional processing:
-        def coalesce(variable_name: str):
-            nonlocal implicitly_exposed, exposed_dict
-            if os.environ.get(variable_name) is not None:
-                implicitly_exposed += [variable_name]
-            else:
-                exposed_dict[variable_name] = ""
-
-        for variable in [
-            Keys.pdk,
-            Keys.pdkpath,
-            Keys.scl,
-        ]:
-            coalesce(variable)
+    """
+    If readable_paths are set to None, refg:: will not work
+    """
+    if None in (pdk, pdkpath, scl):
+        if only_extract_process_info:
+            pdkpath = ""
+            scl = ""
+            pdk = ""
+        else:
+            raise TypeError(
+                "pdk, pdkpath and scl all need to be non-None unless only_extract_process_info is passed"
+            )
 
     base_vars = {
         Keys.pdk: pdk,
@@ -413,25 +440,13 @@ def preprocess_dict(
         Keys.scl: scl,
         Keys.design_dir: design_dir,
     }
-    base_vars_clean = {k: v for k, v in base_vars.items() if v is not None}
 
-    env_copy = os.environ.copy()
-    env_copy.update(base_vars_clean)
-
-    exposed = list(exposing) + implicitly_exposed
-    for key in exposed:
-        if value := env_copy.get(key):
-            exposed_dict[key] = value
-
-    for key in implicitly_exposed:
-        if exposed_dict.get(key) is None:
-            raise ValueError(
-                f"{key} environment variable must be set.",
-            )
-
-    preprocessed = process_config_dict(config_dict, exposed_dict)
+    preprocessed = process_config_dict(
+        config_dict,
+        base_vars,
+        readable_paths,
+    )
     if only_extract_process_info:
         preprocessed = extract_process_vars(preprocessed)
 
-    preprocessed.update(base_vars_clean)
     return preprocessed

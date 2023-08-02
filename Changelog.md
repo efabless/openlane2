@@ -1,3 +1,69 @@
+# 2.0.0-b1
+
+* Added unit testing and coverage reporting for core infrastructure features (80%+)
+* Added running unit tests in the CI for different Python versions
+* Moved CI designs out-of-tree
+* Various documentation improvements
+* Common Module
+  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the environment and testing
+  * Made Tcl environment evaluation no longer rely on the filesystem
+  * Made Tcl environment evaluation restore the environment after the fact
+  * Moved `Path` from State module to common
+  * Moved parsing metric modifiers and such from Toolbox
+* Config Module
+  * Updated PDK migration script to be a bit more resilient
+  * Fixed bug where `meta` did not get copied properly with `Config` copies
+  * Rewrote configuration dictionary preprocessor again
+* Flow Module
+  * Sequential flows now handle duplicate Step IDs by adding a suffix
+* Logging Module
+  * Logging rewritten to use Python logger with rich handler, the latter of which suppressed during unit testing
+ * State Module
+  * `.save_snapshot()` now also saves a JSON representation of metrics
+  * Fixed metric cloning
+  * Step Module
+  * Report start/end locii also end up in the log file
+  * Utils
+  * DRC module now uses `.` to separate category layer and rule in name
+
+# 2.0.0-a55
+
+* Updated OpenROAD to `02ea75b`
+* Updated Volare to `0.9.2`
+* Added guide on updating utilities with Nix
+
+# 2.0.0-a54
+
+* Updated Magic to `0afe4d8`:
+```
+Corrected an error introduced by the code added recently for support
+
+of command logging, which caused the "select cell <instance>" command
+option to become invalid;  this command option is used by the
+parameterized cell generator and makes it impossible to edit the
+parameterized cells.
+```
+
+# 2.0.0-a53
+
+* Reworked Tcl unsafe string escaping to use home-cooked functions instead of
+  "shlex"
+
+# 2.0.0-a52
+
+* Added three designs to the gf180mcu test set
+* Magic GDS writes now check log for `Calma output error` before proceeding
+  further
+* Moved constraint variables to PDK
+  * `SYNTH_CAP_LOAD` renamed to `OUTPUT_CAP_LOAD`
+* Deprecated names for variables now take priority: allows overriding PDK
+  variables properly
+* Updated Magic to `8b3bb1a`
+* Updated PDK to `78b7bc3`
+* Updated Volare to `0.8.0` to support zstd-compressed PDKs
+* Temporarily removed `manual_macro_placement_test` from the sky130 test set
+  pending a weird bug
+
 # 2.0.0-a51
 
 * Updated Netgen to `87d8759`

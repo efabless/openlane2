@@ -80,7 +80,7 @@ jobs:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
       fail-fast: false
-    name: Build (Python ${{ matrix.python-version }})
+    name: Build and Unit Test (Python ${{ matrix.python-version }})
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
@@ -88,10 +88,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Smoke Test
+      - name: Run Unit Tests
         run: |
           make venv
-          ./venv/bin/python3 -m openlane --version
+          make test
   build-docker-amd64:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64]
@@ -134,6 +134,8 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:

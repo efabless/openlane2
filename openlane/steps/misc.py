@@ -14,11 +14,11 @@
 import os
 from typing import Optional, Tuple
 
-from .step import ViewsUpdate, MetricsUpdate, Step
 from ..logging import info
-from ..common import get_script_dir
 from ..config import Variable
-from ..state import State, DesignFormat, Path
+from ..state import State, DesignFormat
+from ..common import Path, get_script_dir
+from .step import ViewsUpdate, MetricsUpdate, Step
 
 
 @Step.factory.register()

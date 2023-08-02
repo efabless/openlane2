@@ -197,8 +197,8 @@ class FlowProgressBar(object):
     @ensure_progress_started
     def get_ordinal_prefix(self) -> str:
         """
-        Returns a string with the current step ordinal, which can be used to
-        create a step directory.
+        :returns: A string with the current step ordinal, which can be
+        used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
         return f"%0{max_stage_digits}d-" % self.__ordinal
@@ -289,7 +289,7 @@ class Flow(ABC):
         self.progress_bar = FlowProgressBar(self.name)
 
     @classmethod
-    def get_help_md(Self):
+    def get_help_md(Self):  # pragma: no cover
         """
         Renders Markdown help for this flow to a string.
         """
@@ -351,7 +351,7 @@ class Flow(ABC):
 
     @classmethod
     @deprecated(
-        version="2.0.0-a29",
+        version="2.0.0a29",
         reason="Use the constructor for the class instead",
         action="once",
     )
@@ -359,7 +359,7 @@ class Flow(ABC):
         Self,
         config_in: Union[Config, str, os.PathLike, Dict],
         **kwargs,
-    ):
+    ):  # pragma: no cover
         kwargs["config"] = config_in
         return Self(**kwargs)
 
@@ -383,14 +383,18 @@ class Flow(ABC):
 
             This tag is used to create the "run directory", which will be placed
             under the directory ``runs/`` in the design directory.
+        :param last_run: Use the latest run (by modification time) as the tag.
+
+            If no runs exist, a :class:`FlowException` will be raised.
+
+            If ``last_run`` and ``tag`` are both set, a :class:`FlowException` will
+            also be raised.
 
         :returns: ``(success, state_list)``
         """
         if last_run:
             if tag is not None:
-                raise FlowException(
-                    "tag and last_run cannot be defined simultaneously."
-                )
+                raise FlowException("tag and last_run cannot be used simultaneously.")
 
             runs = glob.glob(os.path.join(self.design_dir, "runs", "*"))
 
@@ -404,6 +408,8 @@ class Flow(ABC):
 
             if latest_run is not None:
                 tag = os.path.basename(latest_run)
+            else:
+                raise FlowException("last_run used without any existing runs")
 
         if tag is None:
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
@@ -446,9 +452,9 @@ class Flow(ABC):
                         latest_time = time
                         latest_json = state_out_json
 
-                verbose(f"Using state at '{latest_json}'.")
-
                 if latest_json is not None:
+                    verbose(f"Using state at '{latest_json}'.")
+
                     initial_state = State.loads(
                         open(latest_json, encoding="utf8").read()
                     )
@@ -465,7 +471,9 @@ class Flow(ABC):
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
 
-        self.progress_bar = FlowProgressBar(self.name)
+        self.progress_bar = FlowProgressBar(
+            self.name, starting_ordinal=starting_ordinal
+        )
         self.progress_bar.start()
         final_state, step_objects = self.run(
             initial_state=initial_state,
@@ -498,11 +506,11 @@ class Flow(ABC):
     @protected
     def dir_for_step(self, step: Step) -> str:
         """
-        Returns a directory within the run directory for a specific step,
-        prefixed with the current progress bar stage number.
-
         May only be called while :attr:`run_dir` is not None, i.e., the flow
-        has started.
+        has started. Otherwise, a :class:`FlowException` is raised.
+
+        :returns: A directory within the run directory for a specific step,
+            prefixed with the current progress bar stage number.
         """
         if self.run_dir is None:
             raise FlowException(
@@ -555,12 +563,14 @@ class Flow(ABC):
         """
         An asynchronous equivalent to :meth:`start_step`.
 
-        It returns a ``Future`` encapsulating a State object, which can then be
-        used as an input to the next step or inspected to await it.
-
         :param step: The step object to run
         :param args: Arguments to `step.start`
         :param kwargs: Keyword arguments to `step.start`
+        :returns: A ``Future`` encapsulating a State object, which can be used
+            as an input to the next step (where the next step will wait for the
+            ``Future`` to be realized before calling :meth:`Step.run`).
+
+
         """
 
         kwargs["toolbox"] = self.toolbox
@@ -574,25 +584,31 @@ class Flow(ABC):
         action="once",
     )
     @protected
-    def set_max_stage_count(self, count: int):
+    def set_max_stage_count(self, count: int):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.set_max_stage_count`.
         """
         self.progress_bar.set_max_stage_count(count)
 
     @deprecated(
-        version="2.0.0a46", reason="Use .progress_bar.start_stage", action="once"
+        version="2.0.0a46",
+        reason="Use .progress_bar.start_stage",
+        action="once",
     )
     @protected
-    def start_stage(self, name: str):
+    def start_stage(self, name: str):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.start_stage`.
         """
         self.progress_bar.start_stage(name)
 
-    @deprecated(version="2.0.0a46", reason="Use .progress_bar.end_stage", action="once")
+    @deprecated(
+        version="2.0.0a46",
+        reason="Use .progress_bar.end_stage",
+        action="once",
+    )
     @protected
-    def end_stage(self, increment_ordinal: bool = True):
+    def end_stage(self, increment_ordinal: bool = True):  # pragma: no cover
         """
         Alias for ``self.progress_bar``'s :py:meth:`FlowProgressBar.end_stage`.
         """

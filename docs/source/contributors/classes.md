@@ -50,14 +50,13 @@ presuming said adults cannot be trusted to indent their own code.
 Unfortunately, it is difficult to write good object oriented code, or even have an
 API, with these strictures. We've thus decided to adopt the following convention:
 
-### Private
+### Public
 
-Private properties and methods are prefixed by `__` (two underscores.) They may
-be only be used inside the specific class they are declared in, and not its
-super or subclasses.
+All properties that do not fall into the aforementioned categories are public,
+i.e., they can be used in any context importing OpenLane.
 
-Private properties and methods are **not** part of the OpenLane API and
-may break at any time without a major version increment.
+Public methods are part of the OpenLane API and they are guaranteed to be
+functional within the same major version.
 
 ### Protected
 
@@ -76,14 +75,26 @@ some documentation tools such as Sphinx designate all properties and methods
 starting with `_` as private.
 ```
 
-Protected methods are part of the OpenLane API.
+Protected methods are part of the OpenLane API and they are guaranteed to be
+functional within the same major version.
 
-### Public
+### Internal
 
-All properties that do not fall into the aforementioned categories are public,
-i.e., they can be used in any context importing OpenLane.
+Interal properties and methods are prefixed by `_` (one underscore.) They may
+only be used inside the OpenLane codebase proper and not plugins or the like,
+even those that inherit from the same classes.
 
-Public methods are part of the OpenLane API.
+Internal properties and methods are **not** part of the OpenLane API and
+may break at any time without a major version increment.
+
+### Private
+
+Private properties and methods are prefixed by `__` (two underscores.) They may
+be only be used inside the specific class they are declared in, and not its
+super or subclasses.
+
+Private properties and methods are **not** part of the OpenLane API and
+may break at any time without a major version increment.
 
 ## Hierarchy and "Virtual" Public Variables/Methods
 

@@ -314,7 +314,7 @@ class Step(ABC):
                     )
 
     @classmethod
-    def __get_desc(Self) -> str:
+    def __get_desc(Self) -> str:  # pragma: no cover
         if hasattr(Self, "long_name"):
             return Self.long_name
         elif hasattr(Self, "name"):
@@ -322,7 +322,7 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self, docstring_override: str = ""):
+    def get_help_md(Self, docstring_override: str = ""):  # pragma: no cover
         """
         Renders Markdown help for this step to a string.
         """
@@ -393,7 +393,7 @@ class Step(ABC):
         return result
 
     @classmethod
-    def display_help(Self):
+    def display_help(Self):  # pragma: no cover
         """
         IPython-only. Displays Markdown help for a given step.
         """
@@ -401,7 +401,7 @@ class Step(ABC):
 
         IPython.display.display(IPython.display.Markdown(Self.get_help_md()))
 
-    def _repr_markdown_(self) -> str:
+    def _repr_markdown_(self) -> str:  # pragma: no cover
         """
         Only one _ because this is used by IPython.
         """
@@ -410,8 +410,13 @@ class Step(ABC):
                 ### Step not yet executed.
             """
         state_in = self.state_in.result()
-        assert self.start_time is not None and self.end_time is not None
 
+        assert (
+            self.start_time is not None
+        ), "Start time not set even though self.state_out exists"
+        assert (
+            self.end_time is not None
+        ), "End time not set even though self.state_out exists"
         result = ""
         time_elapsed = self.end_time - self.start_time
 
@@ -438,13 +443,14 @@ class Step(ABC):
 
         return result
 
-    def layout_preview(self) -> Optional[str]:
+    def layout_preview(self) -> Optional[str]:  # pragma: no cover
         """
-        Returns an HTML tag that could act as a preview for a specific stage.
+        :returns: An HTML tag that could act as a preview for a specific stage
+            or ``None`` if a preview is unavailable for this step.
         """
         return None
 
-    def display_result(self):
+    def display_result(self):  # pragma: no cover
         """
         IPython-only. Displays the results of a given step.
         """
@@ -674,7 +680,10 @@ class Step(ABC):
             current_rpt = None
             while line := process_stdout.readline():
                 lines += line
+                log_file.write(line)
                 if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
+                    if current_rpt is not None:
+                        current_rpt.close()
                     report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
                     report_path = os.path.join(report_dir, report_name)
                     current_rpt = open(report_path, "w")
@@ -682,22 +691,20 @@ class Step(ABC):
                     if current_rpt is not None:
                         current_rpt.close()
                     current_rpt = None
-                else:
-                    if line.startswith(METRIC_LOCUS):
-                        command, name, value = line.split(" ", maxsplit=3)
-                        metric_type: Union[Type[str], Type[int], Type[float]] = str
-                        if command.endswith("_I"):
-                            metric_type = int
-                        elif command.endswith("_F"):
-                            metric_type = float
-                        generated_metrics[name] = metric_type(value)
-                    elif current_rpt is not None:
-                        # No echo- the timing reports especially can be very large
-                        # and terminal emulators will slow the flow down.
-                        current_rpt.write(line)
-                    elif not silent and "table template" not in line:  # sky130 ff hack
-                        verbose(line.strip())
-                    log_file.write(line)
+                elif line.startswith(METRIC_LOCUS):
+                    command, name, value = line.split(" ", maxsplit=3)
+                    metric_type: Union[Type[str], Type[int], Type[float]] = str
+                    if command.endswith("_I"):
+                        metric_type = int
+                    elif command.endswith("_F"):
+                        metric_type = float
+                    generated_metrics[name] = metric_type(value)
+                elif current_rpt is not None:
+                    # No echo- the timing reports especially can be very large
+                    # and terminal emulators will slow the flow down.
+                    current_rpt.write(line)
+                elif not silent and "table template" not in line:  # sky130 ff hack
+                    verbose(line.strip())
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:

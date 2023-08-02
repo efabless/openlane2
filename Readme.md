@@ -1,4 +1,4 @@
-> Efabless OpenLane 2 is in early access and all APIs are, presently, highly unstable and subject to change without notice.
+> OpenLane 2.0.0 is in beta. APIs have mostly stabilized, but some oddities are still to be expected. Proceed with caution.
 >
 > If you *don't* know why you're here, you're probably looking for the stable version of OpenLane at https://github.com/The-OpenROAD-Project/OpenLane.
 
