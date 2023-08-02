@@ -307,6 +307,12 @@ class SpiceExtraction(MagicStep):
             default=False,
             deprecated_names=["LVS_CONNECT_BY_LABEL"],
         ),
+        Variable(
+            "MAGIC_EXT_SHORT_RESISTOR",
+            bool,
+            "Enables adding resistors to shorts- resolves LVS issues if more than one top-level pin is connected to the same net, but may increase runtime and break some designs. Proceed with caution.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
