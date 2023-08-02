@@ -446,7 +446,6 @@ class Flow(ABC):
                 state_out_jsons = glob.glob(
                     os.path.join(self.run_dir, "**", "state_out.json"), recursive=True
                 )
-                print(self.run_dir, state_out_jsons)
                 for state_out_json in state_out_jsons:
                     time = os.path.getmtime(state_out_json)
                     if time > latest_time:

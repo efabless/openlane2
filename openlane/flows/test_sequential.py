@@ -69,9 +69,9 @@ def test_sequential_flow(MetricIncrementer: Type[Step]):
 
     assert [step.id for step in flow.Steps] == [
         "Test.MetricIncrementer",
-        "Test.MetricIncrementer1",
-        "Test.MetricIncrementer2",
-        "Test.MetricIncrementer3",
+        "Test.MetricIncrementer-1",
+        "Test.MetricIncrementer-2",
+        "Test.MetricIncrementer-3",
     ], "SequentialFlow did not increment IDs properly for duplicate steps"
 
     state = flow.start()
@@ -158,15 +158,15 @@ def test_substitution(MetricIncrementer):
         pdk_root="/pdk",
         Substitute={
             "Test.MetricIncrementer": OtherMetricIncrementer,
-            "Test.MetricIncrementer1": "Test.OtherMetricIncrementer",
+            "Test.MetricIncrementer-1": "Test.OtherMetricIncrementer",
         },
     )
 
     assert [step.id for step in flow.Steps] == [
         "Test.OtherMetricIncrementer",
-        "Test.OtherMetricIncrementer1",
-        "Test.MetricIncrementer2",
-        "Test.MetricIncrementer3",
+        "Test.OtherMetricIncrementer-1",
+        "Test.MetricIncrementer-2",
+        "Test.MetricIncrementer-3",
     ], "SequentialFlow did not increment IDs properly for duplicate steps"
 
     state = flow.start()

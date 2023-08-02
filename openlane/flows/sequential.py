@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import os
-from typing import Iterable, List, Tuple, Optional, Type, Dict, Union
+from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
@@ -36,17 +36,17 @@ class SequentialFlow(Flow):
     All subclasses of this flow have to do is override the :attr:`.Steps` abstract property
     and it would automatically handle the rest. See `Classic` in Built-in Flows for an example.
 
-    It should be noted, for duplicate Steps, all Steps other than the first one
-    will technically be subclassed with no change other than to simply set
-    the ID to the previous step's ID with a suffix: i.e. the second instance of
-    ``Test.MyStep`` will have an ID of ``Test.MyStep1``, and so on.
+    It should be noted, for Steps with duplicate IDs, all Steps other than the
+    first one will technically be subclassed with no change other than to simply
+    set the ID to the previous step's ID with a suffix: i.e. the second instance
+    of ``Test.MyStep`` will have an ID of ``Test.MyStep1``, and so on.
 
     :param Substitute: Substitute all instances of one `Step` type by another `Step`
         type in the :attr:`.Steps` attribute for this instance only.
 
         You may also use the string Step IDs in place of a `Step` type object.
 
-        Duplicate steps are
+        Duplicate ID normalization is re-run after substitutions.
 
     :param args: Arguments for :class:`Flow`.
     :param kwargs: Keyword arguments for :class:`Flow`.
@@ -72,16 +72,20 @@ class SequentialFlow(Flow):
 
     @staticmethod
     def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):
-        id_uses: Dict[str, int] = {}
+        ids_used: Set[str] = set()
+
         for i, step in enumerate(target.Steps):
+            counter = 0
             id = step.id
-            id_uses[id] = id_uses.get(id, 0)
-            if id_uses[id] > 0:
-                new_name = f"{step.__name__}{id_uses[id]}"
-                new_id = f"{id}{id_uses[id]}"
-                new_step = type(new_name, (step,), {"id": new_id})
+            name = step.__name__
+            while id in ids_used:
+                counter += 1
+                id = f"{step.id}-{counter}"
+                name = f"{step.__name__}_{counter}"
+            if id != step.id:
+                new_step = type(name, (step,), {"id": id})
                 target.Steps[i] = new_step
-            id_uses[id] += 1
+            ids_used.add(id)
 
     def __init__(
         self,
@@ -97,7 +101,7 @@ class SequentialFlow(Flow):
             for key, item in substitute.items():
                 self.__substitute_step(key, item)
 
-        self.__normalize_step_ids(self)
+            self.__normalize_step_ids(self)
 
         super().__init__(*args, **kwargs)
 
