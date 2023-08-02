@@ -44,7 +44,7 @@ with pkgs; clangStdenv.mkDerivation rec {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-Kz8ygEfpLexiHnETxrlLeAdwxSBMIyTSDYq2/183rYo=";
+    sha256 = "sha256-g5sFmCB1HBFsD7bViakMf58Y/bCAXw1oFy/SKuBYr8M=";
   };
 
   patches = [
