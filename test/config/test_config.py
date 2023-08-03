@@ -11,189 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-from shutil import rmtree
-from unittest import mock
 from decimal import Decimal
-from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import pytest
-from pyfakefs.fake_filesystem_unittest import Patcher
 
-from . import config
-from ..common import Path, StringEnum
-
-
-@pytest.fixture()
-def _mock_fs():
-    with Patcher() as patcher:
-        rmtree("/run", ignore_errors=True)
-        patcher.fs.create_dir("/cwd/src")
-        patcher.fs.create_file("/cwd/src/a.v")
-        patcher.fs.create_file("/cwd/src/b.v")
-        patcher.fs.create_dir("/cwd/spef")
-        patcher.fs.create_file("/cwd/spef/b.spef")
-        patcher.fs.create_file(
-            "/pdk/dummy/libs.tech/openlane/config.tcl",
-            contents="""
-            if { ![info exists ::env(STD_CELL_LIBRARY)] } {
-                set ::env(STD_CELL_LIBRARY) "dummy_scl"
-            }
-            set ::env(TECH_LEF) "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
-            set ::env(LIB_SYNTH) "sky130_fd_sc_hd__tt_025C_1v80.lib"
-            """,
-        )
-        patcher.fs.create_file(
-            "/pdk/dummy2/libs.tech/openlane/config.tcl",
-            contents="""
-            if { ![info exists ::env(STD_CELL_LIBRARY)] } {
-                set ::env(STD_CELL_LIBRARY) "dummy2_scl"
-            }
-            set ::env(TECH_LEF) "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
-            set ::env(LIB_SYNTH) "sky130_fd_sc_hd__tt_025C_1v80.lib"
-            """,
-        )
-        patcher.fs.create_file(
-            "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
-        )
-        patcher.fs.create_file(
-            "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
-        )
-        patcher.fs.create_file(
-            "/pdk/dummy/libs.tech/openlane/dummy_scl/config.tcl",
-            contents="",
-        )
-        patcher.fs.create_file(
-            "/pdk/dummy2/libs.tech/openlane/dummy2_scl/config.tcl",
-            contents="",
-        )
-
-        os.chdir("/cwd")
-        yield
+from openlane.config import config
+from openlane.common import Path
 
 
-DiodeOnPortsEnum = StringEnum("Ports", ["none", "in"])
-MOCK_PDK_VARS = [
-    config.Variable(
-        "PDK",
-        str,
-        description="x",
-    ),
-    config.Variable(
-        "STD_CELL_LIBRARY",
-        str,
-        description="x",
-    ),
-    config.Variable(
-        "EXAMPLE_PDK_VAR",
-        Decimal,
-        description="x",
-        default=10.0,
-    ),
-    config.Variable(
-        "TECH_LEFS",
-        Dict[str, Path],
-        description="x",
-    ),
-    config.Variable(
-        "DEFAULT_CORNER",
-        str,
-        description="x",
-        default="nom_tt_025C_1v80",
-    ),
-]
-MOCK_FLOW_VARS = [
-    config.Variable(
-        "DESIGN_DIR",
-        Path,
-        "The directory of the design. Does not need to be provided explicitly.",
-    ),
-    config.Variable(
-        "DESIGN_NAME",
-        str,
-        description="x",
-    ),
-    config.Variable(
-        "VERILOG_FILES",
-        List[Path],
-        description="x",
-    ),
-    config.Variable(
-        "GRT_REPAIR_ANTENNAS",
-        bool,
-        description="x",
-        default=True,
-    ),
-    config.Variable(
-        "RUN_HEURISTIC_DIODE_INSERTION",
-        bool,
-        description="x",
-        default=False,
-    ),
-    config.Variable(
-        "DIODE_ON_PORTS",
-        DiodeOnPortsEnum,
-        description="x",
-        default="none",
-    ),
-    config.Variable(
-        "MACROS",
-        Optional[Dict[str, config.Macro]],
-        description="x",
-        default=None,
-    ),
-]
+mock_variables = pytest.mock_variables
+DiodeOnPortsEnum = pytest.DiodeOnPortsEnum
 
 
-def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
-    from . import config
-
-    if patch_in_objects is None:
-        patch_in_objects = []
-    patch_in_objects = patch_in_objects + [config]
-
-    def decorator(f: Callable):
-        for o in patch_in_objects:
-            if hasattr(o, "pdk_variables"):
-                f = mock.patch.object(
-                    o,
-                    "pdk_variables",
-                    MOCK_PDK_VARS,
-                )(f)
-            if hasattr(o, "flow_common_variables"):
-                f = mock.patch.object(
-                    o,
-                    "flow_common_variables",
-                    MOCK_FLOW_VARS,
-                )(f)
-            if hasattr(o, "removed_variables"):
-                f = mock.patch.object(
-                    o,
-                    "removed_variables",
-                    {"REMOVED_VARIABLE": "Variable sucked"},
-                )(f)
-            if hasattr(o, "universal_flow_config_variables"):
-                f = mock.patch.object(
-                    o,
-                    "universal_flow_config_variables",
-                    MOCK_FLOW_VARS,
-                )(f)
-            if hasattr(o, "all_variables"):
-                f = mock.patch.object(
-                    o,
-                    "all_variables",
-                    MOCK_FLOW_VARS,
-                )(f)
-
-        return f
-
-    return decorator
-
-
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_dict_config():
-    from . import Meta, Config
+    from openlane.config import Meta, Config
 
     cfg, _ = Config.load(
         {"DESIGN_NAME": "whatever", "VERILOG_FILES": "dir::src/*.v"},
@@ -228,10 +61,10 @@ def test_dict_config():
     assert cfg == assert_cfg, "Generated configuration does not match expected value"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_json_config():
-    from . import Meta, Config
+    from openlane.config import Meta, Config
 
     with open("/cwd/config.json", "w") as f:
         f.write(
@@ -282,10 +115,10 @@ def test_json_config():
     ), "get_meta test failed"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_tcl_config():
-    from . import Meta, Config
+    from openlane.config import Meta, Config
 
     with open("/cwd/config.tcl", "w") as f:
         f.write(
@@ -330,10 +163,10 @@ def test_tcl_config():
     ), "Generated configuration does not match expected value"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_copy_filtered():
-    from . import Config, Variable
+    from openlane.config import Config, Variable
 
     step1_variables = [
         Variable(
@@ -393,10 +226,10 @@ def test_copy_filtered():
     }, "copy_filtered for step 2 did not work properly"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_automatic_conversion():
-    from . import Config
+    from openlane.config import Config
 
     with open("/cwd/config.json", "w") as f:
         f.write(
@@ -448,10 +281,10 @@ def test_automatic_conversion():
     assert e is not None, "invalid config accepted: automatic conversion for meta >= 2"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_pdk():
-    from . import InvalidConfig, Config
+    from openlane.config import InvalidConfig, Config
 
     cfg1, _ = Config.load(
         {
@@ -534,10 +367,10 @@ def test_pdk():
     ], "invalid PDK did not return suggestions in warnings"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_invalid_keys(caplog: pytest.LogCaptureFixture):
-    from . import InvalidConfig, Config
+    from openlane.config import InvalidConfig, Config
 
     with open("/cwd/config.json", "w") as f:
         f.write(
@@ -605,10 +438,10 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
     caplog.clear()
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_dis_migration(caplog: pytest.LogCaptureFixture):
-    from . import Config, InvalidConfig
+    from openlane.config import Config, InvalidConfig
 
     def set_dis(dis: int):
         with open("/cwd/config.json", "w") as f:
@@ -697,12 +530,12 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     caplog.clear()
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_macro_migration(
     caplog: pytest.LogCaptureFixture,
 ):
-    from . import Config, Macro, InvalidConfig
+    from openlane.config import Config, Macro, InvalidConfig
 
     cfg, _ = Config.load(
         {

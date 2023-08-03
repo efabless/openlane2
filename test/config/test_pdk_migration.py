@@ -239,7 +239,7 @@ RAW_GF180MCUC_IN = {
 
 
 def test_pdk_migration_basics():
-    from .pdk import migrate_old_config
+    from openlane.config.pdk import migrate_old_config
 
     sky130A_migrated = migrate_old_config(RAW_SKY130A_IN)
     gf180mcuC_migrated = migrate_old_config(RAW_GF180MCUC_IN)

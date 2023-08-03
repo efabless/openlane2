@@ -17,13 +17,12 @@ import textwrap
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from ..state import DesignFormat
-from ..config import Config, Macro
+from openlane.state import DesignFormat
 
 
 @pytest.fixture()
-def example_config() -> Config:
-    from ..config import Instance
+def mock_macros_config():
+    from openlane.config import Config, Macro, Instance
 
     return Config(
         {
@@ -82,9 +81,9 @@ def example_config() -> Config:
         ("min_ff_025C_5v00", []),
     ],
 )
-def test_filter_views(corner, expected, example_config: Config):
-    from . import Toolbox
-    from ..common import Path
+def test_filter_views(corner, expected, mock_macros_config):
+    from openlane.common import Path
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
     views_by_corner = {
@@ -99,7 +98,9 @@ def test_filter_views(corner, expected, example_config: Config):
         }.items()
     }
 
-    assert toolbox.filter_views(example_config, views_by_corner, corner) == expected, []
+    assert (
+        toolbox.filter_views(mock_macros_config, views_by_corner, corner) == expected
+    ), []
 
 
 def gmv_parameters(f):
@@ -143,7 +144,8 @@ def test_get_macro_views_without_macros(
     unless_exist,
     expected,
 ):
-    from . import Toolbox
+    from openlane.config import Config
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -164,14 +166,15 @@ def test_get_macro_views_with_macros(
     corner,
     unless_exist,
     expected,
-    example_config,
+    mock_macros_config,
 ):
-    from . import Toolbox
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 
     assert (
-        toolbox.get_macro_views(example_config, view, corner, unless_exist) == expected
+        toolbox.get_macro_views(mock_macros_config, view, corner, unless_exist)
+        == expected
     ), "get_macro_views returned unexpected result"
 
 
@@ -220,14 +223,14 @@ def test_get_macro_views_with_macros(
         ),
     ],
 )
-def test_get_timing_files(timing_corner, prioritize_nl, expected, example_config):
-    from . import Toolbox
+def test_get_timing_files(timing_corner, prioritize_nl, expected, mock_macros_config):
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 
     assert (
         toolbox.get_timing_files(
-            example_config,
+            mock_macros_config,
             timing_corner,
             prioritize_nl,
         )
@@ -236,13 +239,14 @@ def test_get_timing_files(timing_corner, prioritize_nl, expected, example_config
 
 
 def test_get_timing_files_warnings(
-    caplog: pytest.LogCaptureFixture, example_config: Config
+    caplog: pytest.LogCaptureFixture,
+    mock_macros_config,
 ):
-    from . import Toolbox
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 
-    cfg = example_config
+    cfg = mock_macros_config
 
     # 0. Missing netlists
     netlist_bk = cfg["MACROS"]["b"].nl
@@ -293,7 +297,7 @@ def test_get_timing_files_warnings(
 
 
 @pytest.fixture()
-def _mock_fs():
+def _lib_mock_fs():
     with Patcher() as patcher:
         patcher.fs.create_dir("/cwd")
         os.chdir("/cwd")
@@ -373,9 +377,9 @@ def lib_trim_result():
     ]
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cell_list_from_lib(lib_trim_result):
-    from . import Toolbox
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -391,9 +395,9 @@ def test_remove_cell_list_from_lib(lib_trim_result):
         ), "remove_cells_from_lib produced unexpected result"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cells_from_lib(lib_trim_result):
-    from . import Toolbox
+    from openlane.utils import Toolbox
 
     toolbox = Toolbox(".")
 

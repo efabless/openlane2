@@ -18,13 +18,10 @@ from typing import Callable, Optional, Type
 import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
 
-from . import flow
-from ..config import Variable
-from ..config.test_config import (  # noqa: F401
-    MOCK_FLOW_VARS,
-    mock_variables,
-    _mock_fs,
-)
+from openlane.flows import flow
+from openlane.config import Variable
+
+mock_variables = pytest.mock_variables
 
 
 @pytest.fixture()
@@ -34,9 +31,9 @@ def variable():
 
 @pytest.fixture()
 def MockStepTuple(variable: Variable):
-    from ..common import Path
-    from ..steps import Step
-    from ..state import DesignFormat, State
+    from openlane.common import Path
+    from openlane.steps import Step
+    from openlane.state import DesignFormat, State
 
     class StepA(Step):
         id = "Test.StepA"
@@ -107,9 +104,9 @@ def MockStepTuple(variable: Variable):
 
 @pytest.fixture()
 def DummyFlow(MockStepTuple):
-    from .flow import Flow
+    from openlane.flows import Flow
 
-    StepA, StepB, StepC = MockStepTuple
+    StepA, StepB, _ = MockStepTuple
 
     class Dummy(Flow):
         Steps = [
@@ -176,7 +173,7 @@ class MockProgress(object):
 
 
 def test_flow_abc_init():
-    from . import Flow
+    from openlane.flows import Flow
 
     with pytest.raises(TypeError, match="Can't instantiate abstract class") as e:
         Flow()
@@ -185,7 +182,7 @@ def test_flow_abc_init():
 
 
 def test_factory(DummyFlow: Type[flow.Flow]):
-    from . import Flow
+    from openlane.flows import Flow
 
     assert Flow.factory.list() == [
         "Optimizing",
@@ -209,7 +206,7 @@ def test_factory(DummyFlow: Type[flow.Flow]):
     ), "failed to retrieve registered dummy flow"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_init_and_config_vars(DummyFlow: Type[flow.Flow], variable: Variable):
     flow = DummyFlow(
@@ -224,15 +221,15 @@ def test_init_and_config_vars(DummyFlow: Type[flow.Flow], variable: Variable):
         pdk_root="/pdk",
     )
 
-    assert flow.get_config_variables() == MOCK_FLOW_VARS + [
+    assert flow.get_config_variables() == pytest.MOCK_FLOW_VARS + [
         variable
     ], "flow config variables did not match"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_clashing_variables(DummyFlow: Type[flow.Flow], MockStepTuple):
-    from . import FlowException
+    from openlane.flows import FlowException
 
     StepA, StepB, StepC = MockStepTuple
 
@@ -258,7 +255,7 @@ def test_clashing_variables(DummyFlow: Type[flow.Flow], MockStepTuple):
     assert e is not None, "clashing variables did not generate a FlowException"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 @mock.patch.object(flow, "Progress", MockProgress)
 def test_progress_bar(DummyFlow: Type[flow.Flow]):
@@ -308,14 +305,14 @@ def test_progress_bar(DummyFlow: Type[flow.Flow]):
     flow.start()
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 @mock.patch.object(flow, "Progress", MockProgress)
 def test_run_tags(
     fs: FakeFilesystem, DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture
 ):
-    from . import FlowException
-    from ..state import State
+    from openlane.flows import FlowException
+    from openlane.state import State
 
     flow = DummyFlow(
         {

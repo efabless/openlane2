@@ -27,7 +27,7 @@ P-diff distance to N-tap must be < 15.0um (LU.3)
 
 def test_magic_drc():
 
-    from . import DRC, Violation
+    from openlane.utils import DRC, Violation
 
     drc_object, count = DRC.from_magic(io.StringIO(MAGIC_EXAMPLE))
     violations = {
@@ -63,7 +63,7 @@ def test_magic_drc():
 
 
 def test_magic_drc_badrule():
-    from . import DRC
+    from openlane.utils import DRC
 
     description = "P-diff distance to N-tap must be < 15.0um (egg salad)"
     magic_bad_rule_example = f"""RAM8
@@ -82,7 +82,7 @@ def test_magic_drc_badrule():
 
 
 def test_magic_drc_exceptions():
-    from . import DRC
+    from openlane.utils import DRC
 
     BAD_MAGIC_EXAMPLE = """
     ----------------------------------------
@@ -106,7 +106,7 @@ def test_magic_drc_exceptions():
 
 
 def test_klayout_xml():
-    from . import DRC
+    from openlane.utils import DRC
     from xml.etree import ElementTree as ET
 
     drc_object, _ = DRC.from_magic(io.StringIO(MAGIC_EXAMPLE))
