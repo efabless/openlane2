@@ -184,7 +184,7 @@ def test_step_start_missing_toolbox(mock_run, mock_config):
 @mock_variables()
 def test_step_start_missing_step_dir(mock_run, mock_config):
     from openlane.steps import Step
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
     from openlane.state import DesignFormat, State
 
     class TestStep(Step):
@@ -207,7 +207,7 @@ def test_step_start_missing_step_dir(mock_run, mock_config):
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_step_start_invalid_state(mock_run, mock_config):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
     from openlane.steps import Step, StepException
     from openlane.state import DesignFormat, State
 
@@ -232,7 +232,7 @@ def test_step_start_invalid_state(mock_run, mock_config):
 @mock_variables()
 def test_step_start(mock_config):
     from openlane.common import Path
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
     from openlane.state import DesignFormat, State
     from openlane.steps import Step, MetricsUpdate, ViewsUpdate
 

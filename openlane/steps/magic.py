@@ -20,8 +20,7 @@ from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir
-from ..utils import DRC as DRCObject
+from ..common import get_script_dir, DRC as DRCObject
 
 
 class MagicStep(TclStep):
@@ -256,15 +255,15 @@ class DRC(MagicStep):
 
         reports_dir = os.path.join(self.step_dir, "reports")
         report_path = os.path.join(reports_dir, "drc.rpt")
-        report_stats = os.stat(report_path)
 
-        drc_db_file = None
-        if report_stats.st_size >= 0:  # 134217728:
-            drc_db_file = os.path.join(reports_dir, "drc.db")
+        # report_stats = os.stat(report_path)
+        # drc_db_file = None
+        # if report_stats.st_size >= 0:  # 134217728:
+        #     drc_db_file = os.path.join(reports_dir, "drc.db")
 
         drc, bbox_count = DRCObject.from_magic(
             open(report_path, encoding="utf8"),
-            db_file=drc_db_file,
+            # db_file=drc_db_file,
         )
 
         klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")

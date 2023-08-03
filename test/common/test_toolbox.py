@@ -83,7 +83,7 @@ def mock_macros_config():
 )
 def test_filter_views(corner, expected, mock_macros_config):
     from openlane.common import Path
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
     views_by_corner = {
@@ -100,7 +100,7 @@ def test_filter_views(corner, expected, mock_macros_config):
 
     assert (
         toolbox.filter_views(mock_macros_config, views_by_corner, corner) == expected
-    ), []
+    ), "test_filter_views returned unexpected set of views"
 
 
 def gmv_parameters(f):
@@ -145,7 +145,7 @@ def test_get_macro_views_without_macros(
     expected,
 ):
     from openlane.config import Config
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -168,7 +168,7 @@ def test_get_macro_views_with_macros(
     expected,
     mock_macros_config,
 ):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -224,7 +224,7 @@ def test_get_macro_views_with_macros(
     ],
 )
 def test_get_timing_files(timing_corner, prioritize_nl, expected, mock_macros_config):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -242,7 +242,7 @@ def test_get_timing_files_warnings(
     caplog: pytest.LogCaptureFixture,
     mock_macros_config,
 ):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -379,7 +379,7 @@ def lib_trim_result():
 
 @pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cell_list_from_lib(lib_trim_result):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
@@ -397,7 +397,7 @@ def test_remove_cell_list_from_lib(lib_trim_result):
 
 @pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cells_from_lib(lib_trim_result):
-    from openlane.utils import Toolbox
+    from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 

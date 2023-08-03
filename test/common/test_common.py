@@ -25,15 +25,6 @@ class MyString(UserString):
     pass
 
 
-def test_slugify():
-    from openlane.common import slugify
-
-    assert slugify("ABCD efg.xy-Z") == "abcd-efg-xy-z", "Failed slugify test"
-    assert (
-        slugify("Lorem ipsum   dolor sit amet") == "lorem-ipsum-dolor-sit-amet"
-    ), "Failed slugify test"
-
-
 def test_stringenum():
     from openlane.common import StringEnum
 

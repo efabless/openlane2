@@ -25,9 +25,17 @@ P-diff distance to N-tap must be < 15.0um (LU.3)
 """
 
 
-def test_magic_drc():
+def test_slugify():
+    from openlane.common import slugify
 
-    from openlane.utils import DRC, Violation
+    assert slugify("ABCD efg.xy-Z") == "abcd-efg-xy-z", "Failed slugify test"
+    assert (
+        slugify("Lorem ipsum   dolor sit amet") == "lorem-ipsum-dolor-sit-amet"
+    ), "Failed slugify test"
+
+
+def test_magic_drc():
+    from openlane.common import DRC, Violation
 
     drc_object, count = DRC.from_magic(io.StringIO(MAGIC_EXAMPLE))
     violations = {
@@ -63,7 +71,7 @@ def test_magic_drc():
 
 
 def test_magic_drc_badrule():
-    from openlane.utils import DRC
+    from openlane.common import DRC
 
     description = "P-diff distance to N-tap must be < 15.0um (egg salad)"
     magic_bad_rule_example = f"""RAM8
@@ -82,7 +90,7 @@ def test_magic_drc_badrule():
 
 
 def test_magic_drc_exceptions():
-    from openlane.utils import DRC
+    from openlane.common import DRC
 
     BAD_MAGIC_EXAMPLE = """
     ----------------------------------------
@@ -106,7 +114,7 @@ def test_magic_drc_exceptions():
 
 
 def test_klayout_xml():
-    from openlane.utils import DRC
+    from openlane.common import DRC
     from xml.etree import ElementTree as ET
 
     drc_object, _ = DRC.from_magic(io.StringIO(MAGIC_EXAMPLE))

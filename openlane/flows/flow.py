@@ -50,9 +50,8 @@ from ..config import (
 )
 from ..state import State
 from ..steps import Step
-from ..utils import Toolbox
 from ..logging import console, info, verbose
-from ..common import get_tpe, mkdirp, protected, final, slugify
+from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
 
 
 class FlowError(RuntimeError):

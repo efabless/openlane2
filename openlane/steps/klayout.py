@@ -20,10 +20,9 @@ from typing import Optional, List, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
 from ..logging import warn
-from ..utils import Toolbox
 from ..config import Variable, Config
 from ..state import DesignFormat, State
-from ..common import Path, get_script_dir
+from ..common import Path, get_script_dir, Toolbox
 
 
 def get_lef_args(config: Config, toolbox: Toolbox) -> List[str]:

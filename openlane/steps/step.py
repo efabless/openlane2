@@ -39,10 +39,10 @@ from openlane.state.state import StateElement
 
 from ..state import State, InvalidState
 from ..state import DesignFormat
-from ..utils import Toolbox
 from ..config import Config, Variable
 from ..common import (
     GenericImmutableDict,
+    Toolbox,
     mkdirp,
     slugify,
     final,
