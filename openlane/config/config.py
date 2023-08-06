@@ -420,7 +420,9 @@ class Config(GenericImmutableDict[str, Any]):
         scl = process_info.get(SpecialKeys.scl) or scl
         pdkpath = ""
 
-        config_in: GenericImmutableDict[str, Any] = GenericImmutableDict(process_info)
+        config_in: GenericImmutableDict[str, Any] = GenericImmutableDict(
+            process_info, overrides={"PDK_ROOT": pdk_root}
+        )
 
         if _load_pdk_configs:
             pdk_root = Self.__resolve_pdk_root(pdk_root)

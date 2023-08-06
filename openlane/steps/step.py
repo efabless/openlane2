@@ -463,7 +463,7 @@ class Step(ABC):
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
     @classmethod
-    def load(Self, config_path: str, state_in_path: str) -> Step:
+    def load(Self, config_path: str, state_in_path: str, pdk_root: str = ".") -> Step:
         """
         Creates a step object, but instead of using a Flow or a global state,
         the config_path and input state are deserialized from JSON files.
@@ -473,12 +473,17 @@ class Step(ABC):
         :param config_path: Path to a **Step-filtered** ``config.json`` file.
             The step will not tolerate variables unrelated to this specific step.
         :param state_in_path: Path to a valid ``state_in.json`` file.
+        :param pdk_root: The PDK root, which is needed for some utilities.
+
+            If your utility doesn't require it, just keep the default value
+            as-is.
         :returns: The created step object
         """
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read()),
             flow_config_vars=universal_flow_config_variables + Self.config_vars,
             design_dir=".",
+            pdk_root=pdk_root,
             _load_pdk_configs=False,
         )
         state_in = State.loads(open(state_in_path).read())
@@ -488,6 +493,10 @@ class Step(ABC):
         """
         Creates a folder that, given a specific version of OpenLane being
         installed, makes a portable reproducible of that step's execution.
+
+        * Reproducibles are limited on Magic and Netgen, as their RC files
+        form an indirect dependency on many `.mag` files or similar that cannot
+        be enumerated by OpenLane.
 
         Reproducibles are automatically generated for failed steps, but
         this may be called manually on any step, too.
@@ -519,9 +528,10 @@ class Step(ABC):
         # 1. Config
         dumpable_config = copy_recursive(self.config, translator=visitor)
 
-        pdk_root = dumpable_config["PDK_ROOT"]
-        pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
-        dumpable_config["PDK_ROOT"] = pdk_root_resolved
+        # pdk_root = dumpable_config["PDK_ROOT"]
+        # pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
+        # dumpable_config["PDK_ROOT"] = pdk_root_resolved
+        del dumpable_config["PDK_ROOT"]
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
@@ -543,12 +553,19 @@ class Step(ABC):
                     f"""
                     #!/usr/bin/env python3
                     import sys
+                    import argparse
                     from openlane import __version__
 
                     if __version__ != "{__version__}":
                         print(f"Incompatible OpenLane version for this reproducible: {{__version__}}", file=sys.stderr)
                         print(f"> Try 'pip3 install openlane=={__version__}', then re-run this script.", file=sys.stderr)
                         exit(-1)
+                    
+                    parser = argparse.ArgumentParser(prog='Reproducible')
+                    parser.add_argument('--pdk-root')
+                    args = parser.parse_args()
+
+                    pdk_root = args.pdk_root or "."
                     
                     from openlane.steps import Step
                     from openlane.common import Toolbox
@@ -557,6 +574,7 @@ class Step(ABC):
                     step = Step.load(
                         config_path="config.json",
                         state_in_path="state_in.json",
+                        pdk_root=pdk_root,
                     )
                     step.start(
                         toolbox=Toolbox("tmp"),
@@ -565,6 +583,8 @@ class Step(ABC):
                     """
                 ).strip()
             )
+
+        # 4. PDK Note
 
         info("Reproducible created at:")
         verbose(f"'{os.path.relpath(target_dir)}'")

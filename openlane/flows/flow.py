@@ -443,7 +443,7 @@ class Flow(ABC):
                 latest_time = 0
                 latest_json: Optional[str] = None
                 state_out_jsons = glob.glob(
-                    os.path.join(self.run_dir, "**", "state_out.json"), recursive=True
+                    os.path.join(self.run_dir, "*", "state_out.json")
                 )
                 for state_out_json in state_out_jsons:
                     time = os.path.getmtime(state_out_json)
