@@ -518,12 +518,19 @@ class Step(ABC):
 
         # 1. Config
         dumpable_config = copy_recursive(self.config, translator=visitor)
+
+        pdk_root = dumpable_config["PDK_ROOT"]
+        pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
+        dumpable_config["PDK_ROOT"] = pdk_root_resolved
+
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
             f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))
 
         # 2. State
+        state_in = self.state_in.result()
         dumpable_state = copy_recursive(self.state_in.result(), translator=visitor)
+        dumpable_state["metrics"] = state_in.metrics.to_raw_dict()
         state_path = os.path.join(target_dir, "state_in.json")
         with open(state_path, "w") as f:
             f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))
@@ -534,11 +541,17 @@ class Step(ABC):
             f.write(
                 textwrap.dedent(
                     f"""
-                    from openlane.steps import Step
-                    from openlane.common import Toolbox
+                    #!/usr/bin/env python3
+                    import sys
                     from openlane import __version__
 
-                    assert __version__ == "{__version__}", f"incompatible OpenLane version {{__version__}}"
+                    if __version__ != "{__version__}":
+                        print(f"Incompatible OpenLane version for this reproducible: {{__version__}}", file=sys.stderr)
+                        print(f"> Try 'pip3 install openlane=={__version__}', then re-run this script.", file=sys.stderr)
+                        exit(-1)
+                    
+                    from openlane.steps import Step
+                    from openlane.common import Toolbox
 
                     Step = Step.factory.get("{self.__class__.id}")
                     step = Step.load(
@@ -550,7 +563,7 @@ class Step(ABC):
                         step_dir="step_dir",
                     )
                     """
-                )
+                ).strip()
             )
 
         info("Reproducible created at:")
