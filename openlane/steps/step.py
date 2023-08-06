@@ -464,16 +464,36 @@ class Step(ABC):
 
     @classmethod
     def load(Self, config_path: str, state_in_path: str) -> Step:
+        """
+        Creates a step object, but instead of using a Flow or a global state,
+        the config_path and input state are deserialized from JSON files.
+
+        Useful for re-running steps that have already run.
+
+        :param config_path: Path to a **Step-filtered** ``config.json`` file.
+            The step will not tolerate variables unrelated to this specific step.
+        :param state_in_path: Path to a valid ``state_in.json`` file.
+        :returns: The created step object
+        """
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read()),
             flow_config_vars=universal_flow_config_variables + Self.config_vars,
             design_dir=".",
-            _dont_load_pdk=True,
+            _load_pdk_configs=False,
         )
         state_in = State.loads(open(state_in_path).read())
         return Self(config=config, state_in=state_in)
 
     def create_reproducible(self, target_dir: str):
+        """
+        Creates a folder that, given a specific version of OpenLane being
+        installed, makes a portable reproducible of that step's execution.
+
+        Reproducibles are automatically generated for failed steps, but
+        this may be called manually on any step, too.
+
+        :param target_dir: The directory in which to create the reproducible
+        """
         # 0. Create Directories
         mkdirp(target_dir)
 

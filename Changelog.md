@@ -1,3 +1,15 @@
+# 2.0.0-b3
+
+* Added ability to create reproducible for any step using instance method
+  `Step.create_reproducible()`
+* Added ability to load and run Step from Config and State JSON files
+* Added internal ability to load a Config without attempting to load the PDK
+  configuration data- i.e., only rely on the user's input
+* Moved tests from source tree to `test/` folder, refactoring as necessary
+* Internal `utils` module folded into `common` module, with elements publicly
+  documented
+* Removed `tcl_reproducible`
+
 # 2.0.0-b2
 
 * Updated Magic to `952b20d`

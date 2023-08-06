@@ -279,7 +279,7 @@ class Config(GenericImmutableDict[str, Any]):
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
-        _dont_load_pdk: bool = False,
+        _load_pdk_configs: bool = True,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -358,7 +358,7 @@ class Config(GenericImmutableDict[str, Any]):
             scl=scl,
             config_override_strings=(config_override_strings or []),
             default_meta_version=default_meta_version,
-            _dont_load_pdk=_dont_load_pdk,
+            _load_pdk_configs=_load_pdk_configs,
         )
 
         return (loaded, design_dir)
@@ -390,7 +390,7 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         default_meta_version: int = 1,
-        _dont_load_pdk: bool = False,
+        _load_pdk_configs: bool = True,
     ) -> "Config":
         meta: Optional[Meta] = None
         if raw.get("meta") is not None:
@@ -422,7 +422,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         config_in: GenericImmutableDict[str, Any] = GenericImmutableDict(process_info)
 
-        if not _dont_load_pdk:
+        if _load_pdk_configs:
             pdk_root = Self.__resolve_pdk_root(pdk_root)
             if pdk is None:
                 raise ValueError(
@@ -497,7 +497,7 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         default_meta_version: int = 1,  # Unused, kept for API consistency
-        _dont_load_pdk: bool = False,  # Unused, kept for API consistency
+        _load_pdk_configs: bool = True,  # Unused, kept for API consistency
     ) -> "Config":
         warn(
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
