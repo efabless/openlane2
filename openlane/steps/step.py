@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import os
 import time
+import json
+import shutil
 import textwrap
 import subprocess
 from signal import Signals
@@ -35,18 +37,19 @@ from typing import (
     Type,
 )
 
-from openlane.state.state import StateElement
-
-from ..state import State, InvalidState
-from ..state import DesignFormat
-from ..config import Config, Variable
+from ..config import Config, Variable, universal_flow_config_variables
+from ..state import State, InvalidState, StateElement
 from ..common import (
     GenericImmutableDict,
+    GenericDictEncoder,
     Toolbox,
+    DesignFormat,
+    Path,
     mkdirp,
     slugify,
     final,
     protected,
+    copy_recursive,
 )
 from ..logging import (
     rule,
@@ -55,6 +58,7 @@ from ..logging import (
     warn,
     err,
 )
+from ..__version__ import __version__
 
 
 class StepError(RuntimeError):
@@ -458,6 +462,80 @@ class Step(ABC):
 
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
+    @classmethod
+    def load(Self, config_path: str, state_in_path: str) -> Step:
+        config, _ = Config.load(
+            config_in=json.loads(open(config_path).read()),
+            flow_config_vars=universal_flow_config_variables + Self.config_vars,
+            design_dir=".",
+            _dont_load_pdk=True,
+        )
+        state_in = State.loads(open(state_in_path).read())
+        return Self(config=config, state_in=state_in)
+
+    def create_reproducible(self, target_dir: str):
+        # 0. Create Directories
+        mkdirp(target_dir)
+
+        files_path = os.path.join(target_dir, "files")
+
+        def visitor(x: Any) -> Any:
+            nonlocal files_path
+            if not isinstance(x, Path):
+                return x
+
+            target_relpath = os.path.join(".", "files", x[1:])
+            target_abspath = os.path.join(files_path, x[1:])
+
+            mkdirp(os.path.dirname(target_abspath))
+
+            if os.path.isdir(x):
+                mkdirp(target_abspath)
+            else:
+                shutil.copy(x, target_abspath)
+
+            return Path(target_relpath)
+
+        # 1. Config
+        dumpable_config = copy_recursive(self.config, translator=visitor)
+        config_path = os.path.join(target_dir, "config.json")
+        with open(config_path, "w") as f:
+            f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))
+
+        # 2. State
+        dumpable_state = copy_recursive(self.state_in.result(), translator=visitor)
+        state_path = os.path.join(target_dir, "state_in.json")
+        with open(state_path, "w") as f:
+            f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))
+
+        # 3. Runner
+        script_path = os.path.join(target_dir, "run.py")
+        with open(script_path, "w") as f:
+            f.write(
+                textwrap.dedent(
+                    f"""
+                    from openlane.steps import Step
+                    from openlane.common import Toolbox
+                    from openlane import __version__
+
+                    assert __version__ == "{__version__}", f"incompatible OpenLane version {{__version__}}"
+
+                    Step = Step.factory.get("{self.__class__.id}")
+                    step = Step.load(
+                        config_path="config.json",
+                        state_in_path="state_in.json",
+                    )
+                    step.start(
+                        toolbox=Toolbox("tmp"),
+                        step_dir="step_dir",
+                    )
+                    """
+                )
+            )
+
+        info("Reproducible created at:")
+        verbose(f"'{os.path.relpath(target_dir)}'")
+
     @final
     def start(
         self,
@@ -536,6 +614,14 @@ class Step(ABC):
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
             f.write(state_in_result.dumps())
+
+        with open(os.path.join(self.step_dir, "config.json"), "w") as f:
+            config_mut = self.config.to_raw_dict()
+            config_mut["meta"] = {
+                "openlane_version": __version__,
+                "step_id": self.__class__.id,
+            }
+            f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
         self.start_time = time.time()
 

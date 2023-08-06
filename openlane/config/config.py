@@ -117,13 +117,22 @@ class Config(GenericImmutableDict[str, Any]):
         """
         return Config(self, meta=self.meta, overrides=overrides)
 
-    def to_raw_dict(self) -> Dict[str, Any]:
+    def to_raw_dict(self, include_meta: bool = True) -> Dict[str, Any]:
         """
+        :param include_meta: Whether to include the "meta" object or not
         :returns: A raw dictionary representation including the ``meta`` object.
         """
         final = super().to_raw_dict()
-        final["meta"] = self.meta
+        if include_meta:
+            final["meta"] = self.meta
         return final
+
+    def dumps(self, include_meta: bool = True, **kwargs) -> str:
+        if "indent" not in kwargs:
+            kwargs["indent"] = 4
+        return json.dumps(
+            self.to_raw_dict(include_meta), cls=self.get_encoder(), **kwargs
+        )
 
     def copy_filtered(
         self,
@@ -264,11 +273,13 @@ class Config(GenericImmutableDict[str, Any]):
         Self,
         config_in: Union[str, os.PathLike, Dict[str, Any]],
         flow_config_vars: Sequence[Variable],
+        *,
         config_override_strings: Optional[Sequence[str]] = None,
         pdk: Optional[str] = None,
         pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
+        _dont_load_pdk: bool = False,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -338,8 +349,6 @@ class Config(GenericImmutableDict[str, Any]):
             raw = config_in
             loader = Self.__load_dict
 
-        pdk_root = Self.__resolve_pdk_root(pdk_root)
-
         loaded = loader(
             raw,
             design_dir,
@@ -349,6 +358,7 @@ class Config(GenericImmutableDict[str, Any]):
             scl=scl,
             config_override_strings=(config_override_strings or []),
             default_meta_version=default_meta_version,
+            _dont_load_pdk=_dont_load_pdk,
         )
 
         return (loaded, design_dir)
@@ -373,12 +383,14 @@ class Config(GenericImmutableDict[str, Any]):
         raw: Dict[str, Any],
         design_dir: str,
         flow_config_vars: Sequence[Variable],
-        config_override_strings: Sequence[str],
-        pdk_root: str,
+        *,
+        config_override_strings: Sequence[str],  # Unused, kept for API consistency
+        pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         default_meta_version: int = 1,
+        _dont_load_pdk: bool = False,
     ) -> "Config":
         meta: Optional[Meta] = None
         if raw.get("meta") is not None:
@@ -405,17 +417,30 @@ class Config(GenericImmutableDict[str, Any]):
         )
 
         pdk = process_info.get(SpecialKeys.pdk) or pdk
-        if pdk is None:
-            raise ValueError(
-                "The pdk argument is required as the configuration object lacks a 'PDK' key."
+        scl = process_info.get(SpecialKeys.scl) or scl
+        pdkpath = ""
+
+        config_in: GenericImmutableDict[str, Any] = GenericImmutableDict(process_info)
+
+        if not _dont_load_pdk:
+            pdk_root = Self.__resolve_pdk_root(pdk_root)
+            if pdk is None:
+                raise ValueError(
+                    "The pdk argument is required as the configuration object lacks a 'PDK' key."
+                )
+
+            config_in, pdkpath, scl = Self.__get_pdk_config(
+                pdk=pdk,
+                scl=scl,
+                pdk_root=pdk_root,
+                full_pdk_warnings=full_pdk_warnings,
             )
 
-        config_in, pdkpath, scl = Self.__get_pdk_config(
-            pdk=pdk,
-            scl=scl,
-            pdk_root=pdk_root,
-            full_pdk_warnings=full_pdk_warnings,
-        )
+        readable_paths = [
+            os.path.abspath(design_dir),
+        ]
+        if pdkpath != "":
+            readable_paths.append(os.path.abspath(pdkpath))
 
         config_in = Config(
             config_in,
@@ -425,10 +450,7 @@ class Config(GenericImmutableDict[str, Any]):
                 pdkpath=pdkpath,
                 scl=config_in[SpecialKeys.scl],
                 design_dir=design_dir,
-                readable_paths=[
-                    os.path.abspath(pdkpath),
-                    os.path.abspath(design_dir),
-                ],
+                readable_paths=readable_paths,
             ),
             meta=meta,
         )
@@ -468,12 +490,14 @@ class Config(GenericImmutableDict[str, Any]):
         config: str,
         design_dir: str,
         flow_config_vars: Sequence[Variable],
+        *,
         config_override_strings: Sequence[str],  # Unused, kept for API consistency
-        pdk_root: str,
+        pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
         default_meta_version: int = 1,  # Unused, kept for API consistency
+        _dont_load_pdk: bool = False,  # Unused, kept for API consistency
     ) -> "Config":
         warn(
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."

@@ -36,14 +36,10 @@ from typing import (
 from deprecated.sphinx import deprecated
 
 from .memoize import memoize
-from . import (
-    Path,
-    mkdirp,
-    get_script_dir,
-    aggregate_metrics,
-)
-from ..common import is_string
-from ..state import DesignFormat
+from .metrics import aggregate_metrics
+from .generic_dict import is_string
+from .misc import Path, mkdirp, get_script_dir
+from .design_format import DesignFormat
 from ..logging import debug, warn
 
 
@@ -94,10 +90,10 @@ class Toolbox(object):
         for key, value in views_by_corner.items():
             if not fnmatch.fnmatch(timing_corner, key):
                 continue
-            if isinstance(value, Path) or is_string(value):
-                result += [value]
+            if is_string(value):
+                result += [value]  # type: ignore
             else:
-                result += list(value)
+                result += list(value)  # type: ignore
 
         return result
 

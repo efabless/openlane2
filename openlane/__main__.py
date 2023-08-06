@@ -67,6 +67,7 @@ def run(
     frm: Optional[str],
     to: Optional[str],
     skip: Tuple[str, ...],
+    reproducible: Optional[str],
     with_initial_state: Optional[State],
     config_override_strings: List[str],
 ) -> int:
@@ -127,6 +128,7 @@ def run(
             to=to,
             skip=skip,
             with_initial_state=with_initial_state,
+            reproducible=reproducible,
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
@@ -225,6 +227,7 @@ def run_smoke_test(
             last_run=False,
             frm=None,
             to=None,
+            reproducible=None,
             skip=(),
             with_initial_state=None,
             config_override_strings=[],
@@ -343,7 +346,7 @@ formatter_settings = HelpFormatter.settings(
     ),
     constraint=mutually_exclusive,
 )
-@cloup_flow_opts()
+@cloup_flow_opts(sequential_flow_reproducible=True)
 @pass_context
 def cli(ctx, /, **kwargs):
     args = kwargs["config_files"]

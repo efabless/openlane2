@@ -19,6 +19,7 @@ from collections import UserString
 from dataclasses import asdict, is_dataclass
 from typing import (
     Any,
+    Callable,
     Dict,
     Hashable,
     Iterator,
@@ -29,6 +30,8 @@ from typing import (
     Tuple,
     Optional,
 )
+
+from .misc import idem
 
 
 class GenericDictEncoder(json.JSONEncoder):
@@ -259,10 +262,15 @@ def is_string(obj: Any) -> bool:
 
 # Screw this, if you can figure out how to type hint mapping in dictionary out
 # and non-mapping in sequence out in Python, be my guest
-def copy_recursive(input):
+def copy_recursive(input, translator: Callable = idem):
     """
     Copies any arbitrarily-deep nested structure of Mappings and/or Sequences.
 
+    :param input: The input nested structure
+    :param translator: Before an object is appended, this function will be
+        called to process the value.
+
+        By default, :fun:`idem` is called.
     :returns: The copy.
 
         All sequences will become built-in ``list``s and all mappings will
@@ -287,6 +295,8 @@ def copy_recursive(input):
                 result.append(recursive(value, visit_stack))
 
         visit_stack.pop()
+
+        result = translator(result)
         return result
 
     return recursive(input, [])
