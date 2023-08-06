@@ -14,7 +14,6 @@
 import os
 import re
 import sys
-import types
 import uuid
 import fnmatch
 import tempfile
@@ -37,13 +36,13 @@ from typing import (
 from deprecated.sphinx import deprecated
 
 from .memoize import memoize
-from .generic_dict import is_string
 from . import (
     Path,
     mkdirp,
     get_script_dir,
     aggregate_metrics,
 )
+from ..common import is_string
 from ..state import DesignFormat
 from ..logging import debug, warn
 
@@ -95,10 +94,10 @@ class Toolbox(object):
         for key, value in views_by_corner.items():
             if not fnmatch.fnmatch(timing_corner, key):
                 continue
-            if isinstance(value, Iterable) and not is_string(value):
-                result += list(value)
-            else:
+            if isinstance(value, Path) or is_string(value):
                 result += [value]
+            else:
+                result += list(value)
 
         return result
 
