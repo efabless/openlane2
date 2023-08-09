@@ -527,6 +527,10 @@ class Step(ABC):
 
         # 1. Config
         dumpable_config = copy_recursive(self.config, translator=visitor)
+        dumpable_config["meta"] = {
+            "openlane_version": __version__,
+            "step": self.__class__.id,
+        }
 
         # pdk_root = dumpable_config["PDK_ROOT"]
         # pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
@@ -546,45 +550,26 @@ class Step(ABC):
             f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))
 
         # 3. Runner
-        script_path = os.path.join(target_dir, "run.py")
+        script_path = os.path.join(target_dir, "run.sh")
         with open(script_path, "w") as f:
             f.write(
                 textwrap.dedent(
-                    f"""
-                    #!/usr/bin/env python3
-                    import sys
-                    import argparse
-                    from openlane import __version__
-
-                    if __version__ != "{__version__}":
-                        print(f"Incompatible OpenLane version for this reproducible: {{__version__}}", file=sys.stderr)
-                        print(f"> Try 'pip3 install openlane=={__version__}', then re-run this script.", file=sys.stderr)
-                        exit(-1)
-                    
-                    parser = argparse.ArgumentParser(prog='Reproducible')
-                    parser.add_argument('--pdk-root')
-                    args = parser.parse_args()
-
-                    pdk_root = args.pdk_root or "."
-                    
-                    from openlane.steps import Step
-                    from openlane.common import Toolbox
-
-                    Step = Step.factory.get("{self.__class__.id}")
-                    step = Step.load(
-                        config_path="config.json",
-                        state_in_path="state_in.json",
-                        pdk_root=pdk_root,
-                    )
-                    step.start(
-                        toolbox=Toolbox("tmp"),
-                        step_dir="step_dir",
-                    )
+                    """
+                    #!/bin/sh
+                    set -e
+                    version="$(python3 -m openlane --bare-version)"
+                    if [ "$?" != "0" ]; then
+                        echo "Failed to run 'python3 -m openlane --bare-version'."
+                        exit -1
+                    fi
+                    python3 -m openlane.steps run\\
+                        --config ./config.json\\
+                        --state-in ./state_in.json
                     """
                 ).strip()
             )
-
-        # 4. PDK Note
+        if hasattr(os, "chmod"):
+            os.chmod(script_path, 0o755)
 
         info("Reproducible created at:")
         verbose(f"'{os.path.relpath(target_dir)}'")
@@ -672,7 +657,7 @@ class Step(ABC):
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
-                "step_id": self.__class__.id,
+                "step": self.__class__.id,
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
@@ -848,8 +833,10 @@ class Step(ABC):
         split_lines = lines.split("\n")
         if returncode != 0:
             if returncode > 0:
-                err("\n".join(split_lines[-10:]))
-                err(f"Log file: {log_path}")
+                log = "\n".join(split_lines[-10:])
+                if log.strip() != "":
+                    err(log)
+                err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return generated_metrics

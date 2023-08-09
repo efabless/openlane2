@@ -56,7 +56,7 @@ def test_dict_config():
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
         },
-        meta=Meta(version=2, flow="Classic"),
+        meta=Meta(version=2, flow=None),
     )
     assert cfg == assert_cfg, "Generated configuration does not match expected value"
 
@@ -159,7 +159,7 @@ def test_tcl_config():
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
         },
-        meta=Meta(version=1, flow="Classic"),
+        meta=Meta(version=1, flow=None),
     ), "Generated configuration does not match expected value"
 
 

@@ -41,13 +41,16 @@ from .pdk import (
     migrate_old_config,
 )
 from ..logging import info, warn
+from ..__version__ import __version__
 from ..common import GenericDict, GenericImmutableDict, TclUtils, Path
 
 
 @dataclass
 class Meta:
     version: int = 1
-    flow: Union[None, str, List[str]] = "Classic"
+    flow: Union[None, str, List[str]] = None
+    step: Union[None, str] = None
+    openlane_version: Union[None, str] = __version__
 
 
 class InvalidConfig(ValueError):

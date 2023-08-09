@@ -219,9 +219,6 @@ class SequentialFlow(Flow):
                 except DeferredStepError as e:
                     deferred_errors.append(str(e))
                 except StepError as e:
-                    step.create_reproducible(
-                        os.path.join(step.step_dir, "reproducible")
-                    )
                     raise FlowError(str(e))
 
             self.progress_bar.end_stage(increment_ordinal=increment_ordinal)

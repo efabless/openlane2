@@ -27,9 +27,6 @@ from cloup import (
     option,
     option_group,
     command,
-    HelpFormatter,
-    HelpTheme,
-    Style,
     Context,
 )
 from cloup.constraints import (
@@ -52,6 +49,7 @@ from . import common
 from .container import run_in_container
 from .plugins import discovered_plugins
 from .config import Config, InvalidConfig
+from .common.cli import formatter_settings
 from .flows import Flow, SequentialFlow, FlowException, FlowError, cloup_flow_opts
 
 
@@ -287,15 +285,6 @@ def cli_in_container(
 
 o = partial(option, show_default=True)
 
-formatter_settings = HelpFormatter.settings(
-    theme=HelpTheme(
-        invoked_command=Style(fg="bright_yellow"),
-        heading=Style(fg="cyan", bold=True),
-        constraint=Style(fg="magenta"),
-        col1=Style(fg="bright_yellow"),
-    )
-)
-
 
 @command(
     no_args_is_help=True,
@@ -349,6 +338,13 @@ formatter_settings = HelpFormatter.settings(
 @cloup_flow_opts(sequential_flow_reproducible=True)
 @pass_context
 def cli(ctx, /, **kwargs):
+    """
+    Runs an OpenLane flow via the commandline using a design configuration
+    object.
+
+    Try 'python3 -m openlane.steps --help' for step-specific options, including
+    reproducibles and running a step standalone.
+    """
     args = kwargs["config_files"]
     run_kwargs = kwargs.copy()
 
