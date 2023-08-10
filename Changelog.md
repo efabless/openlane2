@@ -1,3 +1,8 @@
+* Updated OpenROAD to `36bd481`: **There is an API break in OpenDB APIs**:
+    - `odb.read_def` now takes a `dbTech` and a Path string instead of a `dbDatabase` and a Path string.
+    - The `dbTech` object can be obtained via the `getTech` method on `dbDatabase` objects: `db.getTech()`, for example.
+* Updated Volare to `0.11.0`
+
 # 2.0.0-b3
 
 * Added ability to create reproducible for any step using instance method
