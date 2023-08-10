@@ -18,10 +18,12 @@ from enum import Enum
 from decimal import Decimal, InvalidOperation
 from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
 from typing import (
+    ClassVar,
     Dict,
     List,
     Literal,
     Optional,
+    Set,
     Tuple,
     Union,
     Mapping,
@@ -224,6 +226,8 @@ class Variable:
         must be represented in terms of their official symbols.
     """
 
+    known_variable_names: ClassVar[Set[str]] = set()
+
     name: str
     type: Any
     description: str
@@ -233,6 +237,13 @@ class Variable:
     )
 
     units: Optional[str] = None
+
+    def __post_init__(self):
+        Variable.known_variable_names.add(self.name)
+        for name in self.deprecated_names:
+            if isinstance(name, tuple):
+                name, _ = name
+            Variable.known_variable_names.add(name)
 
     @property
     def optional(self) -> bool:

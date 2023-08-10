@@ -806,10 +806,12 @@ class Config(GenericImmutableDict[str, Any]):
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
             elif "_OPT" not in key and key != "//":
-                if unknown_key_warn:
-                    warnings.append(f"Unknown key '{key}' provided.")
-                else:
+                if not unknown_key_warn and key not in Variable.known_variable_names:
                     errors.append(f"Unknown key '{key}' provided.")
+                else:
+                    warnings.append(
+                        f"Key '{key}' provided is unused by the current flow."
+                    )
 
         if (
             translated_macros and final.get("MACROS") is not None

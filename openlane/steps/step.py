@@ -748,16 +748,32 @@ class Step(ABC):
         """
         A helper function for :class:`Step` objects to run subprocesses.
 
-        The output from the subprocess is processed line-by-line.
+        The output from the subprocess is processed line-by-line. ``run_subprocess``
+        makes a number of special functions accessible to subprocesses by simply
+        printing keywords in the terminal, such as:
+
+        * ``%OL_CREATE_REPORT <file>``: Starts redirecting all output from
+          standard output to a report file inside the step directory, with the
+          name <file>.
+        * ``%OL_END_REPORT``: Stops redirection behavior.
+        * ``%OL_METRIC <name> <value>``: Adds a string metric with the name <name>
+            and the value <value> to this function's returned object.
+        * ``%OL_METRIC_F <name> <value>``: Adds a floating-point metric with the
+            name <name> and the value <value> to this function's returned object.
+        * ``%OL_METRIC_I <name> <value>``: Adds an integer metric with the name
+            <name> and the value <value> to this function's returned object.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
-        :param log_to: An optional override for the log path from :meth:`get_log_path`.
-            Useful for if you run multiple subprocesses within one step.
+        :param log_to: An optional override for the log path from
+            :meth:`get_log_path`. Useful for if you run multiple subprocesses
+            within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
+        :returns: A dictionary of any metrics generated using the %OL_METRIC{,_I,_F}
+            directive.
         :raises subprocess.CalledProcessError: If the process has a non-zero exit,
             this exception will be raised.
         """

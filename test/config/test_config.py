@@ -397,7 +397,7 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
         ), "unknown variable triggered an error when loading from a meta.version: 1 JSON file"
 
     assert (
-        "Unknown key" in caplog.text
+        "unused by the current flow" in caplog.text
     ), "unknown variable did not trigger a warning when loading from a meta.version: 1 JSON file"
     caplog.clear()
 

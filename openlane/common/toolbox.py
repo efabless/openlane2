@@ -20,6 +20,7 @@ import tempfile
 import subprocess
 from enum import IntEnum
 from shutil import which
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -35,7 +36,6 @@ from typing import (
 
 from deprecated.sphinx import deprecated
 
-from .memoize import memoize
 from .metrics import aggregate_metrics
 from .generic_dict import is_string
 from .misc import Path, mkdirp, get_script_dir
@@ -53,6 +53,7 @@ class Toolbox(object):
 
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
+        self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
 
     @deprecated(
         version="2.0.0b1",
@@ -180,9 +181,9 @@ class Toolbox(object):
             Gate-Level Netlists and SPEF views.
 
             If set to ``false``, only lib files are returned.
-        :returns: A tuple:
-            - \\[0\\] being the name of the timing corner
-            - \\[1\\] being a heterogenous list of files
+        :returns: A tuple of:
+            * The name of the timing corner
+            * A heterogenous list of files
                 - Lib files are returned as-is
                 - Netlists are returned as-is
                 - SPEF files are returned in the format "{instance_name}@{spef_path}"
@@ -310,7 +311,6 @@ class Toolbox(object):
                 warn(f"Failed to render preview: {e.stdout}")
         return result
 
-    @memoize()
     def remove_cells_from_lib(
         self,
         input_lib_files: FrozenSet[str],
