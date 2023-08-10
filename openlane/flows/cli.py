@@ -145,9 +145,11 @@ def pdk_scl_cb(
 
 
 def cloup_flow_opts(
+    *,
     config_options: bool = True,
     run_options: bool = True,
     sequential_flow_controls: bool = True,
+    sequential_flow_reproducible: bool = False,
     pdk_options: bool = True,
     log_level: bool = True,
     jobs: bool = True,
@@ -166,9 +168,11 @@ def cloup_flow_opts(
         * ``flow_name``: ``Optional[str]``: A valid flow ID to be used with :meth:`Flow.factory.get`
         * ``config_override_strings``‡: ``Optional[Iterable[str]]``
     * Sequential flow controls (if parameter ``sequential_flow_controls`` is ``True``)
-        * ``frm``§: ``str``: Start from a step with this ID. Supported by sequential flows.
-        * ``to``§: ``str``: Stop at a step with this id. Supported by sequential flows.
+        * ``frm``§: ``Optional[str]``: Start from a step with this ID. Supported by sequential flows.
+        * ``to``§: ``Optional[str]``: Stop at a step with this id. Supported by sequential flows.
         * ``skip``§: ``Iterable[str]``: Skip these steps. Supported by sequential flows.
+    * Sequential flow reproducible (if parameter ``sequential_flow_reproducible`` is ``True``)
+        * ``reproducible``§: ``str``: Create a reproducible for a step with is ID, aborting the flow afterwards. Supported by sequential flows.
     * Flow run options (if parameter ``run_options`` is ``True``):
         * ``tag``§: ``Optional[str]``
         * ``last_run``§: ``bool``: If ``True``, ``tag`` is guaranteed to be None.
@@ -281,6 +285,12 @@ def cloup_flow_opts(
                     multiple=True,
                     help="Skip these steps. Supported by sequential flows.",
                 ),
+            )(f)
+        if sequential_flow_reproducible:
+            f = o(
+                "--reproducible",
+                type=str,
+                help="Create a reproducible for the step matching this ID, then abort the flow. Supported by sequential flows.",
             )(f)
         if log_level:
             f = o(

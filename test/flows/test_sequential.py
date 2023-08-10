@@ -15,17 +15,16 @@ from typing import Type
 
 import pytest
 
-from . import flow
-from ..steps import Step
-from ..config.test_config import (  # noqa: F401
-    mock_variables,
-    _mock_fs,
-)
+from openlane.flows import flow
+from openlane.steps import Step
+
+
+mock_variables = pytest.mock_variables
 
 
 @pytest.fixture()
 def MetricIncrementer():
-    from ..steps import Step
+    from openlane.steps import Step
 
     @Step.factory.register()
     class MetricIncrementer(Step):
@@ -43,10 +42,10 @@ def MetricIncrementer():
     return MetricIncrementer
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_sequential_flow(MetricIncrementer: Type[Step]):
-    from . import SequentialFlow
+    from openlane.flows import SequentialFlow
 
     class Dummy(SequentialFlow):
         Steps = [
@@ -78,10 +77,10 @@ def test_sequential_flow(MetricIncrementer: Type[Step]):
     assert state.metrics["counter"] == 4, "SequentialFlow did not run properly"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_custom_seqflow(MetricIncrementer):
-    from . import SequentialFlow
+    from openlane.flows import SequentialFlow
 
     MyFlow = SequentialFlow.make(
         [
@@ -112,10 +111,10 @@ def test_custom_seqflow(MetricIncrementer):
     assert state.metrics["counter"] == 4, "CustomSequentialFlow did not run properly"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_custom_seqflow_bad_id(MetricIncrementer):
-    from . import SequentialFlow
+    from openlane.flows import SequentialFlow
 
     with pytest.raises(TypeError, match="No step found with id"):
         SequentialFlow.make(
@@ -128,10 +127,10 @@ def test_custom_seqflow_bad_id(MetricIncrementer):
         )
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_substitution(MetricIncrementer):
-    from . import SequentialFlow
+    from openlane.flows import SequentialFlow
 
     @Step.factory.register()
     class OtherMetricIncrementer(MetricIncrementer):
@@ -175,10 +174,10 @@ def test_substitution(MetricIncrementer):
     ), "step substitution replaced other than exactly two step"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_bad_substitution(MetricIncrementer):
-    from . import SequentialFlow, FlowException
+    from openlane.flows import SequentialFlow, FlowException
 
     MyFlow = SequentialFlow.make(
         [
@@ -223,10 +222,10 @@ def test_bad_substitution(MetricIncrementer):
         )
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
 def test_flow_control(MetricIncrementer):
-    from . import SequentialFlow
+    from openlane.flows import SequentialFlow
 
     class OtherMetricIncrementer(MetricIncrementer):
         id = "Test.OtherMetricIncrementer"

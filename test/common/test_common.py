@@ -25,17 +25,8 @@ class MyString(UserString):
     pass
 
 
-def test_slugify():
-    from . import slugify
-
-    assert slugify("ABCD efg.xy-Z") == "abcd-efg-xy-z", "Failed slugify test"
-    assert (
-        slugify("Lorem ipsum   dolor sit amet") == "lorem-ipsum-dolor-sit-amet"
-    ), "Failed slugify test"
-
-
 def test_stringenum():
-    from . import StringEnum
+    from openlane.common import StringEnum
 
     breeds = ["Siamese", "Persian", "Ragdoll", "Maine Coon"]
 
@@ -54,7 +45,7 @@ def test_stringenum():
 
 
 def test_is_string():
-    from . import is_string
+    from openlane.common import is_string
 
     assert is_string(
         "just a normal string"
@@ -68,7 +59,7 @@ def test_is_string():
 
 
 def test_parse_metric_modifiers():
-    from . import parse_metric_modifiers
+    from openlane.common import parse_metric_modifiers
 
     assert parse_metric_modifiers("category__name__optional_name_modifier__etc",) == (
         "category__name__optional_name_modifier__etc",
@@ -117,7 +108,7 @@ def test_parse_metric_modifiers():
     ],
 )
 def test_aggregate_metrics(input, aggregators, expected):
-    from . import aggregate_metrics
+    from openlane.common import aggregate_metrics
 
     assert (
         aggregate_metrics(input, aggregators) == expected
@@ -125,7 +116,7 @@ def test_aggregate_metrics(input, aggregators, expected):
 
 
 def test_generic_dict():
-    from . import GenericDict
+    from openlane.common import GenericDict
 
     test_dict = GenericDict({"a": "b", "c": "d"}, overrides={"c": "e"})
     assert test_dict["a"] == "b", "Copying in constructor not working properly"
@@ -145,7 +136,7 @@ def test_generic_dict():
 
 
 def test_immutable_generic_dict():
-    from . import GenericImmutableDict
+    from openlane.common import GenericImmutableDict
 
     test_dict = GenericImmutableDict({"a": "b", "c": "d"}, overrides={"c": "e"})
     assert test_dict["a"] == "b", "Copying in constructor not working properly"
@@ -174,7 +165,7 @@ deep_dict = {
 
 
 def test_generic_dict_encoder():
-    from . import GenericDict
+    from openlane.common import GenericDict
 
     assert (
         GenericDict(deep_dict).dumps(indent=0).replace("\n", "")
@@ -188,7 +179,7 @@ def test_generic_dict_encoder():
 
 
 def test_copy_recursive():
-    from . import copy_recursive
+    from openlane.common import copy_recursive
 
     deep_dict_copy = copy_recursive(deep_dict)
 
@@ -207,7 +198,7 @@ def test_copy_recursive():
 
 
 def test_tpe():
-    from . import get_tpe, set_tpe
+    from openlane.common import get_tpe, set_tpe
 
     tpe = get_tpe()
     assert tpe._max_workers == os.cpu_count(), "TPE was not initialized properly"
@@ -219,7 +210,7 @@ def test_tpe():
 
 
 def test_immutable_dict():
-    from . import GenericImmutableDict
+    from openlane.common import GenericImmutableDict
 
     immutable_dict = GenericImmutableDict({"a": "d", "p": 4})
 

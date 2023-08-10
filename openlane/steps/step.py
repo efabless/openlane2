@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import os
 import time
+import json
+import shutil
 import textwrap
 import subprocess
 from signal import Signals
@@ -35,18 +37,19 @@ from typing import (
     Type,
 )
 
-from openlane.state.state import StateElement
-
-from ..state import State, InvalidState
-from ..state import DesignFormat
-from ..utils import Toolbox
-from ..config import Config, Variable
+from ..config import Config, Variable, universal_flow_config_variables
+from ..state import State, InvalidState, StateElement
 from ..common import (
     GenericImmutableDict,
+    GenericDictEncoder,
+    Toolbox,
+    DesignFormat,
+    Path,
     mkdirp,
     slugify,
     final,
     protected,
+    copy_recursive,
 )
 from ..logging import (
     rule,
@@ -55,6 +58,7 @@ from ..logging import (
     warn,
     err,
 )
+from ..__version__ import __version__
 
 
 class StepError(RuntimeError):
@@ -458,6 +462,118 @@ class Step(ABC):
 
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
+    @classmethod
+    def load(Self, config_path: str, state_in_path: str, pdk_root: str = ".") -> Step:
+        """
+        Creates a step object, but instead of using a Flow or a global state,
+        the config_path and input state are deserialized from JSON files.
+
+        Useful for re-running steps that have already run.
+
+        :param config_path: Path to a **Step-filtered** ``config.json`` file.
+            The step will not tolerate variables unrelated to this specific step.
+        :param state_in_path: Path to a valid ``state_in.json`` file.
+        :param pdk_root: The PDK root, which is needed for some utilities.
+
+            If your utility doesn't require it, just keep the default value
+            as-is.
+        :returns: The created step object
+        """
+        config, _ = Config.load(
+            config_in=json.loads(open(config_path).read()),
+            flow_config_vars=universal_flow_config_variables + Self.config_vars,
+            design_dir=".",
+            pdk_root=pdk_root,
+            _load_pdk_configs=False,
+        )
+        state_in = State.loads(open(state_in_path).read())
+        return Self(config=config, state_in=state_in)
+
+    def create_reproducible(self, target_dir: str):
+        """
+        Creates a folder that, given a specific version of OpenLane being
+        installed, makes a portable reproducible of that step's execution.
+
+        * Reproducibles are limited on Magic and Netgen, as their RC files
+        form an indirect dependency on many `.mag` files or similar that cannot
+        be enumerated by OpenLane.
+
+        Reproducibles are automatically generated for failed steps, but
+        this may be called manually on any step, too.
+
+        :param target_dir: The directory in which to create the reproducible
+        """
+        # 0. Create Directories
+        mkdirp(target_dir)
+
+        files_path = os.path.join(target_dir, "files")
+
+        def visitor(x: Any) -> Any:
+            nonlocal files_path
+            if not isinstance(x, Path):
+                return x
+
+            target_relpath = os.path.join(".", "files", x[1:])
+            target_abspath = os.path.join(files_path, x[1:])
+
+            mkdirp(os.path.dirname(target_abspath))
+
+            if os.path.isdir(x):
+                mkdirp(target_abspath)
+            else:
+                shutil.copy(x, target_abspath)
+
+            return Path(target_relpath)
+
+        # 1. Config
+        dumpable_config = copy_recursive(self.config, translator=visitor)
+        dumpable_config["meta"] = {
+            "openlane_version": __version__,
+            "step": self.__class__.id,
+        }
+
+        # pdk_root = dumpable_config["PDK_ROOT"]
+        # pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
+        # dumpable_config["PDK_ROOT"] = pdk_root_resolved
+        del dumpable_config["PDK_ROOT"]
+
+        config_path = os.path.join(target_dir, "config.json")
+        with open(config_path, "w") as f:
+            f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))
+
+        # 2. State
+        state_in = self.state_in.result()
+        dumpable_state = copy_recursive(self.state_in.result(), translator=visitor)
+        dumpable_state["metrics"] = state_in.metrics.to_raw_dict()
+        state_path = os.path.join(target_dir, "state_in.json")
+        with open(state_path, "w") as f:
+            f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))
+
+        # 3. Runner
+        script_path = os.path.join(target_dir, "run.sh")
+        with open(script_path, "w") as f:
+            f.write(
+                textwrap.dedent(
+                    """
+                    #!/bin/sh
+                    set -e
+                    version="$(python3 -m openlane --bare-version)"
+                    if [ "$?" != "0" ]; then
+                        echo "Failed to run 'python3 -m openlane --bare-version'."
+                        exit -1
+                    fi
+                    python3 -m openlane.steps run\\
+                        --config ./config.json\\
+                        --state-in ./state_in.json
+                    """
+                ).strip()
+            )
+        if hasattr(os, "chmod"):
+            os.chmod(script_path, 0o755)
+
+        info("Reproducible created at:")
+        verbose(f"'{os.path.relpath(target_dir)}'")
+
     @final
     def start(
         self,
@@ -536,6 +652,14 @@ class Step(ABC):
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
             f.write(state_in_result.dumps())
+
+        with open(os.path.join(self.step_dir, "config.json"), "w") as f:
+            config_mut = self.config.to_raw_dict()
+            config_mut["meta"] = {
+                "openlane_version": __version__,
+                "step": self.__class__.id,
+            }
+            f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
         self.start_time = time.time()
 
@@ -709,8 +833,10 @@ class Step(ABC):
         split_lines = lines.split("\n")
         if returncode != 0:
             if returncode > 0:
-                err("\n".join(split_lines[-10:]))
-                err(f"Log file: {log_path}")
+                log = "\n".join(split_lines[-10:])
+                if log.strip() != "":
+                    err(log)
+                err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return generated_metrics

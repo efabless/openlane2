@@ -3,7 +3,6 @@ import os
 import subprocess
 from setuptools import setup, find_packages
 
-
 module_name = "openlane"
 
 __dir__ = os.path.dirname(__file__)
@@ -11,7 +10,7 @@ version = subprocess.check_output(
     [
         "python3",
         os.path.join(
-            os.path.abspath(os.path.dirname(__file__)),
+            os.path.abspath(__dir__),
             module_name,
             "__version__.py",
         ),
@@ -48,6 +47,11 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Operating System :: MacOS :: MacOS X",
     ],
-    entry_points={"console_scripts": ["openlane = openlane.__main__:cli"]},
+    entry_points={
+        "console_scripts": [
+            "openlane = openlane.__main__:cli",
+            "openlane.steps = openlane.steps.__main__:cli",
+        ]
+    },
     python_requires=">3.8",
 )

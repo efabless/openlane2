@@ -43,7 +43,15 @@ from .common_variables import (
 from ..config import Variable
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, console
-from ..common import Path, get_script_dir, StringEnum, get_tpe, mkdirp, TclUtils
+from ..common import (
+    Path,
+    TclUtils,
+    StringEnum,
+    get_script_dir,
+    get_tpe,
+    mkdirp,
+    aggregate_metrics,
+)
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -192,7 +200,7 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = -inf
             metrics_updates.update(or_metrics_out)
 
-        metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
+        metric_updates_with_aggregates = aggregate_metrics(
             metrics_updates,
             timing_metric_aggregation,
         )
@@ -418,7 +426,7 @@ class STAPostPNR(STAPrePNR):
         for corner, updates_future in futures.items():
             metrics_updates.update(updates_future.result())
 
-        metric_updates_with_aggregates = self.toolbox.aggregate_metrics(
+        metric_updates_with_aggregates = aggregate_metrics(
             metrics_updates, timing_metric_aggregation
         )
 

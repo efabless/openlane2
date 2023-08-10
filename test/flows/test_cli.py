@@ -13,14 +13,11 @@
 # limitations under the License.
 import pytest
 from pyfakefs.fake_filesystem import FakeFilesystem
-from ..config.test_config import (  # noqa: F401
-    _mock_fs,
-)
 
 
 def test_cli_basic():
     import click
-    from .cli import cloup_flow_opts
+    from openlane.flows import cloup_flow_opts
 
     @click.command()
     @cloup_flow_opts(volare_by_default=False)
@@ -33,7 +30,7 @@ def test_cli_basic():
 
 def test_only_flag():
     import click
-    from .cli import cloup_flow_opts
+    from openlane.flows import cloup_flow_opts
 
     @click.command()
     @cloup_flow_opts(volare_by_default=False)
@@ -53,9 +50,9 @@ def test_only_flag():
 
 def test_log_level_flag(caplog: pytest.LogCaptureFixture):
     import click
-    from .cli import cloup_flow_opts
 
-    from ..logging import get_log_level, reset_log_level
+    from openlane.flows import cloup_flow_opts
+    from openlane.logging import get_log_level, reset_log_level
 
     @click.command()
     @cloup_flow_opts(volare_by_default=False)
@@ -90,9 +87,9 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
 
 def test_worker_count_cb():
     import click
-    from .cli import cloup_flow_opts
 
-    from ..common import get_tpe, set_tpe
+    from openlane.flows import cloup_flow_opts
+    from openlane.common import get_tpe, set_tpe
 
     @click.command()
     @cloup_flow_opts(volare_by_default=False)
@@ -110,12 +107,9 @@ def test_worker_count_cb():
     set_tpe(tpe_backup)
 
 
-pytest.mark.usefixtures("_mock_fs")
-
-
 def test_initial_state(fs: FakeFilesystem, caplog: pytest.LogCaptureFixture):
     import click
-    from .cli import cloup_flow_opts
+    from openlane.flows import cloup_flow_opts
 
     @click.command()
     @cloup_flow_opts(volare_by_default=False)

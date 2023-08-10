@@ -25,6 +25,7 @@ result
 /*.def
 logs/
 /openlane_run
+failures_report.json
 
 # Testing
 .coverage

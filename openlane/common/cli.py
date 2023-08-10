@@ -11,5 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .drc import DRC, Violation
-from .toolbox import Toolbox
+from cloup import (
+    HelpFormatter,
+    HelpTheme,
+    Style,
+)
+
+formatter_settings = HelpFormatter.settings(
+    theme=HelpTheme(
+        invoked_command=Style(fg="bright_yellow"),
+        heading=Style(fg="cyan", bold=True),
+        constraint=Style(fg="magenta"),
+        col1=Style(fg="bright_yellow"),
+    )
+)
