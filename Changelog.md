@@ -1,7 +1,7 @@
 # 2.0.0-b4
 
 * Updated documentation for `run_subprocess`
-* Updated Volare to `0.11.0`
+* Updated Volare to `0.11.2`
 * Fixed a bug with `Toolbox` method memoization
 * Unknown key errors only emit a warning now if the key is used as a Variable's
   name *anywhere* linked to OpenLane. This allows using the same config file
