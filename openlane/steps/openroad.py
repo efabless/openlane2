@@ -153,8 +153,8 @@ class OpenROADStep(TclStep):
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
         lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
-            frozenset([self.config["PNR_EXCLUSION_CELL_LIST"]]),
+            frozenset([str(e) for e in lib_list]),
+            frozenset([str(self.config["PNR_EXCLUSION_CELL_LIST"])]),
             as_cell_lists=True,
         )
 

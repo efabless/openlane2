@@ -98,11 +98,11 @@ class YosysStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
+            frozenset([str(e) for e in lib_list]),
             excluded_cells=frozenset(
                 [
-                    self.config["SYNTH_EXCLUSION_CELL_LIST"],
-                    self.config["PNR_EXCLUSION_CELL_LIST"],
+                    str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
+                    str(self.config["PNR_EXCLUSION_CELL_LIST"]),
                 ]
             ),
             as_cell_lists=True,
