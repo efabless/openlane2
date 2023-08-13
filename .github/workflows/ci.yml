@@ -159,12 +159,15 @@ jobs:
           key: derivation-amd64
           other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
       - name: Cache PDKs
+        id: cache-pdks
         uses: actions/cache@v3
         with:
           path: ~/.volare
           key: cache-pdks-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Enable PDKs
+        if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
+          pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Test
