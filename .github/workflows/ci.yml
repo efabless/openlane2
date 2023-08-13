@@ -14,10 +14,11 @@ on:
 
 jobs:
   prepare-test-matrices:
-    name: Prepare Test Matrices
+    name: Prepare Test Matrices and Cache PDKs
     runs-on: ubuntu-22.04
     outputs:
       design_matrix: ${{ steps.set-matrix.outputs.design_matrix }}
+      opdks_rev: ${{ steps.set-rev.outputs.opdks_rev }}
     steps:
       - uses: actions/checkout@v3
       - name: Python Dependencies
@@ -32,6 +33,19 @@ jobs:
         run: |
           python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
           echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
+      - name: Get Open PDKs Revision
+        id: set-rev
+        run: |
+          echo "opdks_rev=./openlane/open_pdks_rev" >> $GITHUB_OUTPUT
+      - name: Cache PDKs
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare
+          key: cache-pdks-${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Enable PDKs
+        run: |
+          volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
   lint:
     name: Lint
     runs-on: ubuntu-22.04
@@ -90,7 +104,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run Unit Tests
         run: |
-          make venv
           make test
   build-docker-amd64:
     runs-on: ubuntu-22.04
@@ -145,6 +158,15 @@ jobs:
         with:
           key: derivation-amd64
           other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+      - name: Cache PDKs
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare
+          key: cache-pdks-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Enable PDKs
+        run: |
+          volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Test
         run: |
           nix-shell --run "\
