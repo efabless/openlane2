@@ -31,7 +31,7 @@ def _mock_fs():
 
 
 def test_expr():
-    from .preprocessor import Expr
+    from openlane.config.preprocessor import Expr
 
     assert Expr.evaluate("5 + 4 * (2 + 1)", {}) == 17, "Order of evaluation failure"
 
@@ -54,7 +54,7 @@ def test_expr():
 
 
 def test_process_string():
-    from .preprocessor import process_string
+    from openlane.config.preprocessor import process_string
 
     assert process_string("expr::2 * 2", {}) == 4, "expr:: not working"
 
@@ -119,7 +119,7 @@ mmpt_raw = {
 
 
 def test_process_info_extraction():
-    from .preprocessor import preprocess_dict
+    from openlane.config.preprocessor import preprocess_dict
 
     process_info = preprocess_dict(
         mmpt_raw,
@@ -137,7 +137,7 @@ def test_process_info_extraction():
 
 
 def test_preprocess_dict():
-    from .preprocessor import preprocess_dict
+    from openlane.config.preprocessor import preprocess_dict
 
     preprocessed = preprocess_dict(
         mmpt_raw,

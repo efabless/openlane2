@@ -17,7 +17,7 @@
 
 OpenLane is a RTL to GDSII infrastructure library based on several components including OpenROAD, Yosys, Magic, Netgen, CVC, KLayout and a number of custom scripts for design exploration and optimization. A reference flow performs all ASIC implementation steps from RTL all the way down to GDSII.
 
-You can find the documentation [here](https://openlane2.readthedocs.io/en/latest/getting_started/) to get started.
+You can find the documentation [here](https://openlane2.readthedocs.io/en/latest/getting_started/) to get started. You can discuss OpenLane 2 in the [#openlane-2](https://open-source-silicon.slack.com/archives/C05M85Q5GCF) channel of the [Efabless Open Source Silicon Slack](https://invite.skywater.tools).
 
 ```python
 from openlane.flows import Flow

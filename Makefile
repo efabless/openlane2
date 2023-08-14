@@ -81,3 +81,4 @@ clean:
 	rm -rf *.egg-info
 	rm -rf designs/*/runs
 	rm -rf test_data/designs/*/runs
+	rm -rf test/designs/*/runs

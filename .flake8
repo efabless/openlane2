@@ -18,4 +18,5 @@ exclude =
     venv/,
     openlane/__init__.py,
     openlane/**/__init__.py,
+    test/designs/*.py,
     examples

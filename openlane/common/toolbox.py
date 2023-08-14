@@ -20,6 +20,7 @@ import tempfile
 import subprocess
 from enum import IntEnum
 from shutil import which
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -33,24 +34,26 @@ from typing import (
     Union,
 )
 
-from .memoize import memoize
-
-from ..state import DesignFormat
-from ..logging import debug, warn
-from ..config import Config, Macro
-from ..common import (
-    Path,
-    mkdirp,
-    get_script_dir,
-    aggregate_metrics,
-)
-
 from deprecated.sphinx import deprecated
+
+from .metrics import aggregate_metrics
+from .generic_dict import is_string
+from .misc import Path, mkdirp, get_script_dir
+from .design_format import DesignFormat
+from ..logging import debug, warn
 
 
 class Toolbox(object):
+    """
+    An assisting object shared by a Flow and all its constituent Steps.
+
+    The toolbox may create artifacts that are cached to avoid constant re-creation
+    between steps.
+    """
+
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = os.path.abspath(tmp_dir)
+        self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
 
     @deprecated(
         version="2.0.0b1",
@@ -66,30 +69,64 @@ class Toolbox(object):
 
     def filter_views(
         self,
-        config: Config,
-        views_by_corner: Mapping[str, Union[Path, List[Path]]],
+        config: Mapping[str, Any],
+        views_by_corner: Mapping[str, Union[Path, Iterable[Path]]],
         timing_corner: Optional[str] = None,
     ) -> List[Path]:
+        """
+        Given a mapping from (wildcards of) corner names to views, this function
+        enumerates all views matching either the default timing corner or
+        an explicitly-provided override.
+
+        :param config: The configuration. Used solely to extract the default corner.
+        :param views_by_corner: The mapping from (wild cards) of vorner names to
+            views.
+        :param corner: An explicit override for the default corner. Must be a
+            fully qualified IPVT corner.
+        :returns: The created list
+        """
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         result: List[Path] = []
 
         for key, value in views_by_corner.items():
             if not fnmatch.fnmatch(timing_corner, key):
                 continue
-            if isinstance(value, list):
-                result += value
+            if is_string(value):
+                result += [value]  # type: ignore
             else:
-                result += [value]
+                result += list(value)  # type: ignore
 
         return result
 
     def get_macro_views(
         self,
-        config: Config,
+        config: Mapping[str, Any],
         view: DesignFormat,
         timing_corner: Optional[str] = None,
         unless_exist: Optional[DesignFormat] = None,
     ) -> List[Path]:
+        """
+        For :class:`Config` objects (or similar Mappings) that have Macro
+        information, this function gets all Macro views matching a certain
+        :class:`DesignFormat` for either the default timing corner or an
+        explicitly-provided override.
+
+        :param config: The configuration.
+        :param view: The design format to return views of.
+        :param timing_corner: An explicit override for the default corner set
+            by the configuration.
+        :param corner: An explicit override for the default corner. Must be a
+            fully qualified IPVT corner.
+        :param unless_exist: If a Macro also has a view for this DesignFormat,
+            do not return a result for the requested DesignFormat.
+
+            Useful for if you want to return say, Netlists if reliable LIB files
+            do not exist.
+        :returns: A list of the Macro views matched by the process described
+            above.
+        """
+        from ..config import Macro
+
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         macros = config["MACROS"]
         result: List[Path] = []
@@ -128,14 +165,14 @@ class Toolbox(object):
 
     def get_timing_files(
         self,
-        config: Config,
+        config: Mapping[str, Any],
         timing_corner: Optional[str] = None,
         prioritize_nl: bool = False,
     ) -> Tuple[str, List[str]]:
         """
         Returns the lib files for a given configuration and timing corner.
 
-        :param config: A configuration object.
+        :param config: A configuration object or a similar mapping.
         :param timing_corner: A fully qualified IPVT corner to get SCL libs for.
 
             If not specified, the value for `DEFAULT_CORNER` from the SCL will
@@ -144,9 +181,9 @@ class Toolbox(object):
             Gate-Level Netlists and SPEF views.
 
             If set to ``false``, only lib files are returned.
-        :returns: A tuple:
-            - \\[0\\] being the name of the timing corner
-            - \\[1\\] being a heterogenous list of files
+        :returns: A tuple of:
+            * The name of the timing corner
+            * A heterogenous list of files
                 - Lib files are returned as-is
                 - Netlists are returned as-is
                 - SPEF files are returned in the format "{instance_name}@{spef_path}"
@@ -154,6 +191,8 @@ class Toolbox(object):
             It is left up to the step or tool to process this list as they see
             fit.
         """
+        from ..config import Macro
+
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
 
         result: List[Union[str, Path]] = []
@@ -210,7 +249,7 @@ class Toolbox(object):
         return (timing_corner, [str(path) for path in result])
 
     def __render_common(
-        self, config: Config
+        self, config: Mapping[str, Any]
     ) -> Optional[Tuple[str, str, str]]:  # pragma: no cover
         klayout_bin = which("klayout")
         if klayout_bin is None:
@@ -226,7 +265,7 @@ class Toolbox(object):
         return (str(lyp), str(lyt), str(lym))
 
     def render_png(
-        self, config: Config, input: str
+        self, config: Mapping[str, Any], input: str
     ) -> Optional[bytes]:  # pragma: no cover
         files = self.__render_common(config)
         if files is None:
@@ -272,7 +311,6 @@ class Toolbox(object):
                 warn(f"Failed to render preview: {e.stdout}")
         return result
 
-    @memoize
     def remove_cells_from_lib(
         self,
         input_lib_files: FrozenSet[str],

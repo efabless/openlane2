@@ -137,6 +137,7 @@ class SequentialFlow(Flow):
         frm: Optional[str] = None,
         to: Optional[str] = None,
         skip: Optional[Iterable[str]] = None,
+        reproducible: Optional[str] = None,
         **kwargs,
     ) -> Tuple[State, List[Step]]:
         step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}
@@ -157,7 +158,16 @@ class SequentialFlow(Flow):
                 to_resolved = id
             else:
                 raise FlowException(
-                    f"Failed to process start step '{to}': no step with ID '{to}' found in flow."
+                    f"Failed to process end step '{to}': no step with ID '{to}' found in flow."
+                )
+
+        reproducible_resolved = None
+        if reproducible is not None:
+            if id := step_ids.get(reproducible.lower()):
+                reproducible_resolved = id
+            else:
+                raise FlowException(
+                    f"Failed to process reproducible step '{reproducible}': no step with ID '{reproducible}' found in flow."
                 )
 
         if skipped_steps := skip:
@@ -189,6 +199,14 @@ class SequentialFlow(Flow):
             if not executing or cls.id in skipped_ids:
                 info(f"Skipping step '{step.name}'…")
                 increment_ordinal = False
+            elif cls.id == reproducible_resolved:
+                step.create_reproducible(
+                    os.path.join(
+                        self.dir_for_step(step),
+                        "reproducible",
+                    )
+                )
+                break
             else:
                 step_list.append(step)
                 try:

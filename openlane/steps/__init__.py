@@ -24,6 +24,8 @@ from .step import (
     DeferredStepError,
     StepException,
     Step,
+    MetricsUpdate,
+    ViewsUpdate,
 )
 from .tclstep import TclStep
 from . import checker as Checker

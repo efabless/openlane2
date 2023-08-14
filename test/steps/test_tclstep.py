@@ -11,17 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pytest
 import tkinter
 
-from .tclstep import TclStep
-from .test_step import mock_config  # noqa: F401
-from ..state import State
-from ..config.test_config import _mock_fs, mock_variables  # noqa: F401
-from ..common import TclUtils
+import pytest
+
+mock_variables = pytest.mock_variables
 
 
 def test_tclstep_missing_get_script_path():
+    from openlane.steps import TclStep
+
     class TclStepTest(TclStep):
         pass
 
@@ -30,10 +29,11 @@ def test_tclstep_missing_get_script_path():
         TclStepTest()
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_tclstep_init(mock_config):  # noqa: F811
-    from ..state.design_format import DesignFormat
+    from openlane.steps import TclStep
+    from openlane.state import DesignFormat, State
 
     class TclStepTest(TclStep):
         inputs = []
@@ -46,10 +46,11 @@ def test_tclstep_init(mock_config):  # noqa: F811
     TclStepTest(config=mock_config, state_in=State({DesignFormat.NETLIST: "abc"}))
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_tclstep_get_command(mock_config):  # noqa: F811
-    from ..state.design_format import DesignFormat
+    from openlane.steps import TclStep
+    from openlane.state import DesignFormat, State
 
     class TclStepTest(TclStep):
         inputs = []
@@ -66,6 +67,8 @@ def test_tclstep_get_command(mock_config):  # noqa: F811
 
 def test_tcl_step_value_to_tcl():
     from enum import Enum
+    from openlane.steps import TclStep
+    from openlane.common import TclUtils
 
     numerical_list_value = [1.0, 2.1000, 3, 4.01]
     numerical_list_value_string = "1.0 2.1 3 4.01"
@@ -158,10 +161,11 @@ def test_tcl_step_value_to_tcl():
     assert out == expected_dict_value, "failed to convert dictionary"
 
 
-@pytest.mark.usefixtures("_mock_fs")
+@pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_env(mock_config):  # noqa: F811
-    from ..state.design_format import DesignFormat
+    from openlane.steps import TclStep
+    from openlane.state import DesignFormat, State
 
     script_path = "/dummy_path"
     state_in = State({DesignFormat.NETLIST: "abc"})

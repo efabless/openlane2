@@ -12,315 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-from abc import abstractmethod
 
 import os
-import re
 import json
-import glob
-import shlex
-import shutil
-import textwrap
-import subprocess
 from enum import Enum
 from decimal import Decimal
-from collections import deque
+from abc import abstractmethod
 from dataclasses import is_dataclass, asdict
-from os.path import join, dirname, isdir, relpath
-from typing import Any, ClassVar, List, Dict, Sequence, Union, Tuple
+from typing import Any, ClassVar, List, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
-from ..config import Keys
-from ..logging import info, warn
 from ..state import State, DesignFormat
 from ..common import (
     Path,
     TclUtils,
     GenericDictEncoder,
-    mkdirp,
     get_script_dir,
-    get_openlane_root,
     protected,
 )
-
-
-def create_reproducible(
-    design_dir: str,
-    step_dir: str,
-    cmd: Sequence[Union[str, os.PathLike]],
-    env_in: Dict[str, str],
-    tcl_script: str,
-    verbose: bool = False,
-) -> str:
-    design_dir = os.path.abspath(design_dir)
-    step_dir = os.path.abspath(step_dir)
-    run_path = os.path.dirname(step_dir)
-    run_path_rel = os.path.relpath(run_path)
-    pdk_root = env_in[Keys.pdk_root]
-    env_delta = {k: env_in[k] for k in env_in if k not in os.environ}
-
-    info(
-        textwrap.dedent(
-            """\
-            OpenLane TCLStep Issue Packager
-
-            EFABLESS CORPORATION AND ALL AUTHORS OF THE OPENLANE PROJECT SHALL NOT BE HELD
-            LIABLE FOR ANY LEAKS THAT MAY OCCUR TO ANY PROPRIETARY DATA AS A RESULT OF USING
-            THIS SCRIPT. THIS SCRIPT IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OR
-            CONDITIONS OF ANY KIND.
-
-            BY USING THIS SCRIPT, YOU ACKNOWLEDGE THAT YOU FULLY UNDERSTAND THIS DISCLAIMER
-            AND ALL IT ENTAILS.
-            """
-        )
-    )
-
-    # Phase 1: Set up destination folder
-    destination_folder = os.path.join(step_dir, "tcl_reproducible")
-    info(f"Setting up '{destination_folder}'…")
-
-    try:
-        shutil.rmtree(destination_folder)
-    except FileNotFoundError:
-        pass
-
-    mkdirp(destination_folder)
-
-    # Phase 2: Process TCL Scripts To Find Full List Of Files
-    tcl_script_abspath = os.path.abspath(tcl_script)
-
-    script_counter = 0
-
-    def get_script_key():
-        nonlocal script_counter
-        value = f"PACKAGED_SCRIPT_{script_counter}"
-        script_counter += 1
-        return value
-
-    tcls_to_process = deque([(tcl_script, get_script_key())])
-
-    new_cmd = []
-    for element in cmd:
-        element = str(element)
-        element_basename = os.path.basename(element)
-        element_abspath = os.path.abspath(element)
-        if os.path.exists(element):
-            if element_abspath == tcl_script_abspath:
-                new_cmd.append("$PACKAGED_SCRIPT_0")
-            elif element_abspath.endswith(".tcl") or element_abspath.endswith(
-                ".magicrc"
-            ):
-                env_key = get_script_key()
-                tcls_to_process.append((element_abspath, env_key))
-                new_cmd.append(f"${env_key}")
-            else:
-                new_cmd.append(element)
-        elif element.startswith(run_path_rel) or element_abspath.startswith(run_path):
-            new_cmd.append(element_basename)
-        else:
-            new_cmd.append(element)
-
-    def shift(deque):
-        try:
-            return deque.popleft()
-        except Exception:
-            return None
-
-    env_keys_used = set(env_delta.keys())
-    tcls = set()
-    env = env_in.copy()
-    current = shift(tcls_to_process)
-    loop_guard = 1024
-    while current is not None:
-        env_key = None
-        if isinstance(current, tuple):
-            current, env_key = current
-
-        loop_guard -= 1
-        if loop_guard == 0:
-            raise Exception("An infinite loop has been detected. Please file an issue.")
-
-        if env_key is None:
-            env_key = get_script_key()
-
-        env_keys_used.add(env_key)
-        env[env_key] = current
-
-        warnings = []
-
-        try:
-            script = open(current).read()
-            if verbose:
-                info(f"Processing {current}…")
-
-            for key, value in env.items():
-                value = str(value)
-
-                key_accessor = re.compile(
-                    rf"((\$(?:\:\:)?env\({re.escape(key)}\))([/\-\w\.]*)|(\${re.escape(key)}))"
-                )
-                for use in key_accessor.findall(script):
-                    full = use[0]
-                    accessor = use[1] or use[3]
-                    env_keys_used.add(key)
-                    if verbose:
-                        info(f"Found {accessor}…")
-                    value_substituted = full.replace(accessor, value)
-
-                    if value_substituted.endswith(".tcl") or value_substituted.endswith(
-                        ".sdc"
-                    ):
-                        if value_substituted not in tcls:
-                            tcls.add(value_substituted)
-                            tcls_to_process.append(value_substituted)
-        except FileNotFoundError:
-            warnings.append(f"{current} was not found, might be a product. Skipping…")
-        except Exception as e:
-            warnings.append(f"{current} error. {e}")
-
-        current = shift(tcls_to_process)
-
-    # Phase 4: Copy The Files
-    final_env = {}
-
-    def copy(frm, to):
-        parents = dirname(to)
-        mkdirp(parents)
-
-        def do_copy():
-            if isdir(frm):
-                shutil.copytree(frm, to)
-            else:
-                shutil.copyfile(frm, to)
-
-        try:
-            incomplete_matches = glob.glob(frm + "*")
-
-            if len(incomplete_matches) == 0:
-                raise FileNotFoundError()
-            elif len(incomplete_matches) != 1 or incomplete_matches[0] != frm:
-                # Prefix For Other Files
-                for match in incomplete_matches:
-                    if match == frm:
-                        # If it's both a file AND a prefix for other files
-                        do_copy()
-                    else:
-                        new_frm = match
-                        new_to = to + new_frm[len(frm) :]
-                        copy(new_frm, new_to)
-            else:
-                do_copy()
-        except FileNotFoundError:
-            warnings.append(f"{frm} was not found, might be a product. Skipping…")
-        except Exception as e:
-            warnings.append(f"Couldn't copy {frm}: {e}. Skipped.")
-
-    if verbose:
-        info("\nProcessing environment variables…\n---")
-
-    ol_root = get_openlane_root()
-    if verbose:
-        info(f"Resolving with OpenLane root: {ol_root}")
-    loop_guard = 1024
-    for key in env_keys_used:
-        loop_guard -= 1
-        if loop_guard == 0:
-            raise Exception("An infinite loop has been detected. Please file an issue.")
-        full_value = env[key]
-        final_env[key] = ""
-        if verbose:
-            info(f"Processing {key}: {full_value}")
-        for potential_file in full_value.split():
-            potential_file_abspath = os.path.abspath(potential_file)
-            if potential_file_abspath.startswith(run_path):
-                relative = relpath(potential_file, run_path)
-                final_value = join(".", relative)
-                final_path = join(destination_folder, final_value)
-                from_path = potential_file
-                if potential_file_abspath != step_dir:  # Otherwise, infinite recursion
-                    copy(from_path, final_path)
-                final_env[key] += f"{final_value} "
-            elif potential_file_abspath.startswith(pdk_root):
-                if potential_file_abspath == pdk_root:  # Too many files to copy
-                    continue
-                relative = relpath(potential_file, pdk_root)
-                final_value = join("pdk", relative)
-                final_path = join(destination_folder, final_value)
-                copy(potential_file, final_path)
-                final_env[key] += f"{final_value} "
-            elif potential_file_abspath.startswith(design_dir):
-                if potential_file_abspath == design_dir:  # Too many files
-                    continue
-                relative = relpath(potential_file, design_dir)
-                final_value = join("design", relative)
-                final_path = join(destination_folder, final_value)
-                from_path = potential_file
-                copy(from_path, final_path)
-                final_env[key] += f"{final_value} "
-            elif potential_file_abspath.startswith(ol_root):
-                relative = relpath(potential_file, ol_root)
-                final_value = join("openlane", relative)
-                final_path = join(destination_folder, final_value)
-
-                from_path = potential_file
-                if potential_file_abspath != os.path.abspath(
-                    get_script_dir()
-                ):  # Too many files to copy otherwise
-                    copy(from_path, final_path)
-                final_env[key] += f"{final_value} "
-            elif os.path.exists(potential_file) and not potential_file.startswith(
-                "/dev"
-            ):  # /dev/null, /dev/stdout, /dev/stderr, etc should still work
-                final_path = join(destination_folder, potential_file)
-                final_value = os.path.relpath(final_path, destination_folder)
-                copy(potential_file, final_path)
-                final_env[key] += f"{final_value} "
-            else:
-                final_env[key] += f"{potential_file} "
-        final_env[key] = final_env[key].rstrip()
-    if verbose:
-        info("---\n")
-
-    for warning in warnings:
-        warn(warning)
-
-    # Phase 5: Create Environment Set/Run Files
-    def env_list(
-        format_string: str = "{key}={value}",
-        env: Dict[str, str] = final_env,
-        indent: int = 0,
-    ) -> str:
-        array = []
-        for key, value in sorted(env.items()):
-            array.append(format_string.format(key=key, value=shlex.quote(value)))
-        value = f"\n{'    ' * indent}".join(array)
-        return value
-
-    run_shell = join(destination_folder, "run.sh")
-    with open(run_shell, "w") as f:
-        f.write(
-            textwrap.dedent(
-                f"""\
-                #!/bin/sh
-                dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
-                cd $dir;
-                {env_list("export {key}={value};", indent=4)}
-                {' '.join(new_cmd)}
-                """
-            )
-        )
-    os.chmod(run_shell, 0o755)
-
-    gdb_env = join(destination_folder, "env.gdb")
-    with open(gdb_env, "w") as f:
-        f.write(env_list("set env {key} {value}"))
-
-    lldb_env = join(destination_folder, "env.lldb")
-    with open(lldb_env, "w") as f:
-        f.write(env_list("env {key}={value}"))
-
-    return destination_folder
 
 
 class TclStep(Step):
@@ -480,29 +190,11 @@ class TclStep(Step):
 
         env = self.prepare_env(env, state_in)
 
-        try:
-            generated_metrics = self.run_subprocess(
-                command,
-                env=env,
-                **kwargs,
-            )
-        except subprocess.CalledProcessError as e:
-            if (
-                e.returncode is not None
-                and e.returncode > 0
-                and self.reproducibles_allowed
-            ):
-                reproducible_folder = create_reproducible(
-                    self.config["DESIGN_DIR"],
-                    self.step_dir,
-                    command,
-                    env,
-                    self.get_script_path(),
-                )
-                info(
-                    f"Reproducible created: please tarball and upload '{os.path.relpath(reproducible_folder)}' if you're going to file an issue."
-                )
-            raise
+        generated_metrics = self.run_subprocess(
+            command,
+            env=env,
+            **kwargs,
+        )
 
         overrides: ViewsUpdate = {}
         for output in self.outputs:

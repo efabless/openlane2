@@ -88,8 +88,20 @@ and any metrics updated to the second dictionary in the returned tuple.
 ## Creating Reports
 You can create report files manually in Python, but if you're running a subprocess,
 you can also write `%OL_CREATE_REPORT <name>.rpt` to stdout and everything until
-`%OL_END_REPORT` will be forwarded to a file called `<name>.rpt` in the step dir
-automatically.
+`%OL_END_REPORT` (or another `%OL_CREATE_REPORT`) will be forwarded to a file called
+`<name>.rpt` in the step dir automatically.
+
+## Creating Metrics
+Likewise, if you're running a subprocess, you can have {meth}`openlane.steps.Step.run_subprocess`
+capture them for you automatically by using `%OL_METRIC`. See the documentation
+of {meth}`openlane.steps.Step.run_subprocess` for more info.
+
+```{note}
+Metrics generated using this method will not be automatically added to the
+output state. The {meth}`openlane.steps.Step.run` method is expected to capture
+the returned dictionary of any {meth}`openlane.steps.Step.run_subprocess`
+invocations and add any values to the returned `MetricUpdate` dictionary as appropriate.
+```
 
 ## Tool-Specific Steps
 The `Step` object makes heavy use of object-oriented programming to encourage

@@ -1,3 +1,34 @@
+# 2.0.0-b4
+
+* Updated documentation for `run_subprocess`
+* Updated Volare to `0.11.2`
+* Fixed a bug with `Toolbox` method memoization
+* Unknown key errors only emit a warning now if the key is used as a Variable's
+  name *anywhere* linked to OpenLane. This allows using the same config file
+  with multiple flows without errors.
+
+# 2.0.0-b3
+
+* Added ability to create reproducible for any step using instance method
+  `Step.create_reproducible()`
+* Added ability to load and run Step from Config and State JSON files, working
+  for both existing step folders and new reproducibles
+* Added new CLI- under either the script `openlane.steps` or
+  `python3 -m openlane.steps`, exposing the two functionalities above.
+* Added internal ability to load a Config without attempting to load the PDK
+  configuration data- i.e., only rely on the user's input
+* Extended `Meta` objects to support Step ID and OpenLane version.
+* Moved tests from source tree to `test/` folder, refactoring as necessary
+* Internal `utils` module folded into `common` module, with elements publicly
+  documented
+* Removed `tcl_reproducible`
+
+# 2.0.0-b2
+
+* Updated Magic to `952b20d`
+* Added new variable, `MAGIC_EXT_SHORT_RESISTOR` to `Magic.SpiceExtraction`,
+  disabled by default
+
 # 2.0.0-b1
 
 * Added unit testing and coverage reporting for core infrastructure features (80%+)
@@ -5,7 +36,8 @@
 * Moved CI designs out-of-tree
 * Various documentation improvements
 * Common Module
-  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the environment and testing
+  * Created new TclUtils to handle common Tcl interactions, i.e., evaluating the
+    environment and testing
   * Made Tcl environment evaluation no longer rely on the filesystem
   * Made Tcl environment evaluation restore the environment after the fact
   * Moved `Path` from State module to common
@@ -17,7 +49,8 @@
 * Flow Module
   * Sequential flows now handle duplicate Step IDs by adding a suffix
 * Logging Module
-  * Logging rewritten to use Python logger with rich handler, the latter of which suppressed during unit testing
+  * Logging rewritten to use Python logger with rich handler, the latter of
+  which suppressed during unit testing
  * State Module
   * `.save_snapshot()` now also saves a JSON representation of metrics
   * Fixed metric cloning

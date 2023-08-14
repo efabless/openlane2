@@ -1,10 +1,21 @@
+# Copyright 2023 Efabless Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import os
+from typing import Dict
 
 import pytest
-
-from ..common import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
-from typing import Dict
 
 
 @pytest.fixture()
@@ -16,8 +27,7 @@ def _mock_fs():
 
 
 def test_create_by_type():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {DesignFormat.NETLIST: "abc"}
     state = State(test_dict)
@@ -25,8 +35,7 @@ def test_create_by_type():
 
 
 def test_create_by_id():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {"nl": "abc"}
     state = State(test_dict)
@@ -34,8 +43,7 @@ def test_create_by_id():
 
 
 def test_override_by_id():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {"nl": "abc"}
     override = {"nl": "abcd"}
@@ -44,8 +52,7 @@ def test_override_by_id():
 
 
 def test_override_by_type():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {"nl": "abc"}
     override = {DesignFormat.NETLIST: "abcd"}
@@ -54,8 +61,7 @@ def test_override_by_type():
 
 
 def test_immutable():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {DesignFormat.NETLIST: "abc"}
     state = State(test_dict)
@@ -67,8 +73,7 @@ def test_immutable():
 
 
 def test_to_raw_dict():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {DesignFormat.NETLIST: "abc"}
     test_metrics = {"metric": "a"}
@@ -81,7 +86,7 @@ def test_to_raw_dict():
 
 
 def test_metrics_access():
-    from .state import State
+    from openlane.state import State
 
     test_dict = {}
     test_metrics = {"metric": "a"}
@@ -90,7 +95,7 @@ def test_metrics_access():
 
 
 def test_metrics_mutate():
-    from .state import State
+    from openlane.state import State
 
     test_dict = {}
     test_metrics = {"metric": "a"}
@@ -109,8 +114,7 @@ def test_metrics_mutate():
 
 
 def test_copy():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {"nl": "abc", "spef": {"nom": "abc"}}
     test_metrics = {"metric": "a"}
@@ -122,8 +126,7 @@ def test_copy():
 
 
 def test_empty():
-    from .state import State
-    from .design_format import DesignFormat
+    from openlane.state import DesignFormat, State
 
     test_dict = {}
     test_metrics = {}
@@ -135,7 +138,7 @@ def test_empty():
 
 
 def test_path_fail_exists():
-    from .state import State, InvalidState
+    from openlane.state import State, InvalidState
 
     test_dict = {"nl": "./state.py", "pnl": "abcd"}
     test_metrics = {"metric": "a"}
@@ -158,7 +161,8 @@ def test_path_fail_exists():
 
 @pytest.mark.usefixtures("_mock_fs")
 def test_path_success():
-    from .state import State
+    from openlane.state import State
+    from openlane.common import Path
 
     test_file = "test.nl.v"
     with open(test_file, "w") as f:
@@ -174,7 +178,8 @@ def test_path_success():
 @pytest.mark.usefixtures("_mock_fs")
 def test_save():
     import json
-    from .state import State
+    from openlane.state import State
+    from openlane.common import Path
 
     test_file = "test.nl.v"
     test_file_contents = "test\n"
@@ -220,7 +225,7 @@ def test_save():
 @pytest.mark.usefixtures("_mock_fs")
 def test_loads():
     import json
-    from .state import State
+    from openlane.state import State
 
     test_file = "test.nl.v"
     test_file_contents = "test\n"
