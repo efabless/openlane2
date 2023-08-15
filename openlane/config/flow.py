@@ -15,7 +15,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Union
 
 from .variable import Variable, Macro
-from ..common import StringEnum, Path
+from ..common import Path
 
 
 pdk_variables = [

@@ -24,6 +24,8 @@
   PDK if the configuration is successfully validated.
 * `PDK`, `PDK_ROOT` are no longer considered "PDK" variables as PDK variables
   depend on them
+* `PRIMARY_SIGNOFF_TOOL` now a PDK variable and a string so OpenLane is not
+  limited to two signoff tools
 * `Toolbox.render_png()` now relies on a new `Step` called `KLayout.Render`
 * `Config.interactive()` fixed, new Nix-based Colab notebook to be uploaded
   Soon™
