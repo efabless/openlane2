@@ -550,7 +550,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         permissive_variables = []
         strict_variables = list(flow_config_vars)
-        on_unknown_key: Literal["error", "warn"] | None = "error"
+        on_unknown_key: Union[Literal["error", "warn"], None] = "error"
         if meta.version < 2:
             permissive_variables = strict_variables
             strict_variables = []
