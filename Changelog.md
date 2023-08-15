@@ -1,3 +1,34 @@
+# 2.0.0-b7
+
+* Internally reworked `Config` module
+  * `Variable` objects now have a boolean property, `.pdk`, which is set to
+    `True` if the variable is expected to be provided by the PDK
+  * List of common flow variables now incorporate both option config variables
+    *and* PDK config variables, with the aforementioned flag used to tell
+    them apart.
+  * Individual `Step`s may now freely declare PDK variable, with the implication
+    that if a `Flow` or one of its constituent `Step`s has one or more variables
+    not declared by the current PDK, the `Step` (and `Flow`) are incompatible
+    with the PDK.
+  * Mutable data structures are used during the construction of `Config` to avoid
+    constant copying of immutable dictionaries
+    * Multiple private instance methods converted to private `classmethod`s to
+    deal with mutable data structures instead of constantly making `Config`
+    copies
+  * Getting raw values from the PDK memoized to avoid having to call the Tcl
+    interpreter repeatedly
+  * All `Step` objects, not just those used with an interactive configuration,
+    can now be given overrides upon construction using keyword arguments.
+* A number of previously-universal PDK variables are now declared by the `Step`s
+  and made non-optional, i.e., the `Step` can expect them to be declared by the
+  PDK if the configuration is successfully validated.
+* `PDK`, `PDK_ROOT` are no longer considered "PDK" variables as PDK variables
+  depend on them
+* `Toolbox.render_png()` now relies on a new `Step` called `KLayout.Render`
+* `Config.interactive()` fixed, new Nix-based Colab notebook to be uploaded
+  Soon™
+* Assorted documentation updates and bugfixes
+
 # 2.0.0-b6
 
 * Added `Odb.ApplyDEFTemplate` to `Classic` Flow
@@ -63,7 +94,7 @@
   * Logging rewritten to use Python logger with rich handler, the latter of
   which suppressed during unit testing
  * State Module
-  * `.save_snapshot()` now also saves a JSON representation of metrics
+  * `State.save_snapshot()` now also saves a JSON representation of metrics
   * Fixed metric cloning
   * Step Module
   * Report start/end locii also end up in the log file
