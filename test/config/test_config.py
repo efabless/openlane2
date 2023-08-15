@@ -41,6 +41,7 @@ def test_dict_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
@@ -92,6 +93,7 @@ def test_json_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
@@ -144,6 +146,7 @@ def test_tcl_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
@@ -197,33 +200,12 @@ def test_copy_filtered():
         pdk_root="/pdk",
     )
 
-    step1_cfg = cfg.copy_filtered(step1_variables, include_pdk_variables=False)
+    step1_cfg = cfg.copy_filtered(step1_variables, include_flow_variables=False)
 
     assert step1_cfg == {
-        "DESIGN_DIR": "/cwd",
-        "DESIGN_NAME": "whatever",
         "STEP1_VAR": 3,
-        "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
         "meta": cfg.meta,
-        "GRT_REPAIR_ANTENNAS": True,
-        "RUN_HEURISTIC_DIODE_INSERTION": False,
-        "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
-        "MACROS": None,
     }, "copy_filtered for step 1 did not work properly"
-
-    step2_cfg = cfg.copy_filtered(step2_variables, include_common_variables=False)
-
-    assert step2_cfg == {
-        "STEP2_VAR": 4,
-        "PDK": "dummy",
-        "STD_CELL_LIBRARY": "dummy_scl",
-        "EXAMPLE_PDK_VAR": Decimal("10"),
-        "meta": cfg.meta,
-        "TECH_LEFS": {
-            "nom_*": Path("/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef")
-        },
-        "DEFAULT_CORNER": "nom_tt_025C_1v80",
-    }, "copy_filtered for step 2 did not work properly"
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
@@ -397,7 +379,7 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
         ), "unknown variable triggered an error when loading from a meta.version: 1 JSON file"
 
     assert (
-        "unused by the current flow" in caplog.text
+        "unknown key" in caplog.text
     ), "unknown variable did not trigger a warning when loading from a meta.version: 1 JSON file"
     caplog.clear()
 

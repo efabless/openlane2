@@ -226,7 +226,7 @@ class OpenROADStep(TclStep):
         if self.state_out.get("def") == state_in.get("def"):
             return None
 
-        if image := self.toolbox.render_png(self.config, str(self.state_out["def"])):
+        if image := self.toolbox.render_png(self.config, self.state_out):
             image_encoded = b64encode(image).decode("utf8")
             return f'<img src="data:image/png;base64,{image_encoded}" />'
 
@@ -978,7 +978,7 @@ class RCX(OpenROADStep):
     """
     This extracts `parasitic <https://en.wikipedia.org/wiki/Parasitic_element_(electrical_networks)>`_
     electrical values from a detailed-placed circuit. These can be used to create
-    basically the highest accurate STA possible for a design.
+    basically the highest accurate STA possible for a given design.
     """
 
     id = "OpenROAD.RCX"
@@ -1003,6 +1003,12 @@ class RCX(OpenROADStep):
             "RCX_SDC_FILE",
             Optional[Path],
             "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
+        ),
+        Variable(
+            "RCX_RULESETS",
+            Dict[str, Path],
+            "Map of corner patterns to OpenRCX extraction rules.",
+            pdk=True,
         ),
     ]
 

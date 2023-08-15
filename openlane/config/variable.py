@@ -237,6 +237,7 @@ class Variable:
     )
 
     units: Optional[str] = None
+    pdk: bool = False
 
     def __post_init__(self):
         Variable.known_variable_names.add(self.name)
@@ -289,7 +290,7 @@ class Variable:
                 # value is not optional
                 if not is_optional(validating_type):
                     raise ValueError(
-                        f"Non-optional variable '{key_path}' received a null value."
+                        f"Non-optional variable '{key_path}' explicitly assigned a null value."
                     )
                 else:
                     return None
@@ -303,9 +304,14 @@ class Variable:
                         permissive_typing=permissive_typing,
                     )
                 elif not is_optional(validating_type):
-                    raise ValueError(
-                        f"Required variable '{key_path}' did not get a specified value."
-                    )
+                    if self.pdk:
+                        raise ValueError(
+                            f"Required PDK variable '{key_path}' did not get a specified value. This PDK may be incompatible with your flow."
+                        )
+                    else:
+                        raise ValueError(
+                            f"Required variable '{key_path}' did not get a specified value."
+                        )
                 else:
                     return None
 
@@ -485,6 +491,8 @@ class Variable:
                     f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
+            if type(value) == validating_type:
+                return value
             try:
                 return validating_type[value]
             except KeyError:

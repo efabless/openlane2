@@ -37,7 +37,11 @@ from typing import (
     Type,
 )
 
-from ..config import Config, Variable, universal_flow_config_variables
+from ..config import (
+    Config,
+    Variable,
+    universal_flow_config_variables,
+)
 from ..state import State, InvalidState, StateElement
 from ..common import (
     GenericImmutableDict,
@@ -240,6 +244,7 @@ class Step(ABC):
         name: Optional[str] = None,
         long_name: Optional[str] = None,
         flow: Optional[Any] = None,
+        _config_quiet: bool = False,
         **kwargs,
     ):
         if self.id == NotImplemented:
@@ -277,29 +282,15 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if Config.current_interactive:
-            mutable = Config(**kwargs.copy())
-            overrides, warnings, errors = mutable.__process_variable_list(
-                [],
-                self.config_vars,
-            )
-            config = config.copy(**overrides)
-            for warning in warnings:
-                warn(warning)
-            if len(errors) != 0:
-                err(f"Errors while processing inputs for {self.name}:")
-                for error in errors:
-                    err(error)
-                raise StepException("Failed to handle one or more kwarg variables.")
-        elif len(kwargs) != 0:
-            raise StepException(
-                "Variables may not be passed as keyword arguments unless the Config object is per-step."
-            )
+        config = config._with_increment(
+            self.config_vars,
+            kwargs,
+            _config_quiet,
+        )
 
         self.config = config.copy_filtered(
             self.config_vars,
-            include_pdk_variables=True,
-            include_common_variables=True,
+            include_flow_variables=True,
         )
 
         state_in_future: Future[State] = Future()
@@ -481,13 +472,27 @@ class Step(ABC):
         """
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read()),
-            flow_config_vars=universal_flow_config_variables + Self.config_vars,
+            flow_config_vars=Self.get_all_config_variables(),
             design_dir=".",
             pdk_root=pdk_root,
             _load_pdk_configs=False,
         )
         state_in = State.loads(open(state_in_path).read())
         return Self(config=config, state_in=state_in)
+
+    @classmethod
+    def get_all_config_variables(Self) -> List[Variable]:
+        flow_variables_by_name: Dict[str, Variable] = {
+            variable.name: variable for variable in universal_flow_config_variables
+        }
+        for variable in Self.config_vars:
+            if existing_variable := flow_variables_by_name.get(variable.name):
+                if variable != existing_variable:
+                    raise StepException(
+                        f"Misconstructed step: Unrelated variable exists with the same name as one in the common Flow variables: {variable.name}"
+                    )
+
+        return list(flow_variables_by_name.values())
 
     def create_reproducible(self, target_dir: str):
         """

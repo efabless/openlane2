@@ -6,3 +6,4 @@ requests>=2.27,<3
 volare>=0.11.2
 lxml>=4.9.0
 deprecated>=1.2.10,<2
+immutabledict>=2,<3

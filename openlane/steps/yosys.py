@@ -83,6 +83,52 @@ class YosysStep(TclStep):
             "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
             default=False,
         ),
+        Variable(
+            "SYNTH_LATCH_MAP",
+            Optional[Path],
+            "A path to a file contianing the latch mapping for Yosys.",
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_TRISTATE_MAP",
+            Optional[Path],
+            "A path to a file contianing the tri-state buffer mapping for Yosys.",
+            deprecated_names=["TRISTATE_BUFFER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_CSA_MAP",
+            Optional[Path],
+            "A path to a file containing the carry-select adder mapping for Yosys.",
+            deprecated_names=["CARRY_SELECT_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_RCA_MAP",
+            Optional[Path],
+            "A path to a file containing the ripple-carry adder mapping for Yosys.",
+            deprecated_names=["RIPPLE_CARRY_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_FA_MAP",
+            Optional[Path],
+            "A path to a file containing the full adder mapping for Yosys.",
+            deprecated_names=["FULL_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_MUX_MAP",
+            Optional[Path],
+            "A path to a file containing the mux mapping for Yosys.",
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_MUX4_MAP",
+            Optional[Path],
+            "A path to a file containing the mux4 mapping for Yosys.",
+            pdk=True,
+        ),
     ]
 
     def get_command(self) -> List[str]:

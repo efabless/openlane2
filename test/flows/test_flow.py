@@ -221,7 +221,7 @@ def test_init_and_config_vars(DummyFlow: Type[flow.Flow], variable: Variable):
         pdk_root="/pdk",
     )
 
-    assert flow.get_config_variables() == pytest.MOCK_FLOW_VARS + [
+    assert flow.get_all_config_variables() == pytest.COMMON_FLOW_VARS + [
         variable
     ], "flow config variables did not match"
 

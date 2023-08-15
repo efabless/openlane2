@@ -17,7 +17,480 @@ from typing import List, Optional, Dict, Union
 from .variable import Variable, Macro
 from ..common import StringEnum, Path
 
-all_variables = [
+
+pdk_variables = [
+    # Core/Common
+    Variable(
+        "STD_CELL_LIBRARY",
+        str,
+        "Specifies the default standard cell library to be used under the specified PDK.",
+        pdk=True,
+    ),
+    Variable(
+        "VDD_PIN",
+        str,
+        "The power pin for the cells.",
+        pdk=True,
+    ),
+    Variable(
+        "GND_PIN",
+        str,
+        "The ground pin for the cells.",
+        pdk=True,
+    ),
+    Variable(
+        "WIRE_LENGTH_THRESHOLD",
+        Optional[Decimal],
+        "A value above which wire lengths generate warnings.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "TECH_LEFS",
+        Dict[str, Path],
+        "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX in the default flow.",
+        pdk=True,
+    ),
+    Variable(
+        "CELL_LEFS",
+        List[Path],
+        "Path(s) to the cell LEF file(s).",
+        deprecated_names=["CELLS_LEF"],
+        pdk=True,
+    ),
+    Variable(
+        "CELL_GDS",
+        List[Path],
+        "Path(s) to the cell GDSII file(s).",
+        deprecated_names=["GDS_FILES", "CELLS_GDS"],
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_LEF",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad LEF file(s).",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_LEF_CORE_SIDE",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad LEF file(s) as used for routing (?).",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_VERILOG",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad Verilog models.",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_PREFIX",
+        Optional[List[str]],
+        "A list of pad cell name prefixes.",
+        pdk=True,
+    ),
+    # Timing and Power
+    Variable(
+        "DEFAULT_MAX_TRAN",
+        Optional[Decimal],
+        "Defines the default maximum transition value used in Synthesis and CTS.\nA minimum of 0.1 * CLOCK_PERIOD and this variable, if defined, is used.",
+        units="ns",
+        pdk=True,
+    ),
+    Variable(
+        "WIRE_RC_LAYER",
+        Optional[str],
+        "A metal layer with which to estimate parasitics in earlier stages of the flow.",
+        pdk=True,
+    ),
+    Variable(
+        "DEFAULT_CORNER",
+        str,
+        "The interconnect/process/voltage/temperature corner (IPVT) to use the characterized lib files compatible with by default.",
+        pdk=True,
+    ),
+    Variable(
+        "STA_CORNERS",
+        List[str],
+        "A list of fully qualified IPVT (Interconnect, transistor Process, Voltage, and Temperature) timing corners on which to conduct multi-corner static timing analysis.",
+        pdk=True,
+    ),
+    # Floorplanning
+    Variable(
+        "FP_TRACKS_INFO",
+        Path,
+        "A path to the a classic OpenROAD `.tracks` file. Used by the floorplanner to generate tracks.",
+        deprecated_names=["TRACKS_INFO_FILE"],
+        pdk=True,
+    ),
+    Variable(
+        "FP_TAPCELL_DIST",
+        Decimal,
+        "The distance between tap cell columns.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_RAIL_OFFSET",
+        Decimal,
+        "The offset for the power distribution network rails for first metal layer.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_VWIDTH",
+        Decimal,
+        "The strap width for the vertical layer in generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_VSPACING",
+        Decimal,
+        "The spacing between vertical straps in generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_HSPACING",
+        Decimal,
+        "The spacing between horizontal straps in generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_HWIDTH",
+        Decimal,
+        "The strap width for the horizontal layer in generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_VWIDTH",
+        Decimal,
+        "The width for the vertical layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_HWIDTH",
+        Decimal,
+        "The width for the horizontal layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_VSPACING",
+        Decimal,
+        "The spacing for the vertical layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_HSPACING",
+        Decimal,
+        "The spacing for the horizontal layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_VOFFSET",
+        Decimal,
+        "The offset for the vertical layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_CORE_RING_HOFFSET",
+        Decimal,
+        "The offset for the horizontal layer in the core ring of generated power distribution networks.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_IO_HLAYER",
+        str,
+        "The metal layer on which to place horizontal IO pins, i.e., the top and bottom of the die.",
+        pdk=True,
+    ),
+    Variable(
+        "FP_IO_VLAYER",
+        str,
+        "The metal layer on which to place vertial IO pins, i.e., the top and bottom of the die.",
+        pdk=True,
+    ),
+    Variable("RT_MIN_LAYER", str, "The lowest metal layer to route on.", pdk=True),
+    Variable("RT_MAX_LAYER", str, "The highest metal layer to route on.", pdk=True),
+]
+
+scl_variables = [
+    # Common
+    Variable(
+        "SCL_GROUND_PINS",
+        List[str],
+        "SCL-specific ground pins",
+        deprecated_names=["STD_CELL_GROUND_PINS"],
+        pdk=True,
+    ),
+    Variable(
+        "SCL_POWER_PINS",
+        List[str],
+        "SCL-specific power pins",
+        deprecated_names=["STD_CELL_POWER_PINS"],
+        pdk=True,
+    ),
+    Variable(
+        "FILL_CELL",
+        List[str],
+        "A list of cell names or wildcards of fill cells to be used in fill insertion.",
+        pdk=True,
+    ),
+    Variable(
+        "DECAP_CELL",
+        List[str],
+        "A list of cell names or wildcards of decap cells to be used in fill insertion.",
+        pdk=True,
+    ),
+    Variable(
+        "LIB",
+        Dict[str, List[Path]],
+        "A map from corner patterns to a list of associated liberty files. Exactly one entry must match the `DEFAULT_CORNER`.",
+        pdk=True,
+    ),
+    Variable(
+        "SYNTH_EXCLUSION_CELL_LIST",
+        Path,
+        "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
+        deprecated_names=["NO_SYNTH_CELL_LIST"],
+        pdk=True,
+    ),
+    Variable(
+        "PNR_EXCLUSION_CELL_LIST",
+        Path,
+        "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
+        deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
+        pdk=True,
+    ),
+    # Constraints
+    Variable(
+        "OUTPUT_CAP_LOAD",
+        Decimal,
+        "Defines the capacitive load on the output ports.",
+        units="fF",
+        deprecated_names=["SYNTH_CAP_LOAD"],
+        pdk=True,
+    ),
+    Variable(
+        "MAX_FANOUT_CONSTRAINT",
+        int,
+        "The max load that the output ports can drive to be used as a constraint on Synthesis and CTS.",
+        units="cells",
+        deprecated_names=["SYNTH_MAX_FANOUT"],
+        pdk=True,
+    ),
+    Variable(
+        "MAX_TRANSITION_CONSTRAINT",
+        Optional[Decimal],
+        "The max transition time (slew) from high to low or low to high on cell inputs in ns to be used as a constraint on Synthesis and CTS. If not provided, it is calculated at runtime as `10%` of the provided clock period, unless that exceeds the PDK's `DEFAULT_MAX_TRAN` value.",
+        units="ns",
+        deprecated_names=["SYNTH_MAX_TRAN"],
+        pdk=True,
+    ),
+    Variable(
+        "CLOCK_UNCERTAINTY_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock uncertainty/jitter for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_UNCERTAINTY"],
+        pdk=True,
+    ),
+    Variable(
+        "CLOCK_TRANSITION_CONSTRAINT",
+        Decimal,
+        "Specifies a value for the clock transition/slew for timing analysis.",
+        units="ns",
+        deprecated_names=["SYNTH_CLOCK_TRANSITION"],
+        pdk=True,
+    ),
+    Variable(
+        "TIME_DERATING_CONSTRAINT",
+        Decimal,
+        "Specifies a derating factor to multiply the path delays with. It specifies the upper and lower ranges of timing.",
+        units="%",
+        deprecated_names=["SYNTH_TIMING_DERATE"],
+        pdk=True,
+    ),
+    Variable(
+        "IO_DELAY_CONSTRAINT",
+        Decimal,
+        "Specifies the percentage of the clock period used in the input/output delays.",
+        units="%",
+        deprecated_names=["IO_PCT"],
+        pdk=True,
+    ),
+    # Synthesis
+    Variable(
+        "SYNTH_DRIVING_CELL",
+        str,
+        "The cell to drive the input ports, used in synthesis and static timing analysis, in the format `{cell}/{port}`.",
+        pdk=True,
+    ),
+    Variable(
+        "SYNTH_CLK_DRIVING_CELL",
+        Optional[str],
+        "The cell to drive the clock input ports, used in synthesis and static timing analysis, in the format `{cell}/{port}`. If not specified, `SYNTH_DRIVING_CELL` will be used.",
+        pdk=True,
+    ),
+    Variable(
+        "SYNTH_TIEHI_CELL",
+        str,
+        "Defines the tie high cell followed by the port that implements the tie high functionality, in the format `{cell}/{port}`.",
+        pdk=True,
+    ),
+    Variable(
+        "SYNTH_TIELO_CELL",
+        str,
+        "Defines the tie high cell followed by the port that implements the tie low functionality, in the format `{cell}/{port}`.",
+        pdk=True,
+    ),
+    Variable(
+        "SYNTH_BUFFER_CELL",
+        str,
+        "Defines a buffer port to be used by yosys during synthesis: in the format `{cell}/{input_port}/{output_port}`",
+        pdk=True,
+    ),
+    # Clock Tree Synthesis
+    Variable(
+        "CTS_ROOT_BUFFER",
+        str,
+        "Defines the cell inserted at the root of the clock tree. Used in CTS.",
+        pdk=True,
+    ),
+    Variable(
+        "CTS_CLK_BUFFERS",
+        List[str],
+        "Defines the list of clock buffers to be used in CTS.",
+        deprecated_names=["CTS_CLK_BUFFER_LIST"],
+        pdk=True,
+    ),
+    Variable(
+        "CTS_MAX_CAP",
+        Decimal,
+        "Defines the maximum capacitance, used in CTS.",
+        units="pF",
+        pdk=True,
+    ),
+    # Floorplanning
+    Variable(
+        "FP_WELLTAP_CELL",
+        str,
+        "Defines the cell used for tap insertion.",
+        pdk=True,
+    ),
+    Variable(
+        "FP_ENDCAP_CELL",
+        str,
+        "Defines so-called 'end-cap' cells- decap cells placed at either sides of a design.",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_RAIL_LAYER",
+        str,
+        "Defines the metal layer used for PDN rails.",
+        deprecated_names=["FP_PDN_RAILS_LAYER"],
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_RAIL_WIDTH",
+        Decimal,
+        "Defines the width of PDN rails on the `FP_PDN_RAILS_LAYER` layer.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_HORIZONTAL_LAYER",
+        str,
+        "Defines the horizontal PDN layer.",
+        deprecated_names=["FP_PDN_UPPER_LAYER"],
+        pdk=True,
+    ),
+    Variable(
+        "FP_PDN_VERTICAL_LAYER",
+        str,
+        "Defines the vertical PDN layer.",
+        deprecated_names=["FP_PDN_LOWER_LAYER"],
+        pdk=True,
+    ),
+    Variable(
+        "IGNORE_DISCONNECTED_MODULES",
+        Optional[List[str]],
+        "Modules (or cells) to ignore when checking for disconnected pins.",
+        pdk=True,
+    ),
+    # Placement
+    Variable(
+        "PLACE_SITE",
+        str,
+        "Defines the main placement site in placement as specified in the technology LEF files, to generate the placement grid.",
+        pdk=True,
+    ),
+    Variable(
+        "PLACE_SITE_WIDTH",
+        Decimal,
+        "The site width for the previously designated place site.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "PLACE_SITE_HEIGHT",
+        Decimal,
+        "The site height for the previously designated place site.",
+        units="µm",
+        pdk=True,
+    ),
+    Variable(
+        "GPL_CELL_PADDING",
+        Decimal,
+        "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
+        units="sites",
+        pdk=True,
+    ),
+    Variable(
+        "DPL_CELL_PADDING",
+        Decimal,
+        "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
+        units="sites",
+        pdk=True,
+    ),
+    Variable(
+        "CELL_PAD_EXCLUDE",
+        List[str],
+        "Defines a list of cells to be excluded from cell padding.",
+        pdk=True,
+    ),
+    # Antenna
+    Variable(
+        "DIODE_CELL",
+        Optional[str],
+        "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
+        pdk=True,
+    ),
+    # Routing
+    Variable(
+        "GRT_LAYER_ADJUSTMENTS",
+        List[Decimal],
+        "Layer-specific reductions in the routing capacity of the edges between the cells in the global routing graph, delimited by commas. Values range from 0 through 1.",
+        pdk=True,
+    ),
+    # CVC
+    Variable(
+        "CVC_SCRIPTS_DIR",
+        Optional[Path],
+        "Path to a directory of Circuit Validity Checker (CVC) scripts for the relevant PDK. Must contain the following set of files: `cvcrc`, an initialization file, `cdl.awk`, an awk script to remove black box definitions from SPICE files, `models`, cell models, and finally `power.awk`, an awk script that adds power information to the verilog netlists.\nIf this path is not defined, this PDK will be marked incompatible with CVC.",
+        pdk=True,
+    ),
+]
+option_variables = [
     # Common
     Variable(
         "DESIGN_DIR",
@@ -28,6 +501,11 @@ all_variables = [
         "DESIGN_NAME",
         str,
         "The name of the top level module of the design. This is the only required variable for all steps and all flows.",
+    ),
+    Variable(
+        "PDK_ROOT",
+        str,
+        "The path to all PDKs. This variable is special and tools should typically handle them.",
     ),
     Variable(
         "PDK",
@@ -164,21 +642,5 @@ all_variables = [
         default=False,
     ),
 ]
-removed_variables: Dict[str, str] = {
-    "PL_RANDOM_GLB_PLACEMENT": "The random global placer no longer yields a tangible benefit with newer versions of OpenROAD.",
-    "PL_RANDOM_INITIAL_PLACEMENT": "A random initial placer no longer yields a tangible benefit with newer versions of OpenROAD.",
-    "KLAYOUT_XOR_GDS": "The GDS output is of limited utility compared to the XML database.",
-    "KLAYOUT_XOR_XML": "The XML database is always generated.",
-    "MAGIC_GENERATE_GDS": "The GDS view is always generated when MAGIC_RUN_STREAMOUT is set.",
-    "CLOCK_BUFFER_FANOUT": "The simple CTS script that used this variable no longer exists.",
-    "FP_IO_HMETAL": "Replaced by FP_IO_HLAYER in the PDK configuration variables, which uses a more specific layer name.",
-    "FP_IO_VMETAL": "Replaced by FP_IO_VLAYER in the PDK  configuration variables, which uses a more specific layer name.",
-    "GLB_OPTIMIZE_MIRRORING": "Shares DPL_OPTIMIZE_MIRRORING.",
-    "GRT_MAX_DIODE_INS_ITERS": "Relevant diode insertion strategies removed.",
-    "TAKE_LAYOUT_SCROT": "Buggy/dubious utility.",
-    "MAGIC_PAD": "Hacky/dubious utility.",
-    "GENERATE_FINAL_SUMMARY_REPORT": "To be specified via API/CLI- not much of a configuration variable.",
-    "USE_GPIO_PADS": "Add the pad's files to EXTRA_LEFS and EXTRA_VERILOG_MODELS as apprioriate.",
-    "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
-    "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
-}
+
+flow_common_variables = pdk_variables + scl_variables + option_variables

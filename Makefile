@@ -42,11 +42,6 @@ test: venv/manifest.txt
 	./venv/bin/coverage report
 	./venv/bin/coverage html
 
-.PHONY: test-opt
-test-opt: venv/manifest.txt
-	./venv/bin/python3 -m openlane -f optimizing ./designs/spm/config.json
-
-
 .PHONY: check-license
 check-license: venv/manifest.txt
 	./venv/bin/python3 -m pip freeze > ./requirements.frz.txt

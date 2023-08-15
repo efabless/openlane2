@@ -18,10 +18,14 @@ import dataclasses
 from glob import glob
 from decimal import Decimal
 from textwrap import dedent
+from functools import lru_cache
 from dataclasses import dataclass
+from immutabledict import immutabledict
 from typing import (
     Any,
     ClassVar,
+    Literal,
+    Mapping,
     Tuple,
     Union,
     List,
@@ -33,24 +37,13 @@ from typing import (
 )
 
 from .variable import Macro, Variable
+from .removals import removed_variables
+from .flow import pdk_variables, scl_variables, flow_common_variables
+from .pdk_compat import migrate_old_config
 from .preprocessor import preprocess_dict, Keys as SpecialKeys
-from .flow import removed_variables, all_variables as flow_common_variables
-from .pdk import (
-    all_variables as pdk_variables,
-    removed_variables as pdk_removed_variables,
-    migrate_old_config,
-)
 from ..logging import info, warn
 from ..__version__ import __version__
 from ..common import GenericDict, GenericImmutableDict, TclUtils, Path
-
-
-@dataclass
-class Meta:
-    version: int = 1
-    flow: Union[None, str, List[str]] = None
-    step: Union[None, str] = None
-    openlane_version: Union[None, str] = __version__
 
 
 class InvalidConfig(ValueError):
@@ -90,19 +83,46 @@ class InvalidConfig(ValueError):
         super().__init__(message, *args, **kwargs)
 
 
+@dataclass
+class Meta:
+    """
+    Constitutes metadata for a configuration object.
+    """
+
+    version: int = 1
+    flow: Union[None, str, List[str]] = None
+    step: Union[None, str] = None
+    openlane_version: Union[None, str] = __version__
+
+    def copy(self) -> "Meta":
+        return dataclasses.replace(self)
+
+
 class Config(GenericImmutableDict[str, Any]):
     """
     A map from OpenLane configuration variable keys to their values.
 
     It is recommended that you use :meth:`load` to create new, validated
     configurations from dictionaries or files.
+
+    :param meta: The :class:`Meta` object for this configuration. If ``None`` is
+        passed, the default Meta object will be assigned.
+    :param final: Whether the configuration is final (i.e. has been
+        pre-assembled for an entire flow) or may be incremented per-step.
+
+        Final configurations may not be adjusted or incremented.
+
     """
 
     current_interactive: ClassVar[Optional["Config"]] = None
     meta: Meta
-    __interactive: bool = False
 
-    def __init__(self, *args, meta: Optional[Meta] = None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        meta: Optional[Meta] = None,
+        **kwargs,
+    ):
         if meta is None:
             meta = Meta(version=1)
 
@@ -131,6 +151,12 @@ class Config(GenericImmutableDict[str, Any]):
         return final
 
     def dumps(self, include_meta: bool = True, **kwargs) -> str:
+        """
+        :param include_meta: Whether to include the ``meta`` object in the
+            serialized string.
+        :param kwargs: Passed to ``json.dumps``.
+        :returns: A JSON string representing the the GenericDict object.
+        """
         if "indent" not in kwargs:
             kwargs["indent"] = 4
         return json.dumps(
@@ -140,15 +166,10 @@ class Config(GenericImmutableDict[str, Any]):
     def copy_filtered(
         self,
         config_vars: List[Variable],
-        include_pdk_variables: bool = True,
-        include_common_variables: bool = True,
+        include_flow_variables: bool = True,
     ) -> "Config":
         variables: Set[str] = set([variable.name for variable in config_vars])
-        if include_pdk_variables:
-            variables = variables.union(
-                set([variable.name for variable in pdk_variables])
-            )
-        if include_common_variables:
+        if include_flow_variables:
             variables = variables.union(
                 set([variable.name for variable in flow_common_variables])
             )
@@ -156,25 +177,6 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(
             {variable: self[variable] for variable in variables},
             meta=dataclasses.replace(self.meta),
-        )
-
-    def _repr_markdown_(self) -> str:  # pragma: no cover
-        title = "Interactive Configuration" if self.__interactive else "Configuration"
-        values_title = "Initial Values" if self.__interactive else "Values"
-        return (
-            dedent(
-                f"""
-                ### {title}
-                #### {values_title}
-
-                <br />
-
-                ```yml
-                %s
-                ```
-                """
-            )
-            % yaml.safe_dump(json.loads(self.dumps()))
         )
 
     @classmethod
@@ -239,21 +241,24 @@ class Config(GenericImmutableDict[str, Any]):
         """
         PDK_ROOT = Self.__resolve_pdk_root(PDK_ROOT)
 
-        config_in, _, _ = Self.__get_pdk_config(
+        raw, _, _ = Self.__get_pdk_config(
             PDK,
             STD_CELL_LIBRARY,
             PDK_ROOT,
+            pdk_variables + scl_variables,
         )
 
         kwargs["DESIGN_NAME"] = DESIGN_NAME
+        kwargs["DESIGN_DIR"] = kwargs.get("DESIGN_DIR", ".")
 
-        config_in = Config(config_in, overrides=kwargs)
+        raw.update(kwargs)
 
-        config_in, design_warnings, design_errors = config_in.__process_variable_list(
-            pdk_variables,
-            list(flow_common_variables),
+        processed, design_warnings, design_errors = Config.__process_variable_list(
+            raw,
+            [],
+            flow_common_variables,
             removed_variables,
-            unknown_key_warn=False,
+            on_unknown_key="error",
         )
 
         if len(design_errors) != 0:
@@ -266,15 +271,14 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-        config_in.__interactive = True
-        Config.current_interactive = config_in
+        Config.current_interactive = Config(processed)
 
-        return config_in
+        return Config.current_interactive
 
     @classmethod
     def load(
         Self,
-        config_in: Union[str, os.PathLike, Dict[str, Any]],
+        config_in: Union[str, os.PathLike, Mapping[str, Any]],
         flow_config_vars: Sequence[Variable],
         *,
         config_override_strings: Optional[Sequence[str]] = None,
@@ -283,6 +287,7 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
+        complete: bool = True,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -291,8 +296,8 @@ class Config(GenericImmutableDict[str, Any]):
         The returned config object is locked and cannot be modified.
 
         :param config_in: Either a file path to a JSON file or a Python
-            dictionary representing an unprocessed OpenLane configuration
-            object.
+            Mapping object (such as ``dict``) representing an unprocessed
+            OpenLane configuration object.
 
             Tcl files are also supported, but are deprecated and will be removed
             in the future.
@@ -318,9 +323,9 @@ class Config(GenericImmutableDict[str, Any]):
         :returns: A tuple containing a Config object and the design directory.
         """
         loader: Callable = Self.__loads
-        raw: Union[str, dict] = ""
+        raw: Union[str, Mapping] = ""
         default_meta_version = 1
-        if not isinstance(config_in, dict):
+        if not isinstance(config_in, Mapping):
             if design_dir is not None:
                 raise TypeError(
                     "The argument design_dir is not supported when config_in is not a dictionary."
@@ -366,6 +371,80 @@ class Config(GenericImmutableDict[str, Any]):
 
         return (loaded, design_dir)
 
+    ## Internal
+
+    def _with_increment(
+        self,
+        config_vars: Sequence[Variable],
+        other_inputs: Mapping[str, Any],
+        config_quiet: bool = False,
+        filtered_by: Optional[Sequence[Variable]] = None,
+    ) -> "Config":
+        incremental_pdk_vars = [variable for variable in config_vars if variable.pdk]
+        mutable, _, _ = self.__get_pdk_config(
+            self["PDK"],
+            self["STD_CELL_LIBRARY"],
+            self["PDK_ROOT"],
+            incremental_pdk_vars,
+        )
+
+        mutable.update(self)
+        mutable.update(other_inputs)
+
+        processed, design_warnings, design_errors = Config.__process_variable_list(
+            mutable,
+            [],
+            config_vars,
+            removed_variables,
+            on_unknown_key=None,
+        )
+
+        if len(design_errors) != 0:
+            raise InvalidConfig(
+                "incremental configuration", design_warnings, design_errors
+            )
+
+        if not config_quiet:
+            if len(design_warnings) > 0:
+                info(
+                    "Loading the incremental configuration has generated the following warnings:"
+                )
+            for warning in design_warnings:
+                warn(warning)
+
+        return Config(
+            self,
+            overrides=processed,
+            meta=self.meta.copy(),
+        )
+
+    ## For Jupyter
+    def _repr_markdown_(self) -> str:  # pragma: no cover
+        title = (
+            "Interactive Configuration"
+            if self == Config.current_interactive
+            else "Configuration"
+        )
+        values_title = (
+            "Initial Values" if self == Config.current_interactive else "Values"
+        )
+        return (
+            dedent(
+                f"""
+                ### {title}
+                #### {values_title}
+
+                <br />
+
+                ```yml
+                %s
+                ```
+                """
+            )
+            % yaml.safe_dump(json.loads(self.dumps()))
+        )
+
+    ## Private Methods
     @classmethod
     def __loads(
         Self,
@@ -383,7 +462,7 @@ class Config(GenericImmutableDict[str, Any]):
     @classmethod
     def __load_dict(
         Self,
-        raw: Dict[str, Any],
+        mapping_in: Mapping[str, Any],
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         *,
@@ -395,6 +474,8 @@ class Config(GenericImmutableDict[str, Any]):
         default_meta_version: int = 1,
         _load_pdk_configs: bool = True,
     ) -> "Config":
+        raw = dict(mapping_in)
+
         meta: Optional[Meta] = None
         if raw.get("meta") is not None:
             meta_raw = raw["meta"]
@@ -406,6 +487,14 @@ class Config(GenericImmutableDict[str, Any]):
                     "design configuration file", [], [f"'meta' object is invalid: {e}"]
                 )
 
+        flow_option_vars = []
+        flow_pdk_vars = []
+        for variable in flow_config_vars:
+            if variable.pdk:
+                flow_pdk_vars.append(variable)
+            else:
+                flow_option_vars.append(variable)
+
         if meta is None:
             meta = Meta(version=default_meta_version)
 
@@ -413,19 +502,19 @@ class Config(GenericImmutableDict[str, Any]):
             key, value = string.split("=", 1)
             raw[key] = value
 
-        process_info = preprocess_dict(
-            raw,
-            only_extract_process_info=True,
-            design_dir=design_dir,
+        mutable = GenericDict(
+            preprocess_dict(
+                raw,
+                only_extract_process_info=True,
+                design_dir=design_dir,
+            )
         )
 
-        pdk = process_info.get(SpecialKeys.pdk) or pdk
-        scl = process_info.get(SpecialKeys.scl) or scl
+        pdk = mutable.get(SpecialKeys.pdk) or pdk
+        scl = mutable.get(SpecialKeys.scl) or scl
         pdkpath = ""
 
-        config_in: GenericImmutableDict[str, Any] = GenericImmutableDict(
-            process_info, overrides={"PDK_ROOT": pdk_root}
-        )
+        mutable["PDK_ROOT"] = pdk_root
 
         if _load_pdk_configs:
             pdk_root = Self.__resolve_pdk_root(pdk_root)
@@ -434,11 +523,12 @@ class Config(GenericImmutableDict[str, Any]):
                     "The pdk argument is required as the configuration object lacks a 'PDK' key."
                 )
 
-            config_in, pdkpath, scl = Self.__get_pdk_config(
+            mutable, pdkpath, scl = Self.__get_pdk_config(
                 pdk=pdk,
                 scl=scl,
                 pdk_root=pdk_root,
                 full_pdk_warnings=full_pdk_warnings,
+                flow_pdk_vars=flow_pdk_vars,
             )
 
         readable_paths = [
@@ -447,32 +537,31 @@ class Config(GenericImmutableDict[str, Any]):
         if pdkpath != "":
             readable_paths.append(os.path.abspath(pdkpath))
 
-        config_in = Config(
-            config_in,
-            overrides=preprocess_dict(
+        mutable.update(
+            preprocess_dict(
                 raw,
                 pdk=pdk,
                 pdkpath=pdkpath,
-                scl=config_in[SpecialKeys.scl],
+                scl=mutable[SpecialKeys.scl],
                 design_dir=design_dir,
                 readable_paths=readable_paths,
-            ),
-            meta=meta,
+            )
         )
 
-        permissive_variables = pdk_variables
+        permissive_variables = []
         strict_variables = list(flow_config_vars)
-        unknown_key_warn = False
+        on_unknown_key: Literal["error", "warn"] | None = "error"
         if meta.version < 2:
-            permissive_variables = permissive_variables + strict_variables
+            permissive_variables = strict_variables
             strict_variables = []
-            unknown_key_warn = True
+            on_unknown_key = "warn"
 
-        config_in, design_warnings, design_errors = config_in.__process_variable_list(
+        processed, design_warnings, design_errors = Config.__process_variable_list(
+            mutable,
             permissive_variables,
             strict_variables,
             removed_variables,
-            unknown_key_warn,
+            on_unknown_key=on_unknown_key,
         )
 
         if len(design_errors) != 0:
@@ -487,7 +576,7 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-        return config_in
+        return Config(processed, meta=meta)
 
     @classmethod
     def __loads_tcl(
@@ -508,19 +597,25 @@ class Config(GenericImmutableDict[str, Any]):
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
         )
 
+        flow_option_vars = []
+        flow_pdk_vars = []
+        for variable in flow_config_vars:
+            if variable.pdk:
+                flow_pdk_vars.append(variable)
+            else:
+                flow_option_vars.append(variable)
+
         pdk_root = Self.__resolve_pdk_root(pdk_root)
 
-        config_in = Config(
+        tcl_vars_in = GenericDict(
             {
                 SpecialKeys.pdk_root: pdk_root,
                 SpecialKeys.pdk: pdk,
             }
         )
-
-        tcl_vars_in = dict(config_in)
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
-        tcl_config = dict(TclUtils._eval_env(tcl_vars_in, config))
+        tcl_config = GenericDict(TclUtils._eval_env(tcl_vars_in, config))
 
         process_info = preprocess_dict(
             tcl_config,
@@ -535,28 +630,29 @@ class Config(GenericImmutableDict[str, Any]):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        config_in, _, scl = Self.__get_pdk_config(
+        mutable, _, scl = Self.__get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
             full_pdk_warnings=full_pdk_warnings,
+            flow_pdk_vars=flow_pdk_vars,
         )
 
         tcl_vars_in[SpecialKeys.pdk] = pdk
         tcl_vars_in[SpecialKeys.scl] = scl
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
 
-        design_config = TclUtils._eval_env(tcl_vars_in, config)
-
-        config_in = Config(config_in, overrides=design_config)
+        mutable.update(GenericDict(TclUtils._eval_env(tcl_vars_in, config)))
         for string in config_override_strings:
             key, value = string.split("=", 1)
-            config_in[key] = value
+            mutable[key] = value
 
-        config_in, design_warnings, design_errors = config_in.__process_variable_list(
-            pdk_variables + list(flow_config_vars),
+        processed, design_warnings, design_errors = Config.__process_variable_list(
+            mutable,
+            list(flow_config_vars),
             [],
             removed_variables,
+            on_unknown_key="warn",
         )
 
         if len(design_errors) != 0:
@@ -571,7 +667,7 @@ class Config(GenericImmutableDict[str, Any]):
         for warning in design_warnings:
             warn(warning)
 
-        return config_in
+        return Config(processed)
 
     @classmethod
     def __resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:
@@ -586,24 +682,18 @@ class Config(GenericImmutableDict[str, Any]):
                 )
         return os.path.abspath(pdk_root)
 
-    @classmethod
-    def __get_pdk_config(
-        Self,
-        pdk: str,
-        scl: Optional[str],
-        pdk_root: str,
-        full_pdk_warnings: Optional[bool] = False,
-    ) -> Tuple["Config", str, str]:
-        """
-        :returns: A tuple of the PDK configuration, the PDK path and the SCL.
-        """
-
+    @staticmethod
+    @lru_cache(1, True)
+    def __get_pdk_raw(
+        pdk_root: str, pdk: str, scl: Optional[str]
+    ) -> Tuple[immutabledict[str, Any], str, str]:
         pdk_config: GenericDict[str, Any] = GenericDict(
             {
                 SpecialKeys.pdk_root: pdk_root,
                 SpecialKeys.pdk: pdk,
             }
         )
+
         if scl is not None:
             pdk_config[SpecialKeys.scl] = scl
 
@@ -640,11 +730,30 @@ class Config(GenericImmutableDict[str, Any]):
             )
         )
 
-        config_in = Config(scl_env)
-        config_in, pdk_warnings, pdk_errors = config_in.__process_variable_list(
-            pdk_variables,
+        return immutabledict(scl_env), pdkpath, scl
+
+    @staticmethod
+    def __get_pdk_config(
+        pdk: str,
+        scl: Optional[str],
+        pdk_root: str,
+        flow_pdk_vars: Optional[List[Variable]] = None,
+        full_pdk_warnings: Optional[bool] = False,
+    ) -> Tuple[GenericDict[str, Any], str, str]:
+        """
+        :returns: A tuple of the PDK configuration, the PDK path and the SCL.
+        """
+
+        frozen, pdkpath, scl = Config.__get_pdk_raw(pdk_root, pdk, scl)
+        if flow_pdk_vars is None or len(flow_pdk_vars) == 0:
+            return (GenericDict(), pdkpath, scl)
+
+        raw: GenericDict[str, Any] = GenericDict(frozen)  # microwave
+        processed, pdk_warnings, pdk_errors = Config.__process_variable_list(
+            raw,
+            flow_pdk_vars,
             [],
-            pdk_removed_variables,
+            on_unknown_key=None,
         )
 
         if len(pdk_errors) != 0:
@@ -658,15 +767,19 @@ class Config(GenericImmutableDict[str, Any]):
                 for warning in pdk_warnings:
                     warn(warning)
 
-        return (config_in, pdkpath, scl)
+        processed["PDK_ROOT"] = pdk_root
+        processed["PDK"] = pdk
+
+        return (processed, pdkpath, scl)
 
     def __process_variable_list(
-        self,
+        mutable: GenericDict[str, Any],
         variables: Sequence["Variable"],
         strict_variables: Sequence["Variable"],
-        removed: Optional[Dict[str, str]] = None,
-        unknown_key_warn: bool = True,
-    ) -> Tuple["Config", List[str], List[str]]:
+        removed: Optional[Mapping[str, str]] = None,
+        *,
+        on_unknown_key: Union[Literal["error", "warn"], None] = "warn",
+    ) -> Tuple[GenericDict[str, Any], List[str], List[str]]:
         """
         Verifies a configuration object against a list of variables, returning
         an object with the variables normalized according to their types.
@@ -687,7 +800,6 @@ class Config(GenericImmutableDict[str, Any]):
         warnings: List[str] = []
         errors = []
         final: GenericDict[str, Any] = GenericDict()
-        mutable = self.copy_mut()
 
         # Special Deprecation Behaviors
         if (
@@ -806,12 +918,20 @@ class Config(GenericImmutableDict[str, Any]):
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
             elif "_OPT" not in key and key != "//":
-                if not unknown_key_warn and key not in Variable.known_variable_names:
-                    errors.append(f"Unknown key '{key}' provided.")
-                else:
-                    warnings.append(
-                        f"Key '{key}' provided is unused by the current flow."
-                    )
+                if on_unknown_key == "error":
+                    if key in Variable.known_variable_names:
+                        warnings.append(
+                            f"Key '{key}' provided is unused by the current flow."
+                        )
+                    else:
+                        errors.append(f"Unknown key '{key}' provided.")
+                elif on_unknown_key == "warn":
+                    if key in Variable.known_variable_names:
+                        warnings.append(
+                            f"Key '{key}' provided is unused by the current flow."
+                        )
+                    else:
+                        warnings.append(f"An unknown key '{key}' was provided.")
 
         if (
             translated_macros and final.get("MACROS") is not None
@@ -823,4 +943,4 @@ class Config(GenericImmutableDict[str, Any]):
                 if "/dev/null" in macro.lef:
                     macro.lef = [Path("")]
 
-        return (Config(final, meta=self.meta), warnings, errors)
+        return (final, warnings, errors)
