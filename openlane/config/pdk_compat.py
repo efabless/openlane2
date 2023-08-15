@@ -136,6 +136,10 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["TIME_DERATING_CONSTRAINT"] = 5
     new["IO_DELAY_CONSTRAINT"] = 20
 
+    # 8. Primary Signoff Tool
+    if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
+        new["PRIMARY_SIGNOFF_TOOL"] = "magic"
+
     # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"

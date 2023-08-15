@@ -89,6 +89,12 @@ pdk_variables = [
         "A list of pad cell name prefixes.",
         pdk=True,
     ),
+    Variable(
+        "PRIMARY_SIGNOFF_TOOL",
+        str,
+        "Specify the primary signoff tool for taping out with this PDK. For most open-source PDKs, that would be 'magic'.",
+        pdk=True,
+    ),
     # Timing and Power
     Variable(
         "DEFAULT_MAX_TRAN",
@@ -514,12 +520,6 @@ option_variables = [
         default="sky130A",
     ),
     Variable(
-        "PRIMARY_SIGNOFF_TOOL",
-        StringEnum("PRIMARY_SIGNOFF_TOOL", ["magic", "klayout"]),
-        "Specify the primary signoff tool for taping out.",
-        default="magic",
-    ),
-    Variable(
         "CLOCK_PERIOD",
         Decimal,
         "The clock period for the design.",
@@ -612,22 +612,10 @@ option_variables = [
         default=True,
     ),
     Variable(
-        "RUN_KLAYOUT_DRC",
-        bool,
-        "Enables running KLayout DRC on GDSII produced by magic.",
-        default=False,
-    ),
-    Variable(
         "RUN_CVC",
         bool,
         "Runs the Circuit Validity Checker on the output spice, which is a voltage-aware ERC checker for CDL netlists. Will not run unless supported by the current PDK.",
         default=True,
-    ),
-    Variable(
-        "KLAYOUT_DRC_KLAYOUT_GDS",
-        bool,
-        "Enables running KLayout DRC on GDSII produced by KLayout.",
-        default=False,
     ),
     Variable(
         "LEC_ENABLE",

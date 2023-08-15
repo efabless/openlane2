@@ -214,7 +214,7 @@ class StreamOut(MagicStep):
             log_to=magic_log_dir,
             **kwargs,
         )
-        if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
+        if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
             views_updates[DesignFormat.GDS] = views_updates[DesignFormat.MAG_GDS]
 
         for line in open(magic_log_dir, encoding="utf8"):
