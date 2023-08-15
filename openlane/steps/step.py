@@ -383,7 +383,7 @@ class Step(ABC):
             )
             for var in Self.config_vars:
                 units = var.units or ""
-                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`<sup>PDK</sup> | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
 
         return result
 
@@ -499,9 +499,11 @@ class Step(ABC):
         Creates a folder that, given a specific version of OpenLane being
         installed, makes a portable reproducible of that step's execution.
 
-        * Reproducibles are limited on Magic and Netgen, as their RC files
-        form an indirect dependency on many `.mag` files or similar that cannot
-        be enumerated by OpenLane.
+        ..note
+
+            Reproducibles are limited on Magic and Netgen, as their RC files
+            form an indirect dependency on many `.mag` files or similar that
+            cannot be enumerated by OpenLane.
 
         Reproducibles are automatically generated for failed steps, but
         this may be called manually on any step, too.

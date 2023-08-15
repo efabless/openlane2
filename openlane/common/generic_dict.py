@@ -270,7 +270,7 @@ def copy_recursive(input, translator: Callable = idem):
     :param translator: Before an object is appended, this function will be
         called to process the value.
 
-        By default, :fun:`idem` is called.
+        By default, :func:`idem` is called.
     :returns: The copy.
 
         All sequences will become built-in ``list``s and all mappings will

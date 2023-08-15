@@ -57,15 +57,17 @@ def generate_module_docs(app: Sphinx, conf: Config):
             loader=lookup,
         )
 
+        module = openlane.config.flow
+
         # 1. PDK
         template = env.get_template("pdk.md")
-        module = openlane.config.pdk
         with open(
             os.path.join(doc_root_dir, "reference", "pdk_config_vars.md"), "w"
         ) as f:
             f.write(
                 template.render(
-                    module=module,
+                    pdk_variables=module.pdk_variables,
+                    scl_variables=module.scl_variables,
                 )
             )
 
@@ -73,13 +75,12 @@ def generate_module_docs(app: Sphinx, conf: Config):
         template = env.get_template("flows.md")
         flow_factory = openlane.flows.Flow.factory
 
-        module = openlane.config.flow
         with open(
             os.path.join(doc_root_dir, "reference", "flow_config_vars.md"), "w"
         ) as f:
             f.write(
                 template.render(
-                    module=module,
+                    option_variables=module.option_variables,
                     flows=[
                         flow_factory.get(key)
                         for key in flow_factory.list()
