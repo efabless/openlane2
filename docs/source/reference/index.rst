@@ -2,7 +2,7 @@ Reference Manual
 --------------------------------------------------------------------------------
 .. toctree::
    configuration
-   flow_config_vars
+   flows
    step_config_vars
    pin_placement_cfg
    architecture

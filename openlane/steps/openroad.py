@@ -683,9 +683,10 @@ class GeneratePDN(OpenROADStep):
         + pdn_variables
         + [
             Variable(
-                "PDN_CFG",
+                "FP_PDN_CFG",
                 Optional[Path],
                 "A custom PDN configuration file. If not provided, the default PDN config will be used.",
+                deprecated_names=["PDN_CFG"],
             )
         ]
     )

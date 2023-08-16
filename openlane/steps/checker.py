@@ -35,7 +35,7 @@ class MetricChecker(Step):
     deferred: ClassVar[bool] = True
 
     @classmethod
-    def get_help_md(Self):
+    def get_help_md(Self, **kwargs):
         threshold_string = Self.get_threshold_description(None)
         if threshold_string is None:
             threshold_string = str(Self.get_threshold(None))
@@ -46,7 +46,7 @@ class MetricChecker(Step):
             dynamic_docstring += " an immediate error"
         dynamic_docstring += f" if {Self.metric_description} (metric: ``{Self.metric_name}``) are >= {threshold_string}."
 
-        return super().get_help_md(dynamic_docstring)
+        return super().get_help_md(docstring_override=dynamic_docstring, **kwargs)
 
     def get_threshold(self: Optional["MetricChecker"]) -> Optional[Decimal]:
         return Decimal(0)

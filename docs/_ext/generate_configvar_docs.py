@@ -59,28 +59,13 @@ def generate_module_docs(app: Sphinx, conf: Config):
 
         module = openlane.config.flow
 
-        # 1. PDK
-        template = env.get_template("pdk.md")
-        with open(
-            os.path.join(doc_root_dir, "reference", "pdk_config_vars.md"), "w"
-        ) as f:
-            f.write(
-                template.render(
-                    pdk_variables=module.pdk_variables,
-                    scl_variables=module.scl_variables,
-                )
-            )
-
-        # 2. Flows
+        # 1. Flows
         template = env.get_template("flows.md")
         flow_factory = openlane.flows.Flow.factory
 
-        with open(
-            os.path.join(doc_root_dir, "reference", "flow_config_vars.md"), "w"
-        ) as f:
+        with open(os.path.join(doc_root_dir, "reference", "flows.md"), "w") as f:
             f.write(
                 template.render(
-                    option_variables=module.option_variables,
                     flows=[
                         flow_factory.get(key)
                         for key in flow_factory.list()
@@ -89,7 +74,30 @@ def generate_module_docs(app: Sphinx, conf: Config):
                 )
             )
 
-        # 3. Steps
+        # 2. Common PDK Vars
+        template = env.get_template("common_pdk_vars.md")
+        with open(
+            os.path.join(doc_root_dir, "reference", "common_pdk_vars.md"), "w"
+        ) as f:
+            f.write(
+                template.render(
+                    pdk_variables=module.pdk_variables,
+                    scl_variables=module.scl_variables,
+                )
+            )
+
+        # 3. Common Flow Vars
+        template = env.get_template("common_vars.md")
+        with open(
+            os.path.join(doc_root_dir, "reference", "common_flow_vars.md"), "w"
+        ) as f:
+            f.write(
+                template.render(
+                    option_variables=module.option_variables,
+                )
+            )
+
+        # 4. Steps
         template = env.get_template("steps.md")
         step_factory = openlane.steps.Step.factory
 

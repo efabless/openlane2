@@ -317,7 +317,12 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self, docstring_override: str = ""):  # pragma: no cover
+    def get_help_md(
+        Self,
+        *,
+        docstring_override: str = "",
+        use_dropdown: bool = False,
+    ):  # pragma: no cover
         """
         Renders Markdown help for this step to a string.
         """
@@ -327,15 +332,12 @@ class Step(ABC):
 
         result = (
             textwrap.dedent(
-                f"""\
-                ### <a name="{Self.id}"></a> {Self.__get_desc()}
-
+                f"""
                 ```{{eval-rst}}
                 %s
                 ```
 
-                #### Importing
-
+                {':::{dropdown} Importing' if use_dropdown else '#### Importing'}
                 ```python
                 from {Self.__module__} import {Self.__name__}
 
@@ -345,6 +347,7 @@ class Step(ABC):
 
                 {Self.__name__} = Step.factory.get("{Self.id}")
                 ```
+                {':::' if use_dropdown else ''}
                 """
             )
             % doc_string
@@ -383,7 +386,19 @@ class Step(ABC):
             )
             for var in Self.config_vars:
                 units = var.units or ""
-                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`<sup>PDK</sup> | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
+                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+
+        result = (
+            textwrap.dedent(
+                f"""
+                ### {Self.__get_desc()}
+                
+                <a name="{Self.id}"></a>
+                """
+            )
+            + result
+        )
 
         return result
 
