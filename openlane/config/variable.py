@@ -437,6 +437,10 @@ class Variable:
             else:
                 raise ValueError(f"Value for '{key_path}' is not '{arg}': '{value}'")
         elif is_dataclass(validating_type):
+            if isinstance(value, validating_type):
+                # Do not validate further
+                return value  
+
             raw = value
             if not isinstance(raw, dict):
                 raise ValueError(
