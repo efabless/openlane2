@@ -1,3 +1,7 @@
+# 2.0.0-b5
+
+* Fixed issue with referencing files outside the design directory
+
 # 2.0.0-b4
 
 * Updated documentation for `run_subprocess`
