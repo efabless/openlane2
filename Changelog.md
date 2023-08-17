@@ -1,6 +1,9 @@
 # 2.0.0-b5
 
+* Added `refg::` to documentation
+* Fixed issue where "worst clock skew" metrics were aggregated incorrectly
 * Fixed issue with referencing files outside the design directory
+
 
 # 2.0.0-b4
 
