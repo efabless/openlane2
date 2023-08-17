@@ -267,15 +267,18 @@ def process_string(
         if not mutable.startswith(REFG_PREFIX):
             return concatenated
 
+        ## If we're refg, all returns beyond this point must be of type
+        ## List[str]
+
         # Glob only if readable_paths isn't null
         if readable_paths is None:
-            return target
+            return [target]
 
         final_abspath = os.path.abspath(concatenated)
 
         # Glob only if it doesn't already resolve to a valid file
         if os.path.exists(final_abspath):
-            return final_abspath
+            return [final_abspath]
 
         in_exposed = [final_abspath.startswith(p) for p in readable_paths]
         if True not in in_exposed:
