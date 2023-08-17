@@ -15,6 +15,8 @@ import tkinter
 
 import pytest
 
+from openlane.steps import step
+
 mock_variables = pytest.mock_variables
 
 
@@ -30,7 +32,7 @@ def test_tclstep_missing_get_script_path():
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_tclstep_init(mock_config):  # noqa: F811
     from openlane.steps import TclStep
     from openlane.state import DesignFormat, State
@@ -47,7 +49,7 @@ def test_tclstep_init(mock_config):  # noqa: F811
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_tclstep_get_command(mock_config):  # noqa: F811
     from openlane.steps import TclStep
     from openlane.state import DesignFormat, State
@@ -162,7 +164,7 @@ def test_tcl_step_value_to_tcl():
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_env(mock_config):  # noqa: F811
     from openlane.steps import TclStep
     from openlane.state import DesignFormat, State

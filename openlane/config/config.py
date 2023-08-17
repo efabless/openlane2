@@ -20,7 +20,6 @@ from decimal import Decimal
 from textwrap import dedent
 from functools import lru_cache
 from dataclasses import dataclass
-from immutabledict import immutabledict
 from typing import (
     Any,
     ClassVar,
@@ -35,6 +34,8 @@ from typing import (
     Dict,
     Set,
 )
+
+from immutabledict import immutabledict
 
 from .variable import Macro, Variable
 from .removals import removed_variables
@@ -165,9 +166,22 @@ class Config(GenericImmutableDict[str, Any]):
 
     def copy_filtered(
         self,
-        config_vars: List[Variable],
+        config_vars: Sequence[Variable],
         include_flow_variables: bool = True,
     ) -> "Config":
+        """
+        Creates a new copy of the configuration object, but only with the
+        configuration variables defined by the parameter.
+
+        :param config_vars: A list of configuration variables to include in
+            the filtered copy.
+        :param include_flow_variables: Whether to include the common flow
+            variables in the copy or not.
+
+            This parameter is deprecated as of OpenLane 2.0.0b5 and should be
+            set to ``False`` by callers.
+        :returns: The new copy
+        """
         variables: Set[str] = set([variable.name for variable in config_vars])
         if include_flow_variables:
             variables = variables.union(
@@ -177,6 +191,67 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(
             {variable: self[variable] for variable in variables},
             meta=dataclasses.replace(self.meta),
+        )
+
+    def with_increment(
+        self,
+        config_vars: Sequence[Variable],
+        other_inputs: Mapping[str, Any],
+        config_quiet: bool = False,
+    ) -> "Config":
+        """
+        Creates a new ``Config`` object by copying all values
+        from the original in addition to any new variables (and removing
+        any variables not in `config_vars`).
+
+        Furthermore, inputs can be provided incrementally by passing the object
+        ``other_inputs``, which will also use these as overrides to the
+        values in the base ``Config`` object.
+
+        All values, including those in the base ``Config`` object and in
+        ``other_inputs``, will be re-validated.
+
+        :param config_vars: A list of configuration variables to include and
+            validate.
+        :param other_inputs: A mapping of other inputs.
+        :returns: The new ``Config`` object
+        """
+        incremental_pdk_vars = [variable for variable in config_vars if variable.pdk]
+
+        mutable, _, _ = self.__get_pdk_config(
+            self["PDK"],
+            self["STD_CELL_LIBRARY"],
+            self["PDK_ROOT"],
+            incremental_pdk_vars,
+        )
+
+        mutable.update(self)
+        mutable.update(other_inputs)
+
+        processed, design_warnings, design_errors = Config.__process_variable_list(
+            mutable,
+            [],
+            config_vars,
+            removed_variables,
+            on_unknown_key=None,
+        )
+
+        if len(design_errors) != 0:
+            raise InvalidConfig(
+                "incremental configuration", design_warnings, design_errors
+            )
+
+        if not config_quiet:
+            if len(design_warnings) > 0:
+                info(
+                    "Loading the incremental configuration has generated the following warnings:"
+                )
+            for warning in design_warnings:
+                warn(warning)
+
+        return Config(
+            processed,
+            meta=self.meta.copy(),
         )
 
     @classmethod
@@ -370,53 +445,6 @@ class Config(GenericImmutableDict[str, Any]):
         )
 
         return (loaded, design_dir)
-
-    ## Internal
-
-    def _with_increment(
-        self,
-        config_vars: Sequence[Variable],
-        other_inputs: Mapping[str, Any],
-        config_quiet: bool = False,
-        filtered_by: Optional[Sequence[Variable]] = None,
-    ) -> "Config":
-        incremental_pdk_vars = [variable for variable in config_vars if variable.pdk]
-        mutable, _, _ = self.__get_pdk_config(
-            self["PDK"],
-            self["STD_CELL_LIBRARY"],
-            self["PDK_ROOT"],
-            incremental_pdk_vars,
-        )
-
-        mutable.update(self)
-        mutable.update(other_inputs)
-
-        processed, design_warnings, design_errors = Config.__process_variable_list(
-            mutable,
-            [],
-            config_vars,
-            removed_variables,
-            on_unknown_key=None,
-        )
-
-        if len(design_errors) != 0:
-            raise InvalidConfig(
-                "incremental configuration", design_warnings, design_errors
-            )
-
-        if not config_quiet:
-            if len(design_warnings) > 0:
-                info(
-                    "Loading the incremental configuration has generated the following warnings:"
-                )
-            for warning in design_warnings:
-                warn(warning)
-
-        return Config(
-            self,
-            overrides=processed,
-            meta=self.meta.copy(),
-        )
 
     ## For Jupyter
     def _repr_markdown_(self) -> str:  # pragma: no cover

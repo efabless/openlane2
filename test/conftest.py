@@ -273,6 +273,52 @@ def mock_config():
     return mock_config
 
 
+class MockProgress(object):
+    def __init__(self, *args, **kwargs):
+        self.add_task_called_count = 0
+        self.start_called_count = 0
+        self.stop_called_count = 0
+        self.update_called_count = 0
+        self.total = 100
+        self.completed = 0
+        self.description = "Progress"
+
+    def add_task(self, *args):
+        self.add_task_called_count += 1
+
+    def start(self):
+        self.start_called_count += 1
+
+    def stop(self):
+        self.stop_called_count += 1
+
+    def update(
+        self,
+        _,
+        description: Optional[str] = None,
+        total: Optional[int] = None,
+        completed: Optional[float] = None,
+    ):
+        if total_stages := total:
+            self.total = total_stages
+
+        if completed_stages := completed:
+            self.completed = completed_stages
+
+        if current_task_description := description:
+            self.description = current_task_description
+
+        self.update_called_count += 1
+
+
+@pytest.fixture(autouse=True)
+def _mock_progress():
+    from openlane.flows import flow
+
+    with mock.patch.object(flow, "Progress", MockProgress):
+        yield
+
+
 def pytest_configure():
     pytest.COMMON_FLOW_VARS = COMMON_FLOW_VARS
     pytest.mock_variables = mock_variables

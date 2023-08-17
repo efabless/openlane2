@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from decimal import Decimal
-
 import pytest
+
+from decimal import Decimal
 
 from openlane.config import config
 from openlane.common import Path
@@ -206,6 +206,50 @@ def test_copy_filtered():
         "STEP1_VAR": 3,
         "meta": cfg.meta,
     }, "copy_filtered for step 1 did not work properly"
+
+
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables()
+def test_with_increment():
+    from openlane.config import Config, Variable
+
+    step1_variables = [
+        Variable(
+            "STEP1_VAR",
+            int,
+            description="x",
+        )
+    ]
+    step2_variables = [
+        Variable(
+            "STEP2_VAR",
+            int,
+            description="x",
+        )
+    ]
+
+    cfg, _ = Config.load(
+        {
+            "DESIGN_NAME": "whatever",
+            "VERILOG_FILES": "dir::src/*.v",
+            "STEP1_VAR": 3,
+            "STEP2_VAR": 4,
+        },
+        config.flow_common_variables + step1_variables + step2_variables,
+        design_dir="/cwd",
+        pdk="dummy",
+        scl="dummy_scl",
+        pdk_root="/pdk",
+    )
+
+    step1_cfg = cfg.copy_filtered(step1_variables)
+    step1_cfg_incr = cfg.with_increment(
+        config.flow_common_variables + step1_variables, {}, True
+    )
+
+    assert (
+        step1_cfg == step1_cfg_incr
+    ), "_with_increment not properly working as a filter"
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")

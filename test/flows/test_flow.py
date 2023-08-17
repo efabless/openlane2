@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from unittest import mock
 from typing import Callable, Optional, Type
 
 import pytest
@@ -131,44 +130,6 @@ def DummyFlow(MockStepTuple):
     return Dummy
 
 
-class MockProgress(object):
-    def __init__(self, *args, **kwargs):
-        self.add_task_called_count = 0
-        self.start_called_count = 0
-        self.stop_called_count = 0
-        self.update_called_count = 0
-        self.total = 100
-        self.completed = 0
-        self.description = "Progress"
-
-    def add_task(self, *args):
-        self.add_task_called_count += 1
-
-    def start(self):
-        self.start_called_count += 1
-
-    def stop(self):
-        self.stop_called_count += 1
-
-    def update(
-        self,
-        _,
-        description: Optional[str] = None,
-        total: Optional[int] = None,
-        completed: Optional[float] = None,
-    ):
-        if total_stages := total:
-            self.total = total_stages
-
-        if completed_stages := completed:
-            self.completed = completed_stages
-
-        if current_task_description := description:
-            self.description = current_task_description
-
-        self.update_called_count += 1
-
-
 # ---
 
 
@@ -257,7 +218,6 @@ def test_clashing_variables(DummyFlow: Type[flow.Flow], MockStepTuple):
 
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
-@mock.patch.object(flow, "Progress", MockProgress)
 def test_progress_bar(DummyFlow: Type[flow.Flow]):
     def run_override(self: DummyFlow, initial_state, **kwargs):
         assert (
@@ -307,7 +267,6 @@ def test_progress_bar(DummyFlow: Type[flow.Flow]):
 
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
-@mock.patch.object(flow, "Progress", MockProgress)
 def test_run_tags(
     fs: FakeFilesystem, DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture
 ):

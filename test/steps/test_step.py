@@ -354,6 +354,7 @@ def test_run_subprocess(mock_run):
     step = StepTest(
         config=Config(config_dict),
         state_in=state_in,
+        _no_revalidate_conf=True,
     )
     out_file = "out.txt"
     report_file = "test.rpt"

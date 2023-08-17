@@ -245,6 +245,7 @@ class Step(ABC):
         long_name: Optional[str] = None,
         flow: Optional[Any] = None,
         _config_quiet: bool = False,
+        _no_revalidate_conf: bool = False,
         **kwargs,
     ):
         if self.id == NotImplemented:
@@ -282,16 +283,17 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        config = config._with_increment(
-            self.config_vars,
-            kwargs,
-            _config_quiet,
-        )
-
-        self.config = config.copy_filtered(
-            self.config_vars,
-            include_flow_variables=True,
-        )
+        if _no_revalidate_conf:
+            self.config = config.copy_filtered(
+                self.get_all_config_variables(),
+                include_flow_variables=False,  # get_all_config_variables() gets them anyway
+            )
+        else:
+            self.config = config.with_increment(
+                self.get_all_config_variables(),
+                kwargs,
+                _config_quiet,
+            )
 
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):
@@ -497,17 +499,19 @@ class Step(ABC):
 
     @classmethod
     def get_all_config_variables(Self) -> List[Variable]:
-        flow_variables_by_name: Dict[str, Variable] = {
+        variables_by_name: Dict[str, Variable] = {
             variable.name: variable for variable in universal_flow_config_variables
         }
         for variable in Self.config_vars:
-            if existing_variable := flow_variables_by_name.get(variable.name):
+            if existing_variable := variables_by_name.get(variable.name):
                 if variable != existing_variable:
                     raise StepException(
                         f"Misconstructed step: Unrelated variable exists with the same name as one in the common Flow variables: {variable.name}"
                     )
+            else:
+                variables_by_name[variable.name] = variable
 
-        return list(flow_variables_by_name.values())
+        return list(variables_by_name.values())
 
     def create_reproducible(self, target_dir: str):
         """

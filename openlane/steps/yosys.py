@@ -141,7 +141,6 @@ class YosysStep(TclStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_synth = self.toolbox.remove_cells_from_lib(
             frozenset([str(e) for e in lib_list]),
