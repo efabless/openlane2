@@ -646,7 +646,7 @@ class TapEndcapInsertion(OpenROADStep):
             bool,
             "Enables/disables this step.",
             default=True,
-            deprecated_names=["TAP_DECAP_INSERTION"],
+            deprecated_names=["TAP_DECAP_INSERTION", "RUN_TAP_DECAP_INSERTION"],
         ),
         Variable(
             "FP_TAP_HORIZONTAL_HALO",
