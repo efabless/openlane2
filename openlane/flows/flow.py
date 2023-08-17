@@ -275,7 +275,7 @@ class Flow(ABC):
         if not isinstance(config, Config):
             config, design_dir = Config.load(
                 config_in=config,
-                flow_config_vars=self.get_config_variables(),
+                flow_config_vars=self.get_all_config_variables(),
                 config_override_strings=config_override_strings,
                 pdk=pdk,
                 pdk_root=pdk_root,
@@ -329,7 +329,7 @@ class Flow(ABC):
 
         return result
 
-    def get_config_variables(self) -> List[Variable]:
+    def get_all_config_variables(self) -> List[Variable]:
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
             variable.name: (variable, "Universal")
             for variable in universal_flow_config_variables

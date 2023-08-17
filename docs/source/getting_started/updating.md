@@ -1,5 +1,9 @@
 # Updating OpenLane
 
+## Nix
+Just `git pull`. No, seriously, that's it. Your next `nix-shell` invocation will be using the updated OpenLane.
+
+## Docker/Python
 Run following command to update OpenLane:
 
 ```

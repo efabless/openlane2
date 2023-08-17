@@ -158,7 +158,7 @@ def cloup_flow_opts(
 ) -> Decorator:
     """
     Creates a wrapper that appends a number of OpenLane flow-related flags to a
-    function decorated with `@cloup.command https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command`_.
+    function decorated with @cloup.command (https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command).
 
     The following keyword arguments will be passed to the decorated function.
     * Those postfixed ‡ are compatible with the constructor for :class:`Flow`.

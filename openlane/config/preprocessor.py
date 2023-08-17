@@ -302,7 +302,7 @@ def process_list_recursive(
     ref: List[Any],
     symbols: Dict[str, Any],
     readable_paths: Optional[List[str]],
-    /,
+    *,
     key_path: str = "",
 ):
     for i, value in enumerate(input):
@@ -341,7 +341,7 @@ def process_dict_recursive(
     ref: Dict[str, Any],
     symbols: Dict[str, Any],
     readable_paths: Optional[List[str]],
-    /,
+    *,
     key_path: str = "",
 ):
     for key, value in input.items():

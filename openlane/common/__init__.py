@@ -43,7 +43,6 @@ from .misc import (
     Path,
     zip_first,
 )
-from .memoize import memoize
 from .toolbox import Toolbox
 from .drc import DRC, Violation
 

@@ -37,7 +37,11 @@ from typing import (
     Type,
 )
 
-from ..config import Config, Variable, universal_flow_config_variables
+from ..config import (
+    Config,
+    Variable,
+    universal_flow_config_variables,
+)
 from ..state import State, InvalidState, StateElement
 from ..common import (
     GenericImmutableDict,
@@ -240,6 +244,8 @@ class Step(ABC):
         name: Optional[str] = None,
         long_name: Optional[str] = None,
         flow: Optional[Any] = None,
+        _config_quiet: bool = False,
+        _no_revalidate_conf: bool = False,
         **kwargs,
     ):
         if self.id == NotImplemented:
@@ -277,30 +283,17 @@ class Step(ABC):
         elif not hasattr(self, "long_name"):
             self.long_name = self.name
 
-        if Config.current_interactive:
-            mutable = Config(**kwargs.copy())
-            overrides, warnings, errors = mutable.__process_variable_list(
-                [],
-                self.config_vars,
+        if _no_revalidate_conf:
+            self.config = config.copy_filtered(
+                self.get_all_config_variables(),
+                include_flow_variables=False,  # get_all_config_variables() gets them anyway
             )
-            config = config.copy(**overrides)
-            for warning in warnings:
-                warn(warning)
-            if len(errors) != 0:
-                err(f"Errors while processing inputs for {self.name}:")
-                for error in errors:
-                    err(error)
-                raise StepException("Failed to handle one or more kwarg variables.")
-        elif len(kwargs) != 0:
-            raise StepException(
-                "Variables may not be passed as keyword arguments unless the Config object is per-step."
+        else:
+            self.config = config.with_increment(
+                self.get_all_config_variables(),
+                kwargs,
+                _config_quiet,
             )
-
-        self.config = config.copy_filtered(
-            self.config_vars,
-            include_pdk_variables=True,
-            include_common_variables=True,
-        )
 
         state_in_future: Future[State] = Future()
         if isinstance(state_in, State):
@@ -326,7 +319,12 @@ class Step(ABC):
         return Self.__name__
 
     @classmethod
-    def get_help_md(Self, docstring_override: str = ""):  # pragma: no cover
+    def get_help_md(
+        Self,
+        *,
+        docstring_override: str = "",
+        use_dropdown: bool = False,
+    ):  # pragma: no cover
         """
         Renders Markdown help for this step to a string.
         """
@@ -336,15 +334,12 @@ class Step(ABC):
 
         result = (
             textwrap.dedent(
-                f"""\
-                ### <a name="{Self.id}"></a> {Self.__get_desc()}
-
+                f"""
                 ```{{eval-rst}}
                 %s
                 ```
 
-                #### Importing
-
+                {':::{dropdown} Importing' if use_dropdown else '#### Importing'}
                 ```python
                 from {Self.__module__} import {Self.__name__}
 
@@ -354,6 +349,7 @@ class Step(ABC):
 
                 {Self.__name__} = Step.factory.get("{Self.id}")
                 ```
+                {':::' if use_dropdown else ''}
                 """
             )
             % doc_string
@@ -392,7 +388,19 @@ class Step(ABC):
             )
             for var in Self.config_vars:
                 units = var.units or ""
-                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}` | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
+                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+
+        result = (
+            textwrap.dedent(
+                f"""
+                ### {Self.__get_desc()}
+                
+                <a name="{Self.id}"></a>
+                """
+            )
+            + result
+        )
 
         return result
 
@@ -481,7 +489,7 @@ class Step(ABC):
         """
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read()),
-            flow_config_vars=universal_flow_config_variables + Self.config_vars,
+            flow_config_vars=Self.get_all_config_variables(),
             design_dir=".",
             pdk_root=pdk_root,
             _load_pdk_configs=False,
@@ -489,14 +497,32 @@ class Step(ABC):
         state_in = State.loads(open(state_in_path).read())
         return Self(config=config, state_in=state_in)
 
+    @classmethod
+    def get_all_config_variables(Self) -> List[Variable]:
+        variables_by_name: Dict[str, Variable] = {
+            variable.name: variable for variable in universal_flow_config_variables
+        }
+        for variable in Self.config_vars:
+            if existing_variable := variables_by_name.get(variable.name):
+                if variable != existing_variable:
+                    raise StepException(
+                        f"Misconstructed step: Unrelated variable exists with the same name as one in the common Flow variables: {variable.name}"
+                    )
+            else:
+                variables_by_name[variable.name] = variable
+
+        return list(variables_by_name.values())
+
     def create_reproducible(self, target_dir: str):
         """
         Creates a folder that, given a specific version of OpenLane being
         installed, makes a portable reproducible of that step's execution.
 
-        * Reproducibles are limited on Magic and Netgen, as their RC files
-        form an indirect dependency on many `.mag` files or similar that cannot
-        be enumerated by OpenLane.
+        ..note
+
+            Reproducibles are limited on Magic and Netgen, as their RC files
+            form an indirect dependency on many `.mag` files or similar that
+            cannot be enumerated by OpenLane.
 
         Reproducibles are automatically generated for failed steps, but
         this may be called manually on any step, too.

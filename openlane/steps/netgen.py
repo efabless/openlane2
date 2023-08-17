@@ -21,9 +21,9 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..logging import info
 from ..config import Variable, Keys
 from ..state import DesignFormat, State
+from ..common import Path
 
 
 def get_metrics(stats: Dict) -> Dict:
@@ -98,6 +98,16 @@ class NetgenStep(TclStep):
     inputs = []
     outputs = []
 
+    config_vars = [
+        Variable(
+            "NETGEN_SETUP",
+            Path,
+            "A path to the setup file for Netgen used to configure LVS. If set to None, this PDK will not support Netgen-based steps.",
+            deprecated_names=["NETGEN_SETUP_FILE"],
+            pdk=True,
+        ),
+    ]
+
     @abstractmethod
     def get_script_path(self):
         pass
@@ -122,7 +132,7 @@ class LVS(NetgenStep):
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
     flow_control_variable = "RUN_LVS"
 
-    config_vars = [
+    config_vars = NetgenStep.config_vars + [
         Variable(
             "RUN_LVS",
             bool,
@@ -138,10 +148,6 @@ class LVS(NetgenStep):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config["NETGEN_SETUP"] is None:
-            info(f"Skipping {self.name}: Netgen is not supported for this PDK.")
-            return Step.run(self, state_in, **kwargs)
-
         spice_glob = os.path.join(
             self.config[Keys.pdk_root],
             self.config[Keys.pdk],

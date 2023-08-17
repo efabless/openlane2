@@ -66,6 +66,7 @@ pdn_variables = [
         "The offset of the vertical power stripes on the metal layer 4 in the power distribution network.",
         default=16.32,
         units="µm",
+        pdk=True,
     ),
     Variable(
         "FP_PDN_VPITCH",
@@ -73,6 +74,7 @@ pdn_variables = [
         "The pitch of the vertical power stripes on the metal layer 4 in the power distribution network.",
         default=153.6,
         units="µm",
+        pdk=True,
     ),
     Variable(
         "FP_PDN_HOFFSET",
@@ -80,6 +82,7 @@ pdn_variables = [
         "The offset of the horizontal power stripes on the metal layer 5 in the power distribution network.",
         default=16.65,
         units="µm",
+        pdk=True,
     ),
     Variable(
         "FP_PDN_HPITCH",
@@ -87,6 +90,7 @@ pdn_variables = [
         "The pitch of the horizontal power stripes on the metal layer 5 in the power distribution network.",
         default=153.18,
         units="µm",
+        pdk=True,
     ),
     Variable(
         "FP_PDN_AUTO_ADJUST",

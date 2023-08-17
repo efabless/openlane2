@@ -65,5 +65,5 @@ https://docs.docker.com/get-started/
 
 ```{include} docker_no_root.md
 ```
-```{include} installation_common_section.md
+```{include} _common.md
 ```

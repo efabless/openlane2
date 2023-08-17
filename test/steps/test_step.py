@@ -17,6 +17,8 @@ from typing import Tuple
 
 import pytest
 
+from openlane.steps import step
+
 mock_variables = pytest.mock_variables
 
 
@@ -31,8 +33,6 @@ def mock_run():
 
 
 # ---
-
-
 def test_step_init_empty():
     from openlane.steps import Step
 
@@ -106,7 +106,7 @@ def test_step_missing_state_in(mock_run):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_create(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.state import DesignFormat, State
@@ -129,7 +129,7 @@ def test_step_create(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_mock_run(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.state import DesignFormat, State
@@ -158,7 +158,7 @@ def test_mock_run(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_start_missing_toolbox(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.state import DesignFormat, State
@@ -181,7 +181,7 @@ def test_step_start_missing_toolbox(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_start_missing_step_dir(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.common import Toolbox
@@ -205,7 +205,7 @@ def test_step_start_missing_step_dir(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_start_invalid_state(mock_run, mock_config):
     from openlane.common import Toolbox
     from openlane.steps import Step, StepException
@@ -229,7 +229,7 @@ def test_step_start_invalid_state(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_start(mock_config):
     from openlane.common import Path
     from openlane.common import Toolbox
@@ -272,7 +272,7 @@ def test_step_start(mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_longname(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.state import DesignFormat, State
@@ -293,7 +293,7 @@ def test_step_longname(mock_run, mock_config):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables()
+@mock_variables([step])
 def test_step_factory(mock_run):
     from openlane.steps import Step
 
@@ -313,8 +313,10 @@ def test_step_factory(mock_run):
     ), "Wrong type registered by StepFactor"
 
 
+# Do NOT use the Fake FS for this test.
+# The Configuration should NOT be re-validated.
 @pytest.mark.usefixtures("_chdir_tmp")
-@mock_variables()
+@mock_variables([step])
 def test_run_subprocess(mock_run):
     import subprocess
     from openlane.steps import Step
@@ -336,6 +338,7 @@ def test_run_subprocess(mock_run):
         "DESIGN_NAME": "whatever",
         "DESIGN_DIR": dir,
         "EXAMPLE_PDK_VAR": "bla",
+        "PDK_ROOT": "/pdk",
         "PDK": "dummy",
         "STD_CELL_LIBRARY": "dummy_scl",
         "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
@@ -351,6 +354,7 @@ def test_run_subprocess(mock_run):
     step = StepTest(
         config=Config(config_dict),
         state_in=state_in,
+        _no_revalidate_conf=True,
     )
     out_file = "out.txt"
     report_file = "test.rpt"

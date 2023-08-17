@@ -54,8 +54,89 @@ def get_lef_args(config: Config, toolbox: Toolbox) -> List[str]:
     return lef_args
 
 
+class KLayoutStep(Step):
+    config_vars = [
+        Variable(
+            "KLAYOUT_TECH",
+            Path,
+            "A path to the KLayout layer technology (.lyt) file.",
+            pdk=True,
+        ),
+        Variable(
+            "KLAYOUT_PROPERTIES",
+            Path,
+            "A path to the KLayout layer properties (.lyp) file.",
+            pdk=True,
+        ),
+        Variable(
+            "KLAYOUT_DEF_LAYER_MAP",
+            Path,
+            "A path to the KLayout LEF/DEF layer mapping (.map) file.",
+            pdk=True,
+        ),
+    ]
+
+
 @Step.factory.register()
-class StreamOut(Step):
+class Render(KLayoutStep):
+    """
+    Renders a PNG of the layout using KLayout.
+
+    DEF is required as an input, but if a GDS-II view
+    exists in the input state, it will be used instead.
+    """
+
+    id = "KLayout.Render"
+    name = "Render Image (w/ KLayout)"
+
+    inputs = [DesignFormat.DEF]
+    outputs = []
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        input_view = state_in[DesignFormat.DEF]
+        if gds := state_in[DesignFormat.GDS]:
+            input_view = gds
+
+        lyp = self.config["KLAYOUT_PROPERTIES"]
+        lyt = self.config["KLAYOUT_TECH"]
+        lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
+
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepError(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lef_arguments = ["-l", str(tech_lefs[0])]
+        for file in self.config["CELL_LEFS"]:
+            lef_arguments += ["-l", str(file)]
+        if extra := self.config["EXTRA_LEFS"]:
+            for file in extra:
+                lef_arguments += ["-l", str(file)]
+
+        self.run_subprocess(
+            [
+                sys.executable,
+                os.path.join(get_script_dir(), "klayout", "render.py"),
+                input_view,
+                "--output",
+                os.path.join(self.step_dir, "out.png"),
+                "--lyp",
+                lyp,
+                "--lyt",
+                lyt,
+                "--lym",
+                lym,
+            ]
+            + lef_arguments,
+            silent=True,
+        )
+
+        return {}, {}
+
+
+@Step.factory.register()
+class StreamOut(KLayoutStep):
     """
     Converts DEF views into GDSII streams using KLayout.
 
@@ -74,7 +155,7 @@ class StreamOut(Step):
     inputs = [DesignFormat.DEF]
     outputs = [DesignFormat.GDS, DesignFormat.KLAYOUT_GDS]
 
-    config_vars = [
+    config_vars = KLayoutStep.config_vars + [
         Variable(
             "RUN_KLAYOUT_STREAMOUT",
             bool,
@@ -89,7 +170,7 @@ class StreamOut(Step):
         lyt = self.config["KLAYOUT_TECH"]
         lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
         if None in [lyp, lyt, lym]:
-            if self.config["PRIMARY_SIGNOFF_TOOL"].value == "klayout":
+            if self.config["PRIMARY_SIGNOFF_TOOL"] == "klayout":
                 raise StepError(
                     "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset, yet, KLayout is set as the primary sign-off tool."
                 )
@@ -147,7 +228,7 @@ class StreamOut(Step):
 
         views_updates[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
 
-        if self.config["PRIMARY_SIGNOFF_TOOL"].value == "klayout":
+        if self.config["PRIMARY_SIGNOFF_TOOL"] == "klayout":
             views_updates[DesignFormat.GDS] = views_updates[DesignFormat.KLAYOUT_GDS]
 
         return views_updates, {}
@@ -157,9 +238,7 @@ class StreamOut(Step):
             return None
         assert self.toolbox is not None
 
-        if image := self.toolbox.render_png(
-            self.config, str(self.state_out["klayout_gds"])
-        ):
+        if image := self.toolbox.render_png(self.config, self.state_out):
             image_encoded = b64encode(image).decode("utf8")
             return f'<img src="data:image/png;base64,{image_encoded}" />'
 
@@ -167,7 +246,7 @@ class StreamOut(Step):
 
 
 @Step.factory.register()
-class XOR(Step):
+class XOR(KLayoutStep):
     """
     Performs an XOR operation on the Magic and KLayout GDS views. The idea is:
     if there's any difference between the GDSII streams between the two tools,
@@ -184,7 +263,7 @@ class XOR(Step):
     ]
     outputs = []
 
-    config_vars = [
+    config_vars = KLayoutStep.config_vars + [
         Variable(
             "RUN_KLAYOUT_XOR",
             bool,
@@ -196,6 +275,12 @@ class XOR(Step):
             int,
             "Specifies number of threads used in the KLayout XOR check.",
             default=1,
+        ),
+        Variable(
+            "KLAYOUT_XOR_IGNORE_LAYERS",
+            Optional[List[str]],
+            "KLayout layers to ignore during XOR operations.",
+            pdk=True,
         ),
     ]
 
@@ -243,7 +328,44 @@ class XOR(Step):
 
 
 @Step.factory.register()
-class OpenGUI(Step):
+class DRC(KLayoutStep):
+    id = "KLayout.DRC"
+    name = "Design Rule Check (KLayout)"
+
+    inputs = [
+        DesignFormat.GDS,
+    ]
+    outputs = []
+
+    flow_control_variable = "RUN_KLAYOUT_DRC"
+
+    config_vars = KLayoutStep.config_vars + [
+        Variable(
+            "RUN_KLAYOUT_DRC",
+            bool,
+            "Enables running KLayout DRC on GDSII produced by magic.",
+            default=False,
+        ),
+        Variable(
+            "KLAYOUT_DRC_TECH_SCRIPT",
+            Path,
+            "A path to a KLayout DRC tech script.",
+            pdk=True,
+        ),
+        Variable(
+            "KLAYOUT_DRC_KLAYOUT_GDS",
+            bool,
+            "Prioritizes the KLayout GDS-II stream (if it exists) over the one generated by the primary signoff tool.",
+            default=False,
+        ),
+    ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        raise NotImplementedError()
+
+
+@Step.factory.register()
+class OpenGUI(KLayoutStep):
     """
     Opens the DEF view in the KLayout GUI, with layers loaded and mapped
     properly. Useful to inspect ``.klayout.xml`` database files and the like.
