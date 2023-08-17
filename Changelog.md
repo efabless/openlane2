@@ -1,9 +1,13 @@
+# 2.0.0-b6
+
+* Added `Odb.ApplyDEFTemplate` to `Classic` Flow
+* Added `RUN_TAP_DECAP_INSERTION` as a deprecated name for `RUN_TAP_ENDCAP_INSERTION`
+
 # 2.0.0-b5
 
 * Added `refg::` to documentation
 * Fixed issue where "worst clock skew" metrics were aggregated incorrectly
 * Fixed issue with referencing files outside the design directory
-
 
 # 2.0.0-b4
 
