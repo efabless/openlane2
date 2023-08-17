@@ -439,7 +439,7 @@ class Variable:
         elif is_dataclass(validating_type):
             if isinstance(value, validating_type):
                 # Do not validate further
-                return value  
+                return value
 
             raw = value
             if not isinstance(raw, dict):
