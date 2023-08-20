@@ -73,11 +73,11 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
     "timing__setup_vio__count": (0, lambda x: sum(x)),
     "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
-    "clock__max_slew_violation__count": (0, lambda x: sum(x)),
+    "design__max_slew_violation__count": (0, lambda x: sum(x)),
     "design__max_fanout_violation__count": (0, lambda x: sum(x)),
     "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (inf, max),
-    "clock__skew__worst_setup": (inf, max),
+    "clock__skew__worst_hold": (-inf, max),
+    "clock__skew__worst_setup": (-inf, max),
     "timing__hold__ws": (inf, min),
     "timing__setup__ws": (inf, min),
     "timing__hold__wns": (inf, min),
@@ -458,7 +458,7 @@ class STAPostPNR(STAPrePNR):
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
-                "clock__max_slew_violation__count",
+                "design__max_slew_violation__count",
             ]:
                 row.append(
                     format_count(

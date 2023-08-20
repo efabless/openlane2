@@ -1,3 +1,9 @@
+# 2.0.0-b8
+
+* Rename incorrectly-named metric rename `clock__max_slew_violation__count` to
+  `design__max_slew_violation__count`
+* Fix clock skew metric aggregation by using `-inf` instead of `inf`
+
 # 2.0.0-b7
 
 * Internally reworked `Config` module
