@@ -42,7 +42,7 @@ from .common_variables import (
 
 from ..config import Variable
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, console, verbose
+from ..logging import debug, err, info, warn, verbose
 from ..common import (
     Path,
     TclUtils,

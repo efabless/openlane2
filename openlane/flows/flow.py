@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import glob
+import logging
 import datetime
 import textwrap
 from abc import abstractmethod, ABC
@@ -50,7 +51,13 @@ from ..config import (
 )
 from ..state import State
 from ..steps import Step
-from ..logging import console, info, verbose
+from ..logging import (
+    console,
+    info,
+    verbose,
+    register_additional_handler,
+    deregister_additional_handler,
+)
 from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
 
 
@@ -466,6 +473,16 @@ class Flow(ABC):
             info(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
             mkdirp(self.run_dir)
 
+        warning_log_path = os.path.join(self.run_dir, "warnings.log")
+        warning_handler = logging.FileHandler(warning_log_path, mode="a+")
+        warning_handler.setLevel("WARNING")
+        register_additional_handler(warning_handler)
+
+        error_log_path = os.path.join(self.run_dir, "errors.log")
+        error_handler = logging.FileHandler(error_log_path, mode="a+")
+        error_handler.setLevel("ERROR")
+        register_additional_handler(error_handler)
+
         config_res_path = os.path.join(self.run_dir, "resolved.json")
         with open(config_res_path, "w") as f:
             f.write(self.config.dumps())
@@ -480,6 +497,9 @@ class Flow(ABC):
             **kwargs,
         )
         self.progress_bar.end()
+
+        deregister_additional_handler(warning_handler)
+        deregister_additional_handler(error_handler)
 
         # Stored until next start()
         self.step_objects = step_objects
