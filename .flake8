@@ -16,7 +16,7 @@ exclude =
     build/,
     pdk/,
     venv/,
-    openlane/__init__.py,
-    openlane/**/__init__.py,
     test/designs/*.py,
     examples
+per-file-ignores =
+    */__init__.py:F401

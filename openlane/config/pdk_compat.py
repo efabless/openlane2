@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+from glob import glob
 from typing import Any, List, Mapping, Dict
 
 
@@ -136,7 +137,19 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["TIME_DERATING_CONSTRAINT"] = 5
     new["IO_DELAY_CONSTRAINT"] = 20
 
-    # 8. Primary Signoff Tool
+    # 8. SPICE models
+    if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
+        spice_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "spice",
+            "*.spice",
+        )
+        new["CELL_SPICE_MODELS"] = glob(spice_glob)
+
+    # 9. Primary Signoff Tool
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         new["PRIMARY_SIGNOFF_TOOL"] = "magic"
 
