@@ -73,7 +73,7 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
       - name: Derivation to Cache
         uses: ./.github/actions/derivation_to_cache
@@ -91,7 +91,7 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
   build-py:
@@ -122,12 +122,12 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
@@ -159,12 +159,12 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Cache PDKs
         id: cache-pdks
         uses: actions/cache@v3
