@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
+from decimal import Decimal
 
 import os
 import time
@@ -488,14 +489,18 @@ class Step(ABC):
         :returns: The created step object
         """
         config, _ = Config.load(
-            config_in=json.loads(open(config_path).read()),
+            config_in=json.loads(open(config_path).read(), parse_float=Decimal),
             flow_config_vars=Self.get_all_config_variables(),
             design_dir=".",
             pdk_root=pdk_root,
             _load_pdk_configs=False,
         )
         state_in = State.loads(open(state_in_path).read())
-        return Self(config=config, state_in=state_in)
+        return Self(
+            config=config,
+            state_in=state_in,
+            _no_revalidate_conf=True,
+        )
 
     @classmethod
     def get_all_config_variables(Self) -> List[Variable]:

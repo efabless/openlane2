@@ -15,6 +15,7 @@ import os
 import re
 import io
 import json
+from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Optional, Tuple
 
@@ -322,7 +323,7 @@ class Synthesis(YosysStep):
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
-        stats = json.loads(stats_str)
+        stats = json.loads(stats_str, parse_float=Decimal)
 
         metric_updates = {}
         metric_updates["design__instance__count"] = stats["design"]["num_cells"]

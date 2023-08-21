@@ -44,6 +44,7 @@ jobs:
           key: cache-pdks-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable PDKs
         run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
   lint:
@@ -66,6 +67,9 @@ jobs:
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -81,6 +85,9 @@ jobs:
     name: Build (Nix on macOS/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:

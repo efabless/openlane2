@@ -15,6 +15,7 @@ import os
 import re
 import glob
 import json
+from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Dict, Tuple
 
@@ -178,14 +179,14 @@ class LVS(NetgenStep):
                 )
 
             print(
-                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {os.path.abspath(self.step_dir)}/lvs.rpt -json",
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {self.step_dir}/lvs.rpt -json",
                 file=f,
             )
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         stats_file = os.path.join(self.step_dir, "lvs.json")
         stats_string = open(stats_file).read()
-        lvs_metrics = get_metrics(json.loads(stats_string))
+        lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
         metrics_updates.update(lvs_metrics)
 
         return (views_updates, metrics_updates)
