@@ -580,20 +580,25 @@ class Step(ABC):
         with open(state_path, "w") as f:
             f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))
 
-        # 3. Runner
-        script_path = os.path.join(target_dir, "run.sh")
+        # 3. Runner (OpenLane)
+        script_path = os.path.join(target_dir, "run_ol.sh")
         with open(script_path, "w") as f:
             f.write(
                 textwrap.dedent(
                     """
                     #!/bin/sh
                     set -e
-                    version="$(python3 -m openlane --bare-version)"
+                    python3 -m openlane --version
                     if [ "$?" != "0" ]; then
-                        echo "Failed to run 'python3 -m openlane --bare-version'."
+                        echo "Failed to run 'python3 -m openlane --version'."
                         exit -1
                     fi
-                    python3 -m openlane.steps run\\
+
+                    command=run
+                    if [ "$1" == "eject" ]; then
+                        command=eject
+                    fi
+                    python3 -m openlane.steps $command\\
                         --config ./config.json\\
                         --state-in ./state_in.json
                     """
