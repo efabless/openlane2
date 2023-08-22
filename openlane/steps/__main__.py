@@ -14,6 +14,7 @@
 import os
 import json
 import shlex
+import shutil
 import datetime
 from functools import partial
 from typing import Any, Dict, Optional, Sequence, Union
@@ -27,10 +28,10 @@ from cloup import (
 )
 
 from .step import Step, StepError, StepException
-from ..common import mkdirp, Toolbox
 from ..logging import info, err, warn
 from ..__version__ import __version__
 from ..common.cli import formatter_settings
+from ..common import mkdirp, Toolbox, get_openlane_root
 
 
 def extract_step_id(ctx: Context, json_in_path: str) -> Optional[str]:
@@ -207,7 +208,7 @@ def eject(ctx, output, state_in, config, id):
             "OpenLane version being used is different from the version this step was originally run with. Procceed with caution."
         )
 
-    toolbox_dir = os.path.join(output, "toolbox_tmp")
+    toolbox_dir = os.path.join(".", "toolbox_tmp")
 
     found_cmd: Optional[Sequence[Union[str, os.PathLike]]] = None
     found_env: Optional[Dict[str, Any]] = None
@@ -246,14 +247,24 @@ def eject(ctx, output, state_in, config, id):
         )
         exit(-1)
 
+    canon_scripts_dir = os.path.join(get_openlane_root(), "scripts")
+    target_scripts_dir = os.path.join(".", "scripts")
+
+    try:
+        shutil.rmtree(target_scripts_dir)
+    except FileNotFoundError:
+        pass
+
+    shutil.copytree(canon_scripts_dir, target_scripts_dir)
+
     current_env = os.environ
-    filtered_env = {}
+    filtered_env = {
+        "STEP_DIR": ".",
+        "SCRIPTS_DIR": target_scripts_dir,
+    }
     if found_env is not None:
         for key, value in found_env.items():
-            if value != current_env.get(key) and value not in [
-                "STEP_DIR",
-                "SCRIPTS_DIR",
-            ]:
+            if value != current_env.get(key) and key not in filtered_env:
                 filtered_env[key] = value
 
     with open(output, "w", encoding="utf8") as f:
