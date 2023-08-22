@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import re
-import glob
 import json
 from decimal import Decimal
 from abc import abstractmethod
@@ -22,9 +21,10 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..config import Variable, Keys
-from ..state import DesignFormat, State
 from ..common import Path
+from ..logging import warn
+from ..config import Variable
+from ..state import DesignFormat, State
 
 
 def get_metrics(stats: Dict) -> Dict:
@@ -149,15 +149,13 @@ class LVS(NetgenStep):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        spice_glob = os.path.join(
-            self.config[Keys.pdk_root],
-            self.config[Keys.pdk],
-            "libs.ref",
-            self.config[Keys.scl],
-            "spice",
-            "*.spice",
-        )
-        spice_files: List[str] = glob.glob(spice_glob)
+        spice_files = []
+        if self.config["CELL_SPICE_MODELS"] is None:
+            warn(
+                "This PDK does not appear to define any SPICE models. LVS will still run, but all cells will be black-boxed and the result may be inaccurate."
+            )
+        else:
+            spice_files = self.config["CELL_SPICE_MODELS"].copy()
 
         if pdk_spice_files := self.config.get("SPICE_MODELS"):
             spice_files = pdk_spice_files.copy()

@@ -52,20 +52,6 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
-        "CELL_LEFS",
-        List[Path],
-        "Path(s) to the cell LEF file(s).",
-        deprecated_names=["CELLS_LEF"],
-        pdk=True,
-    ),
-    Variable(
-        "CELL_GDS",
-        List[Path],
-        "Path(s) to the cell GDSII file(s).",
-        deprecated_names=["GDS_FILES", "CELLS_GDS"],
-        pdk=True,
-    ),
-    Variable(
         "GPIO_PADS_LEF",
         Optional[List[Path]],
         "Path(s) to GPIO pad LEF file(s).",
@@ -261,6 +247,26 @@ scl_variables = [
         "LIB",
         Dict[str, List[Path]],
         "A map from corner patterns to a list of associated liberty files. Exactly one entry must match the `DEFAULT_CORNER`.",
+        pdk=True,
+    ),
+    Variable(
+        "CELL_LEFS",
+        List[Path],
+        "Path(s) to the cells' LEF file(s).",
+        deprecated_names=["CELLS_LEF"],
+        pdk=True,
+    ),
+    Variable(
+        "CELL_GDS",
+        List[Path],
+        "Path(s) to the cells' GDSII file(s).",
+        deprecated_names=["GDS_FILES", "CELLS_GDS"],
+        pdk=True,
+    ),
+    Variable(
+        "CELL_SPICE_MODELS",
+        Optional[List[Path]],
+        "Path(s) to cells' SPICE model(s)",
         pdk=True,
     ),
     Variable(
@@ -572,7 +578,7 @@ option_variables = [
     Variable(
         "EXTRA_SPICE_MODELS",
         Optional[List[Path]],
-        "Miscellaneous SPICE files .",
+        "Specifies miscellaneous SPICE models to be loaded indiscriminately whenever SPICE models are loaded.",
     ),
     Variable(
         "EXTRA_LIBS",
