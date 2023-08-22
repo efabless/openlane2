@@ -63,7 +63,7 @@ def get_opdks_rev() -> str:
     """
     return open(
         os.path.join(get_openlane_root(), "open_pdks_rev"), encoding="utf8"
-    ).read()
+    ).read().strip()
 
 
 # The following code snippet has been adapted under the following license:
