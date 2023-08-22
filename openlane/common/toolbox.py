@@ -50,7 +50,7 @@ class Toolbox(object):
     """
 
     def __init__(self, tmp_dir: str) -> None:
-        self.tmp_dir = os.path.abspath(tmp_dir)
+        self.tmp_dir = tmp_dir
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
 
     @deprecated(

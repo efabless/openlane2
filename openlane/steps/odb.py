@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import re
-import sys
 import json
 import shutil
 from math import inf
@@ -27,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..logging import warn
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
-from ..common import Path, get_openlane_root, get_script_dir, StringEnum
+from ..common import Path, get_script_dir, StringEnum
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -52,9 +51,6 @@ class OdbpyStep(Step):
         command += [
             str(state_in[DesignFormat.ODB]),
         ]
-
-        env["OPENLANE_ROOT"] = get_openlane_root()
-        env["ODB_PYTHONPATH"] = ":".join(sys.path)
 
         generated_metrics = self.run_subprocess(
             command,

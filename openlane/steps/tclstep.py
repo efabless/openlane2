@@ -125,7 +125,7 @@ class TclStep(Step):
         """
         env = env.copy()
 
-        env["SCRIPTS_DIR"] = get_script_dir()
+        env["SCRIPTS_DIR"] = os.path.abspath(get_script_dir())
         env["STEP_DIR"] = os.path.abspath(self.step_dir)
 
         tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])

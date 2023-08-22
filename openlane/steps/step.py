@@ -563,9 +563,6 @@ class Step(ABC):
             "step": self.__class__.id,
         }
 
-        # pdk_root = dumpable_config["PDK_ROOT"]
-        # pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
-        # dumpable_config["PDK_ROOT"] = pdk_root_resolved
         del dumpable_config["PDK_ROOT"]
 
         config_path = os.path.join(target_dir, "config.json")
