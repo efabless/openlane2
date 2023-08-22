@@ -90,9 +90,16 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
-        "WIRE_RC_LAYER",
+        "DATA_WIRE_RC_LAYER",
         Optional[str],
-        "A metal layer with which to estimate parasitics in earlier stages of the flow.",
+        "A metal layer with which to estimate parasitics for data nets in earlier stages of the flow.",
+        pdk=True,
+        deprecated_names=["WIRE_RC_LAYER"],
+    ),
+    Variable(
+        "CLOCK_WIRE_RC_LAYER",
+        Optional[str],
+        "A metal layer with which to estimate parasitics for clock nets in earlier stages of the flow.",
         pdk=True,
     ),
     Variable(
