@@ -26,6 +26,8 @@ from .logger import (
     set_log_level,
     reset_log_level,
     get_log_level,
+    register_additional_handler,
+    deregister_additional_handler,
     verbose,
     debug,
     info,

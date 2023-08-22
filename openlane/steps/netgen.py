@@ -13,16 +13,17 @@
 # limitations under the License.
 import os
 import re
-import glob
 import json
+from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Dict, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..logging import info
-from ..config import Variable, Keys
+from ..common import Path
+from ..logging import warn
+from ..config import Variable
 from ..state import DesignFormat, State
 
 
@@ -98,6 +99,16 @@ class NetgenStep(TclStep):
     inputs = []
     outputs = []
 
+    config_vars = [
+        Variable(
+            "NETGEN_SETUP",
+            Path,
+            "A path to the setup file for Netgen used to configure LVS. If set to None, this PDK will not support Netgen-based steps.",
+            deprecated_names=["NETGEN_SETUP_FILE"],
+            pdk=True,
+        ),
+    ]
+
     @abstractmethod
     def get_script_path(self):
         pass
@@ -122,7 +133,7 @@ class LVS(NetgenStep):
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
     flow_control_variable = "RUN_LVS"
 
-    config_vars = [
+    config_vars = NetgenStep.config_vars + [
         Variable(
             "RUN_LVS",
             bool,
@@ -138,19 +149,13 @@ class LVS(NetgenStep):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config["NETGEN_SETUP"] is None:
-            info(f"Skipping {self.name}: Netgen is not supported for this PDK.")
-            return Step.run(self, state_in, **kwargs)
-
-        spice_glob = os.path.join(
-            self.config[Keys.pdk_root],
-            self.config[Keys.pdk],
-            "libs.ref",
-            self.config[Keys.scl],
-            "spice",
-            "*.spice",
-        )
-        spice_files: List[str] = glob.glob(spice_glob)
+        spice_files = []
+        if self.config["CELL_SPICE_MODELS"] is None:
+            warn(
+                "This PDK does not appear to define any SPICE models. LVS will still run, but all cells will be black-boxed and the result may be inaccurate."
+            )
+        else:
+            spice_files = self.config["CELL_SPICE_MODELS"].copy()
 
         if pdk_spice_files := self.config.get("SPICE_MODELS"):
             spice_files = pdk_spice_files.copy()
@@ -172,14 +177,14 @@ class LVS(NetgenStep):
                 )
 
             print(
-                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {os.path.abspath(self.step_dir)}/lvs.rpt -json",
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {self.step_dir}/lvs.rpt -json",
                 file=f,
             )
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         stats_file = os.path.join(self.step_dir, "lvs.json")
         stats_string = open(stats_file).read()
-        lvs_metrics = get_metrics(json.loads(stats_string))
+        lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
         metrics_updates.update(lvs_metrics)
 
         return (views_updates, metrics_updates)

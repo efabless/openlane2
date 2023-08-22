@@ -1,7 +1,61 @@
-* Updated OpenROAD to `36bd481`: **There is an API break in OpenDB APIs**:
-    - `odb.read_def` now takes a `dbTech` and a Path string instead of a `dbDatabase` and a Path string.
-    - The `dbTech` object can be obtained via the `getTech` method on `dbDatabase` objects: `db.getTech()`, for example.
-* Updated Volare to `0.11.0`
+# 2.0.0-b8
+
+* Rename incorrectly-named metric rename `clock__max_slew_violation__count` to
+  `design__max_slew_violation__count`
+* Fix clock skew metric aggregation by using `-inf` instead of `inf`
+
+# 2.0.0-b7
+
+* Internally reworked `Config` module
+  * `Variable` objects now have a boolean property, `.pdk`, which is set to
+    `True` if the variable is expected to be provided by the PDK
+  * List of common flow variables now incorporate both option config variables
+    *and* PDK config variables, with the aforementioned flag used to tell
+    them apart.
+  * Individual `Step`s may now freely declare PDK variable, with the implication
+    that if a `Flow` or one of its constituent `Step`s has one or more variables
+    not declared by the current PDK, the `Step` (and `Flow`) are incompatible
+    with the PDK.
+  * Mutable data structures are used during the construction of `Config` to avoid
+    constant copying of immutable dictionaries
+    * Multiple private instance methods converted to private `classmethod`s to
+    deal with mutable data structures instead of constantly making `Config`
+    copies
+  * Getting raw values from the PDK memoized to avoid having to call the Tcl
+    interpreter repeatedly
+  * All `Step` objects, not just those used with an interactive configuration,
+    can now be given overrides upon construction using keyword arguments.
+* A number of previously-universal PDK variables are now declared by the `Step`s
+  and made non-optional, i.e., the `Step` can expect them to be declared by the
+  PDK if the configuration is successfully validated.
+* `PDK`, `PDK_ROOT` are no longer considered "PDK" variables as PDK variables
+  depend on them
+* `PRIMARY_SIGNOFF_TOOL` now a PDK variable and a string so OpenLane is not
+  limited to two signoff tools
+* `Toolbox.render_png()` now relies on a new `Step` called `KLayout.Render`
+* `Config.interactive()` fixed, new Nix-based Colab notebook to be uploaded
+  Soon™
+* Assorted documentation updates and bugfixes
+
+# 2.0.0-b6
+
+* Added `Odb.ApplyDEFTemplate` to `Classic` Flow
+* Added `RUN_TAP_DECAP_INSERTION` as a deprecated name for `RUN_TAP_ENDCAP_INSERTION`
+
+# 2.0.0-b5
+
+* Added `refg::` to documentation
+* Fixed issue where "worst clock skew" metrics were aggregated incorrectly
+* Fixed issue with referencing files outside the design directory
+
+# 2.0.0-b4
+
+* Updated documentation for `run_subprocess`
+* Updated Volare to `0.11.2`
+* Fixed a bug with `Toolbox` method memoization
+* Unknown key errors only emit a warning now if the key is used as a Variable's
+  name *anywhere* linked to OpenLane. This allows using the same config file
+  with multiple flows without errors.
 
 # 2.0.0-b3
 
@@ -48,7 +102,7 @@
   * Logging rewritten to use Python logger with rich handler, the latter of
   which suppressed during unit testing
  * State Module
-  * `.save_snapshot()` now also saves a JSON representation of metrics
+  * `State.save_snapshot()` now also saves a JSON representation of metrics
   * Fixed metric cloning
   * Step Module
   * Report start/end locii also end up in the log file

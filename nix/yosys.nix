@@ -45,8 +45,8 @@ in clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "yosys";
-    rev = "f7a8284c7b095bca4bc2c65032144c4e3264ee4d";
-    sha256 = "sha256-qhMcXJFEuBPl7vh+gYTu7PnSWi+L3YMLrBMQyYqfc0w=";
+    rev = "14d50a176d59a5eac95a57a01f9e933297251d5b";
+    sha256 = "sha256-ZdtQ3tUEImJGYzN2j4f3fuxYUzTmSx6Vz8U7mLjgZXY=";
   };
 
   nativeBuildInputs = [ pkg-config bison flex ];

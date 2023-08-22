@@ -22,7 +22,21 @@ import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 from openlane.config import Variable, Macro
-from openlane.common import StringEnum, Path
+from openlane.common import StringEnum, Path, GenericDict
+
+
+def pytest_assertrepr_compare(op, left, right):
+    if isinstance(left, GenericDict) and isinstance(right, GenericDict) and op == "==":
+        return_value = ["comparing GenericDict-derived objects"]
+        left_d = left.to_raw_dict()
+        right_d = right.to_raw_dict()
+
+        for key in set(left_d.keys()).union(right_d.keys()):
+            if left_d.get(key) != right_d.get(key):
+                return_value.append(
+                    f"  * mismatched values for '{key}': {repr(left_d.get(key))} vs. {repr(right_d.get(key))}"
+                )
+        return return_value
 
 
 @pytest.fixture()
@@ -121,34 +135,43 @@ def _chdir_tmp():
 DiodeOnPortsEnum = StringEnum("Ports", ["none", "in"])
 MOCK_PDK_VARS = [
     Variable(
-        "PDK",
-        str,
-        description="x",
-    ),
-    Variable(
         "STD_CELL_LIBRARY",
         str,
         description="x",
+        pdk=True,
     ),
     Variable(
         "EXAMPLE_PDK_VAR",
         Decimal,
         description="x",
         default=10.0,
+        pdk=True,
     ),
     Variable(
         "TECH_LEFS",
         Dict[str, Path],
         description="x",
+        pdk=True,
     ),
     Variable(
         "DEFAULT_CORNER",
         str,
         description="x",
         default="nom_tt_025C_1v80",
+        pdk=True,
     ),
 ]
 MOCK_FLOW_VARS = [
+    Variable(
+        "PDK_ROOT",
+        str,
+        description="x",
+    ),
+    Variable(
+        "PDK",
+        str,
+        description="x",
+    ),
     Variable(
         "DESIGN_DIR",
         Path,
@@ -189,6 +212,7 @@ MOCK_FLOW_VARS = [
         default=None,
     ),
 ]
+COMMON_FLOW_VARS = MOCK_PDK_VARS + MOCK_FLOW_VARS
 
 
 def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
@@ -200,17 +224,11 @@ def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
 
     def decorator(f: Callable):
         for o in patch_in_objects:
-            if hasattr(o, "pdk_variables"):
-                f = mock.patch.object(
-                    o,
-                    "pdk_variables",
-                    MOCK_PDK_VARS,
-                )(f)
             if hasattr(o, "flow_common_variables"):
                 f = mock.patch.object(
                     o,
                     "flow_common_variables",
-                    MOCK_FLOW_VARS,
+                    COMMON_FLOW_VARS,
                 )(f)
             if hasattr(o, "removed_variables"):
                 f = mock.patch.object(
@@ -222,13 +240,13 @@ def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
                 f = mock.patch.object(
                     o,
                     "universal_flow_config_variables",
-                    MOCK_FLOW_VARS,
+                    COMMON_FLOW_VARS,
                 )(f)
             if hasattr(o, "all_variables"):
                 f = mock.patch.object(
                     o,
                     "all_variables",
-                    MOCK_FLOW_VARS,
+                    COMMON_FLOW_VARS,
                 )(f)
 
         return f
@@ -246,7 +264,7 @@ def mock_config():
             "DESIGN_NAME": "whatever",
             "VERILOG_FILES": "dir::src/*.v",
         },
-        MOCK_FLOW_VARS,
+        COMMON_FLOW_VARS,
         design_dir="/cwd",
         pdk="dummy",
         scl="dummy_scl",
@@ -255,8 +273,53 @@ def mock_config():
     return mock_config
 
 
+class MockProgress(object):
+    def __init__(self, *args, **kwargs):
+        self.add_task_called_count = 0
+        self.start_called_count = 0
+        self.stop_called_count = 0
+        self.update_called_count = 0
+        self.total = 100
+        self.completed = 0
+        self.description = "Progress"
+
+    def add_task(self, *args):
+        self.add_task_called_count += 1
+
+    def start(self):
+        self.start_called_count += 1
+
+    def stop(self):
+        self.stop_called_count += 1
+
+    def update(
+        self,
+        _,
+        description: Optional[str] = None,
+        total: Optional[int] = None,
+        completed: Optional[float] = None,
+    ):
+        if total_stages := total:
+            self.total = total_stages
+
+        if completed_stages := completed:
+            self.completed = completed_stages
+
+        if current_task_description := description:
+            self.description = current_task_description
+
+        self.update_called_count += 1
+
+
+@pytest.fixture(autouse=True)
+def _mock_progress():
+    from openlane.flows import flow
+
+    with mock.patch.object(flow, "Progress", MockProgress):
+        yield
+
+
 def pytest_configure():
-    pytest.MOCK_PDK_VARS = MOCK_PDK_VARS
-    pytest.MOCK_FLOW_VARS = MOCK_FLOW_VARS
+    pytest.COMMON_FLOW_VARS = COMMON_FLOW_VARS
     pytest.mock_variables = mock_variables
     pytest.DiodeOnPortsEnum = DiodeOnPortsEnum

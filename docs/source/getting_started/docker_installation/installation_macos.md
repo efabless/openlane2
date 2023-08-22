@@ -22,5 +22,5 @@ It may also be prudent to enable Full Disk Access permissions for Docker: Under 
 :::
 
 
-```{include} installation_common_section.md
+```{include} _common.md
 ```

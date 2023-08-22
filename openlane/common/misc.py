@@ -170,7 +170,7 @@ class Path(UserString, os.PathLike):
 
 class zip_first(object):
     """
-    Works like ``zip_longest`` if |a| > |b| and ``zip`` if |a| <= |b|.
+    Works like ``zip_longest`` if ｜a｜ > ｜b｜ and ``zip`` if ｜a｜ <= ｜b｜.
     """
 
     def __init__(self, a: Iterable, b: Iterable, fillvalue: Any) -> None:

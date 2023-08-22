@@ -65,7 +65,7 @@ class OdbpyStep(Step):
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         metrics_updates: MetricsUpdate = generated_metrics
         if os.path.exists(metrics_path):
-            or_metrics_out = json.loads(open(metrics_path).read())
+            or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
                 if value == "Infinity":
                     or_metrics_out[key] = inf

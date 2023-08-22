@@ -20,7 +20,7 @@ from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject
+from ..common import get_script_dir, DRC as DRCObject, Path
 
 
 class MagicStep(TclStep):
@@ -57,6 +57,20 @@ class MagicStep(TclStep):
             bool,
             "A flag to choose whether to include GDS pointers in the generated mag files or not.",
             default=False,
+        ),
+        Variable(
+            "MAGICRC",
+            Path,
+            "A path to the `.magicrc` file which is sourced before running magic in the flow.",
+            deprecated_names=["MAGIC_MAGICRC"],
+            pdk=True,
+        ),
+        Variable(
+            "MAGIC_TECH",
+            Path,
+            "A path to a Magic tech file which, mainly, has DRC rules.",
+            deprecated_names=["MAGIC_TECH_FILE"],
+            pdk=True,
         ),
     ]
 
@@ -200,7 +214,7 @@ class StreamOut(MagicStep):
             log_to=magic_log_dir,
             **kwargs,
         )
-        if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
+        if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
             views_updates[DesignFormat.GDS] = views_updates[DesignFormat.MAG_GDS]
 
         for line in open(magic_log_dir, encoding="utf8"):

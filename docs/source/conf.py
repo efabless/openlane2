@@ -45,6 +45,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.graphviz",
     "sphinx.ext.mathjax",
+    "sphinx_design",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
 ]

@@ -15,6 +15,7 @@ import os
 import re
 import io
 import json
+from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Optional, Tuple
 
@@ -83,6 +84,52 @@ class YosysStep(TclStep):
             "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
             default=False,
         ),
+        Variable(
+            "SYNTH_LATCH_MAP",
+            Optional[Path],
+            "A path to a file contianing the latch mapping for Yosys.",
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_TRISTATE_MAP",
+            Optional[Path],
+            "A path to a file contianing the tri-state buffer mapping for Yosys.",
+            deprecated_names=["TRISTATE_BUFFER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_CSA_MAP",
+            Optional[Path],
+            "A path to a file containing the carry-select adder mapping for Yosys.",
+            deprecated_names=["CARRY_SELECT_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_RCA_MAP",
+            Optional[Path],
+            "A path to a file containing the ripple-carry adder mapping for Yosys.",
+            deprecated_names=["RIPPLE_CARRY_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_FA_MAP",
+            Optional[Path],
+            "A path to a file containing the full adder mapping for Yosys.",
+            deprecated_names=["FULL_ADDER_MAP"],
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_MUX_MAP",
+            Optional[Path],
+            "A path to a file containing the mux mapping for Yosys.",
+            pdk=True,
+        ),
+        Variable(
+            "SYNTH_MUX4_MAP",
+            Optional[Path],
+            "A path to a file containing the mux4 mapping for Yosys.",
+            pdk=True,
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -95,14 +142,13 @@ class YosysStep(TclStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
+            frozenset([str(e) for e in lib_list]),
             excluded_cells=frozenset(
                 [
-                    self.config["SYNTH_EXCLUSION_CELL_LIST"],
-                    self.config["PNR_EXCLUSION_CELL_LIST"],
+                    str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
+                    str(self.config["PNR_EXCLUSION_CELL_LIST"]),
                 ]
             ),
             as_cell_lists=True,
@@ -277,7 +323,7 @@ class Synthesis(YosysStep):
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
-        stats = json.loads(stats_str)
+        stats = json.loads(stats_str, parse_float=Decimal)
 
         metric_updates = {}
         metric_updates["design__instance__count"] = stats["design"]["num_cells"]

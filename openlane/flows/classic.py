@@ -52,6 +52,7 @@ class Classic(SequentialFlow):
         OpenROAD.TapEndcapInsertion,
         OpenROAD.IOPlacement,
         Odb.CustomIOPlacement,
+        Odb.ApplyDEFTemplate,
         OpenROAD.GeneratePDN,
         OpenROAD.GlobalPlacement,
         OpenROAD.STAMidPNR,

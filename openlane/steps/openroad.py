@@ -42,7 +42,7 @@ from .common_variables import (
 
 from ..config import Variable
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, console
+from ..logging import debug, err, info, warn, verbose
 from ..common import (
     Path,
     TclUtils,
@@ -73,11 +73,11 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
     "timing__setup_vio__count": (0, lambda x: sum(x)),
     "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
-    "clock__max_slew_violation__count": (0, lambda x: sum(x)),
+    "design__max_slew_violation__count": (0, lambda x: sum(x)),
     "design__max_fanout_violation__count": (0, lambda x: sum(x)),
     "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (inf, min),
-    "clock__skew__worst_setup": (inf, min),
+    "clock__skew__worst_hold": (-inf, max),
+    "clock__skew__worst_setup": (-inf, max),
     "timing__hold__ws": (inf, min),
     "timing__setup__ws": (inf, min),
     "timing__hold__wns": (inf, min),
@@ -153,8 +153,8 @@ class OpenROADStep(TclStep):
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
         lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
-            frozenset([self.config["PNR_EXCLUSION_CELL_LIST"]]),
+            frozenset([str(e) for e in lib_list]),
+            frozenset([str(self.config["PNR_EXCLUSION_CELL_LIST"])]),
             as_cell_lists=True,
         )
 
@@ -192,7 +192,7 @@ class OpenROADStep(TclStep):
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
-            or_metrics_out = json.loads(open(metrics_path).read())
+            or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
                 if value == "Infinity":
                     or_metrics_out[key] = inf
@@ -226,7 +226,7 @@ class OpenROADStep(TclStep):
         if self.state_out.get("def") == state_in.get("def"):
             return None
 
-        if image := self.toolbox.render_png(self.config, str(self.state_out["def"])):
+        if image := self.toolbox.render_png(self.config, self.state_out):
             image_encoded = b64encode(image).decode("utf8")
             return f'<img src="data:image/png;base64,{image_encoded}" />'
 
@@ -458,7 +458,7 @@ class STAPostPNR(STAPrePNR):
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
-                "clock__max_slew_violation__count",
+                "design__max_slew_violation__count",
             ]:
                 row.append(
                     format_count(
@@ -467,7 +467,7 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        console.print(table)
+        verbose(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 
@@ -646,7 +646,7 @@ class TapEndcapInsertion(OpenROADStep):
             bool,
             "Enables/disables this step.",
             default=True,
-            deprecated_names=["TAP_DECAP_INSERTION"],
+            deprecated_names=["TAP_DECAP_INSERTION", "RUN_TAP_DECAP_INSERTION"],
         ),
         Variable(
             "FP_TAP_HORIZONTAL_HALO",
@@ -683,9 +683,10 @@ class GeneratePDN(OpenROADStep):
         + pdn_variables
         + [
             Variable(
-                "PDN_CFG",
+                "FP_PDN_CFG",
                 Optional[Path],
                 "A custom PDN configuration file. If not provided, the default PDN config will be used.",
+                deprecated_names=["PDN_CFG"],
             )
         ]
     )
@@ -978,7 +979,7 @@ class RCX(OpenROADStep):
     """
     This extracts `parasitic <https://en.wikipedia.org/wiki/Parasitic_element_(electrical_networks)>`_
     electrical values from a detailed-placed circuit. These can be used to create
-    basically the highest accurate STA possible for a design.
+    basically the highest accurate STA possible for a given design.
     """
 
     id = "OpenROAD.RCX"
@@ -1003,6 +1004,12 @@ class RCX(OpenROADStep):
             "RCX_SDC_FILE",
             Optional[Path],
             "Specifies SDC file to be used for RCX-based STA, which can be different from the one used for implementation.",
+        ),
+        Variable(
+            "RCX_RULESETS",
+            Dict[str, Path],
+            "Map of corner patterns to OpenRCX extraction rules.",
+            pdk=True,
         ),
     ]
 

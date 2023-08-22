@@ -1,4 +1,4 @@
-# Docker-based Installation (Beginners)
+# Docker-based Installation
 
 For ease of installation, OpenLane offers the ability to transparently [Docker](https://en.wikipedia.org/wiki/Docker_(software)) containers.
 

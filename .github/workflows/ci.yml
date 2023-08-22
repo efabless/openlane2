@@ -14,15 +14,16 @@ on:
 
 jobs:
   prepare-test-matrices:
-    name: Prepare Test Matrices
+    name: Prepare Test Matrices and Cache PDKs
     runs-on: ubuntu-22.04
     outputs:
       design_matrix: ${{ steps.set-matrix.outputs.design_matrix }}
+      opdks_rev: ${{ steps.set-rev.outputs.opdks_rev }}
     steps:
       - uses: actions/checkout@v3
       - name: Python Dependencies
         run: |
-          python3 -m pip install click pyyaml
+          python3 -m pip install -r ./requirements.txt
       - name: Determine If Running Extended Test Set
         run: |
           export EVENT_NAME=${{ github.event_name }};
@@ -32,6 +33,20 @@ jobs:
         run: |
           python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
           echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
+      - name: Get Open PDKs Revision
+        id: set-rev
+        run: |
+          echo "opdks_rev=$(cat ./openlane/open_pdks_rev)" >> $GITHUB_OUTPUT
+      - name: Cache PDKs
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare
+          key: cache-pdks-${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Enable PDKs
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
   lint:
     name: Lint
     runs-on: ubuntu-22.04
@@ -52,10 +67,13 @@ jobs:
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
       - name: Derivation to Cache
         uses: ./.github/actions/derivation_to_cache
@@ -67,10 +85,13 @@ jobs:
     name: Build (Nix on macOS/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
   build-py:
@@ -90,7 +111,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run Unit Tests
         run: |
-          make venv
           make test
   build-docker-amd64:
     runs-on: ubuntu-22.04
@@ -102,12 +122,12 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
@@ -139,12 +159,24 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
+      - name: Cache PDKs
+        id: cache-pdks
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare
+          key: cache-pdks-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Enable PDKs
+        if: steps.cache-pdks.outputs.cache-hit != 'true'
+        run: |
+          pip3 install -r ./requirements.txt
+          volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Test
         run: |
           nix-shell --run "\
