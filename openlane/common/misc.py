@@ -61,9 +61,11 @@ def get_opdks_rev() -> str:
     """
     Gets the Open_PDKs revision confirmed compatible with this version of OpenLane.
     """
-    return open(
-        os.path.join(get_openlane_root(), "open_pdks_rev"), encoding="utf8"
-    ).read().strip()
+    return (
+        open(os.path.join(get_openlane_root(), "open_pdks_rev"), encoding="utf8")
+        .read()
+        .strip()
+    )
 
 
 # The following code snippet has been adapted under the following license:
