@@ -171,7 +171,7 @@ def run_in_container(
 
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
-    
+
     terminal_args = []
     if interactive:
         terminal_args.append("-i")

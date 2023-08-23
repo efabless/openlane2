@@ -256,7 +256,7 @@ def cli_in_container(
 
     status = 0
     docker_mounts = list(ctx.params.get("docker_mounts") or ())
-    docker_tty: bool = ctx.params.get("docker_tty")
+    docker_tty: bool = ctx.params.get("docker_tty", False)
     pdk_root = ctx.params.get("pdk_root")
     argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
 
@@ -266,7 +266,9 @@ def cli_in_container(
         final_argv = ["openlane"] + argv
         interactive = False
 
-    docker_image = os.getenv("OPENLANE_IMAGE_OVERRIDE", f"ghcr.io/efabless/openlane2:{__version__}")
+    docker_image = os.getenv(
+        "OPENLANE_IMAGE_OVERRIDE", f"ghcr.io/efabless/openlane2:{__version__}"
+    )
 
     try:
         status = run_in_container(
