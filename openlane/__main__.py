@@ -302,20 +302,20 @@ o = partial(option, show_default=True)
         multiple=True,
         is_eager=True,  # docker options should be processed before anything else
         default=(),
-        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. Must be passed before --dockerized, has no effect if --dockerized is not set.",
+        help="Used to mount more directories in dockerized mode. If a valid directory is specified, it will be mounted in the same path in the container. Otherwise, the value of the option will be passed to the Docker-compatible container engine verbatim. Must be passed before --dockerized, has no effect if --dockerized is not set.",
     ),
     o(
         "--docker-tty/--docker-no-tty",
         is_eager=True,  # docker options should be processed before anything else
         default=True,
-        help="Controls the allocation of a virtual terminal by passing -t to the Docker or Docker-compatible container engine invocation. Must be passed before --dockerized, has no effect if --dockerized is not set.",
+        help="Controls the allocation of a virtual terminal by passing -t to the Docker-compatible container engine invocation. Must be passed before --dockerized, has no effect if --dockerized is not set.",
     ),
     o(
         "--dockerized",
         default=False,
         is_flag=True,
         is_eager=True,  # ddocker options should be processed before anything else
-        help="Re-invoke using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
+        help="Run the remaining flags using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
         callback=cli_in_container,
     ),
 )
