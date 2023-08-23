@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import shlex
 import inspect
 from enum import Enum
@@ -476,11 +475,14 @@ class Variable:
             # Handle one-file globs
             if isinstance(value, list) and len(value) == 1:
                 value = value[0]
-            if not os.path.exists(str(value)):
+            result = Path(value)
+            try:
+                result.validate()
+            except ValueError as e:
                 raise ValueError(
-                    f"Path provided for variable '{key_path}' does not exist: '{value}'"
+                    f"Path provided for variable '{key_path}' is invalid: '{e}'"
                 )
-            return Path(value)
+            return result
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):
                 raise ValueError(

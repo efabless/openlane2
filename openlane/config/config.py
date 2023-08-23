@@ -37,7 +37,7 @@ from typing import (
 
 from immutabledict import immutabledict
 
-from .variable import Macro, Variable
+from .variable import Variable
 from .removals import removed_variables
 from .flow import pdk_variables, scl_variables, flow_common_variables
 from .pdk_compat import migrate_old_config
@@ -362,7 +362,6 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
-        complete: bool = True,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -858,7 +857,6 @@ class Config(GenericImmutableDict[str, Any]):
                     mutable["DIODE_ON_PORTS"] = "in"
 
         # Macros
-        translated_macros = False
         if mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is None:
             mutable["MACROS"] = {}
 
@@ -876,7 +874,6 @@ class Config(GenericImmutableDict[str, Any]):
                     "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
                 )
             else:
-                translated_macros = True
                 warnings.append(
                     "The configuration variable 'EXTRA_SPEFS' is deprecated. Check the docs on how to use the new 'MACROS' configuration variable."
                 )
@@ -890,8 +887,8 @@ class Config(GenericImmutableDict[str, Any]):
                     )
                     macro_dict = {
                         "module": module,
-                        "gds": ["/dev/null"],
-                        "lef": ["/dev/null"],
+                        "gds": [Path._dummy_path],
+                        "lef": [Path._dummy_path],
                     }
                     macro_dict["spef"] = {
                         "min_*": [min],
@@ -960,15 +957,5 @@ class Config(GenericImmutableDict[str, Any]):
                         )
                     else:
                         warnings.append(f"An unknown key '{key}' was provided.")
-
-        if (
-            translated_macros and final.get("MACROS") is not None
-        ):  # Second check in case an error was generated
-            for macro in final["MACROS"].values():
-                assert isinstance(macro, Macro)
-                if "/dev/null" in macro.gds:
-                    macro.gds = [Path("")]
-                if "/dev/null" in macro.lef:
-                    macro.lef = [Path("")]
 
         return (final, warnings, errors)

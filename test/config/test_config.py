@@ -578,8 +578,8 @@ def test_macro_migration(
 
     assert cfg["MACROS"] == {
         "b": Macro(
-            gds=[""],
-            lef=[""],
+            gds=[Path._dummy_path],
+            lef=[Path._dummy_path],
             instances={},
             nl=[],
             spef={
