@@ -157,9 +157,10 @@ class Toolbox(object):
                 result += views_filtered
             elif isinstance(views, list):
                 result += views
-            elif views is not None and str(views) != "":
+            elif views is not None:
                 result += [Path(views)]
-        return result
+
+        return [element for element in result if str(element) != Path._dummy_path]
 
     def get_timing_files(
         self,

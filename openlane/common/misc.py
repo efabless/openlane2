@@ -21,6 +21,7 @@ from collections import UserString
 
 from typing import (
     Any,
+    ClassVar,
     Iterable,
     Sequence,
     TypeVar,
@@ -160,6 +161,11 @@ class Path(UserString, os.PathLike):
     Basically just a string.
     """
 
+    # This path will pretend to exist in the exists() call, but will
+    # fail to open. It should be used for deprecated variable
+    # translation only.
+    _dummy_path: ClassVar[str] = "__openlane_dummy_path"
+
     def __fspath__(self) -> str:
         return str(self)
 
@@ -168,6 +174,13 @@ class Path(UserString, os.PathLike):
         A convenience method calling :meth:`os.path.exists`
         """
         return os.path.exists(self)
+
+    def validate(self):
+        """
+        Raises an error if the path does not exist.
+        """
+        if not self.exists() and not self == Path._dummy_path:
+            raise ValueError(f"'{self}' does not exist")
 
 
 class zip_first(object):
