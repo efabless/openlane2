@@ -133,13 +133,16 @@ jobs:
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Install Dependencies
+        run: make venv
       - name: Smoke-Test Docker Image
         run: |
-          docker run --rm\
-            -v /tmp:/tmp\
-            -e TMPDIR=/tmp\
-            openlane:tmp-amd64\
-            openlane --smoke-test
+          OPENLANE_IMAGE_OVERRIDE=openlane:tmp-amd64\
+            ./venv/bin/python3 -m openlane --docker-no-tty --dockerized --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
         with:

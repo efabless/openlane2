@@ -154,6 +154,7 @@ def run_in_container(
     scl: Optional[str] = None,
     other_mounts: Optional[Sequence[str]] = None,
     interactive: bool = False,
+    tty: bool = False,
 ) -> int:
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
@@ -170,6 +171,12 @@ def run_in_container(
 
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
+    
+    terminal_args = []
+    if interactive:
+        terminal_args.append("-i")
+    if tty:
+        terminal_args.append("-t")
 
     mount_args = []
     from_home, to_home = sanitize_path(pathlib.Path.home())
@@ -217,8 +224,8 @@ def run_in_container(
             CONTAINER_ENGINE,
             "run",
             "--rm",
-            "-ti" if interactive else "-t",
         ]
+        + terminal_args
         + permission_args(osinfo)
         + mount_args
         + gui_args(osinfo)
