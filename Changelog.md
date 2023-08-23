@@ -1,3 +1,8 @@
+# 2.0.0-b10
+
+* Add new commandline options: `--docker-tty/--docker-no-tty`, controlling the `-t` flag of Docker and compatible container engines which allocates a virtual tty
+* Convert CI to use `--dockerized` instead of a plain `docker run`
+
 # 2.0.0-b9
 
 * `Flow.start()` now registers two handlers, one for errors and one for warnings, and forwards them to `step_dir/{errors,warnings}.log` respectively
