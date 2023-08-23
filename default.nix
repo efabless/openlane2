@@ -29,8 +29,8 @@
 
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
   
-  volare-rev ? "08f47719be91c919e94fc48c66f0f39a05970df7",
-  volare-sha256 ? "sha256-BeUP//whn7wPJfK0VxxZuGsyiLWZZL82T9YOrlrAXh0=",
+  volare-rev ? "25f3d610c9791ad85d328366c3e809b507d2d51c",
+  volare-sha256 ? "sha256-BCvP8I6kAbRsp6PrwMb+xwrr9KiPLeix2ZdgXFUw8WA=",
   volare ? let src = pkgs.fetchFromGitHub {
     owner = "efabless";
     repo = "volare";

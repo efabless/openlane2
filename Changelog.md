@@ -1,3 +1,27 @@
+# 2.0.0-b9
+
+* `Flow.start()` now registers two handlers, one for errors and one for warnings, and forwards them to `step_dir/{errors,warnings}.log` respectively
+* Created `CELL_SPICE_MODELS` as a PDK variable to handle .spice models of the SCLs instead of globbing in-step
+* Added a "dummy path" for macro translation purposes that always validates and is ignored by `self.toolbox.get_macro_views`
+* Reduced reliance on absolute paths
+  * Special exception carved out for `STEP_DIR`, `SCRIPTS_DIR`
+  * Made KLayout scripts more resilient to relative pathing
+* Created new "eject" feature, which would make reproducibles for steps relying on subprocesses independent of OpenLane
+  * `scripts` directory copied in entirety into ejected reproducibles
+* Updated Open PDKs to `e3b630d`
+* Updated Yosys to `14d50a1`
+* Updated CI to handle missing `vars.CACHIX_CACHE`
+* Updated Volare to `0.12.3` to use new authentication and user agent
+* Downgraded Magic to `0afe4d8` to match OL1
+* Restored ancient `{DATA,CLOCK}_WIRE_RC_LAYER` variables, with translation behavior from `WIRE_RC_LAYER` to `DATA_WIRE_RC_LAYER`
+* Fixed issue with `Step.load()` re-validating values, which affected
+  reproducibles
+* Timing signoff no longer prints if log level is higher than `VERBOSE`
+* Use `parse_float=Decimal` consistently when loading JSON strings to
+  avoid fun floating point errors
+* Removed dependency on State module from `odb` scripts
+* Removed custom PYTHONPATH setting from `OdbStep` (which was mostly to mitigate problems fixed in #86)
+
 # 2.0.0-b8
 
 * Rename incorrectly-named metric rename `clock__max_slew_violation__count` to
