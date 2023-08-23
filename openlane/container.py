@@ -13,8 +13,6 @@
 # limitations under the License.
 
 ## This file is internal to OpenLane 2 and is not part of the API.
-
-from genericpath import isdir
 import os
 import re
 import shlex
