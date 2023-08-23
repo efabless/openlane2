@@ -257,7 +257,7 @@ class DRC(MagicStep):
             "MAGIC_DRC_USE_GDS",
             bool,
             "A flag to choose whether to run the magic DRC checks on GDS or not. If not, then the checks will be done on the DEF/LEF, which is faster.",
-            default=False,
+            default=True,
         ),
     ]
 
