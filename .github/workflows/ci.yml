@@ -141,9 +141,10 @@ jobs:
         run: make venv
       - name: Smoke-Test Docker Image
         run: |
+          mkdir -p $HOME/.volare
+          chmod -R 755 $HOME/.volare
           OPENLANE_IMAGE_OVERRIDE=openlane:tmp-amd64\
             ./venv/bin/python3 -m openlane\
-              --docker-mount $PWD/.volare:$HOME/.volare\
               --docker-no-tty\
               --dockerized\
               --smoke-test
