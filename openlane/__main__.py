@@ -30,9 +30,6 @@ from cloup import (
     Context,
 )
 from cloup.constraints import (
-    If,
-    IsSet,
-    accept_none,
     mutually_exclusive,
 )
 
