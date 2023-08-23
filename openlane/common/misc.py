@@ -161,7 +161,7 @@ class Path(UserString, os.PathLike):
     Basically just a string.
     """
 
-    # This path will pretend to exist in the exists() call, but will
+    # This path will pass the validate() call, but will
     # fail to open. It should be used for deprecated variable
     # translation only.
     _dummy_path: ClassVar[str] = "__openlane_dummy_path"
