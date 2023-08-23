@@ -256,7 +256,7 @@ def cli_in_container(
 
     status = 0
     docker_mounts = list(ctx.params.get("docker_mounts") or ())
-    docker_tty: bool = ctx.params.get("docker_tty", False)
+    docker_tty: bool = ctx.params.get("docker_tty", True)
     pdk_root = ctx.params.get("pdk_root")
     argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
 
@@ -304,14 +304,14 @@ o = partial(option, show_default=True)
         "docker_mounts",
         multiple=True,
         is_eager=True,  # docker options should be processed before anything else
-        default=[],
-        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. Must be passed before --dockerized.",
+        default=(),
+        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. Must be passed before --dockerized, has no effect if --dockerized is not set.",
     ),
     o(
         "--docker-tty/--docker-no-tty",
         is_eager=True,  # docker options should be processed before anything else
         default=True,
-        help="Additionally mount this directory in dockerized mode. Can be supplied multiple times to mount multiple directories. Must be passed before --dockerized.",
+        help="Controls the allocation of a virtual terminal by passing -t to the Docker or Docker-compatible container engine invocation. Must be passed before --dockerized, has no effect if --dockerized is not set.",
     ),
     o(
         "--dockerized",
@@ -321,7 +321,6 @@ o = partial(option, show_default=True)
         help="Re-invoke using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
         callback=cli_in_container,
     ),
-    constraint=If(~IsSet("dockerized"), accept_none),
 )
 @option_group(
     "Subcommands",

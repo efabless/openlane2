@@ -142,7 +142,11 @@ jobs:
       - name: Smoke-Test Docker Image
         run: |
           OPENLANE_IMAGE_OVERRIDE=openlane:tmp-amd64\
-            ./venv/bin/python3 -m openlane --docker-no-tty --dockerized --smoke-test
+            ./venv/bin/python3 -m openlane\
+              --docker-mount $PWD/.volare:$HOME/.volare\
+              --docker-no-tty\
+              --dockerized\
+              --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
         with:
