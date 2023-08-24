@@ -1,3 +1,17 @@
+# 2.0.0-b11
+
+* Added new `mag` format to design formats, populated by `Magic.StreamOut`
+* Added support for `stdin` in reproducibles (mainly for Magic): ejected reproducibles now save the input and use it
+* Added three new PDK variables to all Magic-based steps: `MAGIC_PDK_SETUP`, `CELL_MAGS`, and `CELL_MAGLEFS`, which explicitly list some files Magic constructed from `PDK_ROOT`, as well as codifying a convention that variables must explicitly list files being used.
+* Added new variable to `Magic.SpiceExtraction`, `MAGIC_EXT_ABSTRACT`, which allows for cell/submodule-level LVS rather than transistor-level LVS.
+* Changed SPEF file saving to only strip asterisks instead of underscores as well, matching the folders
+* Fixed an issue where OpenLane's type-checking only accepted a single value for Literals in violation of ["Shortening unions of literals," PEP-586](https://peps.python.org/pep-0586/#shortening-unions-of-literals)
+* Fixed an issue where command-line overrides were still treated as strict variables
+* Fixed an issue where `rule()` would print a line even when log levels would not allow it
+* Fixed an issue where `PDK_ROOT` was of type `str`
+* Updated documentation to provide information on conventions for declaring variables
+  * Deprecated `StringEnums`, now favoring `Literal['str1', 'str2', …]`
+
 # 2.0.0-b10
 
 * Add new commandline options: `--docker-tty/--docker-no-tty`, controlling the `-t` flag of Docker and compatible container engines which allocates a virtual tty
