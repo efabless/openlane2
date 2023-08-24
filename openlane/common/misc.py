@@ -149,7 +149,7 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
 
 
 @deprecated(
-    reason="Use Literal['str1', 'str2', …]. Less stupid than Python enums",
+    reason="Use Literal['str1', 'str2', …], which is more idiomatic to Python.",
     version="2.0.0b11",
 )
 def StringEnum(name: str, values: Sequence[str]):
