@@ -19,14 +19,14 @@ from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from .common_variables import io_layer_variables
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..logging import warn
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
-from ..common import Path, get_script_dir, StringEnum
+from ..common import Path, get_script_dir
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -354,7 +354,7 @@ class DiodesOnPorts(OdbpyStep):
     config_vars = [
         Variable(
             "DIODE_ON_PORTS",
-            StringEnum("DIODE_ON_PORTS", ["none", "in", "out", "both"]),
+            Literal["none", "in", "out", "both"],
             "Always insert diodes on ports with the specified polarities.",
             default="none",
         ),
@@ -375,11 +375,11 @@ class DiodesOnPorts(OdbpyStep):
             "--diode-pin",
             pin,
             "--port-protect",
-            self.config["DIODE_ON_PORTS"].value,
+            self.config["DIODE_ON_PORTS"],
         ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config["DIODE_ON_PORTS"].value == "none":
+        if self.config["DIODE_ON_PORTS"] == "none":
             warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 

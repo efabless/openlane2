@@ -73,6 +73,24 @@ class MagicStep(TclStep):
             deprecated_names=["MAGIC_TECH_FILE"],
             pdk=True,
         ),
+        Variable(
+            "MAGIC_PDK_SETUP",
+            Path,
+            "A path to a PDK-specific setup file sourced by `.magicrc`.",
+            pdk=True,
+        ),
+        Variable(
+            "CELL_MAGS",
+            Optional[List[Path]],
+            "A list of pre-processed concrete views for cells. Read as a fallback for undefined cells.",
+            pdk=True,
+        ),
+        Variable(
+            "CELL_MAGLEFS",
+            Optional[List[Path]],
+            "A list of pre-processed abstract LEF views for cells. Read as a fallback for undefined cells in scripts where cells are blackboxed.",
+            pdk=True,
+        ),
     ]
 
     @abstractmethod
@@ -127,7 +145,7 @@ class WriteLEF(MagicStep):
         Variable(
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
-            "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
+            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using the DEF/LEF with concrete views.",
             default=False,
         ),
         Variable(
@@ -264,7 +282,7 @@ class DRC(MagicStep):
         Variable(
             "MAGIC_DRC_USE_GDS",
             bool,
-            "A flag to choose whether to run the magic DRC checks on GDS or not. If not, then the checks will be done on the DEF/LEF, which is faster.",
+            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, with concrete views of cells and submacros, which is a bit faster, but less accurate.",
             default=True,
         ),
     ]

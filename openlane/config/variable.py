@@ -49,7 +49,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Union[Literal["N"], Literal["S"], Literal["FN"], Literal["FS"]]
+    orientation: Literal["N", "S", "FN", "FS"]
 
 
 @dataclass
@@ -169,7 +169,7 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
                 type_string = "｜".join(arg_strings)
                 type_string = f"({type_string})"
             elif origin == Literal:
-                return str(args[0])
+                return "｜".join([repr(arg) for arg in args])
             else:
                 arg_strings = [repr_type(arg) for arg in args]
                 type_string = f"{type_string}[{','.join(arg_strings)}]"
@@ -223,6 +223,11 @@ class Variable:
     :param units: Used only in documentation: the unit corresponding to this
         object, i.e., µm, pF, etc. Can be any string, but for consistency, SI units
         must be represented in terms of their official symbols.
+
+    :param pdk: Whether this variable is expected to be given a default value
+        by a PDK or not. If this variable is not of an option type and the PDK
+        does not provide this value, the PDK is considered incompatible with
+        the Step declaring this value.
     """
 
     known_variable_names: ClassVar[Set[str]] = set()
@@ -430,11 +435,12 @@ class Variable:
                 )
             )
         elif type_origin == Literal:
-            arg = type_args[0]
-            if value == arg:
+            if value in type_args:
                 return value
             else:
-                raise ValueError(f"Value for '{key_path}' is not '{arg}': '{value}'")
+                raise ValueError(
+                    f"Value for '{key_path}' is invalid for {repr_type(validating_type)}: '{value}'"
+                )
         elif is_dataclass(validating_type):
             if isinstance(value, validating_type):
                 # Do not validate further

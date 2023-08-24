@@ -39,6 +39,38 @@ Don't forget the [`Step` strictures](../reference/architecture.md#step-stricture
 Some of them are programmatically enforced, but are still not.
 ```
 
+### Writing Config Variables
+Config variables are declared using the {class}`openlane.config.Variable` object.
+
+There are some conventions to writing these variables.
+
+* Variable names are declared in `UPPER_SNAKE_CASE`, and must be valid identifiers
+  in the Python programming language.
+* Composite types should be declared using the `typing` module, i.e., for a list
+  of strings, try `typing.List[str]` instead of `list[str]` or just `list`.
+  * `list[str]` is incompatible with Python 3.8.
+  * `list` does not give OpenLane adequate information to validate the child
+  variables.
+* Variables that capture a physical quantity, such as time, distance or similar,
+  must declare units using their `"units"` field.
+  * In case of micro-, the only SI prefix denoted with a non-latin letter, use this
+    exact unicode codepoint: `µ`
+* Variables may be declared as `pdk`, which determines the compatibility of a PDK
+  with your step. If you use a PDK that does not declare one of your declared PDK
+  variables, the configuration will not compile and the step will raise a
+  {class}`openlane.steps.StepException`.
+  * PDK variables should generally avoid having default values other than ``None``.
+    An exception is when a quantity may be defined by some PDKs, but needs a fallback
+    value for others.
+* No complex defaults. Defaults must be scalar and quick to evaluate- if your
+  default value depends on the default value of another variable, for example,
+* All filesystem paths must be declared as {class}`openlane.common.Path`, objects
+  which adds some very necessary validation and enables easier processing of the
+  variables down the line.
+  * Avoid pointing to entire folders. If your step may require multiple files within
+    a folder, try using the type `List[Path]`.
+
+
 ### Implementing `run`
 The run header should look like this:
 
@@ -62,8 +94,7 @@ output_path = os.path.join(self.step_dir, f"{design_name}.def")
 A step has access to:
 
 * Its declared `config_vars`
-* [All Common Flow Variables](../reference/flow_config_vars.md#universal-flow-configuration-variables)
-* [All PDK/SCL Variables](../reference/pdk_config_vars.md)
+* [All Common Flow Variables](../reference/flows.md#universal-flow-configuration-variables)
 
 Attempting to access any other variable is undefined behavior.
 ```

@@ -18,7 +18,6 @@ import pathlib
 import unicodedata
 from enum import Enum
 from collections import UserString
-
 from typing import (
     Any,
     ClassVar,
@@ -26,6 +25,8 @@ from typing import (
     Sequence,
     TypeVar,
 )
+
+from deprecated.sphinx import deprecated
 
 
 T = TypeVar("T")
@@ -147,6 +148,10 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
+@deprecated(
+    reason="Use Literal['str1', 'str2', …]. Less stupid than Python enums",
+    version="2.0.0b11",
+)
 def StringEnum(name: str, values: Sequence[str]):
     """
     Creates a string enumeration class where the keys and values are the same.

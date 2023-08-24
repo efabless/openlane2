@@ -563,8 +563,6 @@ class Step(ABC):
             "step": self.__class__.id,
         }
 
-        del dumpable_config["PDK_ROOT"]
-
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
             f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))

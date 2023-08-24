@@ -24,7 +24,7 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
-from typing import Any, Callable, Iterable, List, Dict, Tuple, Optional, Union
+from typing import Any, Callable, Iterable, List, Dict, Literal, Tuple, Optional, Union
 
 import rich
 import rich.table
@@ -46,7 +46,6 @@ from ..logging import debug, err, info, warn, verbose
 from ..common import (
     Path,
     TclUtils,
-    StringEnum,
     get_script_dir,
     get_tpe,
     mkdirp,
@@ -516,7 +515,7 @@ class Floorplan(OpenROADStep):
     config_vars = OpenROADStep.config_vars + [
         Variable(
             "FP_SIZING",
-            StringEnum("FP_SIZING", ["relative", "absolute"]),
+            Literal["relative", "absolute"],
             "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
             default="relative",
         ),
@@ -599,7 +598,7 @@ class IOPlacement(OpenROADStep):
         + [
             Variable(
                 "FP_IO_MODE",
-                StringEnum("FP_IO_MODE", ["matching", "random_equidistant"]),
+                Literal["matching", "random_equidistant"],
                 "Decides the mode of the random IO placement option.",
                 default="random_equidistant",
             ),

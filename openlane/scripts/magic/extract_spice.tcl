@@ -20,6 +20,7 @@ if { $::env(MAGIC_EXT_USE_GDS) } {
 
 load $::env(DESIGN_NAME) -dereference
 
+set backup $::env(PWD)
 set extdir $::env(STEP_DIR)/extraction
 set netlist $::env(STEP_DIR)/$::env(DESIGN_NAME).spice
 
@@ -45,5 +46,6 @@ if { $::env(MAGIC_EXT_SHORT_RESISTOR) } {
 }
 
 ext2spice -o $netlist $::env(DESIGN_NAME).ext
+
+cd $backup
 feedback save $::env(STEP_DIR)/feedback.txt
-# exec cp $::env(DESIGN_NAME).spice $::env(signoff_results)/$::env(DESIGN_NAME).spice

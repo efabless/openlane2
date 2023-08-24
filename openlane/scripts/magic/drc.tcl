@@ -74,8 +74,4 @@ puts stdout "\[INFO\] Saving mag view with DRC errors ($mag_view)"
 # WARNING: changes the name of the cell; keep as last step
 save $mag_view
 puts stdout "\[INFO\] Saved"
-
-puts stdout "Saving feedback…"
-feedback save $::env(STEP_DIR)/feedback.txt
-puts stdout "Saved."
 exit 0

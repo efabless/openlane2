@@ -61,7 +61,7 @@ class TclUtils(object):
         rollback = {}
         for key, value in env_in.items():
             rollback[key] = os.getenv(key)
-            os.environ[key] = value
+            os.environ[key] = str(value)
 
         tcl_script = f"""
         {tcl_in}
