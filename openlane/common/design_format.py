@@ -90,6 +90,12 @@ class DesignFormat(Enum):
         "Simulation Program with Integrated Circuit Emphasis",
     )
 
+    MAG: DesignFormatObject = DesignFormatObject(
+        "mag",
+        "mag",
+        "Magic VLSI View",
+    )
+
     GDS: DesignFormatObject = DesignFormatObject(
         "gds",
         "gds",

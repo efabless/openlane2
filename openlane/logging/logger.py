@@ -163,6 +163,8 @@ def rule(title: str = "", /, **kwargs):  # pragma: no cover
 
     :param title: A title string to enclose in the console rule
     """
+    if get_log_level() > LogLevels.INFO:
+        return
     if __plain_output:
         print(("-" * 10) + str(title) + ("-" * 10))
     else:

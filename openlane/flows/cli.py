@@ -216,7 +216,7 @@ def cloup_flow_opts(
                     "config_override_strings",
                     type=str,
                     multiple=True,
-                    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
+                    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values, and keys must not use their deprecated names.",
                 ),
             )(f)
         if run_options:

@@ -75,4 +75,7 @@ puts stdout "\[INFO\] Saving mag view with DRC errors ($mag_view)"
 save $mag_view
 puts stdout "\[INFO\] Saved"
 
+puts stdout "Saving feedback…"
+feedback save $::env(STEP_DIR)/feedback.txt
+puts stdout "Saved."
 exit 0

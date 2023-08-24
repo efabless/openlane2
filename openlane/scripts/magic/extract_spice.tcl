@@ -14,13 +14,13 @@
 if { $::env(MAGIC_EXT_USE_GDS) } {
     source $::env(SCRIPTS_DIR)/magic/gds/read.tcl
 } else {
+    set ::mag_read_cell_lefs 1
     source $::env(SCRIPTS_DIR)/magic/def/read.tcl
 }
 
 load $::env(DESIGN_NAME) -dereference
 
 set extdir $::env(STEP_DIR)/extraction
-set feedback_file $::env(STEP_DIR)/feedback.txt
 set netlist $::env(STEP_DIR)/$::env(DESIGN_NAME).spice
 
 file mkdir $extdir
@@ -45,5 +45,5 @@ if { $::env(MAGIC_EXT_SHORT_RESISTOR) } {
 }
 
 ext2spice -o $netlist $::env(DESIGN_NAME).ext
-feedback save $feedback_file
+feedback save $::env(STEP_DIR)/feedback.txt
 # exec cp $::env(DESIGN_NAME).spice $::env(signoff_results)/$::env(DESIGN_NAME).spice

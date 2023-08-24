@@ -1024,6 +1024,9 @@ class RCX(OpenROADStep):
         env = self.prepare_env(env, state_in)
 
         def run_corner(corner: str):
+            nonlocal env
+            current_env = env.copy()
+
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
             if rcx_ruleset is None:
                 warn(
@@ -1031,12 +1034,9 @@ class RCX(OpenROADStep):
                 )
                 return None
 
-            corner_clean = corner
-            if corner_clean.endswith("_*"):
-                corner_clean = corner_clean[:-2]
-
-            nonlocal env
-            current_env = env.copy()
+            corner_sanitized = corner.strip("*")
+            corner_dir = os.path.join(self.step_dir, corner_sanitized)
+            mkdirp(corner_dir)
 
             tech_lefs = self.toolbox.filter_views(
                 self.config, self.config["TECH_LEFS"], corner
@@ -1053,14 +1053,16 @@ class RCX(OpenROADStep):
             current_env["RCX_RULESET"] = rcx_ruleset
 
             out = os.path.join(
-                self.step_dir, f"{self.config['DESIGN_NAME']}.{corner_clean}.spef"
+                corner_dir, f"{self.config['DESIGN_NAME']}.{corner_sanitized}.spef"
             )
             current_env["SAVE_SPEF"] = out
 
-            log_path = os.path.join(self.step_dir, f"{corner_clean}.log")
-            info(
-                f"Running RCX for the {corner_clean} interconnect corner ({log_path})…"
-            )
+            corner_qualifier = f"the {corner} corner"
+            if "*" in corner:
+                corner_qualifier = f"corners matching {corner}"
+
+            log_path = os.path.join(corner_dir, "rcx.log")
+            info(f"Running RCX for {corner_qualifier} ({log_path})…")
 
             try:
                 self.run_subprocess(
@@ -1069,9 +1071,9 @@ class RCX(OpenROADStep):
                     env=current_env,
                     silent=True,
                 )
-                info(f"Finished RCX for the {corner_clean} interconnect corner.")
+                info(f"Finished RCX for {corner_qualifier}.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed RCX for the {corner_clean} interconnect corner:")
+                err(f"Failed RCX for the {corner_qualifier}:")
                 raise e
 
             return out

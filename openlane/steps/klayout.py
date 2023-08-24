@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import subprocess
 import sys
+import shutil
+import subprocess
 from base64 import b64encode
 from typing import Optional, List, Tuple
 
@@ -229,7 +230,9 @@ class StreamOut(KLayoutStep):
         views_updates[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
 
         if self.config["PRIMARY_SIGNOFF_TOOL"] == "klayout":
-            views_updates[DesignFormat.GDS] = views_updates[DesignFormat.KLAYOUT_GDS]
+            gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
+            shutil.copy(klayout_gds_out, gds_path)
+            views_updates[DesignFormat.GDS] = Path(gds_path)
 
         return views_updates, {}
 

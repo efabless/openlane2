@@ -488,9 +488,9 @@ class Variable:
                 raise ValueError(
                     f"Refusing to automatically convert '{value}' at '{key_path}' to a boolean"
                 )
-            if value in ["1", "true", 1, True]:
+            if value in ["1", "true", "True", 1, True]:
                 return True
-            elif value in ["0", "false", 0, False]:
+            elif value in ["0", "false", "False", 0, False]:
                 return False
             else:
                 raise ValueError(
