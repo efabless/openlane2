@@ -1,0 +1,73 @@
+name: Bug Report
+description: If OpenLane is not behaving as expected, please file a report here.
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong? Be clear and concise.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you *want* to happen?
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        This part is incredibly important:
+
+        Please run the following shell command in the OpenLane root folder:
+
+            openlane.env_info || python3 ./openlane/env_info.py
+
+        Then copy and paste the ENTIRE output in the text field below.
+
+        If you need to redact one or more elements of PYTHONPATH for
+        confidentiality, please mention that.
+  - type: textarea
+    id: environment-report
+    attributes:
+      label: Environment report
+      render: sh
+      description: Please paste the output from the previous command. It will be automatically formatted into code, so no need for backticks.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        You also need to upload some files so we can reproduce your issue.
+
+        If a step fails, you can create a reproducible by going
+        into the step directory, then typing `openlane.steps create-reproducible -d .`
+
+        A new directory called `reproducible` should be created. Zip or tarball
+        that directory then upload by clicking and dragging the file to
+        the text-field below.
+
+        > **Warning:**
+        > GitHub's maximum file upload size is 25 MB, so if your upload is larger than 25MB, please consider splitting it as follows:
+        > for tar files: `split -b 24M <tar-file-name> "<file-tar-name>.part"`
+        > for zip files: `zip -r -s 24M <zip-file-name> <directory-name>`
+  - type: textarea
+    id: reproduction-material
+    attributes:
+      label: Reproduction material
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: ---
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: sh
+    validations:
+      required: true
