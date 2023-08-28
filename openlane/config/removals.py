@@ -21,7 +21,7 @@ removed_variables: Dict[str, str] = {
     "MAGIC_GENERATE_GDS": "The GDS view is always generated when MAGIC_RUN_STREAMOUT is set.",
     "CLOCK_BUFFER_FANOUT": "The simple CTS script that used this variable no longer exists.",
     "FP_IO_HMETAL": "Replaced by FP_IO_HLAYER in the PDK configuration variables, which uses a more specific layer name.",
-    "FP_IO_VMETAL": "Replaced by FP_IO_VLAYER in the PDK  configuration variables, which uses a more specific layer name.",
+    "FP_IO_VMETAL": "Replaced by FP_IO_VLAYER in the PDK configuration variables, which uses a more specific layer name.",
     "GLB_OPTIMIZE_MIRRORING": "Shares DPL_OPTIMIZE_MIRRORING.",
     "GRT_MAX_DIODE_INS_ITERS": "Relevant diode insertion strategies removed.",
     "TAKE_LAYOUT_SCROT": "Buggy/dubious utility.",
@@ -30,4 +30,5 @@ removed_variables: Dict[str, str] = {
     "USE_GPIO_PADS": "Add the pad's files to EXTRA_LEFS and EXTRA_VERILOG_MODELS as apprioriate.",
     "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
     "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
+    "FP_PDN_AUTO_ADJUST": "Too situational. It's always best to be more explicit.",
 }

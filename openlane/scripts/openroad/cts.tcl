@@ -72,11 +72,6 @@ estimate_parasitics -placement
 
 write_views
 
-if { [catch {check_placement -verbose} errmsg] } {
-    puts stderr $errmsg
-    exit 1
-}
-
 puts "%OL_CREATE_REPORT cts.rpt"
 report_cts
 puts "%OL_END_REPORT"

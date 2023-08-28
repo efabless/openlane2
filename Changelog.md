@@ -1,3 +1,19 @@
+# 2.0.0-b12
+
+* Added diode padding to `dpl_cell_pad.tcl`
+* Added `FULL_LIBS` to `YosysStep` without any redactions
+* Moved all PDN variables to the the `OpenROAD.GeneratePDN` step as step-specific
+  PDK variables
+* Updated PDN documentation to make sense and added an illustrated diagram of
+  values
+* Slightly reordered Classic Flow so detailed placement happens right after
+  `Odb.HeuristicDiodeInsertion`
+* Fixed translation of `FP_PDN_MACRO_HOOKS` when a string is provided (only
+  splitting if a `,` is found)
+* Removed extraneous `check_placement -verbose` after `common/dpl.tcl` sources
+  in OpenROAD scripts
+
+
 # 2.0.0-b11
 
 * Added new `mag` format to design formats, populated by `Magic.StreamOut`

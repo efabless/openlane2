@@ -47,11 +47,6 @@ repair_timing {*}$arg_list
 # Legalize
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
-if { [catch {check_placement -verbose} errmsg] } {
-    puts stderr $errmsg
-    exit 1
-}
-
 unset_dont_touch_objects
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl

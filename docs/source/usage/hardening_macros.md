@@ -120,7 +120,7 @@ You have three options for floorplanning in the default flow:
   to `relative` (the default value), and setting [`FP_CORE_UTIL`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_CORE_UTIL)
   as the core utilization percentage. You may also the aspect ratio
   (`1` by default) by changing [`FP_ASPECT_RATIO`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_ASPECT_RATIO).
-1. Set a specific die area by setting [`FP_SIZING`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_SIZING)
+2. Set a specific die area by setting [`FP_SIZING`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_SIZING)
   to `absolute` and setting the [`DIE_AREA` configuration variable](../reference/step_config_vars.md#OpenROAD.Floorplan.DIE_AREA).
 
 <!--
@@ -135,6 +135,25 @@ file- not just the floorplan.
 ```
 -->
 
+## PDN Generation
+
+You can find a full list of power distribution network configuration variables
+in the PDN step [here](../reference/step_config_vars.md#power-distribution-network-generation).
+
+Most designs would have to change these values based on the size of the floorplan:
+
+* `FP_PDN_VPITCH`
+* `FP_PDN_VSPACING`
+* `FP_PDN_HPITCH`
+* `FP_PDN_HSPACING`
+
+A visualization of the values could be found below:
+
+```{include} ./pdn.svg
+:start-line: 2
+```
+
+
 ## I/O Placement
 
 I/O placement refers to finding the locations of the metal pins for the ports
@@ -145,7 +164,7 @@ flow:
 
 1. Letting OpenROAD randomly assign IOs using the random equidistant mode.
    This is the default.
-1. Manually setting the direction of each pin using a configuration file
+2. Manually setting the direction of each pin using a configuration file
    by pointing [`FP_PIN_ORDER_CFG`](../reference/step_config_vars.md#Odb.CustomIOPlacement.FP_PIN_ORDER_CFG)
    to point to that file.
 

@@ -16,9 +16,6 @@ read_current_odb
 
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
-if { [catch {check_placement -verbose} errmsg] } {
-    puts stderr $errmsg
-    exit 1
-}
+check_placement -verbose
 
 write_views
