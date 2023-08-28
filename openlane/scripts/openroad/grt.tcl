@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 read_current_odb
+source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
 set_propagated_clock [all_clocks]
 
@@ -25,6 +25,7 @@ check_antennas -verbose
 puts "%OL_END_REPORT"
 
 if { $::env(GRT_REPAIR_ANTENNAS) } {
+    set diode_split [split $::env(DIODE_CELL) "/"]
     repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS)
     check_placement -verbose
 
