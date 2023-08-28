@@ -27,7 +27,7 @@ import platform
 import subprocess
 
 try:
-    from typing import Optional, Dict, List  # noqa: F401
+    from typing import Optional, Dict, List, Any  # noqa: F401
 except ImportError:
     pass
 
@@ -141,9 +141,9 @@ class NixInfo(StringRepresentable):
                 if line.strip() == "":
                     continue
                 line = line[3:]
-                key, value = line.split(": ", maxsplit=1)
+                key, value_raw = line.split(": ", maxsplit=1)
                 key = key.strip(" -")
-                value = value.strip(' `"')
+                value = value_raw.strip(' `"')  # type: Any
                 if value == "yes":
                     value = True
                 elif value == "no":
@@ -186,6 +186,13 @@ class OSInfo(StringRepresentable):
         self.distro_version = None
         self.python_version = platform.python_version()
         self.python_path = sys.path.copy()
+        self.tkinter = False
+        try:
+            import tkinter  # noqa: F401
+
+            self.tkinter = True
+        except ImportError:
+            pass
         self.container_info = None
         self.nix_info = None
 
@@ -243,13 +250,13 @@ def env_info_cli():
         if isinstance(obj, list):
             for value in obj:
                 if isinstance(value, StringRepresentable) or isinstance(value, dict):
-                    print("%s- %s:" % (" " * indent, key))
+                    print("%s- " % (" " * indent), end="")
                     print_params(value, indent=indent + 2)
                 elif isinstance(value, list):
                     if len(value) == 0:
-                        print("%s- []" % (" " * indent, key))
+                        print("%s- []" % (" " * indent))
                     else:
-                        print("%s- " % (" " * indent, key), end="")
+                        print("%s- " % (" " * indent), end="")
                         print_params(value, indent=indent + 2)
                 else:
                     print("%s- %s" % (" " * indent, value))
