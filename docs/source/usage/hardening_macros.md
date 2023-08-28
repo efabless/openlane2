@@ -147,6 +147,11 @@ Most designs would have to change these values based on the size of the floorpla
 * `FP_PDN_HPITCH`
 * `FP_PDN_HSPACING`
 
+A visualization of the values could be found below:
+
+```{include} ./pdn.svg
+:start-line: 2
+```
 
 
 ## I/O Placement
@@ -159,7 +164,7 @@ flow:
 
 1. Letting OpenROAD randomly assign IOs using the random equidistant mode.
    This is the default.
-1. Manually setting the direction of each pin using a configuration file
+2. Manually setting the direction of each pin using a configuration file
    by pointing [`FP_PIN_ORDER_CFG`](../reference/step_config_vars.md#Odb.CustomIOPlacement.FP_PIN_ORDER_CFG)
    to point to that file.
 

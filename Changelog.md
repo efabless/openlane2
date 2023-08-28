@@ -4,6 +4,8 @@
 * Added `FULL_LIBS` to `YosysStep` without any redactions
 * Moved all PDN variables to the the `OpenROAD.GeneratePDN` step as step-specific
   PDK variables
+* Updated PDN documentation to make sense and added an illustrated diagram of
+  values
 * Slightly reordered Classic Flow so detailed placement happens right after
   `Odb.HeuristicDiodeInsertion`
 * Removed extraneous `check_placement -verbose` after `common/dpl.tcl` sources
