@@ -46,10 +46,6 @@ repair_timing {*}$arg_list
 
 # Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
-if { [catch {check_placement -verbose} errmsg] } {
-    puts stderr $errmsg
-    exit 1
-}
 unset_dont_touch_objects
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 

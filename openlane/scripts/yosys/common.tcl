@@ -27,7 +27,7 @@ proc read_deps {{power_defines "off"}} {
     }
 
     if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-        foreach lib $::env(SYNTH_LIBS) {
+        foreach lib $::env(FULL_LIBS) {
             log "Reading SCL library '$lib' as a blackbox…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }

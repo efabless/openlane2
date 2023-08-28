@@ -822,7 +822,7 @@ class GlobalRouting(OpenROADStep):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    config_vars = OpenROADStep.config_vars + grt_variables
+    config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
