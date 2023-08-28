@@ -37,7 +37,9 @@ The Macro configuration object may look kind of like this:
                     "orientation": "N"
                 }
             },
-            "libs": ["dir::macros/spm/lib/spm.lib"],
+            "lib": {
+                "*": ["dir::macros/spm/lib/spm.lib"]
+                },
             "gds": [
                 "dir::macros/spm/gds/spm.magic.gds"
             ],
