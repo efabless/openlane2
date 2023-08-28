@@ -8,6 +8,8 @@
   values
 * Slightly reordered Classic Flow so detailed placement happens right after
   `Odb.HeuristicDiodeInsertion`
+* Fixed translation of `FP_PDN_MACRO_HOOKS` when a string is provided (only
+  splitting if a `,` is found)
 * Removed extraneous `check_placement -verbose` after `common/dpl.tcl` sources
   in OpenROAD scripts
 

@@ -109,6 +109,15 @@ def old_to_new_tracks(old_tracks: str) -> str:
     return final_str
 
 
+def pdn_macro_migrator(x):
+    if not isinstance(x, str):
+        return x
+    if "," in x:
+        return [el.strip() for el in x.split(",")]
+    else:
+        return [x.strip()]
+
+
 class OpenROADStep(TclStep):
     inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = [
@@ -130,7 +139,7 @@ class OpenROADStep(TclStep):
             "PDN_MACRO_CONNECTIONS",
             Optional[List[str]],
             "Specifies explicit power connections of internal macros to the top level power grid, in the format: macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
-            deprecated_names=["FP_PDN_MACRO_HOOKS"],
+            deprecated_names=[("FP_PDN_MACRO_HOOKS", pdn_macro_migrator)],
         ),
         Variable(
             "PDN_ENABLE_GLOBAL_CONNECTIONS",

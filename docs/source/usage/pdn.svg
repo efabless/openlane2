@@ -23,9 +23,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="6.2088592"
-     inkscape:cx="227.7391"
-     inkscape:cy="138.91441"
+     inkscape:zoom="17.561306"
+     inkscape:cx="82.624836"
+     inkscape:cy="25.709933"
      inkscape:window-width="3440"
      inkscape:window-height="1287"
      inkscape:window-x="0"
@@ -51,9 +51,9 @@
        style="font-size:10.6667px;white-space:pre;shape-inside:url(#rect954);opacity:1;fill:currentColor;stroke:none;stroke-width:1.00157"><tspan
          x="262.44141"
          y="215.13896"
-         id="tspan351"><tspan
+         id="tspan828"><tspan
            style="font-family:monospace;-inkscape-font-specification:monospace"
-           id="tspan349">core boundary</tspan></tspan></text>
+           id="tspan826">core boundary</tspan></tspan></text>
     <path
        style="opacity:1;stroke:currentColor;stroke-width:0.277312"
        d="M 5,47.475666 H 95 Z"
@@ -167,5 +167,89 @@
          style="stroke-width:0.11173"
          x="98.621887"
          y="27.2838">pitch</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="39.314201"
+       id="text1597-36"><tspan
+         id="tspan1595-75"
+         style="font-size:1.33333px;fill:currentColor;stroke:none;stroke-width:0.11173"
+         x="4.9333215"
+         y="39.314201">vdd1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="34.306324"
+       id="text459"><tspan
+         sodipodi:role="line"
+         id="tspan462"
+         x="4.9333215"
+         y="34.306324"><tspan
+           id="tspan457"
+           style="font-size:1.33333px;fill:currentColor;stroke:none;stroke-width:0.11173"
+           x="4.9333215"
+           y="34.306324">vdd2</tspan></tspan><tspan
+         sodipodi:role="line"
+         id="tspan464"
+         x="4.9333215"
+         y="35.972988" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="29.317348"
+       id="text500"><tspan
+         sodipodi:role="line"
+         id="tspan496"
+         x="4.9333215"
+         y="29.317348">vss</tspan><tspan
+         sodipodi:role="line"
+         id="tspan498"
+         x="4.9333215"
+         y="30.984011" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="17.485722"
+       id="text1597-36-2"><tspan
+         id="tspan1595-75-8"
+         style="font-size:1.33333px;fill:currentColor;stroke:none;stroke-width:0.11173"
+         x="4.9333215"
+         y="17.485722">vdd1</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="12.477844"
+       id="text459-9"><tspan
+         sodipodi:role="line"
+         id="tspan462-7"
+         x="4.9333215"
+         y="12.477844"><tspan
+           id="tspan457-3"
+           style="font-size:1.33333px;fill:currentColor;stroke:none;stroke-width:0.11173"
+           x="4.9333215"
+           y="12.477844">vdd2</tspan></tspan><tspan
+         sodipodi:role="line"
+         id="tspan464-6"
+         x="4.9333215"
+         y="14.144506" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:1.33333px;font-family:monospace;-inkscape-font-specification:monospace;fill:currentColor;stroke:none;stroke-width:0.11173"
+       x="4.9333215"
+       y="7.4888692"
+       id="text500-1"><tspan
+         sodipodi:role="line"
+         id="tspan496-2"
+         x="4.9333215"
+         y="7.4888692">vss</tspan><tspan
+         sodipodi:role="line"
+         id="tspan498-9"
+         x="4.9333215"
+         y="9.1555319" /></text>
   </g>
 </svg>
