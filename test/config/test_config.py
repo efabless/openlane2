@@ -20,7 +20,6 @@ from openlane.common import Path
 
 
 mock_variables = pytest.mock_variables
-DiodeOnPortsEnum = pytest.DiodeOnPortsEnum
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
@@ -48,7 +47,7 @@ def test_dict_config():
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -100,7 +99,7 @@ def test_json_config():
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -153,7 +152,7 @@ def test_tcl_config():
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -504,9 +503,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
 
     assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 0 properly"
     assert not cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 0 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum.none
-    ), "failed to migrate dis 0 properly"
+    assert cfg["DIODE_ON_PORTS"] == "none", "failed to migrate dis 0 properly"
 
     set_dis(3)
     cfg, _ = Config.load(
@@ -518,9 +515,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 3 properly"
     assert not cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 3 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum.none
-    ), "failed to migrate dis 3 properly"
+    assert cfg["DIODE_ON_PORTS"] == "none", "failed to migrate dis 3 properly"
 
     set_dis(4)
     cfg, _ = Config.load(
@@ -532,9 +527,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 4 properly"
     assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 4 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum["in"]
-    ), "failed to migrate dis 4 properly"
+    assert cfg["DIODE_ON_PORTS"] == "in", "failed to migrate dis 4 properly"
 
     set_dis(6)
     cfg, _ = Config.load(
@@ -546,9 +539,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 6 properly"
     assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 6 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum["in"]
-    ), "failed to migrate dis 6 properly"
+    assert cfg["DIODE_ON_PORTS"] == "in", "failed to migrate dis 6 properly"
 
     assert (
         "See 'Migrating DIODE_INSERTION_STRATEGY'" in caplog.text

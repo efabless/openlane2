@@ -137,7 +137,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["TIME_DERATING_CONSTRAINT"] = 5
     new["IO_DELAY_CONSTRAINT"] = 20
 
-    # 8. SPICE models
+    # 8. "Implicit" Paths
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         spice_glob = os.path.join(
             config["PDK_ROOT"],
@@ -148,6 +148,34 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "*.spice",
         )
         new["CELL_SPICE_MODELS"] = glob(spice_glob)
+
+        mag_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "mag",
+            "*.mag",
+        )
+        new["CELL_MAGS"] = glob(mag_glob)
+
+        maglef_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "maglef",
+            "*.mag",
+        )
+        new["CELL_MAGLEFS"] = glob(maglef_glob)
+
+        new["MAGIC_PDK_SETUP"] = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.tech",
+            "magic",
+            f"{config['PDK']}.tcl",
+        )
 
     # 9. Primary Signoff Tool
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):

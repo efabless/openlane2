@@ -514,17 +514,17 @@ option_variables = [
     Variable(
         "DESIGN_DIR",
         Path,
-        "The directory of the design. Does not need to be provided explicitly.",
+        "The directory of the design. Should be set via command-line arguments or :meth:`Config.load` flags and not actual configuration files. If using a configuration file, ``DESIGN_DIR`` will be the directory where that file exists.",
+    ),
+    Variable(
+        "PDK_ROOT",
+        Path,
+        "The home path of all PDKs. Should be set via command-line arguments or :meth:`Config.load` flags and not actual configuration files.",
     ),
     Variable(
         "DESIGN_NAME",
         str,
-        "The name of the top level module of the design. This is the only required variable for all steps and all flows.",
-    ),
-    Variable(
-        "PDK_ROOT",
-        str,
-        "The path to all PDKs. This variable is special and tools should typically handle them.",
+        "The name of the top level module of the design. This is the only variable that MUST be set in every single OpenLane configuration file or dictionary.",
     ),
     Variable(
         "PDK",

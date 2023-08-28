@@ -525,9 +525,11 @@ class Config(GenericImmutableDict[str, Any]):
         if meta is None:
             meta = Meta(version=default_meta_version)
 
+        override_keys = set()
         for string in config_override_strings:
             key, value = string.split("=", 1)
             raw[key] = value
+            override_keys.add(key)
 
         mutable = GenericDict(
             preprocess_dict(
@@ -575,13 +577,17 @@ class Config(GenericImmutableDict[str, Any]):
             )
         )
 
-        permissive_variables = []
-        strict_variables = list(flow_config_vars)
-        on_unknown_key: Union[Literal["error", "warn"], None] = "error"
-        if meta.version < 2:
-            permissive_variables = strict_variables
-            strict_variables = []
-            on_unknown_key = "warn"
+        permissive_variables = list(flow_config_vars)
+        strict_variables = []
+        on_unknown_key: Union[Literal["error", "warn"], None] = "warn"
+        if meta.version >= 2:
+            permissive_variables = []
+            for variable in flow_config_vars:
+                if variable.name in override_keys:
+                    permissive_variables.append(variable)
+                    continue
+                strict_variables.append(variable)
+            on_unknown_key = "error"
 
         processed, design_warnings, design_errors = Config.__process_variable_list(
             mutable,
@@ -612,7 +618,7 @@ class Config(GenericImmutableDict[str, Any]):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         *,
-        config_override_strings: Sequence[str],  # Unused, kept for API consistency
+        config_override_strings: Sequence[str],
         pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,

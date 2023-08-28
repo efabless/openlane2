@@ -27,6 +27,12 @@ if { [info exist ::env(EXTRA_LEFS)] } {
         lef read $lef_file
     }
 }
+# if { [info exist ::mag_read_cell_lefs] && $::mag_read_cell_lefs } {
+#     foreach lef_file $::env(CELL_LEFS) {
+#         puts "> lef read $lef_file"
+#         lef read $lef_file
+#     }
+# }
 
 # DEF
 set def_read_args [list]

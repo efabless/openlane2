@@ -16,13 +16,13 @@ import tempfile
 from shutil import rmtree
 from unittest import mock
 from decimal import Decimal
-from typing import Any, Optional, Iterable, Callable, List, Dict
+from typing import Any, Literal, Optional, Iterable, Callable, List, Dict
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 from openlane.config import Variable, Macro
-from openlane.common import StringEnum, Path, GenericDict
+from openlane.common import Path, GenericDict
 
 
 def pytest_assertrepr_compare(op, left, right):
@@ -132,7 +132,6 @@ def _chdir_tmp():
         yield
 
 
-DiodeOnPortsEnum = StringEnum("Ports", ["none", "in"])
 MOCK_PDK_VARS = [
     Variable(
         "STD_CELL_LIBRARY",
@@ -201,7 +200,7 @@ MOCK_FLOW_VARS = [
     ),
     Variable(
         "DIODE_ON_PORTS",
-        DiodeOnPortsEnum,
+        Literal["none", "in"],
         description="x",
         default="none",
     ),
@@ -322,4 +321,3 @@ def _mock_progress():
 def pytest_configure():
     pytest.COMMON_FLOW_VARS = COMMON_FLOW_VARS
     pytest.mock_variables = mock_variables
-    pytest.DiodeOnPortsEnum = DiodeOnPortsEnum
