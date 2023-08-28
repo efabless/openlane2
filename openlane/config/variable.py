@@ -253,29 +253,29 @@ class Variable:
     @property
     def optional(self) -> bool:
         """
-        Returns whether a variable's type is an `Option type <https://en.wikipedia.org/wiki/Option_type>`_.
+        :returns: Whether a variable's type is an `Option type <https://en.wikipedia.org/wiki/Option_type>`_.
         """
         return is_optional(self.type)
 
     @property
     def some(self) -> Any:
         """
-        Returns the type of a variable presuming it is not None.
+        :returns: The type of a variable presuming it is not None.
 
-        If a variable is not Optional, that is simply the type specified in the
-        :ivar:`type` field.
+            If a variable is not Optional, that is simply the type specified in the
+            ``type`` attribute.
         """
         return some_of(self.type)
 
     def type_repr_md(self) -> str:  # pragma: no cover
         """
-        Prints a pretty Markdown string representation of the Variable's type.
+        :returns: A pretty Markdown string representation of the Variable's type.
         """
         return repr_type(self.type)
 
     def desc_repr_md(self) -> str:  # pragma: no cover
         """
-        Prints the description, but with newlines escaped for Markdown.
+        :returns: The description, but with newlines escaped for Markdown.
         """
         return self.description.replace("\n", "<br />")
 

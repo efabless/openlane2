@@ -22,7 +22,7 @@ You already know how to harden individual macros from the previous document. Now
 The chip core would usually have other macros inside it.
 
 In addition to the configuration variables for most cores, you will also need
-to set the [`MACROS`](../reference/flow_config_vars.md#MACROS) configuration
+to set the [`MACROS`](../reference/common_flow_vars.md#macros) configuration
 object.
 
 The Macro configuration object may look kind of like this:
@@ -65,10 +65,10 @@ loaded during STA for example, `lef` during PNR and `gds` during stream-out.
 For backwards compatibility with OpenLane 1, there exist a number of variables
 that load views indiscriminately, but their use is discouraged:
 
-* [`EXTRA_LIBS`](../reference/flow_config_vars.md#EXTRA_LIBS)
-* [`EXTRA_LEFS`](../reference/flow_config_vars.md#EXTRA_LEFS)
-* [`EXTRA_VERILOG_MODELS`](../reference/flow_config_vars.md#EXTRA_VERILOG_MODELS)
-* [`EXTRA_GDS_FILES`](../reference/flow_config_vars.md#EXTRA_GDS_FILES)
+* [`EXTRA_LIBS`](../reference/common_flow_vars.md#extra_libs)
+* [`EXTRA_LEFS`](../reference/common_flow_vars.md#extra_lefs)
+* [`EXTRA_VERILOG_MODELS`](../reference/common_flow_vars.md#extra_verilog_models)
+* [`EXTRA_GDS_FILES`](../reference/common_flow_vars.md#extra_gds_files)
 <!--
 TODO:
     * Padframe
