@@ -47,5 +47,20 @@ actually exist) using the `$` instruction, where `$1` adds one virtual pin,
 
 Here is the `.cfg` file for the SPM design:
 
-```{literalinclude} ../../../designs/spm/pin_order.cfg
+```
+#N
+@min_distance=0.1
+x.*
+
+#S
+$1
+rst
+
+#E
+clk
+
+#W
+p
+y
+
 ```

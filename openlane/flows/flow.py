@@ -205,7 +205,7 @@ class FlowProgressBar(object):
     def get_ordinal_prefix(self) -> str:
         """
         :returns: A string with the current step ordinal, which can be
-        used to create a step directory.
+            used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
         return f"%0{max_stage_digits}d-" % self.__ordinal
@@ -333,7 +333,7 @@ class Flow(ABC):
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
-                result += f"* [`{step.id}`](./step_config_vars.md#{step.id})\n"
+                result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
 
         return result
 

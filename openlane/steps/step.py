@@ -390,14 +390,14 @@ class Step(ABC):
             for var in Self.config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                result += f'| <a name="{Self.id.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
 
         result = (
             textwrap.dedent(
                 f"""
                 ### {Self.__get_desc()}
                 
-                <a name="{Self.id}"></a>
+                <a name="{Self.id.lower()}"></a>
                 """
             )
             + result
@@ -760,7 +760,7 @@ class Step(ABC):
     def get_log_path(self) -> str:
         """
         :returns: the default value for :meth:`run_subprocess`'s "log_to"
-        parameter.
+            parameter.
 
             Override it to change the default log path.
         """
