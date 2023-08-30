@@ -11,6 +11,7 @@
     <a href="https://nixos.org/"><img src="https://img.shields.io/static/v1?logo=nixos&logoColor=white&label=&message=Built%20with%20Nix&color=41439a" alt="Built with Nix"/></a>
 </p>
 <p align="center">
+    <a href="https://colab.research.google.com/github/efabless/openlane2/blob/main/notebook.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab"></a>
     <a href="https://openlane2.readthedocs.io/"><img src="https://readthedocs.org/projects/openlane2/badge/?version=latest" alt="Documentation Build Status Badge"/></a>
     <a href="https://invite.skywater.tools"><img src="https://img.shields.io/badge/Community-Open%20Source%20Silicon%20Slack-ff69b4?logo=slack" alt="Invite to the Open Source Silicon Slack"/></a>
 </p>
@@ -38,6 +39,9 @@ flow = Classic(
 flow.start()
 ```
 
+## Try it out
+You can try OpenLane right in your browser, free-of-charge, using Google Colaboratory
+by following [**this link**](https://colab.research.google.com/github/efabless/openlane2/blob/main/notebook.ipynb).
 
 ## Installation
 You'll need the following:

@@ -74,5 +74,4 @@ puts stdout "\[INFO\] Saving mag view with DRC errors ($mag_view)"
 # WARNING: changes the name of the cell; keep as last step
 save $mag_view
 puts stdout "\[INFO\] Saved"
-
 exit 0

@@ -74,15 +74,47 @@ def __logger():
 __openlane_logger = __logger()
 
 
+def register_additional_handler(handler: logging.Handler):
+    """
+    Adds a new handler to the default OpenLane logger.
+
+    :param handler: The new handler. Must be of type ``logging.Handler``
+        or its subclasses.
+    """
+    __openlane_logger.addHandler(handler)
+
+
+def deregister_additional_handler(handler: logging.Handler):
+    """
+    Removes a registered handler from the default OpenLane logger.
+
+    :param handler: The handler. If not registered, the behavior
+        of this function is undefined.
+    """
+    __openlane_logger.removeHandler(handler)
+
+
 def set_log_level(lv: Union[str, int]):
+    """
+    Sets the log level of the default OpenLane logger.
+
+    :param lv: Either the name or number of the desired log level.
+    """
     __openlane_logger.setLevel(lv)
 
 
 def reset_log_level():
+    """
+    Sets the log level of the default OpenLane logger back to the
+    default log level.
+    """
     set_log_level("VERBOSE")
 
 
 def get_log_level() -> int:
+    """
+    Obtains the numeric log level of the OpenLane logger.
+    """
     return __openlane_logger.getEffectiveLevel()
 
 
@@ -131,6 +163,8 @@ def rule(title: str = "", /, **kwargs):  # pragma: no cover
 
     :param title: A title string to enclose in the console rule
     """
+    if get_log_level() > LogLevels.INFO:
+        return
     if __plain_output:
         print(("-" * 10) + str(title) + ("-" * 10))
     else:

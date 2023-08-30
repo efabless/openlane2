@@ -21,7 +21,7 @@ The following is the recommended installation method under Windows. Other virtua
 6. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
 7. Check the verison of WSL using following command: `wsl --list --verbose`
 
-It should produce following output:
+It should produce the following output:
 
 ```powershell
 PS C:\Users\user> wsl --list --verbose
@@ -65,5 +65,5 @@ https://docs.docker.com/go/wsl2/
 ```{include} wsl_ubuntu_packages.md
 ```
 
-```{include} installation_common_section.md
+```{include} _common.md
 ```

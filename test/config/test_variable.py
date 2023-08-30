@@ -287,7 +287,8 @@ def test_compile_invalid(variable_set: list):
     for variable in variable_set:
         print(f"* Testing {variable.name} ({variable.type})…")
         with pytest.raises(
-            ValueError, match="(invalid)|(does not exist)|(is not 'yes')"
+            ValueError,
+            match="(is invalid)|(does not exist)",
         ):
             variable.compile(
                 invalid_input,

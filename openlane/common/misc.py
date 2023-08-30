@@ -18,13 +18,15 @@ import pathlib
 import unicodedata
 from enum import Enum
 from collections import UserString
-
 from typing import (
     Any,
+    ClassVar,
     Iterable,
     Sequence,
     TypeVar,
 )
+
+from deprecated.sphinx import deprecated
 
 
 T = TypeVar("T")
@@ -61,9 +63,11 @@ def get_opdks_rev() -> str:
     """
     Gets the Open_PDKs revision confirmed compatible with this version of OpenLane.
     """
-    return open(
-        os.path.join(get_openlane_root(), "open_pdks_rev"), encoding="utf8"
-    ).read()
+    return (
+        open(os.path.join(get_openlane_root(), "open_pdks_rev"), encoding="utf8")
+        .read()
+        .strip()
+    )
 
 
 # The following code snippet has been adapted under the following license:
@@ -144,6 +148,10 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
+@deprecated(
+    reason="Use Literal['str1', 'str2', …], which is more idiomatic to Python.",
+    version="2.0.0b11",
+)
 def StringEnum(name: str, values: Sequence[str]):
     """
     Creates a string enumeration class where the keys and values are the same.
@@ -158,6 +166,11 @@ class Path(UserString, os.PathLike):
     Basically just a string.
     """
 
+    # This path will pass the validate() call, but will
+    # fail to open. It should be used for deprecated variable
+    # translation only.
+    _dummy_path: ClassVar[str] = "__openlane_dummy_path"
+
     def __fspath__(self) -> str:
         return str(self)
 
@@ -167,10 +180,17 @@ class Path(UserString, os.PathLike):
         """
         return os.path.exists(self)
 
+    def validate(self):
+        """
+        Raises an error if the path does not exist.
+        """
+        if not self.exists() and not self == Path._dummy_path:
+            raise ValueError(f"'{self}' does not exist")
+
 
 class zip_first(object):
     """
-    Works like ``zip_longest`` if |a| > |b| and ``zip`` if |a| <= |b|.
+    Works like ``zip_longest`` if ｜a｜ > ｜b｜ and ``zip`` if ｜a｜ <= ｜b｜.
     """
 
     def __init__(self, a: Iterable, b: Iterable, fillvalue: Any) -> None:

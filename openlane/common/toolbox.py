@@ -13,13 +13,10 @@
 # limitations under the License.
 import os
 import re
-import sys
 import uuid
 import fnmatch
 import tempfile
-import subprocess
 from enum import IntEnum
-from shutil import which
 from functools import lru_cache
 from typing import (
     Any,
@@ -36,11 +33,12 @@ from typing import (
 
 from deprecated.sphinx import deprecated
 
-from .metrics import aggregate_metrics
-from .generic_dict import is_string
-from .misc import Path, mkdirp, get_script_dir
-from .design_format import DesignFormat
+
+from .misc import Path, mkdirp
 from ..logging import debug, warn
+from .metrics import aggregate_metrics
+from .design_format import DesignFormat
+from .generic_dict import GenericImmutableDict, is_string
 
 
 class Toolbox(object):
@@ -52,7 +50,7 @@ class Toolbox(object):
     """
 
     def __init__(self, tmp_dir: str) -> None:
-        self.tmp_dir = os.path.abspath(tmp_dir)
+        self.tmp_dir = tmp_dir
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
 
     @deprecated(
@@ -159,9 +157,10 @@ class Toolbox(object):
                 result += views_filtered
             elif isinstance(views, list):
                 result += views
-            elif views is not None and str(views) != "":
+            elif views is not None:
                 result += [Path(views)]
-        return result
+
+        return [element for element in result if str(element) != Path._dummy_path]
 
     def get_timing_files(
         self,
@@ -173,12 +172,14 @@ class Toolbox(object):
         Returns the lib files for a given configuration and timing corner.
 
         :param config: A configuration object or a similar mapping.
-        :param timing_corner: A fully qualified IPVT corner to get SCL libs for.
+        :param timing_corner:
+            A fully qualified IPVT corner to get SCL libs for.
 
             If not specified, the value for `DEFAULT_CORNER` from the SCL will
             be used.
-        :param prioritize_nl: Do not return lib files for macros that have
-            Gate-Level Netlists and SPEF views.
+        :param prioritize_nl:
+            Do not return lib files for macros that have gate-Level Netlists and
+            SPEF views.
 
             If set to ``false``, only lib files are returned.
         :returns: A tuple of:
@@ -248,68 +249,34 @@ class Toolbox(object):
 
         return (timing_corner, [str(path) for path in result])
 
-    def __render_common(
-        self, config: Mapping[str, Any]
-    ) -> Optional[Tuple[str, str, str]]:  # pragma: no cover
-        klayout_bin = which("klayout")
-        if klayout_bin is None:
-            warn("This PDK does not support KLayout; previews cannot be rendered.")
-            return None
-
-        lyp = config["KLAYOUT_PROPERTIES"]
-        lyt = config["KLAYOUT_TECH"]
-        lym = config["KLAYOUT_DEF_LAYER_MAP"]
-        if None in [lyp, lyt, lym]:
-            warn("This PDK does not support KLayout; previews cannot be rendered.")
-            return None
-        return (str(lyp), str(lyt), str(lym))
-
     def render_png(
-        self, config: Mapping[str, Any], input: str
+        self,
+        config: GenericImmutableDict[str, Any],
+        state_in: GenericImmutableDict[str, Any],
     ) -> Optional[bytes]:  # pragma: no cover
-        files = self.__render_common(config)
-        if files is None:
+        try:
+            from ..steps import KLayout, StepError
+            from ..config import Config, InvalidConfig
+            from ..state import State
+
+            # I'm too damn tired to figure out a way to forward-declare those two,
+            # have fun if you want to
+            if not isinstance(config, Config):
+                raise TypeError("parameter config must be of type Config")
+
+            if not isinstance(state_in, State):
+                raise TypeError("parameter state_in must be of type State")
+
+            with tempfile.TemporaryDirectory() as d:
+                render_step = KLayout.Render(config, state_in, _config_quiet=True)
+                render_step.start(self, d)
+                return open(os.path.join(d, "out.png"), "rb").read()
+        except InvalidConfig:
+            warn("PDK is incompatible with KLayout. Unable to generate preview.")
             return None
-        lyp, lyt, lym = files
-
-        tech_lefs = self.filter_views(config, config["TECH_LEFS"])
-        if len(tech_lefs) != 1:
-            raise ValueError(
-                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
-            )
-
-        lef_arguments = ["-l", str(tech_lefs[0])]
-        for file in config["CELL_LEFS"]:
-            lef_arguments += ["-l", str(file)]
-        if extra := config["EXTRA_LEFS"]:
-            for file in extra:
-                lef_arguments += ["-l", str(file)]
-
-        result = None
-        with tempfile.NamedTemporaryFile() as f:
-            try:
-                cmd = [
-                    sys.executable,
-                    os.path.join(get_script_dir(), "klayout", "render.py"),
-                    input,
-                    "--output",
-                    f.name,
-                    "--lyp",
-                    lyp,
-                    "--lyt",
-                    lyt,
-                    "--lym",
-                    lym,
-                ] + lef_arguments
-                subprocess.check_output(
-                    cmd,
-                    stderr=subprocess.STDOUT,
-                    encoding="utf8",
-                )
-                result = f.read()
-            except subprocess.CalledProcessError as e:
-                warn(f"Failed to render preview: {e.stdout}")
-        return result
+        except StepError as e:
+            warn(f"Failed to generate preview: {e}.")
+            return None
 
     def remove_cells_from_lib(
         self,

@@ -100,7 +100,7 @@ report_parasitic_annotation -report_unannotated
 
 puts "\n==========================================================================="
 puts "max slew violation count [sta::max_slew_violation_count]"
-write_metric_int "clock__max_slew_violation__count__corner:[$corner name]" [sta::max_slew_violation_count]
+write_metric_int "design__max_slew_violation__count__corner:[$corner name]" [sta::max_slew_violation_count]
 puts "max fanout violation count [sta::max_fanout_violation_count]"
 write_metric_int "design__max_fanout_violation__count__corner:[$corner name]" [sta::max_fanout_violation_count]
 puts "max cap violation count [sta::max_capacitance_violation_count]"

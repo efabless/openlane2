@@ -131,40 +131,31 @@ reference a variable that is declared after the current expression.
 > In this example, the first configuration is invalid, as B is referenced before
 > it is declared, but the latter is OK, where the value will be "vdd gnd" as well.
 
-Unlike Tcl config files, environment variables (other than `DESIGN_DIR`, `PDK`,
-`PDKPATH`, `STD_CELL_LIBRARY`) are not exposed to `config.json` by default.
+Do note that unlike Tcl config files, environment variables (other than
+`DESIGN_DIR`, `PDK`, `PDKPATH`, `STD_CELL_LIBRARY`) are not exposed to
+`config.json` by default.
 
-<!--
-Which you can then use as follows:
-
-```json
-{
-    "DEFINES_FILE": "ref::$CARAVEL_ROOT/verilog/rtl/defines.v"
-}
-```
-
-...which then would evaluate to `/caravel/verilog/rtl/defines.v`.
--->
-
-Another feature this has is if the files you choose lie **inside** an exposed
-directory, this prefix supports non-recursive globs, i.e., you can use an
+If the files you choose lie **inside** the design directory, a different prefix,
+`refg::`, supports non-recursive globs, i.e., you can use an
 asterisk as a wildcard to pick multiple files in a specific folder.
 
 * Outside the design directory, this is disabled for security reasons and the
   final path will continue to include the asterisk.
+* `refg::` will always return an array, even if only one element was found,
+  for consistency.
   
-As shown below, `ref::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
+As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
 in the `src` folder inside the design directory.
 
 ```json
 {
-    "VERILOG_FILES": "ref::$DESIGN_DIR/src/*.v"
+    "VERILOG_FILES": "refg::$DESIGN_DIR/src/*.v"
 }
 ```
 
 There are some shorthands for the exposed default variables:
-* `dir::` is equivalent to `ref::$DESIGN_DIR/`
-* `pdk_dir::` is equivalent to `ref::$PDKPATH/`
+* `dir::` is equivalent to `refg::$DESIGN_DIR/`
+* `pdk_dir::` is equivalent to `refg::$PDKPATH/`
 
 
 #### Expression Engine

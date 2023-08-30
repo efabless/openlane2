@@ -1,3 +1,112 @@
+# 2.0.0-b12
+
+* Added diode padding to `dpl_cell_pad.tcl`
+* Added `FULL_LIBS` to `YosysStep` without any redactions
+* Moved all PDN variables to the the `OpenROAD.GeneratePDN` step as step-specific
+  PDK variables
+* Updated PDN documentation to make sense and added an illustrated diagram of
+  values
+* Slightly reordered Classic Flow so detailed placement happens right after
+  `Odb.HeuristicDiodeInsertion`
+* Fixed translation of `FP_PDN_MACRO_HOOKS` when a string is provided (only
+  splitting if a `,` is found)
+* Removed extraneous `check_placement -verbose` after `common/dpl.tcl` sources
+  in OpenROAD scripts
+
+
+# 2.0.0-b11
+
+* Added new `mag` format to design formats, populated by `Magic.StreamOut`
+* Added support for `stdin` in reproducibles (mainly for Magic): ejected reproducibles now save the input and use it
+* Added three new PDK variables to all Magic-based steps: `MAGIC_PDK_SETUP`, `CELL_MAGS`, and `CELL_MAGLEFS`, which explicitly list some files Magic constructed from `PDK_ROOT`, as well as codifying a convention that variables must explicitly list files being used.
+* Added new variable to `Magic.SpiceExtraction`, `MAGIC_EXT_ABSTRACT`, which allows for cell/submodule-level LVS rather than transistor-level LVS.
+* Changed SPEF file saving to only strip asterisks instead of underscores as well, matching the folders
+* Fixed an issue where OpenLane's type-checking only accepted a single value for Literals in violation of ["Shortening unions of literals," PEP-586](https://peps.python.org/pep-0586/#shortening-unions-of-literals)
+* Fixed an issue where command-line overrides were still treated as strict variables
+* Fixed an issue where `rule()` would print a line even when log levels would not allow it
+* Fixed an issue where `PDK_ROOT` was of type `str`
+* Updated documentation to provide information on conventions for declaring variables
+  * Deprecated `StringEnums`, now favoring `Literal['str1', 'str2', …]`
+
+# 2.0.0-b10
+
+* Add new commandline options: `--docker-tty/--docker-no-tty`, controlling the `-t` flag of Docker and compatible container engines which allocates a virtual tty
+* Convert CI to use `--dockerized` instead of a plain `docker run`
+
+# 2.0.0-b9
+
+* `Flow.start()` now registers two handlers, one for errors and one for warnings, and forwards them to `step_dir/{errors,warnings}.log` respectively
+* Created `CELL_SPICE_MODELS` as a PDK variable to handle .spice models of the SCLs instead of globbing in-step
+* Added a "dummy path" for macro translation purposes that always validates and is ignored by `self.toolbox.get_macro_views`
+* Reduced reliance on absolute paths
+  * Special exception carved out for `STEP_DIR`, `SCRIPTS_DIR`
+  * Made KLayout scripts more resilient to relative pathing
+* Created new "eject" feature, which would make reproducibles for steps relying on subprocesses independent of OpenLane
+  * `scripts` directory copied in entirety into ejected reproducibles
+* Updated Open PDKs to `e3b630d`
+* Updated Yosys to `14d50a1`
+* Updated CI to handle missing `vars.CACHIX_CACHE`
+* Updated Volare to `0.12.3` to use new authentication and user agent
+* Downgraded Magic to `0afe4d8` to match OL1
+* Restored ancient `{DATA,CLOCK}_WIRE_RC_LAYER` variables, with translation behavior from `WIRE_RC_LAYER` to `DATA_WIRE_RC_LAYER`
+* Fixed issue with `Step.load()` re-validating values, which affected
+  reproducibles
+* Timing signoff no longer prints if log level is higher than `VERBOSE`
+* Use `parse_float=Decimal` consistently when loading JSON strings to
+  avoid fun floating point errors
+* Removed dependency on State module from `odb` scripts
+* Removed custom PYTHONPATH setting from `OdbStep` (which was mostly to mitigate problems fixed in #86)
+
+# 2.0.0-b8
+
+* Rename incorrectly-named metric rename `clock__max_slew_violation__count` to
+  `design__max_slew_violation__count`
+* Fix clock skew metric aggregation by using `-inf` instead of `inf`
+
+# 2.0.0-b7
+
+* Internally reworked `Config` module
+  * `Variable` objects now have a boolean property, `.pdk`, which is set to
+    `True` if the variable is expected to be provided by the PDK
+  * List of common flow variables now incorporate both option config variables
+    *and* PDK config variables, with the aforementioned flag used to tell
+    them apart.
+  * Individual `Step`s may now freely declare PDK variable, with the implication
+    that if a `Flow` or one of its constituent `Step`s has one or more variables
+    not declared by the current PDK, the `Step` (and `Flow`) are incompatible
+    with the PDK.
+  * Mutable data structures are used during the construction of `Config` to avoid
+    constant copying of immutable dictionaries
+    * Multiple private instance methods converted to private `classmethod`s to
+    deal with mutable data structures instead of constantly making `Config`
+    copies
+  * Getting raw values from the PDK memoized to avoid having to call the Tcl
+    interpreter repeatedly
+  * All `Step` objects, not just those used with an interactive configuration,
+    can now be given overrides upon construction using keyword arguments.
+* A number of previously-universal PDK variables are now declared by the `Step`s
+  and made non-optional, i.e., the `Step` can expect them to be declared by the
+  PDK if the configuration is successfully validated.
+* `PDK`, `PDK_ROOT` are no longer considered "PDK" variables as PDK variables
+  depend on them
+* `PRIMARY_SIGNOFF_TOOL` now a PDK variable and a string so OpenLane is not
+  limited to two signoff tools
+* `Toolbox.render_png()` now relies on a new `Step` called `KLayout.Render`
+* `Config.interactive()` fixed, new Nix-based Colab notebook to be uploaded
+  Soon™
+* Assorted documentation updates and bugfixes
+
+# 2.0.0-b6
+
+* Added `Odb.ApplyDEFTemplate` to `Classic` Flow
+* Added `RUN_TAP_DECAP_INSERTION` as a deprecated name for `RUN_TAP_ENDCAP_INSERTION`
+
+# 2.0.0-b5
+
+* Added `refg::` to documentation
+* Fixed issue where "worst clock skew" metrics were aggregated incorrectly
+* Fixed issue with referencing files outside the design directory
+
 # 2.0.0-b4
 
 * Updated documentation for `run_subprocess`
@@ -52,7 +161,7 @@
   * Logging rewritten to use Python logger with rich handler, the latter of
   which suppressed during unit testing
  * State Module
-  * `.save_snapshot()` now also saves a JSON representation of metrics
+  * `State.save_snapshot()` now also saves a JSON representation of metrics
   * Fixed metric cloning
   * Step Module
   * Report start/end locii also end up in the log file

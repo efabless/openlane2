@@ -158,7 +158,7 @@ def cloup_flow_opts(
 ) -> Decorator:
     """
     Creates a wrapper that appends a number of OpenLane flow-related flags to a
-    function decorated with `@cloup.command https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command`_.
+    function decorated with @cloup.command (https://cloup.readthedocs.io/en/stable/autoapi/cloup/index.html#cloup.command).
 
     The following keyword arguments will be passed to the decorated function.
     * Those postfixed ‡ are compatible with the constructor for :class:`Flow`.
@@ -216,7 +216,7 @@ def cloup_flow_opts(
                     "config_override_strings",
                     type=str,
                     multiple=True,
-                    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values.",
+                    help="For this run only- override a configuration variable with a certain value. In the format KEY=VALUE. Can be specified multiple times. Values must be valid JSON values, and keys must not use their deprecated names.",
                 ),
             )(f)
         if run_options:

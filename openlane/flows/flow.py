@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import os
 import glob
+import logging
 import datetime
 import textwrap
+import contextlib
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from functools import wraps
@@ -50,7 +52,13 @@ from ..config import (
 )
 from ..state import State
 from ..steps import Step
-from ..logging import console, info, verbose
+from ..logging import (
+    console,
+    info,
+    verbose,
+    register_additional_handler,
+    deregister_additional_handler,
+)
 from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
 
 
@@ -197,7 +205,7 @@ class FlowProgressBar(object):
     def get_ordinal_prefix(self) -> str:
         """
         :returns: A string with the current step ordinal, which can be
-        used to create a step directory.
+            used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
         return f"%0{max_stage_digits}d-" % self.__ordinal
@@ -275,7 +283,7 @@ class Flow(ABC):
         if not isinstance(config, Config):
             config, design_dir = Config.load(
                 config_in=config,
-                flow_config_vars=self.get_config_variables(),
+                flow_config_vars=self.get_all_config_variables(),
                 config_override_strings=config_override_strings,
                 pdk=pdk,
                 pdk_root=pdk_root,
@@ -325,11 +333,11 @@ class Flow(ABC):
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
-                result += f"* [`{step.id}`](./step_config_vars.md#{step.id})\n"
+                result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
 
         return result
 
-    def get_config_variables(self) -> List[Variable]:
+    def get_all_config_variables(self) -> List[Variable]:
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
             variable.name: (variable, "Universal")
             for variable in universal_flow_config_variables
@@ -465,6 +473,20 @@ class Flow(ABC):
         except FileNotFoundError:
             info(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
             mkdirp(self.run_dir)
+
+        warning_log_path = os.path.join(self.run_dir, "warnings.log")
+        warning_handler = logging.FileHandler(warning_log_path, mode="a+")
+        warning_handler.setLevel("WARNING")
+        register_additional_handler(warning_handler)
+
+        error_log_path = os.path.join(self.run_dir, "errors.log")
+        error_handler = logging.FileHandler(error_log_path, mode="a+")
+        error_handler.setLevel("ERROR")
+        register_additional_handler(error_handler)
+
+        with contextlib.ExitStack() as stack:
+            stack.callback(deregister_additional_handler, warning_handler)
+            stack.callback(deregister_additional_handler, error_handler)
 
         config_res_path = os.path.join(self.run_dir, "resolved.json")
         with open(config_res_path, "w") as f:

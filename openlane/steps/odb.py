@@ -13,21 +13,20 @@
 # limitations under the License.
 import os
 import re
-import sys
 import json
 import shutil
 from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from .common_variables import io_layer_variables
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..logging import warn
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
-from ..common import Path, get_openlane_root, get_script_dir, StringEnum
+from ..common import Path, get_script_dir
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -53,9 +52,6 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        env["OPENLANE_ROOT"] = get_openlane_root()
-        env["ODB_PYTHONPATH"] = ":".join(sys.path)
-
         generated_metrics = self.run_subprocess(
             command,
             env=env,
@@ -65,7 +61,7 @@ class OdbpyStep(Step):
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         metrics_updates: MetricsUpdate = generated_metrics
         if os.path.exists(metrics_path):
-            or_metrics_out = json.loads(open(metrics_path).read())
+            or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
                 if value == "Infinity":
                     or_metrics_out[key] = inf
@@ -358,7 +354,7 @@ class DiodesOnPorts(OdbpyStep):
     config_vars = [
         Variable(
             "DIODE_ON_PORTS",
-            StringEnum("DIODE_ON_PORTS", ["none", "in", "out", "both"]),
+            Literal["none", "in", "out", "both"],
             "Always insert diodes on ports with the specified polarities.",
             default="none",
         ),
@@ -379,11 +375,11 @@ class DiodesOnPorts(OdbpyStep):
             "--diode-pin",
             pin,
             "--port-protect",
-            self.config["DIODE_ON_PORTS"].value,
+            self.config["DIODE_ON_PORTS"],
         ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config["DIODE_ON_PORTS"].value == "none":
+        if self.config["DIODE_ON_PORTS"] == "none":
             warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 

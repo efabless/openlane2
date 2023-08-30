@@ -25,7 +25,6 @@ RAW_SKY130A_IN = {
     "GRT_LAYER_ADJUSTMENTS": "0.99,0,0,0,0,0",
     "FP_PDN_CORE_RING_VWIDTH": "1.6",
     "FP_PDN_HSPACING": "1.7",
-    "WIRE_RC_LAYER": "met1",
     "FP_PDN_VOFFSET": "16.32",
     "TECH_LEF_MAX": "/pdk_root/sky130A/libs.ref/sky130_fd_sc_hd/techlef/sky130_fd_sc_hd__max.tlef",
     "KLAYOUT_DEF_LAYER_MAP": "/pdk_root/sky130A/libs.tech/klayout/tech/sky130A.map",
@@ -144,7 +143,6 @@ RAW_GF180MCUC_IN = {
     "GRT_LAYER_ADJUSTMENTS": "0,0,0,0,0",
     "FP_PDN_CORE_RING_VWIDTH": "1.6",
     "FP_PDN_HSPACING": "1.7",
-    "WIRE_RC_LAYER": "Metal2",
     "FP_PDN_VOFFSET": "16.32",
     "LIB_SYNTH": "/pdk_root/gf180mcuC/libs.ref/gf180mcu_fd_sc_mcu7t5v0/liberty/gf180mcu_fd_sc_mcu7t5v0__tt_025C_5v00.lib",
     "TECH_LEF_MAX": "/pdk_root/gf180mcuC/libs.ref/gf180mcu_fd_sc_mcu7t5v0/techlef/gf180mcu_fd_sc_mcu7t5v0__max.tlef",
@@ -239,7 +237,7 @@ RAW_GF180MCUC_IN = {
 
 
 def test_pdk_migration_basics():
-    from openlane.config.pdk import migrate_old_config
+    from openlane.config.pdk_compat import migrate_old_config
 
     sky130A_migrated = migrate_old_config(RAW_SKY130A_IN)
     gf180mcuC_migrated = migrate_old_config(RAW_GF180MCUC_IN)

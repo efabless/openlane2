@@ -13,7 +13,6 @@
 # limitations under the License.
 
 ## This file is internal to OpenLane 2 and is not part of the API.
-
 import os
 import re
 import shlex
@@ -134,15 +133,24 @@ def ensure_image(image: str) -> bool:
     return True
 
 
-win_path_sep = re.compile(r"\\")
+dos_path_sep = re.compile(r"\\")
 
 
 def sanitize_path(path: Union[str, os.PathLike]) -> Tuple[str, str]:
+    """
+    :returns: A tuple of:
+        - The host path, processed ``abspath``
+        - The target path, on UNIX-like operating systems it's identical to the
+          host path, but on Windows, the path is translated to a valid UNIX path
+          as follows:
+          - Backslashes are converted into forward slashes
+          - The drive letter (e.g. C:) is converted to a root directory (e.g. /c)
+    """
     path_str = str(path)
     abspath = os.path.abspath(path_str)
     mountable_path = abspath
     if os.path.sep == "\\":
-        mountable_path = win_path_sep.sub("/", abspath)[2:]
+        mountable_path = f"/{abspath[0]}" + dos_path_sep.sub("/", abspath)[2:]
     return (abspath, mountable_path)
 
 
@@ -154,6 +162,7 @@ def run_in_container(
     scl: Optional[str] = None,
     other_mounts: Optional[Sequence[str]] = None,
     interactive: bool = False,
+    tty: bool = False,
 ) -> int:
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
@@ -170,6 +179,12 @@ def run_in_container(
 
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
+
+    terminal_args = []
+    if interactive:
+        terminal_args.append("-i")
+    if tty:
+        terminal_args.append("-t")
 
     mount_args = []
     from_home, to_home = sanitize_path(pathlib.Path.home())
@@ -209,16 +224,19 @@ def run_in_container(
 
     if other_mounts is not None:
         for mount in other_mounts:
-            mount_from, mount_to = sanitize_path(mount)
-            mount_args += ["-v", f"{mount_from}:{mount_to}"]
+            if os.path.isdir(mount):
+                mount_from, mount_to = sanitize_path(mount)
+                mount_args += ["-v", f"{mount_from}:{mount_to}"]
+            else:
+                mount_args += ["-v", f"{mount}"]
 
     cmd = (
         [
             CONTAINER_ENGINE,
             "run",
             "--rm",
-            "-ti" if interactive else "-t",
         ]
+        + terminal_args
         + permission_args(osinfo)
         + mount_args
         + gui_args(osinfo)

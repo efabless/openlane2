@@ -35,3 +35,4 @@ using their module name as follows:
 """
 from .plugins import discovered_plugins
 from .__version__ import __version__
+from .env_info import env_info_cli

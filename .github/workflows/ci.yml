@@ -44,6 +44,7 @@ jobs:
           key: cache-pdks-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable PDKs
         run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
   lint:
@@ -66,10 +67,13 @@ jobs:
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
       - name: Derivation to Cache
         uses: ./.github/actions/derivation_to_cache
@@ -81,10 +85,13 @@ jobs:
     name: Build (Nix on macOS/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
   build-py:
@@ -115,24 +122,32 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Install Dependencies
+        run: make venv
       - name: Smoke-Test Docker Image
         run: |
-          docker run --rm\
-            -v /tmp:/tmp\
-            -e TMPDIR=/tmp\
-            openlane:tmp-amd64\
-            openlane --smoke-test
+          mkdir -p $HOME/.volare
+          chmod -R 755 $HOME/.volare
+          OPENLANE_IMAGE_OVERRIDE=openlane:tmp-amd64\
+            ./venv/bin/python3 -m openlane\
+              --docker-no-tty\
+              --dockerized\
+              --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -152,12 +167,12 @@ jobs:
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
-          cachix_cache: ${{ vars.CACHIX_CACHE }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           key: derivation-amd64
-          other-substituters: "https://${{ vars.CACHIX_CACHE }}.cachix.org"
+          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Cache PDKs
         id: cache-pdks
         uses: actions/cache@v3

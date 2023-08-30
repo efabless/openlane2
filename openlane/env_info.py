@@ -27,7 +27,7 @@ import platform
 import subprocess
 
 try:
-    from typing import Optional  # noqa: F401
+    from typing import Optional, Dict, List, Any  # noqa: F401
 except ImportError:
     pass
 
@@ -64,13 +64,15 @@ class ContainerInfo(StringRepresentable):
                 info_str = subprocess.check_output(
                     [CONTAINER_ENGINE, "info", "--format", "{{json .}}"]
                 ).decode("utf8")
-            except Exception:
-                return None
+            except Exception as e:
+                raise Exception("Failed to get Docker info: %s" % str(e)) from None
 
             try:
                 info = json.loads(info_str)
-            except Exception:
-                raise Exception("Result from 'docker info' was not valid JSON.")
+            except Exception as e:
+                raise Exception(
+                    "Result from 'docker info' was not valid JSON: %s" % str(e)
+                ) from None
 
             if info.get("host") is not None:
                 if info["host"].get("conmon") is not None:
@@ -110,25 +112,89 @@ class ContainerInfo(StringRepresentable):
             return None
 
 
+class NixInfo(StringRepresentable):
+    version = ""  # type: str
+    multi_user = False  # type: bool
+    sandbox = False  # type: bool
+    channels = None  # type: Optional[Dict[str, List[str]]]
+    nixpkgs = ""  # type: str
+
+    def __init__(self) -> None:
+        self.version = ""  # type: str
+        self.multi_user = False  # type: bool
+        self.sandbox = False  # type: bool
+        self.channels = None  # type: Optional[Dict[str, List[str]]]
+        self.nixpkgs = ""  # type: str
+
+    @staticmethod
+    def get():
+        # type: () -> Optional['NixInfo']
+        ninfo = NixInfo()
+
+        try:
+            try:
+                info_str = subprocess.check_output(["nix-info", "-m"]).decode("utf8")
+            except Exception as e:
+                raise Exception("Failed to get Docker info: %s" % str(e)) from None
+
+            for line in info_str.splitlines():
+                if line.strip() == "":
+                    continue
+                line = line[3:]
+                key, value_raw = line.split(": ", maxsplit=1)
+                key = key.strip(" -")
+                value = value_raw.strip(' `"')  # type: Any
+                if value == "yes":
+                    value = True
+                elif value == "no":
+                    value = False
+                if key in ninfo.__dict__:
+                    setattr(ninfo, key, value)
+                elif key.startswith("channels"):
+                    user = key[len("channels") + 1 : -1]
+                    ninfo.channels = ninfo.channels or {}
+                    ninfo.channels[user] = [
+                        el.strip() for el in value.split(",") if el.strip() != ""
+                    ]
+                elif key.startswith("multi-user"):
+                    ninfo.multi_user = value
+
+            return ninfo
+        except Exception as e:
+            print(e, file=sys.stderr)
+            return None
+
+
 class OSInfo(StringRepresentable):
     kernel = ""  # type: str
-    python_version = ""  # type: str
     kernel_version = ""  # type: str
+    supported = False  # type: bool
     distro = None  # type: Optional[str]
     distro_version = None  # type: Optional[str]
+    python_version = ""  # type: str
+    python_path = []  # type: List[str]
     container_info = None  # type: Optional[ContainerInfo]
-    supported = False  # type: bool
+    nix_info = None  # type: Optional[NixInfo]
 
     def __init__(self):
         self.kernel = platform.system()
-        self.python_version = platform.python_version()
         self.kernel_version = (
             platform.release()
         )  # Unintuitively enough, it's the kernel's release
+        self.supported = self.kernel in ["Darwin", "Linux", "Windows"]
         self.distro = None
         self.distro_version = None
+        self.python_version = platform.python_version()
+        self.python_path = sys.path.copy()
+        self.tkinter = False
+        try:
+            import tkinter  # noqa: F401
+
+            self.tkinter = True
+        except ImportError:
+            pass
         self.container_info = None
-        self.supported = self.kernel in ["Darwin", "Linux", "Windows"]
+        self.nix_info = None
 
     @staticmethod
     def get():
@@ -175,9 +241,45 @@ class OSInfo(StringRepresentable):
                 print("Failed to get distribution info.", file=sys.stderr)
 
         osinfo.container_info = ContainerInfo.get()
-
+        osinfo.nix_info = NixInfo.get()
         return osinfo
 
 
+def env_info_cli():
+    def print_params(obj, indent=0):
+        if isinstance(obj, list):
+            for value in obj:
+                if isinstance(value, StringRepresentable) or isinstance(value, dict):
+                    print("%s- " % (" " * indent), end="")
+                    print_params(value, indent=indent + 2)
+                elif isinstance(value, list):
+                    if len(value) == 0:
+                        print("%s- []" % (" " * indent))
+                    else:
+                        print("%s- " % (" " * indent), end="")
+                        print_params(value, indent=indent + 2)
+                else:
+                    print("%s- %s" % (" " * indent, value))
+
+        else:
+            current = obj if isinstance(obj, dict) else obj.__dict__
+            for key in current:
+                value = current[key]
+                if isinstance(value, StringRepresentable) or isinstance(value, dict):
+                    print("%s%s:" % (" " * indent, key))
+                    print_params(value, indent=indent + 2)
+                elif isinstance(value, list):
+                    if len(value) == 0:
+                        print("%s%s: []" % (" " * indent, key))
+                    else:
+                        print("%s%s:" % (" " * indent, key))
+                        print_params(value, indent=indent + 2)
+                else:
+                    print("%s%s: %s" % (" " * indent, key, value))
+
+    info = OSInfo.get()
+    print_params(info)
+
+
 if __name__ == "__main__":
-    print(OSInfo.get())
+    env_info_cli()

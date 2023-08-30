@@ -31,8 +31,8 @@
 
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
   
-  volare-rev ? "2775640b422afa3c1c0016c4a46da5fa23026a93",
-  volare-sha256 ? "sha256-a7I4Tg6tzFGFo3u2zQIKScboOX4OFO4FdqBKbcxEEl0=",
+  volare-rev ? "25f3d610c9791ad85d328366c3e809b507d2d51c",
+  volare-sha256 ? "sha256-BCvP8I6kAbRsp6PrwMb+xwrr9KiPLeix2ZdgXFUw8WA=",
   volare ? let src = pkgs.fetchFromGitHub {
     owner = "efabless";
     repo = "volare";
@@ -80,6 +80,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     tkinter
     lxml
     deprecated
+    immutabledict
   ];
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;

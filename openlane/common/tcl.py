@@ -14,7 +14,7 @@
 import os
 import re
 import tkinter
-from typing import Mapping, Any, Iterable
+from typing import Dict, Mapping, Any, Iterable
 
 _setter_rx = re.compile(r"set\s+(?:\:\:)?env\(\s*(\w+)\s*\)")
 _find_unsafe = re.compile(r"[^\w@%+=:,./-]", re.ASCII).search
@@ -53,7 +53,7 @@ class TclUtils(object):
         return " ".join(TclUtils.escape(arg) for arg in ss)
 
     @staticmethod
-    def _eval_env(env_in: Mapping[str, Any], tcl_in: str) -> Mapping[str, Any]:
+    def _eval_env(env_in: Mapping[str, Any], tcl_in: str) -> Dict[str, Any]:
         interpreter = tkinter.Tcl()
         keys_modified = _setter_rx.findall(tcl_in)
 
@@ -61,7 +61,7 @@ class TclUtils(object):
         rollback = {}
         for key, value in env_in.items():
             rollback[key] = os.getenv(key)
-            os.environ[key] = value
+            os.environ[key] = str(value)
 
         tcl_script = f"""
         {tcl_in}

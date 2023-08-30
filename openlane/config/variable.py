@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import shlex
 import inspect
 from enum import Enum
@@ -50,7 +49,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Union[Literal["N"], Literal["S"], Literal["FN"], Literal["FS"]]
+    orientation: Literal["N", "S", "FN", "FS"]
 
 
 @dataclass
@@ -170,7 +169,7 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
                 type_string = "｜".join(arg_strings)
                 type_string = f"({type_string})"
             elif origin == Literal:
-                return str(args[0])
+                return "｜".join([repr(arg) for arg in args])
             else:
                 arg_strings = [repr_type(arg) for arg in args]
                 type_string = f"{type_string}[{','.join(arg_strings)}]"
@@ -224,6 +223,11 @@ class Variable:
     :param units: Used only in documentation: the unit corresponding to this
         object, i.e., µm, pF, etc. Can be any string, but for consistency, SI units
         must be represented in terms of their official symbols.
+
+    :param pdk: Whether this variable is expected to be given a default value
+        by a PDK or not. If this variable is not of an option type and the PDK
+        does not provide this value, the PDK is considered incompatible with
+        the Step declaring this value.
     """
 
     known_variable_names: ClassVar[Set[str]] = set()
@@ -237,6 +241,7 @@ class Variable:
     )
 
     units: Optional[str] = None
+    pdk: bool = False
 
     def __post_init__(self):
         Variable.known_variable_names.add(self.name)
@@ -248,29 +253,29 @@ class Variable:
     @property
     def optional(self) -> bool:
         """
-        Returns whether a variable's type is an `Option type <https://en.wikipedia.org/wiki/Option_type>`_.
+        :returns: Whether a variable's type is an `Option type <https://en.wikipedia.org/wiki/Option_type>`_.
         """
         return is_optional(self.type)
 
     @property
     def some(self) -> Any:
         """
-        Returns the type of a variable presuming it is not None.
+        :returns: The type of a variable presuming it is not None.
 
-        If a variable is not Optional, that is simply the type specified in the
-        :ivar:`type` field.
+            If a variable is not Optional, that is simply the type specified in the
+            ``type`` attribute.
         """
         return some_of(self.type)
 
     def type_repr_md(self) -> str:  # pragma: no cover
         """
-        Prints a pretty Markdown string representation of the Variable's type.
+        :returns: A pretty Markdown string representation of the Variable's type.
         """
         return repr_type(self.type)
 
     def desc_repr_md(self) -> str:  # pragma: no cover
         """
-        Prints the description, but with newlines escaped for Markdown.
+        :returns: The description, but with newlines escaped for Markdown.
         """
         return self.description.replace("\n", "<br />")
 
@@ -289,7 +294,7 @@ class Variable:
                 # value is not optional
                 if not is_optional(validating_type):
                     raise ValueError(
-                        f"Non-optional variable '{key_path}' received a null value."
+                        f"Non-optional variable '{key_path}' explicitly assigned a null value."
                     )
                 else:
                     return None
@@ -303,9 +308,14 @@ class Variable:
                         permissive_typing=permissive_typing,
                     )
                 elif not is_optional(validating_type):
-                    raise ValueError(
-                        f"Required variable '{key_path}' did not get a specified value."
-                    )
+                    if self.pdk:
+                        raise ValueError(
+                            f"Required PDK variable '{key_path}' did not get a specified value. This PDK may be incompatible with your flow."
+                        )
+                    else:
+                        raise ValueError(
+                            f"Required variable '{key_path}' did not get a specified value."
+                        )
                 else:
                     return None
 
@@ -425,12 +435,17 @@ class Variable:
                 )
             )
         elif type_origin == Literal:
-            arg = type_args[0]
-            if value == arg:
+            if value in type_args:
                 return value
             else:
-                raise ValueError(f"Value for '{key_path}' is not '{arg}': '{value}'")
+                raise ValueError(
+                    f"Value for '{key_path}' is invalid for {repr_type(validating_type)}: '{value}'"
+                )
         elif is_dataclass(validating_type):
+            if isinstance(value, validating_type):
+                # Do not validate further
+                return value
+
             raw = value
             if not isinstance(raw, dict):
                 raise ValueError(
@@ -466,25 +481,30 @@ class Variable:
             # Handle one-file globs
             if isinstance(value, list) and len(value) == 1:
                 value = value[0]
-            if not os.path.exists(str(value)):
+            result = Path(value)
+            try:
+                result.validate()
+            except ValueError as e:
                 raise ValueError(
-                    f"Path provided for variable '{key_path}' does not exist: '{value}'"
+                    f"Path provided for variable '{key_path}' is invalid: '{e}'"
                 )
-            return Path(value)
+            return result
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):
                 raise ValueError(
                     f"Refusing to automatically convert '{value}' at '{key_path}' to a boolean"
                 )
-            if value in ["1", "true", 1, True]:
+            if value in ["1", "true", "True", 1, True]:
                 return True
-            elif value in ["0", "false", 0, False]:
+            elif value in ["0", "false", "False", 0, False]:
                 return False
             else:
                 raise ValueError(
                     f"Value provided for variable '{key_path}' of type {validating_type.__name__} is invalid: '{value}'"
                 )
         elif issubclass(validating_type, Enum):
+            if type(value) == validating_type:
+                return value
             try:
                 return validating_type[value]
             except KeyError:

@@ -13,9 +13,12 @@
 # limitations under the License.
 import os
 import json
+import shlex
+import shutil
 import datetime
+import subprocess
 from functools import partial
-from typing import Optional
+from typing import IO, Any, Dict, Optional, Sequence, Union
 
 from click import pass_context, Context
 from cloup import (
@@ -26,10 +29,10 @@ from cloup import (
 )
 
 from .step import Step, StepError, StepException
-from ..logging import err, warn
-from ..common import mkdirp, Toolbox
-from ..common.cli import formatter_settings
+from ..logging import info, err, warn
 from ..__version__ import __version__
+from ..common.cli import formatter_settings
+from ..common import mkdirp, Toolbox, get_openlane_root
 
 
 def extract_step_id(ctx: Context, json_in_path: str) -> Optional[str]:
@@ -152,6 +155,160 @@ def run(ctx, output, state_in, config, id):
     "--output",
     type=Path(
         exists=False,
+        file_okay=True,
+        dir_okay=False,
+    ),
+    help="Ejected run script",
+    default="run.sh",
+)
+@o(
+    "--id",
+    type=str,
+    required=False,
+    help="The ID for the step. Can be omitted if the configuration object has the ID in the key-path .meta.step.",
+)
+@o(
+    "-c",
+    "--config",
+    type=Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+    ),
+    required=True,
+    help="A step-specific config.json file",
+)
+@o(
+    "-i",
+    "--state-in",
+    type=Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+    ),
+    required=False,
+)
+@pass_context
+def eject(ctx, output, state_in, config, id):
+    """
+    For steps that rely on underlying utilities using a subprocess, this scripts
+    "ejects" OpenLane and just returns a shell script that runs this subprocess.
+
+    This is useful for:
+
+    * OpenLane developers and maintainers reporting issues to original tool
+      developers
+    * Advanced users who are sure that the issue is not OpenLane-specific and
+      would like to skip reporting an issue with OpenLane first
+    """
+
+    step = load_step_from_inputs(ctx, id, config, state_in)
+
+    if step.config.meta.openlane_version != __version__:
+        warn(
+            "OpenLane version being used is different from the version this step was originally run with. Procceed with caution."
+        )
+
+    toolbox_dir = os.path.join(".", "toolbox_tmp")
+
+    found_cmd: Optional[Sequence[Union[str, os.PathLike]]] = None
+    found_env: Optional[Dict[str, Any]] = None
+    found_stdin_data: Optional[Union[str, bytes]] = None
+
+    class Stop(Exception):
+        pass
+
+    def run_subprocess_subsitute(
+        cmd: Sequence[Union[str, os.PathLike]],
+        env: Optional[Dict[str, Any]] = None,
+        stdin: Optional[IO[Any]] = None,
+        *args,
+        **kwargs,
+    ):
+        nonlocal found_env, found_cmd, found_stdin_data
+        found_cmd = cmd
+        found_env = env
+        if found_stdin := stdin:
+            found_stdin_data = found_stdin.read()
+        raise Stop()
+
+    step.run_subprocess = run_subprocess_subsitute
+
+    try:
+        step.start(
+            toolbox=Toolbox(toolbox_dir),
+            step_dir=".",
+        )
+    except Stop:
+        pass
+    except Exception as e:
+        info("An error occurred while attempting to execute the step:")
+        err(e)
+        info("This may affect the ejection process.")
+
+    if found_cmd is None:
+        err(
+            "Could not eject: The step did not successfully invoke a subprocess using run_subprocess."
+        )
+        exit(-1)
+
+    canon_scripts_dir = os.path.join(get_openlane_root(), "scripts")
+    target_scripts_dir = os.path.join(".", "scripts")
+
+    try:
+        shutil.rmtree(target_scripts_dir)
+    except FileNotFoundError:
+        pass
+
+    shutil.copytree(canon_scripts_dir, target_scripts_dir)
+    if chmod := shutil.which("chmod"):
+        # Nix's Files aren't writeable
+        subprocess.check_call([chmod, "-R", "755", target_scripts_dir])
+
+    current_env = os.environ
+    filtered_env = {
+        "STEP_DIR": ".",
+        "SCRIPTS_DIR": target_scripts_dir,
+    }
+    if found_env is not None:
+        for key, value in found_env.items():
+            if value == current_env.get(key) or key in filtered_env:
+                continue
+            if os.path.isabs(value) and os.path.exists(value):
+                if value.startswith(canon_scripts_dir):
+                    value = value.replace(canon_scripts_dir, target_scripts_dir)
+            filtered_env[key] = value
+
+    cat_in = ""
+    if found_stdin_data:
+        mode = "wb"
+        if isinstance(found_stdin_data, str):
+            mode = "w"
+        with open("STDIN", mode) as f:
+            f.write(found_stdin_data)
+        cat_in = "cat STDIN | "
+
+    with open(output, "w", encoding="utf8") as f:
+        f.write("#!/bin/sh\n")
+        for key, value in filtered_env.items():
+            f.write(f"export {key}={shlex.quote(str(value))}\n")
+        f.write("\n")
+        f.write(cat_in)
+        f.write(shlex.join([str(e) for e in found_cmd]))
+        f.write("\n")
+
+    if hasattr(os, "chmod"):
+        os.chmod(output, 0o755)
+
+    info("Ejected successfully.")
+
+
+@command(formatter_settings=formatter_settings)
+@o(
+    "-o",
+    "--output",
+    type=Path(
+        exists=False,
         file_okay=False,
         dir_okay=True,
     ),
@@ -244,6 +401,7 @@ def cli():
 
 
 cli.add_command(run)
+cli.add_command(eject)
 cli.add_command(create_reproducible)
 
 if __name__ == "__main__":

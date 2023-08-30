@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from decimal import Decimal
-
 import pytest
+
+from decimal import Decimal
 
 from openlane.config import config
 from openlane.common import Path
 
 
 mock_variables = pytest.mock_variables
-DiodeOnPortsEnum = pytest.DiodeOnPortsEnum
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
@@ -41,13 +40,14 @@ def test_dict_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -92,13 +92,14 @@ def test_json_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -144,13 +145,14 @@ def test_tcl_config():
         {
             "DESIGN_DIR": "/cwd",
             "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
             "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
-            "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
+            "DIODE_ON_PORTS": "none",
             "MACROS": None,
             "TECH_LEFS": {
                 "nom_*": Path(
@@ -197,33 +199,56 @@ def test_copy_filtered():
         pdk_root="/pdk",
     )
 
-    step1_cfg = cfg.copy_filtered(step1_variables, include_pdk_variables=False)
+    step1_cfg = cfg.copy_filtered(step1_variables, include_flow_variables=False)
 
     assert step1_cfg == {
-        "DESIGN_DIR": "/cwd",
-        "DESIGN_NAME": "whatever",
         "STEP1_VAR": 3,
-        "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
         "meta": cfg.meta,
-        "GRT_REPAIR_ANTENNAS": True,
-        "RUN_HEURISTIC_DIODE_INSERTION": False,
-        "DIODE_ON_PORTS": DiodeOnPortsEnum.none,
-        "MACROS": None,
     }, "copy_filtered for step 1 did not work properly"
 
-    step2_cfg = cfg.copy_filtered(step2_variables, include_common_variables=False)
 
-    assert step2_cfg == {
-        "STEP2_VAR": 4,
-        "PDK": "dummy",
-        "STD_CELL_LIBRARY": "dummy_scl",
-        "EXAMPLE_PDK_VAR": Decimal("10"),
-        "meta": cfg.meta,
-        "TECH_LEFS": {
-            "nom_*": Path("/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef")
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables()
+def test_with_increment():
+    from openlane.config import Config, Variable
+
+    step1_variables = [
+        Variable(
+            "STEP1_VAR",
+            int,
+            description="x",
+        )
+    ]
+    step2_variables = [
+        Variable(
+            "STEP2_VAR",
+            int,
+            description="x",
+        )
+    ]
+
+    cfg, _ = Config.load(
+        {
+            "DESIGN_NAME": "whatever",
+            "VERILOG_FILES": "dir::src/*.v",
+            "STEP1_VAR": 3,
+            "STEP2_VAR": 4,
         },
-        "DEFAULT_CORNER": "nom_tt_025C_1v80",
-    }, "copy_filtered for step 2 did not work properly"
+        config.flow_common_variables + step1_variables + step2_variables,
+        design_dir="/cwd",
+        pdk="dummy",
+        scl="dummy_scl",
+        pdk_root="/pdk",
+    )
+
+    step1_cfg = cfg.copy_filtered(step1_variables)
+    step1_cfg_incr = cfg.with_increment(
+        config.flow_common_variables + step1_variables, {}, True
+    )
+
+    assert (
+        step1_cfg == step1_cfg_incr
+    ), "_with_increment not properly working as a filter"
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
@@ -397,7 +422,7 @@ def test_invalid_keys(caplog: pytest.LogCaptureFixture):
         ), "unknown variable triggered an error when loading from a meta.version: 1 JSON file"
 
     assert (
-        "unused by the current flow" in caplog.text
+        "unknown key" in caplog.text
     ), "unknown variable did not trigger a warning when loading from a meta.version: 1 JSON file"
     caplog.clear()
 
@@ -478,9 +503,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
 
     assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 0 properly"
     assert not cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 0 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum.none
-    ), "failed to migrate dis 0 properly"
+    assert cfg["DIODE_ON_PORTS"] == "none", "failed to migrate dis 0 properly"
 
     set_dis(3)
     cfg, _ = Config.load(
@@ -492,9 +515,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 3 properly"
     assert not cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 3 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum.none
-    ), "failed to migrate dis 3 properly"
+    assert cfg["DIODE_ON_PORTS"] == "none", "failed to migrate dis 3 properly"
 
     set_dis(4)
     cfg, _ = Config.load(
@@ -506,9 +527,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert not cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 4 properly"
     assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 4 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum["in"]
-    ), "failed to migrate dis 4 properly"
+    assert cfg["DIODE_ON_PORTS"] == "in", "failed to migrate dis 4 properly"
 
     set_dis(6)
     cfg, _ = Config.load(
@@ -520,9 +539,7 @@ def test_dis_migration(caplog: pytest.LogCaptureFixture):
     )
     assert cfg["GRT_REPAIR_ANTENNAS"], "failed to migrate dis 6 properly"
     assert cfg["RUN_HEURISTIC_DIODE_INSERTION"], "failed to migrate dis 6 properly"
-    assert (
-        cfg["DIODE_ON_PORTS"] == DiodeOnPortsEnum["in"]
-    ), "failed to migrate dis 6 properly"
+    assert cfg["DIODE_ON_PORTS"] == "in", "failed to migrate dis 6 properly"
 
     assert (
         "See 'Migrating DIODE_INSERTION_STRATEGY'" in caplog.text
@@ -552,8 +569,8 @@ def test_macro_migration(
 
     assert cfg["MACROS"] == {
         "b": Macro(
-            gds=[""],
-            lef=[""],
+            gds=[Path._dummy_path],
+            lef=[Path._dummy_path],
             instances={},
             nl=[],
             spef={

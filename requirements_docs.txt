@@ -1,8 +1,9 @@
 # docs
-furo
-docutils>=0.17
-sphinx>=4
+furo==2023.7.26 
+docutils>=0.17,<1
+sphinx>=7.2.2
 sphinx-autobuild>=2021.3.14
-sphinx-autodoc-typehints
-myst-parser>=0.18.0
-docstring-parser
+sphinx-autodoc-typehints>=1.24.0
+sphinx-design>=0.5.0,<1
+myst-parser>=2.0.0,<3
+docstring-parser>=0.15,<1

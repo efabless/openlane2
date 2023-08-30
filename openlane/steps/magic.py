@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import shutil
 from abc import abstractmethod
 from typing import List, Optional, Tuple
 
-from .step import StepError, ViewsUpdate, MetricsUpdate, Step
+from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject
+from ..common import get_script_dir, DRC as DRCObject, Path
 
 
 class MagicStep(TclStep):
@@ -57,6 +58,38 @@ class MagicStep(TclStep):
             bool,
             "A flag to choose whether to include GDS pointers in the generated mag files or not.",
             default=False,
+        ),
+        Variable(
+            "MAGICRC",
+            Path,
+            "A path to the `.magicrc` file which is sourced before running magic in the flow.",
+            deprecated_names=["MAGIC_MAGICRC"],
+            pdk=True,
+        ),
+        Variable(
+            "MAGIC_TECH",
+            Path,
+            "A path to a Magic tech file which, mainly, has DRC rules.",
+            deprecated_names=["MAGIC_TECH_FILE"],
+            pdk=True,
+        ),
+        Variable(
+            "MAGIC_PDK_SETUP",
+            Path,
+            "A path to a PDK-specific setup file sourced by `.magicrc`.",
+            pdk=True,
+        ),
+        Variable(
+            "CELL_MAGS",
+            Optional[List[Path]],
+            "A list of pre-processed concrete views for cells. Read as a fallback for undefined cells.",
+            pdk=True,
+        ),
+        Variable(
+            "CELL_MAGLEFS",
+            Optional[List[Path]],
+            "A list of pre-processed abstract LEF views for cells. Read as a fallback for undefined cells in scripts where cells are blackboxed.",
+            pdk=True,
         ),
     ]
 
@@ -112,7 +145,7 @@ class WriteLEF(MagicStep):
         Variable(
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
-            "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
+            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using the DEF/LEF with concrete views.",
             default=False,
         ),
         Variable(
@@ -147,7 +180,7 @@ class StreamOut(MagicStep):
     flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
     inputs = [DesignFormat.DEF]
-    outputs = [DesignFormat.GDS, DesignFormat.MAG_GDS]
+    outputs = [DesignFormat.GDS, DesignFormat.MAG_GDS, DesignFormat.MAG]
 
     config_vars = MagicStep.config_vars + [
         Variable(
@@ -200,8 +233,15 @@ class StreamOut(MagicStep):
             log_to=magic_log_dir,
             **kwargs,
         )
-        if self.config["PRIMARY_SIGNOFF_TOOL"].value == "magic":
-            views_updates[DesignFormat.GDS] = views_updates[DesignFormat.MAG_GDS]
+        if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
+            magic_gds_out = str(views_updates[DesignFormat.MAG_GDS])
+            gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
+            shutil.copy(magic_gds_out, gds_path)
+            views_updates[DesignFormat.GDS] = Path(gds_path)
+
+        views_updates[DesignFormat.MAG] = Path(
+            os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.mag")
+        )
 
         for line in open(magic_log_dir, encoding="utf8"):
             if "Calma output error" in line:
@@ -242,8 +282,8 @@ class DRC(MagicStep):
         Variable(
             "MAGIC_DRC_USE_GDS",
             bool,
-            "A flag to choose whether to run the magic DRC checks on GDS or not. If not, then the checks will be done on the DEF/LEF, which is faster.",
-            default=False,
+            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, with concrete views of cells and submacros, which is a bit faster, but less accurate.",
+            default=True,
         ),
     ]
 
@@ -312,13 +352,28 @@ class SpiceExtraction(MagicStep):
             "Enables adding resistors to shorts- resolves LVS issues if more than one top-level pin is connected to the same net, but may increase runtime and break some designs. Proceed with caution.",
             default=False,
         ),
+        Variable(
+            "MAGIC_EXT_ABSTRACT",
+            bool,
+            "Extracts a SPICE netlist based on black-boxed standard cells and macros (basically, anything with a LEF) rather than transistors. An error will be thrown if both this and `MAGIC_EXT_USE_GDS` is set to ``True``.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "magic", "extract_spice.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        if self.config["MAGIC_EXT_USE_GDS"] and self.config["MAGIC_EXT_ABSTRACT"]:
+            raise StepException(
+                "'MAGIC_EXT_USE_GDS' and 'MAGIC_EXT_ABSTRACT' cannot be both set to 'True'. The step cannot run."
+            )
+
+        kwargs, env = self.extract_env(kwargs)
+
+        env["MAGTYPE"] = "maglef" if self.config["MAGIC_EXT_ABSTRACT"] else "mag"
+
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         feedback_string = open(feedback_path, encoding="utf8").read()
