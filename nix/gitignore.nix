@@ -1,4 +1,6 @@
-{ pkgs ? import ./pkgs.nix }:
+{
+  pkgs ? import ./pkgs.nix {},
+}:
 
 with pkgs; let src = fetchFromGitHub { 
   owner = "hercules-ci";

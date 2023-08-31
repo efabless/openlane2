@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./nix/pkgs.nix,
+  pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
   magic ? import ./nix/magic.nix { inherit pkgs; },
 
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
+
+  verilator ? import ./nix/verilator.nix { inherit pkgs; },
 
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
@@ -63,6 +65,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     netgen
     yosys
     magic
+    verilator
     ruby
     tcl
 
