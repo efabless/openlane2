@@ -948,7 +948,7 @@ class Config(GenericImmutableDict[str, Any]):
                 continue
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
-            elif "_OPT" not in key and key != "//":
+            elif "_OPT" not in key and not key.startswith("//") and not key.startswith("#"):
                 if on_unknown_key == "error":
                     if key in Variable.known_variable_names:
                         warnings.append(

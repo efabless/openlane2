@@ -53,6 +53,9 @@ class Toolbox(object):
 
     def __init__(self, tmp_dir: str) -> None:
         self.tmp_dir = tmp_dir
+
+        mkdirp(self.tmp_dir)
+
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
         self.create_blackbox_model = lru_cache(16, True)(self.create_blackbox_model)  # type: ignore
 
@@ -320,9 +323,6 @@ class Toolbox(object):
             excluded_cell = 11
 
         cell_start_rx = re.compile(r"(\s*)cell\s*\(\"?(.*?)\"?\)\s*\{")
-
-        mkdirp(self.tmp_dir)
-
         out_paths = []
 
         for file in input_lib_files:

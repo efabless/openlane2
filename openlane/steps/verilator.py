@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import re
 from typing import List, Optional, Tuple
 from subprocess import CalledProcessError
@@ -53,7 +54,7 @@ class Lint(Step):
             bool,
             "When a file references an include file, resolve the filename relative to the path of the referencing file, instead of relative to the current directory.",
             default=True,
-            deprecated_names=["VERILATOR_REALTIVE_INCLUDES"],
+            deprecated_names=["VERILATOR_RELATIVE_INCLUDES"],
         ),
         Variable(
             "SYNTH_DEFINES",
@@ -93,10 +94,24 @@ class Lint(Step):
 
         defines = self.config["LINTER_DEFINES"] or self.config["SYNTH_DEFINES"] or []
 
-        bb_file = self.toolbox.create_blackbox_model(
+        bb_path = self.toolbox.create_blackbox_model(
             frozenset([str(path) for path in input_models]),
             frozenset(defines),
         )
+
+        bb_with_guards = os.path.join(self.step_dir, "bb.v")
+        with open(bb_path, "r", encoding="utf8",) as bb_in, open(
+            bb_with_guards,
+            "w",
+            encoding="utf8",
+        ) as bb_out:
+            "\n/* verilator lint_off UNUSEDSIGNAL */\n$out_str\n/* verilator lint_on UNUSEDSIGNAL */\n/* verilator lint_on UNDRIVEN */"
+            print("/* verilator lint_off UNDRIVEN */", file=bb_out)
+            print("/* verilator lint_off UNUSEDSIGNAL */", file=bb_out)
+            for line in bb_in:
+                bb_out.write(line)
+            print("/* verilator lint_on UNDRIVEN */", file=bb_out)
+            print("/* verilator lint_on UNUSEDSIGNAL */", file=bb_out)
 
         if not self.config["QUIT_ON_LINTER_WARNINGS"]:
             extra_args.append("--Wno-fatal")
@@ -119,7 +134,7 @@ class Lint(Step):
                     "--top-module",
                     self.config["DESIGN_NAME"],
                 ]
-                + [bb_file]
+                + [bb_with_guards]
                 + self.config["VERILOG_FILES"]
                 + extra_args,
                 env=env,

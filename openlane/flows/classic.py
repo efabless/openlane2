@@ -41,11 +41,11 @@ class Classic(SequentialFlow):
     """
 
     Steps: List[Type[Step]] = [
-        Yosys.JsonHeader,
         Verilator.Lint,
         Checker.LintTimingConstructs,
         Checker.LintErrors,
         Checker.LintWarnings,
+        Yosys.JsonHeader,
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
