@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./nix/pkgs.nix,
+  pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
   magic ? import ./nix/magic.nix { inherit pkgs; },

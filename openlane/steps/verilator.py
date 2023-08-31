@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import re
-
 from typing import List, Optional, Tuple
+from subprocess import CalledProcessError
 
-from .step import Step, ViewsUpdate, MetricsUpdate, StepError
-
+from .step import Step, StepException, ViewsUpdate, MetricsUpdate
+from ..common import DesignFormat
 from ..config import Variable
 from ..state import State, Path
 
@@ -25,7 +25,7 @@ from ..state import State, Path
 class Lint(Step):
     """Lint design verilog source files"""
 
-    id = "Linter.Lint"
+    id = "Verilator.Lint"
     inputs = []  # The input RTL is part of the configuration
     outputs = []
     flow_control_variable = "RUN_LINTER"
@@ -80,22 +80,35 @@ class Lint(Step):
         metrics_updates: MetricsUpdate = {}
         extra_args = []
 
+        scl_models = (
+            self.config["CELL_VERILOG_MODELS"]
+            or self.config["CELL_BB_VERILOG_MODELS"]
+            or []
+        )
+        input_models = (
+            scl_models
+            + self.toolbox.get_macro_views(self.config, DesignFormat.NETLIST)
+            + (self.config["EXTRA_VERILOG_MODELS"] or [])
+        )  # not +=: break reference!
+
+        defines = self.config["LINTER_DEFINES"] or self.config["SYNTH_DEFINES"] or []
+
+        bb_file = self.toolbox.create_blackbox_model(
+            frozenset([str(path) for path in input_models]),
+            frozenset(defines),
+        )
+
         if not self.config["QUIT_ON_LINTER_WARNINGS"]:
             extra_args.append("--Wno-fatal")
 
         if self.config["LINTER_RELATIVE_INCLUDES"]:
             extra_args.append("--relative-includes")
 
-        defines = []
-        if self.config["LINTER_DEFINES"]:
-            for define in self.config["LINTER_DEFINES"]:
-                defines.append(f"+define+{define}")
-        elif self.config["SYNTH_DEFINES"]:
-            for define in self.config["SYNTH_DEFINES"]:
-                defines.append(f"+define+{define}")
+        for define in defines:
+            extra_args.append(f"+define+{define}")
         extra_args += defines
 
-        clean_exit = True
+        exit_error: Optional[CalledProcessError] = None
         try:
             self.run_subprocess(
                 [
@@ -106,12 +119,13 @@ class Lint(Step):
                     "--top-module",
                     self.config["DESIGN_NAME"],
                 ]
+                + [bb_file]
                 + self.config["VERILOG_FILES"]
                 + extra_args,
                 env=env,
             )
-        except Exception:
-            clean_exit = False
+        except CalledProcessError as e:
+            exit_error = e
 
         warnings_count = 0
         errors_count = 0
@@ -126,12 +140,14 @@ class Lint(Step):
                 if "Error-NEEDTIMINGOPT" in line:
                     timing_constructs = 1
 
-            if not clean_exit:
+            if exit_error is not None:
                 matched_errors = error_pattern.match(line)
                 if matched_errors:
                     errors_count = int(matched_errors.group(1))
                 else:
-                    raise StepError("Linter exited non-cleanly")
+                    raise StepException(
+                        f"Verilator exited unexpectedly: {exit_error.args}: {exit_error.stdout}"
+                    )
 
         metrics_updates.update({"design__lint_errors__count": errors_count})
         metrics_updates.update(

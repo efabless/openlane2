@@ -49,4 +49,4 @@ from .netgen import NetgenStep
 
 from . import klayout as KLayout
 from . import misc as Misc
-from . import linter as Linter
+from . import verilator as Verilator

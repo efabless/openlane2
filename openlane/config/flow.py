@@ -194,6 +194,18 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
+        "CELL_VERILOG_MODELS",
+        Optional[List[Path]],
+        "Path(s) to cells' Verilog model(s)",
+        pdk=True,
+    ),
+    Variable(
+        "CELL_BB_VERILOG_MODELS",
+        Optional[List[Path]],
+        "Path(s) to cells' black-box Verilog model(s)",
+        pdk=True,
+    ),
+    Variable(
         "CELL_SPICE_MODELS",
         Optional[List[Path]],
         "Path(s) to cells' SPICE model(s)",

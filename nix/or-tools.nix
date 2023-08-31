@@ -34,7 +34,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 {
-  pkgs ? import ./pkgs.nix
+  pkgs ? import ./pkgs.nix {},
 }:
 
 with pkgs; let abseil-cpp17 = abseil-cpp.overrideAttrs(finalAttrs: previousAttrs: {

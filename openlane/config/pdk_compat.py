@@ -139,6 +139,30 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
     # 8. "Implicit" Paths
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
+        model_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*.v",
+        )
+        new["CELL_VERILOG_MODELS"] = [
+            path for path in glob(model_glob) if "_blackbox" not in path
+        ]
+
+        bb_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*__blackbox*.v",
+        )
+
+        if blackbox_models := glob(bb_glob):
+            new["CELL_BB_VERILOG_MODELS"] = blackbox_models
+
         spice_glob = os.path.join(
             config["PDK_ROOT"],
             config["PDK"],
