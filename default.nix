@@ -15,33 +15,18 @@
   pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
-  magic ? import ./nix/magic.nix { inherit pkgs; },
-
-  netgen ? import ./nix/netgen.nix { inherit pkgs; },
-
-  verilator ? import ./nix/verilator.nix { inherit pkgs; },
-
-  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
-    inherit pkgs;
-  },
 
   klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
     inherit pkgs;
   },
-
-  yosys ? import ./nix/yosys.nix { inherit pkgs; },
-  
-  volare-rev ? "25f3d610c9791ad85d328366c3e809b507d2d51c",
-  volare-sha256 ? "sha256-BCvP8I6kAbRsp6PrwMb+xwrr9KiPLeix2ZdgXFUw8WA=",
-  volare ? let src = pkgs.fetchFromGitHub {
-    owner = "efabless";
-    repo = "volare";
-    rev = volare-rev;
-    sha256 = volare-sha256;
-  }; in import "${src}" {
+  magic ? import ./nix/magic.nix { inherit pkgs; },
+  netgen ? import ./nix/netgen.nix { inherit pkgs; },
+  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
   },
-
+  verilator ? import ./nix/verilator.nix { inherit pkgs; },
+  volare ? import ./nix/volare.nix { inherit pkgs; },
+  yosys ? import ./nix/yosys.nix { inherit pkgs; },
   
   ...
 }:

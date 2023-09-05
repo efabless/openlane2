@@ -205,6 +205,11 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         new["PRIMARY_SIGNOFF_TOOL"] = "magic"
 
+    # 10. CVC
+    if "CVC_SCRIPTS_DIR" in config:
+        new["CVCRC"] = os.path.join(config["CVC_SCRIPTS_DIR"], "cvcrc")
+        new["CVC_MODELS"] = os.path.join(config["CVC_SCRIPTS_DIR"], "models")
+
     # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"

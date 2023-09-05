@@ -33,6 +33,12 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
+        "VDD_PIN_VOLTAGE",
+        Decimal,
+        "The voltage of the VDD pin.",
+        pdk=True,
+    ),
+    Variable(
         "GND_PIN",
         str,
         "The ground pin for the cells.",
@@ -406,13 +412,6 @@ scl_variables = [
         "GRT_LAYER_ADJUSTMENTS",
         List[Decimal],
         "Layer-specific reductions in the routing capacity of the edges between the cells in the global routing graph, delimited by commas. Values range from 0 through 1.",
-        pdk=True,
-    ),
-    # CVC
-    Variable(
-        "CVC_SCRIPTS_DIR",
-        Optional[Path],
-        "Path to a directory of Circuit Validity Checker (CVC) scripts for the relevant PDK. Must contain the following set of files: `cvcrc`, an initialization file, `cdl.awk`, an awk script to remove black box definitions from SPICE files, `models`, cell models, and finally `power.awk`, an awk script that adds power information to the verilog netlists.\nIf this path is not defined, this PDK will be marked incompatible with CVC.",
         pdk=True,
     ),
 ]
