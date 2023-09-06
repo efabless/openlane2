@@ -227,7 +227,8 @@ class Flow(ABC):
 
     :param name: An optional string name for the Flow itself, and not a run of it.
 
-        If not set, the Python class name will be used instead.
+        If not set, the class variable ``name`` will be used instead, if THAT
+        is not set,
 
     :param config_override_strings: See :meth:`Config.load`
     :param pdk: See :meth:`Config.load`
@@ -238,9 +239,12 @@ class Flow(ABC):
     :cvar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
 
-        Subclasses of :class:`Step` are expected to override the default value
+        Subclasses of :class:`Flow` are expected to override the default value
         as a class member- but subclasses may allow this value to be further
         overridden during construction (and only then.)
+
+        :class:`Flow` subclasses without the ``Steps`` class property declared
+        are considered abstract and cannot be initialized.
 
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
@@ -259,7 +263,7 @@ class Flow(ABC):
         If :meth:`start` is called again, the reference is destroyed.
     """
 
-    name: str
+    name: str = NotImplemented
     Steps: List[Type[Step]] = NotImplemented  # Override
     step_objects: Optional[List[Step]] = None
     run_dir: Optional[str] = None
@@ -280,10 +284,14 @@ class Flow(ABC):
             raise NotImplementedError(
                 f"Abstract flow {self.__class__.__qualname__} does not implement the .Steps property and cannot be initialized."
             )
-        for Step in self.Steps:
-            Step.assert_concrete("used in a Flow")
+        for step in self.Steps:
+            step.assert_concrete("used in a Flow")
 
-        self.name = name or self.__class__.__name__
+        self.name = (
+            self.__class__.__qualname__ if self.name == NotImplemented else self.name
+        )
+        if name is not None:
+            self.name = name
 
         self.Steps = self.Steps.copy()  # Break global reference
 

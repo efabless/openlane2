@@ -154,8 +154,8 @@ class Step(ABC):
         per-instance to disambiguate when the same step is used multiple times
         in a flow.
 
-        Steps without the ``id`` class property declared are considered abstract
-        steps and cannot be initialized or used in the flow.
+        :class:`Step` subclasses without the ``id`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
     :param name: A short name for the Step, used in progress bars and
         the like.
@@ -177,15 +177,15 @@ class Step(ABC):
         are required for this step. These will be validated by the :meth:`start`
         method.
 
-        Steps without the ``inputs`` class property declared are considered abstract
-        steps and cannot be initialized or used in the flow.
+        :class:`Step` subclasses without the ``inputs`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
     :cvar outputs: A list of :class:`openlane.state.DesignFormat` objects that
         may be emitted by this step. A step is not allowed to modify design
         formats not declared in ``outputs``.
 
-        Steps without the ``outputs`` class property declared are considered abstract
-        steps and cannot be initialized or used in the flow.
+        :class:`Step` subclasses without the ``outputs`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
     :cvar flow_control_variable: An optional key for a configuration variable.
 

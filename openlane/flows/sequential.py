@@ -94,7 +94,9 @@ class SequentialFlow(Flow):
     def __init__(
         self,
         *args,
-        Substitute: Optional[Dict[str, Union[str, Type[Step]]],] = None,
+        Substitute: Optional[
+            Dict[str, Union[str, Type[Step]]],
+        ] = None,
         **kwargs,
     ):
         self.Steps = self.Steps.copy()  # Break global reference
