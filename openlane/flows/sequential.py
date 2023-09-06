@@ -77,6 +77,10 @@ class SequentialFlow(Flow):
         for i, step in enumerate(target.Steps):
             counter = 0
             id = step.id
+            if (
+                id == NotImplemented
+            ):  # Will be validated later by initialization: ignore for now
+                continue
             name = step.__name__
             while id in ids_used:
                 counter += 1
@@ -90,9 +94,7 @@ class SequentialFlow(Flow):
     def __init__(
         self,
         *args,
-        Substitute: Optional[
-            Dict[str, Union[str, Type[Step]]],
-        ] = None,
+        Substitute: Optional[Dict[str, Union[str, Type[Step]]],] = None,
         **kwargs,
     ):
         self.Steps = self.Steps.copy()  # Break global reference
@@ -112,7 +114,11 @@ class SequentialFlow(Flow):
     ):
         step_indices: List[int] = []
         for i, step in enumerate(self.Steps):
-            if step.id.lower() == id.lower():
+            if (
+                step.id
+                != NotImplemented  # Will be validated later by initialization: ignore for now
+                and step.id.lower() == id.lower()
+            ):
                 step_indices.append(i)
 
         if len(step_indices) == 0:

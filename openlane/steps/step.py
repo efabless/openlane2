@@ -150,9 +150,12 @@ class Step(ABC):
 
         The ID should be in ``UpperCamelCase``.
 
-        While this is technically an instance variable, it is expected for every
-        subclass to override this variable and instances are only to change it
-        to disambiguate when the same step is used multiple times in a flow.
+        While this is technically a class variable, instances allowed to change it
+        per-instance to disambiguate when the same step is used multiple times
+        in a flow.
+
+        Steps without the ``id`` class property declared are considered abstract
+        steps and cannot be initialized or used in the flow.
 
     :param name: A short name for the Step, used in progress bars and
         the like.
@@ -174,9 +177,15 @@ class Step(ABC):
         are required for this step. These will be validated by the :meth:`start`
         method.
 
+        Steps without the ``inputs`` class property declared are considered abstract
+        steps and cannot be initialized or used in the flow.
+
     :cvar outputs: A list of :class:`openlane.state.DesignFormat` objects that
         may be emitted by this step. A step is not allowed to modify design
         formats not declared in ``outputs``.
+
+        Steps without the ``outputs`` class property declared are considered abstract
+        steps and cannot be initialized or used in the flow.
 
     :cvar flow_control_variable: An optional key for a configuration variable.
 
@@ -213,14 +222,14 @@ class Step(ABC):
     """
 
     # Class Variables
-    inputs: ClassVar[List[DesignFormat]]
-    outputs: ClassVar[List[DesignFormat]]
+    id: str = NotImplemented
+    inputs: ClassVar[List[DesignFormat]] = NotImplemented
+    outputs: ClassVar[List[DesignFormat]] = NotImplemented
     flow_control_variable: ClassVar[Optional[str]] = None
     flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
 
     # Instance Variables
-    id: str = NotImplemented
     name: str
     long_name: str
     state_in: Future[State]
@@ -249,10 +258,7 @@ class Step(ABC):
         _no_revalidate_conf: bool = False,
         **kwargs,
     ):
-        if self.id == NotImplemented:
-            raise NotImplementedError(
-                "All subclasses of Step must override the value of id."
-            )
+        self.__class__.assert_concrete()
 
         if flow is not None:
             warn(
@@ -303,13 +309,29 @@ class Step(ABC):
             state_in_future = state_in
         self.state_in = state_in_future
 
-    def __init_subclass__(cls):
-        if not isabstract(cls):
-            for attr in ["inputs", "outputs"]:
-                if not hasattr(cls, attr):
-                    raise NotImplementedError(
-                        f"{cls} must implement class attribute '{attr}'"
-                    )
+    @classmethod
+    def assert_concrete(Self, action: str = "initialized"):
+        """
+        Checks if the Step class in question is concrete, with abstract methods
+        AND ``NotImplemented`` classes implemented and declared respectively.
+
+        Should be called before any ``Step`` subclass is used.
+
+        If the class is not concrete, a ``NotImplementedError`` is raised.
+
+        :param action: The action to be attempted, to be included in the
+            ``NotImplementedError`` message.
+        """
+        if isabstract(Self):
+            raise NotImplementedError(
+                f"Abstract step {Self.__qualname__} has one or more methods not implemented ({' '.join(Self.__abstractmethods__)}) and cannot be {action}"
+            )
+
+        for attr in ["id", "inputs", "outputs"]:
+            if not hasattr(Self, attr) or getattr(Self, attr) == NotImplemented:
+                raise NotImplementedError(
+                    f"Abstract step {Self.__qualname__} does not implement the .{attr} property and cannot be {action}"
+                )
 
     @classmethod
     def __get_desc(Self) -> str:  # pragma: no cover
@@ -927,6 +949,10 @@ class Step(ABC):
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
+                if cls.id == NotImplemented:
+                    raise RuntimeError(
+                        f"Abstract step {cls} without property .id cannot be registered."
+                    )
                 Self.__registry[cls.id.lower()] = cls
                 return cls
 

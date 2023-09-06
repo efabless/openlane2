@@ -34,7 +34,7 @@ You can configure any of the variables in these lists:
 * The declared configuration variables of [the default Flow's steps](../reference/flow_config_vars.md#classic)
     * Click on each step to see its configuration variables.
 
-The basic configuration `config.json` file for the default flowshould at least
+The basic configuration `config.json` file for the default flow should at least
 contain these variables:
 
 * [`DESIGN_NAME`](../reference/flow_config_vars.md#DESIGN_NAME)

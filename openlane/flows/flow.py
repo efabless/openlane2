@@ -235,7 +235,7 @@ class Flow(ABC):
     :param scl: See :meth:`Config.load`
     :param design_dir: See :meth:`Config.load`
 
-    :ivar Steps:
+    :cvar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
 
         Subclasses of :class:`Step` are expected to override the default value
@@ -260,7 +260,7 @@ class Flow(ABC):
     """
 
     name: str
-    Steps: List[Type[Step]] = []  # Override
+    Steps: List[Type[Step]] = NotImplemented  # Override
     step_objects: Optional[List[Step]] = None
     run_dir: Optional[str] = None
     toolbox: Optional[Toolbox] = None
@@ -276,6 +276,13 @@ class Flow(ABC):
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
     ):
+        if self.__class__.Steps == NotImplemented:
+            raise NotImplementedError(
+                f"Abstract flow {self.__class__.__qualname__} does not implement the .Steps property and cannot be initialized."
+            )
+        for Step in self.Steps:
+            Step.assert_concrete("used in a Flow")
+
         self.name = name or self.__class__.__name__
 
         self.Steps = self.Steps.copy()  # Break global reference
