@@ -246,6 +246,11 @@ class Flow(ABC):
         :class:`Flow` subclasses without the ``Steps`` class property declared
         are considered abstract and cannot be initialized.
 
+    :cvar config_vars:
+        A list of **flow-specific** configuration variables. These configuration
+        variables are used entirely within the logic of the flow itself and
+        are not exposed to ``Step``s.
+
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
         if it exists.
@@ -265,6 +270,7 @@ class Flow(ABC):
 
     name: str = NotImplemented
     Steps: List[Type[Step]] = NotImplemented  # Override
+    config_vars: List[Variable] = []
     step_objects: Optional[List[Step]] = None
     run_dir: Optional[str] = None
     toolbox: Optional[Toolbox] = None
@@ -354,9 +360,16 @@ class Flow(ABC):
 
     def get_all_config_variables(self) -> List[Variable]:
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
-            variable.name: (variable, "Universal")
+            variable.name: (variable, "universal flow variables")
             for variable in universal_flow_config_variables
         }
+        for variable in self.config_vars:
+            if flow_variables_by_name.get(variable.name) is not None:
+                existing_variable, source = flow_variables_by_name[variable.name]
+                if variable != existing_variable:
+                    raise FlowException(
+                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
+                    )
         for step_cls in self.Steps:
             for variable in step_cls.config_vars:
                 if flow_variables_by_name.get(variable.name) is not None:
