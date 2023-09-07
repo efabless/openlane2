@@ -49,16 +49,27 @@ check-license: venv/manifest.txt
 		java -jar app.jar \
 		--requirements '/volume/requirements.frz.txt'
 
-REQ_FILES = ./requirements_dev.txt ./requirements.txt
-REQ_FILES_PFX = $(addprefix -r ,$(REQ_FILES))
+# NO_BINARY_ARG is used when installing OpenLane's core dependencies within
+# Nix. The reason is NixOS does not support Python binary wheels.
+#
+# We do not extend this privilege to the development dependencies, as they take
+# one billion years to build.
+
+NO_BINARY_ARG =
+ifneq ($(shell echo $(IN_NIX_SHELL)), "") 
+NO_BINARY_ARG = --no-binary :all:
+else ifneq ($(shell "test -d /etc/nixos && echo 1 || echo 0"), "0")
+NO_BINARY_ARG = --no-binary :all:
+endif
 
 venv: venv/manifest.txt
-venv/manifest.txt: $(REQ_FILES)
+venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	rm -rf venv
 	python3 -m venv ./venv
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade $(REQ_FILES_PFX)
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade $(NO_BINARY_ARG) -r ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
 	@echo ">> Venv prepared. To install documentation dependencies, invoke './venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt'"
 

@@ -20,6 +20,13 @@ source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
 read_spef $::env(CURRENT_SPEF_DEFAULT_CORNER)
 
+if {[info exists ::env(LIB_VOLTAGE)]} {
+    puts "\[INFO] Setting voltage extracted from liberty to $::env(LIB_VOLTAGE)..."
+    set_pdnsim_net_voltage -net $::env(VDD_NET) -voltage  $::env(LIB_VOLTAGE)
+}
+
+set voltages $::env(STEP_DIR)/voltages.csv
+
 puts "%OL_CREATE_REPORT irdrop.rpt"
-analyze_power_grid -net $::env(VDD_NET) -outfile $::env(STEP_DIR)/voltages.csv
+analyze_power_grid -net $::env(VDD_NET) -outfile $voltages
 puts "%OL_END_REPORT"

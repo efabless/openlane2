@@ -19,6 +19,7 @@
   klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
     inherit pkgs;
   },
+  libparse ? import ./nix/libparse.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
@@ -66,6 +67,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     lxml
     deprecated
     immutabledict
+    libparse
   ];
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;

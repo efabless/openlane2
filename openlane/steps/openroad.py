@@ -24,7 +24,17 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
-from typing import Any, Callable, Iterable, List, Dict, Literal, Tuple, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Dict,
+    Literal,
+    Tuple,
+    Optional,
+    Union,
+)
 
 import rich
 import rich.table
@@ -1178,6 +1188,11 @@ class IRDropReport(OpenROADStep):
             "Enables/disables this step.",
             default=True,
         ),
+        Variable(
+            "IRDROP_OPERATING_CONDITIONS",
+            Optional[str],
+            "The operating conditions in the default corner's liberty file(s) to use for IR drop analysis. If None, the liberty file's default corner will be used.",
+        ),
     ]
 
     def get_script_path(self):
@@ -1186,11 +1201,7 @@ class IRDropReport(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         from decimal import Decimal
 
-        if state_in[DesignFormat.SPEF] is None:
-            raise StepException(
-                "SPEF extraction was not performed before IR drop report."
-            )
-
+        assert state_in[DesignFormat.SPEF] is not None
         if not isinstance(state_in[DesignFormat.SPEF], dict):
             raise StepException(
                 "Malformed input state: value for SPEF is not a dictionary."
@@ -1213,10 +1224,16 @@ class IRDropReport(OpenROADStep):
         elif len(spefs_in) < 1:
             raise StepException("No SPEF file found for the default corner.")
 
+        libs_in = self.toolbox.filter_views(self.config, self.config["LIB"])
+        if voltage := self.toolbox.get_lib_voltage(str(libs_in[0])):
+            env["LIB_VOLTAGE"] = str(voltage)
+
         env["CURRENT_SPEF_DEFAULT_CORNER"] = str(spefs_in[0])
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         report = open(os.path.join(self.step_dir, "irdrop.rpt")).read()
+
+        verbose(report)
 
         voltage_rx = re.compile(r"Worstcase voltage\s*:\s*([\d\.\+\-e]+)\s*V")
         avg_drop_rx = re.compile(r"Average IR drop\s*:\s*([\d\.\+\-e]+)\s*V")

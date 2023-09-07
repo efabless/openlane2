@@ -12,29 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-    pkgs ? import ./nix/pkgs.nix {},
-    openlane-app ? import ./. {}
+  pkgs ? import ./pkgs.nix {}
 }:
 
-with pkgs; mkShell {
-  name = "openlane";
+with pkgs; with python3.pkgs; buildPythonPackage rec {
+  name = "libparse";
 
-  propagatedBuildInputs = [
-    openlane-app
+  src = fetchFromGitHub {
+    owner = "efabless";
+    repo = "libparse-python";
+    rev = "b3b757943fbac728fe8354c5781aadabdfa8bc3d";
+    sha256 = "sha256-PzEaEt2H6GeJla4LEvFjw4/YeTmsVFaFDM/D8ab+rEQ=";
+    fetchSubmodules = true;
+  };
 
-    # Conveniences
-    git
-    neovim
-    delta
-    zsh
-
-    # Docs + Testing
-    enchant
-    jupyter
-    graphviz
-
-    # PIP support
-    libxml2
-    libxslt
+  nativeBuildInputs = [
+    clang
+    swig
   ];
+
+  doCheck = false;
 }
