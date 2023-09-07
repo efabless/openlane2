@@ -15,7 +15,7 @@ from typing import Type
 
 import pytest
 
-from openlane.flows import flow as flow_module
+from openlane.flows import flow as flow_module, sequential as sequential_flow_module
 from openlane.steps import Step, step as step_module
 
 
@@ -43,7 +43,7 @@ def MetricIncrementer():
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_sequential_flow(MetricIncrementer: Type[Step]):
     from openlane.flows import SequentialFlow
 
@@ -78,7 +78,7 @@ def test_sequential_flow(MetricIncrementer: Type[Step]):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_custom_seqflow(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
@@ -112,7 +112,7 @@ def test_custom_seqflow(MetricIncrementer):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_custom_seqflow_bad_id(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
@@ -128,7 +128,7 @@ def test_custom_seqflow_bad_id(MetricIncrementer):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_substitution(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
@@ -175,7 +175,7 @@ def test_substitution(MetricIncrementer):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_bad_substitution(MetricIncrementer):
     from openlane.flows import SequentialFlow, FlowException
 
@@ -223,7 +223,7 @@ def test_bad_substitution(MetricIncrementer):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow_module, step_module])
+@mock_variables([flow_module, sequential_flow_module, step_module])
 def test_flow_control(MetricIncrementer):
     from openlane.flows import SequentialFlow
 

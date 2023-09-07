@@ -317,9 +317,9 @@ class Flow(ABC):
         self.progress_bar = FlowProgressBar(self.name)
 
     @classmethod
-    def get_help_md(Self):  # pragma: no cover
+    def get_help_md(Self) -> str:  # pragma: no cover
         """
-        Renders Markdown help for this flow to a string.
+        :returns: rendered Markdown help for this Flow
         """
         doc_string = ""
         if Self.__doc__:
@@ -351,6 +351,25 @@ class Flow(ABC):
             )
             % doc_string
         )
+        flow_config_vars = Self.config_vars
+        if hasattr(Self, "gating_config_vars"):
+            flow_config_vars = Self.config_vars + list(Self.gating_config_vars.values())
+
+        if len(flow_config_vars):
+            result += textwrap.dedent(
+                """
+                #### Flow-specific Configuration Variables
+
+                | Variable Name | Type | Description | Default | Units |
+                | - | - | - | - | - |
+                """
+            )
+            for var in flow_config_vars:
+                units = var.units or ""
+                pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
+                result += f'| <a name="{Self.__name__.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+            result += "\n"
+
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
@@ -359,6 +378,11 @@ class Flow(ABC):
         return result
 
     def get_all_config_variables(self) -> List[Variable]:
+        """
+        :returns: All configuration variables for this Flow, including
+            universal configuration variables, flow-specific configuration
+            variables and step-specific configuration variables.
+        """
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
             variable.name: (variable, "universal flow variables")
             for variable in universal_flow_config_variables
@@ -370,6 +394,7 @@ class Flow(ABC):
                     raise FlowException(
                         f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
                     )
+
         for step_cls in self.Steps:
             for variable in step_cls.config_vars:
                 if flow_variables_by_name.get(variable.name) is not None:

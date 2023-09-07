@@ -50,7 +50,7 @@ def test_step_init_missing_id(mock_run):
 
     with pytest.raises(
         NotImplementedError,
-        match="All subclasses of Step must override the value of id",
+        match="does not implement the .id property and cannot be initialized",
     ):
         TestStep()
 
@@ -58,24 +58,31 @@ def test_step_init_missing_id(mock_run):
 def test_step_inputs_not_implemented(mock_run):
     from openlane.steps import Step
 
-    with pytest.raises(
-        NotImplementedError, match="must implement class attribute 'inputs'"
-    ):
+    class TestStep(Step):
+        id = "Dummy"
+        outputs = []
+        run = mock_run
 
-        class TestStep(Step):
-            run = mock_run
+    with pytest.raises(
+        NotImplementedError,
+        match="does not implement the .inputs property and cannot be initialized",
+    ):
+        TestStep.assert_concrete()
 
 
 def test_step_outputs_not_implemented(mock_run):
     from openlane.steps import Step
 
-    with pytest.raises(
-        NotImplementedError, match="must implement class attribute 'outputs'"
-    ):
+    class TestStep(Step):
+        id = "Dummy"
+        inputs = []
+        run = mock_run
 
-        class TestStep(Step):
-            inputs = []
-            run = mock_run
+    with pytest.raises(
+        NotImplementedError,
+        match="does not implement the .outputs property and cannot be initialized",
+    ):
+        TestStep.assert_concrete()
 
 
 def test_step_missing_config(mock_run):

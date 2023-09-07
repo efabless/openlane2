@@ -2,16 +2,20 @@
 These flows come included with OpenLane. They use a variety of built-in steps to
 either provide a general RTL-to-GDSII flow or more specific niches.
 
-Each Flow's list configuration variables is essentially a sum of its included
-steps and the "Universal" Flow Configuration Variables, which consist of two
-parts:
-
+Each Flow's list of configuration variables is essentially a sum of:
 ```{toctree}
 :maxdepth: 1
 
 common_flow_vars
 common_pdk_vars
 ```
+
+***AND***
+
+* Flow-specific Configuration Variables
+* All included Step Configuration Variables
+
+
 
 If you're looking for documentation for the `Flow` Python classes themselves,
 check the API reference [here](./api/flows/index).

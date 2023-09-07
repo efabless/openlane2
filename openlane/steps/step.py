@@ -187,15 +187,6 @@ class Step(ABC):
         :class:`Step` subclasses without the ``outputs`` class property declared
         are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
-    :cvar flow_control_variable: An optional key for a configuration variable.
-
-        If running inside a Flow, and this exists, if this variable is "False"
-        or "None", the step is skipped.
-
-    :cvar flow_control_msg: If ``flow_control_variable`` causes the step to be
-        skipped and this variable is set, the value of this variable is
-        printed.
-
     :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
 
@@ -225,8 +216,6 @@ class Step(ABC):
     id: str = NotImplemented
     inputs: ClassVar[List[DesignFormat]] = NotImplemented
     outputs: ClassVar[List[DesignFormat]] = NotImplemented
-    flow_control_variable: ClassVar[Optional[str]] = None
-    flow_control_msg: ClassVar[Optional[str]] = None
     config_vars: ClassVar[List[Variable]] = []
 
     # Instance Variables
@@ -308,6 +297,12 @@ class Step(ABC):
         else:
             state_in_future = state_in
         self.state_in = state_in_future
+
+    def __init_subclass__(cls):
+        if hasattr(cls, "flow_control_variable"):
+            warn(
+                f"Step '{cls.id}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
+            )
 
     @classmethod
     def assert_concrete(Self, action: str = "initialized"):
@@ -413,6 +408,7 @@ class Step(ABC):
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
                 result += f'| <a name="{Self.id.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+            result += "\n"
 
         result = (
             textwrap.dedent(
@@ -681,26 +677,6 @@ class Step(ABC):
         state_in_result = self.state_in.result()
 
         rule(f"{self.long_name}")
-
-        if not Config.current_interactive and self.flow_control_variable is not None:
-            flow_control_value = self.config[self.flow_control_variable]
-            if isinstance(flow_control_value, bool):
-                if not flow_control_value:
-                    if self.flow_control_msg is not None:
-                        info(self.flow_control_msg)
-                    else:
-                        info(
-                            f"{self.flow_control_variable} is set to False: skipping {self.id} …"
-                        )
-                        return state_in_result.copy()
-            elif flow_control_value is None:
-                if self.flow_control_msg is not None:
-                    info(self.flow_control_msg)
-                else:
-                    info(
-                        f"Required variable {self.flow_control_variable} is set to null: skipping…"
-                    )
-                return state_in_result.copy()
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:

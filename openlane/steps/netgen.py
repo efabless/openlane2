@@ -131,16 +131,6 @@ class LVS(NetgenStep):
 
     id = "Netgen.LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
-    flow_control_variable = "RUN_LVS"
-
-    config_vars = NetgenStep.config_vars + [
-        Variable(
-            "RUN_LVS",
-            bool,
-            "Enables running LVS.",
-            default=True,
-        ),
-    ]
 
     def get_command(self) -> List[str]:
         return super().get_command() + [self.get_script_path()]

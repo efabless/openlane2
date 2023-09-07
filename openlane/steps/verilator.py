@@ -29,19 +29,12 @@ class Lint(Step):
     id = "Verilator.Lint"
     inputs = []  # The input RTL is part of the configuration
     outputs = []
-    flow_control_variable = "RUN_LINTER"
+
     config_vars = [
         Variable(
             "VERILOG_FILES",
             List[Path],
             "The paths of the design's Verilog files.",
-        ),
-        Variable(
-            "RUN_LINTER",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["RUN_VERILATOR"],
         ),
         Variable(
             "LINTER_INCLUDE_PDK_MODELS",
