@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: "[TEMP] Install libparse dependencies"
         run: |
-          sudo apt-get install -y swig3 libxml2-dev libxslt1-dev
+          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Python Dependencies
         run: |
           python3 -m pip install -r ./requirements.txt
@@ -62,7 +62,7 @@ jobs:
           python-version: "3.8"
       - name: "[TEMP] Install libparse dependencies"
         run: |
-          sudo apt-get install -y swig3 libxml2-dev libxslt1-dev
+          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Install Linters
         run: make venv
       - name: Lint
@@ -117,7 +117,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: "[TEMP] Install libparse dependencies"
         run: |
-          sudo apt-get install -y swig3 libxml2-dev libxslt1-dev
+          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Run Unit Tests
         run: |
           make test
