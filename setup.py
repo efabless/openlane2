@@ -51,6 +51,7 @@ setup(
         "console_scripts": [
             "openlane = openlane.__main__:cli",
             "openlane.steps = openlane.steps.__main__:cli",
+            "openlane.env_info = openlane:env_info_cli",
         ]
     },
     python_requires=">3.8",

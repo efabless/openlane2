@@ -14,7 +14,6 @@
 # flake8: noqa E402
 import odb
 
-import os
 import sys
 import locale
 import inspect
@@ -27,26 +26,20 @@ try:
 except locale.Error:
     # We tried. :)
     pass
-
-if python_path := os.environ.get("ODB_PYTHONPATH", None):
-    sys.path = python_path.split(":") + sys.path
-
-sys.path.insert(0, os.path.dirname(os.environ["OPENLANE_ROOT"]))
 # -- END
 
 import click
 import rich
 from rich.table import Table
-from openlane.common.design_format import DesignFormat, DesignFormatObject
 
-# Re-export now that the environment actually works properly
+# Re-export for subfunctions
 rich
 click
 Table
 
-write_fn: Dict[DesignFormat, Callable] = {
-    DesignFormat.DEF: lambda reader, file: odb.write_def(reader.block, file),
-    DesignFormat.ODB: lambda reader, file: odb.write_db(reader.db, file),
+write_fn: Dict[str, Callable] = {
+    "def": lambda reader, file: odb.write_def(reader.block, file),
+    "odb": lambda reader, file: odb.write_db(reader.db, file),
 }
 
 
@@ -93,7 +86,7 @@ def click_odb(function):
         for key, value in kwargs.items():
             if key.startswith("output_"):
                 id = key[7:]
-                outputs.append((DesignFormat.by_id(id), value))
+                outputs.append((id, value))
 
         kwargs = {k: kwargs[k] for k in kwargs.keys() if not k.startswith("output_")}
 
@@ -114,15 +107,11 @@ def click_odb(function):
             fn = write_fn[format]
             fn(reader, path)
 
-    for format in DesignFormat:
-        if write_fn.get(format) is None:
-            continue
-        # For type-checker: all guaranteed to be DesignFormatObjects
-        assert isinstance(format.value, DesignFormatObject)
+    for format in write_fn:
         wrapper = click.option(
-            f"--output-{format.value.id}",
+            f"--output-{format}",
             default=None,
-            help=f"Write {format.value.name}",
+            help=f"Write {format} view",
         )(wrapper)
 
     wrapper = click.option(

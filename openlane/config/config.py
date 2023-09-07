@@ -37,7 +37,7 @@ from typing import (
 
 from immutabledict import immutabledict
 
-from .variable import Macro, Variable
+from .variable import Variable
 from .removals import removed_variables
 from .flow import pdk_variables, scl_variables, flow_common_variables
 from .pdk_compat import migrate_old_config
@@ -362,7 +362,6 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
-        complete: bool = True,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -526,9 +525,11 @@ class Config(GenericImmutableDict[str, Any]):
         if meta is None:
             meta = Meta(version=default_meta_version)
 
+        override_keys = set()
         for string in config_override_strings:
             key, value = string.split("=", 1)
             raw[key] = value
+            override_keys.add(key)
 
         mutable = GenericDict(
             preprocess_dict(
@@ -576,13 +577,17 @@ class Config(GenericImmutableDict[str, Any]):
             )
         )
 
-        permissive_variables = []
-        strict_variables = list(flow_config_vars)
-        on_unknown_key: Union[Literal["error", "warn"], None] = "error"
-        if meta.version < 2:
-            permissive_variables = strict_variables
-            strict_variables = []
-            on_unknown_key = "warn"
+        permissive_variables = list(flow_config_vars)
+        strict_variables = []
+        on_unknown_key: Union[Literal["error", "warn"], None] = "warn"
+        if meta.version >= 2:
+            permissive_variables = []
+            for variable in flow_config_vars:
+                if variable.name in override_keys:
+                    permissive_variables.append(variable)
+                    continue
+                strict_variables.append(variable)
+            on_unknown_key = "error"
 
         processed, design_warnings, design_errors = Config.__process_variable_list(
             mutable,
@@ -613,7 +618,7 @@ class Config(GenericImmutableDict[str, Any]):
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         *,
-        config_override_strings: Sequence[str],  # Unused, kept for API consistency
+        config_override_strings: Sequence[str],
         pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
@@ -858,7 +863,6 @@ class Config(GenericImmutableDict[str, Any]):
                     mutable["DIODE_ON_PORTS"] = "in"
 
         # Macros
-        translated_macros = False
         if mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is None:
             mutable["MACROS"] = {}
 
@@ -876,7 +880,6 @@ class Config(GenericImmutableDict[str, Any]):
                     "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
                 )
             else:
-                translated_macros = True
                 warnings.append(
                     "The configuration variable 'EXTRA_SPEFS' is deprecated. Check the docs on how to use the new 'MACROS' configuration variable."
                 )
@@ -890,8 +893,8 @@ class Config(GenericImmutableDict[str, Any]):
                     )
                     macro_dict = {
                         "module": module,
-                        "gds": ["/dev/null"],
-                        "lef": ["/dev/null"],
+                        "gds": [Path._dummy_path],
+                        "lef": [Path._dummy_path],
                     }
                     macro_dict["spef"] = {
                         "min_*": [min],
@@ -945,7 +948,11 @@ class Config(GenericImmutableDict[str, Any]):
                 continue
             if key in removed:
                 warnings.append(f"'{key}' has been removed: {removed[key]}")
-            elif "_OPT" not in key and key != "//":
+            elif (
+                "_OPT" not in key
+                and not key.startswith("//")
+                and not key.startswith("#")
+            ):
                 if on_unknown_key == "error":
                     if key in Variable.known_variable_names:
                         warnings.append(
@@ -960,15 +967,5 @@ class Config(GenericImmutableDict[str, Any]):
                         )
                     else:
                         warnings.append(f"An unknown key '{key}' was provided.")
-
-        if (
-            translated_macros and final.get("MACROS") is not None
-        ):  # Second check in case an error was generated
-            for macro in final["MACROS"].values():
-                assert isinstance(macro, Macro)
-                if "/dev/null" in macro.gds:
-                    macro.gds = [Path("")]
-                if "/dev/null" in macro.lef:
-                    macro.lef = [Path("")]
 
         return (final, warnings, errors)

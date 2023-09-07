@@ -137,8 +137,32 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     new["TIME_DERATING_CONSTRAINT"] = 5
     new["IO_DELAY_CONSTRAINT"] = 20
 
-    # 8. SPICE models
+    # 8. "Implicit" Paths
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
+        model_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*.v",
+        )
+        new["CELL_VERILOG_MODELS"] = [
+            path for path in glob(model_glob) if "_blackbox" not in path
+        ]
+
+        bb_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*__blackbox*.v",
+        )
+
+        if blackbox_models := glob(bb_glob):
+            new["CELL_BB_VERILOG_MODELS"] = blackbox_models
+
         spice_glob = os.path.join(
             config["PDK_ROOT"],
             config["PDK"],
@@ -149,9 +173,42 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         )
         new["CELL_SPICE_MODELS"] = glob(spice_glob)
 
+        mag_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "mag",
+            "*.mag",
+        )
+        new["CELL_MAGS"] = glob(mag_glob)
+
+        maglef_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "maglef",
+            "*.mag",
+        )
+        new["CELL_MAGLEFS"] = glob(maglef_glob)
+
+        new["MAGIC_PDK_SETUP"] = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.tech",
+            "magic",
+            f"{config['PDK']}.tcl",
+        )
+
     # 9. Primary Signoff Tool
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         new["PRIMARY_SIGNOFF_TOOL"] = "magic"
+
+    # 10. CVC
+    if "CVC_SCRIPTS_DIR" in config:
+        new["CVCRC"] = os.path.join(config["CVC_SCRIPTS_DIR"], "cvcrc")
+        new["CVC_MODELS"] = os.path.join(config["CVC_SCRIPTS_DIR"], "models")
 
     # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):

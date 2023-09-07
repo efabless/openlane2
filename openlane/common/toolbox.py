@@ -14,8 +14,10 @@
 import os
 import re
 import uuid
+import shutil
 import fnmatch
 import tempfile
+import subprocess
 from enum import IntEnum
 from functools import lru_cache
 from typing import (
@@ -35,10 +37,10 @@ from deprecated.sphinx import deprecated
 
 
 from .misc import Path, mkdirp
-from ..logging import debug, warn
 from .metrics import aggregate_metrics
 from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string
+from ..logging import debug, warn, err
 
 
 class Toolbox(object):
@@ -50,8 +52,12 @@ class Toolbox(object):
     """
 
     def __init__(self, tmp_dir: str) -> None:
-        self.tmp_dir = os.path.abspath(tmp_dir)
+        self.tmp_dir = tmp_dir
+
+        mkdirp(self.tmp_dir)
+
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
+        self.create_blackbox_model = lru_cache(16, True)(self.create_blackbox_model)  # type: ignore
 
     @deprecated(
         version="2.0.0b1",
@@ -157,9 +163,10 @@ class Toolbox(object):
                 result += views_filtered
             elif isinstance(views, list):
                 result += views
-            elif views is not None and str(views) != "":
+            elif views is not None:
                 result += [Path(views)]
-        return result
+
+        return [element for element in result if str(element) != Path._dummy_path]
 
     def get_timing_files(
         self,
@@ -316,9 +323,6 @@ class Toolbox(object):
             excluded_cell = 11
 
         cell_start_rx = re.compile(r"(\s*)cell\s*\(\"?(.*?)\"?\)\s*\{")
-
-        mkdirp(self.tmp_dir)
-
         out_paths = []
 
         for file in input_lib_files:
@@ -360,3 +364,75 @@ class Toolbox(object):
             out_paths.append(out_path)
 
         return out_paths
+
+    def create_blackbox_model(
+        self,
+        input_models: FrozenSet[str],
+        defines: FrozenSet[str],
+    ) -> str:
+        class State(IntEnum):
+            output = 0
+            dont = 1
+
+        out_path = os.path.join(self.tmp_dir, f"{uuid.uuid4().hex}.bb.v")
+        bad_yosys_line = re.compile(r"^\s+(\w+|(\\\S+?))\s*\(.*\).*;")
+        final_files = []
+
+        with open(out_path, "w", encoding="utf8") as out:
+            for model in input_models:
+                patched_path = os.path.join(
+                    self.tmp_dir, f"{uuid.uuid4().hex}.patched.v"
+                )
+                patched = open(patched_path, "w", encoding="utf8")
+                state = State.output
+                for line in open(model, "r", encoding="utf8"):
+                    if state == State.output:
+                        if line.strip().startswith(
+                            "primitive"
+                        ) or line.strip().startswith("specify"):
+                            state = State.dont
+                        elif bad_yosys_line.search(line) is None:
+                            print(line.strip("\n"), file=patched)
+                            print(line.strip("\n"), file=out)
+                    elif state == State.dont:
+                        if line.strip().startswith(
+                            "endprimitive"
+                        ) or line.strip().startswith("endspecify"):
+                            print("/* removed primitive */", file=out)
+                            state = State.output
+                patched.close()
+                print("", file=out)
+                final_files.append(patched_path)
+
+        yosys = shutil.which("yosys")
+
+        if yosys is None:
+            warn("yosys not found in PATH. This may trigger issues with blackboxing.")
+            return out_path
+
+        commands = ""
+        for file in final_files:
+            commands += f"read_verilog -sv -lib {file};\n"
+        for define in defines:
+            commands += f"verilog_defines -D{define};\n"
+
+        try:
+            subprocess.check_call(
+                [
+                    yosys,
+                    "-p",
+                    f"""
+                    {commands}
+                    blackbox;
+                    write_verilog -noattr -noexpr -nohex -nodec -defparam -blackboxes {out_path};
+                    """,
+                ],
+                stdout=open(os.path.join(self.tmp_dir, f"{out_path}_yosys.log"), "wb"),
+                stderr=subprocess.STDOUT,
+            )
+        except subprocess.CalledProcessError as e:
+            err("Failed to pre-process input models for linting with Yosys: ")
+            err(e.stdout.decode("utf8"))
+            err("Will attempt to load models into linter as-is.")
+
+        return out_path

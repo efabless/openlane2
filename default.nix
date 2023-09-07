@@ -12,34 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./nix/pkgs.nix,
+  pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
-  magic ? import ./nix/magic.nix { inherit pkgs; },
-
-  netgen ? import ./nix/netgen.nix { inherit pkgs; },
-
-  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
-    inherit pkgs;
-  },
 
   klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
     inherit pkgs;
   },
-
-  yosys ? import ./nix/yosys.nix { inherit pkgs; },
-  
-  volare-rev ? "08f47719be91c919e94fc48c66f0f39a05970df7",
-  volare-sha256 ? "sha256-BeUP//whn7wPJfK0VxxZuGsyiLWZZL82T9YOrlrAXh0=",
-  volare ? let src = pkgs.fetchFromGitHub {
-    owner = "efabless";
-    repo = "volare";
-    rev = volare-rev;
-    sha256 = volare-sha256;
-  }; in import "${src}" {
+  magic ? import ./nix/magic.nix { inherit pkgs; },
+  netgen ? import ./nix/netgen.nix { inherit pkgs; },
+  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
   },
-
+  verilator ? import ./nix/verilator.nix { inherit pkgs; },
+  volare ? import ./nix/volare.nix { inherit pkgs; },
+  yosys ? import ./nix/yosys.nix { inherit pkgs; },
   
   ...
 }:
@@ -63,6 +50,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     netgen
     yosys
     magic
+    verilator
     ruby
     tcl
 

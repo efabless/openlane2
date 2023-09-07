@@ -24,7 +24,7 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
-from typing import Any, Callable, Iterable, List, Dict, Tuple, Optional, Union
+from typing import Any, Callable, Iterable, List, Dict, Literal, Tuple, Optional, Union
 
 import rich
 import rich.table
@@ -46,7 +46,6 @@ from ..logging import debug, err, info, warn, verbose
 from ..common import (
     Path,
     TclUtils,
-    StringEnum,
     get_script_dir,
     get_tpe,
     mkdirp,
@@ -110,6 +109,15 @@ def old_to_new_tracks(old_tracks: str) -> str:
     return final_str
 
 
+def pdn_macro_migrator(x):
+    if not isinstance(x, str):
+        return x
+    if "," in x:
+        return [el.strip() for el in x.split(",")]
+    else:
+        return [x.strip()]
+
+
 class OpenROADStep(TclStep):
     inputs = [DesignFormat.ODB, DesignFormat.SDC]
     outputs = [
@@ -131,7 +139,7 @@ class OpenROADStep(TclStep):
             "PDN_MACRO_CONNECTIONS",
             Optional[List[str]],
             "Specifies explicit power connections of internal macros to the top level power grid, in the format: macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
-            deprecated_names=["FP_PDN_MACRO_HOOKS"],
+            deprecated_names=[("FP_PDN_MACRO_HOOKS", pdn_macro_migrator)],
         ),
         Variable(
             "PDN_ENABLE_GLOBAL_CONNECTIONS",
@@ -516,7 +524,7 @@ class Floorplan(OpenROADStep):
     config_vars = OpenROADStep.config_vars + [
         Variable(
             "FP_SIZING",
-            StringEnum("FP_SIZING", ["relative", "absolute"]),
+            Literal["relative", "absolute"],
             "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
             default="relative",
         ),
@@ -599,7 +607,7 @@ class IOPlacement(OpenROADStep):
         + [
             Variable(
                 "FP_IO_MODE",
-                StringEnum("FP_IO_MODE", ["matching", "random_equidistant"]),
+                Literal["matching", "random_equidistant"],
                 "Decides the mode of the random IO placement option.",
                 default="random_equidistant",
             ),
@@ -823,7 +831,7 @@ class GlobalRouting(OpenROADStep):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    config_vars = OpenROADStep.config_vars + grt_variables
+    config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
@@ -1024,6 +1032,9 @@ class RCX(OpenROADStep):
         env = self.prepare_env(env, state_in)
 
         def run_corner(corner: str):
+            nonlocal env
+            current_env = env.copy()
+
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
             if rcx_ruleset is None:
                 warn(
@@ -1031,12 +1042,9 @@ class RCX(OpenROADStep):
                 )
                 return None
 
-            corner_clean = corner
-            if corner_clean.endswith("_*"):
-                corner_clean = corner_clean[:-2]
-
-            nonlocal env
-            current_env = env.copy()
+            corner_sanitized = corner.strip("*")
+            corner_dir = os.path.join(self.step_dir, corner_sanitized)
+            mkdirp(corner_dir)
 
             tech_lefs = self.toolbox.filter_views(
                 self.config, self.config["TECH_LEFS"], corner
@@ -1053,14 +1061,16 @@ class RCX(OpenROADStep):
             current_env["RCX_RULESET"] = rcx_ruleset
 
             out = os.path.join(
-                self.step_dir, f"{self.config['DESIGN_NAME']}.{corner_clean}.spef"
+                corner_dir, f"{self.config['DESIGN_NAME']}.{corner_sanitized}.spef"
             )
             current_env["SAVE_SPEF"] = out
 
-            log_path = os.path.join(self.step_dir, f"{corner_clean}.log")
-            info(
-                f"Running RCX for the {corner_clean} interconnect corner ({log_path})…"
-            )
+            corner_qualifier = f"the {corner} corner"
+            if "*" in corner:
+                corner_qualifier = f"corners matching {corner}"
+
+            log_path = os.path.join(corner_dir, "rcx.log")
+            info(f"Running RCX for {corner_qualifier} ({log_path})…")
 
             try:
                 self.run_subprocess(
@@ -1069,9 +1079,9 @@ class RCX(OpenROADStep):
                     env=current_env,
                     silent=True,
                 )
-                info(f"Finished RCX for the {corner_clean} interconnect corner.")
+                info(f"Finished RCX for {corner_qualifier}.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed RCX for the {corner_clean} interconnect corner:")
+                err(f"Failed RCX for the {corner_qualifier}:")
                 raise e
 
             return out

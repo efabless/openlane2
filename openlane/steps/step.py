@@ -390,14 +390,14 @@ class Step(ABC):
             for var in Self.config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f'| <a name="{Self.id}.{var.name}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                result += f'| <a name="{Self.id.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
 
         result = (
             textwrap.dedent(
                 f"""
                 ### {Self.__get_desc()}
                 
-                <a name="{Self.id}"></a>
+                <a name="{Self.id.lower()}"></a>
                 """
             )
             + result
@@ -563,11 +563,6 @@ class Step(ABC):
             "step": self.__class__.id,
         }
 
-        # pdk_root = dumpable_config["PDK_ROOT"]
-        # pdk_root_resolved = os.path.join(".", "files", pdk_root[1:])
-        # dumpable_config["PDK_ROOT"] = pdk_root_resolved
-        del dumpable_config["PDK_ROOT"]
-
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
             f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))
@@ -673,7 +668,7 @@ class Step(ABC):
                         info(self.flow_control_msg)
                     else:
                         info(
-                            f"`{self.flow_control_variable}` is set to False: skipping {self.id} …"
+                            f"{self.flow_control_variable} is set to False: skipping {self.id} …"
                         )
                         return state_in_result.copy()
             elif flow_control_value is None:
@@ -681,7 +676,7 @@ class Step(ABC):
                     info(self.flow_control_msg)
                 else:
                     info(
-                        f"Required variable '{self.flow_control_variable}' is set to null: skipping…"
+                        f"Required variable {self.flow_control_variable} is set to null: skipping…"
                     )
                 return state_in_result.copy()
 
@@ -765,7 +760,7 @@ class Step(ABC):
     def get_log_path(self) -> str:
         """
         :returns: the default value for :meth:`run_subprocess`'s "log_to"
-        parameter.
+            parameter.
 
             Override it to change the default log path.
         """

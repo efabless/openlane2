@@ -35,68 +35,33 @@
 
 {
   pkgs ? import ./pkgs.nix {},
-  libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; let
-  rev = "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7";
-in clangStdenv.mkDerivation {
-  pname = "klayout";
-  version = "${rev}"; # I'm going to avoid a KLayout rebuild like the goddamn plague
+with pkgs; clangStdenv.mkDerivation rec {
+  name = "verilator";
+  rev = "23fe5c1b9386228afe80a42b95e91cde8462d1c4";
 
   src = fetchFromGitHub {
-    owner = "KLayout";
-    repo = "klayout";
-    rev = "${rev}";
-    sha256 = "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=";
+    owner = "verilator";
+    repo = "verilator";
+    inherit rev;
+    sha256 = "sha256-nCYlRR7qvo7W3CCCl5FS1qFO0IMKYWwiysCLcJAE7xI=";
   };
 
+  enableParallelBuilding = true;
+  buildInputs = [ perl ];
+  nativeBuildInputs = [ makeWrapper flex bison python3 autoconf help2man ];
+  nativeCheckInputs = [ which ];
+
+  preConfigure = "autoconf";
+
   postPatch = ''
-    substituteInPlace src/klayout.pri --replace "-Wno-reserved-user-defined-literal" ""
-    patchShebangs .
+    patchShebangs bin/* src/{flexfix,vlcovgen} test_regress/{driver.pl,t/*.pl}
   '';
 
-  nativeBuildInputs = [
-    which
-    perl
-    python3
-    ruby
-    gnused
-    libsForQt5.wrapQtAppsHook
-  ];
-
-  buildInputs = with libsForQt5; [
-    qtbase
-    qtmultimedia
-    qttools
-    qtxmlpatterns
-    curl
-    gcc
-  ];
-
-  propagatedBuildInputs = [
-    ruby
-  ];
-  
-  buildPhase = ''
-    runHook preBuild
-    mkdir -p $out/lib
-    CC=clang CXX=clang++ ./build.sh -prefix $out/lib -option -j$NIX_BUILD_CORES -expert -verbose
-    runHook postBuild
+  postInstall = lib.optionalString stdenv.isLinux ''
+    for x in $(ls $out/bin/verilator*); do
+      wrapProgram "$x" --set LOCALE_ARCHIVE "${glibcLocales}/lib/locale/locale-archive"
+    done
   '';
-
-  postBuild = if stdenv.isDarwin then ''
-    mkdir $out/bin
-    cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
-  '' else ''
-    mkdir $out/bin
-    cp $out/lib/klayout $out/bin/
-  '';
-
-  # Make libraries also accessible to standalone binary on macOS
-  postFixup = if stdenv.isDarwin then ''
-    sed -Ei "2iexport DYLD_LIBRARY_PATH=$out/lib:\$DYLD_LIBRARY_PATH" $out/bin/klayout
-  '' else '''';
-
-  dontInstall = true; # "Installation" already happens as part of "build.sh"
 }

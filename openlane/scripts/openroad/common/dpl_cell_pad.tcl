@@ -20,3 +20,7 @@ set_placement_padding -global -right $cell_pad_side -left $cell_pad_side
 if { $::env(CELL_PAD_EXCLUDE) != "" } {
     set_placement_padding -masters $::env(CELL_PAD_EXCLUDE) -right 0 -left 0
 }
+if { [info exists ::env(DIODE_PADDING)] && $::env(DIODE_PADDING) } {
+    set diode_split [split $::env(DIODE_CELL) "/"]
+    set_placement_padding -masters [lindex $diode_split 0] -left $::env(DIODE_PADDING)
+}

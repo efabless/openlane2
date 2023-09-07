@@ -205,7 +205,7 @@ class FlowProgressBar(object):
     def get_ordinal_prefix(self) -> str:
         """
         :returns: A string with the current step ordinal, which can be
-        used to create a step directory.
+            used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
         return f"%0{max_stage_digits}d-" % self.__ordinal
@@ -333,7 +333,7 @@ class Flow(ABC):
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
-                result += f"* [`{step.id}`](./step_config_vars.md#{step.id})\n"
+                result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
 
         return result
 
@@ -423,8 +423,6 @@ class Flow(ABC):
 
         # Stored until next start()
         self.run_dir = os.path.join(self.design_dir, "runs", tag)
-        # Stored until next start()
-        self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
         initial_state = with_initial_state or State()
 
@@ -473,6 +471,9 @@ class Flow(ABC):
         except FileNotFoundError:
             info(f"Starting a new run of the '{self.name}' flow with the tag '{tag}'.")
             mkdirp(self.run_dir)
+
+        # Stored until next start()
+        self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
         warning_log_path = os.path.join(self.run_dir, "warnings.log")
         warning_handler = logging.FileHandler(warning_log_path, mode="a+")

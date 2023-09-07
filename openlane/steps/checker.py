@@ -269,3 +269,85 @@ class LVS(MetricChecker):
             default=True,
         ),
     ]
+
+
+@Step.factory.register()
+class LintErrors(MetricChecker):
+    id = "Checker.LintErrors"
+    flow_control_variable = "QUIT_ON_LINTER_ERRORS"
+    name = "Lint Errors Checker"
+    long_name = "Lint Errors Checker"
+    deferred = False
+
+    metric_name = "design__lint_errors__count"
+    metric_description = "Lint errors"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_LINTER_ERRORS",
+            bool,
+            "Quit on linter errors.",
+            default=True,
+            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
+        ),
+    ]
+
+
+@Step.factory.register()
+class LintWarnings(MetricChecker):
+    id = "Checker.LintWarnings"
+    flow_control_variable = "QUIT_ON_LINTER_WARNINGS"
+    name = "Lint Warnings Checker"
+    long_name = "Lint Warnings Checker"
+    deferred = False
+
+    metric_name = "design__lint_warnings__count"
+    metric_description = "Lint warnings"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_LINTER_WARNINGS",
+            bool,
+            "Quit on linter warnings.",
+            default=False,
+            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
+        ),
+    ]
+
+
+@Step.factory.register()
+class LintTimingConstructs(MetricChecker):
+    id = "Checker.LintTimingConstructs"
+    flow_control_variable = "QUIT_ON_LINTER_TIMING_CONSTRUCTS"
+    name = "Lint Timing Error Checker"
+    long_name = "Lint Timing Errors Checker"
+    deferred = False
+
+    metric_name = "design__lint_timing_constructs__count"
+    metric_description = "Lint Timing Errors"
+
+    config_vars = [
+        Variable(
+            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
+            bool,
+            "Quit on linter timing errors.",
+            default=True,
+        ),
+    ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        metric_value = state_in.metrics.get(self.metric_name)
+
+        if metric_value is not None:
+            if metric_value > 0:
+                error_msg = "Timing constructs found in the RTL. Please remove them or wrap them around an ifdef. It heavily unrecommended to rely on timing constructs for synthesis."
+                err(f"{error_msg}")
+                raise StepError(error_msg)
+            else:
+                info(f"Check for {self.metric_description} clear.")
+        else:
+            warn(
+                f"The {self.metric_description} metric was not found. Are you sure the relevant step was run?"
+            )
+
+        return {}, {}

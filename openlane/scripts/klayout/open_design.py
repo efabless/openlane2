@@ -58,7 +58,7 @@ else:
         for key, value in kwargs.items():
             args.append("-rd")
             if isinstance(value, tuple) or isinstance(value, list):
-                value = ";".join(value)
+                value = ";".join([os.path.abspath(element) for element in value])
             elif (
                 isinstance(value, str)
                 and os.path.exists(value)

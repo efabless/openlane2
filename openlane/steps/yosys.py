@@ -17,7 +17,7 @@ import io
 import json
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
@@ -25,7 +25,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from ..config import Variable
 from ..logging import debug, verbose
 from ..state import State, DesignFormat
-from ..common import Path, get_script_dir, StringEnum
+from ..common import Path, get_script_dir
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
@@ -142,9 +142,11 @@ class YosysStep(TclStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
+        lib_list = [
+            str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
+        ]
         lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset([str(e) for e in lib_list]),
+            frozenset(lib_list),
             excluded_cells=frozenset(
                 [
                     str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
@@ -155,6 +157,7 @@ class YosysStep(TclStep):
         )
 
         env["SYNTH_LIBS"] = " ".join(lib_synth)
+        env["FULL_LIBS"] = " ".join(lib_list)
 
         macro_libs = self.toolbox.get_macro_views(
             self.config,
@@ -228,21 +231,18 @@ class Synthesis(YosysStep):
         ),
         Variable(
             "SYNTH_STRATEGY",
-            StringEnum(
-                "SYNTH_STRATEGY",
-                [
-                    "AREA 0",
-                    "AREA 1",
-                    "AREA 2",
-                    "AREA 3",
-                    "AREA 4",
-                    "DELAY 0",
-                    "DELAY 1",
-                    "DELAY 2",
-                    "DELAY 3",
-                    "DELAY 4",
-                ],
-            ),
+            Literal[
+                "AREA 0",
+                "AREA 1",
+                "AREA 2",
+                "AREA 3",
+                "AREA 4",
+                "DELAY 0",
+                "DELAY 1",
+                "DELAY 2",
+                "DELAY 3",
+                "DELAY 4",
+            ],
             "Strategies for abc logic synthesis and technology mapping. AREA strategies usually result in a more compact design, while DELAY strategies usually result in a design that runs at a higher frequency. Please note that there is no way to know which strategy is the best before trying them.",
             default="AREA 0",
         ),
@@ -286,7 +286,7 @@ class Synthesis(YosysStep):
         ),
         Variable(
             "SYNTH_ADDER_TYPE",
-            StringEnum("SYNTH_ADDER_TYPE", ["YOSYS", "FA", "RCA", "CSA"]),
+            Literal["YOSYS", "FA", "RCA", "CSA"],
             "Adder type to which the $add and $sub operators are mapped to.  Possible values are `YOSYS/FA/RCA/CSA`; where `YOSYS` refers to using Yosys internal adder definition, `FA` refers to full-adder structure, `RCA` refers to ripple carry adder structure, and `CSA` refers to carry select adder.",
             default="YOSYS",
         ),

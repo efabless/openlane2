@@ -90,7 +90,10 @@ else:
         required=True,
         help="Name of the design/top module",
     )
-    @click.argument("input")
+    @click.argument(
+        "input",
+        type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    )
     def stream_out(**kwargs):
         args = [
             "klayout",
@@ -101,7 +104,7 @@ else:
         for key, value in kwargs.items():
             args.append("-rd")
             if isinstance(value, tuple) or isinstance(value, list):
-                value = ";".join(value)
+                value = ";".join([os.path.abspath(element) for element in value])
             elif (
                 isinstance(value, str)
                 and os.path.exists(value)

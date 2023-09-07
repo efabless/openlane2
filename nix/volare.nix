@@ -14,10 +14,14 @@
 {
   pkgs ? import ./pkgs.nix {},
 }:
-
-with pkgs; fetchFromGitHub {
-  owner = "YosysHQ";
-  repo = "abc";
-  rev = "bb64142b07794ee685494564471e67365a093710";
-  sha256 = "sha256-Qkk61Lh84ervtehWskSB9GKh+JPB7mI1IuG32OSZMdg=";
+let
+  rev = "74cb54d93a51b3f9438508ae4155b8d695a2eec8";
+  sha256 = "sha256-r5ZtYHDddWZCEOec5KkMpwXjofXg230h6gVAnj7lRKk=";
+in let src = pkgs.fetchFromGitHub {
+  owner = "efabless";
+  repo = "volare";
+  inherit rev;
+  inherit sha256;
+}; in import "${src}" {
+  inherit pkgs;
 }

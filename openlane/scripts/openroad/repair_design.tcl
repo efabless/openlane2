@@ -57,11 +57,6 @@ report_floating_nets -verbose
 # Legalize
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
-if { [catch {check_placement -verbose} errmsg] } {
-    puts stderr $errmsg
-    exit 1
-}
-
 unset_dont_touch_objects
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl

@@ -14,9 +14,11 @@
 import os
 import json
 import shlex
+import shutil
 import datetime
+import subprocess
 from functools import partial
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import IO, Any, Dict, Optional, Sequence, Union
 
 from click import pass_context, Context
 from cloup import (
@@ -27,10 +29,10 @@ from cloup import (
 )
 
 from .step import Step, StepError, StepException
-from ..common import mkdirp, Toolbox
 from ..logging import info, err, warn
 from ..__version__ import __version__
 from ..common.cli import formatter_settings
+from ..common import mkdirp, Toolbox, get_openlane_root
 
 
 def extract_step_id(ctx: Context, json_in_path: str) -> Optional[str]:
@@ -207,10 +209,11 @@ def eject(ctx, output, state_in, config, id):
             "OpenLane version being used is different from the version this step was originally run with. Procceed with caution."
         )
 
-    toolbox_dir = os.path.join(output, "toolbox_tmp")
+    toolbox_dir = os.path.join(".", "toolbox_tmp")
 
     found_cmd: Optional[Sequence[Union[str, os.PathLike]]] = None
     found_env: Optional[Dict[str, Any]] = None
+    found_stdin_data: Optional[Union[str, bytes]] = None
 
     class Stop(Exception):
         pass
@@ -218,12 +221,15 @@ def eject(ctx, output, state_in, config, id):
     def run_subprocess_subsitute(
         cmd: Sequence[Union[str, os.PathLike]],
         env: Optional[Dict[str, Any]] = None,
+        stdin: Optional[IO[Any]] = None,
         *args,
         **kwargs,
     ):
-        nonlocal found_env, found_cmd
+        nonlocal found_env, found_cmd, found_stdin_data
         found_cmd = cmd
         found_env = env
+        if found_stdin := stdin:
+            found_stdin_data = found_stdin.read()
         raise Stop()
 
     step.run_subprocess = run_subprocess_subsitute
@@ -246,21 +252,48 @@ def eject(ctx, output, state_in, config, id):
         )
         exit(-1)
 
+    canon_scripts_dir = os.path.join(get_openlane_root(), "scripts")
+    target_scripts_dir = os.path.join(".", "scripts")
+
+    try:
+        shutil.rmtree(target_scripts_dir)
+    except FileNotFoundError:
+        pass
+
+    shutil.copytree(canon_scripts_dir, target_scripts_dir)
+    if chmod := shutil.which("chmod"):
+        # Nix's Files aren't writeable
+        subprocess.check_call([chmod, "-R", "755", target_scripts_dir])
+
     current_env = os.environ
-    filtered_env = {}
+    filtered_env = {
+        "STEP_DIR": ".",
+        "SCRIPTS_DIR": target_scripts_dir,
+    }
     if found_env is not None:
         for key, value in found_env.items():
-            if value != current_env.get(key) and value not in [
-                "STEP_DIR",
-                "SCRIPTS_DIR",
-            ]:
-                filtered_env[key] = value
+            if value == current_env.get(key) or key in filtered_env:
+                continue
+            if os.path.isabs(value) and os.path.exists(value):
+                if value.startswith(canon_scripts_dir):
+                    value = value.replace(canon_scripts_dir, target_scripts_dir)
+            filtered_env[key] = value
+
+    cat_in = ""
+    if found_stdin_data:
+        mode = "wb"
+        if isinstance(found_stdin_data, str):
+            mode = "w"
+        with open("STDIN", mode) as f:
+            f.write(found_stdin_data)
+        cat_in = "cat STDIN | "
 
     with open(output, "w", encoding="utf8") as f:
         f.write("#!/bin/sh\n")
         for key, value in filtered_env.items():
             f.write(f"export {key}={shlex.quote(str(value))}\n")
         f.write("\n")
+        f.write(cat_in)
         f.write(shlex.join([str(e) for e in found_cmd]))
         f.write("\n")
 
