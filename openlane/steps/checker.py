@@ -18,7 +18,6 @@ from typing import Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
-from ..config import Variable
 from ..logging import err, warn, info
 
 
@@ -86,141 +85,70 @@ class MetricChecker(Step):
 @Step.factory.register()
 class YosysUnmappedCells(MetricChecker):
     id = "Checker.YosysUnmappedCells"
-    flow_control_variable = "QUIT_ON_UNMAPPED_CELLS"
     name = "Unmapped Cells Checker"
     deferred = False
 
     metric_name = "design__instance_unmapped__count"
     metric_description = "Unmapped Yosys instances"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_UNMAPPED_CELLS",
-            bool,
-            "Checks for unmapped cells after synthesis.",
-            deprecated_names=["CHECK_UNMAPPED_CELLS"],
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class YosysSynthChecks(MetricChecker):
     id = "Checker.YosysChecks"
-    flow_control_variable = "QUIT_ON_SYNTH_CHECKS"
     name = "Yosys Synth Checks"
     deferred = False
 
     metric_name = "synthesis__check_error__count"
     metric_description = "Yosys check errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_SYNTH_CHECKS",
-            bool,
-            "Quits the flow if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class TrDRC(MetricChecker):
     id = "Checker.TrDRC"
-    flow_control_variable = "QUIT_ON_TR_DRC"
     name = "Routing DRC Checker"
     long_name = "Routing Design Rule Checker"
 
     metric_name = "route__drc_errors"
     metric_description = "Routing DRC errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_TR_DRC",
-            bool,
-            "Checks for DRC violations after routing and exits the flow if any was found.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class MagicDRC(MetricChecker):
     id = "Checker.MagicDRC"
-    flow_control_variable = "QUIT_ON_MAGIC_DRC"
     name = "Magic DRC Checker"
     long_name = "Magic Design Rule Checker"
 
     metric_name = "magic__drc_error__count"
     metric_description = "Magic DRC errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_MAGIC_DRC",
-            bool,
-            "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class IllegalOverlap(MetricChecker):
     id = "Checker.IllegalOverlap"
-    flow_control_variable = "QUIT_ON_ILLEGAL_OVERLAPS"
     name = "Illegal Overlap Checker"
     long_name = "Spice Extraction-based Illegal Overlap Checker"
 
     metric_name = "magic__illegal_overlap__count"
     metric_description = "Magic Illegal Overlap errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_ILLEGAL_OVERLAPS",
-            bool,
-            "Checks for illegal overlaps during magic extraction. In some cases, these imply existing undetected shorts in the design. It also exits the flow if any was found.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class DisconnectedPins(MetricChecker):
     id = "Checker.DisconnectedPins"
-    flow_control_variable = "QUIT_ON_DISCONNECTED_PINS"
     name = "Disconnected Pins Checker"
     deferred = False
 
     metric_name = "design__disconnected_pins__count"
     metric_description = "Disconnected pins count"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_DISCONNECTED_PINS",
-            bool,
-            "Checks for disconnected instance pins.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class WireLength(MetricChecker):
     id = "Checker.WireLength"
-    flow_control_variable = "QUIT_ON_LONG_WIRE"
     name = "Wire Length Threshold Checker"
 
     metric_name = "route__wirelength__max"
     metric_description = "Threshold-surpassing long wires"
-
-    config_vars = [
-        Variable(
-            "QUIT_ON_LONG_WIRE",
-            bool,
-            "Exits the flow if any wire length exceeds the threshold set in the PDK.",
-            default=False,
-        ),
-    ]
 
     def get_threshold(self) -> Optional[Decimal]:
         threshold = self.config["WIRE_LENGTH_THRESHOLD"]
@@ -234,47 +162,26 @@ class WireLength(MetricChecker):
 @Step.factory.register()
 class XOR(MetricChecker):
     id = "Checker.XOR"
-    flow_control_variable = "QUIT_ON_XOR_ERROR"
     name = "XOR Difference Checker"
     long_name = "Magic vs. KLayout XOR Difference Checker"
 
     metric_name = "design__xor_difference__count"
     metric_description = "XOR differences"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_XOR_ERROR",
-            bool,
-            "Checks for geometric differences between the Magic and KLayout stream-outs.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class LVS(MetricChecker):
     id = "Checker.LVS"
-    flow_control_variable = "QUIT_ON_LVS_ERROR"
     name = "LVS Error Checker"
     long_name = "Layout vs. Schematic Error Checker"
 
     metric_name = "design__lvs_errors__count"
     metric_description = "LVS errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_LVS_ERROR",
-            bool,
-            "Checks for LVS errors after netgen LVS is executed and exits the flow if any was found.",
-            default=True,
-        ),
-    ]
-
 
 @Step.factory.register()
 class LintErrors(MetricChecker):
     id = "Checker.LintErrors"
-    flow_control_variable = "QUIT_ON_LINTER_ERRORS"
     name = "Lint Errors Checker"
     long_name = "Lint Errors Checker"
     deferred = False
@@ -282,21 +189,10 @@ class LintErrors(MetricChecker):
     metric_name = "design__lint_errors__count"
     metric_description = "Lint errors"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_LINTER_ERRORS",
-            bool,
-            "Quit on linter errors.",
-            default=True,
-            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
-        ),
-    ]
-
 
 @Step.factory.register()
 class LintWarnings(MetricChecker):
     id = "Checker.LintWarnings"
-    flow_control_variable = "QUIT_ON_LINTER_WARNINGS"
     name = "Lint Warnings Checker"
     long_name = "Lint Warnings Checker"
     deferred = False
@@ -304,36 +200,16 @@ class LintWarnings(MetricChecker):
     metric_name = "design__lint_warnings__count"
     metric_description = "Lint warnings"
 
-    config_vars = [
-        Variable(
-            "QUIT_ON_LINTER_WARNINGS",
-            bool,
-            "Quit on linter warnings.",
-            default=False,
-            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
-        ),
-    ]
-
 
 @Step.factory.register()
 class LintTimingConstructs(MetricChecker):
     id = "Checker.LintTimingConstructs"
-    flow_control_variable = "QUIT_ON_LINTER_TIMING_CONSTRUCTS"
     name = "Lint Timing Error Checker"
     long_name = "Lint Timing Errors Checker"
     deferred = False
 
     metric_name = "design__lint_timing_constructs__count"
     metric_description = "Lint Timing Errors"
-
-    config_vars = [
-        Variable(
-            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
-            bool,
-            "Quit on linter timing errors.",
-            default=True,
-        ),
-    ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metric_value = state_in.metrics.get(self.metric_name)

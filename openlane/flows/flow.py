@@ -227,7 +227,8 @@ class Flow(ABC):
 
     :param name: An optional string name for the Flow itself, and not a run of it.
 
-        If not set, the Python class name will be used instead.
+        If not set, the class variable ``name`` will be used instead, if THAT
+        is not set,
 
     :param config_override_strings: See :meth:`Config.load`
     :param pdk: See :meth:`Config.load`
@@ -235,12 +236,20 @@ class Flow(ABC):
     :param scl: See :meth:`Config.load`
     :param design_dir: See :meth:`Config.load`
 
-    :ivar Steps:
+    :cvar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
 
-        Subclasses of :class:`Step` are expected to override the default value
+        Subclasses of :class:`Flow` are expected to override the default value
         as a class member- but subclasses may allow this value to be further
         overridden during construction (and only then.)
+
+        :class:`Flow` subclasses without the ``Steps`` class property declared
+        are considered abstract and cannot be initialized.
+
+    :cvar config_vars:
+        A list of **flow-specific** configuration variables. These configuration
+        variables are used entirely within the logic of the flow itself and
+        are not exposed to ``Step``s.
 
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
@@ -259,8 +268,9 @@ class Flow(ABC):
         If :meth:`start` is called again, the reference is destroyed.
     """
 
-    name: str
-    Steps: List[Type[Step]] = []  # Override
+    name: str = NotImplemented
+    Steps: List[Type[Step]] = NotImplemented  # Override
+    config_vars: List[Variable] = []
     step_objects: Optional[List[Step]] = None
     run_dir: Optional[str] = None
     toolbox: Optional[Toolbox] = None
@@ -276,7 +286,18 @@ class Flow(ABC):
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
     ):
-        self.name = name or self.__class__.__name__
+        if self.__class__.Steps == NotImplemented:
+            raise NotImplementedError(
+                f"Abstract flow {self.__class__.__qualname__} does not implement the .Steps property and cannot be initialized."
+            )
+        for step in self.Steps:
+            step.assert_concrete("used in a Flow")
+
+        self.name = (
+            self.__class__.__qualname__ if self.name == NotImplemented else self.name
+        )
+        if name is not None:
+            self.name = name
 
         self.Steps = self.Steps.copy()  # Break global reference
 
@@ -296,9 +317,9 @@ class Flow(ABC):
         self.progress_bar = FlowProgressBar(self.name)
 
     @classmethod
-    def get_help_md(Self):  # pragma: no cover
+    def get_help_md(Self) -> str:  # pragma: no cover
         """
-        Renders Markdown help for this flow to a string.
+        :returns: rendered Markdown help for this Flow
         """
         doc_string = ""
         if Self.__doc__:
@@ -330,6 +351,25 @@ class Flow(ABC):
             )
             % doc_string
         )
+        flow_config_vars = Self.config_vars
+        if hasattr(Self, "gating_config_vars"):
+            flow_config_vars = Self.config_vars + list(Self.gating_config_vars.values())
+
+        if len(flow_config_vars):
+            result += textwrap.dedent(
+                """
+                #### Flow-specific Configuration Variables
+
+                | Variable Name | Type | Description | Default | Units |
+                | - | - | - | - | - |
+                """
+            )
+            for var in flow_config_vars:
+                units = var.units or ""
+                pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
+                result += f'| <a name="{Self.__name__.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+            result += "\n"
+
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
@@ -338,10 +378,23 @@ class Flow(ABC):
         return result
 
     def get_all_config_variables(self) -> List[Variable]:
+        """
+        :returns: All configuration variables for this Flow, including
+            universal configuration variables, flow-specific configuration
+            variables and step-specific configuration variables.
+        """
         flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
-            variable.name: (variable, "Universal")
+            variable.name: (variable, "universal flow variables")
             for variable in universal_flow_config_variables
         }
+        for variable in self.config_vars:
+            if flow_variables_by_name.get(variable.name) is not None:
+                existing_variable, source = flow_variables_by_name[variable.name]
+                if variable != existing_variable:
+                    raise FlowException(
+                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
+                    )
+
         for step_cls in self.Steps:
             for variable in step_cls.config_vars:
                 if flow_variables_by_name.get(variable.name) is not None:

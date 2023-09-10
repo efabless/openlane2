@@ -129,19 +129,11 @@ class WriteLEF(MagicStep):
 
     id = "Magic.WriteLEF"
     name = "Write LEF (Magic)"
-    flow_control_variable = "RUN_MAGIC_WRITE_LEF"
 
     inputs = [DesignFormat.GDS, DesignFormat.DEF]
     outputs = [DesignFormat.LEF]
 
     config_vars = MagicStep.config_vars + [
-        Variable(
-            "RUN_MAGIC_WRITE_LEF",
-            bool,
-            "Generate a LEF view using Magic.",
-            default=True,
-            deprecated_names=["MAGIC_GENERATE_LEF"],
-        ),
         Variable(
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
@@ -177,19 +169,11 @@ class StreamOut(MagicStep):
 
     id = "Magic.StreamOut"
     name = "GDSII Stream Out (Magic)"
-    flow_control_variable = "RUN_MAGIC_STREAMOUT"
 
     inputs = [DesignFormat.DEF]
     outputs = [DesignFormat.GDS, DesignFormat.MAG_GDS, DesignFormat.MAG]
 
     config_vars = MagicStep.config_vars + [
-        Variable(
-            "RUN_MAGIC_STREAMOUT",
-            bool,
-            "Enables running GDSII streaming out using Magic.",
-            default=True,
-            deprecated_names=["RUN_MAGIC"],
-        ),
         Variable(
             "DIE_AREA",
             Optional[str],
@@ -267,18 +251,10 @@ class DRC(MagicStep):
     name = "DRC"
     long_name = "Design Rule Checks"
 
-    flow_control_variable = "RUN_MAGIC_DRC"
-
     inputs = [DesignFormat.DEF, DesignFormat.GDS]
     outputs = []
 
     config_vars = MagicStep.config_vars + [
-        Variable(
-            "RUN_MAGIC_DRC",
-            bool,
-            "Enables running magic DRC on GDSII produced by Magic.",
-            default=True,
-        ),
         Variable(
             "MAGIC_DRC_USE_GDS",
             bool,

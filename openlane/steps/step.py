@@ -150,9 +150,12 @@ class Step(ABC):
 
         The ID should be in ``UpperCamelCase``.
 
-        While this is technically an instance variable, it is expected for every
-        subclass to override this variable and instances are only to change it
-        to disambiguate when the same step is used multiple times in a flow.
+        While this is technically a class variable, instances allowed to change it
+        per-instance to disambiguate when the same step is used multiple times
+        in a flow.
+
+        :class:`Step` subclasses without the ``id`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
     :param name: A short name for the Step, used in progress bars and
         the like.
@@ -174,18 +177,15 @@ class Step(ABC):
         are required for this step. These will be validated by the :meth:`start`
         method.
 
+        :class:`Step` subclasses without the ``inputs`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
+
     :cvar outputs: A list of :class:`openlane.state.DesignFormat` objects that
         may be emitted by this step. A step is not allowed to modify design
         formats not declared in ``outputs``.
 
-    :cvar flow_control_variable: An optional key for a configuration variable.
-
-        If running inside a Flow, and this exists, if this variable is "False"
-        or "None", the step is skipped.
-
-    :cvar flow_control_msg: If ``flow_control_variable`` causes the step to be
-        skipped and this variable is set, the value of this variable is
-        printed.
+        :class:`Step` subclasses without the ``outputs`` class property declared
+        are considered abstract and cannot be initialized or used in a :class:`Flow`.
 
     :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
@@ -213,14 +213,12 @@ class Step(ABC):
     """
 
     # Class Variables
-    inputs: ClassVar[List[DesignFormat]]
-    outputs: ClassVar[List[DesignFormat]]
-    flow_control_variable: ClassVar[Optional[str]] = None
-    flow_control_msg: ClassVar[Optional[str]] = None
+    id: str = NotImplemented
+    inputs: ClassVar[List[DesignFormat]] = NotImplemented
+    outputs: ClassVar[List[DesignFormat]] = NotImplemented
     config_vars: ClassVar[List[Variable]] = []
 
     # Instance Variables
-    id: str = NotImplemented
     name: str
     long_name: str
     state_in: Future[State]
@@ -249,10 +247,7 @@ class Step(ABC):
         _no_revalidate_conf: bool = False,
         **kwargs,
     ):
-        if self.id == NotImplemented:
-            raise NotImplementedError(
-                "All subclasses of Step must override the value of id."
-            )
+        self.__class__.assert_concrete()
 
         if flow is not None:
             warn(
@@ -304,12 +299,34 @@ class Step(ABC):
         self.state_in = state_in_future
 
     def __init_subclass__(cls):
-        if not isabstract(cls):
-            for attr in ["inputs", "outputs"]:
-                if not hasattr(cls, attr):
-                    raise NotImplementedError(
-                        f"{cls} must implement class attribute '{attr}'"
-                    )
+        if hasattr(cls, "flow_control_variable"):
+            warn(
+                f"Step '{cls.id}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
+            )
+
+    @classmethod
+    def assert_concrete(Self, action: str = "initialized"):
+        """
+        Checks if the Step class in question is concrete, with abstract methods
+        AND ``NotImplemented`` classes implemented and declared respectively.
+
+        Should be called before any ``Step`` subclass is used.
+
+        If the class is not concrete, a ``NotImplementedError`` is raised.
+
+        :param action: The action to be attempted, to be included in the
+            ``NotImplementedError`` message.
+        """
+        if isabstract(Self):
+            raise NotImplementedError(
+                f"Abstract step {Self.__qualname__} has one or more methods not implemented ({' '.join(Self.__abstractmethods__)}) and cannot be {action}"
+            )
+
+        for attr in ["id", "inputs", "outputs"]:
+            if not hasattr(Self, attr) or getattr(Self, attr) == NotImplemented:
+                raise NotImplementedError(
+                    f"Abstract step {Self.__qualname__} does not implement the .{attr} property and cannot be {action}"
+                )
 
     @classmethod
     def __get_desc(Self) -> str:  # pragma: no cover
@@ -391,6 +408,7 @@ class Step(ABC):
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
                 result += f'| <a name="{Self.id.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+            result += "\n"
 
         result = (
             textwrap.dedent(
@@ -660,26 +678,6 @@ class Step(ABC):
 
         rule(f"{self.long_name}")
 
-        if not Config.current_interactive and self.flow_control_variable is not None:
-            flow_control_value = self.config[self.flow_control_variable]
-            if isinstance(flow_control_value, bool):
-                if not flow_control_value:
-                    if self.flow_control_msg is not None:
-                        info(self.flow_control_msg)
-                    else:
-                        info(
-                            f"{self.flow_control_variable} is set to False: skipping {self.id} …"
-                        )
-                        return state_in_result.copy()
-            elif flow_control_value is None:
-                if self.flow_control_msg is not None:
-                    info(self.flow_control_msg)
-                else:
-                    info(
-                        f"Required variable {self.flow_control_variable} is set to null: skipping…"
-                    )
-                return state_in_result.copy()
-
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
             f.write(state_in_result.dumps())
@@ -927,6 +925,10 @@ class Step(ABC):
             """
 
             def decorator(cls: Type[Step]) -> Type[Step]:
+                if cls.id == NotImplemented:
+                    raise RuntimeError(
+                        f"Abstract step {cls} without property .id cannot be registered."
+                    )
                 Self.__registry[cls.id.lower()] = cls
                 return cls
 

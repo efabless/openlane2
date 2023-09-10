@@ -23,7 +23,7 @@ from typing import List, Literal, Optional, Tuple
 
 from .common_variables import io_layer_variables
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
-from ..logging import warn
+from ..logging import warn, info
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -124,9 +124,6 @@ class ApplyDEFTemplate(OdbpyStep):
     id = "Odb.ApplyDEFTemplate"
     name = "Apply DEF Template"
 
-    flow_control_variable = "FP_DEF_TEMPLATE"
-    flow_control_msg = "No DEF template provided, skipping…"
-
     config_vars = [
         Variable(
             "FP_DEF_TEMPLATE",
@@ -147,6 +144,12 @@ class ApplyDEFTemplate(OdbpyStep):
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
         ]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["FP_DEF_TEMPLATE"] is None:
+            info("No DEF template provided, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
 
 
 class SetPowerConnections(OdbpyStep):
@@ -285,9 +288,6 @@ class CustomIOPlacement(OdbpyStep):
     name = "Custom I/O Placement"
     long_name = "Custom I/O Pin Placement Script"
 
-    flow_control_variable = "FP_PIN_ORDER_CFG"
-    flow_control_msg = "No custom floorplan file configured, skipping…"
-
     config_vars = io_layer_variables + [
         Variable(
             "FP_PIN_ORDER_CFG",
@@ -335,6 +335,12 @@ class CustomIOPlacement(OdbpyStep):
                 else "--ignore-unmatched"
             ),
         ]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["FP_PIN_ORDER_CFG"] is None:
+            info("No custom floorplan file configured, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -412,14 +418,7 @@ class HeuristicDiodeInsertion(OdbpyStep):
     name = "Heuristic Diode Insertion"
     long_name = "Heuristic Diode Insertion Script"
 
-    flow_control_variable = "RUN_HEURISTIC_DIODE_INSERTION"
     config_vars = [
-        Variable(
-            "RUN_HEURISTIC_DIODE_INSERTION",
-            bool,
-            "Enables/disables this step.",
-            default=False,  # For compatibility with OL1. Yep.
-        ),
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
             Optional[Decimal],

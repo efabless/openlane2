@@ -112,15 +112,7 @@ class ERC(Step):
     ]
     outputs = []
 
-    flow_control_variable = "RUN_CVC"
-
     config_vars = [
-        Variable(
-            "RUN_CVC",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
         Variable(
             "CVCRC",
             Optional[Path],  # Only optional for backwards-compat
