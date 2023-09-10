@@ -555,7 +555,7 @@ option_variables = [
         Optional[Path],
         "Specifies the base SDC file to source before running Static Timing Analysis.",
         deprecated_names=["SDC_FILE"],
-        default=Path(os.path.join(get_script_dir(), "base.sdc"))
+        default=Path(os.path.join(get_script_dir(), "base.sdc")),
     ),
     Variable(
         "PNR_SDC_FILE",
