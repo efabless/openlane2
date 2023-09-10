@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
+import fnmatch
 
 import os
 from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
+from ..config import Variable, universal_flow_config_variables
+from ..logging import info, success, err
 from ..steps import (
     Step,
     StepError,
     StepException,
     DeferredStepError,
 )
-from ..logging import info, success, err
 
 
 class SequentialFlow(Flow):
@@ -50,10 +52,64 @@ class SequentialFlow(Flow):
 
     :param args: Arguments for :class:`Flow`.
     :param kwargs: Keyword arguments for :class:`Flow`.
+
+    :cvar gating_config_vars: A mapping from step ID (wildcards) to boolean
+        variables. If a step ID matches this variable, this boolean variable
+        will decide if step is or is not executed.
     """
+
+    gating_config_vars: Dict[str, Variable] = {}
 
     def __init_subclass__(cls, scm_type=None, name=None, **kwargs):
         cls.__normalize_step_ids(cls)
+
+    def get_all_config_variables(self) -> List[Variable]:
+        """
+        :returns: All configuration variables for this Flow, including
+            universal configuration variables, flow-specific configuration
+            variables and step-specific configuration variables.
+        """
+        flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
+            variable.name: (variable, "universal flow variables")
+            for variable in universal_flow_config_variables
+        }
+        for variable in self.config_vars:
+            if flow_variables_by_name.get(variable.name) is not None:
+                existing_variable, source = flow_variables_by_name[variable.name]
+                if variable != existing_variable:
+                    raise FlowException(
+                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
+                    )
+            flow_variables_by_name[variable.name] = (
+                variable,
+                "flow-specific variables",
+            )
+
+        for variable in self.gating_config_vars.values():
+            if flow_variables_by_name.get(variable.name) is not None:
+                existing_variable, source = flow_variables_by_name[variable.name]
+                if variable != existing_variable:
+                    raise FlowException(
+                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific gating variables share a name: {variable.name}"
+                    )
+            flow_variables_by_name[variable.name] = (
+                variable,
+                "flow-specific gating variables",
+            )
+
+        for step_cls in self.Steps:
+            for variable in step_cls.config_vars:
+                if flow_variables_by_name.get(variable.name) is not None:
+                    existing_variable, existing_step = flow_variables_by_name[
+                        variable.name
+                    ]
+                    if variable != existing_variable:
+                        raise FlowException(
+                            f"Misconfigured flow: Unrelated variables in {existing_step} and {step_cls.__name__} share a name: {variable.name}"
+                        )
+                flow_variables_by_name[variable.name] = (variable, step_cls.__name__)
+
+        return [variable for variable, _ in flow_variables_by_name.values()]
 
     @classmethod
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
@@ -77,6 +133,10 @@ class SequentialFlow(Flow):
         for i, step in enumerate(target.Steps):
             counter = 0
             id = step.id
+            if (
+                id == NotImplemented
+            ):  # Will be validated later by initialization: ignore for now
+                continue
             name = step.__name__
             while id in ids_used:
                 counter += 1
@@ -112,7 +172,11 @@ class SequentialFlow(Flow):
     ):
         step_indices: List[int] = []
         for i, step in enumerate(self.Steps):
-            if step.id.lower() == id.lower():
+            if (
+                step.id
+                != NotImplemented  # Will be validated later by initialization: ignore for now
+                and step.id.lower() == id.lower()
+            ):
                 step_indices.append(i)
 
         if len(step_indices) == 0:
@@ -190,13 +254,27 @@ class SequentialFlow(Flow):
 
         current_state = initial_state
         for cls in self.Steps:
+            gating_variable = self.gating_config_vars.get(cls.id)
+            if gating_variable is None:
+                for key, value in self.gating_config_vars.items():
+                    if fnmatch.fnmatch(cls.id, key):
+                        gating_variable = value
+                        break
+
             step = cls(config=self.config, state_in=current_state)
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
             self.progress_bar.start_stage(step.name)
             increment_ordinal = True
-            if not executing or cls.id in skipped_ids:
+            if (
+                not executing
+                or cls.id in skipped_ids
+                or (
+                    gating_variable is not None
+                    and not self.config[gating_variable.name]
+                )
+            ):
                 info(f"Skipping step '{step.name}'…")
                 increment_ordinal = False
             elif cls.id == reproducible_resolved:

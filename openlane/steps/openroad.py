@@ -351,20 +351,9 @@ class STAPostPNR(STAPrePNR):
     id = "OpenROAD.STAPostPNR"
     name = "STA (Post-PnR)"
     long_name = "Static Timing Analysis (Post-PnR)"
-    flow_control_variable = "RUN_MCSTA"
 
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
-
-    config_vars = STAPrePNR.config_vars + [
-        Variable(
-            "RUN_MCSTA",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["RUN_SPEF_STA"],
-        ),
-    ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -656,16 +645,8 @@ class TapEndcapInsertion(OpenROADStep):
 
     id = "OpenROAD.TapEndcapInsertion"
     name = "Tap/Decap Insertion"
-    flow_control_variable = "RUN_TAP_ENDCAP_INSERTION"
 
     config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_TAP_ENDCAP_INSERTION",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["TAP_DECAP_INSERTION", "RUN_TAP_DECAP_INSERTION"],
-        ),
         Variable(
             "FP_TAP_HORIZONTAL_HALO",
             Decimal,
@@ -900,15 +881,8 @@ class DetailedRouting(OpenROADStep):
 
     id = "OpenROAD.DetailedRouting"
     name = "Detailed Routing"
-    flow_control_variable = "RUN_DRT"
 
     config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_DRT",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
         Variable(
             "DRT_THREADS",
             Optional[int],
@@ -977,16 +951,6 @@ class FillInsertion(OpenROADStep):
 
     id = "OpenROAD.FillInsertion"
     name = "Fill Insertion"
-    flow_control_variable = "RUN_FILL_INSERTION"
-
-    config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_FILL_INSERTION",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
-    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "fill.tcl")
@@ -1003,15 +967,8 @@ class RCX(OpenROADStep):
     id = "OpenROAD.RCX"
     name = "Parasitics (RC) Extraction"
     long_name = "Parasitic Resistance/Capacitance Extraction"
-    flow_control_variable = "RUN_SPEF_EXTRACTION"
 
     config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_SPEF_EXTRACTION",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
         Variable(
             "RCX_MERGE_VIA_WIRE_RES",
             bool,
@@ -1176,24 +1133,9 @@ class IRDropReport(OpenROADStep):
     id = "OpenROAD.IRDropReport"
     name = "IR Drop Report"
     long_name = "Generate IR Drop Report"
-    flow_control_variable = "RUN_IRDROP_REPORT"
 
     inputs = [DesignFormat.ODB, DesignFormat.SPEF]
     outputs = []
-
-    config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "RUN_IRDROP_REPORT",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-        ),
-        Variable(
-            "IRDROP_OPERATING_CONDITIONS",
-            Optional[str],
-            "The operating conditions in the default corner's liberty file(s) to use for IR drop analysis. If None, the liberty file's default corner will be used.",
-        ),
-    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
@@ -1316,19 +1258,11 @@ class CTS(ResizerStep):
 
     id = "OpenROAD.CTS"
     name = "Clock Tree Synthesis"
-    flow_control_variable = "RUN_CTS"
 
     config_vars = (
         OpenROADStep.config_vars
         + dpl_variables
         + [
-            Variable(
-                "RUN_CTS",
-                bool,
-                "Enables/disables this step.",
-                default=True,
-                deprecated_names=["CLOCK_TREE_SYNTH"],
-            ),
             Variable(
                 "CTS_TOLERANCE",
                 int,
@@ -1408,16 +1342,8 @@ class RepairDesign(ResizerStep):
 
     id = "OpenROAD.RepairDesign"
     name = "Repair Design (Post-Global Placement)"
-    flow_control_variable = "RUN_REPAIR_DESIGN"
 
     config_vars = ResizerStep.config_vars + [
-        Variable(
-            "RUN_REPAIR_DESIGN",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
-        ),
         Variable(
             "DESIGN_REPAIR_BUFFER_INPUT_PORTS",
             bool,
@@ -1489,16 +1415,8 @@ class ResizerTimingPostCTS(ResizerStep):
 
     id = "OpenROAD.ResizerTimingPostCTS"
     name = "Resizer Timing Optimizations (Post-Clock Tree Synthesis)"
-    flow_control_variable = "RUN_POST_CTS_RESIZER_TIMING"
 
     config_vars = ResizerStep.config_vars + [
-        Variable(
-            "RUN_POST_CTS_RESIZER_TIMING",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
-        ),
         Variable(
             "PL_RESIZER_HOLD_SLACK_MARGIN",
             Decimal,
@@ -1554,16 +1472,8 @@ class ResizerTimingPostGRT(ResizerStep):
 
     id = "OpenROAD.ResizerTimingPostGRT"
     name = "Resizer Timing Optimizations (Post-Global Routing)"
-    flow_control_variable = "RUN_POST_GRT_RESIZER_TIMING"
 
     config_vars = ResizerStep.config_vars + [
-        Variable(
-            "RUN_POST_GRT_RESIZER_TIMING",
-            bool,
-            "Enables/disables this step.",
-            default=True,
-            deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
-        ),
         Variable(
             "GRT_RESIZER_HOLD_SLACK_MARGIN",
             Decimal,

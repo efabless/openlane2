@@ -133,7 +133,9 @@ class NixInfo(StringRepresentable):
 
         try:
             try:
-                info_str = subprocess.check_output(["nix-info", "-m"]).decode("utf8")
+                info_str = subprocess.check_output(
+                    ["nix-shell", "-p", "nix-info", "--run", "nix-info -m"]
+                ).decode("utf8")
             except Exception as e:
                 raise Exception("Failed to get Docker info: %s" % str(e)) from None
 
