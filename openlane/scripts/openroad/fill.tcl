@@ -25,5 +25,7 @@ foreach {pattern} $::env(FILL_CELL) {
 }
 puts $fill_list
 filler_placement $fill_list
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
+check_placement -verbose
 
 write_views
