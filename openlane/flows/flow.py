@@ -352,8 +352,6 @@ class Flow(ABC):
             % doc_string
         )
         flow_config_vars = Self.config_vars
-        if hasattr(Self, "gating_config_vars"):
-            flow_config_vars = Self.config_vars + list(Self.gating_config_vars.values())
 
         if len(flow_config_vars):
             result += textwrap.dedent(
