@@ -19,7 +19,6 @@ from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
-from ..config import Variable, universal_flow_config_variables
 from ..logging import info, success, err
 from ..steps import (
     Step,
@@ -53,63 +52,45 @@ class SequentialFlow(Flow):
     :param args: Arguments for :class:`Flow`.
     :param kwargs: Keyword arguments for :class:`Flow`.
 
-    :cvar gating_config_vars: A mapping from step ID (wildcards) to boolean
-        variables. If a step ID matches this variable, this boolean variable
-        will decide if step is or is not executed.
+    :cvar gating_config_vars: A mapping from step ID (wildcards) to lists of
+        boolean variable names. All boolean variables must be True for a step with
+        a specific ID to execute.
     """
 
-    gating_config_vars: Dict[str, Variable] = {}
+    gating_config_vars: Dict[str, List[str]] = {}
 
-    def __init_subclass__(cls, scm_type=None, name=None, **kwargs):
-        cls.__normalize_step_ids(cls)
+    def __init_subclass__(Self, scm_type=None, name=None, **kwargs):
+        Self.__normalize_step_ids(Self)
 
-    def get_all_config_variables(self) -> List[Variable]:
-        """
-        :returns: All configuration variables for this Flow, including
-            universal configuration variables, flow-specific configuration
-            variables and step-specific configuration variables.
-        """
-        flow_variables_by_name: Dict[str, Tuple[Variable, str]] = {
-            variable.name: (variable, "universal flow variables")
-            for variable in universal_flow_config_variables
-        }
-        for variable in self.config_vars:
-            if flow_variables_by_name.get(variable.name) is not None:
-                existing_variable, source = flow_variables_by_name[variable.name]
-                if variable != existing_variable:
-                    raise FlowException(
-                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
+        # Validate Gating Config Vars
+        variables_by_name = {}
+        for variable in Self.config_vars:
+            variables_by_name[variable.name] = variable
+
+        step_id_set = set()
+        for step in Self.Steps:
+            step_id_set.add(step.id)
+
+        for id, variable_names in Self.gating_config_vars.items():
+            if id not in step_id_set:
+                found = False
+                for step_id in step_id_set:
+                    if fnmatch.fnmatch(step_id, id):
+                        found = True
+                        break
+                if not found:
+                    raise TypeError(
+                        f"Gated Step '{id}' does not match any Step in Flow '{Self.__qualname__}'"
                     )
-            flow_variables_by_name[variable.name] = (
-                variable,
-                "flow-specific variables",
-            )
-
-        for variable in self.gating_config_vars.values():
-            if flow_variables_by_name.get(variable.name) is not None:
-                existing_variable, source = flow_variables_by_name[variable.name]
-                if variable != existing_variable:
-                    raise FlowException(
-                        f"Misconfigured flow: Unrelated variables in {source} and flow-specific gating variables share a name: {variable.name}"
+            for var_name in variable_names:
+                if var_name not in variables_by_name:
+                    raise TypeError(
+                        f"Gating variable '{var_name}' for Step '{id}' does not match any declared config_vars in Flow '{Self.__qualname__}'"
                     )
-            flow_variables_by_name[variable.name] = (
-                variable,
-                "flow-specific gating variables",
-            )
-
-        for step_cls in self.Steps:
-            for variable in step_cls.config_vars:
-                if flow_variables_by_name.get(variable.name) is not None:
-                    existing_variable, existing_step = flow_variables_by_name[
-                        variable.name
-                    ]
-                    if variable != existing_variable:
-                        raise FlowException(
-                            f"Misconfigured flow: Unrelated variables in {existing_step} and {step_cls.__name__} share a name: {variable.name}"
-                        )
-                flow_variables_by_name[variable.name] = (variable, step_cls.__name__)
-
-        return [variable for variable, _ in flow_variables_by_name.values()]
+                if variables_by_name[var_name].type != bool:
+                    raise TypeError(
+                        f"Gating variable '{var_name}' in Flow '{Self.__qualname__}' is not a boolean"
+                    )
 
     @classmethod
     def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
@@ -252,29 +233,34 @@ class SequentialFlow(Flow):
         executing = frm is None
         deferred_errors = []
 
+        gating_cvars_expanded: Dict[str, List[str]] = {}
+        for key, value in self.gating_config_vars.items():
+            if key in step_ids.values():
+                gating_cvars_expanded[key] = value
+                continue
+            for id in step_ids.values():
+                if fnmatch.fnmatch(id, key):
+                    gating_cvars_expanded[id] = value
+                    break
+
         current_state = initial_state
         for cls in self.Steps:
-            gating_variable = self.gating_config_vars.get(cls.id)
-            if gating_variable is None:
-                for key, value in self.gating_config_vars.items():
-                    if fnmatch.fnmatch(cls.id, key):
-                        gating_variable = value
-                        break
-
             step = cls(config=self.config, state_in=current_state)
             if frm_resolved is not None and frm_resolved == step.id:
                 executing = True
 
+            gated = False
+            if gating_cvars := gating_cvars_expanded.get(step.id):
+                for variable in gating_cvars:
+                    if not self.config[variable]:
+                        info(
+                            f"Gating variable for step '{step.id}' set to 'False'- the step will be skipped."
+                        )
+                        gated = True
+
             self.progress_bar.start_stage(step.name)
             increment_ordinal = True
-            if (
-                not executing
-                or cls.id in skipped_ids
-                or (
-                    gating_variable is not None
-                    and not self.config[gating_variable.name]
-                )
-            ):
+            if not executing or cls.id in skipped_ids or gated:
                 info(f"Skipping step '{step.name}'…")
                 increment_ordinal = False
             elif cls.id == reproducible_resolved:

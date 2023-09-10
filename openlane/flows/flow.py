@@ -387,6 +387,7 @@ class Flow(ABC):
             variable.name: (variable, "universal flow variables")
             for variable in universal_flow_config_variables
         }
+
         for variable in self.config_vars:
             if flow_variables_by_name.get(variable.name) is not None:
                 existing_variable, source = flow_variables_by_name[variable.name]
@@ -394,6 +395,10 @@ class Flow(ABC):
                     raise FlowException(
                         f"Misconfigured flow: Unrelated variables in {source} and flow-specific variables share a name: {variable.name}"
                     )
+            flow_variables_by_name[variable.name] = (
+                variable,
+                "flow-specific variables",
+            )
 
         for step_cls in self.Steps:
             for variable in step_cls.config_vars:

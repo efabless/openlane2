@@ -19,7 +19,7 @@
       * `design__lint_errors__count`
 * Added support for `Flow`-specific configuration variables
     * Added a `config_vars` property to `Flow`
-    * Added a `gating_config_vars` property to `SequentialFlow`, essentially replacing `flow_control_variable` (breaking change) with deprecation warning
+    * Added a `gating_config_vars` property to `SequentialFlow`, essentially replacing `flow_control_variable` (breaking change) with deprecation warnings for the latter
     * Added more consistent runtime handling of "abstract class properties"
     * Folded *all* OpenLane 1-style `RUN_` variables into Classic Flow
 * Added an undocumented CVC step- upstream no longer supporting CVC in flows
