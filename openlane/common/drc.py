@@ -174,7 +174,7 @@ class DRC:
                                 cell = ET.Element("cell")
                                 cell.text = self.module
                                 category = ET.Element("category")
-                                category.text = violation.category_name
+                                category.text = "'" + violation.category_name + "'"
                                 visited = ET.Element("visited")
                                 visited.text = "false"
                                 multiplicity = ET.Element("multiplicity")
