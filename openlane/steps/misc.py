@@ -11,11 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-from typing import Optional, Tuple
+from typing import Tuple
 
-from ..common import Path, get_script_dir
-from ..config import Variable
 from ..config.flow import option_variables
 from ..logging import warn
 from ..state import State, DesignFormat
@@ -44,9 +41,9 @@ class LoadBaseSDC(Step):
         assert default_sdc_file is not None
         if path == default_sdc_file.default:
             warn("BASE_SDC_FILE is not defined. Loading default SDC file")
-        if self.config.get("PNR_SDC_FILE") == None:
+        if self.config.get("PNR_SDC_FILE") is None:
             warn("PNR_SDC_FILE is not defined. Using default SDC file for PNR steps")
-        if self.config.get("SIGNOFF_SDC_FILE") == None:
+        if self.config.get("SIGNOFF_SDC_FILE") is None:
             warn(
                 "SIGNOFF_SDC_FILE is not defined. Using default SDC file for signoff steps"
             )
