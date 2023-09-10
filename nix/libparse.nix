@@ -21,8 +21,8 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "efabless";
     repo = "libparse-python";
-    rev = "15fbd65b5e4eb3964fbf7e7291c9ce2cf7f02113";
-    sha256 = "sha256-zWV2pw1NkmzXNcO9456OfOUPZIXsSrEB0fMQ/NU060Y=";
+    rev = "f83b5a5a57934d6d3f246e7257bfb8f19bf82ce6";
+    sha256 = "sha256-ruNlkoedvUBCUThp2aBgqaLfvrL6wAUnRWxzuAwdgFo=";
     fetchSubmodules = true;
   };
 
