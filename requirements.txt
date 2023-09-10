@@ -7,4 +7,4 @@ volare>=0.12.6
 lxml>=4.9.0
 deprecated>=1.2.10,<2
 immutabledict>=2,<3
-libparse>=0.3.0,<1
+libparse>=0.3.1,<1

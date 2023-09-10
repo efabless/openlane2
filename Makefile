@@ -49,20 +49,6 @@ check-license: venv/manifest.txt
 		java -jar app.jar \
 		--requirements '/volume/requirements.frz.txt'
 
-# NO_BINARY_ARG is used when installing OpenLane's core dependencies within
-# Nix. The reason is NixOS does not support Python binary wheels.
-#
-# We do not extend this privilege to the development dependencies, as they take
-# one billion years to build.
-
-PATCH_COMMAND =
-ifneq ($(CXX_LIB_PATH), "")
-ifneq ($(shell test -d /etc/nixos && echo 1 || echo 0), "0")
-PATCH_COMMAND = patchelf --replace-needed libstdc++.so.6 "$(CXX_LIB_PATH)/libstdc++.so.6" ./venv/lib64/*/site-packages/*.so
-endif
-endif
-
-
 venv: venv/manifest.txt
 venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	rm -rf venv
@@ -72,7 +58,6 @@ venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
-	$(PATCH_COMMAND)
 	@echo ">> Venv prepared. To install documentation dependencies, invoke './venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt'"
 
 .PHONY: veryclean
