@@ -14,10 +14,11 @@
 import os
 from typing import Optional, Tuple
 
-from ..logging import info
-from ..config import Variable
-from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
+from ..config import Variable
+from ..config.flow import option_variables
+from ..logging import warn
+from ..state import State, DesignFormat
 from .step import ViewsUpdate, MetricsUpdate, Step
 
 
@@ -35,26 +36,19 @@ class LoadBaseSDC(Step):
     inputs = []
     outputs = [DesignFormat.SDC]
 
-    config_vars = [
-        Variable(
-            "BASE_SDC_FILE",
-            Optional[Path],
-            "Specifies the base SDC file to source before running Static Timing Analysis.",
-            deprecated_names=["SDC_FILE"],
-        ),
-    ]
-
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        path = Path(
-            os.path.join(
-                get_script_dir(),
-                "base.sdc",
-            )
+        path = self.config.get("BASE_SDC_FILE")
+        default_sdc_file = next(
+            iter([var for var in option_variables if var.name == "BASE_SDC_FILE"]), None
         )
-        if self.config.get("BASE_SDC_FILE") is not None:
-            info(f"Loading SDC file at '{self.config['BASE_SDC_FILE']}'.")
-            path = self.config["BASE_SDC_FILE"]
-        else:
-            info("Loading default SDC file.")
+        assert default_sdc_file is not None
+        if path == default_sdc_file.default:
+            warn("BASE_SDC_FILE is not defined. Loading default SDC file")
+        if self.config.get("PNR_SDC_FILE") == None:
+            warn("PNR_SDC_FILE is not defined. Using default SDC file for PNR steps")
+        if self.config.get("SIGNOFF_SDC_FILE") == None:
+            warn(
+                "SIGNOFF_SDC_FILE is not defined. Using default SDC file for signoff steps"
+            )
 
         return {DesignFormat.SDC: path}, {}

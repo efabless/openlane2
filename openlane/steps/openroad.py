@@ -166,6 +166,7 @@ class OpenROADStep(TclStep):
             as_cell_lists=True,
         )
 
+        env["SDC_IN"] = env.get("PNR_SDC_FILE") or env["BASE_SDC_FILE"]
         env["PNR_LIBS"] = " ".join(lib_pnr)
         env["MACRO_LIBS"] = " ".join(
             [
@@ -351,6 +352,7 @@ class STAPostPNR(STAPrePNR):
         env = self.prepare_env(env, state_in)
 
         env["OPENSTA"] = "1"
+        env["SDC_IN"] = env.get("SIGNOFF_SDC_FILE") or env["BASE_SDC_FILE"]
 
         def run_corner(corner: str):
             nonlocal env

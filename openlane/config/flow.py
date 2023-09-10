@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
 from decimal import Decimal
 from typing import List, Optional, Dict, Union
 
 from .variable import Variable, Macro
-from ..common import Path
+from ..common import Path, get_script_dir
 
 
 pdk_variables = [
@@ -547,6 +549,23 @@ option_variables = [
         bool,
         "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
         default=False,
+    ),
+    Variable(
+        "BASE_SDC_FILE",
+        Optional[Path],
+        "Specifies the base SDC file to source before running Static Timing Analysis.",
+        deprecated_names=["SDC_FILE"],
+        default=Path(os.path.join(get_script_dir(), "base.sdc"))
+    ),
+    Variable(
+        "PNR_SDC_FILE",
+        Optional[Path],
+        "Specifies the SDC file used during all implementation (PnR) steps",
+    ),
+    Variable(
+        "SIGNOFF_SDC_FILE",
+        Optional[Path],
+        "Specifies the SDC file for STA during signoff",
     ),
 ]
 
