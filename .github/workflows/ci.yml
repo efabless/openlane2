@@ -21,9 +21,6 @@ jobs:
       opdks_rev: ${{ steps.set-rev.outputs.opdks_rev }}
     steps:
       - uses: actions/checkout@v3
-      - name: "[TEMP] Install libparse dependencies"
-        run: |
-          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Python Dependencies
         run: |
           python3 -m pip install -r ./requirements.txt
@@ -60,9 +57,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-      - name: "[TEMP] Install libparse dependencies"
-        run: |
-          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Install Linters
         run: make venv
       - name: Lint
@@ -115,9 +109,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: "[TEMP] Install libparse dependencies"
-        run: |
-          sudo apt-get install -y swig3.0 libxml2-dev libxslt1-dev
       - name: Run Unit Tests
         run: |
           make test

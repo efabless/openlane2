@@ -32,14 +32,5 @@ with pkgs; mkShell {
     enchant
     jupyter
     graphviz
-
-    # PIP support
-    libxml2
-    libxslt
   ];
-
-  shellHook = ''
-  # This is used to patch PIP wheels on NixOS and for LITERALLY NO OTHER REASON
-  export CXX_LIB_PATH="${pkgs.stdenv.cc.cc.lib}/lib"
-  '';
 }
