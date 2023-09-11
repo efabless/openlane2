@@ -39,7 +39,10 @@ class LoadBaseSDC(Step):
             iter([var for var in option_variables if var.name == "BASE_SDC_FILE"]), None
         )
         assert default_sdc_file is not None
-        if path == default_sdc_file.default and (self.config.get("PNR_SDC_FILE") == None or self.config.get("SIGNOFF_SDC_FILE") == None):
+        if path == default_sdc_file.default and (
+            self.config.get("PNR_SDC_FILE") == None
+            or self.config.get("SIGNOFF_SDC_FILE") == None
+        ):
             warn("BASE_SDC_FILE is not defined. Loading default SDC file")
         if self.config.get("PNR_SDC_FILE") == None:
             warn("PNR_SDC_FILE is not defined. Using default SDC file for PNR steps")
