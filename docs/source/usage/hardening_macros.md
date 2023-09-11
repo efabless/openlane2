@@ -95,7 +95,7 @@ Here are some variables you need to consider:
 You may also want to write a custom SDC file to be used in STA and CTS.
 The default SDC file in the default flow is [this file](../../../openlane/scripts/base.sdc),
 however, you can change that by pointing to a new file with the environment variable
-[`BASE_SDC_FILE`](../reference/step_config_vars.md#Misc.LoadBaseSDC.BASE_SDC_FILE)
+[`FALLBACK_SDC_FILE`](../reference/step_config_vars.md#Misc.LoadBaseSDC.FALLBACK_SDC_FILE)
 
 Currently, static timing analysis is done:
 

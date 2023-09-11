@@ -551,21 +551,11 @@ option_variables = [
         default=False,
     ),
     Variable(
-        "BASE_SDC_FILE",
-        Optional[Path],
-        "Specifies the base SDC file to source before running Static Timing Analysis.",
-        deprecated_names=["SDC_FILE"],
+        "FALLBACK_SDC_FILE",
+        Path,
+        "A fallback SDC file for when a step-specific SDC file is not defined.",
+        deprecated_names=["BASE_SDC_FILE", "SDC_FILE"],
         default=Path(os.path.join(get_script_dir(), "base.sdc")),
-    ),
-    Variable(
-        "PNR_SDC_FILE",
-        Optional[Path],
-        "Specifies the SDC file used during all implementation (PnR) steps",
-    ),
-    Variable(
-        "SIGNOFF_SDC_FILE",
-        Optional[Path],
-        "Specifies the SDC file for STA during signoff",
     ),
 ]
 

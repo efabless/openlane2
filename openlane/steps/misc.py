@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 from typing import Tuple
 
-from ..config.flow import option_variables
-from ..logging import warn
-from ..state import State, DesignFormat
 from .step import ViewsUpdate, MetricsUpdate, Step
+from ..common import Path
+from ..state import State, DesignFormat
 
 
 @Step.factory.register()
@@ -24,6 +24,9 @@ class LoadBaseSDC(Step):
     """
     Loads an SDC file specified as a configuration variable into the state
     object unaltered.
+
+    This Step exists for legacy compatibility and should not be used
+    in new flows.
     """
 
     id = "Misc.LoadBaseSDC"
@@ -34,21 +37,13 @@ class LoadBaseSDC(Step):
     outputs = [DesignFormat.SDC]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        path = self.config.get("BASE_SDC_FILE")
-        default_sdc_file = next(
-            iter([var for var in option_variables if var.name == "BASE_SDC_FILE"]), None
-        )
-        assert default_sdc_file is not None
-        if path == default_sdc_file.default and (
-            self.config.get("PNR_SDC_FILE") is None
-            or self.config.get("SIGNOFF_SDC_FILE") is None
-        ):
-            warn("BASE_SDC_FILE is not defined. Loading default SDC file")
-        if self.config.get("PNR_SDC_FILE") is None:
-            warn("PNR_SDC_FILE is not defined. Using default SDC file for PNR steps")
-        if self.config.get("SIGNOFF_SDC_FILE") is None:
-            warn(
-                "SIGNOFF_SDC_FILE is not defined. Using default SDC file for signoff steps"
-            )
+        path = self.config["FALLBACK_SDC_FILE"]
 
-        return {DesignFormat.SDC: path}, {}
+        target = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.sdc")
+
+        # Otherwise, you'll end up with weird permissions and may have to chmod
+        with open(target, "w", encoding="utf8") as out:
+            for line in open(path, "r", encoding="utf8"):
+                out.write(line)
+
+        return {DesignFormat.SDC: Path(target)}, {}

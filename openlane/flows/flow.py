@@ -18,7 +18,6 @@ import glob
 import logging
 import datetime
 import textwrap
-import contextlib
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
 from functools import wraps
@@ -538,29 +537,30 @@ class Flow(ABC):
         error_handler.setLevel("ERROR")
         register_additional_handler(error_handler)
 
-        with contextlib.ExitStack() as stack:
-            stack.callback(deregister_additional_handler, warning_handler)
-            stack.callback(deregister_additional_handler, error_handler)
+        try:
 
-        config_res_path = os.path.join(self.run_dir, "resolved.json")
-        with open(config_res_path, "w") as f:
-            f.write(self.config.dumps())
+            config_res_path = os.path.join(self.run_dir, "resolved.json")
+            with open(config_res_path, "w") as f:
+                f.write(self.config.dumps())
 
-        self.progress_bar = FlowProgressBar(
-            self.name, starting_ordinal=starting_ordinal
-        )
-        self.progress_bar.start()
-        final_state, step_objects = self.run(
-            initial_state=initial_state,
-            starting_ordinal=starting_ordinal,
-            **kwargs,
-        )
-        self.progress_bar.end()
+            self.progress_bar = FlowProgressBar(
+                self.name, starting_ordinal=starting_ordinal
+            )
+            self.progress_bar.start()
+            final_state, step_objects = self.run(
+                initial_state=initial_state,
+                starting_ordinal=starting_ordinal,
+                **kwargs,
+            )
+            self.progress_bar.end()
 
-        # Stored until next start()
-        self.step_objects = step_objects
+            # Stored until next start()
+            self.step_objects = step_objects
 
-        return final_state
+            return final_state
+        finally:
+            deregister_additional_handler(warning_handler)
+            deregister_additional_handler(error_handler)
 
     @protected
     @abstractmethod
