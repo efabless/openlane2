@@ -89,7 +89,7 @@ def move_diearea(target_db, input_lefs, template_def):
 
     for lef in input_lefs:
         odb.read_lef(source_db, lef)
-    odb.read_def(source_db, template_def)
+    odb.read_def(source_db.getTech(), template_def)
 
     assert (
         source_db.getTech().getManufacturingGrid()
@@ -166,7 +166,7 @@ def relocate_pins(db, input_lefs, template_def):
     template_db = odb.dbDatabase.create()
     for lef in input_lefs:
         odb.read_lef(template_db, lef)
-    odb.read_def(template_db, template_def)
+    odb.read_def(template_db.getTech(), template_def)
     template_bterms = template_db.getChip().getBlock().getBTerms()
 
     assert (

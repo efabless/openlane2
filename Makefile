@@ -49,16 +49,14 @@ check-license: venv/manifest.txt
 		java -jar app.jar \
 		--requirements '/volume/requirements.frz.txt'
 
-REQ_FILES = ./requirements_dev.txt ./requirements.txt
-REQ_FILES_PFX = $(addprefix -r ,$(REQ_FILES))
-
 venv: venv/manifest.txt
-venv/manifest.txt: $(REQ_FILES)
+venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	rm -rf venv
 	python3 -m venv ./venv
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade $(REQ_FILES_PFX)
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
 	@echo ">> Venv prepared. To install documentation dependencies, invoke './venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt'"
 
