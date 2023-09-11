@@ -1,3 +1,40 @@
+# 2.0.0-b13
+
+* Add Linting
+    * Added Nix derivation for: [Verilator](https://github.com/verilator/verilator)
+    * Added the following steps:
+      * `Verilator.Lint`
+      * `Checker.LintTimingConstructs`
+      * `Checker.LintWarnings`
+    * Emplaced the three new steps at the beginning of the flow
+    * Added `Classic` flow variable:
+      * `RUN_LINTER` w/ deprecated name (`RUN_VERILATOR`)
+    * Added step variables:
+      * `QUIT_ON_LINTER_ERRORS` -w/ deprecated name (`QUIT_ON_VERILATOR_ERRORS`)
+      * `QUIT_ON_LINTER_WARNINGS` w/ deprecated name (`QUIT_ON_VERILATOR_WARNINGS`)
+      * `QUIT_ON_LINTER_TIMING_CONSTRUCTS`
+      * `LINTER_RELATIVE_INCLUDES` w/ deprecated (`VERILATOR_REALTIVE_INCLUDES`)
+      * `LINTER_DEFINES`
+    * Added metrics:
+      * `design__lint_errors__count`
+* Added support for `Flow`-specific configuration variables
+    * Added a `config_vars` property to `Flow`
+    * Added a `gating_config_vars` property to `SequentialFlow`, essentially replacing `flow_control_variable` (breaking change) with deprecation warnings for the latter
+    * Added more consistent runtime handling of "abstract class properties"
+    * Folded *all* OpenLane 1-style `RUN_` variables into Classic Flow
+* Added an undocumented CVC step- upstream no longer supporting CVC in flows
+* open_pdks -> `1341f54`
+* yosys -> `14d50a1` to match OL1
+* Restored ancient `{DATA,CLOCK}_WIRE_RC_LAYER` variables, with translation behavior from `WIRE_RC_LAYER` to `DATA_WIRE_RC_LAYER
+* Created new PDK variable `CELL_SPICE_MODELS` to handle .spice models of the SCLs instead of globbing in-step
+* Changed default value of `MAGIC_DRC_USE_GDS`
+* Fixed an issue where CI would fail when `vars.CACHIX_CACHE` is not defined (affected pull requests)
+* Fixed an issue with Nix in environment surveys
+* Fixed an issue where `openlane/scripts/openroad/pdn.tcl` used a deprecated name for a variable
+* Fixed a bug where KLayout category names were lacking enclosing single quotes
+* Fixed a number of broken links and entries in the documentation
+
+
 # 2.0.0-b12
 
 * Added diode padding to `dpl_cell_pad.tcl`

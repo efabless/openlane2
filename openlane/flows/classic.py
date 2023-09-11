@@ -95,201 +95,246 @@ class Classic(SequentialFlow):
         Checker.LVS,
     ]
 
-    gating_config_vars = {
-        "Verilator.Lint": Variable(
+    config_vars = [
+        Variable(
             "RUN_LINTER",
             bool,
-            "Enables the Verilator.Lint step.",
+            "Enables the Verilator.Lint step and associated checker steps.",
             default=True,
             deprecated_names=["RUN_VERILATOR"],
         ),
-        "Checker.LintErrors": Variable(
+        Variable(
             "QUIT_ON_LINTER_ERRORS",
             bool,
             "Quit immediately on any linter errors.",
             default=True,
             deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
         ),
-        "Checker.LintWarnings": Variable(
+        Variable(
             "QUIT_ON_LINTER_WARNINGS",
             bool,
             "Quit immediately on any linter warnings.",
             default=False,
             deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
         ),
-        "Checker.LintTimingConstructs": Variable(
+        Variable(
             "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
             bool,
             "Quit immediately on any discovered timing constructs during linting.",
             default=True,
             deprecated_names=["QUIT_ON_LINTER_TIMING_CONSTRUCTS"],
         ),
-        "OpenROAD.RepairDesign": Variable(
-            "RUN_REPAIR_DESIGN",
-            bool,
-            "Enables resizer design repair using the OpenROAD.RepairDesign step.",
-            default=True,
-            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
-        ),
-        "OpenROAD.CTS": Variable(
-            "RUN_CTS",
-            bool,
-            "Enables clock tree synthesis using the OpenROAD.CTS step.",
-            default=True,
-            deprecated_names=["CLOCK_TREE_SYNTH"],
-        ),
-        "OpenROAD.ResizerTimingPostCTS": Variable(
-            "RUN_POST_CTS_RESIZER_TIMING",
-            bool,
-            "Enables resizer timing optimizations after clock tree synthesis using the OpenROAD.ResizerTimingPostCTS step.",
-            default=True,
-            deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
-        ),
-        "OpenROAD.RCX": Variable(
-            "RUN_SPEF_EXTRACTION",
-            bool,
-            "Enables parasitics extraction using the OpenROAD.RCX step.",
-            default=True,
-        ),
-        "OpenROAD.TapEndcapInsertion": Variable(
+        Variable(
             "RUN_TAP_ENDCAP_INSERTION",
             bool,
             "Enables the OpenROAD.TapEndcapInsertion step.",
             default=True,
             deprecated_names=["TAP_DECAP_INSERTION", "RUN_TAP_DECAP_INSERTION"],
         ),
-        "OpenROAD.ResizerTimingPostGRT": Variable(
+        Variable(
+            "RUN_REPAIR_DESIGN",
+            bool,
+            "Enables resizer design repair using the OpenROAD.RepairDesign step.",
+            default=True,
+            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
+        ),
+        Variable(
+            "RUN_CTS",
+            bool,
+            "Enables clock tree synthesis using the OpenROAD.CTS step.",
+            default=True,
+            deprecated_names=["CLOCK_TREE_SYNTH"],
+        ),
+        Variable(
+            "RUN_POST_CTS_RESIZER_TIMING",
+            bool,
+            "Enables resizer timing optimizations after clock tree synthesis using the OpenROAD.ResizerTimingPostCTS step.",
+            default=True,
+            deprecated_names=["PL_RESIZER_TIMING_OPTIMIZATIONS"],
+        ),
+        Variable(
             "RUN_POST_GRT_RESIZER_TIMING",
             bool,
             "Enables resizer timing optimizations after global routing using the OpenROAD.ResizerTimingPostGRT step.",
             default=True,
             deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
         ),
-        "OpenROAD.DetailedRouting": Variable(
+        Variable(
+            "RUN_HEURISTIC_DIODE_INSERTION",
+            bool,
+            "Enables the Odb.HeuristicDiodeInsertion step.",
+            default=False,  # For compatibility with OL1
+        ),
+        Variable(
             "RUN_DRT",
             bool,
             "Enables the OpenROAD.DetailedRouting step.",
             default=True,
         ),
-        "OpenROAD.FillInsertion": Variable(
+        Variable(
             "RUN_FILL_INSERTION",
             bool,
             "Enables the OpenROAD.FillInsertion step.",
             default=True,
         ),
-        "OpenROAD.STAPostPNR": Variable(
+        Variable(
             "RUN_MCSTA",
             bool,
             "Enables multi-corner static timing analysis using the OpenROAD.STAPostPNR step.",
             default=True,
             deprecated_names=["RUN_SPEF_STA"],
         ),
-        "OpenROAD.IRDropReport": Variable(
+        Variable(
+            "RUN_SPEF_EXTRACTION",
+            bool,
+            "Enables parasitics extraction using the OpenROAD.RCX step.",
+            default=True,
+        ),
+        Variable(
             "RUN_IRDROP_REPORT",
             bool,
             "Enables generation of an IR Drop report using the OpenROAD.IRDropReport step.",
             default=True,
         ),
-        "Odb.HeuristicDiodeInsertion": Variable(
-            "RUN_HEURISTIC_DIODE_INSERTION",
-            bool,
-            "Enables the Odb.HeuristicDiodeInsertion step.",
-            default=False,  # For compatibility with OL1
-        ),
-        "Netgen.LVS": Variable(
+        Variable(
             "RUN_LVS",
             bool,
             "Enables the Netgen.LVS step.",
             default=True,
         ),
-        "Magic.DRC": Variable(
-            "RUN_MAGIC_DRC",
-            bool,
-            "Enables the Magic.DRC step.",
-            default=True,
-        ),
-        "Magic.StreamOut": Variable(
+        Variable(
             "RUN_MAGIC_STREAMOUT",
             bool,
             "Enables the Magic.StreamOut step to generate GDSII.",
             default=True,
             deprecated_names=["RUN_MAGIC"],
         ),
-        "Magic.WriteLEF": Variable(
-            "RUN_MAGIC_WRITE_LEF",
-            bool,
-            "Enables the Magic.WriteLEF step.",
-            default=True,
-            deprecated_names=["MAGIC_GENERATE_LEF"],
-        ),
-        "KLayout.StreamOut": Variable(
+        Variable(
             "RUN_KLAYOUT_STREAMOUT",
             bool,
             "Enables the KLayout.StreamOut step to generate GDSII.",
             default=True,
             deprecated_names=["RUN_KLAYOUT"],
         ),
-        "KLayout.XOR": Variable(
+        Variable(
+            "RUN_MAGIC_WRITE_LEF",
+            bool,
+            "Enables the Magic.WriteLEF step.",
+            default=True,
+            deprecated_names=["MAGIC_GENERATE_LEF"],
+        ),
+        Variable(
             "RUN_KLAYOUT_XOR",
             bool,
             "Enables running the KLayout.XOR step on the two GDSII files generated by Magic and Klayout. Stream-outs for both KLayout and Magic should have already run, and the PDK must support both signoff tools.",
             default=True,
         ),
-        "Checker.YosysUnmappedCells": Variable(
+        Variable(
+            "RUN_MAGIC_DRC",
+            bool,
+            "Enables the Magic.DRC step.",
+            default=True,
+        ),
+        Variable(
             "QUIT_ON_UNMAPPED_CELLS",
             bool,
             "Checks for unmapped cells after synthesis and quits immediately if so.",
             deprecated_names=["CHECK_UNMAPPED_CELLS"],
             default=True,
         ),
-        "Checker.YosysChecks": Variable(
+        Variable(
             "QUIT_ON_SYNTH_CHECKS",
             bool,
             "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
             default=True,
         ),
-        "Checker.TrDRC": Variable(
+        Variable(
             "QUIT_ON_TR_DRC",
             bool,
             "Checks for DRC violations after routing and exits the flow if any was found.",
             default=True,
         ),
-        "Checker.MagicDRC": Variable(
+        Variable(
             "QUIT_ON_MAGIC_DRC",
             bool,
             "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
             default=True,
         ),
-        "Checker.DisconnectedPins": Variable(
+        Variable(
             "QUIT_ON_DISCONNECTED_PINS",
             bool,
             "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
             default=True,
         ),
-        "Checker.WireLength": Variable(
+        Variable(
             "QUIT_ON_LONG_WIRE",
             bool,
             "Checks if any wire length exceeds the threshold set in the PDK. If so, an error is raised at the end of the flow.",
             default=False,
         ),
-        "Checker.XOR": Variable(
+        Variable(
             "QUIT_ON_XOR_ERROR",
             bool,
             "Checks for geometric differences between the Magic and KLayout stream-outs. If any exist, raise an error at the end of the flow.",
             default=True,
         ),
-        "Checker.IllegalOverlap": Variable(
+        Variable(
             "QUIT_ON_ILLEGAL_OVERLAPS",
             bool,
             "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
             default=True,
         ),
-        "Checker.LVS": Variable(
+        Variable(
             "QUIT_ON_LVS_ERROR",
             bool,
             "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
             default=True,
         ),
+    ]
+
+    gating_config_vars = {
+        "Verilator.Lint": ["RUN_LINTER"],
+        "Checker.LintErrors": ["RUN_LINTER", "QUIT_ON_LINTER_ERRORS"],
+        "Checker.LintWarnings": ["RUN_LINTER", "QUIT_ON_LINTER_WARNINGS"],
+        "Checker.LintTimingConstructs": [
+            "RUN_LINTER",
+            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
+        ],
+        "OpenROAD.RepairDesign": ["RUN_REPAIR_DESIGN"],
+        "OpenROAD.CTS": ["RUN_CTS"],
+        "OpenROAD.ResizerTimingPostCTS": ["RUN_POST_CTS_RESIZER_TIMING"],
+        "OpenROAD.RCX": ["RUN_SPEF_EXTRACTION"],
+        "OpenROAD.TapEndcapInsertion": ["RUN_TAP_ENDCAP_INSERTION"],
+        "OpenROAD.ResizerTimingPostGRT": ["RUN_POST_GRT_RESIZER_TIMING"],
+        "Odb.HeuristicDiodeInsertion": ["RUN_HEURISTIC_DIODE_INSERTION"],
+        "OpenROAD.DetailedRouting": ["RUN_DRT"],
+        "OpenROAD.FillInsertion": ["RUN_FILL_INSERTION"],
+        "OpenROAD.STAPostPNR": ["RUN_MCSTA"],
+        "OpenROAD.IRDropReport": ["RUN_IRDROP_REPORT"],
+        "Magic.StreamOut": ["RUN_MAGIC_STREAMOUT"],
+        "KLayout.StreamOut": ["RUN_KLAYOUT_STREAMOUT"],
+        "Magic.WriteLEF": ["RUN_MAGIC_WRITE_LEF"],
+        "Magic.DRC": ["RUN_MAGIC_DRC"],
+        "KLayout.XOR": [
+            "RUN_KLAYOUT_XOR",
+            "RUN_MAGIC_STREAMOUT",
+            "RUN_KLAYOUT_STREAMOUT",
+        ],
+        "Netgen.LVS": ["RUN_LVS"],
+        "Checker.YosysUnmappedCells": ["QUIT_ON_UNMAPPED_CELLS"],
+        "Checker.YosysChecks": ["QUIT_ON_SYNTH_CHECKS"],
+        "Checker.TrDRC": ["RUN_DRT", "QUIT_ON_TR_DRC"],
+        "Checker.MagicDRC": ["RUN_MAGIC_DRC", "QUIT_ON_MAGIC_DRC"],
+        "Checker.DisconnectedPins": ["QUIT_ON_DISCONNECTED_PINS"],
+        "Checker.WireLength": ["QUIT_ON_LONG_WIRE"],
+        "Checker.XOR": [
+            "QUIT_ON_XOR_ERROR",
+            "RUN_KLAYOUT_XOR",
+            "RUN_MAGIC_STREAMOUT",
+            "RUN_KLAYOUT_STREAMOUT",
+        ],
+        "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
+        "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
         # "KLayout.DRC": Variable(
         #     "RUN_KLAYOUT_DRC",
         #     bool,
