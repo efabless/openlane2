@@ -20,7 +20,7 @@ a flow entirely in the `config.json` file, with no API access needed:
         "version": 2,
         "flow": [
             "Yosys.Synthesis",
-            "Misc.LoadBaseSDC",
+            "OpenROAD.CheckSDCFiles",
             "OpenROAD.Floorplan",
             "OpenROAD.TapEndcapInsertion",
             "OpenROAD.GeneratePDN",
@@ -51,7 +51,7 @@ from openlane.steps import Yosys, Misc, OpenROAD, Magic, Netgen
 class MyFlow(SequentialFlow):
     Steps = [
         Yosys.Synthesis,
-        Misc.LoadBaseSDC,
+        OpenROAD.CheckSDCFiles,
         OpenROAD.Floorplan,
         OpenROAD.TapEndcapInsertion,
         OpenROAD.GeneratePDN,
@@ -120,7 +120,7 @@ synthesis = Yosys.Synthesis(
 )
 synthesis.start()
 
-sdc_load = Misc.LoadBaseSDC(
+sdc_load = OpenROAD.CheckSDCFiles(
     config=self.config,
     state_in=synthesis.state_out,
     flow=self

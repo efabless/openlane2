@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
 from decimal import Decimal
 from typing import List, Optional, Dict, Union
 
 from .variable import Variable, Macro
-from ..common import Path
+from ..common import Path, get_script_dir
 
 
 pdk_variables = [
@@ -547,6 +549,13 @@ option_variables = [
         bool,
         "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
         default=False,
+    ),
+    Variable(
+        "FALLBACK_SDC_FILE",
+        Path,
+        "A fallback SDC file for when a step-specific SDC file is not defined.",
+        deprecated_names=["BASE_SDC_FILE", "SDC_FILE"],
+        default=Path(os.path.join(get_script_dir(), "base.sdc")),
     ),
 ]
 

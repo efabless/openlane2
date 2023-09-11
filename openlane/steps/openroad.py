@@ -51,6 +51,7 @@ from .common_variables import (
 )
 
 from ..config import Variable
+from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose
 from ..common import (
@@ -128,11 +129,58 @@ def pdn_macro_migrator(x):
         return [x.strip()]
 
 
+@Step.factory.register()
+class CheckSDCFiles(Step):
+    """
+    Checks that the two variables used for SDC files by OpenROAD steps,
+    namely, ``PNR_SDC_FILE`` and ``SIGNOFF_SDC_FILE``, are explicitly set to
+    valid paths by the users, and emits a warning that the fallback will be
+    utilized otherwise.
+    """
+
+    id = "OpenROAD.CheckSDCFiles"
+    name = "Check SDC Files"
+    inputs = []
+    outputs = []
+
+    config_vars = [
+        Variable(
+            "PNR_SDC_FILE",
+            Optional[Path],
+            "Specifies the SDC file used during all implementation (PnR) steps",
+        ),
+        Variable(
+            "SIGNOFF_SDC_FILE",
+            Optional[Path],
+            "Specifies the SDC file for STA during signoff",
+        ),
+    ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        default_sdc_file = [
+            var for var in option_variables if var.name == "FALLBACK_SDC_FILE"
+        ][0]
+        assert default_sdc_file is not None
+
+        is_generic_fallback = default_sdc_file.default
+        fallback_descriptor = "generic" if is_generic_fallback else "user-defined"
+        if self.config["PNR_SDC_FILE"] is None:
+            warn(
+                f"PNR_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+            )
+        if self.config["SIGNOFF_SDC_FILE"] is None:
+            warn(
+                f"SIGNOFF_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+            )
+        return {}, {}
+
+
 class OpenROADStep(TclStep):
-    inputs = [DesignFormat.ODB, DesignFormat.SDC]
+    inputs = [DesignFormat.ODB]
     outputs = [
         DesignFormat.ODB,
         DesignFormat.DEF,
+        DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
     ]
@@ -158,6 +206,11 @@ class OpenROADStep(TclStep):
             default=True,
             deprecated_names=["FP_PDN_ENABLE_GLOBAL_CONNECTIONS"],
         ),
+        Variable(
+            "PNR_SDC_FILE",
+            Optional[Path],
+            "Specifies the SDC file used during all implementation (PnR) steps",
+        ),
     ]
 
     @abstractmethod
@@ -176,6 +229,7 @@ class OpenROADStep(TclStep):
             as_cell_lists=True,
         )
 
+        env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         env["PNR_LIBS"] = " ".join(lib_pnr)
         env["MACRO_LIBS"] = " ".join(
             [
@@ -274,7 +328,7 @@ class STAMidPNR(STAStep):
     name = "STA (Mid-PnR)"
     long_name = "Static Timing Analysis (Mid-PnR)"
 
-    inputs = [DesignFormat.ODB, DesignFormat.SDC]
+    inputs = [DesignFormat.ODB]
     outputs = []
 
 
@@ -290,7 +344,7 @@ class STAPrePNR(STAStep):
     will be black-boxed.
     """
 
-    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
+    inputs = [DesignFormat.NETLIST]
     outputs = [DesignFormat.SDF, DesignFormat.SDC]
 
     id = "OpenROAD.STAPrePNR"
@@ -352,6 +406,14 @@ class STAPostPNR(STAPrePNR):
     name = "STA (Post-PnR)"
     long_name = "Static Timing Analysis (Post-PnR)"
 
+    config_vars = STAPrePNR.config_vars + [
+        Variable(
+            "SIGNOFF_SDC_FILE",
+            Optional[Path],
+            "Specifies the SDC file for STA during signoff",
+        ),
+    ]
+
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
 
@@ -361,6 +423,9 @@ class STAPostPNR(STAPrePNR):
         env = self.prepare_env(env, state_in)
 
         env["OPENSTA"] = "1"
+        env["SDC_IN"] = (
+            self.config["SIGNOFF_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        )
 
         def run_corner(corner: str):
             nonlocal env
@@ -518,7 +583,7 @@ class Floorplan(OpenROADStep):
     name = "Floorplan Init"
     long_name = "Floorplan Initialization"
 
-    inputs = [DesignFormat.NETLIST, DesignFormat.SDC]
+    inputs = [DesignFormat.NETLIST]
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
@@ -757,6 +822,9 @@ class GlobalPlacement(OpenROADStep):
             )
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
+            warn(
+                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
+            )
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -927,8 +995,8 @@ class LayoutSTA(OpenROADStep):
     id = "OpenROAD.LayoutSTA"
     name = "Layout STA"
     long_name = "Layout Static Timing Analysis"
-    inputs = [DesignFormat.ODB, DesignFormat.SDC]
 
+    inputs = [DesignFormat.ODB]
     outputs = []
 
     def get_script_path(self):
