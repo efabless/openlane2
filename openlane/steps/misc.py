@@ -40,13 +40,13 @@ class LoadBaseSDC(Step):
         )
         assert default_sdc_file is not None
         if path == default_sdc_file.default and (
-            self.config.get("PNR_SDC_FILE") == None
-            or self.config.get("SIGNOFF_SDC_FILE") == None
+            self.config.get("PNR_SDC_FILE") is None
+            or self.config.get("SIGNOFF_SDC_FILE") is None
         ):
             warn("BASE_SDC_FILE is not defined. Loading default SDC file")
-        if self.config.get("PNR_SDC_FILE") == None:
+        if self.config.get("PNR_SDC_FILE") is None:
             warn("PNR_SDC_FILE is not defined. Using default SDC file for PNR steps")
-        if self.config.get("SIGNOFF_SDC_FILE") == None:
+        if self.config.get("SIGNOFF_SDC_FILE") is None:
             warn(
                 "SIGNOFF_SDC_FILE is not defined. Using default SDC file for signoff steps"
             )
