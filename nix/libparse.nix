@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
+  pkgs ? import ./pkgs.nix {}
 }:
-let
-  rev = "15f73cae9c458bf212ace57dc5ff58c7c158a10f";
-  sha256 = "sha256-rpo+OJV0AltWLSVOBBHGRhI7pIQFM1HeeS/1rDxoEQM=";
-in let src = pkgs.fetchFromGitHub {
-  owner = "efabless";
-  repo = "volare";
-  inherit rev;
-  inherit sha256;
-}; in import "${src}" {
-  inherit pkgs;
+
+with pkgs; with python3.pkgs; buildPythonPackage rec {
+  name = "libparse";
+
+  src = fetchFromGitHub {
+    owner = "efabless";
+    repo = "libparse-python";
+    rev = "f83b5a5a57934d6d3f246e7257bfb8f19bf82ce6";
+    sha256 = "sha256-ruNlkoedvUBCUThp2aBgqaLfvrL6wAUnRWxzuAwdgFo=";
+    fetchSubmodules = true;
+  };
+
+  nativeBuildInputs = [
+    clang
+    swig
+  ];
+
+  doCheck = false;
 }

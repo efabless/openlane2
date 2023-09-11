@@ -19,6 +19,7 @@ import fnmatch
 import tempfile
 import subprocess
 from enum import IntEnum
+from decimal import Decimal
 from functools import lru_cache
 from typing import (
     Any,
@@ -33,6 +34,7 @@ from typing import (
     Union,
 )
 
+import libparse
 from deprecated.sphinx import deprecated
 
 
@@ -436,3 +438,46 @@ class Toolbox(object):
             err("Will attempt to load models into linter as-is.")
 
         return out_path
+
+    def get_lib_voltage(
+        self,
+        input_lib: str,
+    ) -> Optional[Decimal]:
+        """
+        Extract the voltage from the default operating conditions of a liberty file.
+
+        Returns ``None`` if and only if the ``default_operating_conditions`` key
+        does not exist and the number of operating conditions enumerated is not
+        exactly 1 (one).
+
+        :param input_lib: The lib file in question
+        :returns: The voltage in question
+        """
+        parser = libparse.LibertyParser(open(input_lib, encoding="utf8"))
+        ast = parser.ast
+
+        default_operating_conditions_id = None
+        operating_conditions_raw = {}
+        for child in ast.children:
+            if child.id == "default_operating_conditions":
+                default_operating_conditions_id = child.value
+            if child.id == "operating_conditions":
+                operating_conditions_raw[child.args[0]] = child
+
+        if default_operating_conditions_id is None:
+            if len(operating_conditions_raw) > 1:
+                warn(
+                    f"No default operating condition defined in lib file '{input_lib}', and the lib file has multiple operating conditions."
+                )
+                return None
+
+            elif len(operating_conditions_raw) < 1:
+                warn(f"Lib file '{input_lib}' has no operating conditions set.")
+                return None
+            default_operating_conditions_id = list(operating_conditions_raw.keys())[0]
+
+        operating_conditions = operating_conditions_raw[default_operating_conditions_id]
+        operating_condition_dict = {}
+        for child in operating_conditions.children:
+            operating_condition_dict[child.id] = child.value
+        return Decimal(operating_condition_dict["voltage"])
