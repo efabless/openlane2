@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import Optional, Tuple
+from typing import Tuple
 
-from ..logging import info
-from ..config import Variable
-from ..state import State, DesignFormat
-from ..common import Path, get_script_dir
 from .step import ViewsUpdate, MetricsUpdate, Step
+from ..common import Path
+from ..state import State, DesignFormat
 
 
 @Step.factory.register()
@@ -26,6 +24,9 @@ class LoadBaseSDC(Step):
     """
     Loads an SDC file specified as a configuration variable into the state
     object unaltered.
+
+    This Step exists for legacy compatibility and should not be used
+    in new flows.
     """
 
     id = "Misc.LoadBaseSDC"
@@ -35,26 +36,14 @@ class LoadBaseSDC(Step):
     inputs = []
     outputs = [DesignFormat.SDC]
 
-    config_vars = [
-        Variable(
-            "BASE_SDC_FILE",
-            Optional[Path],
-            "Specifies the base SDC file to source before running Static Timing Analysis.",
-            deprecated_names=["SDC_FILE"],
-        ),
-    ]
-
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        path = Path(
-            os.path.join(
-                get_script_dir(),
-                "base.sdc",
-            )
-        )
-        if self.config.get("BASE_SDC_FILE") is not None:
-            info(f"Loading SDC file at '{self.config['BASE_SDC_FILE']}'.")
-            path = self.config["BASE_SDC_FILE"]
-        else:
-            info("Loading default SDC file.")
+        path = self.config["FALLBACK_SDC_FILE"]
 
-        return {DesignFormat.SDC: path}, {}
+        target = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.sdc")
+
+        # Otherwise, you'll end up with weird permissions and may have to chmod
+        with open(target, "w", encoding="utf8") as out:
+            for line in open(path, "r", encoding="utf8"):
+                out.write(line)
+
+        return {DesignFormat.SDC: Path(target)}, {}

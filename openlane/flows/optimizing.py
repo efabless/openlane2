@@ -19,7 +19,7 @@ from concurrent.futures import Future
 from .flow import Flow
 from ..state import State
 from ..config import Config
-from ..steps import Step, Yosys, OpenROAD, Misc, StepError
+from ..steps import Step, Yosys, OpenROAD, StepError
 from ..logging import get_log_level, set_log_level, LogLevels, success, info
 
 
@@ -33,7 +33,7 @@ from ..logging import get_log_level, set_log_level, LogLevels, success, info
 class Optimizing(Flow):
     Steps = [
         Yosys.Synthesis,
-        Misc.LoadBaseSDC,
+        OpenROAD.CheckSDCFiles,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
         OpenROAD.IOPlacement,
@@ -67,7 +67,7 @@ class Optimizing(Flow):
             synth_future = self.start_step_async(synth_step)
             step_list.append(synth_step)
 
-            sdc_step = Misc.LoadBaseSDC(
+            sdc_step = OpenROAD.CheckSDCFiles(
                 config,
                 id=f"sdc-{strategy}",
                 state_in=synth_future,

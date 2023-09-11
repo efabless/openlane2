@@ -30,8 +30,8 @@ proc env_var_used {file var} {
 }
 
 proc read_current_sdc {} {
-    if { ![info exists ::env(CURRENT_SDC)]} {
-        puts "\[INFO] CURRENT_SDC not found. Not reading an SDC file."
+    if { ![info exists ::env(SDC_IN)]} {
+        puts "\[INFO] SDC_IN not found. Not reading an SDC file."
         return
     }
     set ::env(IO_PCT) [expr $::env(IO_DELAY_CONSTRAINT) / 100]
@@ -44,13 +44,13 @@ proc read_current_sdc {} {
         set ::env(SYNTH_MAX_TRAN) $::env(MAX_TRANSITION_CONSTRAINT)
     }
 
-    if { [env_var_used $::env(CURRENT_SDC) SYNTH_DRIVING_CELL_PIN] == 1 } {
+    if { [env_var_used $::env(SDC_IN) SYNTH_DRIVING_CELL_PIN] == 1 } {
         set ::env(SYNTH_DRIVING_CELL_PIN) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1]
         set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
     }
 
-    puts "Reading design constraints file at '$::env(CURRENT_SDC)'…"
-    if {[catch {read_sdc $::env(CURRENT_SDC)} errmsg]} {
+    puts "Reading design constraints file at '$::env(SDC_IN)'…"
+    if {[catch {read_sdc $::env(SDC_IN)} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
