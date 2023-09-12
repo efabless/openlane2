@@ -51,3 +51,6 @@ place_pins {*}$arg_list \
 	-ver_layers $VMETAL
 
 write_views
+
+report_design_area_metrics
+
