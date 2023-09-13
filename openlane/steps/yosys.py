@@ -25,8 +25,8 @@ from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..state import State, DesignFormat
-from ..logging import debug, verbose, warn
-from ..config import Variable, Config, Macro
+from ..logging import debug, verbose
+from ..config import Variable, Config
 from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
@@ -370,12 +370,14 @@ def _generate_read_deps(
 
     if config["SYNTH_READ_BLACKBOX_LIB"]:
         for lib in toolbox.filter_views(config, config["LIB"]):
-            lib = TclUtils.escape(str(lib))
-            commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib}\n"
+            lib_str = TclUtils.escape(str(lib))
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+            )
 
     for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
-        lib = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib}\n"
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
 
     verilog_include_args = []
     if dirs := config["VERILOG_INCLUDE_DIRS"]:
@@ -388,17 +390,15 @@ def _generate_read_deps(
         unless_exist=DesignFormat.LIB,
     )
     for nl in leftover_macro_nls:
-        nl = TclUtils.escape(str(nl))
+        nl_str = TclUtils.escape(str(nl))
         commands += (
-            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {nl}\n"
+            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {nl_str}\n"
         )
 
     if models := config["EXTRA_VERILOG_MODELS"]:
         for model in models:
-            model = TclUtils.escape(str(model))
-            commands += (
-                f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model}\n"
-            )
+            model_str = TclUtils.escape(str(model))
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
 
     return commands
 
@@ -443,35 +443,6 @@ class EQY(YosysStep):
             ]
             + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
         )
-
-        skip_lec = False
-
-        instance_cut_commands = ""
-        if macros := self.config["MACROS"]:
-            for name, macro in macros.items():
-                assert isinstance(macro, Macro)
-                if len(macro.instances) == 0:
-                    skip_lec = True
-                    warn(
-                        f"Macro {name} is not properly declaring instances: Skipping LEC as it WILL fail. Please follow the 'Migrating from OpenLane 1' guide in the documentation."
-                    )
-                if len(macro.nl) == 0:
-                    skip_lec = True
-
-                    warn(
-                        f"Macro {name} does not list netlists: Skipping LEC as it WILL fail. Please follow the 'Migrating from OpenLane 1' guide in the documentation."
-                    )
-                for name in macro.instances:
-                    instance_cut_commands += f"expose -evert -cut {f't:{name}'}\n"
-
-        if self.config["MACRO_PLACEMENT_CFG"] is not None:
-            warn(
-                f"Macros are being placed using 'MACRO_PLACEMENT_CFG', and not the Macros object: skipping LEC as it WILL fail. Please follow the 'Migrating from OpenLane 1' guide in the documentation."
-            )
-            skip_lec = True
-
-        if skip_lec:
-            return {}, {}
 
         with open(self.get_script_path(), "w", encoding="utf8") as f:
             if eqy_script := self.config["EQY_SCRIPT"]:
@@ -519,7 +490,6 @@ class EQY(YosysStep):
                     nl=state_in[DesignFormat.NETLIST],
                     processed_pdk=processed_pdk,
                     step_dir=self.step_dir,
-                    instance_cut_commands=instance_cut_commands,
                 )
                 f.write(script)
 
