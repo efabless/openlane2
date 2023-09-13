@@ -203,6 +203,13 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
     }
 }
 
+proc set_dont_use_cells {} {
+    set_dont_use $::env(PNR_EXCLUDED_CELLS)
+    if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
+        set_dont_use $::env(RSZ_DONT_USE_CELLS)
+    }
+}
+
 proc read_current_odb {args} {
     sta::parse_key_args "read_current_odb" args \
         keys {}\
@@ -217,6 +224,7 @@ proc read_current_odb {args} {
     # Read supporting views (if applicable)
     read_pnr_libs
     read_current_sdc
+    set_dont_use_cells
 }
 
 proc write_views {args} {

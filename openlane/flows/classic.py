@@ -92,6 +92,7 @@ class Classic(SequentialFlow):
         Checker.IllegalOverlap,
         Netgen.LVS,
         Checker.LVS,
+        Yosys.EQY,
     ]
 
     config_vars = [

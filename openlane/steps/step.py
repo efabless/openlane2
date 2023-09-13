@@ -38,6 +38,8 @@ from typing import (
     Type,
 )
 
+from rich.console import escape
+
 from ..config import (
     Config,
     Variable,
@@ -873,14 +875,14 @@ class Step(ABC):
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
-                    verbose(line.strip())
+                    verbose(line.strip(), markup=False)
         returncode = process.wait()
         split_lines = lines.split("\n")
         if returncode != 0:
             if returncode > 0:
                 log = "\n".join(split_lines[-10:])
                 if log.strip() != "":
-                    err(log)
+                    escape(log)
                 err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 

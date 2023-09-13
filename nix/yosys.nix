@@ -35,35 +35,41 @@
 
 {
   pkgs ? import ./pkgs.nix {},
+  py3 ? pkgs.python3.withPackages (pp: with pp; [
+    click
+    xmlschema
+  ]),
 }:
 
 with pkgs; let
-  abc = import ./yosys-abc.nix { inherit pkgs; };
+  yosys-abc = import ./yosys-abc.nix { inherit pkgs; };
 in clangStdenv.mkDerivation rec {
   name = "yosys";
 
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "yosys";
-    rev = "14d50a176d59a5eac95a57a01f9e933297251d5b";
-    sha256 = "sha256-ZdtQ3tUEImJGYzN2j4f3fuxYUzTmSx6Vz8U7mLjgZXY=";
+    rev = "05f0262d77586407edec3d3f028c08c5872fa033";
+    sha256 = "sha256-GvBytqK3UmZ98PGmf2GpfOyRLsIDrbQCEyyX1+8mB5Q=";
   };
 
   nativeBuildInputs = [ pkg-config bison flex ];
-  propagatedBuildInputs = [ tcl ];
+  propagatedBuildInputs = [ yosys-abc ];
 
   buildInputs = [
     tcl
-    readline
+    libedit
+    libbsd
     libffi
     zlib
-    (python3.withPackages (pp: with pp; [
-      click
-    ]))
+    py3
   ];
+
+  passthru = { inherit py3; };
 
   patches = [
     ./patches/yosys/fix-clang-build.patch
+    ./patches/yosys/plugin-search-dirs.patch
   ];
 
   postPatch = ''
@@ -72,24 +78,30 @@ in clangStdenv.mkDerivation rec {
 
     chmod +x ./misc/yosys-config.in
     patchShebangs tests ./misc/yosys-config.in
+
+    sed -i 's@ENABLE_EDITLINE := 0@ENABLE_EDITLINE := 1@' Makefile
+    sed -i 's@ENABLE_READLINE := 1@ENABLE_READLINE := 0@' Makefile
+    sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
   '';
 
-  preBuild = ''
-    cp -r ${abc} abc/
-    chmod -R 777 .
-    # Verbose
-    sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
-    # Don't compare ABC revisions
-    sed -Ei 's@ABCREV = \w+@ABCREV = default@' ./Makefile
-    # Compile ABC First (Common Build Point of Failure)
-    sed -Ei 's@TARGETS =@TARGETS = $(PROGRAM_PREFIX)yosys-abc$(EXE)@' ./Makefile
-    make config-clang VERBOSE=1
+  preBuild = let
+    shortAbcRev = builtins.substring 0 7 yosys-abc.rev;
+  in ''
+    chmod -R u+w .
+    make config-clang
+    
+    echo 'ABCEXTERNAL = ${yosys-abc}/bin/abc' >> Makefile.conf
+
+    if ! grep -q "ABCREV = ${shortAbcRev}" Makefile; then
+      echo "ERROR: yosys isn't compatible with the provided abc (${yosys-abc}), failing."
+      exit 1
+    fi
   '';
+
+  postBuild   = "ln -sfv ${yosys-abc}/bin/abc ./yosys-abc";
+  postInstall = "ln -sfv ${yosys-abc}/bin/abc $out/bin/yosys-abc";
 
   makeFlags = [ "PREFIX=${placeholder "out"}"];
-
-  postBuild = "";
-  postInstall = "";
-
   doCheck = false;
+  enableParallelBuilding = true;
 }
