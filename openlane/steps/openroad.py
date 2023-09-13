@@ -673,7 +673,7 @@ class IOPlacement(OpenROADStep):
                 "FP_IO_MODE",
                 Literal["matching", "random_equidistant"],
                 "Decides the mode of the random IO placement option.",
-                default="random_equidistant",
+                default="matching",
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
