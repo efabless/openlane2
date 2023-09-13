@@ -829,6 +829,26 @@ class GlobalPlacement(OpenROADStep):
 
 
 @Step.factory.register()
+class GlobalPlacementSkipIO(GlobalPlacement):
+    id = "OpenROAD.GlobalPlacementSkipIO"
+    name = "Global Placement Skip IO"
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        if os.getenv("PL_TARGET_DENSITY_PCT") is None:
+            expr = (
+                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
+            )
+            expr = min(expr, 100)
+            env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
+            warn(
+                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
+            )
+        env["__PL_SKIP_IO"] = "1"
+        return OpenROADStep.run(self, state_in, env=env, **kwargs)
+
+
+@Step.factory.register()
 class BasicMacroPlacement(OpenROADStep):
     id = "OpenROAD.BasicMacroPlacement"
     name = "Basic Macro Placement"
