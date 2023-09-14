@@ -54,7 +54,6 @@ class Classic(SequentialFlow):
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         OpenROAD.TapEndcapInsertion,
-        OpenROAD.IOPlacement,
         OpenROAD.GlobalPlacementSkipIO,
         OpenROAD.IOPlacement,
         Odb.ApplyDEFTemplate,
