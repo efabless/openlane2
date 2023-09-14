@@ -53,3 +53,6 @@ source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 
 write_views
+
+report_design_area_metrics
+

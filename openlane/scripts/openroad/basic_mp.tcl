@@ -19,3 +19,6 @@ macro_placement\
     -halo $::env(PL_MACRO_HALO)
 
 write_views
+
+report_design_area_metrics
+
