@@ -476,6 +476,7 @@ class EQY(YosysStep):
 
                     [gate]
                     {dep_commands}
+                    proc
                     blackbox
                     read_verilog -formal -sv {processed_pdk} {nl}
                     opt -noff -keepdc -fast
