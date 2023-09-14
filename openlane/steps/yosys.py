@@ -24,9 +24,9 @@ from typing import List, Literal, Optional, Tuple
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
 
-from ..state import State, DesignFormat
-from ..logging import debug, verbose
 from ..config import Variable, Config
+from ..state import State, DesignFormat
+from ..logging import debug, verbose, info
 from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
@@ -423,6 +423,12 @@ class EQY(YosysStep):
             Optional[Path],
             "This step will warn if this deprecated variable is used, as it indicates Macros are used without the new Macro object.",
         ),
+        Variable(
+            "EQY_FORCE_ACCEPT_PDK",
+            bool,
+            "Attempt to run EQY even if the PDK's Verilog models are supported by this step. Will likely result in a failure.",
+            default=False,
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -435,14 +441,26 @@ class EQY(YosysStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         processed_pdk = os.path.join(self.step_dir, "formal_pdk.v")
-        subprocess.check_call(
-            [
-                "eqy.formal_pdk_proc",
-                "--output",
-                processed_pdk,
-            ]
-            + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
-        )
+
+        if self.config["PDK"].startswith("sky130A"):
+            subprocess.check_call(
+                [
+                    "eqy.formal_pdk_proc",
+                    "--output",
+                    processed_pdk,
+                ]
+                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
+            )
+        elif self.config["EQY_FORCE_ACCEPT_PDK"]:
+            subprocess.check_call(
+                ["iverilog", "-E", "-o", processed_pdk, "-DFUNCTIONAL"]
+                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
+            )
+        else:
+            info(
+                f"PDK {self.config['PDK']} is not supported by the EQY step. Skipping…"
+            )
+            return {}, {}
 
         with open(self.get_script_path(), "w", encoding="utf8") as f:
             if eqy_script := self.config["EQY_SCRIPT"]:

@@ -54,6 +54,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     netgen
     yosys
     magic
+    verilog
     verilator
     ruby
     tcl
