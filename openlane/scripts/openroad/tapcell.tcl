@@ -22,3 +22,6 @@ tapcell\
     -halo_width_y $::env(FP_TAP_VERTICAL_HALO)
 
 write_views
+
+report_design_area_metrics
+

@@ -50,3 +50,6 @@ unset_dont_touch_objects
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
 write_views
+
+report_design_area_metrics
+

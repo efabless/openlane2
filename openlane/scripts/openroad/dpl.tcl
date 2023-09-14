@@ -19,3 +19,6 @@ source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 check_placement -verbose
 
 write_views
+
+report_design_area_metrics
+

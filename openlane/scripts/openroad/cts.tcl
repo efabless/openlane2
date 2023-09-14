@@ -75,3 +75,6 @@ write_views
 puts "%OL_CREATE_REPORT cts.rpt"
 report_cts
 puts "%OL_END_REPORT"
+
+report_design_area_metrics
+
