@@ -833,9 +833,21 @@ class GlobalPlacementSkipIO(GlobalPlacement):
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
+    config_vars = GlobalPlacement.config_vars + [
+        Variable(
+            "FP_IO_MODE",
+            Literal["matching", "random_equidistant"],
+            "Decides the mode of the random IO placement option.",
+            default="matching",
+        )
+    ]
+
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if os.getenv("PL_TARGET_DENSITY_PCT") is None:
+        if self.config["FP_IO_MODE"] == "random_equidistant":
+            info("FP_IO_MODE set to 'random_equidistant'. Skipping the first global placement iteration…")
+            return {}, {}
+        elif self.config["PL_TARGET_DENSITY_PCT"] is None:
             expr = (
                 self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
             )
