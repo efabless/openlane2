@@ -45,3 +45,6 @@ if { $::env(FP_PDN_CHECK_NODES) } {
 }
 
 write_views
+
+report_design_area_metrics
+
