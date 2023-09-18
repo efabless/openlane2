@@ -27,7 +27,7 @@
     - PPU
     - y_huff
     - aes
-- scl: gf180mcuC/gf180mcu_fd_sc_mcu7t5v0
+- scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: fastest_test_set
   designs:
     - spm
@@ -36,7 +36,7 @@
     - usb_cdc_core
     - zipdiv
     - wbqspiflash
-- scl: gf180mcuC/gf180mcu_fd_sc_mcu7t5v0
+- scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set
   designs:
     - picorv32a
