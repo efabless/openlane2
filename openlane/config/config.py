@@ -891,8 +891,7 @@ class Config(GenericImmutableDict[str, Any]):
                         extra_spef_list[start + 2],
                         extra_spef_list[start + 3],
                     )
-                    macro_dict = {
-                        "module": module,
+                    macro_dict: Dict[str, Any] = {
                         "gds": [Path._dummy_path],
                         "lef": [Path._dummy_path],
                     }

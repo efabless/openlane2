@@ -12,6 +12,7 @@ omit =
     __main__.py
     container.py
     env_info.py
+    */common/cli.py
     */flows/builtins.py
     */flows/classic.py
     */flows/misc.py
@@ -24,3 +25,5 @@ omit =
     */steps/magic.py
     */steps/openroad.py
     */steps/yosys.py
+    */steps/verilator.py
+    */steps/cvc_rv.py

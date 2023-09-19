@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import shutil
 import textwrap
+from unittest import mock
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -71,6 +73,366 @@ def mock_macros_config():
             },
         }
     )
+
+
+@pytest.fixture()
+def sample_lib_files():
+    return {
+        "example_lib.lib": textwrap.dedent(
+            """
+            library ("example_lib") {
+                operating_conditions ("oc0") {
+                    voltage : 3;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                cell ("example_lib__cell0") {
+                }
+                cell ("example_lib__cell1") {
+                    property (x) {
+                        
+                    }
+                }
+                cell ("example_lib__cell2") {
+                }
+            }
+            """
+        ),
+        "example_lib2.lib": textwrap.dedent(
+            """
+            library ("example_lib2") {
+                default_operating_conditions : "oc1";
+                operating_conditions ("oc0") {
+                    voltage : 3;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                operating_conditions ("oc1") {
+                    voltage : 4;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                cell ("example_lib2__cell0") {
+                }
+                cell ("example_lib2__cell1") {
+                }
+                cell ("example_lib2__cell2") {
+                }
+            }
+            """
+        ),
+        "example_lib3.lib": textwrap.dedent(
+            """
+            library ("example_lib3") {
+                operating_conditions ("oc0") {
+                    voltage : 3;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                operating_conditions ("oc1") {
+                    voltage : 4;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                cell ("example_lib3__cell0") {
+                }
+                cell ("example_lib3__cell1") {
+                }
+                cell ("example_lib3__cell2") {
+                }
+            }
+            """
+        ),
+    }
+
+
+@pytest.fixture()
+def _lib_mock_fs(sample_lib_files):
+    with Patcher() as patcher:
+        patcher.fs.create_dir("/cwd")
+        os.chdir("/cwd")
+
+        for path, contents in sample_lib_files.items():
+            patcher.fs.create_file(os.path.join("/cwd", path), contents=contents)
+
+        patcher.fs.create_file(
+            "/cwd/bad_cell_list.txt",
+            contents=textwrap.dedent(
+                """
+                example_lib__cell0
+                example_lib2__cell1
+                example_lib2__cell2
+                """
+            ),
+        )
+        yield
+
+
+@pytest.fixture()
+def lib_trim_result():
+    return [
+        textwrap.dedent(
+            """
+            library ("example_lib") {
+                operating_conditions ("oc0") {
+                    voltage : 3;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                /* removed example_lib__cell0 */
+                cell ("example_lib__cell1") {
+                    property (x) {
+
+                    }
+                }
+                cell ("example_lib__cell2") {
+                }
+            }
+            """
+        ).strip(),
+        textwrap.dedent(
+            """
+            library ("example_lib2") {
+                default_operating_conditions : "oc1";
+                operating_conditions ("oc0") {
+                    voltage : 3;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                operating_conditions ("oc1") {
+                    voltage : 4;
+                    process : 1;
+                    temperature : 25;
+                    tree_type : "balanced_tree";
+                }
+                cell ("example_lib2__cell0") {
+                }
+                /* removed example_lib2__cell1 */
+                /* removed example_lib2__cell2 */
+            }
+            """
+        ).strip(),
+    ]
+
+
+@pytest.fixture()
+def model_blackboxing():
+    start = textwrap.dedent(
+        """
+        `timescale 1ns / 1ps
+        `default_nettype none
+
+        `ifdef NO_PRIMITIVES
+        `else
+        primitive sky130_fd_sc_hd__udp_dff$NSR (
+            Q    ,
+            SET  ,
+            RESET,
+            CLK_N,
+            D
+        );
+
+            output Q    ;
+            input  SET  ;
+            input  RESET;
+            input  CLK_N;
+            input  D    ;
+
+            reg Q;
+
+            table
+            // SET RESET CLK_N  D  :  Qt : Qt+1
+                0    1     ?    ?  :  ?  :  0    ; // Asserting reset
+                0    *     ?    ?  :  0  :  0    ; // Changing reset
+                1    ?     ?    ?  :  ?  :  1    ; // Asserting set (dominates reset)
+                *    0     ?    ?  :  1  :  1    ; // Changing set
+                0    ?    (01)  0  :  ?  :  0    ; // rising clock
+                ?    0    (01)  1  :  ?  :  1    ; // rising clock
+                0    ?     p    0  :  0  :  0    ; // potential rising clock
+                ?    0     p    1  :  1  :  1    ; // potential rising clock
+                0    0     n    ?  :  ?  :  -    ; // Clock falling register output does not change
+                0    0     ?    *  :  ?  :  -    ; // Changing Data
+            endtable
+        endprimitive
+        `endif // NO_PRIMITIVES
+
+        `celldefine
+        module sky130_fd_sc_hd__a2bb2o_1 (
+            X   ,
+            A1_N,
+            A2_N,
+            B1  ,
+            B2  ,
+            VPWR,
+            VGND,
+            VPB ,
+            VNB
+        );
+
+            // Module ports
+            output X   ;
+            input  A1_N;
+            input  A2_N;
+            input  B1  ;
+            input  B2  ;
+            input  VPWR;
+            input  VGND;
+            input  VPB ;
+            input  VNB ;
+
+            // Local signals
+            wire and0_out         ;
+            wire nor0_out         ;
+            wire or0_out_X        ;
+            wire pwrgood_pp0_out_X;
+            wire gnd              ;
+
+            pulldown(gnd);
+
+            //                                 Name         Output             Other arguments
+            and                                and0        (and0_out         , B1, B2               );
+            nor                                nor0        (nor0_out         , A1_N, A2_N           );
+            or                                 or0         (or0_out_X        , nor0_out, and0_out   );
+            sky130_fd_sc_hd__udp_pwrgood_pp$PG pwrgood_pp0 (pwrgood_pp0_out_X, or0_out_X, VPWR, VGND);
+            buf                                buf0        (X                , pwrgood_pp0_out_X    );
+
+        specify
+        if ((!A2_N&!B1&!B2)) (A1_N -=> X) = (0:0:0,0:0:0);
+        if ((!A2_N&!B1&B2)) (A1_N -=> X) = (0:0:0,0:0:0);
+        if ((!A2_N&B1&!B2)) (A1_N -=> X) = (0:0:0,0:0:0);
+        if ((!A1_N&!B1&!B2)) (A2_N -=> X) = (0:0:0,0:0:0);
+        if ((!A1_N&!B1&B2)) (A2_N -=> X) = (0:0:0,0:0:0);
+        if ((!A1_N&B1&!B2)) (A2_N -=> X) = (0:0:0,0:0:0);
+        if ((!A1_N&A2_N&B2)) (B1 +=> X) = (0:0:0,0:0:0);
+        if ((A1_N&!A2_N&B2)) (B1 +=> X) = (0:0:0,0:0:0);
+        if ((A1_N&A2_N&B2)) (B1 +=> X) = (0:0:0,0:0:0);
+        if ((!A1_N&A2_N&B1)) (B2 +=> X) = (0:0:0,0:0:0);
+        if ((A1_N&!A2_N&B1)) (B2 +=> X) = (0:0:0,0:0:0);
+        if ((A1_N&A2_N&B1)) (B2 +=> X) = (0:0:0,0:0:0);
+        endspecify
+        endmodule
+        `endcelldefine
+        """
+    )
+    mid = textwrap.dedent(
+        """
+        `timescale 1ns / 1ps
+        `default_nettype none
+
+        `ifdef NO_PRIMITIVES
+        `else
+        primitive sky130_fd_sc_hd__udp_dff$NSR (
+            Q    ,
+            SET  ,
+            RESET,
+            CLK_N,
+            D
+        );
+
+            output Q    ;
+            input  SET  ;
+            input  RESET;
+            input  CLK_N;
+            input  D    ;
+
+            reg Q;
+
+            table
+            // SET RESET CLK_N  D  :  Qt : Qt+1
+                0    1     ?    ?  :  ?  :  0    ; // Asserting reset
+                0    *     ?    ?  :  0  :  0    ; // Changing reset
+                1    ?     ?    ?  :  ?  :  1    ; // Asserting set (dominates reset)
+                *    0     ?    ?  :  1  :  1    ; // Changing set
+                0    ?    (01)  0  :  ?  :  0    ; // rising clock
+                ?    0    (01)  1  :  ?  :  1    ; // rising clock
+                0    ?     p    0  :  0  :  0    ; // potential rising clock
+                ?    0     p    1  :  1  :  1    ; // potential rising clock
+                0    0     n    ?  :  ?  :  -    ; // Clock falling register output does not change
+                0    0     ?    *  :  ?  :  -    ; // Changing Data
+            endtable
+        endprimitive
+        `endif // NO_PRIMITIVES
+
+        `celldefine
+        module sky130_fd_sc_hd__a2bb2o_1 (
+            X   ,
+            A1_N,
+            A2_N,
+            B1  ,
+            B2  ,
+            VPWR,
+            VGND,
+            VPB ,
+            VNB
+        );
+
+            // Module ports
+            output X   ;
+            input  A1_N;
+            input  A2_N;
+            input  B1  ;
+            input  B2  ;
+            input  VPWR;
+            input  VGND;
+            input  VPB ;
+            input  VNB ;
+
+            // Local signals
+            wire and0_out         ;
+            wire nor0_out         ;
+            wire or0_out_X        ;
+            wire pwrgood_pp0_out_X;
+            wire gnd              ;
+
+
+            //                                 Name         Output             Other arguments
+            and                                and0        (and0_out         , B1, B2               );
+            nor                                nor0        (nor0_out         , A1_N, A2_N           );
+            or                                 or0         (or0_out_X        , nor0_out, and0_out   );
+            sky130_fd_sc_hd__udp_pwrgood_pp$PG pwrgood_pp0 (pwrgood_pp0_out_X, or0_out_X, VPWR, VGND);
+            buf                                buf0        (X                , pwrgood_pp0_out_X    );
+
+        /* removed specify */
+        endmodule
+        `endcelldefine
+        """
+    )
+    out = textwrap.dedent(
+        """
+        module sky130_fd_sc_hd__a2bb2o_1(X, A1_N, A2_N, B1, B2, VPWR, VGND, VPB, VNB);
+          input A1_N;
+          wire A1_N;
+          input A2_N;
+          wire A2_N;
+          input B1;
+          wire B1;
+          input B2;
+          wire B2;
+          input VGND;
+          wire VGND;
+          input VNB;
+          wire VNB;
+          input VPB;
+          wire VPB;
+          input VPWR;
+          wire VPWR;
+          output X;
+          wire X;
+        endmodule
+        """
+    )
+
+    return (start, mid, out)
+
+
+# ---
 
 
 @pytest.mark.parametrize(
@@ -296,87 +658,6 @@ def test_get_timing_files_warnings(
     ), "get_timing_files did not warn about missing SCL liberty"
 
 
-@pytest.fixture()
-def _lib_mock_fs():
-    with Patcher() as patcher:
-        patcher.fs.create_dir("/cwd")
-        os.chdir("/cwd")
-        patcher.fs.create_file(
-            "/cwd/example_lib.lib",
-            contents=textwrap.dedent(
-                """
-                library ("example_lib") {
-                    cell ("example_lib__cell0") {
-                    }
-                    cell ("example_lib__cell1") {
-                        property (x) {
-                            
-                        }
-                    }
-                    cell ("example_lib__cell2") {
-                    }
-                }
-                """
-            ),
-        )
-        patcher.fs.create_file(
-            "/cwd/example_lib2.lib",
-            contents=textwrap.dedent(
-                """
-                library ("example_lib2") {
-                    cell ("example_lib2__cell0") {
-                    }
-                    cell ("example_lib2__cell1") {
-                    }
-                    cell ("example_lib2__cell2") {
-                    }
-                }
-                """
-            ),
-        )
-        patcher.fs.create_file(
-            "/cwd/bad_cell_list.txt",
-            contents=textwrap.dedent(
-                """
-                example_lib__cell0
-                example_lib2__cell1
-                example_lib2__cell2
-                """
-            ),
-        )
-        yield
-
-
-@pytest.fixture()
-def lib_trim_result():
-    return [
-        textwrap.dedent(
-            """
-                library ("example_lib") {
-                    /* removed example_lib__cell0 */
-                    cell ("example_lib__cell1") {
-                        property (x) {
-
-                        }
-                    }
-                    cell ("example_lib__cell2") {
-                    }
-                }
-                """
-        ).strip(),
-        textwrap.dedent(
-            """
-                library ("example_lib2") {
-                    cell ("example_lib2__cell0") {
-                    }
-                    /* removed example_lib2__cell1 */
-                    /* removed example_lib2__cell2 */
-                }
-                """
-        ).strip(),
-    ]
-
-
 @pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cell_list_from_lib(lib_trim_result):
     from openlane.common import Toolbox
@@ -414,3 +695,66 @@ def test_remove_cells_from_lib(lib_trim_result):
         assert (
             contents.strip() in lib_trim_result
         ), "remove_cells_from_lib produced unexpected result"
+
+
+@mock.patch.dict(os.environ, {"PATH": "/bin"})
+@pytest.mark.usefixtures("_chdir_tmp")
+def test_blackbox_creation_no_yosys(model_blackboxing):
+    from openlane.common import Toolbox
+
+    toolbox = Toolbox(".")
+
+    start, mid, _ = model_blackboxing
+    with open("start.v", "w", encoding="utf8") as f:
+        f.write(start)
+
+    out_path = toolbox.create_blackbox_model(frozenset(["start.v"]), frozenset())
+
+    assert (
+        open(out_path, encoding="utf8").read().strip() == mid.strip()
+    ), "Cleaning file for yosys didn't work as expected"
+
+
+@pytest.mark.skipif(
+    (shutil.which("yosys") or shutil.which("yowasp-yosys")) is None,
+    reason="requires yosys or yowasp-yosys",
+)
+@pytest.mark.usefixtures("_chdir_tmp")
+def test_blackbox_creation_w_yosys(model_blackboxing):
+    from openlane.common import Toolbox
+
+    toolbox = Toolbox(".")
+
+    start, _, end = model_blackboxing
+    with open("start.v", "w", encoding="utf8") as f:
+        f.write(start)
+
+    out_path = toolbox.create_blackbox_model(frozenset(["start.v"]), frozenset())
+
+    assert (
+        end.strip() in open(out_path, encoding="utf8").read().strip()
+    ), "Creating black-box file of SCL models did not return the expected result"
+
+
+@pytest.mark.usefixtures("_chdir_tmp")
+def test_voltage_lib_get(sample_lib_files, caplog: pytest.LogCaptureFixture):
+    from openlane.common import Toolbox
+
+    toolbox = Toolbox(".")
+
+    for path, contents in sample_lib_files.items():
+        with open(path, "w", encoding="utf8") as f:
+            f.write(contents)
+
+    assert (
+        toolbox.get_lib_voltage("example_lib.lib") == 3
+    ), "Library with a single set of operating conditions did not return the correct value"
+    assert (
+        toolbox.get_lib_voltage("example_lib2.lib") == 4
+    ), "Library with explicit default operating conditions did not return the correct value"
+    assert (
+        toolbox.get_lib_voltage("example_lib3.lib") is None
+    ), "Library with multiple operating conditions and no default returned a value"
+    assert (
+        "and the lib file has multiple operating conditions" in caplog.text
+    ), "Library with multiple operating conditions and no default did not produce a warning"
