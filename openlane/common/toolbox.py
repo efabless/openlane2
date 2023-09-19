@@ -389,35 +389,35 @@ class Toolbox(object):
                 state = State.output
                 for line in open(model, "r", encoding="utf8"):
                     if state == State.output:
-                        if line.strip().startswith(
-                            "primitive"
-                        ) or line.strip().startswith("specify"):
+                        if line.strip().startswith("specify"):
                             state = State.dont
                         elif bad_yosys_line.search(line) is None:
                             print(line.strip("\n"), file=patched)
                             print(line.strip("\n"), file=out)
                     elif state == State.dont:
-                        if line.strip().startswith(
-                            "endprimitive"
-                        ) or line.strip().startswith("endspecify"):
-                            print("/* removed primitive */", file=out)
+                        if line.strip().startswith("endspecify"):
+                            print("/* removed specify */", file=out)
                             state = State.output
                 patched.close()
                 print("", file=out)
                 final_files.append(patched_path)
 
-        yosys = shutil.which("yosys")
+        yosys = shutil.which("yosys") or shutil.which("yowasp-yosys")
 
         if yosys is None:
-            warn("yosys not found in PATH. This may trigger issues with blackboxing.")
+            warn(
+                "yosys and yowasp-yosys not found in PATH. This may trigger issues with blackboxing."
+            )
             return out_path
 
         commands = ""
+        for define in list(defines) + ["NO_PRIMITIVES"]:
+            commands += f"verilog_defines -D{define};\n"
         for file in final_files:
             commands += f"read_verilog -sv -lib {file};\n"
-        for define in defines:
-            commands += f"verilog_defines -D{define};\n"
 
+        output_log_path = os.path.join(self.tmp_dir, f"{out_path}_yosys.log")
+        output_log = open(output_log_path, "wb")
         try:
             subprocess.check_call(
                 [
@@ -429,12 +429,13 @@ class Toolbox(object):
                     write_verilog -noattr -noexpr -nohex -nodec -defparam -blackboxes {out_path};
                     """,
                 ],
-                stdout=open(os.path.join(self.tmp_dir, f"{out_path}_yosys.log"), "wb"),
+                stdout=output_log,
                 stderr=subprocess.STDOUT,
             )
         except subprocess.CalledProcessError as e:
-            err("Failed to pre-process input models for linting with Yosys: ")
-            err(e.stdout.decode("utf8"))
+            output_log.close()
+            err(f"Failed to pre-process input models for linting with Yosys: {e}")
+            err(open(output_log_path, "r", encoding="utf8").read())
             err("Will attempt to load models into linter as-is.")
 
         return out_path

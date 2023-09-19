@@ -271,3 +271,80 @@ def test_flow_control(MetricIncrementer):
         "other_counter",
         "yet_another_counter",
     ], "flow control did not yield the expected results"
+
+
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables([flow_module, sequential_flow_module, step_module])
+def test_wildcard_gating(MetricIncrementer):
+    from openlane.flows import SequentialFlow
+    from openlane.config import Variable
+
+    class OtherMetricIncrementer(MetricIncrementer):
+        id = "Test.OtherMetricIncrementer"
+
+    class AnotherMetricIncrementer(MetricIncrementer):
+        id = "Test.AnotherMetricIncrementer"
+
+    class YetAnotherMetricIncrementer(MetricIncrementer):
+        id = "Test.YetAnotherMetricIncrementer"
+
+    class LastMetricIncrementer(MetricIncrementer):
+        id = "Test.LastMetricIncrementer"
+
+    class Dummy(SequentialFlow):
+        Steps = [
+            MetricIncrementer,
+            OtherMetricIncrementer,
+            AnotherMetricIncrementer,
+            YetAnotherMetricIncrementer,
+            LastMetricIncrementer,
+        ]
+
+        config_vars = [
+            Variable("TEST_GATING_VARIABLE", bool, description="x", default=False)
+        ]
+
+        gating_config_vars = {"*AnotherMetric*": ["TEST_GATING_VARIABLE"]}
+
+    flow = Dummy(
+        {
+            "DESIGN_NAME": "WHATEVER",
+            "VERILOG_FILES": ["/cwd/src/a.v"],
+        },
+        design_dir="/cwd",
+        pdk="dummy",
+        scl="dummy_scl",
+        pdk_root="/pdk",
+    )
+    state = flow.start()
+    assert state.metrics["counter"] == 3, "Gating variable did not work properly"
+
+
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables([flow_module, sequential_flow_module, step_module])
+def test_gating_validation(MetricIncrementer):
+    from openlane.flows import SequentialFlow
+    from openlane.config import Variable
+
+    class Dummy(SequentialFlow):
+        Steps = [MetricIncrementer]
+
+        config_vars = [
+            Variable("TEST_GATING_VARIABLE", bool, description="x", default=False),
+            Variable("BAD_GATING_VARIABLE", int, description="x", default=0),
+        ]
+
+    with pytest.raises(TypeError, match="does not match any Step in Flow"):
+
+        class _Test0(Dummy):
+            gating_config_vars = {"NotARealStep": ["TEST_GATING_VARIABLE"]}
+
+    with pytest.raises(TypeError, match="does not match any declared config_vars"):
+
+        class _Test1(Dummy):
+            gating_config_vars = {"Test.MetricIncrementer": ["DOESNT_MATCH_ANYTHING"]}
+
+    with pytest.raises(TypeError, match="is not a boolean"):
+
+        class _Test2(Dummy):
+            gating_config_vars = {"Test.MetricIncrementer": ["BAD_GATING_VARIABLE"]}

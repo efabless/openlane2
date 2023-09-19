@@ -451,6 +451,7 @@ class Variable:
                 raise ValueError(
                     f"Value provided for deserializable path {validating_type} at '{key_path}' is not a dictionary."
                 )
+            raw = value.copy()
             kwargs_dict = {}
             for current_field in fields(validating_type):
                 key = current_field.name
@@ -476,6 +477,12 @@ class Variable:
                     permissive_typing=permissive_typing,
                 )
                 kwargs_dict[key] = value__processed
+                if explicitly_specified:
+                    del raw[key]
+            if len(raw):
+                raise ValueError(
+                    f"One or more keys unrecognized for dataclass {validating_type.__qualname__}: {' '.join(raw.keys())}"
+                )
             return validating_type(**kwargs_dict)
         elif validating_type == Path:
             # Handle one-file globs

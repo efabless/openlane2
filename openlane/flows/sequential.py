@@ -241,7 +241,6 @@ class SequentialFlow(Flow):
             for id in step_ids.values():
                 if fnmatch.fnmatch(id, key):
                     gating_cvars_expanded[id] = value
-                    break
 
         current_state = initial_state
         for cls in self.Steps:
