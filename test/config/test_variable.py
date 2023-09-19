@@ -38,6 +38,9 @@ def test_macro_validation():
     with pytest.raises(ValueError, match="at least one LEF file"):
         Macro(gds=["test"], lef=[])
 
+    with pytest.raises(TypeError, match="got an unexpected keyword argument"):
+        Macro(gds=["test"], lef=["test"], lefs=[])
+
 
 def test_is_optional():
     from openlane.config.variable import is_optional

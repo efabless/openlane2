@@ -10,9 +10,9 @@ hardening macros and writing custom flows and scripts.
 
 hardening_macros
 chip_integration
+about_pdks
 writing_custom_flows
 writing_custom_steps
-custom_pdk_builds
 migration/index
 ```
 

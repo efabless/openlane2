@@ -39,7 +39,7 @@ the interconnect corner.
 ## Default Flow Configuration
 In its current state, the default OpenLane flow allows SCLs to configure the following:
 
-* A list of PVT-corners with names that correspond to liberty files
+* A list of PVT-corners with names that correspond to `.lib` files
 * A list of interconnect corners with arbitrary names that *may* correspond to any of:
   * `TECH_LEF`
 

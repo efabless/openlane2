@@ -7,12 +7,13 @@ for more involved chip designs such as Caravel.
 
 Where as OpenLane 1 was **monolithic**, i.e. one flow that (mostly) had to be run
 in its entirety, OpenLane 2 is completely **modular**, with multiple flows composed of
-execution units called **steps**. Each step roughly corresponds to one action
+execution units called Steps. Each Step roughly corresponds to one action
 taken by an EDA tool.
 
 ## Do all my designs work?
 Yes*! OpenLane 2 supports about 99% of the config files from OpenLane 1,
-whether they're written in JSON or Tcl, although Tcl is finicky at this point and we recommend rewriting them in JSON.
+whether they're written in JSON or Tcl, although Tcl is finicky at this point
+and we recommend rewriting them in JSON.
 
 \* Interactive scripts written in Tcl, however, are not supported in OpenLane 2-
 we've replaced them with Python-based flows, which are much better: you can
@@ -38,25 +39,31 @@ OpenLane will automatically pull the corresponding Docker image and the
 PDK version it requires.
 
 ```{warning}
-`--dockerized` will make your home folder, your PDK root and your current working directory available to the OpenLane Docker container.
+`--dockerized` will make your home folder, your PDK root and your current
+working directory available to the OpenLane Docker container.
 
-If you need any other directories mounted, you can pass them in the following manner: `--docker-mount <dir1> [--docker-mount <dir2> [--docker-mount <dir3>]]`.
+If you need any other directories mounted, you can pass them in the following
+manner: `--docker-mount <dir1> [--docker-mount <dir2> [--docker-mount <dir3>]]`.
 ```
 
 ## Is the CLI usage the same?
 No- there are some elements that are different:
 
-* The design is no longer a flag, it's an argument, i.e., you do not need a `-design` or `--design` before the design configuration file.
-* The design argument must be a fully-qualified path to the configuration file, not a folder, and it will not automatically look inside the `designs` folder of OpenLane.
-* Options are now parsed GNU-style, i.e., long flags begin with `--` and short flags begin with `-`.
+* The design is no longer a flag, it's an argument, i.e., you do not need a
+  `-design` or `--design` before the design configuration file.
+* The design argument must be a fully-qualified path to the configuration file,
+  not a folder, and it will not automatically look inside the `designs` folder
+  of OpenLane.
+* Options are now parsed GNU-style, i.e., long flags begin with `--` and short
+  flags begin with `-`.
 
 Here are some examples from OpenLane 1 and how you'd replace them in 2:
 
-| OpenLane 1 | OpenLane 2+ |
-| - | - |
-| `flow.tcl -design spm -tag my_run` | `python3 -m openlane ./designs/spm/config.json --tag my_run`
-| `flow.tcl -design xtea -verbose 2` | `python3 -m openlane ./designs/xtea/config.tcl --log-level VERBOSE` |
-| `flow.tcl -design spm -last_run -from floorplan` | `python3 -m openlane ./designs/spm/config.json --from openroad.floorplan --last-run` (case-insensitive, [step names here](../../reference/flow_config_vars.md#classic)) |
+| OpenLane 1                                        | OpenLane 2+                                                               |
+| -                                                 | -                                                                         |
+| `flow.tcl -design spm -tag my_run`                | `python3 -m openlane ./designs/spm/config.json --tag my_run`              |
+| `flow.tcl -design xtea -verbose 2`                | `python3 -m openlane ./designs/xtea/config.tcl --log-level VERBOSE`       |
+| `flow.tcl -design spm -last_run -from floorplan`  | `python3 -m openlane ./designs/spm/config.json --from openroad.floorplan --last-run` (case-insensitive, [step names here](../../reference/flows.md#classic)) |
 
 ## What else is different?
 We've taken the liberty of vastly improving the run folders while we're at it:
@@ -103,7 +110,8 @@ logs and reports.
 ```
 
 ## I'm having trouble migrating a configuration file.
-Some variables are particularly annoying to deal with: See [migrating variables](./variables.md) for more info.
+Some variables are particularly annoying to deal with:
+See [migrating variables](./variables.md) for more info.
 
 If you can't find the variable causing your problems, feel free to just create
 an issue [on GitHub](https://github.com/efabless/openlane2/issues/new) and

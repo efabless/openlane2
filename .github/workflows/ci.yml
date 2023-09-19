@@ -31,8 +31,8 @@ jobs:
       - name: Set Matrix
         id: set-matrix
         run: |
-          python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
-          echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuC/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
+          python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuD/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS
+          echo "design_matrix=$(python3 ./.github/test_sets/get_test_matrix.py --scl sky130A/sky130_fd_sc_hd --scl gf180mcuD/gf180mcu_fd_sc_mcu7t5v0 $TEST_SETS)" >> $GITHUB_OUTPUT
       - name: Get Open PDKs Revision
         id: set-rev
         run: |

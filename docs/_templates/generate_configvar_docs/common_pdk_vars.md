@@ -1,4 +1,5 @@
 # Universal Flow PDK Configuration Variables
+
 These are variables that are to be defined by a process design kit's
 configuration files for *all* steps and flows. For a PDK to be compatible with
 OpenLane, all non-`Optional` variables *must* be given a value.
@@ -13,6 +14,7 @@ these values may hold a value of `None` in the input configuration and
 behave accordingly.
 ```
 
+(univ_flow_cvars_pdk)=
 ${"##"} PDK-Level
 
 These are variables that affect the entire PDK.
@@ -23,6 +25,7 @@ These are variables that affect the entire PDK.
 | <a name="${var.name.lower()}"></a>`${var.name}` | ${var.type_repr_md()} | ${var.desc_repr_md()} | ${var.units or ""} |
 %endfor
 
+(univ_flow_cvars_scl)=
 ${"##"} SCL-Level
 
 These are variables that affect a specific standard-cell library.
