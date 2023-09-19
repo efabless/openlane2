@@ -469,23 +469,35 @@ class EQY(YosysStep):
             else:
                 script = textwrap.dedent(
                     """
-                    [gold]
+                    [script]
                     {dep_commands}
                     blackbox
+
+                    [gold]
                     read_verilog -formal -sv {files}
 
                     [gate]
-                    {dep_commands}
-                    proc
-                    blackbox
                     read_verilog -formal -sv {processed_pdk} {nl}
-                    opt -noff -keepdc -fast
-                    opt_clean
 
                     [script]
-                    hierarchy -check -top {design_name}
-                    prep
+                    hierarchy -top {design_name}
+                    proc
+                    memory -nomap
+                    prep -top {design_name} -flatten
+
+                    # Unused/internal synthesis signals
+                    opt -noff -keepdc -fast
+                    opt_clean -purge
+
+                    # Common Patterns
+                    memory_map
                     async2sync
+
+                    [gold]
+                    write_verilog {step_dir}/gold.v
+                    
+                    [gate]
+                    write_verilog {step_dir}/gate.v
 
                     [strategy sat]
                     use sat
