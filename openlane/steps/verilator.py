@@ -164,9 +164,7 @@ class Lint(Step):
                     errors_count = int(match[1])
 
             if exit_error is not None and errors_count == 0:
-                raise StepException(
-                    f"Verilator exited unexpectedly: Not exiting due to errors"
-                )
+                raise StepException(f"Verilator exited unexpectedly: {exit_error}")
 
         metrics_updates.update({"design__lint_errors__count": errors_count})
         metrics_updates.update(

@@ -10,7 +10,10 @@
       config_file: config.tcl
     - usb
     - usb_cdc_core
-    # - manual_macro_placement_test
+    - name: latch
+      config_file: config_good.json
+    - name: latch
+      config_file: config_bad.json
     - spm
     - gcd
     - caravel_upw
@@ -36,6 +39,10 @@
     - usb_cdc_core
     - zipdiv
     - wbqspiflash
+    - name: latch
+      config_file: latch_good.json
+    - name: latch
+      config_file: latch_bad.json
 - scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set
   designs:
