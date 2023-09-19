@@ -1,3 +1,35 @@
+# 2.0.0-b14
+
+* Added `PNR_SDC_FILE` to all OpenROAD steps
+* Added `SIGNOFF_SDC_FILE` to `OpenROAD.STAPostPNR`
+* Added `report_design_area_metrics` to OpenROAD scripts that potentially modify the layout
+* Added comprehensive documentation on PDKs
+* Added documentation for migrating the Macro object
+* Added validation for unknown keys for the Macro object
+* Added testing for `openlane.common.toolbox::Toolbox::create_blackbox_model`, `openlane.common.toolbox::Toolbox::get_lib_voltage`,  `openlane.flows.sequential::SequentialFlow::__init_subclass__`=
+* Updated OpenROAD to `0a6d0fd`: **There is an API break in OpenDB APIs**:
+  * `odb.read_def` now takes a `dbTech` and a Path string instead of a
+    `dbDatabase` and a Path string.
+  * The `dbTech` object can be obtained via the `getTech` method on `dbDatabase`
+    objects: `db.getTech()`, for example.
+  * Liberty files without default operating conditions break in PSM-
+    `libparse-python` added as a workaround until the PDKs are fixed
+* `BASE_SDC_FILE` renamed to `FALLBACK_SDC_FILE` with translation
+	* Move `FALLBACK_SDC_FILE` to universal flow variables
+*  OpenROAD scripts internally now always read `SDC_IN` instead of `CURRENT_SDC`
+	* SDC_IN set to either `PNR_SDC_FILE` or `SIGNOFF_SDC_FILE` by the appropriate steps
+* Reimplemented I/O placement in the Classic flow based on the one in ORFS, i.e.:
+  > "We start the loop in ORFS by ignoring io placement while doing global
+  > placement, then do io placement, then re-run global placement
+  > considering IOs. Its not perfect but that's the use." - @maliberty
+* `open_pdks` -> `dd7771c`
+* Volare -> `0.12.8`
+* Changed gf180mcu tests to use `gf180mcuD`, the new recommended variant of gf180mcu
+* Fixed bug with gating config variables with wildcards only affecting the first matching step
+* Fixed detecting if `PL_TARGET_DENSITY_PCT` is not defined
+* Fixed antenna repair: now re-legalizes after repair which was missing
+  * Fixed failing designs in Extended Test Set
+
 # 2.0.0-b13
 
 * Add Linting
