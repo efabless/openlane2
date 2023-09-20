@@ -230,4 +230,12 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         new[
             "SYNTH_CLK_DRIVING_CELL"
         ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+
+    # x3. Bad EF Cell (sky130)
+    if new["PDK"].startswith("sky130"):
+        new["DECAP_CELL"] = [
+            cell
+            for cell in config["DECAP_CELL"].strip().split()
+            if cell != "sky130_ef_sc_hd__decap_12"
+        ]
     return new

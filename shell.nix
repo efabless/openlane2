@@ -27,6 +27,7 @@ with pkgs; mkShell {
     neovim
     delta
     zsh
+    gtkwave
 
     # Docs + Testing
     enchant

@@ -93,6 +93,7 @@ class Classic(SequentialFlow):
         Checker.IllegalOverlap,
         Netgen.LVS,
         Checker.LVS,
+        Yosys.EQY,
     ]
 
     config_vars = [
@@ -236,6 +237,12 @@ class Classic(SequentialFlow):
             default=True,
         ),
         Variable(
+            "RUN_EQY",
+            bool,
+            "Enables the Yosys.EQY step.",
+            default=False,
+        ),
+        Variable(
             "QUIT_ON_UNMAPPED_CELLS",
             bool,
             "Checks for unmapped cells after synthesis and quits immediately if so.",
@@ -321,6 +328,7 @@ class Classic(SequentialFlow):
             "RUN_KLAYOUT_STREAMOUT",
         ],
         "Netgen.LVS": ["RUN_LVS"],
+        "Yosys.EQY": ["RUN_EQY"],
         "Checker.YosysUnmappedCells": ["QUIT_ON_UNMAPPED_CELLS"],
         "Checker.YosysChecks": ["QUIT_ON_SYNTH_CHECKS"],
         "Checker.TrDRC": ["RUN_DRT", "QUIT_ON_TR_DRC"],

@@ -37,6 +37,7 @@ from typing import (
     ClassVar,
     Type,
 )
+from rich.console import escape
 
 from ..config import (
     Config,
@@ -873,7 +874,7 @@ class Step(ABC):
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
-                    verbose(line.strip())
+                    verbose(line.strip(), markup=False)
         returncode = process.wait()
         log_file.close()
         if returncode != 0:
@@ -881,7 +882,7 @@ class Step(ABC):
                 split_lines = lines.split("\n")
                 log = "\n".join(split_lines[-10:])
                 if log.strip() != "":
-                    err(log)
+                    err(escape(log))
                 err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 

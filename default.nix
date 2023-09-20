@@ -28,6 +28,9 @@
   verilator ? import ./nix/verilator.nix { inherit pkgs; },
   volare ? import ./nix/volare.nix { inherit pkgs; },
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
+
+  sby ? import ./nix/sby.nix { inherit pkgs; inherit yosys; },
+  eqy ? import ./nix/eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
   
   ...
 }:
@@ -51,9 +54,11 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     netgen
     yosys
     magic
+    verilog
     verilator
     ruby
     tcl
+    eqy
 
     # Python
     click

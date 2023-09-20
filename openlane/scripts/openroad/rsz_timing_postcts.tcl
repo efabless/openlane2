@@ -20,7 +20,6 @@ read_current_odb
 set_propagated_clock [all_clocks]
 
 set_dont_touch_objects
-set_dont_use_cells
 
 # set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl

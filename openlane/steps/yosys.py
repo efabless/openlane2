@@ -15,6 +15,8 @@ import os
 import re
 import io
 import json
+import subprocess
+import textwrap
 from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
@@ -22,10 +24,10 @@ from typing import List, Literal, Optional, Tuple
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
 
-from ..config import Variable
-from ..logging import debug, verbose
+from ..config import Variable, Config
 from ..state import State, DesignFormat
-from ..common import Path, get_script_dir
+from ..logging import debug, verbose, info
+from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
@@ -60,8 +62,6 @@ def _parse_yosys_check(
 
 
 class YosysStep(TclStep):
-    reproducibles_allowed = False
-
     config_vars = [
         Variable(
             "VERILOG_FILES",
@@ -348,3 +348,174 @@ class Synthesis(YosysStep):
             )
 
         return views_updates, metric_updates
+
+
+def _generate_read_deps(
+    config: Config,
+    toolbox: Toolbox,
+    power_defines: bool = False,
+    include_scls: bool = True,
+) -> str:
+    commands = ""
+
+    if synth_defines := config["SYNTH_DEFINES"]:
+        for define in synth_defines:
+            flag = TclUtils.escape(f"-D{define}")
+            commands += f"verilog_defines {flag}\n"
+
+    if power_defines:
+        if define := config["SYNTH_POWER_DEFINE"]:
+            flag = TclUtils.escape(f"-D{define}")
+            commands += f"verilog_defines {flag}"
+
+    if config["SYNTH_READ_BLACKBOX_LIB"]:
+        for lib in toolbox.filter_views(config, config["LIB"]):
+            lib_str = TclUtils.escape(str(lib))
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+            )
+
+    for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+
+    verilog_include_args = []
+    if dirs := config["VERILOG_INCLUDE_DIRS"]:
+        for dir in dirs:
+            verilog_include_args.append(f"-I{dir}")
+
+    leftover_macro_nls = toolbox.get_macro_views(
+        config,
+        DesignFormat.NETLIST,
+        unless_exist=DesignFormat.LIB,
+    )
+    for nl in leftover_macro_nls:
+        nl_str = TclUtils.escape(str(nl))
+        commands += (
+            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {nl_str}\n"
+        )
+
+    if models := config["EXTRA_VERILOG_MODELS"]:
+        for model in models:
+            model_str = TclUtils.escape(str(model))
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
+
+    return commands
+
+
+@Step.factory.register()
+class EQY(YosysStep):
+    id = "Yosys.EQY"
+    name = "Equivalence Check"
+    long_name = "RTL/Netlist Equivalence Check"
+
+    inputs = [DesignFormat.NETLIST]
+    outputs = []
+
+    config_vars = YosysStep.config_vars + [
+        Variable(
+            "EQY_SCRIPT",
+            Optional[Path],
+            "An optional override for the automatically generated EQY script for more complex designs.",
+        ),
+        Variable(
+            "MACRO_PLACEMENT_CFG",
+            Optional[Path],
+            "This step will warn if this deprecated variable is used, as it indicates Macros are used without the new Macro object.",
+        ),
+        Variable(
+            "EQY_FORCE_ACCEPT_PDK",
+            bool,
+            "Attempt to run EQY even if the PDK's Verilog models are supported by this step. Will likely result in a failure.",
+            default=False,
+        ),
+    ]
+
+    def get_command(self) -> List[str]:
+        script_path = self.get_script_path()
+        work_dir = os.path.join(self.step_dir, "scratch")
+        return ["eqy", "-f", script_path, "-d", work_dir]
+
+    def get_script_path(self) -> str:
+        return os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.eqy")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        processed_pdk = os.path.join(self.step_dir, "formal_pdk.v")
+
+        if self.config["PDK"].startswith("sky130A"):
+            subprocess.check_call(
+                [
+                    "eqy.formal_pdk_proc",
+                    "--output",
+                    processed_pdk,
+                ]
+                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
+            )
+        elif self.config["EQY_FORCE_ACCEPT_PDK"]:
+            subprocess.check_call(
+                ["iverilog", "-E", "-o", processed_pdk, "-DFUNCTIONAL"]
+                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
+            )
+        else:
+            info(
+                f"PDK {self.config['PDK']} is not supported by the EQY step. Skipping…"
+            )
+            return {}, {}
+
+        with open(self.get_script_path(), "w", encoding="utf8") as f:
+            if eqy_script := self.config["EQY_SCRIPT"]:
+                for line in open(eqy_script, "r", encoding="utf8"):
+                    f.write(line)
+            else:
+                script = textwrap.dedent(
+                    """
+                    [script]
+                    {dep_commands}
+                    blackbox
+
+                    [gold]
+                    read_verilog -formal -sv {files}
+
+                    [gate]
+                    read_verilog -formal -sv {processed_pdk} {nl}
+
+                    [script]
+                    hierarchy -top {design_name}
+                    proc
+                    prep -top {design_name} -flatten
+
+                    memory -nomap
+                    async2sync
+
+                    [gold]
+                    write_verilog {step_dir}/gold.v
+                    
+                    [gate]
+                    write_verilog {step_dir}/gate.v
+
+                    [strategy sat]
+                    use sat
+                    depth 5
+
+                    [strategy pdr]
+                    use sby
+                    engine abc pdr -rfi
+
+                    [strategy bitwuzla]
+                    use sby
+                    depth 2
+                    engine smtbmc bitwuzla
+                    """
+                ).format(
+                    design_name=self.config["DESIGN_NAME"],
+                    dep_commands=_generate_read_deps(self.config, self.toolbox),
+                    files=TclUtils.join(
+                        [str(file) for file in self.config["VERILOG_FILES"]]
+                    ),
+                    nl=state_in[DesignFormat.NETLIST],
+                    processed_pdk=processed_pdk,
+                    step_dir=self.step_dir,
+                )
+                f.write(script)
+
+        return super().run(state_in, **kwargs)
