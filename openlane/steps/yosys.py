@@ -482,15 +482,9 @@ class EQY(YosysStep):
                     [script]
                     hierarchy -top {design_name}
                     proc
-                    memory -nomap
                     prep -top {design_name} -flatten
 
-                    # Unused/internal synthesis signals
-                    opt -noff -keepdc -fast
-                    opt_clean -purge
-
-                    # Common Patterns
-                    memory_map
+                    memory -nomap
                     async2sync
 
                     [gold]
