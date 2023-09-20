@@ -31,3 +31,4 @@ failures_report.json
 .coverage
 htmlcov/
 prof/
+sandbox/
