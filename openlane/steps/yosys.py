@@ -32,7 +32,7 @@ from ..common import Path, get_script_dir, Toolbox, TclUtils
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
 
-def parse_yosys_check(
+def _parse_yosys_check(
     report: io.TextIOBase,
     tristate_okay: bool = False,
 ) -> int:
@@ -342,7 +342,7 @@ class Synthesis(YosysStep):
         )
         metric_updates["synthesis__check_error__count"] = 0
         if os.path.exists(check_error_count_file):
-            metric_updates["synthesis__check_error__count"] = parse_yosys_check(
+            metric_updates["synthesis__check_error__count"] = _parse_yosys_check(
                 open(check_error_count_file),
                 self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
             )

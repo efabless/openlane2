@@ -258,7 +258,6 @@ if { $adder_type == "RCA"} {
     }
 }
 
-# <synth> split to run check -assert in the middle
 hierarchy -check -auto-top
 proc_clean
 proc_rmdead
@@ -267,7 +266,7 @@ proc_init
 proc_arst
 proc_rom
 proc_mux
-proc_dlatch
+tee -o "$report_dir/latch.rpt" proc_dlatch
 proc_dff
 proc_memwr
 proc_clean

@@ -13,8 +13,8 @@
 # limitations under the License.
 import os
 import re
+import subprocess
 from typing import List, Optional, Tuple
-from subprocess import CalledProcessError
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
 from ..common import DesignFormat
@@ -48,6 +48,12 @@ class Lint(Step):
             "When a file references an include file, resolve the filename relative to the path of the referencing file, instead of relative to the current directory.",
             default=True,
             deprecated_names=["VERILATOR_RELATIVE_INCLUDES"],
+        ),
+        Variable(
+            "LINTER_ERROR_ON_LATCH",
+            bool,
+            "When a latch is inferred by an `always` block that is not explicitly marked as `always_latch`, report this as a linter error.",
+            default=True,
         ),
         Variable(
             "SYNTH_DEFINES",
@@ -112,11 +118,14 @@ class Lint(Step):
         if self.config["LINTER_RELATIVE_INCLUDES"]:
             extra_args.append("--relative-includes")
 
+        if self.config["LINTER_ERROR_ON_LATCH"]:
+            extra_args.append("--Werror-LATCH")
+
         for define in defines:
             extra_args.append(f"+define+{define}")
         extra_args += defines
 
-        exit_error: Optional[CalledProcessError] = None
+        exit_error: Optional[subprocess.CalledProcessError] = None
         try:
             self.run_subprocess(
                 [
@@ -124,6 +133,7 @@ class Lint(Step):
                     "--lint-only",
                     "--Wall",
                     "--Wno-DECLFILENAME",
+                    "--Wno-EOFNEWLINE",
                     "--top-module",
                     self.config["DESIGN_NAME"],
                 ]
@@ -132,36 +142,36 @@ class Lint(Step):
                 + extra_args,
                 env=env,
             )
-        except CalledProcessError as e:
+        except subprocess.CalledProcessError as e:
             exit_error = e
 
         warnings_count = 0
         errors_count = 0
+        latch_count = 0
         timing_constructs = 0
 
-        error_pattern = re.compile(r"\s*\%Error: Exiting due to (\d+) error\(s\)")
-        with open(self.get_log_path(), "r") as f:
-            line = ""
+        exiting_rx = re.compile(r"^\s*%Error: Exiting due to (\d+) error\(s\)")
+        with open(self.get_log_path(), "r", encoding="utf8") as f:
             for line in f:
-                if "%Warning-" in line:
+                line = line.strip()
+                if r"%Warning-" in line:
                     warnings_count += 1
-                if "Error-NEEDTIMINGOPT" in line:
+                if r"%Error-LATCH" in line:
+                    latch_count += 1
+                if r"%Error-NEEDTIMINGOPT" in line:
                     timing_constructs = 1
+                if match := exiting_rx.search(line):
+                    errors_count = int(match[1])
 
-            if exit_error is not None:
-                matched_errors = error_pattern.match(line)
-                if matched_errors:
-                    errors_count = int(matched_errors.group(1))
-                else:
-                    raise StepException(
-                        f"Verilator exited unexpectedly: {exit_error.args}: {exit_error.stdout}"
-                    )
+            if exit_error is not None and errors_count == 0:
+                raise StepException(f"Verilator exited unexpectedly: {exit_error}")
 
         metrics_updates.update({"design__lint_errors__count": errors_count})
         metrics_updates.update(
             {"design__lint_timing_constructs__count": timing_constructs}
         )
         metrics_updates.update({"design__lint_warnings__count": warnings_count})
+        metrics_updates.update({"design__latch__count": latch_count})
         return views_updates, metrics_updates
 
     def layout_preview(self) -> Optional[str]:

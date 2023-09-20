@@ -876,9 +876,10 @@ class Step(ABC):
                 elif not silent and "table template" not in line:  # sky130 ff hack
                     verbose(line.strip(), markup=False)
         returncode = process.wait()
-        split_lines = lines.split("\n")
+        log_file.close()
         if returncode != 0:
             if returncode > 0:
+                split_lines = lines.split("\n")
                 log = "\n".join(split_lines[-10:])
                 if log.strip() != "":
                     err(escape(log))
