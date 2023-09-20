@@ -298,6 +298,7 @@ opt -fast
 hierarchy -check
 stat
 check
+delete t:\$print
 
 if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
     log "\[INFO] Applying extra mappings from '$::env(SYNTH_EXTRA_MAPPING_FILE)'…"
