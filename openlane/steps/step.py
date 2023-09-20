@@ -37,7 +37,6 @@ from typing import (
     ClassVar,
     Type,
 )
-
 from rich.console import escape
 
 from ..config import (
@@ -882,7 +881,7 @@ class Step(ABC):
             if returncode > 0:
                 log = "\n".join(split_lines[-10:])
                 if log.strip() != "":
-                    escape(log)
+                    err(escape(log))
                 err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
