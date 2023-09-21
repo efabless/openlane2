@@ -191,7 +191,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "maglef",
             "*.mag",
         )
-        new["CELL_MAGLEFS"] = sorted((maglef_glob))
+        new["CELL_MAGLEFS"] = sorted(glob(maglef_glob))
 
         new["MAGIC_PDK_SETUP"] = os.path.join(
             config["PDK_ROOT"],
