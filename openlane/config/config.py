@@ -559,6 +559,8 @@ class Config(GenericImmutableDict[str, Any]):
                 full_pdk_warnings=full_pdk_warnings,
                 flow_pdk_vars=flow_pdk_vars,
             )
+        else:
+            pdkpath = os.path.join(pdk_root, mutable["PDK"])
 
         readable_paths = [
             os.path.abspath(design_dir),

@@ -138,7 +138,7 @@ def verbose(*args, **kwargs):
     if get_log_level() > LogLevels.VERBOSE:
         return
     if __plain_output:
-        print(*args, **kwargs)
+        print(*args)
     else:
         console.print(*args, **kwargs)
 

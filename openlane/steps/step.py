@@ -537,7 +537,7 @@ class Step(ABC):
 
         return list(variables_by_name.values())
 
-    def create_reproducible(self, target_dir: str):
+    def create_reproducible(self, target_dir: str, include_pdk: bool = True):
         """
         Creates a folder that, given a specific version of OpenLane being
         installed, makes a portable reproducible of that step's execution.
@@ -552,16 +552,23 @@ class Step(ABC):
         this may be called manually on any step, too.
 
         :param target_dir: The directory in which to create the reproducible
+        :param include_pdk: Include PDK files. If set to false, Path pointing
+            to PDK files will be prefixed with ``pdk_dir::`` instead of being
+            copied.
         """
         # 0. Create Directories
         mkdirp(target_dir)
 
         files_path = os.path.join(target_dir, "files")
+        pdk_path = os.path.join(self.config["PDK_ROOT"], self.config["PDK"], "")
 
         def visitor(x: Any) -> Any:
-            nonlocal files_path
+            nonlocal files_path, include_pdk, pdk_path
             if not isinstance(x, Path):
                 return x
+
+            if not include_pdk and x.startswith(pdk_path):
+                return x.replace(pdk_path, "pdk_dir::")
 
             target_relpath = os.path.join(".", "files", x[1:])
             target_abspath = os.path.join(files_path, x[1:])
@@ -581,6 +588,9 @@ class Step(ABC):
             "openlane_version": __version__,
             "step": self.__class__.id,
         }
+
+        if not include_pdk:
+            del dumpable_config["PDK_ROOT"]
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
