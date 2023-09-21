@@ -285,7 +285,7 @@ def process_string(
             raise PermissionError(
                 f"'{concatenated}' is not located any path readable to OpenLane"
             )
-        files = glob.glob(final_abspath)
+        files = sorted(glob.glob(final_abspath))
         files_escaped = [file.replace("$", r"\$") for file in files]
         files_escaped.sort()
         return files_escaped

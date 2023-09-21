@@ -147,9 +147,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "verilog",
             "*.v",
         )
-        new["CELL_VERILOG_MODELS"] = [
-            path for path in glob(model_glob) if "_blackbox" not in path
-        ]
+        new["CELL_VERILOG_MODELS"] = sorted(
+            [path for path in glob(model_glob) if "_blackbox" not in path]
+        )
 
         bb_glob = os.path.join(
             config["PDK_ROOT"],
@@ -161,7 +161,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         )
 
         if blackbox_models := glob(bb_glob):
-            new["CELL_BB_VERILOG_MODELS"] = blackbox_models
+            new["CELL_BB_VERILOG_MODELS"] = sorted(blackbox_models)
 
         spice_glob = os.path.join(
             config["PDK_ROOT"],
@@ -171,7 +171,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "spice",
             "*.spice",
         )
-        new["CELL_SPICE_MODELS"] = glob(spice_glob)
+        new["CELL_SPICE_MODELS"] = sorted(glob(spice_glob))
 
         mag_glob = os.path.join(
             config["PDK_ROOT"],
@@ -181,7 +181,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "mag",
             "*.mag",
         )
-        new["CELL_MAGS"] = glob(mag_glob)
+        new["CELL_MAGS"] = sorted(glob(mag_glob))
 
         maglef_glob = os.path.join(
             config["PDK_ROOT"],
@@ -191,7 +191,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             "maglef",
             "*.mag",
         )
-        new["CELL_MAGLEFS"] = glob(maglef_glob)
+        new["CELL_MAGLEFS"] = sorted((maglef_glob))
 
         new["MAGIC_PDK_SETUP"] = os.path.join(
             config["PDK_ROOT"],

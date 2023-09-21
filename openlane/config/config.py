@@ -732,7 +732,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         pdkpath = os.path.join(pdk_root, pdk)
         if not os.path.exists(pdkpath):
-            matches = glob(f"{pdkpath}*")
+            matches = sorted(glob(f"{pdkpath}*"))
             errors = [f"The PDK {pdk} was not found."]
             warnings = []
             for match in matches:
