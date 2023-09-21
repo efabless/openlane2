@@ -384,7 +384,7 @@ class STAPrePNR(STAStep):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = glob(os.path.join(self.step_dir, "*.sdf"))
+        sdfs = sorted(glob(os.path.join(self.step_dir, "*.sdf")))
         for sdf in sdfs:
             _, corner = os.path.basename(sdf)[:-4].split("__")
             sdf_dict[corner] = Path(sdf)
@@ -550,7 +550,7 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        libs = glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True)
+        libs = sorted(glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True))
         for lib in libs:
             _, corner = os.path.basename(lib)[:-4].split("__")
             lib_dict[corner] = Path(lib)
@@ -563,7 +563,7 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True)
+        sdfs = sorted(glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True))
         for sdf in sdfs:
             _, corner = os.path.basename(sdf)[:-4].split("__")
             sdf_dict[corner] = Path(sdf)
