@@ -416,7 +416,7 @@ class Toolbox(object):
         for file in final_files:
             commands += f"read_verilog -sv -lib {file};\n"
 
-        output_log_path = os.path.join(self.tmp_dir, f"{out_path}_yosys.log")
+        output_log_path = f"{out_path}_yosys.log"
         output_log = open(output_log_path, "wb")
         try:
             subprocess.check_call(
