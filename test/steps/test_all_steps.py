@@ -20,9 +20,27 @@ from typing import Optional
 import pytest
 
 
+@pytest.fixture()
+def _all_steps_enabled(request):
+    if not request.config.option.all_steps:
+        pytest.skip()
+
+
+@pytest.fixture()
+def pdk_root(request):
+    import volare
+    from openlane.common import get_opdks_rev
+
+    pdk_root = volare.get_volare_home(request.config.option.pdk_root)
+
+    volare.enable(pdk_root, "sky130", get_opdks_rev())
+
+    return pdk_root
+
+
 @pytest.mark.parametrize("test", pytest.tests)
-@pytest.mark.usefixtures("_chdir_tmp")
-def test_step_folder(test: str):
+@pytest.mark.usefixtures("_chdir_tmp", "_all_steps_enabled")
+def test_step_folder(test: str, pdk_root: str):
     from openlane.steps import Step
     from openlane.common import Toolbox
 
@@ -46,7 +64,7 @@ def test_step_folder(test: str):
         pass
 
     Target = Step.factory.get(step)
-    target = Target.load(config, state_in, "/home/donn/.volare")
+    target = Target.load(config, state_in, pdk_root)
 
     exception: Optional[Exception] = None
     try:

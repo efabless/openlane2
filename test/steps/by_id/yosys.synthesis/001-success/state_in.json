@@ -1,0 +1,23 @@
+{
+    "nl": null,
+    "pnl": null,
+    "json_h": null,
+    "def": null,
+    "lef": null,
+    "odb": null,
+    "sdc": null,
+    "sdf": null,
+    "spef": null,
+    "lib": null,
+    "spice": null,
+    "mag": null,
+    "gds": null,
+    "mag_gds": null,
+    "klayout_gds": null,
+    "metrics": {
+        "design__lint_errors__count": 0,
+        "design__lint_timing_constructs__count": 0,
+        "design__lint_warnings__count": 0,
+        "design__latch__count": 0
+    }
+}

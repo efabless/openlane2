@@ -560,7 +560,8 @@ class Config(GenericImmutableDict[str, Any]):
                 flow_pdk_vars=flow_pdk_vars,
             )
         else:
-            pdkpath = os.path.join(pdk_root, mutable["PDK"])
+            if pdk_root is not None:
+                pdkpath = os.path.join(pdk_root, mutable["PDK"])
 
         readable_paths = [
             os.path.abspath(design_dir),

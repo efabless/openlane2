@@ -41,6 +41,12 @@ test: venv/manifest.txt
 	./venv/bin/coverage report
 	./venv/bin/coverage html
 
+.PHONY: test-all
+test-all: venv/manifest.txt
+	./venv/bin/coverage run -m pytest --all-steps
+	./venv/bin/coverage report
+	./venv/bin/coverage html
+
 .PHONY: check-license
 check-license: venv/manifest.txt
 	./venv/bin/python3 -m pip freeze > ./requirements.frz.txt
