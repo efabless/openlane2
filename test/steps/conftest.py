@@ -19,7 +19,7 @@ import pytest
 
 def pytest_configure():
     __dir__ = os.path.dirname(os.path.abspath(__file__))
-    pytest.step_test_dir = os.path.join(__dir__, "by_id")
+    pytest.step_test_dir = os.path.join(__dir__, "steps", "by_id")
 
     pytest.tests = [
         os.path.relpath(p, pytest.step_test_dir)
