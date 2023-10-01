@@ -1,0 +1,22 @@
+{
+    "nl": "./inverter.nl.v",
+    "pnl": null,
+    "def": null,
+    "lef": null,
+    "odb": null,
+    "sdc": null,
+    "sdf": null,
+    "spef": null,
+    "lib": null,
+    "spice": null,
+    "mag": null,
+    "gds": null,
+    "mag_gds": null,
+    "klayout_gds": null,
+    "json_h": null,
+    "metrics": {
+        "design__instance__count": 1,
+        "design__instance_unmapped__count": 0,
+        "synthesis__check_error__count": 0
+    }
+}
