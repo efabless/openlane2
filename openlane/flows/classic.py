@@ -71,6 +71,7 @@ class Classic(SequentialFlow):
         OpenROAD.STAMidPNR,
         OpenROAD.GlobalRouting,
         OpenROAD.ResizerTimingPostGRT,
+        OpenROAD.RepairDesignPostGRT,
         OpenROAD.STAMidPNR,
         OpenROAD.DetailedRouting,
         Checker.TrDRC,
@@ -155,6 +156,13 @@ class Classic(SequentialFlow):
         ),
         Variable(
             "RUN_POST_GRT_RESIZER_TIMING",
+            bool,
+            "Enables resizer design repair post-grt using the OpenROAD.RepairDesignPostGRT step.",
+            default=True,
+            deprecated_names=["GLB_RESIZER_DESIGN_OPTIMIZATIONS"],
+        ),
+        Variable(
+            "RUN_POST_GRT_REPAIR_DESIGN",
             bool,
             "Enables resizer timing optimizations after global routing using the OpenROAD.ResizerTimingPostGRT step.",
             default=True,
