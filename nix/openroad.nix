@@ -33,7 +33,7 @@ in clangStdenv.mkDerivation rec {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "";
+    sha256 = "sha256-lv/gKwcn5/2QFj7mOk6a0OBxPfm4PDAmSbD1zUJnU+A=";
     fetchSubmodules = true;
   };
 
