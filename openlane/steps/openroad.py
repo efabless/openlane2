@@ -1437,12 +1437,12 @@ class CTS(ResizerStep):
 
 
 @Step.factory.register()
-class RepairDesign(ResizerStep):
+class RepairDesignPostGPL(ResizerStep):
     """
     Runs a number of design "repairs" on a global-placed ODB file.
     """
 
-    id = "OpenROAD.RepairDesign"
+    id = "OpenROAD.RepairDesignPostGPL"
     name = "Repair Design (Post-Global Placement)"
 
     config_vars = ResizerStep.config_vars + [
@@ -1502,6 +1502,16 @@ class RepairDesign(ResizerStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
+
+
+@Step.factory.register()
+class RepairDesign(RepairDesignPostGPL):
+    """
+    This is identical to OpenROAD.RepairDesignPostGPL. It is retained for backwards compatibility.
+    """
+
+    id = "OpenROAD.RepairDesign"
+    name = "Repair Design (Post-Global Placement)"
 
 
 @Step.factory.register()

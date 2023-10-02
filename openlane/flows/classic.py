@@ -134,11 +134,11 @@ class Classic(SequentialFlow):
             deprecated_names=["TAP_DECAP_INSERTION", "RUN_TAP_DECAP_INSERTION"],
         ),
         Variable(
-            "RUN_REPAIR_DESIGN",
+            "RUN_REPAIR_DESIGN_POST_GPL",
             bool,
             "Enables resizer design repair using the OpenROAD.RepairDesign step.",
             default=True,
-            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS"],
+            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS", "RUN_REPAIR_DESIN"],
         ),
         Variable(
             "RUN_CTS",
@@ -315,7 +315,7 @@ class Classic(SequentialFlow):
             "RUN_LINTER",
             "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
         ],
-        "OpenROAD.RepairDesign": ["RUN_REPAIR_DESIGN"],
+        "OpenROAD.RepairDesign": ["RUN_REPAIR_DESIGN_POST_GPL"],
         "OpenROAD.CTS": ["RUN_CTS"],
         "OpenROAD.ResizerTimingPostCTS": ["RUN_POST_CTS_RESIZER_TIMING"],
         "OpenROAD.RCX": ["RUN_SPEF_EXTRACTION"],
