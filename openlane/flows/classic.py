@@ -138,7 +138,7 @@ class Classic(SequentialFlow):
             bool,
             "Enables resizer design repair using the OpenROAD.RepairDesign step.",
             default=True,
-            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS", "RUN_REPAIR_DESIN"],
+            deprecated_names=["PL_RESIZER_DESIGN_OPTIMIZATIONS", "RUN_REPAIR_DESIGN"],
         ),
         Variable(
             "RUN_CTS",
