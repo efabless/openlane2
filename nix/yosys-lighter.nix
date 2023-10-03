@@ -17,46 +17,34 @@
 }:
 
 with pkgs; clangStdenv.mkDerivation rec {
-  name = "sby";
+  name = "yosys-lighter";
+  dylibs = ["lighter"];
 
   src = fetchFromGitHub {
-    owner = "yosyshq";
-    repo = "sby";
-    rev = "7415abfcfa8bf14f024f28e61e62f23ccd892415";
-    sha256 = "sha256-+h+Ddv0FYgovu4ee5e6gA+IiD2wThtzFxOMiGkG99g8=";
+    owner = "aucohl";
+    repo = "lighter";
+    rev = "b8e7d4ece5d6e22ab62c03eead761c736dbcaf3c";
+    sha256 = "sha256-gftQwWrq7KVVQXfb/SThOvbEJK0DoPpiQ3f3X1thBiQ=";
   };
-
-  makeFlags = [
-    "YOSYS_CONFIG=${yosys}/bin/yosys-config"
-  ];
-
   propagatedBuildInputs = [
     yosys
     libedit
     libbsd
     zlib
-
-    # solvers
-    boolector
-    z3
-    yices
   ];
 
   buildInputs = [
     yosys.py3
   ];
 
-  preConfigure = ''
-  sed -i.bak "s@/usr/local@$out@" Makefile
-  sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" sbysrc/sby.py
-  sed -i.bak "s@\"/usr/bin/env\", @@" sbysrc/sby_core.py
+  buildPhase = ''
+  ${yosys}/bin/yosys-config --build lighter.so src/clock_gating_plugin.cc
   '';
 
-  checkPhase = ''
-  make test
+  installPhase = ''
+  mkdir -p $out/share/yosys/plugins
+  cp lighter.so $out/share/yosys/plugins
   '';
-
-  doCheck = true;
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;
   makeWrapperArgs = [

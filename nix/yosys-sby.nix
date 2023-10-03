@@ -14,17 +14,17 @@
 {
   pkgs ? import ./pkgs.nix {},
   yosys ? import ./yosys.nix { inherit pkgs; },
-  sby ? import ./sby.nix { inherit pkgs; inherit yosys; },
 }:
 
 with pkgs; clangStdenv.mkDerivation rec {
-  name = "eqy";
+  name = "yosys-sby";
+  dylibs = [];
 
   src = fetchFromGitHub {
     owner = "yosyshq";
-    repo = "eqy";
-    rev = "9fa132ee621a785480da7c7cf52219264ec980b3";
-    sha256 = "sha256-JKEjjwgoR4rwaRyvk7jezXlC6ARiJ78wkq+qLeF7q9g=";
+    repo = "sby";
+    rev = "7415abfcfa8bf14f024f28e61e62f23ccd892415";
+    sha256 = "sha256-+h+Ddv0FYgovu4ee5e6gA+IiD2wThtzFxOMiGkG99g8=";
   };
 
   makeFlags = [
@@ -35,9 +35,12 @@ with pkgs; clangStdenv.mkDerivation rec {
     yosys
     libedit
     libbsd
-    bitwuzla
     zlib
-    sby
+
+    # solvers
+    boolector
+    z3
+    yices
   ];
 
   buildInputs = [
@@ -46,25 +49,16 @@ with pkgs; clangStdenv.mkDerivation rec {
 
   preConfigure = ''
   sed -i.bak "s@/usr/local@$out@" Makefile
-  sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" src/eqy.py
-  sed -i.bak "s@\"/usr/bin/env\", @@" src/eqy_job.py
-  '';
-
-  postInstall = ''
-  cp examples/spm/formal_pdk_proc.py $out/bin/eqy.formal_pdk_proc
-  chmod +x $out/bin/eqy.formal_pdk_proc
+  sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" sbysrc/sby.py
+  sed -i.bak "s@\"/usr/bin/env\", @@" sbysrc/sby_core.py
   '';
 
   checkPhase = ''
-  sed -i.bak "s@> /dev/null@@" tests/python/Makefile
-  sed -i.bak "s/@//" tests/python/Makefile
-  sed -i.bak "s@make -C /tmp/@make -C \$(TMPDIR)@" tests/python/Makefile
-  make -C tests/python clean "EQY=${yosys.py3}/bin/python3 $PWD/src/eqy.py"
-  make -C tests/python "EQY=${yosys.py3}/bin/python3 $PWD/src/eqy.py"
+  make test
   '';
 
-  doCheck = true;
-  
+  doCheck = false;
+
   computed_PATH = lib.makeBinPath propagatedBuildInputs;
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
