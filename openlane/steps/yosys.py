@@ -26,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..config import Variable, Config
 from ..state import State, DesignFormat
-from ..logging import debug, verbose, info
+from ..logging import debug, verbose, info, warn
 from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
@@ -79,12 +79,6 @@ class YosysStep(TclStep):
             "Specifies the Verilog `include` directories.",
         ),
         Variable(
-            "SYNTH_READ_BLACKBOX_LIB",
-            bool,
-            "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
-            default=False,
-        ),
-        Variable(
             "SYNTH_LATCH_MAP",
             Optional[Path],
             "A path to a file contianing the latch mapping for Yosys.",
@@ -130,6 +124,17 @@ class YosysStep(TclStep):
             "A path to a file containing the mux4 mapping for Yosys.",
             pdk=True,
         ),
+        Variable(
+            "USE_LIGHTER",
+            bool,
+            "Activates Lighter, an experimental module that attempts to optimize clock-gated flip-flops.",
+            default=False,
+        ),
+        Variable(
+            "LIGHTER_DFF_MAP",
+            Optional[Path],
+            "An override to the custom DFF map file provided for the given SCL by Lighter.",
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -142,6 +147,26 @@ class YosysStep(TclStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
+
+        if self.config["USE_LIGHTER"]:
+            lighter_dff_map = self.config["LIGHTER_DFF_MAP"]
+            if lighter_dff_map is None:
+                scl = self.config["STD_CELL_LIBRARY"]
+                try:
+                    raw = subprocess.check_output(
+                        ["lighter_files", scl], encoding="utf8"
+                    )
+                    files = raw.strip().splitlines()
+                    lighter_dff_map = Path(files[0])
+                except FileNotFoundError:
+                    warn(
+                        f"Lighter not found or not set up with OpenLane: If you're using a manual Lighter install, try setting the DFF map explicitly."
+                    )
+                except subprocess.CalledProcessError:
+                    warn(f"{scl} not supported by Lighter.")
+
+            env["_lighter_dff_map"] = lighter_dff_map
+
         lib_list = [
             str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
         ]
@@ -368,12 +393,9 @@ def _generate_read_deps(
             flag = TclUtils.escape(f"-D{define}")
             commands += f"verilog_defines {flag}"
 
-    if config["SYNTH_READ_BLACKBOX_LIB"]:
-        for lib in toolbox.filter_views(config, config["LIB"]):
-            lib_str = TclUtils.escape(str(lib))
-            commands += (
-                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-            )
+    for lib in toolbox.filter_views(config, config["LIB"]):
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
 
     for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
         lib_str = TclUtils.escape(str(lib))

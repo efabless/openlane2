@@ -259,6 +259,12 @@ if { $adder_type == "RCA"} {
 }
 
 hierarchy -check -auto-top
+
+if { [info exists ::env(_lighter_dff_map)] } {
+    puts "Using Lighter with map '$::env(_lighter_dff_map)'…"
+    reg_clock_gating -map $::env(_lighter_dff_map)
+}
+
 proc_clean
 proc_rmdead
 proc_prune

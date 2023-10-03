@@ -44,6 +44,22 @@ with pkgs; clangStdenv.mkDerivation rec {
   installPhase = ''
   mkdir -p $out/share/yosys/plugins
   cp lighter.so $out/share/yosys/plugins
+
+  mkdir -p $out/bin
+  cat << HD > $out/bin/lighter_files
+  #!/bin/sh
+  if [ "\$1" = "" ]; then
+    echo "Usage: \$0 <scl>" >> /dev/stderr
+    exit 1
+  fi
+  find $out/share/lighter_maps/\$1 -type f
+  HD
+  chmod +x $out/bin/lighter_files
+
+  mkdir -p $out/share/lighter_maps
+  cp -r platform/* $out/share/lighter_maps
+  rm -rf $out/share/lighter_maps/**/*.lib
+  rm -rf $out/share/lighter_maps/**/*_blackbox.v
   '';
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;
