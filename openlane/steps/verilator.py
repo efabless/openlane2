@@ -124,7 +124,6 @@ class Lint(Step):
 
         for define in defines:
             extra_args.append(f"+define+{define}")
-        extra_args += defines
 
         exit_error: Optional[subprocess.CalledProcessError] = None
         try:

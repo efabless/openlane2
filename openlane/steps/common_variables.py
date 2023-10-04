@@ -320,6 +320,14 @@ grt_variables = routing_layer_variables + [
         "The maximum number of iterations waiting for the overflow to reach the desired value.",
         default=50,
     ),
+    Variable(
+        "GRT_ANTENNA_MARGIN",
+        int,
+        "The margin to over fix antenna violations.",
+        default=10,
+        units="%",
+        deprecated_names=["GRT_ANT_MARGIN"],
+    ),
 ]
 
 rsz_variables = dpl_variables + [
