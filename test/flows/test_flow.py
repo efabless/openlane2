@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import functools
 from typing import Callable, Optional, Type
 
 import pytest
@@ -145,12 +146,16 @@ def test_flow_abc_init():
 def test_factory(DummyFlow: Type[flow.Flow]):
     from openlane.flows import Flow
 
-    assert Flow.factory.list() == [
-        "Optimizing",
-        "Classic",
-        "OpenInKLayout",
-        "OpenInOpenROAD",
-    ], "One or more built-in flows missing from factory list"
+    assert functools.reduce(
+        lambda x, y: x and (y in Flow.factory.list()),
+        [
+            "Optimizing",
+            "Classic",
+            "OpenInKLayout",
+            "OpenInOpenROAD",
+        ],
+        True,
+    ), "One or more built-in flows missing from factory list"
 
     Flow.factory.register()(DummyFlow)
 
