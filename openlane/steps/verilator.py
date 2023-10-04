@@ -56,14 +56,15 @@ class Lint(Step):
             default=True,
         ),
         Variable(
-            "SYNTH_DEFINES",
+            "VERILOG_DEFINES",
             Optional[List[str]],
-            "Synthesis defines",
+            "Preprocessor defines for input Verilog files",
+            deprecated_names=["SYNTH_DEFINES"],
         ),
         Variable(
             "LINTER_DEFINES",
             Optional[List[str]],
-            "Linter defines overriding SYNTH_DEFINES",
+            "Linter-specific preprocessor definitions; overrides VERILOG_DEFINES for the lint step if exists",
         ),
         Variable(
             "QUIT_ON_LINTER_WARNINGS",
@@ -91,7 +92,7 @@ class Lint(Step):
             + (self.config["EXTRA_VERILOG_MODELS"] or [])
         )  # not +=: break reference!
 
-        defines = self.config["LINTER_DEFINES"] or self.config["SYNTH_DEFINES"] or []
+        defines = self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
         bb_path = self.toolbox.create_blackbox_model(
             frozenset([str(path) for path in input_models]),
