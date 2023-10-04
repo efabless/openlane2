@@ -37,7 +37,7 @@ from typing import (
     ClassVar,
     Type,
 )
-from rich.console import escape
+from rich.markup import escape
 
 from ..config import (
     Config,

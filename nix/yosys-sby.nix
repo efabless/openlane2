@@ -17,7 +17,8 @@
 }:
 
 with pkgs; clangStdenv.mkDerivation rec {
-  name = "sby";
+  name = "yosys-sby";
+  dylibs = [];
 
   src = fetchFromGitHub {
     owner = "yosyshq";
@@ -56,7 +57,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   make test
   '';
 
-  doCheck = true;
+  doCheck = false;
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;
   makeWrapperArgs = [

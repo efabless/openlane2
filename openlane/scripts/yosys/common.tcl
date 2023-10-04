@@ -12,25 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 proc read_deps {{power_defines "off"}} {
-    if { [info exists ::env(SYNTH_DEFINES) ] } {
-        foreach define $::env(SYNTH_DEFINES) {
+    if { [info exists ::env(VERILOG_DEFINES) ] } {
+        foreach define $::env(VERILOG_DEFINES) {
             log "Defining ${define}…"
             verilog_defines -D$define
         }
     }
 
-    if { $power_defines == "on" } {
-        if { [info exists ::env(SYNTH_POWER_DEFINE)] } {
-            log "Defining $::env(SYNTH_POWER_DEFINE)…"
-            verilog_defines -D$::env(SYNTH_POWER_DEFINE)
+    if { [info exists ::env(VERILOG_POWER_DEFINE)] } {
+        if { $power_defines == "on" } {
+            log "Defining $::env(VERILOG_POWER_DEFINE)…"
+            verilog_defines -D$::env(VERILOG_POWER_DEFINE)
         }
     }
 
-    if { $::env(SYNTH_READ_BLACKBOX_LIB) } {
-        foreach lib $::env(FULL_LIBS) {
-            log "Reading SCL library '$lib' as a blackbox…"
-            read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
-        }
+    foreach lib $::env(FULL_LIBS) {
+        log "Reading SCL library '$lib' as a blackbox…"
+        read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
 
     if { [info exists ::env(MACRO_LIBS) ] } {
