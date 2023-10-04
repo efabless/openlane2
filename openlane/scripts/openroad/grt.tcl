@@ -26,7 +26,7 @@ puts "%OL_END_REPORT"
 
 if { $::env(GRT_REPAIR_ANTENNAS) } {
     set diode_split [split $::env(DIODE_CELL) "/"]
-    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS)
+    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS) -ratio_margin $::env(GRT_ANTENNA_MARGIN)
     source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
     # Check Antennas (Post-Repair)
