@@ -27,7 +27,7 @@ with pkgs; let
   });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "7ff344109037f2ace724a784d4801b691827ea49";
+  rev = "bdc8e944cd08ba8edebeca19fa531bd026690330";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
