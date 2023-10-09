@@ -15,6 +15,7 @@ import os
 import math
 import enum
 from decimal import Decimal
+from dataclasses import dataclass
 from collections import UserString
 from concurrent.futures import ThreadPoolExecutor
 
@@ -152,6 +153,11 @@ class MyEnum(enum.Enum):
     Horse = "B"
 
 
+@dataclass
+class MyDataclass:
+    v: MyString
+
+
 deep_dict = {
     "a": [
         {
@@ -160,7 +166,7 @@ deep_dict = {
             "f": ["g", "h"],
         },
     ],
-    "i": {"j": ["k", MyString("l")]},
+    "i": {"j": ["k", MyDataclass(v=MyString("l"))]},
 }
 
 
@@ -169,12 +175,12 @@ def test_generic_dict_encoder():
 
     assert (
         GenericDict(deep_dict).dumps(indent=0).replace("\n", "")
-        == '{"a": [{"b": "Horse","d": 0.2,"f": ["g","h"]}],"i": {"j": ["k","l"]}}'
+        == '{"a": [{"b": "Horse","d": 0.2,"f": ["g","h"]}],"i": {"j": ["k",{"v": "l"}]}}'
     ), "Failed to serialize deep dictionary"
 
     assert (
         GenericDict(deep_dict).dumps(indent=1).replace("\n", "")
-        == '{ "a": [  {   "b": "Horse",   "d": 0.2,   "f": [    "g",    "h"   ]  } ], "i": {  "j": [   "k",   "l"  ] }}'
+        == '{ "a": [  {   "b": "Horse",   "d": 0.2,   "f": [    "g",    "h"   ]  } ], "i": {  "j": [   "k",   {    "v": "l"   }  ] }}'
     ), "Failed to properly handle indent kwarg"
 
 
@@ -193,8 +199,25 @@ def test_copy_recursive():
 
     deep_dict_copy["x"] = deep_dict_copy
 
+    assert id(deep_dict["i"]["j"][1]) != id(
+        deep_dict_copy["i"]["j"][1]
+    ), "Reference to dataclass identical to original"
+
     with pytest.raises(ValueError, match="Circular"):
         copy_recursive(deep_dict_copy)
+
+
+def test_copy_recursive_visitor():
+    from openlane.common import copy_recursive
+
+    def visitor(x):
+        if type(x) == MyString:
+            x = "MY_" + x
+        return x
+
+    deep_dict_copy = copy_recursive(deep_dict, translator=visitor)
+
+    assert deep_dict_copy["i"]["j"][1].v == "MY_l", "Copy_recursive visitor not working"
 
 
 def test_tpe():

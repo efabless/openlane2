@@ -2,5 +2,5 @@
 	path = test/designs
 	url = https://github.com/efabless/openlane2-ci-designs
 [submodule "test/steps/openlane2-step-unit-tests"]
-	path = test/steps/steps
+	path = test/steps/all
 	url = https://github.com/efabless/openlane2-step-unit-tests

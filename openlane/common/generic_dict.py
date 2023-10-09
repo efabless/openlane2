@@ -13,10 +13,10 @@
 # limitations under the License.
 import os
 import json
+import dataclasses
 from enum import Enum
 from decimal import Decimal
 from collections import UserString
-from dataclasses import asdict, is_dataclass
 from typing import (
     Any,
     Callable,
@@ -49,8 +49,8 @@ class GenericDictEncoder(json.JSONEncoder):
             return o.to_raw_dict()
         elif isinstance(o, os.PathLike) or isinstance(o, UserString):
             return str(o)
-        elif is_dataclass(o):
-            return asdict(o)
+        elif dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
         elif isinstance(o, Enum):
             return o.name
         elif isinstance(o, Decimal):
@@ -289,6 +289,12 @@ def copy_recursive(input, translator: Callable = idem):
             result = mapping_cls()
             for key, value in input.items():
                 result[key] = recursive(value, visit_stack)
+        elif dataclasses.is_dataclass(input):
+            replace = {}
+            as_dict = dataclasses.asdict(input)
+            for key, value in as_dict.items():
+                replace[key] = recursive(value, visit_stack)
+            result = dataclasses.replace(input, **replace)
         elif not is_string(input) and isinstance(input, Sequence):
             result = sequence_cls()
             for value in input:

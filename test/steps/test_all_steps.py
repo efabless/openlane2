@@ -50,6 +50,18 @@ def test_step_folder(test: str, pdk_root: str):
 
     state_in = os.path.join(".", "state_in.json")
     config = os.path.join(".", "config.json")
+
+    process_input = None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "process_module", os.path.join(test_path, "process_input.py")
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        process_input = module.process_input
+    except FileNotFoundError:
+        pass
+
     handler = None
     handler_sig = None
     try:
@@ -64,6 +76,15 @@ def test_step_folder(test: str, pdk_root: str):
         pass
 
     Target = Step.factory.get(step)
+
+    if process_input is not None:
+        state_in, config = process_input(
+            state_in,
+            config,
+            Target,
+            pdk_root,
+        )
+
     target = Target.load(config, state_in, pdk_root)
 
     exception: Optional[Exception] = None
