@@ -1,3 +1,46 @@
+# 2.0.0-b15
+
+* Added IcarusVerilog as a dependency to OpenLane, and GTKWave as a Nix shell
+  dependency
+* Added power metric reporting to OpenSTA-based steps
+* Updated OpenROAD to `bdc8e94`
+* Updated Yosys to 0.33 / `2584903`
+  * Changed Yosys build process to use an external ABC as ABC takes 8 billion
+    years to build (estimate)
+  * Patched Yosys and dependent utilities to use BSD libedit
+  * Reimplemented how Yosys plugins work in Nix, so they're all loaded with Yosys
+    * Added derivations for:
+      * [SymbiYosys](https://github.com/YosysHQ/sby)
+      * [eqy](https://github.com/YosysHQ/eqy)
+      * [Lighter](https://github.com/YosysHQ/eqy)
+      * [GHDL Yosys Plugin](https://github.com/ghdl/ghdl-yosys-plugin)
+  * Created `Yosys.EQY`, a step based on EQY that runs at the very end of the
+    flow comparing the RTL inputs and outputs (disabled by default)
+  * Modified `Yosys.Synthesis` to support Lighter, which greatly reduces
+    power consumption by clock-gating D-flipflops (disabled by default, set
+    `USE_LIGHTER` to true to activate)
+  * Created new step, `VHDLSynthesis`
+    * Created new experimental flow, `VHDLClassic`, incorporating said step
+    and removing Verilog-specific steps
+* Latches without `always_latch` are now reported as a lint error if the variable
+  `LINTER_ERROR_ON_LATCH` is set to `True` (which it is by default)
+  * Added latch design to fastest test set for both supported PDKs
+* Fixed a race condition with `openlane/steps/step.py::Step::run_subprocess`
+* Fixed a bug where `glob` introduced nondeterminism, as glob returns files in
+  an arbitrary order on some filesystems: https://docs.python.org/3.8/library/glob.html?highlight=sorted
+  * All `glob` results were simply sorted.
+* Fixed a bug where `openlane/common/toolbox.py::Toolbox::create_blackbox_model`
+  constructs and uses an invalid Path.
+* Fixed `Checker.YosysSynthChecks` ID to match class name
+* Fixed `Odb.SetPowerConnections` missing from step factory
+* Fixed `OpenROAD.GlobalRouting` missing `GRT_ANTENNA_MARGIN` from OpenLane 1
+* Fixed `Verilator.Lint` incorrectly calling Verilator by appending the list
+  of defines to the list of files
+* Renamed `SYNTH_DEFINES` to `VERILOG_DEFINES` with translation behavior
+* Renamed `SYNTH_POWER_DEFINE` to `VERILOG_POWER_DEFINE` with
+  translation behavior
+* Removed `SYNTH_READ_BLACKBOX_LIB`, now always loaded
+  
 # 2.0.0-b14
 
 * Added `PNR_SDC_FILE` to all OpenROAD steps
