@@ -13,5 +13,5 @@
 # limitations under the License.
 # flake8: noqa
 from .optimizing import Optimizing
-from .classic import Classic
+from .classic import Classic, VHDLClassic
 from .misc import OpenInKLayout, OpenInOpenROAD

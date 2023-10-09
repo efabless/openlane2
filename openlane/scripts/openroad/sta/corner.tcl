@@ -121,6 +121,16 @@ puts " report_power"
 puts "============================================================================"
 puts "======================= [$corner name] Corner ===================================\n"
 report_power -corner [$corner name]
+
+set power_result [sta::design_power $corner]
+set totals       [lrange $power_result  0  3]
+lassign $totals design_internal design_switching design_leakage design_total
+
+write_metric_num "power__internal__total" $design_internal
+write_metric_num "power__switching__total" $design_switching
+write_metric_num "power__leakage__total" $design_leakage
+write_metric_num "power__total" $design_total
+
 puts ""
 puts "%OL_END_REPORT"
 

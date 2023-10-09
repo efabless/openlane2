@@ -12,31 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
+
+load_rsz_corners
 read_current_odb
-source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
 set_propagated_clock [all_clocks]
 
-source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+set_dont_touch_objects
 
-# Check Antennas (Pre-Repair)
-puts "%OL_CREATE_REPORT antenna.rpt"
-check_antennas -verbose
-puts "%OL_END_REPORT"
-
-if { $::env(GRT_REPAIR_ANTENNAS) } {
-    set diode_split [split $::env(DIODE_CELL) "/"]
-    repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS) -ratio_margin $::env(GRT_ANTENNA_MARGIN)
-    source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
-
-    # Check Antennas (Post-Repair)
-    puts "%OL_CREATE_REPORT antenna_after.rpt"
-    check_antennas -verbose
-    puts "%OL_END_REPORT"
-    source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
-}
-
+# set rc values
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
+
+# (Re-)GRT and Estimate Parasitics
+source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 estimate_parasitics -global_routing
 
+# Repair design
+repair_design\
+    -max_wire_length $::env(GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH) \
+    -slew_margin $::env(GRT_DESIGN_REPAIR_MAX_SLEW_PCT) \
+    -cap_margin $::env(GRT_DESIGN_REPAIR_MAX_CAP_PCT)
+
+# Re-DPL and GRT
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
+unset_dont_touch_objects
+source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+
 write_views
+
+report_design_area_metrics
+

@@ -94,7 +94,7 @@ class YosysUnmappedCells(MetricChecker):
 
 @Step.factory.register()
 class YosysSynthChecks(MetricChecker):
-    id = "Checker.YosysChecks"
+    id = "Checker.YosysSynthChecks"
     name = "Yosys Synth Checks"
     deferred = False
 

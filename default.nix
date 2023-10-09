@@ -29,8 +29,10 @@
   volare ? import ./nix/volare.nix { inherit pkgs; },
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
 
-  sby ? import ./nix/sby.nix { inherit pkgs; inherit yosys; },
-  eqy ? import ./nix/eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
+  lighter ? import ./nix/yosys-lighter.nix { inherit pkgs; inherit yosys; },
+  sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
+  eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
+  ys-ghdl ? import ./nix/yosys-ghdl.nix { inherit pkgs; inherit yosys; inherit sby; },
   
   ...
 }:
@@ -52,13 +54,17 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     klayout
     python3
     netgen
-    yosys
+    (yosys.withPlugins([
+      sby
+      eqy
+      lighter
+      ys-ghdl
+    ]))
     magic
     verilog
     verilator
     ruby
     tcl
-    eqy
 
     # Python
     click

@@ -152,6 +152,7 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().run(state_in, **kwargs)
 
 
+@Step.factory.register()
 class SetPowerConnections(OdbpyStep):
     """
     Uses JSON netlist and module information in Odb to add global power connections

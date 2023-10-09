@@ -26,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..config import Variable, Config
 from ..state import State, DesignFormat
-from ..logging import debug, verbose, info
+from ..logging import debug, verbose, info, warn
 from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
@@ -61,29 +61,34 @@ def _parse_yosys_check(
     return errors_encountered
 
 
+verilog_rtl_cfg_vars = [
+    Variable(
+        "VERILOG_FILES",
+        List[Path],
+        "The paths of the design's Verilog files.",
+    ),
+    Variable(
+        "VERILOG_DEFINES",
+        Optional[List[str]],
+        "Preprocessor defines for input Verilog files.",
+        deprecated_names=["SYNTH_DEFINES"],
+    ),
+    Variable(
+        "VERILOG_POWER_DEFINE",
+        Optional[str],
+        "Specifies the name of the define used to guard power and ground connections",
+        deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+    ),
+    Variable(
+        "VERILOG_INCLUDE_DIRS",
+        Optional[List[str]],
+        "Specifies the Verilog `include` directories.",
+    ),
+]
+
+
 class YosysStep(TclStep):
     config_vars = [
-        Variable(
-            "VERILOG_FILES",
-            List[Path],
-            "The paths of the design's Verilog files.",
-        ),
-        Variable(
-            "SYNTH_DEFINES",
-            Optional[List[str]],
-            "Synthesis defines",
-        ),
-        Variable(
-            "VERILOG_INCLUDE_DIRS",
-            Optional[List[str]],
-            "Specifies the Verilog `include` directories.",
-        ),
-        Variable(
-            "SYNTH_READ_BLACKBOX_LIB",
-            bool,
-            "Additionally read the liberty file(s) as a blackbox. This will allow RTL designs to incorporate explicitly declared standard cells that will not be tech-mapped or reinterpreted.",
-            default=False,
-        ),
         Variable(
             "SYNTH_LATCH_MAP",
             Optional[Path],
@@ -130,6 +135,17 @@ class YosysStep(TclStep):
             "A path to a file containing the mux4 mapping for Yosys.",
             pdk=True,
         ),
+        Variable(
+            "USE_LIGHTER",
+            bool,
+            "Activates Lighter, an experimental module that attempts to optimize clock-gated flip-flops.",
+            default=False,
+        ),
+        Variable(
+            "LIGHTER_DFF_MAP",
+            Optional[Path],
+            "An override to the custom DFF map file provided for the given SCL by Lighter.",
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -142,6 +158,7 @@ class YosysStep(TclStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
+
         lib_list = [
             str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
         ]
@@ -186,33 +203,10 @@ class JsonHeader(YosysStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "yosys", "json_header.tcl")
 
-    config_vars = YosysStep.config_vars + [
-        Variable(
-            "SYNTH_POWER_DEFINE",
-            Optional[str],
-            "Specifies the name of the define used to guard power and ground connections",
-            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES"],
-        ),
-    ]
+    config_vars = YosysStep.config_vars + verilog_rtl_cfg_vars
 
 
-@Step.factory.register()
-class Synthesis(YosysStep):
-    """
-    Performs synthesis and technology mapping using Yosys and ABC, emitting a
-    netlist. Requires Yosys 0.26 or higher.
-
-    Some metrics will also be extracted and updated, namely:
-
-    * ``design__instance__count``
-    * ``design__instance_unmapped__count``
-
-    If using Yosys 0.27 or higher:
-
-    * ``design__instance__area`` is also updated.
-    """
-
-    id = "Yosys.Synthesis"
+class SynthesisCommon(YosysStep):
     inputs = []  # The input RTL is part of the configuration
     outputs = [DesignFormat.NETLIST]
 
@@ -319,6 +313,27 @@ class Synthesis(YosysStep):
         return os.path.join(get_script_dir(), "yosys", "synthesize.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        if self.config["USE_LIGHTER"]:
+            lighter_dff_map = self.config["LIGHTER_DFF_MAP"]
+            if lighter_dff_map is None:
+                scl = self.config["STD_CELL_LIBRARY"]
+                try:
+                    raw = subprocess.check_output(
+                        ["lighter_files", scl], encoding="utf8"
+                    )
+                    files = raw.strip().splitlines()
+                    lighter_dff_map = Path(files[0])
+                except FileNotFoundError:
+                    warn(
+                        "Lighter not found or not set up with OpenLane: If you're using a manual Lighter install, try setting LIGHTER_DFF_MAP explicitly."
+                    )
+                except subprocess.CalledProcessError:
+                    warn(f"{scl} not supported by Lighter.")
+
+            env["_lighter_dff_map"] = lighter_dff_map
+
         views_updates, metric_updates = super().run(state_in, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
@@ -350,6 +365,50 @@ class Synthesis(YosysStep):
         return views_updates, metric_updates
 
 
+@Step.factory.register()
+class Synthesis(SynthesisCommon):
+    """
+    Performs synthesis and technology mapping on Verilog RTL files
+    using Yosys and ABC, emitting a netlist.
+
+    Some metrics will also be extracted and updated, namely:
+
+    * ``design__instance__count``
+    * ``design__instance_unmapped__count``
+    * ``design__instance__area``
+    """
+
+    id = "Yosys.Synthesis"
+    name = "Synthesis"
+
+    config_vars = SynthesisCommon.config_vars + verilog_rtl_cfg_vars
+
+
+@Step.factory.register()
+class VHDLSynthesis(SynthesisCommon):
+    """
+    Performs synthesis and technology mapping on VHDL files
+    using Yosys, GHDL and ABC, emitting a netlist.
+
+    Some metrics will also be extracted and updated, namely:
+
+    * ``design__instance__count``
+    * ``design__instance_unmapped__count``
+    * ``design__instance__area``
+    """
+
+    id = "Yosys.VHDLSynthesis"
+    name = "Synthesis (VHDL)"
+
+    config_vars = SynthesisCommon.config_vars + [
+        Variable(
+            "VHDL_FILES",
+            List[Path],
+            "The paths of the design's VHDL files.",
+        ),
+    ]
+
+
 def _generate_read_deps(
     config: Config,
     toolbox: Toolbox,
@@ -358,22 +417,19 @@ def _generate_read_deps(
 ) -> str:
     commands = ""
 
-    if synth_defines := config["SYNTH_DEFINES"]:
+    if synth_defines := config["VERILOG_DEFINES"]:
         for define in synth_defines:
             flag = TclUtils.escape(f"-D{define}")
             commands += f"verilog_defines {flag}\n"
 
     if power_defines:
-        if define := config["SYNTH_POWER_DEFINE"]:
+        if define := config["VERILOG_POWER_DEFINE"]:
             flag = TclUtils.escape(f"-D{define}")
             commands += f"verilog_defines {flag}"
 
-    if config["SYNTH_READ_BLACKBOX_LIB"]:
-        for lib in toolbox.filter_views(config, config["LIB"]):
-            lib_str = TclUtils.escape(str(lib))
-            commands += (
-                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-            )
+    for lib in toolbox.filter_views(config, config["LIB"]):
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
 
     for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
         lib_str = TclUtils.escape(str(lib))

@@ -14,11 +14,17 @@
 {
   pkgs ? import ./pkgs.nix {},
   yosys ? import ./yosys.nix { inherit pkgs; },
-  sby ? import ./sby.nix { inherit pkgs; inherit yosys; },
+  sby ? import ./yosys-sby.nix { inherit pkgs; inherit yosys; },
 }:
 
 with pkgs; clangStdenv.mkDerivation rec {
-  name = "eqy";
+  name = "yosys-eqy";
+
+  dylibs = [
+    "eqy_combine"
+    "eqy_partition"
+    "eqy_recode"
+  ];
 
   src = fetchFromGitHub {
     owner = "yosyshq";

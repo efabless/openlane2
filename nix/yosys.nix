@@ -43,6 +43,22 @@
 
 with pkgs; let
   yosys-abc = import ./yosys-abc.nix { inherit pkgs; };
+  withPlugins = plugins:
+    let
+      paths = lib.closePropagation plugins;
+      dylibs = lib.lists.flatten (map (n: n.dylibs) plugins);
+    in let module_flags = with builtins; concatStringsSep " "
+        (map (so: "--add-flags -m --add-flags ${so}") dylibs);
+    in lib.appendToName "with-plugins" ( symlinkJoin {
+      inherit (yosys) name;
+      paths = paths ++ [ yosys ] ;
+      nativeBuildInputs = [ makeWrapper ];
+      postBuild = ''
+        wrapProgram $out/bin/yosys \
+          --set NIX_YOSYS_PLUGIN_DIRS $out/share/yosys/plugins \
+          ${module_flags}
+      '';
+    });
 in clangStdenv.mkDerivation rec {
   name = "yosys";
 
@@ -65,7 +81,7 @@ in clangStdenv.mkDerivation rec {
     py3
   ];
 
-  passthru = { inherit py3; };
+  passthru = { inherit py3; inherit withPlugins; };
 
   patches = [
     ./patches/yosys/fix-clang-build.patch

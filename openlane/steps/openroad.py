@@ -1437,12 +1437,12 @@ class CTS(ResizerStep):
 
 
 @Step.factory.register()
-class RepairDesign(ResizerStep):
+class RepairDesignPostGPL(ResizerStep):
     """
     Runs a number of design "repairs" on a global-placed ODB file.
     """
 
-    id = "OpenROAD.RepairDesign"
+    id = "OpenROAD.RepairDesignPostGPL"
     name = "Repair Design (Post-Global Placement)"
 
     config_vars = ResizerStep.config_vars + [
@@ -1477,7 +1477,7 @@ class RepairDesign(ResizerStep):
         Variable(
             "DESIGN_REPAIR_MAX_WIRE_LENGTH",
             Decimal,
-            "Specifies the maximum wire length cap used by resizer to insert buffers. If set to 0, no buffers will be inserted.",
+            "Specifies the maximum wire length cap used by resizer to insert buffers during design repair. If set to 0, no buffers will be inserted.",
             default=0,
             units="µm",
             deprecated_names=["PL_RESIZER_MAX_WIRE_LENGTH"],
@@ -1502,6 +1502,56 @@ class RepairDesign(ResizerStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "repair_design.tcl")
+
+
+@Step.factory.register()
+class RepairDesign(RepairDesignPostGPL):
+    """
+    This is identical to OpenROAD.RepairDesignPostGPL. It is retained for backwards compatibility.
+    """
+
+    id = "OpenROAD.RepairDesign"
+    name = "Repair Design (Post-Global Placement)"
+
+
+@Step.factory.register()
+class RepairDesignPostGRT(ResizerStep):
+    """
+    Runs a number of design "repairs" on a global-routed ODB file.
+    """
+
+    id = "OpenROAD.RepairDesignPostGRT"
+    name = "Repair Design (Post-Global Routing)"
+
+    config_vars = ResizerStep.config_vars + [
+        Variable(
+            "GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH",
+            Decimal,
+            "Specifies the maximum wire length cap used by resizer to insert buffers during post-grt design repair. If set to 0, no buffers will be inserted.",
+            default=0,
+            units="µm",
+            deprecated_names=["GLB_RESIZER_MAX_WIRE_LENGTH"],
+        ),
+        Variable(
+            "GRT_DESIGN_REPAIR_MAX_SLEW_PCT",
+            Decimal,
+            "Specifies a margin for the slews during post-grt design repair.",
+            default=10,
+            units="%",
+            deprecated_names=["GLB_RESIZER_MAX_SLEW_MARGIN"],
+        ),
+        Variable(
+            "GRT_DESIGN_REPAIR_MAX_CAP_PCT",
+            Decimal,
+            "Specifies a margin for the capacitances during design post-grt repair.",
+            default=10,
+            units="%",
+            deprecated_names=["GLB_RESIZER_MAX_CAP_MARGIN"],
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "repair_design_postgrt.tcl")
 
 
 @Step.factory.register()
