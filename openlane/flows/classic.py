@@ -303,6 +303,7 @@ class Classic(SequentialFlow):
         OpenROAD.RCX,
         OpenROAD.STAPostPNR,
         OpenROAD.IRDropReport,
+        Magic.StreamOutMag,
         Magic.StreamOut,
         KLayout.StreamOut,
         Magic.WriteLEF,
