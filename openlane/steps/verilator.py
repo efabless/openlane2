@@ -171,7 +171,7 @@ class Lint(Step):
             {"design__lint_timing_constructs__count": timing_constructs}
         )
         metrics_updates.update({"design__lint_warnings__count": warnings_count})
-        metrics_updates.update({"design__always_latch__count": latch_count})
+        metrics_updates.update({"design__inferred_latch__count": latch_count})
         return views_updates, metrics_updates
 
     def layout_preview(self) -> Optional[str]:
