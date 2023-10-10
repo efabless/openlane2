@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import pathlib
 import functools
 from typing import Callable, Optional, Type
 
 import pytest
-from pyfakefs.fake_filesystem import FakeFilesystem
 
 from openlane.flows import flow
 from openlane.config import Variable
@@ -272,11 +272,17 @@ def test_progress_bar(DummyFlow: Type[flow.Flow]):
 
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([flow])
-def test_run_tags(
-    fs: FakeFilesystem, DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture
-):
+def test_run_tags(DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture):
     from openlane.flows import FlowException
     from openlane.state import State
+
+    def create_dir(path):
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+
+    def create_file(path, contents):
+        create_dir(os.path.dirname(path))
+        with open(path, "w") as f:
+            f.write(contents)
 
     flow = DummyFlow(
         {
@@ -298,19 +304,19 @@ def test_run_tags(
     with pytest.raises(FlowException, match="last_run used without any existing runs"):
         flow.start(last_run=True)
 
-    fs.create_dir("/cwd/runs/MY_TAG")
+    create_dir("/cwd/runs/MY_TAG")
     flow.start(tag="MY_TAG")
     assert (
         "Starting a new run of the" in caplog.text
     ), ".start() with an empty folder did not print a message about a new run"
     caplog.clear()
 
-    fs.create_dir("/cwd/runs/MY_TAG2")
-    fs.create_file(
+    create_dir("/cwd/runs/MY_TAG2")
+    create_file(
         "/cwd/runs/MY_TAG2/01-step_a/state_out.json",
         contents=State({}, metrics={"step": 0}).dumps(),
     )
-    fs.create_file(
+    create_file(
         "/cwd/runs/MY_TAG2/02-step_b/state_out.json",
         contents=State({}, metrics={"step": 1}).dumps(),
     )
@@ -329,7 +335,7 @@ def test_run_tags(
         "MY_TAG2"
     ), ".start() with last_run failed to return latest run"
 
-    fs.create_file("/cwd/runs/MY_TAG3", contents="")
+    create_file("/cwd/runs/MY_TAG3", contents="")
     with pytest.raises(
         FlowException, match="already exists as a file and not a directory"
     ):

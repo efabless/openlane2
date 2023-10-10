@@ -46,13 +46,15 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
 
   src = gitignore-src.gitignoreSource ./.;
   
-  doCheck = false;
+  buildInputs = [
+    ruby
+    tcl
+  ];
 
   propagatedBuildInputs = [
     # Tools
     openroad
     klayout
-    python3
     netgen
     (yosys.withPlugins([
       sby
@@ -63,8 +65,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     magic
     verilog
     verilator
-    ruby
-    tcl
 
     # Python
     click
@@ -81,8 +81,11 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     libparse
   ];
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
-  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" propagatedBuildInputs;
+  doCheck = false;
+  checkInputs = [ pytestCheckHook pyfakefs ];
+
+  computed_PATH = lib.makeBinPath (propagatedBuildInputs ++ buildInputs);
+  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" (propagatedBuildInputs ++ buildInputs);
 
   # Make PATH/PYTHONPATH available to OpenLane subprocesses
   makeWrapperArgs = [

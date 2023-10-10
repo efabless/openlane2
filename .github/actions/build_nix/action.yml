@@ -29,8 +29,8 @@ runs:
       shell: ${{ inputs.shell }}
       run: |
         nix-env -f "<nixpkgs>" -iA bash
+        nix-shell --run "pytest --all-steps"
         nix-shell --run "openlane --smoke-test"
-        nix-shell --run "make test-all"
     - name: Push
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}

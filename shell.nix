@@ -13,24 +13,27 @@
 # limitations under the License.
 {
     pkgs ? import ./nix/pkgs.nix {},
-    openlane-app ? import ./. {}
+    openlane-app ? import ./. { inherit pkgs; }
 }:
 
 with pkgs; mkShell {
-  name = "openlane";
+  name = "openlane-shell";
 
   propagatedBuildInputs = [
-    openlane-app
+    (python3.withPackages(pp: with pp; [
+      openlane-app
+      pyfakefs
+      pytest
+    ]))
 
     # Conveniences
     git
-    neovim
-    delta
     zsh
+    delta
+    neovim
     gtkwave
 
     # Docs + Testing
-    enchant
     jupyter
     graphviz
   ];
