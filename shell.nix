@@ -13,7 +13,7 @@
 # limitations under the License.
 {
     pkgs ? import ./nix/pkgs.nix {},
-    openlane-app ? import ./. { inherit pkgs; }
+    openlane ? import ./. { inherit pkgs; }
 }:
 
 with pkgs; mkShell {
@@ -21,7 +21,7 @@ with pkgs; mkShell {
 
   propagatedBuildInputs = [
     (python3.withPackages(pp: with pp; [
-      openlane-app
+      openlane
       pyfakefs
       pytest
     ]))
@@ -36,5 +36,5 @@ with pkgs; mkShell {
     # Docs + Testing
     jupyter
     graphviz
-  ];
+  ] ++ openlane.includedTools;
 }

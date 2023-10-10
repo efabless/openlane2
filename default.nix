@@ -51,21 +51,22 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     tcl
   ];
 
-  propagatedBuildInputs = [
-    # Tools
-    openroad
-    klayout
-    netgen
+  includedTools = [
     (yosys.withPlugins([
       sby
       eqy
       lighter
       ys-ghdl
     ]))
+    openroad
+    klayout
+    netgen
     magic
     verilog
     verilator
+  ];
 
+  propagatedBuildInputs = [
     # Python
     click
     cloup
@@ -79,7 +80,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     deprecated
     immutabledict
     libparse
-  ];
+  ] ++ includedTools;
 
   doCheck = false;
   checkInputs = [ pytestCheckHook pyfakefs ];
