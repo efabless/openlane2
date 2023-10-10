@@ -24,14 +24,22 @@ runs:
     - name: Build
       shell: ${{ inputs.shell }}
       run: |
+        echo "#################################################################"
+        nix-env -f "<nixpkgs>" -iA bash
         nix-build
-    - name: Test
+    - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
       run: |
-        nix-env -f "<nixpkgs>" -iA bash
+        echo "#################################################################"
+        nix-shell --run "pytest --all-steps"
+    - name: Smoke Test
+      shell: ${{ inputs.shell }}
+      run: |
+        echo "#################################################################"
         nix-shell --run "openlane --smoke-test"
     - name: Push
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
       run: |
+        echo "#################################################################"
         nix-build | cachix push openlane

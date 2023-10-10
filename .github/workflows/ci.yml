@@ -67,6 +67,9 @@ jobs:
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Initialize Step Unit Test Submodule
+        run: |
+          git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
@@ -85,6 +88,9 @@ jobs:
     name: Build (Nix on macOS/amd64)
     steps:
       - uses: actions/checkout@v3
+      - name: Initialize Step Unit Test Submodule
+        run: |
+          git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV

@@ -66,7 +66,7 @@ def load_step_from_inputs(
         ctx.exit(-1)
 
     return Target.load(
-        config_path=config,
+        config=config,
         state_in_path=state_in,
     )
 
@@ -353,8 +353,13 @@ def eject(ctx, output, state_in, config, id):
     ),
     required=False,
 )
+@o(
+    "--include-pdk/--no-include-pdk",
+    type=bool,
+    default=True,
+)
 @pass_context
-def create_reproducible(ctx, output, step_dir, id, config, state_in):
+def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk):
     """
     Creates a filesystem-independent step reproducible.
 
@@ -388,7 +393,19 @@ def create_reproducible(ctx, output, step_dir, id, config, state_in):
             state_in = os.path.join(step_dir, "state_in.json")
 
     step = load_step_from_inputs(ctx, id, config, state_in)
-    step.create_reproducible(output)
+    step.create_reproducible(output, include_pdk)
+
+
+@command(formatter_settings=formatter_settings, hidden=True)
+@pass_context
+def create_test(ctx):
+    step_dir = os.getcwd()
+
+    config = os.path.join(step_dir, "config.json")
+    state_in = os.path.join(step_dir, "state_in.json")
+
+    step = load_step_from_inputs(ctx, None, config, state_in)
+    step.create_reproducible("test", include_pdk=False, _flatten=True)
 
 
 @group(formatter_settings=formatter_settings)
@@ -403,6 +420,7 @@ def cli():
 cli.add_command(run)
 cli.add_command(eject)
 cli.add_command(create_reproducible)
+cli.add_command(create_test)
 
 if __name__ == "__main__":
     cli()

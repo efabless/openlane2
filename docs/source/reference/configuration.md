@@ -155,7 +155,7 @@ in the `src` folder inside the design directory.
 
 There are some shorthands for the exposed default variables:
 * `dir::` is equivalent to `refg::$DESIGN_DIR/`
-* `pdk_dir::` is equivalent to `refg::$PDKPATH/`
+* `pdk_dir::` is equivalent to `refg::$PDK_ROOT/$PDK`
 
 
 #### Expression Engine

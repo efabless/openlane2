@@ -17,7 +17,6 @@ omit =
     */flows/classic.py
     */flows/misc.py
     */flows/optimizing.py
-    */steps/checker.py
     */steps/klayout.py
     */steps/magic.py
     */steps/misc.py
@@ -25,5 +24,4 @@ omit =
     */steps/magic.py
     */steps/openroad.py
     */steps/yosys.py
-    */steps/verilator.py
     */steps/cvc_rv.py

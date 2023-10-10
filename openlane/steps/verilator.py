@@ -156,10 +156,10 @@ class Lint(Step):
                 line = line.strip()
                 if r"%Warning-" in line:
                     warnings_count += 1
-                if r"%Error-LATCH" in line:
+                if r"%Error-LATCH" in line or r"%Warning-LATCH" in line:
                     latch_count += 1
                 if r"%Error-NEEDTIMINGOPT" in line:
-                    timing_constructs = 1
+                    timing_constructs += 1
                 if match := exiting_rx.search(line):
                     errors_count = int(match[1])
 
@@ -171,7 +171,7 @@ class Lint(Step):
             {"design__lint_timing_constructs__count": timing_constructs}
         )
         metrics_updates.update({"design__lint_warnings__count": warnings_count})
-        metrics_updates.update({"design__latch__count": latch_count})
+        metrics_updates.update({"design__inferred_latch__count": latch_count})
         return views_updates, metrics_updates
 
     def layout_preview(self) -> Optional[str]:

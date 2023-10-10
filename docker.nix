@@ -13,16 +13,14 @@
 # limitations under the License.
 {
     pkgs ? import ./nix/pkgs.nix {},
-    openlane-app ? import ./. {},
+    openlane ? import ./. { inherit pkgs; },
     name ? "ghcr.io/efabless/openlane2",
     tag-override ? null
 }:
 
-with pkgs; let
-    olenv = python3.withPackages(ps: with ps; [ openlane-app ]);
-in dockerTools.buildImage rec {
+with pkgs; dockerTools.buildImage rec {
     inherit name;
-    tag = if tag-override == null then "${openlane-app.version}" else tag-override;
+    tag = if tag-override == null then "${openlane.version}" else tag-override;
 
     copyToRoot = pkgs.buildEnv {
         name = "image-root";
@@ -40,14 +38,14 @@ in dockerTools.buildImage rec {
             cacert
             iana-etc
 
-            # OpenLane
-            olenv
-
             # Conveniences
             git
             neovim
             zsh
             silver-searcher
+
+            # OpenLane
+            (python3.withPackages(ps: with ps; [ openlane ]))
         ];
 
         postBuild = ''
@@ -57,7 +55,7 @@ in dockerTools.buildImage rec {
         autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
         autoload -U colors && colors
 
-        export PS1=$'%{\033[31m%}OpenLane Container (${openlane-app.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
+        export PS1=$'%{\033[31m%}OpenLane Container (${openlane.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% '; 
         HEREDOC
         '';
     };
@@ -70,8 +68,8 @@ in dockerTools.buildImage rec {
             "LC_ALL=C.UTF-8"
             "LC_CTYPE=C.UTF-8"
             "EDITOR=nvim"
-            "PYTHONPATH=${openlane-app.computed_PYTHONPATH}"
-            "PATH=${olenv}/bin:${openlane-app.computed_PATH}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            "PYTHONPATH=${openlane.computed_PYTHONPATH}"
+            "PATH=${openlane}/bin:${openlane.computed_PATH}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
         ];
     };
 }

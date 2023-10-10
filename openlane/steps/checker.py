@@ -34,7 +34,7 @@ class MetricChecker(Step):
     deferred: ClassVar[bool] = True
 
     @classmethod
-    def get_help_md(Self, **kwargs):
+    def get_help_md(Self, **kwargs):  # pragma: no cover
         threshold_string = Self.get_threshold_description(None)
         if threshold_string is None:
             threshold_string = str(Self.get_threshold(None))

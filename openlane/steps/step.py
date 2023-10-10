@@ -46,10 +46,12 @@ from ..config import (
 )
 from ..state import State, InvalidState, StateElement
 from ..common import (
+    GenericDict,
     GenericImmutableDict,
     GenericDictEncoder,
     Toolbox,
     DesignFormat,
+    DesignFormatObject,
     Path,
     mkdirp,
     slugify,
@@ -491,7 +493,23 @@ class Step(ABC):
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
     @classmethod
-    def load(Self, config_path: str, state_in_path: str, pdk_root: str = ".") -> Step:
+    def _load_config_from_file(Self, config_path: str, pdk_root: str = ".") -> Config:
+        config, _ = Config.load(
+            config_in=json.loads(open(config_path).read(), parse_float=Decimal),
+            flow_config_vars=Self.get_all_config_variables(),
+            design_dir=".",
+            pdk_root=pdk_root,
+            _load_pdk_configs=False,
+        )
+        return config
+
+    @classmethod
+    def load(
+        Self,
+        config: Union[str, Config],
+        state_in_path: str,
+        pdk_root: str = ".",
+    ) -> Step:
         """
         Creates a step object, but instead of using a Flow or a global state,
         the config_path and input state are deserialized from JSON files.
@@ -507,13 +525,9 @@ class Step(ABC):
             as-is.
         :returns: The created step object
         """
-        config, _ = Config.load(
-            config_in=json.loads(open(config_path).read(), parse_float=Decimal),
-            flow_config_vars=Self.get_all_config_variables(),
-            design_dir=".",
-            pdk_root=pdk_root,
-            _load_pdk_configs=False,
-        )
+        if not isinstance(config, Config):
+            config = Self._load_config_from_file(config, pdk_root)
+
         state_in = State.loads(open(state_in_path).read())
         return Self(
             config=config,
@@ -537,7 +551,12 @@ class Step(ABC):
 
         return list(variables_by_name.values())
 
-    def create_reproducible(self, target_dir: str):
+    def create_reproducible(
+        self,
+        target_dir: str,
+        include_pdk: bool = True,
+        _flatten: bool = False,
+    ):
         """
         Creates a folder that, given a specific version of OpenLane being
         installed, makes a portable reproducible of that step's execution.
@@ -552,24 +571,56 @@ class Step(ABC):
         this may be called manually on any step, too.
 
         :param target_dir: The directory in which to create the reproducible
+        :param include_pdk: Include PDK files. If set to false, Path pointing
+            to PDK files will be prefixed with ``pdk_dir::`` instead of being
+            copied.
+        :param _flatten: Creates a reproducible with a flat (single-directory)
+            file structure. For internal use only.
         """
         # 0. Create Directories
         mkdirp(target_dir)
 
-        files_path = os.path.join(target_dir, "files")
+        files_path = target_dir
+        if not _flatten:
+            files_path = os.path.join(target_dir, "files")
+
+        pdk_path = os.path.join(self.config["PDK_ROOT"], self.config["PDK"], "")
 
         def visitor(x: Any) -> Any:
-            nonlocal files_path
+            nonlocal files_path, include_pdk, pdk_path
             if not isinstance(x, Path):
                 return x
+
+            if not include_pdk and x.startswith(pdk_path):
+                return x.replace(pdk_path, "pdk_dir::")
 
             target_relpath = os.path.join(".", "files", x[1:])
             target_abspath = os.path.join(files_path, x[1:])
 
+            if _flatten:
+                counter = 0
+                filename = os.path.basename(x)
+
+                def filename_with_counter():
+                    nonlocal counter, filename
+                    if counter == 0:
+                        return filename
+                    else:
+                        return f"{counter}-{filename}"
+
+                target_relpath = ""
+                target_abspath = "/"
+                while os.path.exists(target_abspath):
+                    current = filename_with_counter()
+                    target_relpath = os.path.join(".", current)
+                    target_abspath = os.path.join(files_path, current)
+                    counter += 1
+
             mkdirp(os.path.dirname(target_abspath))
 
             if os.path.isdir(x):
-                mkdirp(target_abspath)
+                if not _flatten:
+                    mkdirp(target_abspath)
             else:
                 shutil.copy(x, target_abspath)
 
@@ -582,14 +633,27 @@ class Step(ABC):
             "step": self.__class__.id,
         }
 
+        del dumpable_config["DESIGN_DIR"]
+
+        if not include_pdk:
+            del dumpable_config["PDK_ROOT"]
+
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
             f.write(json.dumps(dumpable_config, cls=GenericDictEncoder))
 
         # 2. State
-        state_in = self.state_in.result()
-        dumpable_state = copy_recursive(self.state_in.result(), translator=visitor)
-        dumpable_state["metrics"] = state_in.metrics.to_raw_dict()
+        state_in: GenericDict[str, Any] = self.state_in.result().copy_mut()
+        for format in DesignFormat:
+            assert isinstance(format.value, DesignFormatObject)  # type checker shut up
+            if format not in self.__class__.inputs and not (
+                format == DesignFormat.DEF
+                and DesignFormat.ODB
+                in self.__class__.inputs  # hack to write tests a bit more easily
+            ):
+                state_in[format.value.id] = None
+        state_in["metrics"] = self.state_in.result().metrics.copy_mut()
+        dumpable_state = copy_recursive(state_in, translator=visitor)
         state_path = os.path.join(target_dir, "state_in.json")
         with open(state_path, "w") as f:
             f.write(json.dumps(dumpable_state, cls=GenericDictEncoder))

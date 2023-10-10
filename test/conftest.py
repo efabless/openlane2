@@ -321,3 +321,8 @@ def _mock_progress():
 def pytest_configure():
     pytest.COMMON_FLOW_VARS = COMMON_FLOW_VARS
     pytest.mock_variables = mock_variables
+
+
+def pytest_addoption(parser):
+    parser.addoption("--all-steps", action="store_true", default=False)
+    parser.addoption("--pdk-root", action="store", default=None)

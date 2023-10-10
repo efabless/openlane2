@@ -46,26 +46,25 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
 
   src = gitignore-src.gitignoreSource ./.;
   
-  doCheck = false;
+  buildInputs = [];
 
-  propagatedBuildInputs = [
-    # Tools
-    openroad
-    klayout
-    python3
-    netgen
+  includedTools = [
     (yosys.withPlugins([
       sby
       eqy
       lighter
       ys-ghdl
     ]))
+    openroad
+    klayout
+    netgen
     magic
     verilog
     verilator
-    ruby
     tcl
+  ];
 
+  propagatedBuildInputs = [
     # Python
     click
     cloup
@@ -79,10 +78,13 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     deprecated
     immutabledict
     libparse
-  ];
+  ] ++ includedTools;
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
-  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" propagatedBuildInputs;
+  doCheck = false;
+  checkInputs = [ pytestCheckHook pyfakefs ];
+
+  computed_PATH = lib.makeBinPath (propagatedBuildInputs ++ buildInputs);
+  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" (propagatedBuildInputs ++ buildInputs);
 
   # Make PATH/PYTHONPATH available to OpenLane subprocesses
   makeWrapperArgs = [

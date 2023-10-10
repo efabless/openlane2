@@ -11,31 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-    pkgs ? import ./nix/pkgs.nix {},
-    openlane ? import ./. { inherit pkgs; }
-}:
+import os
+import glob
 
-with pkgs; mkShell {
-  name = "openlane-shell";
+import pytest
 
-  propagatedBuildInputs = [
-    (python3.withPackages(pp: with pp; [
-      openlane
-      pyfakefs
-      pytest
-    ]))
 
-    # Conveniences
-    git
-    zsh
-    delta
-    neovim
-    gtkwave
-    coreutils
+def pytest_configure():
+    __dir__ = os.path.dirname(os.path.abspath(__file__))
+    pytest.step_test_dir = os.path.join(__dir__, "all", "by_id")
 
-    # Docs + Testing
-    jupyter
-    graphviz
-  ] ++ openlane.includedTools;
-}
+    pytest.tests = [
+        os.path.relpath(p, pytest.step_test_dir)
+        for p in glob.glob(os.path.join(pytest.step_test_dir, "*", "*"))
+    ]

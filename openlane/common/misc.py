@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+import sys
 import typing
 import pathlib
 import unicodedata
@@ -24,6 +25,9 @@ from typing import (
     Iterable,
     Sequence,
     TypeVar,
+    Optional,
+    Union,
+    Tuple,
 )
 
 from deprecated.sphinx import deprecated
@@ -186,6 +190,16 @@ class Path(UserString, os.PathLike):
         """
         if not self.exists() and not self == Path._dummy_path:
             raise ValueError(f"'{self}' does not exist")
+
+    def startswith(
+        self,
+        prefix: Union[str, Tuple[str, ...], UserString, os.PathLike],
+        start: Optional[int] = 0,
+        end: Optional[int] = sys.maxsize,
+    ) -> bool:
+        if isinstance(prefix, UserString) or isinstance(prefix, os.PathLike):
+            prefix = str(prefix)
+        return super().startswith(prefix, start, end)
 
 
 class zip_first(object):
