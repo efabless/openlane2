@@ -574,8 +574,8 @@ class Step(ABC):
         :param include_pdk: Include PDK files. If set to false, Path pointing
             to PDK files will be prefixed with ``pdk_dir::`` instead of being
             copied.
-        :param _flatten: Creates a reproducible with a fat file structure.
-            For internal use only.
+        :param _flatten: Creates a reproducible with a flat (single-directory)
+            file structure. For internal use only.
         """
         # 0. Create Directories
         mkdirp(target_dir)

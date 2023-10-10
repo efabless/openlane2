@@ -46,10 +46,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
 
   src = gitignore-src.gitignoreSource ./.;
   
-  buildInputs = [
-    ruby
-    tcl
-  ];
+  buildInputs = [];
 
   includedTools = [
     (yosys.withPlugins([
@@ -64,6 +61,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     magic
     verilog
     verilator
+    tcl
   ];
 
   propagatedBuildInputs = [

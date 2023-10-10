@@ -32,6 +32,7 @@ with pkgs; mkShell {
     delta
     neovim
     gtkwave
+    coreutils
 
     # Docs + Testing
     jupyter

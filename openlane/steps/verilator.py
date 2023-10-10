@@ -159,7 +159,7 @@ class Lint(Step):
                 if r"%Error-LATCH" in line or r"%Warning-LATCH" in line:
                     latch_count += 1
                 if r"%Error-NEEDTIMINGOPT" in line:
-                    timing_constructs = 1
+                    timing_constructs += 1
                 if match := exiting_rx.search(line):
                     errors_count = int(match[1])
 

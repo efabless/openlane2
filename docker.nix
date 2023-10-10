@@ -13,7 +13,7 @@
 # limitations under the License.
 {
     pkgs ? import ./nix/pkgs.nix {},
-    openlane ? import ./. {},
+    openlane ? import ./. { inherit pkgs; },
     name ? "ghcr.io/efabless/openlane2",
     tag-override ? null
 }:
