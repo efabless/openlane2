@@ -213,6 +213,7 @@ class StreamOut(MagicStep):
                 macro_gds += [str(path) for path in self.config["MACROS"][macro].gds]
                 macro_gds += ","
             from ..common import TclUtils
+
             env["__MACRO_GDS"] = TclUtils.join(macro_gds[:-1])
 
         views_updates, metrics_updates = super().run(
