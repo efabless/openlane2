@@ -545,12 +545,12 @@ class STAPostPNR(STAPrePNR):
                     format_count(
                         metric_updates_with_aggregates.get(f"{metric}{modifier}")
                     )
-                )   
+                )
             row.append(
                 format_slack(
                     metric_updates_with_aggregates.get(f"timing__setup__ws{modifier}")
                 )
-            )         
+            )
             for metric in [
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
