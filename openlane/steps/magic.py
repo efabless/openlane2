@@ -193,12 +193,6 @@ class StreamOut(MagicStep):
             default=True,
             deprecated_names=["MAGIC_DISABLE_HIER_GDS"],
         ),
-        # Variable(
-        #     "MAGIC_GDS_FLATTEN",
-        #     bool,
-        #     "todo",
-        #     default=True,
-        # ),
     ]
 
     def get_script_path(self):
@@ -209,7 +203,17 @@ class StreamOut(MagicStep):
         if die_area := state_in.metrics.get("design__die__bbox"):
             env["DIE_AREA"] = die_area
 
+        env["MAGTYPE"] = "mag"
         magic_log_dir = os.path.join(self.step_dir, "magic.log")
+
+        if self.config["MACROS"] is not None:
+            macro_gds = []
+            for macro in self.config["MACROS"].keys():
+                macro_gds.append(macro)
+                macro_gds += [str(path) for path in self.config["MACROS"][macro].gds]
+                macro_gds += ","
+            from ..common import TclUtils
+            env["__MACRO_GDS"] = TclUtils.join(macro_gds[:-1])
 
         views_updates, metrics_updates = super().run(
             state_in,
@@ -217,6 +221,7 @@ class StreamOut(MagicStep):
             log_to=magic_log_dir,
             **kwargs,
         )
+
         if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
             magic_gds_out = str(views_updates[DesignFormat.MAG_GDS])
             gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")

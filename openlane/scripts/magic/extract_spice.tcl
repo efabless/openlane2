@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 if { $::env(MAGIC_EXT_USE_GDS) } {
-    source $::env(SCRIPTS_DIR)/magic/gds/read.tcl
+     gds read $::env(CURRENT_GDS)
 } else {
-    set ::mag_read_cell_lefs 1
-    source $::env(SCRIPTS_DIR)/magic/def/read.tcl
+    source $::env(SCRIPTS_DIR)/magic/common/read.tcl
+    read_tech_lef
+    read_pdk_lef
+    read_macro_lef
+    read_def
 }
 
 load $::env(DESIGN_NAME) -dereference
