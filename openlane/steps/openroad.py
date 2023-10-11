@@ -518,7 +518,7 @@ class STAPostPNR(STAPrePNR):
             if slack <= 0:
                 return f"[red]{slack}"
             else:
-                return f"[red]{slack}"
+                return f"[green]{slack}"
 
         table = rich.table.Table()
         table.add_column("Corner/Group")
