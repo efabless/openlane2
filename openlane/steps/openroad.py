@@ -511,10 +511,21 @@ class STAPostPNR(STAPrePNR):
             else:
                 return f"[red]{count}"
 
+        def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
+            if slack is None:
+                return "[gray]?"
+            slack = round(slack, 4)
+            if slack <= 0:
+                return f"[red]{slack}"
+            else:
+                return f"[red]{slack}"
+
         table = rich.table.Table()
         table.add_column("Corner/Group")
+        table.add_column("Hold Worst Slack")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
+        table.add_column("Setup Worst Slack")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -524,9 +535,23 @@ class STAPostPNR(STAPrePNR):
             if corner != "Overall":
                 modifier = f"__corner:{corner}"
             row = [corner]
+            row.append(
+                format_slack(
+                    metric_updates_with_aggregates.get(f"timing__hold__ws{modifier}")
+                )
+            )
+            for metric in ["timing__hold_vio__count", "timing__hold_r2r_vio__count"]:
+                row.append(
+                    format_count(
+                        metric_updates_with_aggregates.get(f"{metric}{modifier}")
+                    )
+                )   
+            row.append(
+                format_slack(
+                    metric_updates_with_aggregates.get(f"timing__setup__ws{modifier}")
+                )
+            )         
             for metric in [
-                "timing__hold_vio__count",
-                "timing__hold_r2r_vio__count",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
