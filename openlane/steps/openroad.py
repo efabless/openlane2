@@ -514,7 +514,7 @@ class STAPostPNR(STAPrePNR):
         def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
             if slack is None:
                 return "[gray]?"
-            slack = round(slack, 4)
+            slack = round(float(slack), 4)
             if slack <= 0:
                 return f"[red]{slack}"
             else:
