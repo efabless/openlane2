@@ -25,7 +25,7 @@ if { 0 } {
 
 read_extra_gds
 
-load (UNNAMED)
+load (NEWCELL)
 
 read_tech_lef
 read_def
