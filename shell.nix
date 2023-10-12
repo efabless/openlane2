@@ -13,7 +13,10 @@
 # limitations under the License.
 {
     pkgs ? import ./nix/pkgs.nix {},
-    openlane ? import ./. { inherit pkgs; }
+    openlane ? import ./. { inherit pkgs; },
+
+    extras ? [],
+    python-extras ? [],
 }:
 
 with pkgs; mkShell {
@@ -37,5 +40,5 @@ with pkgs; mkShell {
     # Docs + Testing
     jupyter
     graphviz
-  ] ++ openlane.includedTools;
+  ] ++ openlane.includedTools ++ extras;
 }
