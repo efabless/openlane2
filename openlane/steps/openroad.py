@@ -535,32 +535,19 @@ class STAPostPNR(STAPrePNR):
             if corner != "Overall":
                 modifier = f"__corner:{corner}"
             row = [corner]
-            row.append(
-                format_slack(
-                    metric_updates_with_aggregates.get(f"timing__hold__ws{modifier}")
-                )
-            )
-            for metric in ["timing__hold_vio__count", "timing__hold_r2r_vio__count"]:
-                row.append(
-                    format_count(
-                        metric_updates_with_aggregates.get(f"{metric}{modifier}")
-                    )
-                )
-            row.append(
-                format_slack(
-                    metric_updates_with_aggregates.get(f"timing__setup__ws{modifier}")
-                )
-            )
             for metric in [
+                "timing__hold__ws",
+                "timing__hold_vio__count",
+                "timing__hold_r2r_vio__count",
+                "timing__setup__ws",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
                 "design__max_slew_violation__count",
             ]:
+                formatter = format_count if metric.endswith("count") else format_slack
                 row.append(
-                    format_count(
-                        metric_updates_with_aggregates.get(f"{metric}{modifier}")
-                    )
+                    formatter(metric_updates_with_aggregates.get(f"{metric}{modifier}"))
                 )
             table.add_row(*row)
 
