@@ -14,9 +14,10 @@
 source $::env(SCRIPTS_DIR)/magic/common/read.tcl
 drc off
 
+read_pdk_gds
+gds noduplicates true
+
 if { 0 } {
-    read_pdk_gds
-    gds noduplicates true
     read_macro_gds
 } else {
     read_macro_gds_blackbox
