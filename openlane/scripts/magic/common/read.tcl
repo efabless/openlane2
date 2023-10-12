@@ -82,7 +82,7 @@ proc read_macro_gds_blackbox {} {
 }
 
 proc read_macro_gds {} {
-    if {  [info exist ::env(MACRO_GDS_FILES)] } {
+    if { [info exist ::env(MACRO_GDS_FILES)] } {
         set gds_files_in $::env(MACRO_GDS_FILES)
         foreach gds_file $gds_files_in {
             puts "> gds read $gds_file"

@@ -22,6 +22,8 @@ if { 0 } {
     read_macro_gds_blackbox
 }
 
+read_extra_gds
+
 load (UNNAMED)
 
 read_tech_lef
