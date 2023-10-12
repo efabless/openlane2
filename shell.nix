@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-    pkgs ? import ./nix/pkgs.nix {},
-    openlane ? import ./. { inherit pkgs; }
+  pkgs ? import ./nix/pkgs.nix {},
+  openlane ? import ./. { inherit pkgs; },
+  openlane-plugins ? [],
 }:
 
-with pkgs; mkShell {
+with pkgs; let
+  pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins)
+  
+; in mkShell {
   name = "openlane-shell";
 
   propagatedBuildInputs = [
@@ -24,7 +28,7 @@ with pkgs; mkShell {
       openlane
       pyfakefs
       pytest
-    ]))
+    ] ++ openlane-plugins ))
 
     # Conveniences
     git
@@ -37,5 +41,5 @@ with pkgs; mkShell {
     # Docs + Testing
     jupyter
     graphviz
-  ] ++ openlane.includedTools;
+  ] ++ openlane.includedTools ++ pluginIncludedTools;
 }

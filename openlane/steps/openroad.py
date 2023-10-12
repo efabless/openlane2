@@ -1123,7 +1123,7 @@ class RCX(OpenROADStep):
                 )
                 return None
 
-            corner_sanitized = corner.strip("*")
+            corner_sanitized = corner.strip("*_")
             corner_dir = os.path.join(self.step_dir, corner_sanitized)
             mkdirp(corner_dir)
 
