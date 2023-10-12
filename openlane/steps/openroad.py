@@ -511,10 +511,21 @@ class STAPostPNR(STAPrePNR):
             else:
                 return f"[red]{count}"
 
+        def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
+            if slack is None:
+                return "[gray]?"
+            slack = round(float(slack), 4)
+            if slack <= 0:
+                return f"[red]{slack}"
+            else:
+                return f"[green]{slack}"
+
         table = rich.table.Table()
         table.add_column("Corner/Group")
+        table.add_column("Hold Worst Slack")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
+        table.add_column("Setup Worst Slack")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -525,17 +536,18 @@ class STAPostPNR(STAPrePNR):
                 modifier = f"__corner:{corner}"
             row = [corner]
             for metric in [
+                "timing__hold__ws",
                 "timing__hold_vio__count",
                 "timing__hold_r2r_vio__count",
+                "timing__setup__ws",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
                 "design__max_slew_violation__count",
             ]:
+                formatter = format_count if metric.endswith("count") else format_slack
                 row.append(
-                    format_count(
-                        metric_updates_with_aggregates.get(f"{metric}{modifier}")
-                    )
+                    formatter(metric_updates_with_aggregates.get(f"{metric}{modifier}"))
                 )
             table.add_row(*row)
 
