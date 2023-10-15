@@ -32,5 +32,5 @@ removed_variables: Dict[str, str] = {
     "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
     "FP_PDN_AUTO_ADJUST": "Too situational. It's always best to be more explicit.",
     "SYNTH_READ_BLACKBOX_LIB": "Always on.",
-    "MAGIC_GDS_ALLOW_ABSTRACT": "Bad practice. User should be able to always provide a GDS file. A GDS file can be generated from a LEF file.",
+    "MAGIC_GDS_ALLOW_ABSTRACT": "Bad practice. If an abstract view is needed, a GDS file can be generated from the abstract LEF file.",
 }
