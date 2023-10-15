@@ -192,7 +192,8 @@ class StreamOut(MagicStep):
             Literal["PDK", "macro"],
             "If set to PDK, magic will use the PDK definition of the STD cells for macros inside the design."
             + " Otherwise, the macro is completely treated as a blackbox and magic will use the existing cell definition inside"
-            + " the macro gds.",
+            + " the macro gds."
+            + " This mode is only supported for macros specified in MACROS variable",
             default="macro",
         ),
     ]
