@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 if { $::env(MAGIC_EXT_USE_GDS) } {
-     gds read $::env(CURRENT_GDS)
+    gds read $::env(CURRENT_GDS)
 } else {
     source $::env(SCRIPTS_DIR)/magic/common/read.tcl
     read_tech_lef
