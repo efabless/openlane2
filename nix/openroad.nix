@@ -57,12 +57,11 @@ in clangStdenv.mkDerivation rec {
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
   '';
 
-  # # This mitigates https://github.com/The-OpenROAD-Project/OpenROAD/issues/2892
-  # # Unfortunately, it *mitigates it*. Doesn't fix it. Going to comment it out
-  # # for now.
-  # patches = [
-  #   ./patches/openroad/drc.patch
-  # ];
+  # Selectively fixes https://github.com/The-OpenROAD-Project/OpenROAD/issues/2892
+  # without other problems introduced by later OR versions
+  patches = [
+    ./patches/openroad/drc.patch
+  ];
 
   buildInputs = [
     abc
