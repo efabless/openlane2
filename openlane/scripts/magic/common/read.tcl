@@ -39,7 +39,9 @@ proc read_macro_lef {} {
             lef read $lef_file
         }
     }
-    if { [info exist ::env(EXTRA_LEFS)] } {
+}
+
+proc read_extra_lef {
         foreach lef_file $::env(EXTRA_LEFS) {
             puts "> lef read $lef_file"
             lef read $lef_file

@@ -239,6 +239,8 @@ class StreamOut(MagicStep):
         for line in open(magic_log_dir, encoding="utf8"):
             if "Calma output error" in line:
                 raise StepError("Magic GDS was written with errors.")
+            elif "is an abstract view" in line:
+                raise StepError("Missing GDS view for a macro. Check step log file.")
 
         return views_updates, metrics_updates
 
