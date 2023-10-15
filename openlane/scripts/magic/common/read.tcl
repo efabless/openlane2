@@ -41,7 +41,7 @@ proc read_macro_lef {} {
     }
 }
 
-proc read_extra_lef {
+proc read_extra_lef {} {
         foreach lef_file $::env(EXTRA_LEFS) {
             puts "> lef read $lef_file"
             lef read $lef_file
