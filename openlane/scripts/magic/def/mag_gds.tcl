@@ -17,7 +17,7 @@ drc off
 read_pdk_gds
 gds noduplicates true
 
-if { 0 } {
+if { $::env(MAGIC_MACRO_STD_CELL_SOURCE) == "PDK" } {
     read_macro_gds
 } else {
     read_macro_gds_blackbox

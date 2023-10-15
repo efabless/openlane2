@@ -14,7 +14,7 @@
 import os
 import shutil
 from abc import abstractmethod
-from typing import List, Optional, Tuple
+from typing import Literal, List, Optional, Tuple
 
 from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
@@ -39,12 +39,6 @@ class MagicStep(TclStep):
             "MAGIC_GDS_POLYGON_SUBCELLS",
             bool,
             'A flag to enable polygon subcells in magic for gds read potentially speeding up magic. From magic docs: "Put non-Manhattan polygons. This prevents interations with other polygons on the same plane and so reduces tile splitting."',
-            default=False,
-        ),
-        Variable(
-            "MAGIC_GDS_ALLOW_ABSTRACT",
-            bool,
-            "A flag to allow abstract view of macros when processing GDS files in Magic.",
             default=False,
         ),
         Variable(
@@ -192,6 +186,15 @@ class StreamOut(MagicStep):
             "A flag to disable writing Caltech Intermediate Format (CIF) hierarchy and subcell array information to the GDSII file.",
             default=True,
             deprecated_names=["MAGIC_DISABLE_HIER_GDS"],
+        ),
+        Variable(
+            "MAGIC_MACRO_STD_CELL_SOURCE",
+            Literal["PDK", "macro"],
+            (
+                "If set to PDK, magic will use the PDK definition of the STD cells for macros inside the design."
+                " Otherwise, the macro is completely treated as a blackbox and magic will use the existing cell definition inside the macro gds."
+            ),
+            default="macro",
         ),
     ]
 
