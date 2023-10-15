@@ -224,7 +224,7 @@ if { [info exists ::env(SYNTH_PARAMETERS) ] } {
 }
 
 select -module $vtop
-show -format dot -prefix $::env(STEP_DIR)/hierarchy
+catch {show -format dot -prefix $::env(STEP_DIR)/hierarchy}
 select -clear
 hierarchy -check -top $vtop
 yosys rename -top $vtop
@@ -320,7 +320,7 @@ if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
     techmap -map $::env(SYNTH_EXTRA_MAPPING_FILE)
 }
 
-show -format dot -prefix $::env(STEP_DIR)/post_techmap
+catch {show -format dot -prefix $::env(STEP_DIR)/post_techmap}
 
 if { $::env(SYNTH_SHARE_RESOURCES) } {
     share -aggressive
