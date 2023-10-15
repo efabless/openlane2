@@ -15,7 +15,7 @@ yosys -import
 source $::env(SCRIPTS_DIR)/yosys/common.tcl
 set vtop $::env(DESIGN_NAME)
 
-read_deps "on"
+read_deps 1 0 0
 
 set verilog_include_args [list]
 if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {

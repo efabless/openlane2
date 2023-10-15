@@ -11,19 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-proc read_deps {{power_defines "off"}} {
-    if { [info exists ::env(VERILOG_DEFINES) ] } {
+proc read_deps {{power_defines 0} {macro_libs 1} {extra_libs 1}} {
+    if { [info exists ::env(VERILOG_DEFINES)] } {
         foreach define $::env(VERILOG_DEFINES) {
             log "Defining ${define}…"
             verilog_defines -D$define
         }
     }
 
-    if { [info exists ::env(VERILOG_POWER_DEFINE)] } {
-        if { $power_defines == "on" } {
-            log "Defining $::env(VERILOG_POWER_DEFINE)…"
-            verilog_defines -D$::env(VERILOG_POWER_DEFINE)
-        }
+    if { [info exists ::env(VERILOG_POWER_DEFINE)] && $power_defines } {
+        log "Defining $::env(VERILOG_POWER_DEFINE)…"
+        verilog_defines -D$::env(VERILOG_POWER_DEFINE)
     }
 
     foreach lib $::env(FULL_LIBS) {
@@ -31,14 +29,14 @@ proc read_deps {{power_defines "off"}} {
         read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
 
-    if { [info exists ::env(MACRO_LIBS) ] } {
+    if { [info exists ::env(MACRO_LIBS)] && $macro_libs } {
         foreach lib $::env(MACRO_LIBS) {
             log "Reading macro library '$lib' as a black-box…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }
     }
 
-    if { [info exists ::env(EXTRA_LIBS) ] } {
+    if { [info exists ::env(EXTRA_LIBS)] && $extra_libs } {
         foreach lib $::env(EXTRA_LIBS) {
             log "Reading extra library '$lib' as a black-box…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
