@@ -1,0 +1,382 @@
+diff --git a/src/drt/src/TritonRoute.cpp b/src/drt/src/TritonRoute.cpp
+index 735d231e37..42c49c16ff 100644
+--- a/src/drt/src/TritonRoute.cpp
++++ b/src/drt/src/TritonRoute.cpp
+@@ -1267,9 +1267,13 @@ void TritonRoute::reportDRC(const string& file_name,
+               break;
+             }
+             case frcInstBlockage: {
+-              frInstBlockage* instBlockage
+-                  = (static_cast<frInstBlockage*>(src));
+-              drcRpt << "inst:" << instBlockage->getInst()->getName() << " ";
++              frInst* inst = (static_cast<frInstBlockage*>(src))->getInst();
++              drcRpt << "inst:" << inst->getName() << " ";
++              break;
++            }
++            case frcInst: {
++              frInst* inst = (static_cast<frInst*>(src));
++              drcRpt << "inst:" << inst->getName() << " ";
+               break;
+             }
+             case frcBlockage: {
+diff --git a/src/drt/src/db/gcObj/gcNet.h b/src/drt/src/db/gcObj/gcNet.h
+index 2d12f46f6f..5de6722fe7 100644
+--- a/src/drt/src/db/gcObj/gcNet.h
++++ b/src/drt/src/db/gcObj/gcNet.h
+@@ -32,6 +32,8 @@
+ 
+ #include "db/gcObj/gcBlockObject.h"
+ #include "db/gcObj/gcPin.h"
++#include "db/obj/frBlockage.h"
++#include "db/obj/frInstBlockage.h"
+ #include "db/obj/frNet.h"
+ 
+ namespace fr {
+@@ -158,6 +160,30 @@ class gcNet : public gcBlockObject
+   }
+   bool hasOwner() const { return owner_; }
+   frBlockObject* getOwner() const { return owner_; }
++  bool isBlockage() const
++  {
++    return hasOwner()
++           && (owner_->typeId() == frcInstBlockage
++               || owner_->typeId() == frcInst
++               || owner_->typeId() == frcBlockage);
++  }
++  frCoord getDesignRuleWidth() const
++  {
++    if (hasOwner()) {
++      switch (owner_->typeId()) {
++        case frcInstBlockage:
++          return static_cast<frInstBlockage*>(owner_)
++              ->getBlockage()
++              ->getDesignRuleWidth();
++        case frcBlockage:
++          return static_cast<frBlockage*>(owner_)->getDesignRuleWidth();
++        default:
++          return -1;
++      }
++    } else {
++      return -1;
++    }
++  }
+   // others
+   frBlockObjectEnum typeId() const override { return gccNet; }
+ 
+diff --git a/src/drt/src/dr/FlexDR_init.cpp b/src/drt/src/dr/FlexDR_init.cpp
+index ea4af600da..14c24176b4 100644
+--- a/src/drt/src/dr/FlexDR_init.cpp
++++ b/src/drt/src/dr/FlexDR_init.cpp
+@@ -2370,9 +2370,14 @@ void FlexDRWorker::initMazeCost_marker_route_queue_addHistoryCost(
+                   break;
+                 }
+                 case frcInstBlockage: {
+-                  frInstBlockage* instBlockage
+-                      = (static_cast<frInstBlockage*>(src));
+-                  cout << instBlockage->getInst()->getName() << "/OBS"
++                  frInst* inst = (static_cast<frInstBlockage*>(src))->getInst();
++                  cout << inst->getName() << "/OBS"
++                       << " ";
++                  break;
++                }
++                case frcInst: {
++                  frInst* inst = (static_cast<frInst*>(src));
++                  cout << inst->getName() << "/OBS"
+                        << " ";
+                   break;
+                 }
+diff --git a/src/drt/src/gc/FlexGC_inf.cpp b/src/drt/src/gc/FlexGC_inf.cpp
+index 491f928080..6dd899be48 100644
+--- a/src/drt/src/gc/FlexGC_inf.cpp
++++ b/src/drt/src/gc/FlexGC_inf.cpp
+@@ -147,17 +147,8 @@ void FlexGCWorker::Impl::checkRectMetSpcTblInf(
+ {
+   frCoord width = rect->width();
+   frLayerNum lNum = rect->getLayerNum();
+-  auto owner = rect->getNet()->getOwner();
+-  if (owner != nullptr
+-      && (owner->typeId() == frcInstBlockage
+-          || owner->typeId() == frcBlockage)) {
+-    frBlockage* blkg;
+-    if (owner->typeId() == frcInstBlockage)
+-      blkg = static_cast<frInstBlockage*>(owner)->getBlockage();
+-    else
+-      blkg = static_cast<frBlockage*>(owner);
+-    if (blkg->getDesignRuleWidth() != -1)
+-      width = blkg->getDesignRuleWidth();
++  if (rect->getNet()->getDesignRuleWidth() != -1) {
++    width = rect->getNet()->getDesignRuleWidth();
+   }
+   if (width < con->getMinWidth())
+     return;
+diff --git a/src/drt/src/gc/FlexGC_init.cpp b/src/drt/src/gc/FlexGC_init.cpp
+index e1e7a6b83d..c4b0ef2382 100644
+--- a/src/drt/src/gc/FlexGC_init.cpp
++++ b/src/drt/src/gc/FlexGC_init.cpp
+@@ -66,7 +66,15 @@ gcNet* FlexGCWorker::Impl::getNet(frBlockObject* obj)
+       }
+       break;
+     }
+-    case frcInstBlockage:
++    case frcInstBlockage: {
++      auto iblkg = static_cast<frInstBlockage*>(obj);
++      if (iblkg->getBlockage()->getDesignRuleWidth() != -1) {
++        owner = iblkg;
++      } else {
++        owner = iblkg->getInst();
++      }
++      break;
++    }
+     case frcBlockage: {
+       owner = obj;
+       break;
+diff --git a/src/drt/src/gc/FlexGC_main.cpp b/src/drt/src/gc/FlexGC_main.cpp
+index 013a8001f4..1b064a72c6 100644
+--- a/src/drt/src/gc/FlexGC_main.cpp
++++ b/src/drt/src/gc/FlexGC_main.cpp
+@@ -37,26 +37,6 @@ using namespace fr;
+ typedef bg::model::polygon<point_t> polygon_t;
+ typedef bg::model::multi_polygon<polygon_t> mpolygon_t;
+ 
+-static bool isBlockage(frBlockObject* owner)
+-{
+-  return owner
+-         && (owner->typeId() == frcInstBlockage
+-             || owner->typeId() == frcBlockage);
+-}
+-
+-void updateBlockageWidth(frBlockObject* owner, frCoord& width)
+-{
+-  if (isBlockage(owner)) {
+-    frBlockage* blkg;
+-    if (owner->typeId() == frcInstBlockage)
+-      blkg = static_cast<frInstBlockage*>(owner)->getBlockage();
+-    else
+-      blkg = static_cast<frBlockage*>(owner);
+-    if (blkg->getDesignRuleWidth() != -1) {
+-      width = blkg->getDesignRuleWidth();
+-    }
+-  }
+-}
+ bool FlexGCWorker::Impl::isCornerOverlap(gcCorner* corner, const Rect& box)
+ {
+   frCoord cornerX = corner->getNextEdge()->low().x();
+@@ -265,19 +245,23 @@ frCoord FlexGCWorker::Impl::checkMetalSpacing_prl_getReqSpcVal(
+   auto width1 = rect1->width();
+   auto width2 = rect2->width();
+   // override width and spacing
+-  if (isBlockage(rect1->getNet()->getOwner())) {
++  if (rect1->getNet()->isBlockage()) {
+     isObs = true;
+     if (USEMINSPACING_OBS) {
+       width1 = currLayer->getWidth();
+     }
+-    updateBlockageWidth(rect1->getNet()->getOwner(), width1);
++    if (rect1->getNet()->getDesignRuleWidth() != -1) {
++      width1 = rect1->getNet()->getDesignRuleWidth();
++    }
+   }
+-  if (isBlockage(rect2->getNet()->getOwner())) {
++  if (rect2->getNet()->isBlockage()) {
+     isObs = true;
+     if (USEMINSPACING_OBS) {
+       width2 = currLayer->getWidth();
+     }
+-    updateBlockageWidth(rect2->getNet()->getOwner(), width2);
++    if (rect2->getNet()->getDesignRuleWidth() != -1) {
++      width2 = rect2->getNet()->getDesignRuleWidth();
++    }
+   }
+   // check if width is a result of route shape
+   // if the width a shape is smaller if only using fixed shape, then it's route
+@@ -602,8 +586,8 @@ void FlexGCWorker::Impl::checkMetalSpacing_short_obs(
+ {
+   if (rect1->isFixed() && rect2->isFixed())
+     return;
+-  bool isRect1Obs = isBlockage(rect1->getNet()->getOwner());
+-  bool isRect2Obs = isBlockage(rect2->getNet()->getOwner());
++  bool isRect1Obs = rect1->getNet()->isBlockage();
++  bool isRect2Obs = rect2->getNet()->isBlockage();
+   if (isRect1Obs && isRect2Obs) {
+     return;
+   }
+@@ -827,11 +811,11 @@ void FlexGCWorker::Impl::checkMetalSpacing_main(gcRect* ptr1,
+     if (prlY == 0) {
+       gtl::bloat(markerRect, gtl::VERTICAL, 1);
+     }
+-    if (isBlockage(ptr1->getNet()->getOwner())
+-        || isBlockage(ptr2->getNet()->getOwner()))
++    if (ptr1->getNet()->isBlockage() || ptr2->getNet()->isBlockage()) {
+       checkMetalSpacing_short_obs(ptr1, ptr2, markerRect);
+-    else
++    } else {
+       checkMetalSpacing_short(ptr1, ptr2, markerRect);
++    }
+     // prl
+   } else {
+     checkMetalSpacing_prl(ptr1,
+@@ -2034,21 +2018,23 @@ frCoord FlexGCWorker::Impl::checkCutSpacing_spc_getReqSpcVal(
+   if (con) {
+     maxSpcVal = con->getCutSpacing();
+     if (con->isAdjacentCuts()) {
+-      auto owner = ptr1->getNet()->getOwner();
+       auto ptr1LayerNum = ptr1->getLayerNum();
+       auto ptr1Layer = getTech()->getLayer(ptr1LayerNum);
+-      if (isBlockage(owner)) {
++      if (ptr1->getNet()->isBlockage()) {
+         frCoord width1 = ptr1->width();
+-        updateBlockageWidth(owner, width1);
++        if (ptr1->getNet()->getDesignRuleWidth() != -1) {
++          width1 = ptr1->getNet()->getDesignRuleWidth();
++        }
+         if (width1 > int(ptr1Layer->getWidth()))
+           maxSpcVal = con->getCutWithin();
+       }
+-      owner = ptr2->getNet()->getOwner();
+       auto ptr2LayerNum = ptr2->getLayerNum();
+       auto ptr2Layer = getTech()->getLayer(ptr2LayerNum);
+-      if (isBlockage(owner)) {
++      if (ptr2->getNet()->isBlockage()) {
+         frCoord width2 = ptr2->width();
+-        updateBlockageWidth(owner, width2);
++        if (ptr2->getNet()->getDesignRuleWidth() != -1) {
++          width2 = ptr2->getNet()->getDesignRuleWidth();
++        }
+         if (width2 > int(ptr2Layer->getWidth()))
+           maxSpcVal = con->getCutWithin();
+       }
+@@ -2452,21 +2438,23 @@ frCoord FlexGCWorker::Impl::checkLef58CutSpacing_spc_getReqSpcVal(
+   if (con) {
+     maxSpcVal = con->getCutSpacing();
+     if (con->hasAdjacentCuts()) {
+-      auto owner = ptr1->getNet()->getOwner();
+       auto ptr1LayerNum = ptr1->getLayerNum();
+       auto ptr1Layer = getTech()->getLayer(ptr1LayerNum);
+-      if (isBlockage(owner)) {
++      if (ptr1->getNet()->isBlockage()) {
+         frCoord width1 = ptr1->width();
+-        updateBlockageWidth(owner, width1);
++        if (ptr1->getNet()->getDesignRuleWidth() != -1) {
++          width1 = ptr1->getNet()->getDesignRuleWidth();
++        }
+         if (width1 > int(ptr1Layer->getWidth()))
+           maxSpcVal = con->getCutWithin();
+       }
+-      owner = ptr2->getNet()->getOwner();
+       auto ptr2LayerNum = ptr2->getLayerNum();
+       auto ptr2Layer = getTech()->getLayer(ptr2LayerNum);
+-      if (isBlockage(owner)) {
++      if (ptr2->getNet()->isBlockage()) {
+         frCoord width2 = ptr2->width();
+-        updateBlockageWidth(owner, width2);
++        if (ptr2->getNet()->getDesignRuleWidth() != -1) {
++          width2 = ptr2->getNet()->getDesignRuleWidth();
++        }
+         if (width2 > int(ptr2Layer->getWidth()))
+           maxSpcVal = con->getCutWithin();
+       }
+@@ -2973,8 +2961,7 @@ bool FlexGCWorker::Impl::checkCutSpacing_main_hasAdjCuts(
+   auto layer = getTech()->getLayer(layerNum);
+ 
+   // rect is obs larger than min. size cut, must check against cutWithin
+-  if (isBlockage(rect->getNet()->getOwner())
+-      && rect->width() > int(layer->getWidth())) {
++  if (rect->getNet()->isBlockage() && rect->width() > int(layer->getWidth())) {
+     return true;
+   }
+ 
+@@ -3003,8 +2990,7 @@ bool FlexGCWorker::Impl::checkCutSpacing_main_hasAdjCuts(
+     }
+     // if target is a cut blockage shape larger than min. size, assume it is a
+     // blockage from MACRO
+-    if (isBlockage(ptr->getNet()->getOwner())
+-        && ptr->width() > int(layer->getWidth())) {
++    if (ptr->getNet()->isBlockage() && ptr->width() > int(layer->getWidth())) {
+       cnt += reqNumCut;
+     } else {
+       cnt++;
+diff --git a/src/drt/src/io/io.cpp b/src/drt/src/io/io.cpp
+index 18a8d9ce18..6fa97c309a 100644
+--- a/src/drt/src/io/io.cpp
++++ b/src/drt/src/io/io.cpp
+@@ -2252,6 +2252,8 @@ void io::Parser::setMasters(odb::dbDatabase* db)
+         }
+       }
+ 
++      vector<gtl::polygon_90_set_data<frCoord>> layerPolys(
++          tech_->getLayers().size());
+       for (auto obs : master->getObstructions()) {
+         frLayerNum layerNum = -1;
+         auto layer = obs->getTechLayer();
+@@ -2306,21 +2308,56 @@ void io::Parser::setMasters(odb::dbDatabase* db)
+             }
+           }
+         }
+-        auto blkIn = make_unique<frBlockage>();
+-        blkIn->setId(numBlockages_);
+-        blkIn->setDesignRuleWidth(obs->getDesignRuleWidth());
+-        numBlockages_++;
+-        auto pinIn = make_unique<frBPin>();
+-        pinIn->setId(0);
+-        // pinFig
+-        unique_ptr<frRect> pinFig = make_unique<frRect>();
+-        pinFig->setBBox(Rect(xl, yl, xh, yh));
+-        pinFig->addToPin(pinIn.get());
+-        pinFig->setLayerNum(layerNum);
+-        unique_ptr<frPinFig> uptr(std::move(pinFig));
+-        pinIn->addPinFig(std::move(uptr));
+-        blkIn->setPin(std::move(pinIn));
+-        tmpMaster->addBlockage(std::move(blkIn));
++        if (obs->getDesignRuleWidth() == -1) {
++          gtl::rectangle_data<frCoord> rect(xl, yl, xh, yh);
++          using gtl::operators::operator+=;
++          layerPolys[layerNum] += rect;
++        } else {
++          auto blkIn = make_unique<frBlockage>();
++          blkIn->setId(numBlockages_++);
++          blkIn->setDesignRuleWidth(obs->getDesignRuleWidth());
++          auto pinIn = make_unique<frBPin>();
++          pinIn->setId(0);
++          // pinFig
++          unique_ptr<frRect> pinFig = make_unique<frRect>();
++          pinFig->setBBox(Rect(xl, yl, xh, yh));
++          pinFig->addToPin(pinIn.get());
++          pinFig->setLayerNum(layerNum);
++          unique_ptr<frPinFig> uptr(std::move(pinFig));
++          pinIn->addPinFig(std::move(uptr));
++          blkIn->setPin(std::move(pinIn));
++          tmpMaster->addBlockage(std::move(blkIn));
++        }
++      }
++      frLayerNum lNum = 0;
++      for (auto& polySet : layerPolys) {
++        vector<gtl::polygon_90_with_holes_data<frCoord>> polys;
++        polySet.get(polys);
++        for (auto& poly : polys) {
++          vector<gtl::rectangle_data<frCoord>> rects;
++          gtl::get_max_rectangles(rects, poly);
++          for (auto& rect : rects) {
++            frCoord xl = gtl::xl(rect);
++            frCoord yl = gtl::yl(rect);
++            frCoord xh = gtl::xh(rect);
++            frCoord yh = gtl::yh(rect);
++            auto blkIn = make_unique<frBlockage>();
++            blkIn->setId(numBlockages_);
++            numBlockages_++;
++            auto pinIn = make_unique<frBPin>();
++            pinIn->setId(0);
++            // pinFig
++            unique_ptr<frRect> pinFig = make_unique<frRect>();
++            pinFig->setBBox(Rect(xl, yl, xh, yh));
++            pinFig->addToPin(pinIn.get());
++            pinFig->setLayerNum(lNum);
++            unique_ptr<frPinFig> uptr(std::move(pinFig));
++            pinIn->addPinFig(std::move(uptr));
++            blkIn->setPin(std::move(pinIn));
++            tmpMaster->addBlockage(std::move(blkIn));
++          }
++        }
++        lNum++;
+       }
+       tmpMaster->setId(numMasters_ + 1);
+       design_->addMaster(std::move(tmpMaster));
