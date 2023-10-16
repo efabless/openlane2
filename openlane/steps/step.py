@@ -1003,7 +1003,11 @@ class Step(ABC):
                     verbose(line.strip(), markup=False)
         process_stats_thread.join()
         with open(os.path.join(self.step_dir, "process_stats.json"), "w") as f:
-            json.dump({"peak": process_stats_thread.peak, "avg": process_stats_thread.avg}, f, indent=4)
+            json.dump(
+                {"peak": process_stats_thread.peak, "avg": process_stats_thread.avg},
+                f,
+                indent=4,
+            )
         returncode = process.wait()
         log_file.close()
         if returncode != 0:
