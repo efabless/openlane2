@@ -16,7 +16,7 @@ To simply fix typos, you do not need to install anything. Pull requests can be c
 For more complex documentation, it is recommended to follow these steps:
 
 01. Read this guide
-02. Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.rst`
+02. Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.md`
 03. ... or open an existing one in the same folder.
 04. Follow these guidelines:
     : - Begin with the general structure of the documentation. This step ensures continuity with the rest of the documentation and allows the writer to better organize their thoughts.
@@ -69,7 +69,7 @@ while the screenshots for the installation guide are located in `docs/_static/in
 
 Directory `docs/source/` contains all of the page's content.
 You can add pages by creating the corresponding file in that folder.
-Then you need to add your page to the Table of Contents in `index.rst`.
+Then you need to add your page to the Table of Contents in `index.md`.
 Or if you want it to be in category, then modify the Table of Contents of said category.
 If you want to create new category than take a look at the source code of existing category.
 
