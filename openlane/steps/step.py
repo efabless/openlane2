@@ -119,6 +119,59 @@ ViewsUpdate = Dict[DesignFormat, StateElement]
 MetricsUpdate = Dict[str, Any]
 
 
+class ProcessStatsThread(Thread):
+    def __init__(self, process, interval=0.1):
+        Thread.__init__(
+            self,
+        )
+        self.process = process
+        self.result = None
+        self.interval = interval
+        self.props = {
+            "cpu": 0.0,
+            "cpu_time_user": 0.0,
+            "cpu_time_system": 0.0,
+            "cpu_time_iowait": 0.0,
+            "memory_rss": 0.0,
+            "memory_vms": 0.0,
+            "threads": 0.0,
+        }
+        self.avg = self.props.copy()
+        self.peak = self.props.copy()
+
+    def run(self):
+        count = 1
+        old = self.props.copy()
+        total = self.props.copy()
+        current = self.props.copy()
+        status = self.process.status()
+        while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
+            with self.process.oneshot():
+                cpu = self.process.cpu_percent()
+                memory = self.process.memory_info()
+                cpu_time = self.process.cpu_times()
+                threads = self.process.num_threads()
+                current["cpu"] = cpu
+                current["cpu_time_user"] = cpu_time.user
+                current["cpu_time_system"] = cpu_time.system
+                current["cpu_time_iowait"] = cpu_time.iowait
+                current["memory_rss"] = memory.rss
+                current["memory_vms"] = memory.vms
+                current["threads"] = threads
+                for prop in self.props.keys():
+                    self.peak[prop] = max(current[prop], old[prop])
+                    total[prop] = total[prop] + current[prop]
+
+                del old
+                old = current.copy()
+
+                count = count + 1
+                time.sleep(self.interval)
+                status = self.process.status()
+        for prop in self.props:
+            self.avg[prop] = total[prop] / count
+
+
 class Step(ABC):
     """
     An abstract base class for Step objects.
@@ -912,62 +965,6 @@ class Step(ABC):
             env=env,
             **kwargs,
         )
-
-        class ProcessStatsThread(Thread):
-            def __init__(self, process, interval=0.1):
-                Thread.__init__(
-                    self,
-                )
-                self.process = process
-                self.result = None
-                self.interval = interval
-                self.props = {
-                    "cpu": 0.0,
-                    "cpu_time_user": 0.0,
-                    "cpu_time_system": 0.0,
-                    "cpu_time_iowait": 0.0,
-                    "memory_rss": 0.0,
-                    "memory_vms": 0.0,
-                    "threads": 0.0,
-                }
-                self.avg = self.props.copy()
-                self.peak = self.props.copy()
-
-            def run(self):
-                cpu = -1
-                memory = -1
-                cpu_time = -1
-                threads = -1
-                count = 1
-                old = self.props.copy()
-                total = self.props.copy()
-                current = self.props.copy()
-                status = self.process.status()
-                while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
-                    with self.process.oneshot():
-                        cpu = self.process.cpu_percent()
-                        memory = self.process.memory_info()
-                        cpu_time = self.process.cpu_times()
-                        threads = self.process.num_threads()
-                        current["cpu"] = cpu
-                        current["cpu_time_user"] = cpu_time.user
-                        current["cpu_time_system"] = cpu_time.system
-                        current["cpu_time_iowait"] = cpu_time.iowait
-                        current["memory_rss"] = memory.rss
-                        current["memory_vms"] = memory.vms
-                        current["threads"] = threads
-                        for prop in self.props.keys():
-                            self.peak[prop] = max(current[prop], old[prop])
-                            total[prop] = total[prop] + current[prop]
-
-                        del old
-                        old = current.copy()
-
-                        count = count + 1
-                        time.sleep(self.interval)
-                        status = self.process.status()
-                for prop in self.props:
-                    self.avg[prop] = total[prop] / count
 
         process_stats_thread = ProcessStatsThread(process)
         process_stats_thread.start()
