@@ -25,7 +25,8 @@ the open-source [GlobalFoundries PDK](https://github.com/google/gf180mcu-pdk).
 See [Using PDKs](./usage/about_pdks.md) for more info.
 
 
-Check the sidebar to the left to get started.
+Follow the navigation element below (or check the sidebar on the left) to
+get started.
 
 ```{toctree}
 :glob:
