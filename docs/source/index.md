@@ -2,11 +2,11 @@
 
 ```{note}
 This documentation pertains to the OpenLane 2.0.0 beta release available at
-https://github.com/efabless/openlane2. To disambiguate it from the stable
+<https://github.com/efabless/openlane2>. To disambiguate it from the stable
 version, the landing page refers to this release as "OpenLane 2."
 
 If you're using the stable version of OpenLane (available at
-https://github.com/The-OpenROAD-Project/OpenLane), you'll find the documentation
+<https://github.com/The-OpenROAD-Project/OpenLane>), you'll find the documentation
 at https://openlane.readthedocs.io.
 ```
 
