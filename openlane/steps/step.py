@@ -14,17 +14,20 @@
 from __future__ import annotations
 from decimal import Decimal
 
-import os
-import time
 import json
+import os
+import psutil
 import shutil
-import textwrap
 import subprocess
+import textwrap
+import time
+
 from signal import Signals
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
+from threading import Thread
 from typing import (
     Any,
     List,
@@ -903,12 +906,71 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
-        process = subprocess.Popen(
+        process = psutil.Popen(
             cmd_str,
             encoding="utf8",
             env=env,
             **kwargs,
         )
+
+        class ProcessStatsThread(Thread):
+            def __init__(self, process, interval=0.1):
+                Thread.__init__(
+                    self,
+                )
+                self.process = process
+                self.result = None
+                self.interval = interval
+                self.props = {
+                    "cpu": 0.0,
+                    "cpu_time_user": 0.0,
+                    "cpu_time_system": 0.0,
+                    "cpu_time_iowait": 0.0,
+                    "memory_rss": 0.0,
+                    "memory_vms": 0.0,
+                    "threads": 0.0,
+                }
+                self.avg = self.props.copy()
+                self.peak = self.props.copy()
+
+            def run(self):
+                cpu = -1
+                memory = -1
+                cpu_time = -1
+                threads = -1
+                count = 1
+                old = self.props.copy()
+                total = self.props.copy()
+                current = self.props.copy()
+                status = self.process.status()
+                while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
+                    with self.process.oneshot():
+                        cpu = self.process.cpu_percent()
+                        memory = self.process.memory_info()
+                        cpu_time = self.process.cpu_times()
+                        threads = self.process.num_threads()
+                        current["cpu"] = cpu
+                        current["cpu_time_user"] = cpu_time.user
+                        current["cpu_time_system"] = cpu_time.system
+                        current["cpu_time_iowait"] = cpu_time.iowait
+                        current["memory_rss"] = memory.rss
+                        current["memory_vms"] = memory.vms
+                        current["threads"] = threads
+                        for prop in self.props.keys():
+                            self.peak[prop] = max(current[prop], old[prop])
+                            total[prop] = total[prop] + current[prop]
+
+                        del old
+                        old = current.copy()
+
+                        count = count + 1
+                        time.sleep(self.interval)
+                        status = self.process.status()
+                for prop in self.props:
+                    self.avg[prop] = total[prop] / count
+
+        process_stats_thread = ProcessStatsThread(process)
+        process_stats_thread.start()
         lines = ""
         if process_stdout := process.stdout:
             current_rpt = None
@@ -939,6 +1001,9 @@ class Step(ABC):
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
                     verbose(line.strip(), markup=False)
+        process_stats_thread.join()
+        with open(os.path.join(self.step_dir, "process_stats.json"), "w") as f:
+            json.dump({"peak": process_stats_thread.peak, "avg": process_stats_thread.avg}, f, indent=4)
         returncode = process.wait()
         log_file.close()
         if returncode != 0:
