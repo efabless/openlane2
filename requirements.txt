@@ -8,3 +8,4 @@ lxml>=4.9.0
 deprecated>=1.2.10,<2
 immutabledict>=2,<3
 libparse>=0.3.1,<1
+psutil>=5.9.4
