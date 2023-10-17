@@ -19,21 +19,23 @@
 with pkgs; let
     surelog = import ./surelog.nix { inherit pkgs; };
 in clangStdenv.mkDerivation rec {
-  name = "yosys-synlig";
+  name = "yosys-synlig-sv";
   dylibs = ["synlig-sv"];
 
-  full-src = fetchFromGitHub {
+  src = fetchFromGitHub {
     owner = "chipsalliance";
     repo = "synlig";
     rev = "e41b39653b5bc45f464825affa5464473be7b92a";
     sha256 = "sha256-2KM7JZhfHfNPu9LtLsoN7e3q+U32p+ybL36y9ae/wdU=";
   };
 
-  src = "${full-src}/frontends/systemverilog";
+  yosys-mk = pkgs.writeText "yosys-mk" ''
+    t  := yosys
+    ts := ''$(call GetTargetStructName,''${t})
 
-  makeFlags = [
-    "YOSYS_CONFIG=${yosys}/bin/yosys-config"
-  ];
+    ''${ts}.src_dir         := ${yosys}/share/yosys/include
+    ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
+  '';
 
   propagatedBuildInputs = [
     yosys
@@ -44,40 +46,27 @@ in clangStdenv.mkDerivation rec {
 
   buildInputs = [
     yosys.py3
-    cmake
     surelog
     surelog.uhdm'
     capnproto
+    antlr4.runtime.cpp
+  ];
+
+  nativeBuildInputs = [
+    pkg-config
   ];
 
   buildPhase = ''
-  set -x
-  yosys-config --build synlig-sv.so\
-    --std=c++17\
-    -I${full-src}/third_party/yosys_mod\
-    *.cc\
-    ${surelog.uhdm'}/lib/*.a\
-    ${capnproto}/lib/*.a
+    rm third_party/Build.surelog.mk
+    cp ${yosys-mk} third_party/Build.yosys.mk
+    cat third_party/Build.yosys.mk
+    make build@systemverilog-plugin -j$NIX_BUILD_CORES
   '';
 
   installPhase = ''
-  mkdir -p $out/share/yosys/plugins
-  cp synlig-sv.so $out/share/yosys/plugins/synlig-sv.so
+    mkdir -p $out/share/yosys/plugins
+    mv build/release/systemverilog-plugin/systemverilog.so $out/share/yosys/plugins/synlig-sv.so
   '';
-
-  dontUseCmakeConfigure = true;
-
-#   preConfigure = ''
-#   sed -i.bak "s@/usr/local@$out@" Makefile
-#   sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" sbysrc/sby.py
-#   sed -i.bak "s@\"/usr/bin/env\", @@" sbysrc/sby_core.py
-#   '';
-
-#   checkPhase = ''
-#   make test
-#   '';
-
-#   doCheck = false;
 
   computed_PATH = lib.makeBinPath propagatedBuildInputs;
   makeWrapperArgs = [
