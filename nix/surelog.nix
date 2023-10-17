@@ -43,7 +43,7 @@ with pkgs; let
             owner = "chipsalliance";
             repo = "uhdm";
             rev = "v${version}";
-            hash = "sha256-IwK42rDTUYS4gFUkpz9e7tYRg82LBN6xXY5OEY9Pk+Q=";
+            hash = "sha256-Q/u5lvILYDT5iScES3CTPIm/B5apoOHXOQmCsZ73NlU=";
         };
         patches = [];
         doCheck = false;
