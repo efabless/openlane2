@@ -29,6 +29,7 @@
   volare ? import ./nix/volare.nix { inherit pkgs; },
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
 
+  synlig-sv ? import ./nix/yosys-synlig-sv.nix { inherit pkgs; inherit yosys; },
   lighter ? import ./nix/yosys-lighter.nix { inherit pkgs; inherit yosys; },
   sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
   eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
@@ -53,6 +54,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
       sby
       eqy
       lighter
+      synlig-sv
       ys-ghdl
     ]))
     openroad
@@ -62,6 +64,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     verilog
     verilator
     tcl
+    uhdm
   ];
 
   propagatedBuildInputs = [

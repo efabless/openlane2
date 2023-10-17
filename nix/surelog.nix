@@ -32,38 +32,82 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 {
   pkgs ? import ./pkgs.nix {},
 }:
 
-with pkgs; clangStdenv.mkDerivation rec {
-  name = "yosys-abc";
+with pkgs; let
+    uhdm' = uhdm.overrideAttrs(finalAttrs: previousAttrs: rec {
+        version = "1.76";
+        src = fetchFromGitHub {
+            owner = "chipsalliance";
+            repo = "uhdm";
+            rev = "v${version}";
+            hash = "sha256-IwK42rDTUYS4gFUkpz9e7tYRg82LBN6xXY5OEY9Pk+Q=";
+        };
+        patches = [];
+        doCheck = false;
+        buildInputs = previousAttrs.buildInputs ++ [
+            capnproto
+        ];
+        cmakeFlags = [
+            "-DUHDM_BUILD_TESTS:BOOL=OFF"
+            "-DUHDM_USE_HOST_CAPNP:BOOL=ON"
+        ];
+        postInstall = "";
+    });
+in stdenv.mkDerivation (finalAttrs: {
+  pname = "surelog";
+  version = "1.76";
 
   src = fetchFromGitHub {
-    owner = "YosysHQ";
-    repo = "abc";
-    rev = "daad9ede0137dc58487a0abc126253e671a85b14";
-    sha256 = "sha256-5XeFYvdqT08xduFUDC5yK1jEOV1fYzyQD7N9ZmG3mpQ=";
+    owner = "chipsalliance";
+    repo = finalAttrs.pname;
+    rev = "v${finalAttrs.version}";
+    hash = "sha256-Vg9NZrgzFRVIsEbZQe8DItDhFOVG1XZoQWBrLzVNwLU=";
+    fetchSubmodules = false;  # we use all dependencies from nix
   };
 
-  patches = [
-    ./patches/yosys/abc-editline.patch
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+    openjdk
+    (python3.withPackages (p: with p; [
+      psutil
+      orderedmultidict
+    ]))
+    gtest
+    antlr4
   ];
 
-  postPatch = ''
-  sed -i "s@-lreadline@-ledit@" ./Makefile
+  buildInputs = [
+    libuuid
+    gperftools
+    uhdm'
+    capnproto
+    antlr4.runtime.cpp
+    nlohmann_json
+  ];
+
+  cmakeFlags = [
+    "-DSURELOG_USE_HOST_CAPNP=On"
+    "-DSURELOG_USE_HOST_UHDM=On"
+    "-DSURELOG_USE_HOST_GTEST=On"
+    "-DSURELOG_USE_HOST_ANTLR=On"
+    "-DSURELOG_USE_HOST_JSON=On"
+    "-DANTLR_JAR_LOCATION=${antlr4.jarLocation}"
+  ];
+
+  doCheck = true;
+  checkPhase = ''
+    runHook preCheck
+    make -j $NIX_BUILD_CORES UnitTests
+    ctest --output-on-failure
+    runHook postCheck
   '';
 
-  nativeBuildInputs = [ cmake ];
-  buildInputs = [ libedit ];
-
-  installPhase = "mkdir -p $out/bin && mv abc $out/bin";
-
-  # needed by yosys
-  passthru.rev = src.rev;
-
-  meta = with lib; {
-    license = licenses.mit;
+  passthru = {
+    inherit uhdm';
   };
-}
+
+})

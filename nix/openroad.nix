@@ -19,7 +19,7 @@
 with pkgs; let
   abc = import ./openroad-abc.nix { inherit pkgs; };
   or-tools = import ./or-tools.nix { inherit pkgs; };
-  lemon = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
+  lemon-graph' = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
     meta = {
       broken = false;
     };
@@ -77,7 +77,7 @@ in clangStdenv.mkDerivation rec {
     clp
     cbc
     
-    lemon
+    lemon-graph'
   ];
 
   nativeBuildInputs = [
