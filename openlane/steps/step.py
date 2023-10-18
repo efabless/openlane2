@@ -159,7 +159,7 @@ class ProcessStatsThread(Thread):
                 current["memory_vms"] = memory.vms
                 current["threads"] = threads
                 for prop in self.props.keys():
-                    self.peak[prop] = max(current[prop], old[prop])
+                    self.peak[prop] = max(current[prop], self.peak[prop])
                     total[prop] = total[prop] + current[prop]
 
                 del old
