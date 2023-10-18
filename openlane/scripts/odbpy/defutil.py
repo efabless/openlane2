@@ -440,8 +440,8 @@ def parse_obstructions(obstructions):
         m = re.match(RE_OBS, obs)
         if m is None:
             print(
-                "Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..."
-                % obs
+                f"[ERROR] Incorrectly formatted input {obs}.\n Format: layer llx lly urx ury, ...",
+                file=sys.stderr
             )
             sys.exit(FORMAT_ERROR)
         else:
