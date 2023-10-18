@@ -95,7 +95,7 @@ verilog_rtl_cfg_vars = [
         bool,
         "Uses -defer flag when reading files the Synlig plugin, which may improve performance by reading each file separately, but is experimental.",
         default=False,
-    )
+    ),
 ]
 
 
