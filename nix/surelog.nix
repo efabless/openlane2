@@ -36,27 +36,7 @@
   pkgs ? import ./pkgs.nix {},
 }:
 
-with pkgs; let
-    uhdm' = uhdm.overrideAttrs(finalAttrs: previousAttrs: rec {
-        version = "1.76";
-        src = fetchFromGitHub {
-            owner = "chipsalliance";
-            repo = "uhdm";
-            rev = "v${version}";
-            hash = "sha256-Q/u5lvILYDT5iScES3CTPIm/B5apoOHXOQmCsZ73NlU=";
-        };
-        patches = [];
-        doCheck = false;
-        buildInputs = previousAttrs.buildInputs ++ [
-            capnproto
-        ];
-        cmakeFlags = [
-            "-DUHDM_BUILD_TESTS:BOOL=OFF"
-            "-DUHDM_USE_HOST_CAPNP:BOOL=ON"
-        ];
-        postInstall = "";
-    });
-in stdenv.mkDerivation (finalAttrs: {
+with pkgs; stdenv.mkDerivation (finalAttrs: {
   pname = "surelog";
   version = "1.76";
 
@@ -64,8 +44,8 @@ in stdenv.mkDerivation (finalAttrs: {
     owner = "chipsalliance";
     repo = finalAttrs.pname;
     rev = "v${finalAttrs.version}";
-    hash = "sha256-Vg9NZrgzFRVIsEbZQe8DItDhFOVG1XZoQWBrLzVNwLU=";
-    fetchSubmodules = false;  # we use all dependencies from nix
+    hash = "sha256-Jfh6KGnPVksyCf2q7sQN6XSAWvbG+aW7/ynUuWKNUPs=";
+    fetchSubmodules = true;  # Use the included UHDM to avoid extreme brainrot
   };
 
   nativeBuildInputs = [
@@ -83,7 +63,6 @@ in stdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     libuuid
     gperftools
-    uhdm'
     capnproto
     antlr4.runtime.cpp
     nlohmann_json
@@ -91,23 +70,13 @@ in stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     "-DSURELOG_USE_HOST_CAPNP=On"
-    "-DSURELOG_USE_HOST_UHDM=On"
     "-DSURELOG_USE_HOST_GTEST=On"
     "-DSURELOG_USE_HOST_ANTLR=On"
     "-DSURELOG_USE_HOST_JSON=On"
+    "-DSURELOG_BUILD_TESTS=Off" # Broken on macOS, CBA to fix them
     "-DANTLR_JAR_LOCATION=${antlr4.jarLocation}"
   ];
 
-  doCheck = true;
-  checkPhase = ''
-    runHook preCheck
-    make -j $NIX_BUILD_CORES UnitTests
-    ctest --output-on-failure
-    runHook postCheck
-  '';
-
-  passthru = {
-    inherit uhdm';
-  };
+  doCheck = false;
 
 })

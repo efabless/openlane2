@@ -47,7 +47,6 @@ in clangStdenv.mkDerivation rec {
   buildInputs = [
     yosys.py3
     surelog
-    surelog.uhdm'
     capnproto
     antlr4.runtime.cpp
   ];
