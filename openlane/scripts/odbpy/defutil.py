@@ -513,7 +513,7 @@ def remove_obstructions(reader, input_lefs, obstructions):
                 found = True
                 odb.dbObstruction_destroy(odb_obstruction[2])
             if found:
-               break
+                break
         if not found:
             print("[WARNING] Obstruction on", layer, "at", *bbox, "(DBU) not found.")
 
