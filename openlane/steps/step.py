@@ -855,7 +855,7 @@ class Step(ABC):
                     f"{self.name}: Interrupted ({Signals(-e.returncode).name})"
                 )
             else:
-                raise StepError(f"{self.name}: subprocess {e.args} failed")
+                raise StepError(e.returncode, f"{self.name}: subprocess {e.args} failed")
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates

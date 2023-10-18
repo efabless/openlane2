@@ -20,6 +20,7 @@ import sys
 
 from reader import OdbReader, click_odb, click
 from typing import Tuple, List
+from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR
 
 
 @click.group()
@@ -429,7 +430,7 @@ def parse_obstructions(obstructions):
         + RE_NUMBER
         + r"\s+"
         + RE_NUMBER
-        + r")"
+        + r") *$"
     )
 
     obses = obstructions.split(",")
@@ -437,14 +438,13 @@ def parse_obstructions(obstructions):
     for obs in obses:
         obs = obs.strip()
         m = re.match(RE_OBS, obs)
-        assert (
-            m
-        ), "Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..." % (
-            obs
-        )
-        layer = m.group("layer")
-        bbox = [float(x) for x in m.group("bbox").split()]
-        obs_list.append((layer, bbox))
+        if m is None:
+            print("Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..." % obs)
+            sys.exit(FORMAT_ERROR)
+        else:
+            layer = m.group("layer")
+            bbox = [float(x) for x in m.group("bbox").split()]
+            obs_list.append((layer, bbox))
 
     return obs_list
 
@@ -464,7 +464,7 @@ def add_obstructions(reader, input_lefs, obstructions):
         odb_layer = reader.tech.findLayer(layer)
         if odb_layer is None:
             print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
-            sys.exit(1)
+            sys.exit(METAL_LAYER_ERROR)
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
