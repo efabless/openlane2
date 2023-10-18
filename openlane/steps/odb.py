@@ -277,6 +277,89 @@ class ReportDisconnectedPins(OdbpyStep):
 
 
 @Step.factory.register()
+class AddObstructions(OdbpyStep):
+    id = "Odb.AddObstructions"
+    name = "Add Obstructions"
+    config_vars = [
+        Variable(
+            "GENERIC_OBSTRUCTIONS",
+            Optional[List[str]],
+            "Add obstructions to the design. If set to `None`, this step is skipped.",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "defutil.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["add_obstructions"]
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        if obstructions := self.config[self.config_vars[0].name]:
+            for obstruction in obstructions:
+                command.append("--obstructions")
+                command.append(obstruction)
+        return command
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config[self.config_vars[0].name] is None:
+            warn(f"{self.config_vars[0].name} is not defined. Skipping {self.id}…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class RemoveObstructions(OdbpyStep):
+    id = "Odb.RemoveObstructions"
+    name = "Remove Obstructions"
+    config_vars = AddObstructions.config_vars
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "defutil.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["remove_obstructions"]
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        if obstructions := self.config[self.config_vars[0].name]:
+            for obstruction in obstructions:
+                command.append("--obstructions")
+                command.append(obstruction)
+        return command
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config[self.config_vars[0].name] is None:
+            warn(f"{self.config_vars[0].name} is not defined. Skipping {self.id}…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class AddPDNObstructions(AddObstructions):
+    id = "Odb.AddPDNObstructions"
+    name = "Add PDN obstructions"
+
+    config_vars = [
+        Variable(
+            "PDN_OBSTRUCTIONS",
+            Optional[List[str]],
+            "Add obstructions to the design before PDN stage. If set to `None`, this step is skipped.",
+            default=None,
+        ),
+    ]
+
+
+@Step.factory.register()
+class RemovePDNObstructions(RemoveObstructions):
+    id = "Odb.RemovePDNObstructions"
+    name = "Remove PDN obstructions"
+
+    config_vars = AddPDNObstructions.config_vars
+
+
+@Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
     """
     Places I/O pins using a custom script, which uses a "pin order configuration"
