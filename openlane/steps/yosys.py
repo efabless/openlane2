@@ -84,6 +84,18 @@ verilog_rtl_cfg_vars = [
         Optional[List[str]],
         "Specifies the Verilog `include` directories.",
     ),
+    Variable(
+        "USE_SYNLIG",
+        bool,
+        "Use the Synlig plugin to process files, which has greater SystemVerilog parsing capabilities, but may not support all Yosys commands properly.",
+        default=True,
+    ),
+    Variable(
+        "SYNLIG_DEFER",
+        bool,
+        "Uses -defer flag when reading files the Synlig plugin, which may improve performance by reading each file separately, but is experimental.",
+        default=False,
+    )
 ]
 
 
@@ -138,7 +150,7 @@ class YosysStep(TclStep):
         Variable(
             "USE_LIGHTER",
             bool,
-            "Activates Lighter, an experimental module that attempts to optimize clock-gated flip-flops.",
+            "Activates Lighter, an experimental plugin that attempts to optimize clock-gated flip-flops.",
             default=False,
         ),
         Variable(

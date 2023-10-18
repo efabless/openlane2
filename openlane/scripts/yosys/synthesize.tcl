@@ -197,18 +197,8 @@ if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
 
 # Start Synthesis
 if { [info exists ::env(VERILOG_FILES) ]} {
-    set verilog_include_args [list]
-    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-            lappend verilog_include_args "-I$dir"
-        }
-    }
-
-    foreach file $::env(VERILOG_FILES) {
-        read_verilog -sv {*}$verilog_include_args $file
-    }
+    read_verilog_files
 } elseif { [info exists ::env(VHDL_FILES)] } {
-    puts $::env(VHDL_FILES)
     ghdl {*}$::env(VHDL_FILES) -e $::env(DESIGN_NAME)
 } else {
     puts "SCRIPT NOT CALLED CORRECTLY: EITHER VERILOG_FILES OR VHDL_FILES MUST BE SET"

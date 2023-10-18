@@ -66,3 +66,30 @@ proc read_deps {{power_defines "off"}} {
         }
     }
 }
+
+proc read_verilog_files {} {
+    set verilog_include_args [list]
+    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+            lappend verilog_include_args "-I$dir"
+        }
+    }
+
+    set synlig_defer [list]
+    if { $::env(SYNLIG_DEFER) } {
+        lappend synlig_defer -defer
+    }
+
+    if { $::env(USE_SYNLIG) && $::env(SYNLIG_DEFER) } {
+        foreach file $::env(VERILOG_FILES) {
+            read_systemverilog -defer -sv {*}$verilog_include_args $file
+        }
+        read_systemverilog -link -top $::env(DESIGN_NAME)
+    } elseif { $::env(USE_SYNLIG) } {
+        read_systemverilog -top $::env(DESIGN_NAME) -sv {*}$verilog_include_args {*}$::env(VERILOG_FILES)
+    } else {
+        foreach file $::env(VERILOG_FILES) {
+            read_verilog -sv {*}$verilog_include_args $file
+        }
+    }
+}

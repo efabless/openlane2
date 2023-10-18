@@ -14,11 +14,10 @@
 {
   pkgs ? import ./pkgs.nix {},
   yosys ? import ./yosys.nix { inherit pkgs; },
+  surelog ? import ./surelog.nix { inherit pkgs; },
 }:
 
-with pkgs; let
-    surelog = import ./surelog.nix { inherit pkgs; };
-in clangStdenv.mkDerivation rec {
+with pkgs; clangStdenv.mkDerivation rec {
   name = "yosys-synlig-sv";
   dylibs = ["synlig-sv"];
 

@@ -25,11 +25,12 @@
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
   },
+  surelog ? import ./nix/surelog.nix { inherit pkgs; },
   verilator ? import ./nix/verilator.nix { inherit pkgs; },
   volare ? import ./nix/volare.nix { inherit pkgs; },
   yosys ? import ./nix/yosys.nix { inherit pkgs; },
 
-  synlig-sv ? import ./nix/yosys-synlig-sv.nix { inherit pkgs; inherit yosys; },
+  synlig-sv ? import ./nix/yosys-synlig-sv.nix { inherit pkgs; inherit yosys; inherit surelog; },
   lighter ? import ./nix/yosys-lighter.nix { inherit pkgs; inherit yosys; },
   sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
   eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
@@ -64,7 +65,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     verilog
     verilator
     tcl
-    uhdm
+    surelog
   ];
 
   propagatedBuildInputs = [
