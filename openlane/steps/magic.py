@@ -258,8 +258,8 @@ class DRC(MagicStep):
         Variable(
             "MAGIC_DRC_USE_GDS",
             bool,
-            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, with concrete views of cells and submacros, which is a bit faster, but less accurate.",
-            default=False,
+            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, which is a bit faster, but may be less accurate as some DEF/LEF elements are abstract.",
+            default=True,
         ),
     ]
 
