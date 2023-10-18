@@ -461,6 +461,10 @@ def add_obstructions(reader, input_lefs, obstructions):
     obs_list = parse_obstructions(obstructions)
     for obs in obs_list:
         layer = obs[0]
+        odb_layer = reader.tech.findLayer(layer)
+        if odb_layer is None:
+            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
+            sys.exit(1)
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
