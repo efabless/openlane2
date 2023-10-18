@@ -46,8 +46,8 @@ _common_config_vars = [
     Variable(
         "RUN_POST_GRT_DESIGN_REPAIR",
         bool,
-        "Enables resizer design repair after global placement using the OpenROAD.RepairDesignPostGPL step.",
-        default=True,
+        "Enables resizer design repair after global placement using the OpenROAD.RepairDesignPostGPL step. This is experimental and may result in hangs and/or extended run times.",
+        default=False,
     ),
     Variable(
         "RUN_CTS",
@@ -66,8 +66,8 @@ _common_config_vars = [
     Variable(
         "RUN_POST_GRT_RESIZER_TIMING",
         bool,
-        "Enables resizer timing optimizations after global routing using the OpenROAD.ResizerTimingPostGRT step.",
-        default=True,
+        "Enables resizer timing optimizations after global routing using the OpenROAD.ResizerTimingPostGRT step. This is experimental and may result in hangs and/or extended run times.",
+        default=False,
         deprecated_names=["GLB_RESIZER_TIMING_OPTIMIZATIONS"],
     ),
     Variable(

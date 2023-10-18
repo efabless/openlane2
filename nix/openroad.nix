@@ -27,13 +27,13 @@ with pkgs; let
   });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "0a6d0fd469bc674417036342994520ee2e0a2727";
+  rev = "0a584d123190322b0725d5440c2c486d91d3afd8";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-2wXgAVQmYusdXUXV4tiNaekLX7RtV0a3P5f2mj42rNk=";
+    sha256 = "sha256-VA/AV7eCdjA6NWVahjZFKs3zP512+XEIMhwVJOwT4lY=";
     fetchSubmodules = true;
   };
 
@@ -56,12 +56,6 @@ in clangStdenv.mkDerivation rec {
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
   '';
-
-  # Selectively fixes https://github.com/The-OpenROAD-Project/OpenROAD/issues/2892
-  # without other problems introduced by later OR versions
-  patches = [
-    ./patches/openroad/drc.patch
-  ];
 
   buildInputs = [
     abc
