@@ -439,7 +439,10 @@ def parse_obstructions(obstructions):
         obs = obs.strip()
         m = re.match(RE_OBS, obs)
         if m is None:
-            print("Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..." % obs)
+            print(
+                "Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..."
+                % obs
+            )
             sys.exit(FORMAT_ERROR)
         else:
             layer = m.group("layer")
