@@ -441,7 +441,7 @@ def parse_obstructions(obstructions):
         if m is None:
             print(
                 f"[ERROR] Incorrectly formatted input {obs}.\n Format: layer llx lly urx ury, ...",
-                file=sys.stderr
+                file=sys.stderr,
             )
             sys.exit(FORMAT_ERROR)
         else:
