@@ -141,7 +141,6 @@ class ProcessStatsThread(Thread):
 
     def run(self):
         count = 1
-        old = self.props.copy()
         total = self.props.copy()
         current = self.props.copy()
         status = self.process.status()
@@ -161,9 +160,6 @@ class ProcessStatsThread(Thread):
                 for prop in self.props.keys():
                     self.peak[prop] = max(current[prop], self.peak[prop])
                     total[prop] = total[prop] + current[prop]
-
-                del old
-                old = current.copy()
 
                 count = count + 1
                 time.sleep(self.interval)
