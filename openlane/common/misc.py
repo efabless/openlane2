@@ -225,3 +225,37 @@ class zip_first(object):
         except StopIteration:
             pass
         return (a, b)
+
+
+def format_size(byte_count: int) -> str:
+    units = [
+        "B",
+        "KiB",
+        "MiB",
+        "GiB",
+        "TiB",
+        "PiB",
+        "EiB",
+        # TODO: update OpenLane when zebibytes are a thing
+    ]
+
+    tracker = 0
+    so_far = byte_count
+    while (so_far // 1024) > 0 and tracker < (len(units) - 1):
+        tracker += 1
+        so_far //= 1024
+
+    return f"{so_far}{units[tracker]}"
+
+
+def format_elapsed_time(elapsed_seconds: float) -> str:
+    hours = int(elapsed_seconds // 3600)
+    leftover = elapsed_seconds % 3600
+
+    minutes = int(leftover // 60)
+    leftover = leftover % 60
+
+    seconds = int(leftover // 1)
+    milliseconds = int((leftover % 1) * 1000)
+
+    return f"{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}"

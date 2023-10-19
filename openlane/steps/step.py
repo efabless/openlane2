@@ -61,6 +61,8 @@ from ..common import (
     final,
     protected,
     copy_recursive,
+    format_size,
+    format_elapsed_time,
 )
 from ..logging import (
     rule,
@@ -120,29 +122,33 @@ MetricsUpdate = Dict[str, Any]
 
 
 class ProcessStatsThread(Thread):
-    def __init__(self, process, interval=0.1):
+    def __init__(self, process: psutil.Popen, interval: float = 0.1):
         Thread.__init__(
             self,
         )
         self.process = process
         self.result = None
         self.interval = interval
-        self.props = {
-            "cpu": 0.0,
+        self.time = {
             "cpu_time_user": 0.0,
             "cpu_time_system": 0.0,
             "cpu_time_iowait": 0.0,
+        }
+        self.peak_resources = {
+            "cpu_percent": 0.0,
             "memory_rss": 0.0,
             "memory_vms": 0.0,
             "threads": 0.0,
         }
-        self.avg = self.props.copy()
-        self.peak = self.props.copy()
+        self.avg_resources = {
+            "cpu_percent": 0.0,
+            "memory_rss": 0.0,
+            "memory_vms": 0.0,
+            "threads": 0.0,
+        }
 
     def run(self):
         count = 1
-        total = self.props.copy()
-        current = self.props.copy()
         status = self.process.status()
         while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
             with self.process.oneshot():
@@ -150,22 +156,47 @@ class ProcessStatsThread(Thread):
                 memory = self.process.memory_info()
                 cpu_time = self.process.cpu_times()
                 threads = self.process.num_threads()
-                current["cpu"] = cpu
-                current["cpu_time_user"] = cpu_time.user
-                current["cpu_time_system"] = cpu_time.system
-                current["cpu_time_iowait"] = cpu_time.iowait
+
+                self.time["cpu_time_user"] = cpu_time.user
+                self.time["cpu_time_system"] = cpu_time.system
+                self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
+
+                current: Dict[str, float] = {}
+                current["cpu_percent"] = cpu
                 current["memory_rss"] = memory.rss
                 current["memory_vms"] = memory.vms
                 current["threads"] = threads
-                for prop in self.props.keys():
-                    self.peak[prop] = max(current[prop], self.peak[prop])
-                    total[prop] = total[prop] + current[prop]
 
-                count = count + 1
+                for key in self.peak_resources.keys():
+                    self.peak_resources[key] = max(
+                        current[key], self.peak_resources[key]
+                    )
+
+                    # moving average
+                    self.avg_resources[key] = (
+                        (count * self.avg_resources[key]) + current[key]
+                    ) / (count + 1)
+
+                count += 1
                 time.sleep(self.interval)
                 status = self.process.status()
-        for prop in self.props:
-            self.avg[prop] = total[prop] / count
+
+    def stats_as_dict(self):
+        return {
+            "time": {k: format_elapsed_time(self.time[k]) for k in self.time},
+            "peak_resources": {
+                k: self.peak_resources[k]
+                if "memory" not in k
+                else format_size(int(self.peak_resources[k]))
+                for k in self.peak_resources
+            },
+            "avg_resources": {
+                k: self.avg_resources[k]
+                if "memory" not in k
+                else format_size(int(self.avg_resources[k]))
+                for k in self.avg_resources
+            },
+        }
 
 
 class Step(ABC):
@@ -995,9 +1026,12 @@ class Step(ABC):
                 elif not silent and "table template" not in line:  # sky130 ff hack
                     verbose(line.strip(), markup=False)
         process_stats_thread.join()
-        with open(os.path.join(self.step_dir, "process_stats.json"), "w") as f:
+
+        json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"
+
+        with open(json_stats, "w") as f:
             json.dump(
-                {"peak": process_stats_thread.peak, "avg": process_stats_thread.avg},
+                process_stats_thread.stats_as_dict(),
                 f,
                 indent=4,
             )
