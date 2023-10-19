@@ -14,17 +14,20 @@
 from __future__ import annotations
 from decimal import Decimal
 
-import os
-import time
 import json
+import os
+import psutil
 import shutil
-import textwrap
 import subprocess
+import textwrap
+import time
+
 from signal import Signals
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
+from threading import Thread
 from typing import (
     Any,
     List,
@@ -58,6 +61,8 @@ from ..common import (
     final,
     protected,
     copy_recursive,
+    format_size,
+    format_elapsed_time,
 )
 from ..logging import (
     rule,
@@ -114,6 +119,84 @@ LastState: State = State()
 
 ViewsUpdate = Dict[DesignFormat, StateElement]
 MetricsUpdate = Dict[str, Any]
+
+
+class ProcessStatsThread(Thread):
+    def __init__(self, process: psutil.Popen, interval: float = 0.1):
+        Thread.__init__(
+            self,
+        )
+        self.process = process
+        self.result = None
+        self.interval = interval
+        self.time = {
+            "cpu_time_user": 0.0,
+            "cpu_time_system": 0.0,
+            "cpu_time_iowait": 0.0,
+        }
+        self.peak_resources = {
+            "cpu_percent": 0.0,
+            "memory_rss": 0.0,
+            "memory_vms": 0.0,
+            "threads": 0.0,
+        }
+        self.avg_resources = {
+            "cpu_percent": 0.0,
+            "memory_rss": 0.0,
+            "memory_vms": 0.0,
+            "threads": 0.0,
+        }
+
+    def run(self):
+        count = 1
+        status = self.process.status()
+        while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
+            with self.process.oneshot():
+                cpu = self.process.cpu_percent()
+                memory = self.process.memory_info()
+                cpu_time = self.process.cpu_times()
+                threads = self.process.num_threads()
+
+                self.time["cpu_time_user"] = cpu_time.user
+                self.time["cpu_time_system"] = cpu_time.system
+                self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
+
+                current: Dict[str, float] = {}
+                current["cpu_percent"] = cpu
+                current["memory_rss"] = memory.rss
+                current["memory_vms"] = memory.vms
+                current["threads"] = threads
+
+                for key in self.peak_resources.keys():
+                    self.peak_resources[key] = max(
+                        current[key], self.peak_resources[key]
+                    )
+
+                    # moving average
+                    self.avg_resources[key] = (
+                        (count * self.avg_resources[key]) + current[key]
+                    ) / (count + 1)
+
+                count += 1
+                time.sleep(self.interval)
+                status = self.process.status()
+
+    def stats_as_dict(self):
+        return {
+            "time": {k: format_elapsed_time(self.time[k]) for k in self.time},
+            "peak_resources": {
+                k: self.peak_resources[k]
+                if "memory" not in k
+                else format_size(int(self.peak_resources[k]))
+                for k in self.peak_resources
+            },
+            "avg_resources": {
+                k: self.avg_resources[k]
+                if "memory" not in k
+                else format_size(int(self.avg_resources[k]))
+                for k in self.avg_resources
+            },
+        }
 
 
 class Step(ABC):
@@ -903,12 +986,15 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
-        process = subprocess.Popen(
+        process = psutil.Popen(
             cmd_str,
             encoding="utf8",
             env=env,
             **kwargs,
         )
+
+        process_stats_thread = ProcessStatsThread(process)
+        process_stats_thread.start()
         lines = ""
         if process_stdout := process.stdout:
             current_rpt = None
@@ -939,6 +1025,16 @@ class Step(ABC):
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
                     verbose(line.strip(), markup=False)
+        process_stats_thread.join()
+
+        json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"
+
+        with open(json_stats, "w") as f:
+            json.dump(
+                process_stats_thread.stats_as_dict(),
+                f,
+                indent=4,
+            )
         returncode = process.wait()
         log_file.close()
         if returncode != 0:

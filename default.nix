@@ -78,6 +78,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     deprecated
     immutabledict
     libparse
+    psutil
   ] ++ includedTools;
 
   doCheck = false;
