@@ -31,6 +31,6 @@ removed_variables: Dict[str, str] = {
     "PL_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
     "GRT_ESTIMATE_PARASITICS": "Parasitics are always estimated whenever possible.",
     "FP_PDN_AUTO_ADJUST": "Too situational. It's always best to be more explicit.",
-    "SYNTH_READ_BLACKBOX_LIB": "Always on.",
-    "CTS_TOLERANCE": "No longer used by OpenROAD",
+    "SYNTH_READ_BLACKBOX_LIB": "Changed to always be on.",
+    "CTS_TOLERANCE": "No longer supported by OpenROAD.",
 }
