@@ -18,14 +18,6 @@ set vtop $::env(DESIGN_NAME)
 read_deps "on"
 
 read_verilog_files
-
-if { [info exists ::env(SYNTH_PARAMETERS) ] } {
-    foreach define $::env(SYNTH_PARAMETERS) {
-        set param_and_value [split $define "="]
-        lassign $param_and_value param value
-        chparam -set $param $value $vtop
-    }
-}
 hierarchy -check -top $vtop
 yosys rename -top $vtop
 yosys proc
