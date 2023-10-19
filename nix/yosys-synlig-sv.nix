@@ -32,15 +32,12 @@ with pkgs; clangStdenv.mkDerivation rec {
     t  := yosys
     ts := ''$(call GetTargetStructName,''${t})
 
-    ''${ts}.src_dir         := ${yosys}/share/yosys/include
+    ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
     ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
   '';
 
   propagatedBuildInputs = [
     yosys
-    libedit
-    libbsd
-    zlib
   ];
 
   buildInputs = [
@@ -57,8 +54,9 @@ with pkgs; clangStdenv.mkDerivation rec {
   buildPhase = ''
     rm third_party/Build.surelog.mk
     cp ${yosys-mk} third_party/Build.yosys.mk
-    cat third_party/Build.yosys.mk
-    make build@systemverilog-plugin -j$NIX_BUILD_CORES
+    make build@systemverilog-plugin\
+      -j$NIX_BUILD_CORES\
+      LDFLAGS="''$(yosys-config --ldflags)"
   '';
 
   installPhase = ''
