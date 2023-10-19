@@ -28,8 +28,5 @@ delete
 select top cell
 erase labels
 
-if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } {
-    gds abstract allow
-}
 
 gds write $::env(SAVE_GDS)

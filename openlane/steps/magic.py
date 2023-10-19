@@ -14,7 +14,7 @@
 import os
 import shutil
 from abc import abstractmethod
-from typing import List, Optional, Tuple
+from typing import Literal, List, Optional, Tuple
 
 from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
@@ -39,12 +39,6 @@ class MagicStep(TclStep):
             "MAGIC_GDS_POLYGON_SUBCELLS",
             bool,
             'A flag to enable polygon subcells in magic for gds read potentially speeding up magic. From magic docs: "Put non-Manhattan polygons. This prevents interations with other polygons on the same plane and so reduces tile splitting."',
-            default=False,
-        ),
-        Variable(
-            "MAGIC_GDS_ALLOW_ABSTRACT",
-            bool,
-            "A flag to allow abstract view of macros when processing GDS files in Magic.",
             default=False,
         ),
         Variable(
@@ -193,12 +187,15 @@ class StreamOut(MagicStep):
             default=True,
             deprecated_names=["MAGIC_DISABLE_HIER_GDS"],
         ),
-        # Variable(
-        #     "MAGIC_GDS_FLATTEN",
-        #     bool,
-        #     "todo",
-        #     default=True,
-        # ),
+        Variable(
+            "MAGIC_MACRO_STD_CELL_SOURCE",
+            Literal["PDK", "macro"],
+            "If set to PDK, magic will use the PDK definition of the STD cells for macros inside the design."
+            + " Otherwise, the macro is completely treated as a blackbox and magic will use the existing cell definition inside"
+            + " the macro gds."
+            + " This mode is only supported for macros specified in MACROS variable",
+            default="macro",
+        ),
     ]
 
     def get_script_path(self):
@@ -209,7 +206,18 @@ class StreamOut(MagicStep):
         if die_area := state_in.metrics.get("design__die__bbox"):
             env["DIE_AREA"] = die_area
 
+        env["MAGTYPE"] = "mag"
         magic_log_dir = os.path.join(self.step_dir, "magic.log")
+
+        if self.config["MACROS"] is not None:
+            macro_gds = []
+            for macro in self.config["MACROS"].keys():
+                macro_gds.append(macro)
+                macro_gds += [str(path) for path in self.config["MACROS"][macro].gds]
+                macro_gds += ","
+            from ..common import TclUtils
+
+            env["__MACRO_GDS"] = TclUtils.join(macro_gds[:-1])
 
         views_updates, metrics_updates = super().run(
             state_in,
@@ -217,6 +225,7 @@ class StreamOut(MagicStep):
             log_to=magic_log_dir,
             **kwargs,
         )
+
         if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
             magic_gds_out = str(views_updates[DesignFormat.MAG_GDS])
             gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
@@ -230,6 +239,8 @@ class StreamOut(MagicStep):
         for line in open(magic_log_dir, encoding="utf8"):
             if "Calma output error" in line:
                 raise StepError("Magic GDS was written with errors.")
+            elif "is an abstract view" in line:
+                raise StepError("Missing GDS view for a macro. Check step log file.")
 
         return views_updates, metrics_updates
 

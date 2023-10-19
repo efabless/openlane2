@@ -33,4 +33,5 @@ removed_variables: Dict[str, str] = {
     "FP_PDN_AUTO_ADJUST": "Too situational. It's always best to be more explicit.",
     "SYNTH_READ_BLACKBOX_LIB": "Changed to always be on.",
     "CTS_TOLERANCE": "No longer supported by OpenROAD.",
+    "MAGIC_GDS_ALLOW_ABSTRACT": "Bad practice. If an abstract view is needed, a GDS file can be generated from the abstract LEF file.",
 }
