@@ -23,6 +23,7 @@ types-colorama
 types-requests
 types-Pygments
 types-Deprecated
+types-psutil
 
 # test
 pytest

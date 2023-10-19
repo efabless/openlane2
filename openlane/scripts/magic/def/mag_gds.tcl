@@ -11,9 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+source $::env(SCRIPTS_DIR)/magic/common/read.tcl
 drc off
 
-source $::env(SCRIPTS_DIR)/magic/def/read.tcl
+read_pdk_gds
+gds noduplicates true
+
+if { $::env(MAGIC_MACRO_STD_CELL_SOURCE) == "PDK" } {
+    read_macro_gds
+} else {
+    read_macro_gds_blackbox
+}
+
+read_extra_gds
+
+load (NEWCELL)
+
+read_tech_lef
+read_def
 
 load $::env(DESIGN_NAME)
 select top cell
@@ -45,42 +60,7 @@ cellname filepath $::env(DESIGN_NAME) $::env(STEP_DIR)
 
 save
 
-
-# mark the incoming cell defs as readonly so that their
-# GDS data gets copied verbatim
-gds readonly true
-gds rescale false
-
-if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
-	gds polygon subcells true
-}
-# # Can be obtained from the PDK's .mag files.
-# set gds_files_in $::env(CELL_GDS)
-# foreach gds_file $gds_files_in {
-# 	puts "> gds read $gds_file"
-# 	gds read $gds_file
-# }
-if {  [info exist ::env(MACRO_GDS_FILES)] } {
-	set gds_files_in $::env(MACRO_GDS_FILES)
-	foreach gds_file $gds_files_in {
-		puts "> gds read $gds_file"
-		gds read $gds_file
-	}
-}
-if {  [info exist ::env(EXTRA_GDS_FILES)] } {
-	set gds_files_in $::env(EXTRA_GDS_FILES)
-	foreach gds_file $gds_files_in {
-		puts "> gds read $gds_file"
-		gds read $gds_file
-	}
-}
-
 load $::env(DESIGN_NAME)
-
-# if { $::env(MAGIC_GDS_FLATTEN) } {
-# 	puts "Flattening cell"
-# 	flatten top cell
-# }
 
 select top cell
 
@@ -91,8 +71,8 @@ if {  $::env(MAGIC_DISABLE_CIF_INFO) } {
 
 gds nodatestamp yes
 
-if { $::env(MAGIC_GDS_ALLOW_ABSTRACT) } {
-	gds abstract allow
+if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
+	gds polygon subcells true
 }
 
 gds write $::env(SAVE_MAG_GDS)

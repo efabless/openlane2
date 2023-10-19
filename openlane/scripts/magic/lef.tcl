@@ -15,7 +15,7 @@ drc off
 if { $::env(MAGIC_LEF_WRITE_USE_GDS) } {
     gds read $::env(CURRENT_GDS)
 } else {
-    source $::env(SCRIPTS_DIR)/magic/def/read.tcl
+    source $::env(SCRIPTS_DIR)/magic/common/read.tcl
 }
 
 if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
