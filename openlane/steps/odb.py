@@ -277,8 +277,8 @@ class ReportDisconnectedPins(OdbpyStep):
 
 
 @Step.factory.register()
-class AddObstructions(OdbpyStep):
-    id = "Odb.AddObstructions"
+class AddRoutingObstructions(OdbpyStep):
+    id = "Odb.AddRoutingObstructions"
     name = "Add Obstructions"
     config_vars = [
         Variable(
@@ -310,10 +310,10 @@ class AddObstructions(OdbpyStep):
 
 
 @Step.factory.register()
-class RemoveObstructions(OdbpyStep):
-    id = "Odb.RemoveObstructions"
+class RemoveRoutingObstructions(OdbpyStep):
+    id = "Odb.RemoveRoutingObstructions"
     name = "Remove Obstructions"
-    config_vars = AddObstructions.config_vars
+    config_vars = AddRoutingObstructions.config_vars
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "defutil.py")
@@ -337,7 +337,7 @@ class RemoveObstructions(OdbpyStep):
 
 
 @Step.factory.register()
-class AddPDNObstructions(AddObstructions):
+class AddPDNObstructions(AddRoutingObstructions):
     id = "Odb.AddPDNObstructions"
     name = "Add PDN obstructions"
 
@@ -352,7 +352,7 @@ class AddPDNObstructions(AddObstructions):
 
 
 @Step.factory.register()
-class RemovePDNObstructions(RemoveObstructions):
+class RemovePDNObstructions(RemoveRoutingObstructions):
     id = "Odb.RemovePDNObstructions"
     name = "Remove PDN obstructions"
 
