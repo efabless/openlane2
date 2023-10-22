@@ -42,10 +42,11 @@ def pdk_root(request):
     return pdk_root
 
 
-def try_call(fn: Optional[Callable], /, **kwargs):
-    if fn is None:
-        fn = lambda: None
-
+def try_call(fn: Callable, /, **kwargs):
+    # Calls a function with only the functions it supports
+    # as a hack, if one of the kwargs is exception and
+    # fn does not have exception in its header, the exception
+    # is raised
     sig = inspect.signature(fn)
     if (
         "exception" in kwargs
@@ -56,6 +57,18 @@ def try_call(fn: Optional[Callable], /, **kwargs):
 
     final_kwargs = {k: kwargs[k] for k in kwargs if k in sig.parameters}
     return fn(**final_kwargs)
+
+
+def element_from_file(file, element):
+    try:
+        spec = importlib.util.spec_from_file_location(element, file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        print(hasattr(module, element))
+        if hasattr(module, element):
+            return getattr(module, element)
+    except FileNotFoundError:
+        pass
 
 
 @pytest.mark.parametrize("test", pytest.tests)
@@ -82,25 +95,12 @@ def test_step_folder(test: str, pdk_root: str):
             print(referenced_file, os.path.join(".", file[:-4]))
             shutil.copy(referenced_file, final_path)
 
-    process_input: Optional[Callable] = None
-    try:
-        import process_input as process_input_file
-
-        importlib.reload(process_input_file)
-
-        process_input = process_input_file.process_input
-    except ImportError:
-        pass
-
-    handler: Optional[Callable] = None
-    try:
-        import handler as handler_file
-
-        importlib.reload(handler_file)
-
-        handler = handler_file.handle
-    except FileNotFoundError:
-        pass
+    process_input: Optional[Callable] = element_from_file(
+        os.path.join(os.getcwd(), "process_input.py"), "process_input"
+    ) or (lambda state_in, config: (state_in, config))
+    handler: Optional[Callable] = element_from_file(
+        os.path.join(os.getcwd(), "handler.py"), "handle"
+    ) or (lambda: None)
 
     # 1. Preprocess State and Config (if needed)
     state_in = os.path.join(".", "state_in.json")
