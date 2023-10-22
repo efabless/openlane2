@@ -80,7 +80,9 @@ class StepError(RuntimeError):
     properly.
     """
 
-    pass
+    def __init__(self, *args, underlying_error: Optional[Exception] = None, **kwargs):
+        self.underlying_error = underlying_error
+        super().__init__(*args, **kwargs)
 
 
 class DeferredStepError(StepError):
@@ -856,7 +858,7 @@ class Step(ABC):
                 )
             else:
                 raise StepError(
-                    e.returncode, f"{self.name}: subprocess {e.args} failed"
+                    f"{self.name}: subprocess {e.args} failed", underlying_error=e
                 )
 
         metrics = GenericImmutableDict(

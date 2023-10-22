@@ -282,9 +282,9 @@ class AddRoutingObstructions(OdbpyStep):
     name = "Add Obstructions"
     config_vars = [
         Variable(
-            "GENERIC_OBSTRUCTIONS",
+            "ROUTING_OBSTRUCTIONS",
             Optional[List[str]],
-            "Add obstructions to the design. If set to `None`, this step is skipped.",
+            "Add routing obstructions to the design. If set to `None`, this step is skipped.",
         ),
     ]
 
@@ -345,7 +345,7 @@ class AddPDNObstructions(AddRoutingObstructions):
         Variable(
             "PDN_OBSTRUCTIONS",
             Optional[List[str]],
-            "Add obstructions to the design before PDN stage. If set to `None`, this step is skipped.",
+            "Add routing obstructions to the design before PDN stage. If set to `None`, this step is skipped.",
             default=None,
         ),
     ]
