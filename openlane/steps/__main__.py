@@ -67,7 +67,7 @@ def load_step_from_inputs(
 
     return Target.load(
         config=config,
-        state=state_in,
+        state_in=state_in,
     )
 
 
