@@ -16,6 +16,11 @@ read_pnr_libs
 read_lefs
 read_current_netlist
 
+set ::chip [[::ord::get_db] getChip]
+set ::tech [[::ord::get_db] getTech]
+set ::block [$::chip getBlock]
+set ::dbu [$tech getDbUnitsPerMicron]
+
 unset_propagated_clock [all_clocks]
 
 set bottom_margin  [expr $::env(PLACE_SITE_HEIGHT) * $::env(BOTTOM_MARGIN_MULT)]
@@ -60,14 +65,20 @@ if {$::env(FP_SIZING) == "absolute"} {
     lappend arg_list -core_space "$bottom_margin $top_margin $left_margin $right_margin"
 }
 
+if { [info exists ::env(FP_OBSTRUCTIONS)] } {
+    foreach obstruction $::env(FP_OBSTRUCTIONS) {
+        set llx [expr [lindex $obstruction 0] * $::dbu]
+        set lly [expr [lindex $obstruction 1] * $::dbu]
+        set urx [expr [lindex $obstruction 2] * $::dbu]
+        set ury [expr [lindex $obstruction 3] * $::dbu]
+        odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
+        puts "\[INFO] Created obstruction at $llx $lly $urx $ury"
+    }
+}
 initialize_floorplan {*}$arg_list
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
-
-set ::chip [[::ord::get_db] getChip]
-set ::tech [[::ord::get_db] getTech]
-set ::block [$::chip getBlock]
 
 puts "\[INFO] Extracting DIE_AREA and CORE_AREA from the floorplan"
 set ::env(DIE_AREA) [list]
@@ -79,16 +90,14 @@ set core_area [$::block getCoreArea]
 set die_area [list [$die_area xMin] [$die_area yMin] [$die_area xMax] [$die_area yMax]]
 set core_area [list [$core_area xMin] [$core_area yMin] [$core_area xMax] [$core_area yMax]]
 
-set dbu [$tech getDbUnitsPerMicron]
-
 set ::env(DIE_AREA) {}
 set ::env(CORE_AREA) {}
 
 foreach coord $die_area {
-    lappend ::env(DIE_AREA) [expr {1.0 * $coord / $dbu}]
+    lappend ::env(DIE_AREA) [expr {1.0 * $coord / $::dbu}]
 }
 foreach coord $core_area {
-    lappend ::env(CORE_AREA) [expr {1.0 * $coord / $dbu}]
+    lappend ::env(CORE_AREA) [expr {1.0 * $coord / $::dbu}]
 }
 
 puts "\[INFO] Floorplanned on a die area of $::env(DIE_AREA) (µm)."
