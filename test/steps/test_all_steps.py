@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
+import sys
 import shutil
 import inspect
 import importlib
-from typing import Optional
+from typing import Callable, Optional
 
 import pytest
+from _pytest.fixtures import SubRequest
 
 
 @pytest.fixture()
-def _all_steps_enabled(request):
-    if not request.config.option.all_steps:
+def _step_enabled(request: SubRequest, test: str):
+    step_rx = request.config.option.step_rx
+    if re.search(step_rx, test) is None:
         pytest.skip()
 
 
@@ -38,53 +42,86 @@ def pdk_root(request):
     return pdk_root
 
 
+def try_call(fn: Optional[Callable], /, **kwargs):
+    if fn is None:
+        fn = lambda: None
+
+    sig = inspect.signature(fn)
+    if (
+        "exception" in kwargs
+        and kwargs["exception"] is not None
+        and "exception" not in sig.parameters
+    ):
+        raise kwargs["exception"] from None
+
+    final_kwargs = {k: kwargs[k] for k in kwargs if k in sig.parameters}
+    return fn(**final_kwargs)
+
+
 @pytest.mark.parametrize("test", pytest.tests)
-@pytest.mark.usefixtures("_chdir_tmp", "_all_steps_enabled")
+@pytest.mark.usefixtures("_chdir_tmp", "_step_enabled")
 def test_step_folder(test: str, pdk_root: str):
     from openlane.steps import Step
+    from openlane.state import State
     from openlane.common import Toolbox
 
+    sys.path.insert(0, os.getcwd())
+
+    # ---
+
+    # 0. Prepare Test Files and Handlers
     step, _ = test.split(os.path.sep, maxsplit=1)
     test_path = os.path.join(pytest.step_test_dir, test)
     shutil.copytree(test_path, ".", dirs_exist_ok=True)
 
+    for file in os.listdir("."):
+        if file.endswith(".ref"):
+            referenced_file_path = open(file, encoding="utf8").read()
+            final_path = os.path.join(".", file[:-4])
+            referenced_file = os.path.join(pytest.step_common_dir, referenced_file_path)
+            print(referenced_file, os.path.join(".", file[:-4]))
+            shutil.copy(referenced_file, final_path)
+
+    process_input: Optional[Callable] = None
+    try:
+        import process_input as process_input_file
+
+        importlib.reload(process_input_file)
+
+        process_input = process_input_file.process_input
+    except ImportError:
+        pass
+
+    handler: Optional[Callable] = None
+    try:
+        import handler as handler_file
+
+        importlib.reload(handler_file)
+
+        handler = handler_file.handle
+    except FileNotFoundError:
+        pass
+
+    # 1. Preprocess State and Config (if needed)
     state_in = os.path.join(".", "state_in.json")
     config = os.path.join(".", "config.json")
 
-    process_input = None
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "process_module", os.path.join(test_path, "process_input.py")
-        )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        process_input = module.process_input
-    except FileNotFoundError:
-        pass
-
-    handler = None
-    handler_sig = None
-    try:
-        spec = importlib.util.spec_from_file_location(
-            "handler_module", os.path.join(test_path, "handler.py")
-        )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        handler = module.handle
-        handler_sig = inspect.signature(handler)
-    except FileNotFoundError:
-        pass
-
     Target = Step.factory.get(step)
 
-    if process_input is not None:
-        state_in, config = process_input(
-            state_in,
-            config,
-            Target,
-            pdk_root,
-        )
+    state_in, config = try_call(
+        process_input,
+        state_in=state_in,
+        config=config,
+        step_cls=Target,
+        pdk_root=pdk_root,
+        test=test,
+    )
 
+    ## Create empty State if state_in.json is missing
+    if state_in is None or (type(state_in) == str and not os.path.isfile(state_in)):
+        state_in = State()
+
+    # 2. Load and Launch Step
     target = Target.load(config, state_in, pdk_root)
 
     exception: Optional[Exception] = None
@@ -96,16 +133,10 @@ def test_step_folder(test: str, pdk_root: str):
     except Exception as e:
         exception = e
 
-    if exception is not None:
-        if handler is None:
-            raise exception from None
-        if len(handler_sig.parameters) != 2:
-            raise exception from None
-
-    if handler is not None:
-        if len(handler_sig.parameters) == 1:
-            handler(target)
-        elif len(handler_sig.parameters) == 2:
-            handler(target, exception)
-        else:
-            raise RuntimeError("Handler has less than 1 or more than 2 parameters")
+    # 3. Call handler
+    try_call(
+        handler,
+        exception=exception,
+        step=target,
+        test=test,
+    )

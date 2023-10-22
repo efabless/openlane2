@@ -71,7 +71,7 @@ proc read_deps {{power_defines "off"}} {
     }
 }
 
-proc read_verilog_files {} {
+proc read_verilog_files {top_module} {
     set verilog_include_args [list]
     if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
         foreach dir $::env(VERILOG_INCLUDE_DIRS) {
@@ -105,7 +105,7 @@ proc read_verilog_files {} {
             foreach define $::env(SYNTH_PARAMETERS) {
                 set param_and_value [split $define "="]
                 lassign $param_and_value param value
-                chparam -set $param $value $vtop
+                chparam -set $param $value $top_module
             }
         }
     }

@@ -197,7 +197,7 @@ if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
 
 # Start Synthesis
 if { [info exists ::env(VERILOG_FILES) ]} {
-    read_verilog_files
+    read_verilog_files $vtop
 } elseif { [info exists ::env(VHDL_FILES)] } {
     ghdl {*}$::env(VHDL_FILES) -e $::env(DESIGN_NAME)
 } else {
@@ -234,6 +234,7 @@ if { $::env(SYNTH_ELABORATE_ONLY) } {
     tee -o "$report_dir/stat.json" stat -json
 
     write_verilog -noattr -noexpr -nohex -nodec -defparam "$::env(SAVE_NETLIST)"
+    write_json "$::env(SAVE_NETLIST).json"
     exit 0
 }
 
@@ -398,6 +399,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
         autoname
     }
     write_verilog -noattr -noexpr -nohex -nodec -defparam $output
+    write_json "$output.json"
     design -reset
 }
 design -save checkpoint

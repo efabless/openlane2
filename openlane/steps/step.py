@@ -590,7 +590,7 @@ class Step(ABC):
     def load(
         Self,
         config: Union[str, Config],
-        state_in_path: str,
+        state_in: Union[str, State],
         pdk_root: str = ".",
     ) -> Step:
         """
@@ -599,9 +599,11 @@ class Step(ABC):
 
         Useful for re-running steps that have already run.
 
-        :param config_path: Path to a **Step-filtered** ``config.json`` file.
+        :param config:
+            (Path to) a **Step-filtered** configuration
+
             The step will not tolerate variables unrelated to this specific step.
-        :param state_in_path: Path to a valid ``state_in.json`` file.
+        :param state: (Path to) a valid input state
         :param pdk_root: The PDK root, which is needed for some utilities.
 
             If your utility doesn't require it, just keep the default value
@@ -610,8 +612,8 @@ class Step(ABC):
         """
         if not isinstance(config, Config):
             config = Self._load_config_from_file(config, pdk_root)
-
-        state_in = State.loads(open(state_in_path).read())
+        if not isinstance(state_in, State):
+            state_in = State.loads(open(state_in).read())
         return Self(
             config=config,
             state_in=state_in,

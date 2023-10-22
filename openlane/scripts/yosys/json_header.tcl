@@ -17,7 +17,7 @@ set vtop $::env(DESIGN_NAME)
 
 read_deps "on"
 
-read_verilog_files
+read_verilog_files $vtop
 hierarchy -check -top $vtop
 yosys rename -top $vtop
 yosys proc

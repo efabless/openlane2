@@ -87,8 +87,8 @@ verilog_rtl_cfg_vars = [
     Variable(
         "USE_SYNLIG",
         bool,
-        "Use the Synlig plugin to process files, which has greater SystemVerilog parsing capabilities, but may not support all Yosys commands properly.",
-        default=True,
+        "Use the Synlig plugin to process files, which has better SystemVerilog parsing capabilities but may not be compatible with all Yosys commands and attributes.",
+        default=False,
     ),
     Variable(
         "SYNLIG_DEFER",
@@ -358,9 +358,9 @@ class SynthesisCommon(YosysStep):
             metric_updates["design__instance__area"] = chip_area
 
         cells = stats["design"]["num_cells_by_type"]
-        unmapped_keyword = "$"
+        safe = ["$assert"]
         unmapped_cells = [
-            cells[y] for y in cells.keys() if y.startswith(unmapped_keyword)
+            cells[y] for y in cells.keys() if y not in safe and y.startswith("$")
         ]
         metric_updates["design__instance_unmapped__count"] = sum(unmapped_cells)
 
