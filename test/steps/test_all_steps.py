@@ -59,14 +59,13 @@ def try_call(fn: Callable, /, **kwargs):
     return fn(**final_kwargs)
 
 
-def element_from_file(file, element):
+def attribute_from_file(file: str, attribute: str):
     try:
-        spec = importlib.util.spec_from_file_location(element, file)
+        spec = importlib.util.spec_from_file_location(attribute, file)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        print(hasattr(module, element))
-        if hasattr(module, element):
-            return getattr(module, element)
+        if hasattr(module, attribute):
+            return getattr(module, attribute)
     except FileNotFoundError:
         pass
 
@@ -92,13 +91,12 @@ def test_step_folder(test: str, pdk_root: str):
             referenced_file_path = open(file, encoding="utf8").read()
             final_path = os.path.join(".", file[:-4])
             referenced_file = os.path.join(pytest.step_common_dir, referenced_file_path)
-            print(referenced_file, os.path.join(".", file[:-4]))
             shutil.copy(referenced_file, final_path)
 
-    process_input: Optional[Callable] = element_from_file(
+    process_input: Callable = attribute_from_file(
         os.path.join(os.getcwd(), "process_input.py"), "process_input"
     ) or (lambda state_in, config: (state_in, config))
-    handler: Optional[Callable] = element_from_file(
+    handler: Callable = attribute_from_file(
         os.path.join(os.getcwd(), "handler.py"), "handle"
     ) or (lambda: None)
 
