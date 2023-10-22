@@ -51,6 +51,9 @@ class OdbpyStep(Step):
         command += [
             str(state_in[DesignFormat.ODB]),
         ]
+        env[
+            "PYTHONPATH"
+        ] = f"{env['PYTHONPATH']}:{os.path.join(get_script_dir(), 'odbpy')}"
 
         generated_metrics = self.run_subprocess(
             command,
@@ -288,6 +291,9 @@ class AddRoutingObstructions(OdbpyStep):
         ),
     ]
 
+    def get_obstruction_variable(self):
+        return self.config_vars[0]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "defutil.py")
 
@@ -303,37 +309,21 @@ class AddRoutingObstructions(OdbpyStep):
         return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config[self.config_vars[0].name] is None:
-            warn(f"{self.config_vars[0].name} is not defined. Skipping {self.id}…")
+        if self.config[self.get_obstruction_variable().name] is None:
+            warn(
+                f"{self.get_obstruction_variable().name} is not defined. Skipping {self.id}…"
+            )
             return {}, {}
         return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
-class RemoveRoutingObstructions(OdbpyStep):
+class RemoveRoutingObstructions(AddRoutingObstructions):
     id = "Odb.RemoveRoutingObstructions"
     name = "Remove Obstructions"
-    config_vars = AddRoutingObstructions.config_vars
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "defutil.py")
 
     def get_subcommand(self) -> List[str]:
         return ["remove_obstructions"]
-
-    def get_command(self) -> List[str]:
-        command = super().get_command()
-        if obstructions := self.config[self.config_vars[0].name]:
-            for obstruction in obstructions:
-                command.append("--obstructions")
-                command.append(obstruction)
-        return command
-
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config[self.config_vars[0].name] is None:
-            warn(f"{self.config_vars[0].name} is not defined. Skipping {self.id}…")
-            return {}, {}
-        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()

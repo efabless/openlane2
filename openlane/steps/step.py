@@ -800,17 +800,6 @@ class Step(ABC):
         """
         global LastState
 
-        if toolbox is None:
-            if not Config.current_interactive:
-                raise TypeError(
-                    "Missing argument 'toolbox' required when not running in a Flow"
-                )
-            else:
-                # Use the default global value.
-                pass
-        else:
-            self.toolbox = toolbox
-
         if step_dir is None:
             if not Config.current_interactive:
                 raise TypeError("Missing required argument 'step_dir'")
@@ -823,6 +812,15 @@ class Step(ABC):
                 Step.counter += 1
         else:
             self.step_dir = step_dir
+
+        if toolbox is None:
+            if not Config.current_interactive:
+                self.toolbox = Toolbox(self.step_dir)
+            else:
+                # Use the default global value.
+                pass
+        else:
+            self.toolbox = toolbox
 
         state_in_result = self.state_in.result()
 

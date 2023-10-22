@@ -20,7 +20,7 @@ import sys
 
 from reader import OdbReader, click_odb, click
 from typing import Tuple, List
-from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR
+from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
 
 @click.group()
@@ -514,6 +514,9 @@ def remove_obstructions(reader, input_lefs, obstructions):
         bbox = obs[1]
         bbox = [int(x * dbu) for x in bbox]
         found = False
+        if reader.tech.findLayer(layer) is None:
+            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
+            sys.exit(METAL_LAYER_ERROR)
         for odb_obstruction in existing_obstructions:
             if odb_obstruction[0:2] == obs:
                 print("Removing obstruction on", layer, "at", *bbox, "(DBU)")
@@ -522,7 +525,15 @@ def remove_obstructions(reader, input_lefs, obstructions):
             if found:
                 break
         if not found:
-            print("[WARNING] Obstruction on", layer, "at", *bbox, "(DBU) not found.")
+            print(
+                "[ERROR] Obstruction on",
+                layer,
+                "at",
+                *bbox,
+                "(DBU) not found.",
+                file=sys.stderr,
+            )
+            sys.exit(NOT_FOUND_ERROR)
 
 
 cli.add_command(remove_obstructions)
