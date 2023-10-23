@@ -455,14 +455,21 @@ class Flow(ABC):
 
         :returns: ``(success, state_list)``
         """
+        if last_run is not None and tag is not None:
+            raise FlowException("tag and last_run cannot be used simultaneously.")
+
+        if run_dir is not None and tag is not None:
+            raise FlowException("tag and run_dir cannot be used simultaneously.")
+
+        if tag is None:
+            tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
+
         if run_dir is not None:
             self.run_dir = run_dir
         else:
             self.run_dir = os.path.join(self.design_dir, "runs", tag)
-        if last_run:
-            if tag is not None:
-                raise FlowException("tag and last_run cannot be used simultaneously.")
 
+        if last_run:
             runs = sorted(glob.glob(os.path.join(self.run_dir, "*")))
 
             latest_time: float = 0
@@ -477,9 +484,6 @@ class Flow(ABC):
                 tag = os.path.basename(latest_run)
             else:
                 raise FlowException("last_run used without any existing runs")
-
-        if tag is None:
-            tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
         # Stored until next start()
 
