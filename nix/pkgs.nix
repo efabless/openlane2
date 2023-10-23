@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
+
+let
+    newpkgs = import (
+    fetchTarball "https://github.com/NixOS/nixpkgs/archive/3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58.tar.gz"
+    ) {};
+in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
     overlays = [
         (new: old: {
             # HACK BECAUSE THIS IS BROKEN ON MAC ON THE COMMIT WE'RE USING
-            ghdl-llvm = if old.stdenv.isDarwin then (
-                import (
-                    fetchTarball "https://github.com/NixOS/nixpkgs/archive/3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58.tar.gz"
-                ) {}
-            ).ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
+            ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
                 meta = {
                     platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
                 };
