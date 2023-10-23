@@ -80,7 +80,9 @@ class StepError(RuntimeError):
     properly.
     """
 
-    pass
+    def __init__(self, *args, underlying_error: Optional[Exception] = None, **kwargs):
+        self.underlying_error = underlying_error
+        super().__init__(*args, **kwargs)
 
 
 class DeferredStepError(StepError):
@@ -800,17 +802,6 @@ class Step(ABC):
         """
         global LastState
 
-        if toolbox is None:
-            if not Config.current_interactive:
-                raise TypeError(
-                    "Missing argument 'toolbox' required when not running in a Flow"
-                )
-            else:
-                # Use the default global value.
-                pass
-        else:
-            self.toolbox = toolbox
-
         if step_dir is None:
             if not Config.current_interactive:
                 raise TypeError("Missing required argument 'step_dir'")
@@ -823,6 +814,15 @@ class Step(ABC):
                 Step.counter += 1
         else:
             self.step_dir = step_dir
+
+        if toolbox is None:
+            if not Config.current_interactive:
+                self.toolbox = Toolbox(self.step_dir)
+            else:
+                # Use the default global value.
+                pass
+        else:
+            self.toolbox = toolbox
 
         state_in_result = self.state_in.result()
 
@@ -857,7 +857,9 @@ class Step(ABC):
                     f"{self.name}: Interrupted ({Signals(-e.returncode).name})"
                 )
             else:
-                raise StepError(f"{self.name}: subprocess {e.args} failed")
+                raise StepError(
+                    f"{self.name}: subprocess {e.args} failed", underlying_error=e
+                )
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates

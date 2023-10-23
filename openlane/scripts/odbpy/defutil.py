@@ -19,6 +19,8 @@ import re
 import sys
 
 from reader import OdbReader, click_odb, click
+from typing import Tuple, List
+from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
 
 @click.group()
@@ -416,15 +418,7 @@ def replace_instance_prefixes(original_prefix, new_prefix, reader):
 cli.add_command(replace_instance_prefixes)
 
 
-@click.command("add_obstructions")
-@click.option(
-    "-O",
-    "--obstructions",
-    required=True,
-    help="Format: layer llx lly urx ury, (microns)",
-)
-@click_odb
-def add_obstructions(obstructions, reader):
+def parse_obstructions(obstructions):
     RE_NUMBER = r"[\-]?[0-9]+(\.[0-9]+)?"
     RE_OBS = (
         r"(?P<layer>\S+)\s+"
@@ -436,7 +430,7 @@ def add_obstructions(obstructions, reader):
         + RE_NUMBER
         + r"\s+"
         + RE_NUMBER
-        + r")"
+        + r") *$"
     )
 
     obses = obstructions.split(",")
@@ -444,17 +438,36 @@ def add_obstructions(obstructions, reader):
     for obs in obses:
         obs = obs.strip()
         m = re.match(RE_OBS, obs)
-        assert (
-            m
-        ), "Incorrectly formatted input (%s).\n Format: layer llx lly urx ury, ..." % (
-            obs
-        )
-        layer = m.group("layer")
-        bbox = [float(x) for x in m.group("bbox").split()]
-        obs_list.append((layer, bbox))
+        if m is None:
+            print(
+                f"[ERROR] Incorrectly formatted input {obs}.\n Format: layer llx lly urx ury, ...",
+                file=sys.stderr,
+            )
+            sys.exit(FORMAT_ERROR)
+        else:
+            layer = m.group("layer")
+            bbox = [float(x) for x in m.group("bbox").split()]
+            obs_list.append((layer, bbox))
 
+    return obs_list
+
+
+@click.command("add_obstructions")
+@click.option(
+    "-O",
+    "--obstructions",
+    required=True,
+    help="Format: layer llx lly urx ury, (microns)",
+)
+@click_odb
+def add_obstructions(reader, input_lefs, obstructions):
+    obs_list = parse_obstructions(obstructions)
     for obs in obs_list:
         layer = obs[0]
+        odb_layer = reader.tech.findLayer(layer)
+        if odb_layer is None:
+            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
+            sys.exit(METAL_LAYER_ERROR)
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
@@ -463,6 +476,67 @@ def add_obstructions(obstructions, reader):
 
 
 cli.add_command(add_obstructions)
+
+
+@click.command("remove_obstructions")
+@click.option(
+    "-O",
+    "--obstructions",
+    required=True,
+    help="Format: layer llx lly urx ury, (microns)",
+)
+@click_odb
+def remove_obstructions(reader, input_lefs, obstructions):
+    obs_list = parse_obstructions(obstructions)
+    existing_obstructions: List[Tuple[str, List[int], odb.dbObstruction]] = []
+    dbu = reader.tech.getDbUnitsPerMicron()
+
+    def to_microns(x):
+        return int(x / dbu)
+
+    for odb_obstruction in reader.block.getObstructions():
+        bbox = odb_obstruction.getBBox()
+        existing_obstructions.append(
+            (
+                bbox.getTechLayer().getName(),
+                [
+                    to_microns(bbox.xMin()),
+                    to_microns(bbox.yMin()),
+                    to_microns(bbox.xMax()),
+                    to_microns(bbox.yMax()),
+                ],
+                odb_obstruction,
+            )
+        )
+
+    for obs in obs_list:
+        layer = obs[0]
+        bbox = obs[1]
+        bbox = [int(x * dbu) for x in bbox]
+        found = False
+        if reader.tech.findLayer(layer) is None:
+            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
+            sys.exit(METAL_LAYER_ERROR)
+        for odb_obstruction in existing_obstructions:
+            if odb_obstruction[0:2] == obs:
+                print("Removing obstruction on", layer, "at", *bbox, "(DBU)")
+                found = True
+                odb.dbObstruction_destroy(odb_obstruction[2])
+            if found:
+                break
+        if not found:
+            print(
+                "[ERROR] Obstruction on",
+                layer,
+                "at",
+                *bbox,
+                "(DBU) not found.",
+                file=sys.stderr,
+            )
+            sys.exit(NOT_FOUND_ERROR)
+
+
+cli.add_command(remove_obstructions)
 
 if __name__ == "__main__":
     cli()
