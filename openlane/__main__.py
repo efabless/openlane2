@@ -65,7 +65,8 @@ def run(
     reproducible: Optional[str],
     with_initial_state: Optional[State],
     config_override_strings: List[str],
-    run_dir: str,
+    run_dir: Optional[str],
+    design_dir: Optional[str],
 ) -> int:
 
     config_file = config_files[0]
@@ -98,6 +99,7 @@ def run(
             pdk=pdk,
             scl=scl,
             config_override_strings=config_override_strings,
+            design_dir=design_dir,
         )
     except InvalidConfig as e:
         info(f"[green]Errors have occurred while loading the {e.config}.")
@@ -228,6 +230,8 @@ def run_smoke_test(
             skip=(),
             with_initial_state=None,
             config_override_strings=[],
+            run_dir=None,
+            design_dir=None,
         )
         if status == 0:
             info("Smoke test passed.")

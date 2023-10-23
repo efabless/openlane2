@@ -400,13 +400,10 @@ class Config(GenericImmutableDict[str, Any]):
         raw: Union[str, Mapping] = ""
         default_meta_version = 1
         if not isinstance(config_in, Mapping):
-            if design_dir is not None:
-                raise TypeError(
-                    "The argument design_dir is not supported when config_in is not a dictionary."
-                )
             config_in = os.path.abspath(config_in)
 
-            design_dir = str(os.path.dirname(config_in))
+            if design_dir is None:
+                design_dir = str(os.path.dirname(config_in))
             config_in = str(config_in)
             if config_in.endswith(".json"):
                 raw = open(config_in, encoding="utf8").read()

@@ -251,6 +251,15 @@ def cloup_flow_opts(
                     default=None,
                 ),
                 o(
+                    "--design-dir",
+                    type=Path(
+                        exists=True,
+                        file_okay=False,
+                        dir_okay=True,
+                    ),
+                    default=None,
+                ),
+                o(
                     "--last-run",
                     is_flag=True,
                     default=False,
