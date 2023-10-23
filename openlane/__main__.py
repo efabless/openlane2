@@ -65,6 +65,7 @@ def run(
     reproducible: Optional[str],
     with_initial_state: Optional[State],
     config_override_strings: List[str],
+    run_dir: str,
 ) -> int:
 
     config_file = config_files[0]
@@ -124,6 +125,7 @@ def run(
             skip=skip,
             with_initial_state=with_initial_state,
             reproducible=reproducible,
+            run_dir=run_dir,
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")

@@ -431,6 +431,7 @@ class Flow(ABC):
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
         last_run: bool = False,
+        run_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
         """
@@ -454,11 +455,15 @@ class Flow(ABC):
 
         :returns: ``(success, state_list)``
         """
+        if run_dir is not None:
+            self.run_dir = run_dir
+        else:
+            self.run_dir = os.path.join(self.design_dir, "runs", tag)
         if last_run:
             if tag is not None:
                 raise FlowException("tag and last_run cannot be used simultaneously.")
 
-            runs = sorted(glob.glob(os.path.join(self.design_dir, "runs", "*")))
+            runs = sorted(glob.glob(os.path.join(self.run_dir, "*")))
 
             latest_time: float = 0
             latest_run: Optional[str] = None
@@ -477,7 +482,6 @@ class Flow(ABC):
             tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
 
         # Stored until next start()
-        self.run_dir = os.path.join(self.design_dir, "runs", tag)
 
         initial_state = with_initial_state or State()
 

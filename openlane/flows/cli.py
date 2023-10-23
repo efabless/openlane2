@@ -242,12 +242,20 @@ def cloup_flow_opts(
                     help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
                 ),
                 o(
+                    "--run-dir",
+                    type=Path(
+                        exists=True,
+                        file_okay=False,
+                        dir_okay=True,
+                    ),
+                    default=None,
+                ),
+                o(
                     "--last-run",
                     is_flag=True,
                     default=False,
                     help="Use the last run as the run tag.",
                 ),
-                constraint=mutually_exclusive,
             )(f)
         if sequential_flow_controls:
             f = option_group(
