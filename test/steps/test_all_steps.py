@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import shutil
+import sys
 import inspect
 import importlib
 from typing import Optional
@@ -65,6 +66,7 @@ def test_step_folder(test: str, pdk_root: str):
     handler = None
     handler_sig = None
     try:
+        sys.path.insert(0, test_path)
         spec = importlib.util.spec_from_file_location(
             "handler_module", os.path.join(test_path, "handler.py")
         )

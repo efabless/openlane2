@@ -20,7 +20,7 @@ import subprocess
 from functools import partial
 from typing import IO, Any, Dict, Optional, Sequence, Union
 
-from click import pass_context, Context
+from click import pass_context, Context, argument
 from cloup import (
     group,
     option,
@@ -397,15 +397,35 @@ def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk
 
 
 @command(formatter_settings=formatter_settings, hidden=True)
+@argument(
+    "step_dir",
+    type=Path(
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    default=None,
+)
+@o(
+    "--output",
+    type=Path(
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    default=None,
+)
 @pass_context
-def create_test(ctx):
-    step_dir = os.getcwd()
+def create_test(ctx, step_dir, output):
 
     config = os.path.join(step_dir, "config.json")
     state_in = os.path.join(step_dir, "state_in.json")
+    if output is None:
+        output = os.path.join(step_dir, "test")
 
     step = load_step_from_inputs(ctx, None, config, state_in)
-    step.create_reproducible("test", include_pdk=False, _flatten=True)
+    step.create_reproducible(output, include_pdk=False, _flatten=True)
+    os.remove(os.path.join(output, "run_ol.sh"))
 
 
 @group(formatter_settings=formatter_settings)
