@@ -72,7 +72,7 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
         set urx [expr [lindex $obstruction 2] * $::dbu]
         set ury [expr [lindex $obstruction 3] * $::dbu]
         odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
-        puts "\[INFO] Created obstruction at $llx $lly $urx $ury"
+        puts "\[INFO] Created obstruction at $::env(FP_OBSTRUCTIONS) (µm)"
     }
 }
 initialize_floorplan {*}$arg_list
