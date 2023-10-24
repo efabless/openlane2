@@ -284,7 +284,7 @@ class Flow(ABC):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
-        force_design_dir: Optional[str] = None,
+        _force_design_dir: Optional[str] = None,
     ):
         if self.__class__.Steps == NotImplemented:
             raise NotImplementedError(
@@ -310,7 +310,7 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
-                force_design_dir=force_design_dir,
+                _force_design_dir=_force_design_dir,
             )
 
         self.config: Config = config
@@ -434,6 +434,7 @@ class Flow(ABC):
         tag: Optional[str] = None,
         last_run: bool = False,
         run_dir: Optional[str] = None,
+        _force_run_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
         """
@@ -466,8 +467,8 @@ class Flow(ABC):
         if last_run and run_dir is not None:
             raise FlowException("run_dir and last_run cannot be used simultaneously.")
 
-        if run_dir is not None:
-            self.run_dir = run_dir
+        if _force_run_dir is not None:
+            self.run_dir = _force_run_dir
         elif last_run:
             runs = sorted(glob.glob(os.path.join(self.design_dir, "runs", "*")))
 

@@ -65,8 +65,8 @@ def run(
     reproducible: Optional[str],
     with_initial_state: Optional[State],
     config_override_strings: List[str],
-    run_dir: Optional[str],
-    force_design_dir: Optional[str],
+    _force_run_dir: Optional[str],
+    _force_design_dir: Optional[str],
 ) -> int:
 
     config_file = config_files[0]
@@ -99,7 +99,7 @@ def run(
             pdk=pdk,
             scl=scl,
             config_override_strings=config_override_strings,
-            force_design_dir=force_design_dir,
+            _force_design_dir=_force_design_dir,
         )
     except InvalidConfig as e:
         info(f"[green]Errors have occurred while loading the {e.config}.")
@@ -127,7 +127,7 @@ def run(
             skip=skip,
             with_initial_state=with_initial_state,
             reproducible=reproducible,
-            run_dir=run_dir,
+            _force_run_dir=_force_run_dir,
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error: {e}")
@@ -349,7 +349,7 @@ o = partial(option, show_default=True)
     ),
     constraint=mutually_exclusive,
 )
-@cloup_flow_opts(sequential_flow_reproducible=True)
+@cloup_flow_opts(_enable_debug_flags=True, sequential_flow_reproducible=True)
 @pass_context
 def cli(ctx, /, **kwargs):
     """
