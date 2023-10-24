@@ -466,7 +466,6 @@ class Flow(ABC):
         if last_run and run_dir is not None:
             raise FlowException("run_dir and last_run cannot be used simultaneously.")
 
-
         if run_dir is not None:
             self.run_dir = run_dir
         elif last_run:
