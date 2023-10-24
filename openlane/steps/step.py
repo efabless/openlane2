@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import textwrap
 import time
+import sys
 
 from signal import Signals
 from inspect import isabstract
@@ -131,11 +132,10 @@ class ProcessStatsThread(Thread):
         self.process = process
         self.result = None
         self.interval = interval
-        self.time = {
-            "cpu_time_user": 0.0,
-            "cpu_time_system": 0.0,
-            "cpu_time_iowait": 0.0,
-        }
+        self.time = {"cpu_time_user": 0.0, "cpu_time_system": 0.0}
+        if sys.platform == "linux":
+            self.time["cpu_time_iowait"] = 0.0
+
         self.peak_resources = {
             "cpu_percent": 0.0,
             "memory_rss": 0.0,
@@ -161,7 +161,8 @@ class ProcessStatsThread(Thread):
 
                 self.time["cpu_time_user"] = cpu_time.user
                 self.time["cpu_time_system"] = cpu_time.system
-                self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
+                if sys.platform == "linux":
+                    self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
 
                 current: Dict[str, float] = {}
                 current["cpu_percent"] = cpu
