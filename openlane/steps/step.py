@@ -23,6 +23,7 @@ import textwrap
 import time
 
 from signal import Signals
+from sys import platform
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
@@ -134,8 +135,10 @@ class ProcessStatsThread(Thread):
         self.time = {
             "cpu_time_user": 0.0,
             "cpu_time_system": 0.0,
-            "cpu_time_iowait": 0.0,
         }
+        if platform is "linux":
+            self.time["cpu_time_iowait"] = 0.0
+
         self.peak_resources = {
             "cpu_percent": 0.0,
             "memory_rss": 0.0,
@@ -161,7 +164,9 @@ class ProcessStatsThread(Thread):
 
                 self.time["cpu_time_user"] = cpu_time.user
                 self.time["cpu_time_system"] = cpu_time.system
-                self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
+
+                if platform is "linux":
+                    self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
 
                 current: Dict[str, float] = {}
                 current["cpu_percent"] = cpu
