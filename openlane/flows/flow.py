@@ -433,7 +433,6 @@ class Flow(ABC):
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
         last_run: bool = False,
-        run_dir: Optional[str] = None,
         _force_run_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
@@ -461,15 +460,8 @@ class Flow(ABC):
         if last_run and tag is not None:
             raise FlowException("tag and last_run cannot be used simultaneously.")
 
-        if run_dir is not None and tag is not None:
-            raise FlowException("tag and run_dir cannot be used simultaneously.")
-
-        if last_run and run_dir is not None:
-            raise FlowException("run_dir and last_run cannot be used simultaneously.")
-
-        if _force_run_dir is not None:
-            self.run_dir = _force_run_dir
-        elif last_run:
+        tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
+        if last_run:
             runs = sorted(glob.glob(os.path.join(self.design_dir, "runs", "*")))
 
             latest_time: float = 0
@@ -484,14 +476,9 @@ class Flow(ABC):
                 tag = os.path.basename(latest_run)
             else:
                 raise FlowException("last_run used without any existing runs")
-            self.run_dir = os.path.join(self.design_dir, "runs", tag)
-        elif tag is None:
-            tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
-            self.run_dir = os.path.join(self.design_dir, "runs", tag)
-        else:
-            self.run_dir = os.path.join(self.design_dir, "runs", tag)
 
-        # self.run_dir Stored until next start()
+        # Stored until next start()
+        self.run_dir = _force_run_dir or os.path.join(self.design_dir, "runs", tag)
 
         initial_state = with_initial_state or State()
 

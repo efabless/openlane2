@@ -407,10 +407,8 @@ class Config(GenericImmutableDict[str, Any]):
                 raise TypeError(
                     "The argument design_dir is not supported when config_in is not a dictionary."
                 )
-            if _force_design_dir is not None:
-                design_dir = _force_design_dir
-            else:
-                design_dir = str(os.path.dirname(config_in))
+
+            design_dir = _force_design_dir or str(os.path.dirname(config_in))
 
             config_in = str(config_in)
             if config_in.endswith(".json"):
