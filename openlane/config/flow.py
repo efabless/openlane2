@@ -14,7 +14,7 @@
 import os
 
 from decimal import Decimal
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Tuple
 
 from .variable import Variable, Macro
 from ..common import Path, get_script_dir
@@ -469,7 +469,7 @@ option_variables = [
     ),
     Variable(
         "DIE_AREA",
-        Optional[str],
+        Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
         'Specific die area to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
         units="µm",
     ),
