@@ -625,7 +625,7 @@ class Floorplan(OpenROADStep):
         ),
         Variable(
             "CORE_AREA",
-            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
             units="µm",
         ),
