@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 project = "OpenLane"
 copyright = "2020-2023 Efabless Corporation and contributors"
 author = "Efabless Corporation"
-repo = "https://github.com/The-OpenROAD-Project/OpenLane"
+repo = "https://github.com/efabless/openlane2"
 branch = "main"
 
 
@@ -67,8 +67,8 @@ except ImportError:
     pass
 
 source_suffix = {
-    ".rst": "restructuredtext",
     ".md": "markdown",
+    ".rst": "restructuredtext",
 }
 
 root_doc = "index"

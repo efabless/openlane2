@@ -1378,12 +1378,6 @@ class CTS(ResizerStep):
         + dpl_variables
         + [
             Variable(
-                "CTS_TOLERANCE",
-                int,
-                "An integer value that represents a tradeoff of QoR and runtime. Higher values will produce smaller runtime but worse QoR.",
-                default=100,
-            ),
-            Variable(
                 "CTS_SINK_CLUSTERING_SIZE",
                 int,
                 "Specifies the maximum number of sinks per cluster.",

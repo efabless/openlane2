@@ -17,23 +17,7 @@ set vtop $::env(DESIGN_NAME)
 
 read_deps "on"
 
-set verilog_include_args [list]
-if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-    foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-        lappend verilog_include_args "-I$dir"
-    }
-}
-foreach file $::env(VERILOG_FILES) {
-    read_verilog -sv {*}$verilog_include_args $file
-}
-
-if { [info exists ::env(SYNTH_PARAMETERS) ] } {
-    foreach define $::env(SYNTH_PARAMETERS) {
-        set param_and_value [split $define "="]
-        lassign $param_and_value param value
-        chparam -set $param $value $vtop
-    }
-}
+read_verilog_files $vtop
 hierarchy -check -top $vtop
 yosys rename -top $vtop
 yosys proc

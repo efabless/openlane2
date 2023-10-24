@@ -42,6 +42,8 @@ from .misc import (
     StringEnum,
     Path,
     zip_first,
+    format_size,
+    format_elapsed_time,
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation

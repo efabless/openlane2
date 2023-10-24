@@ -84,6 +84,18 @@ verilog_rtl_cfg_vars = [
         Optional[List[str]],
         "Specifies the Verilog `include` directories.",
     ),
+    Variable(
+        "USE_SYNLIG",
+        bool,
+        "Use the Synlig plugin to process files, which has better SystemVerilog parsing capabilities but may not be compatible with all Yosys commands and attributes.",
+        default=False,
+    ),
+    Variable(
+        "SYNLIG_DEFER",
+        bool,
+        "Uses -defer flag when reading files the Synlig plugin, which may improve performance by reading each file separately, but is experimental.",
+        default=False,
+    ),
 ]
 
 
@@ -138,7 +150,7 @@ class YosysStep(TclStep):
         Variable(
             "USE_LIGHTER",
             bool,
-            "Activates Lighter, an experimental module that attempts to optimize clock-gated flip-flops.",
+            "Activates Lighter, an experimental plugin that attempts to optimize clock-gated flip-flops.",
             default=False,
         ),
         Variable(
@@ -346,9 +358,9 @@ class SynthesisCommon(YosysStep):
             metric_updates["design__instance__area"] = chip_area
 
         cells = stats["design"]["num_cells_by_type"]
-        unmapped_keyword = "$"
+        safe = ["$assert"]
         unmapped_cells = [
-            cells[y] for y in cells.keys() if y.startswith(unmapped_keyword)
+            cells[y] for y in cells.keys() if y not in safe and y.startswith("$")
         ]
         metric_updates["design__instance_unmapped__count"] = sum(unmapped_cells)
 

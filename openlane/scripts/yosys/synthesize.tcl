@@ -197,18 +197,8 @@ if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
 
 # Start Synthesis
 if { [info exists ::env(VERILOG_FILES) ]} {
-    set verilog_include_args [list]
-    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
-        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
-            lappend verilog_include_args "-I$dir"
-        }
-    }
-
-    foreach file $::env(VERILOG_FILES) {
-        read_verilog -sv {*}$verilog_include_args $file
-    }
+    read_verilog_files $vtop
 } elseif { [info exists ::env(VHDL_FILES)] } {
-    puts $::env(VHDL_FILES)
     ghdl {*}$::env(VHDL_FILES) -e $::env(DESIGN_NAME)
 } else {
     puts "SCRIPT NOT CALLED CORRECTLY: EITHER VERILOG_FILES OR VHDL_FILES MUST BE SET"
@@ -224,7 +214,7 @@ if { [info exists ::env(SYNTH_PARAMETERS) ] } {
 }
 
 select -module $vtop
-show -format dot -prefix $::env(STEP_DIR)/hierarchy
+catch {show -format dot -prefix $::env(STEP_DIR)/hierarchy}
 select -clear
 hierarchy -check -top $vtop
 yosys rename -top $vtop
@@ -244,6 +234,7 @@ if { $::env(SYNTH_ELABORATE_ONLY) } {
     tee -o "$report_dir/stat.json" stat -json
 
     write_verilog -noattr -noexpr -nohex -nodec -defparam "$::env(SAVE_NETLIST)"
+    write_json "$::env(SAVE_NETLIST).json"
     exit 0
 }
 
@@ -320,7 +311,7 @@ if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
     techmap -map $::env(SYNTH_EXTRA_MAPPING_FILE)
 }
 
-show -format dot -prefix $::env(STEP_DIR)/post_techmap
+catch {show -format dot -prefix $::env(STEP_DIR)/post_techmap}
 
 if { $::env(SYNTH_SHARE_RESOURCES) } {
     share -aggressive
@@ -408,6 +399,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
         autoname
     }
     write_verilog -noattr -noexpr -nohex -nodec -defparam $output
+    write_json "$output.json"
     design -reset
 }
 design -save checkpoint

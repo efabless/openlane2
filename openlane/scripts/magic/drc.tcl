@@ -13,9 +13,13 @@
 # limitations under the License.
 
 if { $::env(MAGIC_DRC_USE_GDS) } {
-	source $::env(SCRIPTS_DIR)/magic/gds/read.tcl
+    gds read $::env(CURRENT_GDS)
 } else {
-	source $::env(SCRIPTS_DIR)/magic/def/read.tcl
+	source $::env(SCRIPTS_DIR)/magic/common/read.tcl
+    read_tech_lef
+    read_pdk_lef
+    read_macro_lef
+    read_def
 }
 
 set report_dir $::env(STEP_DIR)/reports

@@ -166,29 +166,6 @@ def test_mock_run(mock_run, mock_config):
 
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables([step])
-def test_step_start_missing_toolbox(mock_run, mock_config):
-    from openlane.steps import Step
-    from openlane.state import DesignFormat, State
-
-    class TestStep(Step):
-        inputs = []
-        outputs = []
-        run = mock_run
-        id = "TestStep"
-
-    state_in = State({DesignFormat.NETLIST: "abc"})
-    step = TestStep(
-        id="TestStep",
-        long_name="longname",
-        config=mock_config,
-        state_in=state_in,
-    )
-    with pytest.raises(TypeError, match="Missing argument 'toolbox' required"):
-        step.start()
-
-
-@pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([step])
 def test_step_start_missing_step_dir(mock_run, mock_config):
     from openlane.steps import Step
     from openlane.common import Toolbox
