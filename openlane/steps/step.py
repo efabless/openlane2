@@ -136,7 +136,7 @@ class ProcessStatsThread(Thread):
             "cpu_time_user": 0.0,
             "cpu_time_system": 0.0,
         }
-        if platform == "linux":
+        if platform is "linux":
             self.time["cpu_time_iowait"] = 0.0
 
         self.peak_resources = {
@@ -165,7 +165,7 @@ class ProcessStatsThread(Thread):
                 self.time["cpu_time_user"] = cpu_time.user
                 self.time["cpu_time_system"] = cpu_time.system
 
-                if platform == "linux":
+                if platform is "linux":
                     self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
 
                 current: Dict[str, float] = {}
