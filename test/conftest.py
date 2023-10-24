@@ -324,5 +324,5 @@ def pytest_configure():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--all-steps", action="store_true", default=False)
+    parser.addoption("--step-rx", action="store", default="^$")
     parser.addoption("--pdk-root", action="store", default=None)

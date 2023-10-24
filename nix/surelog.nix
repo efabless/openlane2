@@ -32,38 +32,51 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
 {
   pkgs ? import ./pkgs.nix {},
 }:
 
-with pkgs; clangStdenv.mkDerivation rec {
-  name = "yosys-abc";
+with pkgs; stdenv.mkDerivation (finalAttrs: {
+  pname = "surelog";
+  version = "1.76";
 
   src = fetchFromGitHub {
-    owner = "YosysHQ";
-    repo = "abc";
-    rev = "daad9ede0137dc58487a0abc126253e671a85b14";
-    sha256 = "sha256-5XeFYvdqT08xduFUDC5yK1jEOV1fYzyQD7N9ZmG3mpQ=";
+    owner = "chipsalliance";
+    repo = finalAttrs.pname;
+    rev = "v${finalAttrs.version}";
+    hash = "sha256-Jfh6KGnPVksyCf2q7sQN6XSAWvbG+aW7/ynUuWKNUPs=";
+    fetchSubmodules = true;  # Use the included UHDM to avoid extreme brainrot
   };
 
-  patches = [
-    ./patches/yosys/abc-editline.patch
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+    openjdk
+    (python3.withPackages (p: with p; [
+      psutil
+      orderedmultidict
+    ]))
+    gtest
+    antlr4
   ];
 
-  postPatch = ''
-  sed -i "s@-lreadline@-ledit@" ./Makefile
-  '';
+  buildInputs = [
+    libuuid
+    gperftools
+    capnproto
+    antlr4.runtime.cpp
+    nlohmann_json
+  ];
 
-  nativeBuildInputs = [ cmake ];
-  buildInputs = [ libedit ];
+  cmakeFlags = [
+    "-DSURELOG_USE_HOST_CAPNP=On"
+    "-DSURELOG_USE_HOST_GTEST=On"
+    "-DSURELOG_USE_HOST_ANTLR=On"
+    "-DSURELOG_USE_HOST_JSON=On"
+    "-DSURELOG_BUILD_TESTS=Off" # Broken on macOS, CBA to fix them
+    "-DANTLR_JAR_LOCATION=${antlr4.jarLocation}"
+  ];
 
-  installPhase = "mkdir -p $out/bin && mv abc $out/bin";
+  doCheck = false;
 
-  # needed by yosys
-  passthru.rev = src.rev;
-
-  meta = with lib; {
-    license = licenses.mit;
-  };
-}
+})

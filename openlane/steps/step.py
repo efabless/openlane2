@@ -80,7 +80,9 @@ class StepError(RuntimeError):
     properly.
     """
 
-    pass
+    def __init__(self, *args, underlying_error: Optional[Exception] = None, **kwargs):
+        self.underlying_error = underlying_error
+        super().__init__(*args, **kwargs)
 
 
 class DeferredStepError(StepError):
@@ -590,7 +592,7 @@ class Step(ABC):
     def load(
         Self,
         config: Union[str, Config],
-        state_in_path: str,
+        state_in: Union[str, State],
         pdk_root: str = ".",
     ) -> Step:
         """
@@ -599,9 +601,11 @@ class Step(ABC):
 
         Useful for re-running steps that have already run.
 
-        :param config_path: Path to a **Step-filtered** ``config.json`` file.
+        :param config:
+            (Path to) a **Step-filtered** configuration
+
             The step will not tolerate variables unrelated to this specific step.
-        :param state_in_path: Path to a valid ``state_in.json`` file.
+        :param state: (Path to) a valid input state
         :param pdk_root: The PDK root, which is needed for some utilities.
 
             If your utility doesn't require it, just keep the default value
@@ -610,8 +614,8 @@ class Step(ABC):
         """
         if not isinstance(config, Config):
             config = Self._load_config_from_file(config, pdk_root)
-
-        state_in = State.loads(open(state_in_path).read())
+        if not isinstance(state_in, State):
+            state_in = State.loads(open(state_in).read())
         return Self(
             config=config,
             state_in=state_in,
@@ -798,17 +802,6 @@ class Step(ABC):
         """
         global LastState
 
-        if toolbox is None:
-            if not Config.current_interactive:
-                raise TypeError(
-                    "Missing argument 'toolbox' required when not running in a Flow"
-                )
-            else:
-                # Use the default global value.
-                pass
-        else:
-            self.toolbox = toolbox
-
         if step_dir is None:
             if not Config.current_interactive:
                 raise TypeError("Missing required argument 'step_dir'")
@@ -821,6 +814,15 @@ class Step(ABC):
                 Step.counter += 1
         else:
             self.step_dir = step_dir
+
+        if toolbox is None:
+            if not Config.current_interactive:
+                self.toolbox = Toolbox(self.step_dir)
+            else:
+                # Use the default global value.
+                pass
+        else:
+            self.toolbox = toolbox
 
         state_in_result = self.state_in.result()
 
@@ -855,7 +857,9 @@ class Step(ABC):
                     f"{self.name}: Interrupted ({Signals(-e.returncode).name})"
                 )
             else:
-                raise StepError(f"{self.name}: subprocess {e.args} failed")
+                raise StepError(
+                    f"{self.name}: subprocess {e.args} failed", underlying_error=e
+                )
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates

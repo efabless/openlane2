@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set ::synlig_defines [list]
+
 proc read_deps {{power_defines "off"}} {
     if { [info exists ::env(VERILOG_DEFINES) ] } {
         foreach define $::env(VERILOG_DEFINES) {
             log "Defining ${define}…"
             verilog_defines -D$define
+            lappend ::synlig_defines "+define+$define"
         }
     }
 
@@ -23,6 +26,7 @@ proc read_deps {{power_defines "off"}} {
         if { $power_defines == "on" } {
             log "Defining $::env(VERILOG_POWER_DEFINE)…"
             verilog_defines -D$::env(VERILOG_POWER_DEFINE)
+            lappend ::synlig_defines "+define+$::env(VERILOG_POWER_DEFINE)"
         }
     }
 
@@ -63,6 +67,46 @@ proc read_deps {{power_defines "off"}} {
         foreach nl $::env(EXTRA_VERILOG_MODELS) {
             log "Reading extra model '$nl' as a black-box…"
             read_verilog -sv -lib {*}$verilog_include_args $nl
+        }
+    }
+}
+
+proc read_verilog_files {top_module} {
+    set verilog_include_args [list]
+    if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
+        foreach dir $::env(VERILOG_INCLUDE_DIRS) {
+            lappend verilog_include_args "-I$dir"
+        }
+    }
+
+    set synlig_params [list]
+
+    if { [info exists ::env(SYNTH_PARAMETERS) ] } {
+        foreach define $::env(SYNTH_PARAMETERS) {
+            set param_and_value [split $define "="]
+            lassign $param_and_value param value
+            lappend synlig_params "-P$param=$value"
+        }
+    }
+
+    if { $::env(USE_SYNLIG) && $::env(SYNLIG_DEFER) } {
+        foreach file $::env(VERILOG_FILES) {
+            read_systemverilog -defer $::synlig_defines -sverilog {*}$verilog_include_args $file
+        }
+        read_systemverilog -link -top $::env(DESIGN_NAME) {*}$synlig_params
+    } elseif { $::env(USE_SYNLIG) } {
+        read_systemverilog -top $::env(DESIGN_NAME) $::synlig_defines {*}$synlig_params -sverilog {*}$verilog_include_args {*}$::env(VERILOG_FILES)
+    } else {
+        foreach file $::env(VERILOG_FILES) {
+            read_verilog -sv {*}$verilog_include_args $file
+        }
+
+        if { [info exists ::env(SYNTH_PARAMETERS) ] } {
+            foreach define $::env(SYNTH_PARAMETERS) {
+                set param_and_value [split $define "="]
+                lassign $param_and_value param value
+                chparam -set $param $value $top_module
+            }
         }
     }
 }

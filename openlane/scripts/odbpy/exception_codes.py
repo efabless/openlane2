@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2023 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,14 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-yosys -import
-source $::env(SCRIPTS_DIR)/yosys/common.tcl
-set vtop $::env(DESIGN_NAME)
 
-read_deps "on"
-
-read_verilog_files $vtop
-hierarchy -check -top $vtop
-yosys rename -top $vtop
-yosys proc
-json -o $::env(SAVE_JSON_HEADER)
+METAL_LAYER_ERROR = 10
+FORMAT_ERROR = 11
+NOT_FOUND_ERROR = 12

@@ -43,7 +43,7 @@ test: venv/manifest.txt
 
 .PHONY: test-all
 test-all: venv/manifest.txt
-	./venv/bin/coverage run -m pytest --all-steps
+	./venv/bin/coverage run -m pytest --step-rx "."
 	./venv/bin/coverage report
 	./venv/bin/coverage html
 
