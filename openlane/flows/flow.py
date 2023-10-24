@@ -284,6 +284,7 @@ class Flow(ABC):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
+        force_design_dir: Optional[str] = None,
     ):
         if self.__class__.Steps == NotImplemented:
             raise NotImplementedError(
@@ -309,6 +310,7 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
+                force_design_dir=force_design_dir
             )
 
         self.config: Config = config

@@ -248,15 +248,17 @@ def cloup_flow_opts(
                         file_okay=False,
                         dir_okay=True,
                     ),
+                    hidden=True,
                     default=None,
                 ),
                 o(
-                    "--design-dir",
+                    "--force-design-dir",
                     type=Path(
                         exists=True,
                         file_okay=False,
                         dir_okay=True,
                     ),
+                    hidden=True
                     default=None,
                 ),
                 o(

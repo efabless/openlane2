@@ -362,6 +362,7 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
+        force_design_dir: Optional[str] = None,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -402,8 +403,15 @@ class Config(GenericImmutableDict[str, Any]):
         if not isinstance(config_in, Mapping):
             config_in = os.path.abspath(config_in)
 
-            if design_dir is None:
+            if design_dir is not None:
+                raise TypeError(
+                    "The argument design_dir is not supported when config_in is not a dictionary."
+                )
+            if force_design_dir is not None:
+                design_dir = force_design_dir
+            else:
                 design_dir = str(os.path.dirname(config_in))
+
             config_in = str(config_in)
             if config_in.endswith(".json"):
                 raw = open(config_in, encoding="utf8").read()
