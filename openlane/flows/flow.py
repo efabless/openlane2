@@ -310,7 +310,7 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
-                force_design_dir=force_design_dir
+                force_design_dir=force_design_dir,
             )
 
         self.config: Config = config

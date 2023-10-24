@@ -66,7 +66,7 @@ def run(
     with_initial_state: Optional[State],
     config_override_strings: List[str],
     run_dir: Optional[str],
-    design_dir: Optional[str],
+    force_design_dir: Optional[str],
 ) -> int:
 
     config_file = config_files[0]
@@ -99,7 +99,7 @@ def run(
             pdk=pdk,
             scl=scl,
             config_override_strings=config_override_strings,
-            design_dir=design_dir,
+            force_design_dir=force_design_dir,
         )
     except InvalidConfig as e:
         info(f"[green]Errors have occurred while loading the {e.config}.")

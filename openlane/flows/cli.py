@@ -258,7 +258,7 @@ def cloup_flow_opts(
                         file_okay=False,
                         dir_okay=True,
                     ),
-                    hidden=True
+                    hidden=True,
                     default=None,
                 ),
                 o(
