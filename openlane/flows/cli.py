@@ -27,9 +27,6 @@ from cloup import (
     Choice,
     Path,
 )
-from cloup.constraints import (
-    mutually_exclusive,
-)
 from cloup.typing import Decorator
 
 from openlane.state.state import InvalidState
