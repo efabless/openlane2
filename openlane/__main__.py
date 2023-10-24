@@ -230,8 +230,8 @@ def run_smoke_test(
             skip=(),
             with_initial_state=None,
             config_override_strings=[],
-            run_dir=None,
-            force_design_dir=None,
+            _force_run_dir=None,
+            _force_design_dir=None,
         )
         if status == 0:
             info("Smoke test passed.")
