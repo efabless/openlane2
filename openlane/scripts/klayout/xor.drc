@@ -20,11 +20,11 @@ if !defined?(RBA)
     opts.on("-i", "--ignore SEMICOLON_DELIMITED_LIST", "Ignore layer(s)") do |ignore|
       options[:ignore] = ignore
     end
-    # opts.on("-O", "--gds-out OUTPUT", "GDS output file (required)") do |gds_out|
-    #   options[:gds_out] = gds_out
-    # end
     opts.on("-t", "--top TOP_CELL", "Top cell name (required)") do |top_cell|
       options[:top_cell] = top_cell
+    end
+    opts.on("-T", "--threads THREAD_COUNT", "Thread count") do |threads|
+      options[:threads] = (threads or "1").to_i
     end
   end
   optparse.parse!
@@ -40,10 +40,9 @@ if !defined?(RBA)
     "-rd", "top_cell=#{options[:top_cell]}",
     "-rd", "a=#{ARGV[0]}",
     "-rd", "b=#{ARGV[1]}",
-    "-rd", "jobs=1",
+    "-rd", "jobs=#{options[:threads]}",
     "-rd", "rdb_out=#{File.absolute_path(options[:rdb_out])}",
     "-rd", "ignore=#{options[:ignore]}",
-    # "-rd", "gds_out=#{options[:gds_out]}",
   ]
   puts "Running: '#{args.join(" ")}'…"
   exec *args
@@ -51,6 +50,11 @@ if !defined?(RBA)
 end
 
 verbose
+
+# Run XOR
+$jobs = $jobs.to_i or 1
+info "Using #{$jobs} threads…"
+threads($jobs)
 
 # Set up inputs
 puts $a, $b
@@ -62,13 +66,8 @@ b = source($b, $top_cell)
 report("XOR #{$a} vs. #{$b}", $rdb_out)
 
 def write_data(xor_data, layer_info)
-  # xor_data.output(layer_info.layer, layer_info.datatype, layer_info.name)
   xor_data.output(layer_info.to_s, "XOR data for layer #{layer_info.to_s}")
 end
-
-# Run XOR
-$jobs = $jobs.to_i
-threads($jobs) unless $jobs <= 1
 
 ## Collect all common layers
 layers = {}
@@ -83,14 +82,14 @@ ignore_list = $ignore.split(";")
 
 ## Perform per-layer XOR
 total_xor_differences = 0
-layers.keys.sort.each do |layer_name|
+layers.sort.uniq.each do |layer_name, layer_data|
   if ignore_list.include? layer_name
-    warn "Skipping #{layer_name}"
+    warn "--- Skipping #{layer_name}… ---"
   else
     info "--- Running XOR for layer #{layer_name} ---"
 
     layer_info = layers[layer_name]
-    xor_data = a.input(layer_name) ^ b.input(layer_name)
+    xor_data = (a.input(layer_name, layer_data) ^ b.input(layer_name, layer_data))
     total_xor_differences += xor_data.data.size
     info "XOR differences: #{xor_data.data.size}"
 

@@ -297,6 +297,8 @@ class XOR(KLayoutStep):
                 os.path.join(self.step_dir, "xor.xml"),
                 "--top",
                 self.config["DESIGN_NAME"],
+                "--threads",
+                self.config["KLAYOUT_XOR_THREADS"],
                 "--ignore",
                 ignored,
                 layout_a,
