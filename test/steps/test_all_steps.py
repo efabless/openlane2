@@ -72,7 +72,7 @@ def attribute_from_file(file: str, attribute: str):
 
 @pytest.mark.parametrize("test", pytest.tests)
 @pytest.mark.usefixtures("_chdir_tmp", "_step_enabled")
-def test_step_folder(test: str, pdk_root: str):
+def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture):
     from openlane.steps import Step
     from openlane.state import State
     from openlane.common import Toolbox
@@ -137,4 +137,5 @@ def test_step_folder(test: str, pdk_root: str):
         exception=exception,
         step=target,
         test=test,
+        caplog=caplog,
     )
