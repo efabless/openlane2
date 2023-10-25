@@ -19,6 +19,19 @@ let
 in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
     overlays = [
         (new: old: {
+            # aarch64-related
+            clp = old.clp.overrideAttrs(finalAttrs: previousAttrs: {
+                meta = {
+                    platforms = previousAttrs.meta.platforms ++ ["aarch64-linux"];
+                };
+            });
+
+            # Darwin-related
+            lemon-graph = old.lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
+                meta = { broken = false; };
+                doCheck = false;
+            });
+
             # HACK BECAUSE THIS IS BROKEN ON MAC ON THE COMMIT WE'RE USING
             ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
                 meta = {

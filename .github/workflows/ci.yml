@@ -82,6 +82,29 @@ jobs:
         uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-amd64-${{ github.run_id }}
+  build-linux-aarch64:
+    needs: lint
+    runs-on: ubuntu-22.04
+    name: Build (Nix on Linux/aarch64)
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v1
+      - name: Initialize Step Unit Test Submodule
+        run: |
+          git submodule update --init test/steps/all
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          nix_build_args:  --option system aarch64-linux --extra-platforms aarch64-linux
+      - name: Derivation to Cache
+        uses: ./.github/actions/derivation_to_cache
+        with:
+          key: derivation-amd64-${{ github.run_id }}
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
@@ -118,10 +141,12 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test
-  build-docker-amd64:
+  build-docker:
     runs-on: ubuntu-22.04
-    needs: [build-linux-amd64]
-    name: Build Docker Image (amd64)
+    matrix:
+      arch: ["amd64", "aarch64"]
+    needs: [build-linux-amd64, build-linux-aarch64]
+    name: Build Docker Image (${{ matrix.arch }})
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
@@ -132,11 +157,14 @@ jobs:
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
-          key: derivation-amd64-${{ github.run_id }}
+          key: derivation-${{ matrix.arch }}-${{ github.run_id }}
           other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Build Docker Image
         run: |
-          IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-amd64 docker.nix)
+          if [ "${{ matrix.arch }}" == "aarch64" ]; then
+            arch_flags="--option system aarch64-linux --extra-platforms aarch64-linux"
+          fi
+          IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-${{ matrix.arch }} $arch_flags docker.nix)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -149,7 +177,7 @@ jobs:
         run: |
           mkdir -p $HOME/.volare
           chmod -R 755 $HOME/.volare
-          OPENLANE_IMAGE_OVERRIDE=openlane:tmp-amd64\
+          OPENLANE_IMAGE_OVERRIDE=openlane:tmp-${{ matrix.arch }}\
             ./venv/bin/python3 -m openlane\
               --docker-no-tty\
               --dockerized\
@@ -157,7 +185,7 @@ jobs:
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: docker-image-amd64
+          name: docker-image-${{ matrix.arch }}
           path: ${{ env.IMAGE_PATH }}
   test:
     runs-on: ubuntu-22.04
@@ -208,7 +236,7 @@ jobs:
           path: ${{ matrix.design.run_folder }}
   publish:
     runs-on: ubuntu-22.04
-    needs: [build-linux-amd64, build-mac-amd64, build-docker-amd64, build-py]
+    needs: [build-linux-amd64, build-mac-amd64, build-docker, build-py]
     name: Publish (If Applicable)
     steps:
       - name: Check out repo
@@ -224,10 +252,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
-      - name: Download Image (Docker)
+      - name: Download Image (Docker/amd64)
         uses: actions/download-artifact@v3
         with:
           name: docker-image-amd64
+          path: /tmp/docker
+      - name: Download Image (Docker/aarch64)
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image-aarch64
           path: /tmp/docker
       - name: Load Image (Docker)
         run: |
@@ -235,8 +268,16 @@ jobs:
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          docker tag openlane:tmp-amd64 ghcr.io/${{ github.repository }}:$NEW_TAG
-          docker push ghcr.io/${{ github.repository }}:$NEW_TAG
+          docker tag openlane:tmp-amd64 ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
+          docker push ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
+
+          docker tag openlane:tmp-aarch64 ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
+          docker push ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
+
+          docker manifest create\
+            ghcr.io/${{ github.repository }}:$NEW_TAG\
+            ghcr.io/${{ github.repository }}:$NEW_TAG-amd64\
+            ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
       - name: Set Up Python
         if: ${{ env.PUBLISH == '1' }}
         uses: actions/setup-python@v4
