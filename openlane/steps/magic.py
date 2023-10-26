@@ -123,7 +123,7 @@ class MagicStep(TclStep):
         error_patterns = [
             r"DEF read.*\(Error\).*",
             r"LEF read.*\(Error\).*",
-            r"Error while reading cell.*",
+            r"Error while reading cell(?!.*Warning:).*",
         ]
 
         error_found = False
