@@ -257,14 +257,19 @@ class XOR(KLayoutStep):
     config_vars = KLayoutStep.config_vars + [
         Variable(
             "KLAYOUT_XOR_THREADS",
-            int,
-            "Specifies number of threads used in the KLayout XOR check.",
-            default=1,
+            Optional[int],
+            "Specifies number of threads used in the KLayout XOR check. If unset, this will be equal to your machine's thread count.",
         ),
         Variable(
             "KLAYOUT_XOR_IGNORE_LAYERS",
             Optional[List[str]],
             "KLayout layers to ignore during XOR operations.",
+            pdk=True,
+        ),
+        Variable(
+            "KLAYOUT_XOR_TILE_SIZE",
+            Optional[int],
+            "A tile size for the XOR process in µm.",
             pdk=True,
         ),
     ]
@@ -285,6 +290,12 @@ class XOR(KLayoutStep):
 
         kwargs, env = self.extract_env(kwargs)
 
+        tile_size_options = []
+        if tile_size := self.config["KLAYOUT_XOR_TILE_SIZE"]:
+            tile_size_options += ["--tile-size", str(tile_size)]
+
+        thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
+
         self.run_subprocess(
             [
                 "ruby",
@@ -298,12 +309,13 @@ class XOR(KLayoutStep):
                 "--top",
                 self.config["DESIGN_NAME"],
                 "--threads",
-                self.config["KLAYOUT_XOR_THREADS"],
+                thread_count,
                 "--ignore",
                 ignored,
                 layout_a,
                 layout_b,
-            ],
+            ]
+            + tile_size_options,
             env=env,
         )
 

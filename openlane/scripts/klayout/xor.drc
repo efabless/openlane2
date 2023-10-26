@@ -23,8 +23,11 @@ if !defined?(RBA)
     opts.on("-t", "--top TOP_CELL", "Top cell name (required)") do |top_cell|
       options[:top_cell] = top_cell
     end
-    opts.on("-T", "--threads THREAD_COUNT", "Thread count") do |threads|
-      options[:threads] = (threads or "1").to_i
+    opts.on("-t", "--tile-size TILE_SIZE", "Tile size (in µm)") do |tile_size|
+      options[:tile_size] = tile_size.to_i
+    end
+    opts.on("-n", "--threads THREAD_COUNT", "Lower bound on the thread count used by this process (+ managing threads)") do |threads|
+      options[:threads] = threads.to_i
     end
   end
   optparse.parse!
@@ -43,6 +46,7 @@ if !defined?(RBA)
     "-rd", "jobs=#{options[:threads]}",
     "-rd", "rdb_out=#{File.absolute_path(options[:rdb_out])}",
     "-rd", "ignore=#{options[:ignore]}",
+    "-rd", "tilesize=#{options[:tile_size]}",
   ]
   puts "Running: '#{args.join(" ")}'…"
   exec *args
@@ -52,9 +56,22 @@ end
 verbose
 
 # Run XOR
-$jobs = $jobs.to_i or 1
+if $jobs == ""
+  $jobs = "1"
+end
+$jobs = $jobs.to_i
+
 info "Using #{$jobs} threads…"
 threads($jobs)
+
+# Tiling
+if $tilesize == ""
+  $tilesize = "500"
+end
+$tilesize = $tilesize.to_i
+
+info "Using a tile size of (#{$tilesize} µm)²…"
+tiles($tilesize.um, $tilesize.um)
 
 # Set up inputs
 puts $a, $b
