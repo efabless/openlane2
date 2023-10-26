@@ -32,7 +32,7 @@ class MagicStep(TclStep):
         Variable(
             "MAGIC_DEF_LABELS",
             bool,
-            "A flag to choose whether labels are read with DEF files or not. From magic docs: \"The '-labels' option to the 'def read' command causes each net in the NETS and SPECIALNETS sections of the DEF file to be annotated with a label having the net name as the label text.\"",
+            "A flag to choose whether labels are read with DEF files or not. From magic docs: \"The '-labels' option to the 'def read' command causes each net in the NETS and SPECIALNETS sections of the DEF file to be annotated with a label having the net name as the label text.\" If LVS fails, try disabling this option.",
             default=True,
         ),
         Variable(
@@ -269,7 +269,7 @@ class DRC(MagicStep):
         Variable(
             "MAGIC_DRC_USE_GDS",
             bool,
-            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, with concrete views of cells and submacros, which is a bit faster, but less accurate.",
+            "A flag to choose whether to run the Magic DRC checks on GDS or not. If not, then the checks will be done on the DEF view of the design, which is a bit faster, but may be less accurate as some DEF/LEF elements are abstract.",
             default=True,
         ),
     ]
