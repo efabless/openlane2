@@ -40,7 +40,7 @@
 
 with pkgs; let
   rev = "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7";
-in clangStdenv.mkDerivation {
+in gccStdenv.mkDerivation {
   name = "klayout";
 
   src = fetchFromGitHub {
@@ -78,19 +78,15 @@ in clangStdenv.mkDerivation {
   ];
   
   buildPhase = ''
-    set -x
-    runHook preBuild
     mkdir -p $out/lib
-    CC=clang CXX=clang++\
-      ./build.sh\
-        -option -j$NIX_BUILD_CORES\
-        -without-qtbinding\
-        -python $(which python3)\
-        -ruby $(which ruby)\
-        -prefix $out/lib\
-        -expert\
-        -verbose./build.sh
-    runHook postBuild
+    ./build.sh\
+      -option -j$NIX_BUILD_CORES\
+      -without-qtbinding\
+      -python $(which python3)\
+      -ruby $(which ruby)\
+      -prefix $out/lib\
+      -expert\
+      -verbose
   '';
 
   postBuild = if stdenv.isDarwin then ''
