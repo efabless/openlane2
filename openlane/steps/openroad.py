@@ -1034,6 +1034,7 @@ class DetailedRouting(OpenROADStep):
         kwargs, env = self.extract_env(kwargs)
         if self.config.get("DRT_THREADS") is None:
             env["DRT_THREADS"] = str(os.cpu_count() or 1)
+            warn(f"DRT_THREADS is not set. Setting it to {env['DRT_THREADS']}…")
         return super().run(state_in, env=env, **kwargs)
 
 

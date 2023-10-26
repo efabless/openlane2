@@ -155,6 +155,7 @@ def cloup_flow_opts(
     jobs: bool = True,
     accept_config_files: bool = True,
     volare_by_default: bool = True,
+    _enable_debug_flags: bool = False,
 ) -> Decorator:
     """
     Creates a wrapper that appends a number of OpenLane flow-related flags to a
@@ -220,6 +221,44 @@ def cloup_flow_opts(
                 ),
             )(f)
         if run_options:
+            f = o(
+                "-i",
+                "--with-initial-state",
+                type=Path(
+                    exists=True,
+                    file_okay=True,
+                    dir_okay=False,
+                ),
+                default=None,
+                callback=initial_state_cb,
+                help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
+            )(f)
+            if _enable_debug_flags:
+                f = option_group(
+                    "Debug flags",
+                    o(
+                        "--force-design-dir",
+                        "_force_design_dir",
+                        type=Path(
+                            exists=True,
+                            file_okay=False,
+                            dir_okay=True,
+                        ),
+                        hidden=True,
+                        default=None,
+                    ),
+                    o(
+                        "--force-run-dir",
+                        "_force_run_dir",
+                        type=Path(
+                            exists=True,
+                            file_okay=False,
+                            dir_okay=True,
+                        ),
+                        hidden=True,
+                        default=None,
+                    ),
+                )(f)
             f = option_group(
                 "Run options",
                 o(
@@ -228,18 +267,6 @@ def cloup_flow_opts(
                     default=None,
                     type=str,
                     help="An optional name to use for this particular run of an OpenLane-based flow. Used to create the run directory.",
-                ),
-                o(
-                    "-i",
-                    "--with-initial-state",
-                    type=Path(
-                        exists=True,
-                        file_okay=True,
-                        dir_okay=False,
-                    ),
-                    default=None,
-                    callback=initial_state_cb,
-                    help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
                 ),
                 o(
                     "--last-run",

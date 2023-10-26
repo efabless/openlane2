@@ -284,6 +284,7 @@ class Flow(ABC):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
+        _force_design_dir: Optional[str] = None,
     ):
         if self.__class__.Steps == NotImplemented:
             raise NotImplementedError(
@@ -309,6 +310,7 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
+                _force_design_dir=_force_design_dir,
             )
 
         self.config: Config = config
@@ -431,6 +433,7 @@ class Flow(ABC):
         with_initial_state: Optional[State] = None,
         tag: Optional[str] = None,
         last_run: bool = False,
+        _force_run_dir: Optional[str] = None,
         **kwargs,
     ) -> State:
         """
@@ -454,10 +457,13 @@ class Flow(ABC):
 
         :returns: ``(success, state_list)``
         """
-        if last_run:
-            if tag is not None:
-                raise FlowException("tag and last_run cannot be used simultaneously.")
+        if last_run and tag is not None:
+            raise FlowException("tag and last_run cannot be used simultaneously.")
 
+        tag = tag or datetime.datetime.now().astimezone().strftime(
+            "RUN_%Y-%m-%d_%H-%M-%S"
+        )
+        if last_run:
             runs = sorted(glob.glob(os.path.join(self.design_dir, "runs", "*")))
 
             latest_time: float = 0
@@ -473,12 +479,8 @@ class Flow(ABC):
             else:
                 raise FlowException("last_run used without any existing runs")
 
-        if tag is None:
-            tag = datetime.datetime.now().astimezone().strftime("RUN_%Y-%m-%d_%H-%M-%S")
-
         # Stored until next start()
-        self.run_dir = os.path.join(self.design_dir, "runs", tag)
-
+        self.run_dir = _force_run_dir or os.path.join(self.design_dir, "runs", tag)
         initial_state = with_initial_state or State()
 
         starting_ordinal = 1
