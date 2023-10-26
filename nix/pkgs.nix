@@ -31,6 +31,13 @@ in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941e
                 meta = { broken = false; };
                 doCheck = false;
             });
+            
+            or-tools = old.or-tools.overrideAttrs (finalAttrs: previousAttrs: {
+                meta = {
+                    platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
+                };
+                doCheck = false;
+            });
 
             # HACK BECAUSE THIS IS BROKEN ON MAC ON THE COMMIT WE'RE USING
             ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
