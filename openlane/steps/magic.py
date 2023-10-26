@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 import shutil
 from abc import abstractmethod
 from typing import Literal, List, Optional, Tuple
@@ -112,7 +113,34 @@ class MagicStep(TclStep):
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
 
-        return super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(
+            state_in,
+            env=env,
+            **kwargs,
+        )
+
+        error_patterns = [
+            r"DEF read.*\(Error\).*",
+            r"LEF read.*\(Error\).*",
+            r"Error while reading cell.*",
+        ]
+
+        for line in open(self.get_log_path(), encoding="utf8"):
+            if "Calma output error" in line:
+                raise StepError(
+                    f"Magic GDS was written with errors. Check log file of {self.id}"
+                )
+            elif "is an abstract view" in line:
+                raise StepError(
+                    f"Missing GDS view for a macro. Check log file of {self.id}."
+                )
+            for pattern in error_patterns:
+                if re.match(pattern, line):
+                    raise StepError(
+                        f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
+                    )
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -207,7 +235,6 @@ class StreamOut(MagicStep):
             env["DIE_AREA"] = die_area
 
         env["MAGTYPE"] = "mag"
-        magic_log_dir = os.path.join(self.step_dir, "magic.log")
 
         if self.config["MACROS"] is not None:
             macro_gds = []
@@ -222,7 +249,6 @@ class StreamOut(MagicStep):
         views_updates, metrics_updates = super().run(
             state_in,
             env=env,
-            log_to=magic_log_dir,
             **kwargs,
         )
 
@@ -235,12 +261,6 @@ class StreamOut(MagicStep):
         views_updates[DesignFormat.MAG] = Path(
             os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.mag")
         )
-
-        for line in open(magic_log_dir, encoding="utf8"):
-            if "Calma output error" in line:
-                raise StepError("Magic GDS was written with errors.")
-            elif "is an abstract view" in line:
-                raise StepError("Missing GDS view for a macro. Check step log file.")
 
         return views_updates, metrics_updates
 
