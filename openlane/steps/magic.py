@@ -126,20 +126,20 @@ class MagicStep(TclStep):
             r"Error while reading cell.*",
         ]
 
+        error_found = False
         for line in open(self.get_log_path(), encoding="utf8"):
             if "Calma output error" in line:
-                raise StepError(
-                    f"Magic GDS was written with errors. Check log file of {self.id}"
-                )
+                error_found = True
             elif "is an abstract view" in line:
-                raise StepError(
-                    f"Missing GDS view for a macro. Check log file of {self.id}."
-                )
+                error_found = True
             for pattern in error_patterns:
                 if re.match(pattern, line):
-                    raise StepError(
-                        f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
-                    )
+                    error_found = True
+                    break
+            if error_found is True:
+                raise StepError(
+                    f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
+                )
 
         return views_updates, metrics_updates
 
