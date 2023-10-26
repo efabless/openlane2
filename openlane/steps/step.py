@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import textwrap
 import time
+import sys
 
 from signal import Signals
 from inspect import isabstract
@@ -131,11 +132,10 @@ class ProcessStatsThread(Thread):
         self.process = process
         self.result = None
         self.interval = interval
-        self.time = {
-            "cpu_time_user": 0.0,
-            "cpu_time_system": 0.0,
-            "cpu_time_iowait": 0.0,
-        }
+        self.time = {"cpu_time_user": 0.0, "cpu_time_system": 0.0}
+        if sys.platform == "linux":
+            self.time["cpu_time_iowait"] = 0.0
+
         self.peak_resources = {
             "cpu_percent": 0.0,
             "memory_rss": 0.0,
@@ -150,38 +150,42 @@ class ProcessStatsThread(Thread):
         }
 
     def run(self):
-        count = 1
-        status = self.process.status()
-        while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
-            with self.process.oneshot():
-                cpu = self.process.cpu_percent()
-                memory = self.process.memory_info()
-                cpu_time = self.process.cpu_times()
-                threads = self.process.num_threads()
+        try:
+            count = 1
+            status = self.process.status()
+            while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
+                with self.process.oneshot():
+                    cpu = self.process.cpu_percent()
+                    memory = self.process.memory_info()
+                    cpu_time = self.process.cpu_times()
+                    threads = self.process.num_threads()
 
-                self.time["cpu_time_user"] = cpu_time.user
-                self.time["cpu_time_system"] = cpu_time.system
-                self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
+                    self.time["cpu_time_user"] = cpu_time.user
+                    self.time["cpu_time_system"] = cpu_time.system
+                    if sys.platform == "linux":
+                        self.time["cpu_time_iowait"] = cpu_time.iowait  # type: ignore
 
-                current: Dict[str, float] = {}
-                current["cpu_percent"] = cpu
-                current["memory_rss"] = memory.rss
-                current["memory_vms"] = memory.vms
-                current["threads"] = threads
+                    current: Dict[str, float] = {}
+                    current["cpu_percent"] = cpu
+                    current["memory_rss"] = memory.rss
+                    current["memory_vms"] = memory.vms
+                    current["threads"] = threads
 
-                for key in self.peak_resources.keys():
-                    self.peak_resources[key] = max(
-                        current[key], self.peak_resources[key]
-                    )
+                    for key in self.peak_resources.keys():
+                        self.peak_resources[key] = max(
+                            current[key], self.peak_resources[key]
+                        )
 
-                    # moving average
-                    self.avg_resources[key] = (
-                        (count * self.avg_resources[key]) + current[key]
-                    ) / (count + 1)
+                        # moving average
+                        self.avg_resources[key] = (
+                            (count * self.avg_resources[key]) + current[key]
+                        ) / (count + 1)
 
-                count += 1
-                time.sleep(self.interval)
-                status = self.process.status()
+                    count += 1
+                    time.sleep(self.interval)
+                    status = self.process.status()
+        except psutil.Error as e:
+            warn(e)
 
     def stats_as_dict(self):
         return {

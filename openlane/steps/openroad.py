@@ -618,8 +618,14 @@ class Floorplan(OpenROADStep):
             units="%",
         ),
         Variable(
+            "FP_OBSTRUCTIONS",
+            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
+            units="µm",
+        ),
+        Variable(
             "CORE_AREA",
-            Optional[str],
+            Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
             units="µm",
         ),

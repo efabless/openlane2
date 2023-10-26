@@ -16,6 +16,7 @@ import re
 import shutil
 from abc import abstractmethod
 from typing import Literal, List, Optional, Tuple
+from decimal import Decimal
 
 from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
@@ -198,7 +199,7 @@ class StreamOut(MagicStep):
     config_vars = MagicStep.config_vars + [
         Variable(
             "DIE_AREA",
-            Optional[str],
+            Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
             'Specific die area to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
             units="µm",
         ),
