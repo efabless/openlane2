@@ -151,6 +151,7 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v1
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
@@ -279,6 +280,8 @@ jobs:
             ghcr.io/${{ github.repository }}:$NEW_TAG\
             ghcr.io/${{ github.repository }}:$NEW_TAG-amd64\
             ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
+
+          docker push ghcr.io/${{ github.repository }}:$NEW_TAG
       - name: Set Up Python
         if: ${{ env.PUBLISH == '1' }}
         uses: actions/setup-python@v4
