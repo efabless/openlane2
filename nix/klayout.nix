@@ -87,6 +87,7 @@ in gccStdenv.mkDerivation {
       -prefix $out/lib\
       -expert\
       -verbose
+    runHook postBuild
   '';
 
   postBuild = if stdenv.isDarwin then ''
