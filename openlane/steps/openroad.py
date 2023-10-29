@@ -1032,9 +1032,8 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config.get("DRT_THREADS") is None:
-            env["DRT_THREADS"] = str(os.cpu_count() or 1)
-            warn(f"DRT_THREADS is not set. Setting it to {env['DRT_THREADS']}…")
+        env["DRT_THREADS"] = env.get("DRT_THREADS", str(os.cpu_count() or 1))
+        info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         return super().run(state_in, env=env, **kwargs)
 
 

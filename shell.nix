@@ -28,6 +28,7 @@ with pkgs; let
       openlane
       pyfakefs
       pytest
+      pillow
     ] ++ openlane-plugins ))
 
     # Conveniences

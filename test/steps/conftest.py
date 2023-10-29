@@ -21,7 +21,12 @@ import pytest
 def collect_step_tests():
     result = []
     test_rx = re.compile(r"\d+\-[A-Za-z\d_]+")
-    for p in glob.glob(os.path.join(pytest.step_test_dir, "**"), recursive=True):
+    for p in sorted(
+        glob.glob(
+            os.path.join(pytest.step_test_dir, "**"),
+            recursive=True,
+        )
+    ):
         basename = os.path.basename(p)
         if test_rx.match(basename) is None:
             continue
