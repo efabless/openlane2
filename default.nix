@@ -56,7 +56,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
       eqy
       lighter
       synlig-sv
-    ] ++ (if builtins.currentSystem == "x86_64-linux" || builtins.currentSystem == "x86_64-darwin" then [ys-ghdl] else []) ))
+    ] ++ (if builtins.currentSystem == "x86_64-linux" then [ys-ghdl] else []) ))
     openroad
     klayout
     netgen
