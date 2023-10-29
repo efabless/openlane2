@@ -124,14 +124,12 @@ class MagicStep(TclStep):
             r"DEF read.*\(Error\).*",
             r"LEF read.*\(Error\).*",
             r"Error while reading cell(?!.*Warning:).*",
+            r".*Calma output error.*",
+            r".*is an abstract view.*",
         ]
 
         error_found = False
         for line in open(self.get_log_path(), encoding="utf8"):
-            if "Calma output error" in line:
-                error_found = True
-            elif "is an abstract view" in line:
-                error_found = True
             for pattern in error_patterns:
                 if re.match(pattern, line):
                     error_found = True
