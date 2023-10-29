@@ -99,14 +99,14 @@ ignore_list = $ignore.split(";")
 
 ## Perform per-layer XOR
 total_xor_differences = 0
-layers.sort.uniq.each do |layer_name|
+layers.sort.uniq.each do |layer_name, layer_data|
   if ignore_list.include? layer_name
     warn "--- Skipping #{layer_name}… ---"
   else
     info "--- Running XOR for layer #{layer_name} ---"
 
     layer_info = layers[layer_name]
-    xor_data = a.input(layer_name) ^ b.input(layer_name)
+    xor_data = (a.input(layer_name, layer_data) ^ b.input(layer_name, layer_data))
     total_xor_differences += xor_data.data.size
     info "XOR differences: #{xor_data.data.size}"
 
