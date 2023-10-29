@@ -87,6 +87,15 @@ class MagicStep(TclStep):
             "A list of pre-processed abstract LEF views for cells. Read as a fallback for undefined cells in scripts where cells are blackboxed.",
             pdk=True,
         ),
+        Variable(
+            "MAGIC_CAPTURE_ERRORS",
+            bool,
+            "Capture errors print by Magic and quit when a fatal error is encountered."
+            + " Fatal errors are determined heuristically. It is not guaranteed that they are fatal errors."
+            + " Hence this is function is gated by a variable."
+            + " This function is needed because Magic does not throw errors.",
+            default=True,
+        ),
     ]
 
     @abstractmethod
@@ -120,24 +129,25 @@ class MagicStep(TclStep):
             **kwargs,
         )
 
-        error_patterns = [
-            r"DEF read.*\(Error\).*",
-            r"LEF read.*\(Error\).*",
-            r"Error while reading cell(?!.*Warning:).*",
-            r".*Calma output error.*",
-            r".*is an abstract view.*",
-        ]
+        if self.config["MAGIC_CAPTURE_ERRORS"]:
+            error_patterns = [
+                r"DEF read.*\(Error\).*",
+                r"LEF read.*\(Error\).*",
+                r"Error while reading cell(?!.*Warning:).*",
+                r".*Calma output error.*",
+                r".*is an abstract view.*",
+            ]
 
-        error_found = False
-        for line in open(self.get_log_path(), encoding="utf8"):
-            for pattern in error_patterns:
-                if re.match(pattern, line):
-                    error_found = True
-                    break
-            if error_found is True:
-                raise StepError(
-                    f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
-                )
+            error_found = False
+            for line in open(self.get_log_path(), encoding="utf8"):
+                for pattern in error_patterns:
+                    if re.match(pattern, line):
+                        error_found = True
+                        break
+                if error_found is True:
+                    raise StepError(
+                        f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
+                    )
 
         return views_updates, metrics_updates
 
