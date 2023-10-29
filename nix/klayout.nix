@@ -39,15 +39,15 @@
 }:
 
 with pkgs; let
-  rev = "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7";
-in gccStdenv.mkDerivation {
+   rev = "8212b7cefd5b774f82f53cf9080ffc109f1e66ea";
+in clangStdenv.mkDerivation {
   name = "klayout";
 
   src = fetchFromGitHub {
     owner = "KLayout";
     repo = "klayout";
     rev = "${rev}";
-    sha256 = "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=";
+    sha256 = "sha256-QvEoXKJ9sH5WIarYPsYEWwoFwA/pZa2etegA+AD8rPo=";
   };
 
   postPatch = ''
@@ -79,6 +79,7 @@ in gccStdenv.mkDerivation {
   
   buildPhase = ''
     mkdir -p $out/lib
+    echo "Using $NIX_BUILD_CORES threads…"
     ./build.sh\
       -option -j$NIX_BUILD_CORES\
       -without-qtbinding\
