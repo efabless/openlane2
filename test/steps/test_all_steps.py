@@ -75,7 +75,7 @@ def attribute_from_file(file: str, attribute: str):
 def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture):
     from openlane.steps import Step
     from openlane.state import State
-    from openlane.common import Toolbox
+    from openlane.common import Toolbox, get_script_dir
 
     sys.path.insert(0, os.getcwd())
 
@@ -99,6 +99,9 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
     handler: Callable = attribute_from_file(
         os.path.join(os.getcwd(), "handler.py"), "handle"
     ) or (lambda: None)
+
+    base_sdc = os.path.join(get_script_dir(), "base.sdc")
+    shutil.copy(base_sdc, ".")
 
     # 1. Preprocess State and Config (if needed)
     state_in = os.path.join(".", "state_in.json")
