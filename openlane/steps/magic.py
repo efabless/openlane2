@@ -138,16 +138,12 @@ class MagicStep(TclStep):
                 r".*is an abstract view.*",
             ]
 
-            error_found = False
             for line in open(self.get_log_path(), encoding="utf8"):
                 for pattern in error_patterns:
                     if re.match(pattern, line):
-                        error_found = True
-                        break
-                if error_found is True:
-                    raise StepError(
-                        f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
-                    )
+                        raise StepError(
+                            f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
+                        )
 
         return views_updates, metrics_updates
 
