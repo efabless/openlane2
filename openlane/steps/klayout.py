@@ -20,7 +20,7 @@ from typing import Optional, List, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
-from ..logging import warn
+from ..logging import info, warn
 from ..config import Variable, Config
 from ..state import DesignFormat, State
 from ..common import Path, get_script_dir, Toolbox
@@ -295,6 +295,7 @@ class XOR(KLayoutStep):
             tile_size_options += ["--tile-size", str(tile_size)]
 
         thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
+        info(f"Running XOR with {thread_count} threads…")
 
         self.run_subprocess(
             [
