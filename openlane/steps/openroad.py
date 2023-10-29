@@ -618,8 +618,14 @@ class Floorplan(OpenROADStep):
             units="%",
         ),
         Variable(
+            "FP_OBSTRUCTIONS",
+            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
+            units="µm",
+        ),
+        Variable(
             "CORE_AREA",
-            Optional[str],
+            Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
             'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
             units="µm",
         ),
@@ -1026,9 +1032,8 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config.get("DRT_THREADS") is None:
-            env["DRT_THREADS"] = str(os.cpu_count() or 1)
-            warn(f"DRT_THREADS is not set. Setting it to {env['DRT_THREADS']}…")
+        env["DRT_THREADS"] = env.get("DRT_THREADS", str(os.cpu_count() or 1))
+        info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         return super().run(state_in, env=env, **kwargs)
 
 

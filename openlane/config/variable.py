@@ -328,7 +328,7 @@ class Variable:
         if type_origin in [list, tuple]:
             return_value = list()
             raw = value
-            if isinstance(raw, list):
+            if isinstance(raw, list) or isinstance(raw, tuple):
                 pass
             elif isinstance(raw, str):
                 if not permissive_typing:
@@ -365,7 +365,7 @@ class Variable:
                 )
 
             if type_origin == tuple:
-                return tuple(raw)
+                return tuple(return_value)
 
             return return_value
         elif type_origin == dict:

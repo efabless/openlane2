@@ -62,7 +62,7 @@ class TclStep(Step):
         """
         if is_dataclass(value):
             return json.dumps(asdict(value), cls=GenericDictEncoder)
-        elif isinstance(value, list):
+        elif isinstance(value, list) or isinstance(value, tuple):
             result = []
             for item in value:
                 result.append(TclStep.value_to_tcl(item))
