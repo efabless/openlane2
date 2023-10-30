@@ -13,6 +13,10 @@ inputs:
     description: "Shell to use"
     required: true
     default: "bash"
+  nix_build_args:
+    description: "Extra arguments to pass on to nix-build"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -26,20 +30,20 @@ runs:
       run: |
         echo "#################################################################"
         nix-env -f "<nixpkgs>" -iA bash
-        nix-build
+        nix-build ${{ inputs.nix_build_args }}
     - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
-        nix-shell --run "pytest --step-rx '.'"
+        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.'"
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
-        nix-shell --run "openlane --smoke-test"
+        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
     - name: Push
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix-build | cachix push openlane
+        nix-build ${{ inputs.nix_build_args }} | cachix push openlane
