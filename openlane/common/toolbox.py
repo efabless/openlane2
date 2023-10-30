@@ -42,7 +42,7 @@ from .misc import Path, mkdirp
 from .metrics import aggregate_metrics
 from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string
-from ..logging import debug, warn, err
+from ..logging import debug, warn, err, verbose
 
 
 class Toolbox(object):
@@ -54,9 +54,9 @@ class Toolbox(object):
     """
 
     def __init__(self, tmp_dir: str) -> None:
+        # Only create before use, otherwise users will end up with
+        # "openlane_run/tmp" created in their PWD because of the global toolbox
         self.tmp_dir = tmp_dir
-
-        mkdirp(self.tmp_dir)
 
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
         self.create_blackbox_model = lru_cache(16, True)(self.create_blackbox_model)  # type: ignore
@@ -306,6 +306,8 @@ class Toolbox(object):
             treated as a list of cells.
         :returns: A path to the lib file with the removed cells.
         """
+        mkdirp(self.tmp_dir)
+
         if as_cell_lists:  # Paths to files
             excluded_cells_str = ""
             for file in excluded_cells:
@@ -372,9 +374,13 @@ class Toolbox(object):
         input_models: FrozenSet[str],
         defines: FrozenSet[str],
     ) -> str:
+        mkdirp(self.tmp_dir)
+
         class State(IntEnum):
             output = 0
             dont = 1
+
+        verbose(f"Creating cell models for {input_models}…")
 
         out_path = os.path.join(self.tmp_dir, f"{uuid.uuid4().hex}.bb.v")
         bad_yosys_line = re.compile(r"^\s+(\w+|(\\\S+?))\s*\(.*\).*;")
@@ -382,6 +388,7 @@ class Toolbox(object):
 
         with open(out_path, "w", encoding="utf8") as out:
             for model in input_models:
+                print(model)
                 patched_path = os.path.join(
                     self.tmp_dir, f"{uuid.uuid4().hex}.patched.v"
                 )

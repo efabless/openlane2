@@ -133,6 +133,12 @@ class ApplyDEFTemplate(OdbpyStep):
             Optional[Path],
             "Points to the DEF file to be used as a template.",
         ),
+        Variable(
+            "FP_TEMPLATE_MATCH_MODE",
+            Literal["strict", "permissive"],
+            "Whether to require that the pin set of the DEF template and the design should be identical. In permissive mode, pins that are in the design and not in the template will be excluded, and vice versa.",
+            default="strict",
+        ),
     ]
 
     def get_script_path(self):
@@ -146,6 +152,7 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().get_command() + [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
+            f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:

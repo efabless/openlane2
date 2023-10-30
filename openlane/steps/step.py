@@ -16,6 +16,7 @@ from decimal import Decimal
 
 import json
 import os
+import shlex
 import psutil
 import shutil
 import subprocess
@@ -994,6 +995,8 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
+
+        verbose("Running command %s…" % shlex.join(cmd_str))
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
