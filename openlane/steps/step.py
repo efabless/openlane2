@@ -68,9 +68,9 @@ from ..common import (
 from ..logging import (
     rule,
     verbose,
-    info,
     warn,
     err,
+    debug,
 )
 from ..__version__ import __version__
 
@@ -721,7 +721,7 @@ class Step(ABC):
         dumpable_config = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
-            "step": self.__class__.id,
+            "step": self.__class__.id.rstrip("-0123456789"),
         }
 
         del dumpable_config["DESIGN_DIR"]
@@ -776,8 +776,8 @@ class Step(ABC):
         if hasattr(os, "chmod"):
             os.chmod(script_path, 0o755)
 
-        info("Reproducible created at:")
-        verbose(f"'{os.path.relpath(target_dir)}'")
+        print("Reproducible created at:")
+        print(f"{os.path.relpath(target_dir)}")
 
     @final
     def start(
@@ -840,10 +840,11 @@ class Step(ABC):
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
-                "step": self.__class__.id,
+                "step": self.__class__.id.rstrip("-0123456789"),
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
+        debug(f"{self.step_dir}")
         self.start_time = time.time()
 
         for input in self.inputs:

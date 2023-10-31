@@ -426,6 +426,7 @@ def create_test(ctx, step_dir, output):
     step = load_step_from_inputs(ctx, None, config, state_in)
     step.create_reproducible(output, include_pdk=False, _flatten=True)
     os.remove(os.path.join(output, "run_ol.sh"))
+    os.remove(os.path.join(output, "base.sdc"))
 
 
 @group(formatter_settings=formatter_settings)
