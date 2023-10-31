@@ -135,7 +135,7 @@ def verbose(*args, **kwargs):
 
     All args and kwargs are passed to https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
     """
-    if get_log_level() > LogLevels.VERBOSE or get_log_level() >= LogLevels.DEBUG:
+    if get_log_level() > LogLevels.VERBOSE:
         return
     if __plain_output:
         print(*args)
