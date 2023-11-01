@@ -19,12 +19,32 @@ let
 in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
     overlays = [
         (new: old: {
-            # HACK BECAUSE THIS IS BROKEN ON MAC ON THE COMMIT WE'RE USING
-            ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
+            # aarch64-related
+            clp = old.clp.overrideAttrs(finalAttrs: previousAttrs: {
+                meta = {
+                    platforms = previousAttrs.meta.platforms ++ ["aarch64-linux"];
+                };
+            });
+
+            # Darwin-related
+            lemon-graph = old.lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
+                meta = { broken = false; };
+                doCheck = false;
+            });
+            
+            or-tools = old.or-tools.overrideAttrs (finalAttrs: previousAttrs: {
                 meta = {
                     platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
                 };
-            }) else (old.ghdl-llvm);
+                doCheck = false;
+            });
+
+            # # Hack to get GHDL to maybe work on macOS- use at your own risk
+            # ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
+            #     meta = {
+            #         platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
+            #     };
+            # }) else (old.ghdl-llvm);
         })
     ];
 } // args

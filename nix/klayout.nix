@@ -39,16 +39,15 @@
 }:
 
 with pkgs; let
-  rev = "6a36bfa7c04f55bd732f8e0f91b553c8f9cebed7";
+   rev = "8212b7cefd5b774f82f53cf9080ffc109f1e66ea";
 in clangStdenv.mkDerivation {
-  pname = "klayout";
-  version = "${rev}"; # I'm going to avoid a KLayout rebuild like the goddamn plague
+  name = "klayout";
 
   src = fetchFromGitHub {
     owner = "KLayout";
     repo = "klayout";
     rev = "${rev}";
-    sha256 = "sha256-fjKxQ3oVtnFwzLeeE6kN0jKE5PIfBZubTF54KO+k/DE=";
+    sha256 = "sha256-QvEoXKJ9sH5WIarYPsYEWwoFwA/pZa2etegA+AD8rPo=";
   };
 
   postPatch = ''
@@ -79,9 +78,16 @@ in clangStdenv.mkDerivation {
   ];
   
   buildPhase = ''
-    runHook preBuild
     mkdir -p $out/lib
-    CC=clang CXX=clang++ ./build.sh -prefix $out/lib -option -j$NIX_BUILD_CORES -expert -verbose
+    echo "Using $NIX_BUILD_CORES threads…"
+    ./build.sh\
+      -option -j$NIX_BUILD_CORES\
+      -without-qtbinding\
+      -python $(which python3)\
+      -ruby $(which ruby)\
+      -prefix $out/lib\
+      -expert\
+      -verbose
     runHook postBuild
   '';
 

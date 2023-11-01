@@ -18,13 +18,6 @@
 
 with pkgs; let
   abc = import ./openroad-abc.nix { inherit pkgs; };
-  or-tools = import ./or-tools.nix { inherit pkgs; };
-  lemon-graph' = lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
-    meta = {
-      broken = false;
-    };
-    doCheck = !stdenv.isDarwin; # Some tests fail to compile on Darwin
-  });
 in clangStdenv.mkDerivation rec {
   name = "openroad";
   rev = "0a584d123190322b0725d5440c2c486d91d3afd8";
@@ -70,14 +63,13 @@ in clangStdenv.mkDerivation rec {
     libsForQt5.qtbase
     llvmPackages.openmp
     
+    lemon-graph
     or-tools
-    re2
     glpk
     zlib
     clp
     cbc
-    
-    lemon-graph'
+    re2
   ];
 
   nativeBuildInputs = [
