@@ -369,20 +369,6 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
-        "PLACE_SITE_WIDTH",
-        Decimal,
-        "The site width for the previously designated place site.",
-        units="µm",
-        pdk=True,
-    ),
-    Variable(
-        "PLACE_SITE_HEIGHT",
-        Decimal,
-        "The site height for the previously designated place site.",
-        units="µm",
-        pdk=True,
-    ),
-    Variable(
         "GPL_CELL_PADDING",
         Decimal,
         "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",

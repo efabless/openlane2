@@ -14,7 +14,7 @@ variables in this manner:
 
 ```json
 {
-    "VERILOG_FILES_BLACKBOX": ["dir::macros/spm/nl/spm.nl.v"],
+    "EXTRA_VERILOG_MODELS": ["dir::macros/spm/nl/spm.nl.v"],
     "EXTRA_GDS_FILES": ["dir::macros/gds/spm.gds"],
     "EXTRA_LEFS": ["dir::macros/lef/spm.lef"],
     "EXTRA_SPEFS": ["dir::macros/spm/spef/nom_/spm.nom.spef"],
