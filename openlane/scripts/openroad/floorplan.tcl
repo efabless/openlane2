@@ -33,8 +33,10 @@ foreach lib $::libs {
 
 set ::default_site $::sites($::env(PLACE_SITE))
 
-set ::default_site_height [expr [$::default_site getHeight] / $::dbu]
-set ::default_site_width [expr [$::default_site getWidth] / $::dbu]
+set ::default_site_height [expr [$::default_site getHeight] / double($::dbu)]
+set ::default_site_width [expr [$::default_site getWidth] / double($::dbu)]
+
+puts "Using site height: $::default_site_height and site width: $::default_site_width…"
 
 unset_propagated_clock [all_clocks]
 
