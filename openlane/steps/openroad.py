@@ -657,6 +657,7 @@ class Floorplan(OpenROADStep):
             "EXTRA_SITES",
             Optional[List[str]],
             "Extra sites to create rows for. The rows will overlap with the rows for `PLACE_SITE`.",
+            pdk=True,
         ),
     ]
 
