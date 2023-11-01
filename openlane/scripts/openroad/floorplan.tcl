@@ -44,6 +44,7 @@ set left_margin [expr $::default_site_width * $::env(LEFT_MARGIN_MULT)]
 set right_margin [expr $::default_site_width * $::env(RIGHT_MARGIN_MULT)]
 
 set arg_list [list]
+lappend arg_list -site $::env(PLACE_SITE)
 if { [info exists ::env(EXTRA_SITES)] } {
     foreach site $::env(EXTRA_SITES) {
         lappend arg_list -site $site
@@ -77,7 +78,6 @@ if {$::env(FP_SIZING) == "absolute"} {
 
     lappend arg_list -die_area $::env(DIE_AREA)
     lappend arg_list -core_area $::env(CORE_AREA)
-    lappend arg_list -site $::env(PLACE_SITE)
 } else {
     lappend arg_list -utilization $::env(FP_CORE_UTIL)
     lappend arg_list -aspect_ratio $::env(FP_ASPECT_RATIO)
