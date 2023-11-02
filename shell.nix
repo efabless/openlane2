@@ -35,6 +35,7 @@ with pkgs; let
     git
     zsh
     delta
+    jdupes
     neovim
     gtkwave
     coreutils
