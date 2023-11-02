@@ -29,7 +29,7 @@ types-psutil
 pytest
 coverage
 pyfakefs>=5.2.3,<6
-pillow>=9,<10
+pillow>=10.0.1,<11
 
 # ide
 pylance
