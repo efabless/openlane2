@@ -653,6 +653,12 @@ class Floorplan(OpenROADStep):
             "The core margin, in multiples of site widths, from the right boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
             default=12,
         ),
+        Variable(
+            "EXTRA_SITES",
+            Optional[List[str]],
+            "Explicitly specify sites other than `PLACE_SITE` to create rows for. If the alternate-site standard cells properly declare the `SITE` property, you do not need to provide this explicitly.",
+            pdk=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1333,6 +1339,7 @@ class IRDropReport(OpenROADStep):
 
 
 # Resizer Steps
+
 
 ## ABC
 class ResizerStep(OpenROADStep):
