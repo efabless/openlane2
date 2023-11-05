@@ -714,6 +714,7 @@ class IOPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             # Skip - Step just checks and copies
+            warn(f"FP_PIN_ORDER_CFG is set. Skipping {self.id}…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
