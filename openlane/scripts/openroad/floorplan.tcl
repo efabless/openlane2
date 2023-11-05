@@ -16,20 +16,45 @@ read_pnr_libs
 read_lefs
 read_current_netlist
 
-set ::chip [[::ord::get_db] getChip]
-set ::tech [[::ord::get_db] getTech]
+set ::db [::ord::get_db]
+set ::chip [$::db getChip]
+set ::tech [$::db getTech]
 set ::block [$::chip getBlock]
-set ::dbu [$tech getDbUnitsPerMicron]
+set ::dbu [$::tech getDbUnitsPerMicron]
+set ::libs [$::db getLibs]
+
+foreach lib $::libs {
+    set current_sites [$lib getSites]
+    foreach site $current_sites {
+        set name [$site getName]
+        set ::sites($name) $site
+    }
+}
+
+set ::default_site $::sites($::env(PLACE_SITE))
+
+set ::default_site_height [expr [$::default_site getHeight] / double($::dbu)]
+set ::default_site_width [expr [$::default_site getWidth] / double($::dbu)]
+
+puts "Using site height: $::default_site_height and site width: $::default_site_width…"
 
 unset_propagated_clock [all_clocks]
 
-set bottom_margin  [expr $::env(PLACE_SITE_HEIGHT) * $::env(BOTTOM_MARGIN_MULT)]
-set top_margin  [expr $::env(PLACE_SITE_HEIGHT) * $::env(TOP_MARGIN_MULT)]
-set left_margin [expr $::env(PLACE_SITE_WIDTH) * $::env(LEFT_MARGIN_MULT)]
-set right_margin [expr $::env(PLACE_SITE_WIDTH) * $::env(RIGHT_MARGIN_MULT)]
+set bottom_margin  [expr $::default_site_height * $::env(BOTTOM_MARGIN_MULT)]
+set top_margin  [expr $::default_site_height * $::env(TOP_MARGIN_MULT)]
+set left_margin [expr $::default_site_width * $::env(LEFT_MARGIN_MULT)]
+set right_margin [expr $::default_site_width * $::env(RIGHT_MARGIN_MULT)]
+
+set used_sites [list]
+lappend used_sites $::env(PLACE_SITE)
+if { [info exists ::env(EXTRA_SITES)] } {
+    foreach site $::env(EXTRA_SITES) {
+        lappend used_sites $site
+    }
+}
 
 set arg_list [list]
-lappend arg_list -site $::env(PLACE_SITE)
+lappend arg_list -sites "$used_sites"
 
 if {$::env(FP_SIZING) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
@@ -58,7 +83,6 @@ if {$::env(FP_SIZING) == "absolute"} {
 
     lappend arg_list -die_area $::env(DIE_AREA)
     lappend arg_list -core_area $::env(CORE_AREA)
-    lappend arg_list -site $::env(PLACE_SITE)
 } else {
     lappend arg_list -utilization $::env(FP_CORE_UTIL)
     lappend arg_list -aspect_ratio $::env(FP_ASPECT_RATIO)

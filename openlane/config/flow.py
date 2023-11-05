@@ -365,21 +365,7 @@ scl_variables = [
     Variable(
         "PLACE_SITE",
         str,
-        "Defines the main placement site in placement as specified in the technology LEF files, to generate the placement grid.",
-        pdk=True,
-    ),
-    Variable(
-        "PLACE_SITE_WIDTH",
-        Decimal,
-        "The site width for the previously designated place site.",
-        units="µm",
-        pdk=True,
-    ),
-    Variable(
-        "PLACE_SITE_HEIGHT",
-        Decimal,
-        "The site height for the previously designated place site.",
-        units="µm",
+        "Defines the primary placement site in placement as specified in the technology LEF files, to generate the placement grid.",
         pdk=True,
     ),
     Variable(
