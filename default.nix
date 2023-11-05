@@ -20,6 +20,7 @@
     inherit pkgs;
   },
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
+  ioplace-parser ? import ./nix/ioplace-parser.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
@@ -81,6 +82,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     deprecated
     immutabledict
     libparse
+    ioplace-parser
     psutil
   ] ++ includedTools;
 
