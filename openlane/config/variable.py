@@ -49,7 +49,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Literal["N", "S", "FN", "FS"]
+    orientation: Literal["N", "S", "FN", "FS", "E", "W", "FW", "FE"]
 
 
 @dataclass
