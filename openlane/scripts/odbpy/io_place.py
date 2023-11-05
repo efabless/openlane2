@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from functools import partial
-import json
 import odb
 
 import os
@@ -326,7 +325,7 @@ def io_place(
                 )
 
     if mismatches_found and unmatched_error:
-        print(f"Mismatches found: ", file=sys.stderr)
+        print("Mismatches found: ", file=sys.stderr)
         exit(os.EX_DATAERR)
 
     if len(not_in_config) > 0:
@@ -371,13 +370,6 @@ def io_place(
     for side, side_info in info_by_side.items():
         if side_info.reverse_result:
             pin_placement[side].reverse()
-
-    cardinals_sorted = list(pin_placement)
-    cardinals_sorted.sort()
-    pin_placement_names = {
-        s: [p if isinstance(p, int) else p.getName() for p in pin_placement[s]]
-        for s in cardinals_sorted
-    }
 
     # create the pins
     for side in pin_placement:
