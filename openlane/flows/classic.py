@@ -382,6 +382,22 @@ Classic.gating_config_vars.update(
 )
 
 
+def _vhdlclassic_substitute_verilog_steps(
+    steps_in: List[Type[Step]],
+) -> List[Type[Step]]:
+    result: List[Type[Step]] = [Yosys.VHDLSynthesis]
+    for step in steps_in:
+        # Ignore Verilog-dependent header steps and such
+        if (
+            step.id.startswith("Yosys.")
+            or step.id.startswith("Checker.Lint")
+            or step.id.startswith("Verilator.")
+        ):
+            continue
+        result.append(step)
+    return result
+
+
 @Flow.factory.register()
 class VHDLClassic(SequentialFlow):
     """
@@ -389,21 +405,7 @@ class VHDLClassic(SequentialFlow):
     input instead of Verilog.
     """
 
-    @staticmethod
-    def SubstituteVerilogSteps(steps_in: List[Type[Step]]) -> List[Type[Step]]:
-        result: List[Type[Step]] = [Yosys.VHDLSynthesis]
-        for step in steps_in:
-            # Ignore Verilog-dependent header steps and such
-            if (
-                step.id.startswith("Yosys.")
-                or step.id.startswith("Checker.Lint")
-                or step.id.startswith("Verilator.")
-            ):
-                continue
-            result.append(step)
-        return result
-
-    Steps: List[Type[Step]] = SubstituteVerilogSteps(Classic.Steps)
+    Steps: List[Type[Step]] = _vhdlclassic_substitute_verilog_steps(Classic.Steps)
 
     config_vars = _common_config_vars.copy()
     gating_config_vars = _common_gating_config_vars.copy()
