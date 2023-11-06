@@ -64,8 +64,8 @@ unless another annotation is specified inside a section.
 #### `@bus_major` (default)
 
 If two buses are matched with the same regular expression, the buses are sorted
-in a bus-major fashion: i.e. alphabetically by bus name and then ascendingly
-by bit number.
+in a bus-major fashion: i.e. alphabetically by any found bus name(s) and then ascendingly
+by any found bit number(s).
 
 For example, for a regular expression `l.*` matching pins:
 * `lemon[1]`
@@ -82,8 +82,8 @@ The order returned would be:
 #### `@bit_major`
 
 If two buses are matched with the same regular expression, the buses are sorted
-in a bit-major fashion: i.e., ascendingly by bit number then alphabetically by
-bus name.
+in a bit-major fashion: i.e., ascendingly by any found bit number(s) then
+alphabetically by any found bus name(s).
 
 For example, for a regular expression `l.*` matching pins:
 * `lemon[1]`

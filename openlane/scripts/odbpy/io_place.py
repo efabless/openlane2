@@ -119,7 +119,7 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
     return result, side_pin_placement
 
 
-identifiers = re.compile(r"\b\w+\b")
+identifiers = re.compile(r"\b[A-Za-z_][A-Za-z_0-9]*\b")
 standalone_numbers = re.compile(r"\b\d+\b")
 trash = re.compile(r"^[^\w\d]+$")
 
@@ -131,8 +131,12 @@ def sorter(bterm, order: ioplace_parser.Order):
     # tokenize and add to key
     while trash.match(text) is None:
         if match := identifiers.search(text):
+            bus = match[0]
             start, end = match.span(0)
-            keys.append(match[0])
+            if order == ioplace_parser.Order.busMajor:
+                priority_keys.append(bus)
+            else:
+                keys.append(bus)
             text = text[:start] + text[end + 1 :]
         elif match := standalone_numbers.search(text):
             index = int(match[0])
@@ -143,9 +147,7 @@ def sorter(bterm, order: ioplace_parser.Order):
             text = text[: match.pos] + text[match.endpos + 1 :]
         else:
             break
-
-    final_keys = priority_keys + keys
-    return final_keys
+    return [priority_keys, keys]
 
 
 @click.command()
@@ -357,13 +359,13 @@ def io_place(
             pin_tracks[side] = [
                 v_tracks[i]
                 for i in range(len(v_tracks))
-                if (i % (math.ceil(info_by_side[side].min_distance / v_step))) == 0
+                if (i % (math.ceil(info_by_side[side].min_distance * micron_in_units / v_step))) == 0
             ]
         elif side in ["W", "E"]:
             pin_tracks[side] = [
                 h_tracks[i]
                 for i in range(len(h_tracks))
-                if (i % (math.ceil(info_by_side[side].min_distance / h_step))) == 0
+                if (i % (math.ceil(info_by_side[side].min_distance * micron_in_units/ h_step))) == 0
             ]
 
     # reversals (including randomly-assigned pins, if needed)

@@ -25,6 +25,10 @@ else:
 
     @click.command()
     @click.option(
+        "--editor/--viewer",
+        default=False,
+    )
+    @click.option(
         "-l",
         "--input-lef",
         "input_lefs",
@@ -49,9 +53,10 @@ else:
         help="KLayout .map (LEF/DEF layer map) file",
     )
     @click.argument("input")
-    def cli(**kwargs):
+    def cli(editor, **kwargs):
         args = [
             "klayout",
+        ] + (["-e"] if editor else []) + [
             "-rm",
             __file__,
         ]
