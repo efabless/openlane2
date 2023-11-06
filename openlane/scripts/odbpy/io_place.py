@@ -356,16 +356,25 @@ def io_place(
     pin_tracks = {}
     for side in pin_placement:
         if side in ["N", "S"]:
+            min_distance = info_by_side[side].min_distance * micron_in_units
             pin_tracks[side] = [
                 v_tracks[i]
                 for i in range(len(v_tracks))
-                if (i % (math.ceil(info_by_side[side].min_distance * micron_in_units / v_step))) == 0
+                if (i % (math.ceil(min_distance / v_step))) == 0
             ]
         elif side in ["W", "E"]:
             pin_tracks[side] = [
                 h_tracks[i]
                 for i in range(len(h_tracks))
-                if (i % (math.ceil(info_by_side[side].min_distance * micron_in_units/ h_step))) == 0
+                if (
+                    i
+                    % (
+                        math.ceil(
+                            info_by_side[side].min_distance * micron_in_units / h_step
+                        )
+                    )
+                )
+                == 0
             ]
 
     # reversals (including randomly-assigned pins, if needed)

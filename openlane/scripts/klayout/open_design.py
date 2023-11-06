@@ -54,12 +54,16 @@ else:
     )
     @click.argument("input")
     def cli(editor, **kwargs):
-        args = [
-            "klayout",
-        ] + (["-e"] if editor else []) + [
-            "-rm",
-            __file__,
-        ]
+        args = (
+            [
+                "klayout",
+            ]
+            + (["-e"] if editor else [])
+            + [
+                "-rm",
+                __file__,
+            ]
+        )
         for key, value in kwargs.items():
             args.append("-rd")
             if isinstance(value, tuple) or isinstance(value, list):

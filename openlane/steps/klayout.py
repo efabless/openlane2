@@ -373,7 +373,7 @@ class OpenGUI(KLayoutStep):
             "EDITOR_MODE",
             bool,
             "Whether to run the KLayout GUI in editor mode or in viewer mode.",
-            default=False
+            default=False,
         )
     ]
 
@@ -393,22 +393,27 @@ class OpenGUI(KLayoutStep):
         if self.config["EDITOR_MODE"]:
             mode_args = ["--editor"]
 
-        cmd = [
-            sys.executable,
-            os.path.join(
-                get_script_dir(),
-                "klayout",
-                "open_design.py",
-            ),
-        ] + mode_args + [
-            "--lyt",
-            str(lyt),
-            "--lyp",
-            str(lyp),
-            "--lym",
-            str(lym),
-            str(state_in[DesignFormat.DEF]),
-        ] + lefs
+        cmd = (
+            [
+                sys.executable,
+                os.path.join(
+                    get_script_dir(),
+                    "klayout",
+                    "open_design.py",
+                ),
+            ]
+            + mode_args
+            + [
+                "--lyt",
+                str(lyt),
+                "--lyp",
+                str(lyp),
+                "--lym",
+                str(lym),
+                str(state_in[DesignFormat.DEF]),
+            ]
+            + lefs
+        )
 
         print(" ".join(cmd))
 
