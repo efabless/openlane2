@@ -302,12 +302,6 @@ grt_variables = routing_layer_variables + [
         default=False,
     ),
     Variable(
-        "GRT_REPAIR_ANTENNAS",
-        bool,
-        "Specifies the insertion strategy of diodes to be used in the flow.",
-        default=True,
-    ),
-    Variable(
         "GRT_ANTENNA_ITERS",
         int,
         "The maximum number of iterations for global antenna repairs.",

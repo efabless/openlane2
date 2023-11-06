@@ -266,12 +266,6 @@ best left as is; see the steps here:
 
 The subsections include some notes:
 
-### Antenna Mitigation
-During global routing, you can set [`GRT_REPAIR_ANTENNAS`](../reference/step_config_vars.md#OpenROAD.GlobalRouting.GRT_REPAIR_ANTENNAS).
-
-This will enable diode insertion during global routing for long nets, which will
-mitigate the effect. This is enabled by default.
-
 ### `DRT_THREADS`
 
 By default, detailed routing, which is the most computationally expensive step

@@ -26,6 +26,8 @@ if { [info exists ::env(DRT_MAX_LAYER)] } {
     set max_layer $::env(DRT_MAX_LAYER)
 }
 
+write_guide $::env(STEP_DIR)/before_drt.guide
+
 detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
