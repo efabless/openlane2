@@ -219,10 +219,8 @@ class DiodeInserter:
             dx, dy, do = self.place_diode_macro(it, px, py, src_pos)
 
         # Insert instance and wire it up
-        diode_inst_name = "ANTENNA_" + inst_name + "_" + it.getMTerm().getConstName()
-        diode_master = self.diode_master
-
-        diode_inst = odb.dbInst_create(self.block, diode_master, diode_inst_name)
+        diode_inst_name = f"_diode_for{inst_name}_{it.getMTerm().getConstName()}"
+        diode_inst = odb.dbInst_create(self.block, self.diode_master, diode_inst_name)
 
         diode_inst.setOrient(do)
         diode_inst.setLocation(dx, dy)
@@ -317,7 +315,6 @@ def place(
     port_protect,
     threshold_microns,
 ):
-
     print(f"Design name: {reader.name}")
 
     pp_val = {

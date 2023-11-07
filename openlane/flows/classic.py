@@ -392,6 +392,7 @@ def _vhdlclassic_substitute_verilog_steps(
             step.id.startswith("Yosys.")
             or step.id.startswith("Checker.Lint")
             or step.id.startswith("Verilator.")
+            or step.id == "Odb.SetPowerConnections"
         ):
             continue
         result.append(step)
