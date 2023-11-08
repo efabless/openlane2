@@ -30,6 +30,10 @@ in clangStdenv.mkDerivation rec {
     fetchSubmodules = true;
   };
 
+  patches = [
+    ./patches/openroad/rcx-merge-vias.patch
+  ];
+
   cmakeFlags = [
     "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
@@ -44,7 +48,7 @@ in clangStdenv.mkDerivation rec {
   preConfigure = ''
     sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake
     patchShebangs ./etc/find_messages.py
-    
+
     sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
@@ -62,7 +66,7 @@ in clangStdenv.mkDerivation rec {
     libffi
     libsForQt5.qtbase
     llvmPackages.openmp
-    
+
     lemon-graph
     or-tools
     glpk
