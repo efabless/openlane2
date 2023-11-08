@@ -53,6 +53,7 @@ class DiodeInserter:
         self.diode_site = self.diode_master.getSite().getConstName()
 
         self.inserted = {}
+        self.insts_by_name = {i.getName(): i for i in self.block.getInsts()}
 
     def debug(self, msg):
         if self.verbose:
@@ -90,14 +91,19 @@ class DiodeInserter:
                 return True
         return False
 
-    def net_has_diode(self, net):
+    def net_has_diode(self, net, *, silly_verbose=False):
         for it in net.getITerms():
             cell_type = it.getInst().getMaster().getConstName()
             cell_pin = it.getMTerm().getConstName()
+            if silly_verbose:
+                print(
+                    f"Net {net.getName()} is connected to {cell_type}/{cell_pin} via {it.getInst().getName()}"
+                )
             if (cell_type == self.diode_cell) and (cell_pin == self.diode_pin):
+                if silly_verbose:
+                    print(f"MATCHED DIODE")
                 return True
-        else:
-            return False
+        return False
 
     def net_manhattan_distance(self, net):
         xs = []
@@ -199,9 +205,9 @@ class DiodeInserter:
 
         return best[1:]
 
-    def insert_diode(self, it, src_pos):
+    def insert_diode(self, net, iterm, src_pos):
         # Get information about the instance
-        inst = it.getInst()
+        inst = iterm.getInst()
         inst_name = inst.getConstName()
         inst_site = (
             inst.getMaster().getSite().getConstName()
@@ -210,16 +216,25 @@ class DiodeInserter:
         )
 
         # Find where the pin is
-        px, py = self.pin_position(it)
+        px, py = self.pin_position(iterm)
 
         # Apply standard cell or macro placement ?
         if inst_site == self.diode_site:
-            dx, dy, do = self.place_diode_stdcell(it, px, py, src_pos)
+            dx, dy, do = self.place_diode_stdcell(iterm, px, py, src_pos)
         else:
-            dx, dy, do = self.place_diode_macro(it, px, py, src_pos)
+            dx, dy, do = self.place_diode_macro(iterm, px, py, src_pos)
 
         # Insert instance and wire it up
-        diode_inst_name = f"_diode_for{inst_name}_{it.getMTerm().getConstName()}"
+        base_diode_inst_name = f"ANTENNA_{inst_name}_{iterm.getMTerm().getName()}"
+        diode_inst_name = base_diode_inst_name
+        counter = 0
+        while self.insts_by_name.get(diode_inst_name) is not None:
+            self.debug(
+                f"[d] Net {net.getName()}: diode {diode_inst_name} appears to already exist."
+            )
+            counter += 1
+            diode_inst_name = f"{base_diode_inst_name}_{counter}"
+
         diode_inst = odb.dbInst_create(self.block, self.diode_master, diode_inst_name)
 
         diode_inst.setOrient(do)
@@ -227,7 +242,7 @@ class DiodeInserter:
         diode_inst.setPlacementStatus("PLACED")
 
         ait = diode_inst.findITerm(self.diode_pin)
-        ait.connect(it.getNet())
+        ait.connect(iterm.getNet())
 
     def execute(self):
         # Scan all nets
@@ -238,11 +253,10 @@ class DiodeInserter:
                 continue
 
             # Check if we already have diode on the net
-            # if yes, then we assume that the user took care of that net manually
-            if self.net_has_diode(net):
-                self.debug(
-                    f"[d] Skipping manually protected net {net.getConstName():s}"
-                )
+            # if yes, then we assume that the user took care of that some
+            # other way
+            if self.net_has_diode(net, silly_verbose=False):
+                self.debug(f"[d] Skipping already-protected net {net.getConstName():s}")
                 continue
 
             # Find signal source (first one found ...)
@@ -263,13 +277,20 @@ class DiodeInserter:
             # Determine the span of the signal and skip small internal nets
             span = self.net_manhattan_distance(net) / self.block.getDbUnitsPerMicron()
             if (span < self.threshold_microns) and not io_protect:
-                self.debug(f"[d] Skipping small net {net.getConstName():s} ({span:f})")
+                if self.threshold_microns != Decimal("Infinity"):
+                    self.debug(
+                        f"[d] Skipping small net {net.getConstName():s} ({span:f})"
+                    )
                 continue
 
+            self.debug(
+                f"[d] Inserting diode(s) for net {net.getConstName():s} ({span:f})"
+            )
+
             # Scan all internal terminals
-            for it in net.getITerms():
-                if it.isInputSignal():
-                    self.insert_diode(it, src_pos)
+            for iterm in net.getITerms():
+                if iterm.isInputSignal():
+                    self.insert_diode(net, iterm, src_pos)
 
 
 @click.command()

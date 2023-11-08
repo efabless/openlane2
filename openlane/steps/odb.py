@@ -455,12 +455,15 @@ class DiodesOnPorts(OdbpyStep):
         cell, pin = self.config["DIODE_CELL"].split("/")
 
         return super().get_command() + [
+            "--verbose",
             "--diode-cell",
             cell,
             "--diode-pin",
             pin,
             "--port-protect",
             self.config["DIODE_ON_PORTS"],
+            "--threshold",
+            "Infinity",
         ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -522,6 +525,7 @@ class HeuristicDiodeInsertion(OdbpyStep):
         return (
             super().get_command()
             + [
+                "--verbose",
                 "--diode-cell",
                 cell,
                 "--diode-pin",

@@ -977,7 +977,7 @@ class GlobalRouting(CheckAntennas):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    outputs = [DesignFormat.ODB]
+    outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
     config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
 
@@ -985,6 +985,7 @@ class GlobalRouting(CheckAntennas):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
 
+@Step.factory.register()
 class RepairAntennas(GlobalRouting):
     """
     Applies `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
