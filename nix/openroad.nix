@@ -50,7 +50,7 @@ in clangStdenv.mkDerivation rec {
     sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-    sed -i 's@%include "../../src/Exception.i"@%include "Exception.i"@' src/dbSta/src/dbSta.i
+    sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
   '';
 
   buildInputs = [
