@@ -101,7 +101,7 @@ class DiodeInserter:
                 )
             if (cell_type == self.diode_cell) and (cell_pin == self.diode_pin):
                 if silly_verbose:
-                    print(f"MATCHED DIODE")
+                    print("Found diode!")
                 return True
         return False
 

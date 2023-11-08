@@ -455,7 +455,6 @@ class DiodesOnPorts(OdbpyStep):
         cell, pin = self.config["DIODE_CELL"].split("/")
 
         return super().get_command() + [
-            "--verbose",
             "--diode-cell",
             cell,
             "--diode-pin",
@@ -525,7 +524,6 @@ class HeuristicDiodeInsertion(OdbpyStep):
         return (
             super().get_command()
             + [
-                "--verbose",
                 "--diode-cell",
                 cell,
                 "--diode-pin",
