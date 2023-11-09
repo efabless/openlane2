@@ -414,7 +414,7 @@ if { $::env(SYNTH_NO_FLAT) } {
 
     read_deps
 
-    file copy -force $::env(SAVE_NETLIST) $::env(synthesis_results)/$::env(DESIGN_NAME).hierarchy.nl.v
+    file copy -force $::env(SAVE_NETLIST) $::env(STEP_DIR)/$::env(DESIGN_NAME).hierarchy.nl.v
     read_verilog -sv $::env(SAVE_NETLIST)
     synth -flatten
 
