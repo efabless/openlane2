@@ -32,15 +32,25 @@ def cli():
 class DiodeInserter:
     def __init__(
         self,
-        block,
+        reader,
         diode_cell,
         diode_pin,
         side_strategy="source",
-        threshold_microns=0,
+        threshold_microns=None,
         port_protect=[],
         verbose=False,
     ):
-        self.block = block
+        if threshold_microns is None:
+            libs = reader.db.getLibs()
+            min_site_width = Decimal("Infinity")
+            for lib in libs:
+                for site in lib.getSites():
+                    site_width = Decimal(site.getWidth()) / reader.dbunits
+                    min_site_width = min(min_site_width, site_width)
+            threshold_microns = min_site_width * 200
+        print(f"Using threshold {threshold_microns}…")
+
+        self.block = reader.block
         self.verbose = verbose
 
         self.diode_cell = diode_cell
@@ -49,7 +59,7 @@ class DiodeInserter:
         self.threshold_microns = threshold_microns
         self.port_protect = port_protect
 
-        self.diode_master = block.getDataBase().findMaster(diode_cell)
+        self.diode_master = self.block.getDataBase().findMaster(diode_cell)
         self.diode_site = self.diode_master.getSite().getConstName()
 
         self.inserted = {}
@@ -323,8 +333,8 @@ class DiodeInserter:
     "--threshold",
     "threshold_microns",
     type=Decimal,
-    default=90,
-    help="Minimum manhattan distance of a net to be considered an antenna risk requiring a diode",
+    default=None,
+    help="Minimum manhattan distance of a net to be considered an antenna risk requiring a diode. By default, the value used is 200 * the minimum site width.",
 )
 @click_odb
 def place(
@@ -346,7 +356,7 @@ def place(
     }
 
     di = DiodeInserter(
-        reader.block,
+        reader,
         diode_cell=diode_cell,
         diode_pin=diode_pin,
         side_strategy=side_strategy,

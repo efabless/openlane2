@@ -503,8 +503,9 @@ class HeuristicDiodeInsertion(OdbpyStep):
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
             Optional[Decimal],
-            "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will typically use a default value.",
+            "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will use a default value equal to 200x the minimum site width in the technology files.",
             units="µm",
+            pdk=True,
         ),
     ]
 
