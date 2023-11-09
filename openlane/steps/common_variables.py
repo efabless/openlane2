@@ -64,7 +64,7 @@ pdn_variables = [
         "FP_PDN_SKIPTRIM",
         bool,
         "Enables `-skip_trim` option during pdngen which skips the metal trim step, which attempts to remove metal stubs.",
-        default=True,
+        default=False,
     ),
     Variable(
         "FP_PDN_CORE_RING",
