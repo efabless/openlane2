@@ -439,14 +439,18 @@ class DiodesOnPorts(OdbpyStep):
     name = "Diodes on Ports"
     long_name = "Diode on Port Insertion Script"
 
-    config_vars = [
-        Variable(
-            "DIODE_ON_PORTS",
-            Literal["none", "in", "out", "both"],
-            "Always insert diodes on ports with the specified polarities.",
-            default="none",
-        ),
-    ]
+    config_vars = (
+        dpl_variables
+        + grt_variables
+        + [
+            Variable(
+                "DIODE_ON_PORTS",
+                Literal["none", "in", "out", "both"],
+                "Always insert diodes on ports with the specified polarities.",
+                default="none",
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "diodes.py")
