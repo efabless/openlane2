@@ -21,7 +21,7 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
-from .common_variables import io_layer_variables
+from .common_variables import io_layer_variables, dpl_variables, grt_variables
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from ..logging import warn, info
 from ..config import Variable, Macro
@@ -430,6 +430,9 @@ class DiodesOnPorts(OdbpyStep):
 
     Useful for hardening macros, where ports may get long wires that are
     unaccounted for when hardening a top-level chip.
+
+    The placement is legalized by performing detailed placement and global
+    routing after inserting the diodes.
     """
 
     id = "Odb.DiodesOnPorts"
@@ -463,6 +466,8 @@ class DiodesOnPorts(OdbpyStep):
             self.config["DIODE_ON_PORTS"],
             "--threshold",
             "Infinity",
+            "--step-config",
+            os.path.join(self.step_dir, "config.json"),
         ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -489,8 +494,8 @@ class HeuristicDiodeInsertion(OdbpyStep):
     `GPL_CELL_PADDING` and `DPL_CELL_PADDING` must be higher than 0 for this
     script to work reliably.
 
-    This step is unique in that it is the only step with a ``RUN_`` variable that
-    is disabled by default. This is for compatibility with OpenLane 1 configs.
+    The placement is legalized by performing detailed placement and global
+    routing after inserting the diodes.
 
     The original script was written by `Sylvain "tnt" Munaut <https://github.com/smunaut>`_.
     """
@@ -499,15 +504,19 @@ class HeuristicDiodeInsertion(OdbpyStep):
     name = "Heuristic Diode Insertion"
     long_name = "Heuristic Diode Insertion Script"
 
-    config_vars = [
-        Variable(
-            "HEURISTIC_ANTENNA_THRESHOLD",
-            Optional[Decimal],
-            "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will use a default value equal to 200x the minimum site width in the technology files.",
-            units="µm",
-            pdk=True,
-        ),
-    ]
+    config_vars = (
+        dpl_variables
+        + grt_variables
+        + [
+            Variable(
+                "HEURISTIC_ANTENNA_THRESHOLD",
+                Decimal,
+                "A manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
+                units="µm",
+                pdk=True,
+            ),
+        ]
+    )
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "diodes.py")
@@ -529,6 +538,8 @@ class HeuristicDiodeInsertion(OdbpyStep):
                 cell,
                 "--diode-pin",
                 pin,
+                "--step-config",
+                os.path.join(self.step_dir, "config.json"),
             ]
             + threshold_opts
         )

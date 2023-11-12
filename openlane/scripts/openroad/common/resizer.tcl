@@ -74,8 +74,6 @@ proc set_dont_touch_objects {args} {
         }
     }
 
-    set_dont_touch "ANTENNA_*"
-
     if { [info exists ::env(RSZ_DONT_TOUCH_LIST)] } {
         set_dont_touch $::env(RSZ_DONT_TOUCH_LIST)
     }
@@ -102,8 +100,6 @@ proc unset_dont_touch_objects {args} {
             }
         }
     }
-
-    unset_dont_touch "ANTENNA_*"
 
     if { [info exists ::env(RSZ_DONT_TOUCH_LIST)] } {
         unset_dont_touch $::env(RSZ_DONT_TOUCH_LIST)

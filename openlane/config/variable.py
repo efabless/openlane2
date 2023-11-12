@@ -233,10 +233,11 @@ class Variable:
 
         If this is true and the variable is of an option type, a PDK may
         optionally provide a default value for this variable, however steps
-        must presume it is `null`.
+        must presume it is ``null``.
 
         If this is false, a PDK is not allowed to set a default value for
-        this variable.
+        this variable. In current versions of OpenLane, the value will be
+        silently ignored, but warnings or errors may occur in future versions.
     """
 
     known_variable_names: ClassVar[Set[str]] = set()

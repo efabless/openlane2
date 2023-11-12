@@ -1077,6 +1077,16 @@ class Step(ABC):
             del kwargs["env"]
         return (kwargs, env)
 
+    @classmethod
+    def with_id(Self, id: str) -> Type["Step"]:
+        """
+        Syntactic sugar for creating a subclass of a step with a different ID.
+
+        Useful in flows, where you want different IDs for different instance of the
+        same step.
+        """
+        return type(Self.__name__, (Self,), {"id": id, "__original_id": Self.id})
+
     class StepFactory(object):
         """
         A factory singleton for Steps, allowing steps types to be registered and then

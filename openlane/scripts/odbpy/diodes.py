@@ -20,8 +20,8 @@ import sys
 import click
 import random
 from decimal import Decimal
-
-from reader import click_odb
+from typing import Optional, List
+from reader import click_odb, OdbReader
 
 
 @click.group()
@@ -32,24 +32,17 @@ def cli():
 class DiodeInserter:
     def __init__(
         self,
-        reader,
-        diode_cell,
-        diode_pin,
-        side_strategy="source",
-        threshold_microns=None,
-        port_protect=[],
+        reader: OdbReader,
+        diode_cell: str,
+        diode_pin: str,
+        threshold_microns: Decimal,
+        side_strategy: str = "source",
+        port_protect_polarities: Optional[List[str]] = None,
         verbose=False,
     ):
-        if threshold_microns is None:
-            libs = reader.db.getLibs()
-            min_site_width = Decimal("Infinity")
-            for lib in libs:
-                for site in lib.getSites():
-                    site_width = Decimal(site.getWidth()) / reader.dbunits
-                    min_site_width = min(min_site_width, site_width)
-            threshold_microns = min_site_width * 200
-        print(f"Using threshold {threshold_microns}…")
+        print(f"Using threshold {threshold_microns}µm…")
 
+        self.reader = reader
         self.block = reader.block
         self.verbose = verbose
 
@@ -57,7 +50,7 @@ class DiodeInserter:
         self.diode_pin = diode_pin
         self.side_strategy = side_strategy
         self.threshold_microns = threshold_microns
-        self.port_protect = port_protect
+        self.port_protect = port_protect_polarities or []
 
         self.diode_master = self.block.getDataBase().findMaster(diode_cell)
         self.diode_site = self.diode_master.getSite().getConstName()
@@ -235,7 +228,7 @@ class DiodeInserter:
             dx, dy, do = self.place_diode_macro(iterm, px, py, src_pos)
 
         # Insert instance and wire it up
-        base_diode_inst_name = f"ANTENNA_{inst_name}_{iterm.getMTerm().getName()}"
+        base_diode_inst_name = f"ANTENNA_{inst_name}_{iterm.getMTerm().getConstName()}"
         diode_inst_name = base_diode_inst_name
         counter = 0
         while self.insts_by_name.get(diode_inst_name) is not None:
@@ -302,6 +295,10 @@ class DiodeInserter:
                 if iterm.isInputSignal():
                     self.insert_diode(net, iterm, src_pos)
 
+    def legalize(self):
+        self.reader.dpl()
+        self.reader.grt()
+
 
 @click.command()
 @click.option(
@@ -361,10 +358,11 @@ def place(
         diode_pin=diode_pin,
         side_strategy=side_strategy,
         threshold_microns=threshold_microns,
-        port_protect=pp_val[port_protect],
+        port_protect_polarities=pp_val[port_protect],
         verbose=verbose,
     )
     di.execute()
+    di.legalize()
 
     print("Inserted", len(di.inserted), "diodes.")
 

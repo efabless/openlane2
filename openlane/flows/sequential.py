@@ -124,8 +124,7 @@ class SequentialFlow(Flow):
                 id = f"{step.id}-{counter}"
                 name = f"{step.__name__}_{counter}"
             if id != step.id:
-                new_step = type(name, (step,), {"id": id})
-                target.Steps[i] = new_step
+                target.Steps[i] = step.with_id(id)
             ids_used.add(id)
 
     def __init__(

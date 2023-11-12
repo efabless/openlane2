@@ -219,6 +219,7 @@ _common_gating_config_vars = {
     "OpenROAD.RCX": ["RUN_SPEF_EXTRACTION"],
     "OpenROAD.TapEndcapInsertion": ["RUN_TAP_ENDCAP_INSERTION"],
     "Odb.HeuristicDiodeInsertion": ["RUN_HEURISTIC_DIODE_INSERTION"],
+    "OpenROAD.RepairAntennas": ["RUN_ANTENNA_REPAIR"],
     "OpenROAD.DetailedRouting": ["RUN_DRT"],
     "OpenROAD.FillInsertion": ["RUN_FILL_INSERTION"],
     "OpenROAD.STAPostPNR": ["RUN_MCSTA"],
