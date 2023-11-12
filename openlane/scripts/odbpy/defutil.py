@@ -433,9 +433,8 @@ def parse_obstructions(obstructions):
         + r") *$"
     )
 
-    obses = obstructions.split(",")
     obs_list = []
-    for obs in obses:
+    for obs in obstructions:
         obs = obs.strip()
         m = re.match(RE_OBS, obs)
         if m is None:
@@ -456,6 +455,7 @@ def parse_obstructions(obstructions):
 @click.option(
     "-O",
     "--obstructions",
+    multiple=True,
     required=True,
     help="Format: layer llx lly urx ury, (microns)",
 )
@@ -482,6 +482,7 @@ cli.add_command(add_obstructions)
 @click.option(
     "-O",
     "--obstructions",
+    multiple=True,
     required=True,
     help="Format: layer llx lly urx ury, (microns)",
 )
