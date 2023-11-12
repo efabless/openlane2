@@ -175,7 +175,9 @@ class OdbReader(object):
         grt.setOverflowIterations(self.config["GRT_OVERFLOW_ITERS"])
         grt.setAllowCongestion(self.config["GRT_ALLOW_CONGESTION"])
         grt.setVerbose(True)
-        grt.globalRoute()
+        grt.globalRoute(
+            True
+        )  # The first variable updates guides- not sure why the default is False
 
 
 def click_odb(function):
