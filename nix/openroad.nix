@@ -21,13 +21,13 @@ with pkgs; let
   abc = import ./openroad-abc.nix { inherit pkgs; };
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "95df42f3e443fe945902ce11b3e585f3e686e89e";
+  rev = "6f9b2bb8b808b1bb5831d4525d868212ae50517a";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-E0vo0OPRFH5TT9PjMpHJoS9AWoAI7c3L/kzl3pcg4j8=";
+    sha256 = "sha256-lLToR+c2oOmgfuw7RX1W/QxwBWhoZWUmdzix3CrxWmA=";
   };
 
   cmakeFlags = [
