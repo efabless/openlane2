@@ -129,7 +129,6 @@ class MagicStep(TclStep):
         env: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        print(cmd, kwargs)
         # https://github.com/RTimothyEdwards/magic/issues/218
         stdin = open(
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
@@ -165,7 +164,9 @@ class MagicStep(TclStep):
             for line in open(log_to, encoding="utf8"):
                 for pattern in error_patterns:
                     if re.match(pattern, line):
-                        raise StepError(f"Error found in log {log_to}:\n\t{line}.")
+                        raise StepError(
+                            f"Error encountered during running Magic: In {log_to}:\n\t{line}."
+                        )
 
         return generated_metrics
 
