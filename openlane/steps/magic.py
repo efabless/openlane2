@@ -117,9 +117,24 @@ class MagicStep(TclStep):
         kwargs["stdin"] = open(
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
         )
-        env["MAGIC_SCRIPT"] = kwargs.get("script") or self.get_script_path()
-        if kwargs.get("script"):
-            del kwargs["script"]
+
+        log_path = self.get_log_path()
+        env["MAGIC_SCRIPT"] = self.get_script_path()
+
+        # Note that this section is considered a hack that was merged to unblock
+        # a tape-out process; we should figure out a better way than calling two
+        # Magic scripts within the same step sometime
+        if alternate_script := kwargs.get("_script"):
+            env["MAGIC_SCRIPT"] = alternate_script
+            log_path = os.path.join(
+                self.step_dir,
+                os.path.splitext(os.path.basename(alternate_script))[0] + ".log",
+            )
+            del kwargs["_script"]
+
+        if log_to_override := kwargs.get("log_to"):
+            log_path = log_to_override
+            del kwargs["log_to"]
 
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
@@ -128,6 +143,7 @@ class MagicStep(TclStep):
         views_updates, metrics_updates = super().run(
             state_in,
             env=env,
+            log_to=log_path,
             **kwargs,
         )
 
@@ -140,9 +156,7 @@ class MagicStep(TclStep):
                 r".*is an abstract view.*",
             ]
 
-            for line in open(
-                kwargs.get("log_to") or self.get_log_path(), encoding="utf8"
-            ):
+            for line in open(log_path, encoding="utf8"):
                 for pattern in error_patterns:
                     if re.match(pattern, line):
                         raise StepError(
@@ -265,8 +279,8 @@ class StreamOut(MagicStep):
                 _, metrics_updates = super().run(
                     state_in,
                     env=env_copy,
-                    script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
-                    log_to=os.path.join(log_folder, f"{macro}.log"),
+                    log_to=os.path.join(log_folder, f"{macro}.get_bbox.log"),
+                    _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
 
                 if metrics_updates == {}:
