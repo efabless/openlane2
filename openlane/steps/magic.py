@@ -14,16 +14,16 @@
 import os
 import re
 import shutil
-from abc import abstractmethod
-from typing import Literal, List, Optional, Tuple
 from decimal import Decimal
+from abc import abstractmethod
+from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
 
 from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
+from ..common import get_script_dir, DRC as DRCObject, Path
 
 
 class MagicStep(TclStep):
@@ -111,39 +111,45 @@ class MagicStep(TclStep):
             str(self.config["MAGICRC"]),
         ]
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        # https://github.com/RTimothyEdwards/magic/issues/218
-        kwargs, env = self.extract_env(kwargs)
-        kwargs["stdin"] = open(
-            os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
-        )
-
-        log_path = self.get_log_path()
-        env["MAGIC_SCRIPT"] = self.get_script_path()
-
-        # Note that this section is considered a hack that was merged to unblock
-        # a tape-out process; we should figure out a better way than calling two
-        # Magic scripts within the same step sometime
-        if alternate_script := kwargs.get("_script"):
-            env["MAGIC_SCRIPT"] = alternate_script
-            log_path = os.path.join(
-                self.step_dir,
-                os.path.splitext(os.path.basename(alternate_script))[0] + ".log",
-            )
-            del kwargs["_script"]
-
-        if log_to_override := kwargs.get("log_to"):
-            log_path = log_to_override
-            del kwargs["log_to"]
+    def prepare_env(self, env: dict, state: State) -> dict:
+        env = super().prepare_env(env, state)
 
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
 
-        views_updates, metrics_updates = super().run(
-            state_in,
-            env=env,
-            log_to=log_path,
+        return env
+
+    def run_subprocess(
+        self,
+        cmd: Sequence[Union[str, os.PathLike]],
+        log_to: Optional[Union[str, os.PathLike]] = None,
+        silent: bool = False,
+        report_dir: Optional[Union[str, os.PathLike]] = None,
+        env: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        print(cmd, kwargs)
+        # https://github.com/RTimothyEdwards/magic/issues/218
+        stdin = open(
+            os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
+        )
+
+        env = (env or {}).copy()
+        env["MAGIC_SCRIPT"] = self.get_script_path()
+        if alternate_script := kwargs.get("_script"):
+            env["MAGIC_SCRIPT"] = alternate_script
+            del kwargs["_script"]
+
+        log_to = log_to or self.get_log_path()
+
+        generated_metrics = super().run_subprocess(
+            cmd,
+            log_to,
+            silent,
+            report_dir,
+            env,
+            stdin=stdin,
             **kwargs,
         )
 
@@ -156,14 +162,12 @@ class MagicStep(TclStep):
                 r".*is an abstract view.*",
             ]
 
-            for line in open(log_path, encoding="utf8"):
+            for line in open(log_to, encoding="utf8"):
                 for pattern in error_patterns:
                     if re.match(pattern, line):
-                        raise StepError(
-                            f"Error encountered during running Magic.\nError: {line}Check the log file of {self.id}."
-                        )
+                        raise StepError(f"Error found in log {log_to}:\n\t{line}.")
 
-        return views_updates, metrics_updates
+        return generated_metrics
 
 
 @Step.factory.register()
@@ -254,6 +258,8 @@ class StreamOut(MagicStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
+
+        env = self.prepare_env(env, state_in)
         if die_area := state_in.metrics.get("design__die__bbox"):
             env["DIE_AREA"] = die_area
 
@@ -269,33 +275,25 @@ class StreamOut(MagicStep):
                 macro_gdses = [str(path) for path in self.config["MACROS"][macro].gds]
                 if len(macro_gdses) > 1:
                     raise StepException(
-                        "Multiple gds per macro not supported when MAGIC_MACRO_STD_CELL_SOURCE is set to 'macro'"
+                        "Multiple GDSII files in one Macro currently unsupported when MAGIC_MACRO_STD_CELL_SOURCE is set to 'macro'."
                     )
                 env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
-                log_folder = os.path.join(self.step_dir, "get_bbox")
-                mkdirp(log_folder)
 
-                _, metrics_updates = super().run(
-                    state_in,
+                generated_metrics = super().run_subprocess(
+                    self.get_command(),
                     env=env_copy,
-                    log_to=os.path.join(log_folder, f"{macro}.get_bbox.log"),
+                    log_to=os.path.join(self.step_dir, f"{macro}.get_bbox.log"),
                     _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
 
-                if metrics_updates == {}:
+                if generated_metrics == {}:
                     raise StepError(
-                        f"{macro} doesn't have pr boundary in it's GDS view"
+                        f"Failed to extract PR boundary from GDSII view of macro '{macro}'. Ensure that the GDSII view has a PR boundary layer."
                     )
-                bbox = " ".join([str(value) for value in metrics_updates.values()])
-                macro_gds.append(macro)
-                macro_gds += macro_gdses
-                macro_gds.append(bbox)
-                macro_gds += ","
+                macro_gds.append([macro, macro_gdses, generated_metrics.values()])
 
-            from ..common import TclUtils
-
-            env["__MACRO_GDS"] = TclUtils.join(macro_gds[:-1])
+            env["__MACRO_GDS"] = TclStep.value_to_tcl(macro_gds)
 
         views_updates, metrics_updates = super().run(
             state_in,

@@ -68,7 +68,7 @@ proc read_extra_gds {} {
 
 proc read_macro_gds_blackbox {} {
     if { [info exists ::env(__MACRO_GDS)] } {
-        foreach macro [split $::env(__MACRO_GDS) ,] {
+        foreach macro $::env(__MACRO_GDS) {
             set macro_name [lindex $macro 0]
             set gds_file [lindex $macro 1]
             set bbox [lindex $macro 2]
