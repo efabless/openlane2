@@ -111,15 +111,15 @@ class MagicStep(TclStep):
             str(self.config["MAGICRC"]),
         ]
 
-    def run(
-        self, state_in: State, script: Optional[str] = None, **kwargs
-    ) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         # https://github.com/RTimothyEdwards/magic/issues/218
         kwargs, env = self.extract_env(kwargs)
         kwargs["stdin"] = open(
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
         )
-        env["MAGIC_SCRIPT"] = script or self.get_script_path()
+        env["MAGIC_SCRIPT"] = kwargs.get("script") or self.get_script_path()
+        if kwargs.get("script"):
+            del kwargs["script"]
 
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
