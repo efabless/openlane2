@@ -34,6 +34,7 @@ from typing import (
     List,
     Callable,
     Optional,
+    Set,
     Union,
     Tuple,
     Sequence,
@@ -1154,9 +1155,9 @@ class CompositeStep(Step):
         super().__init_subclass__()
         available_inputs = set()
 
-        input_set = set()
-        output_set = set()
-        config_var_dict = {}
+        input_set: Set[DesignFormat] = set()
+        output_set: Set[DesignFormat] = set()
+        config_var_dict: Dict[str, Variable] = {}
         for step in Self.Steps:
             for input in step.inputs:
                 if input in available_inputs:
@@ -1171,7 +1172,7 @@ class CompositeStep(Step):
                 if existing := config_var_dict.get(cvar.name):
                     if existing != cvar:
                         raise TypeError(
-                            f"Composite step has mismatching config_vars: {cvar.name} contradicts an earlier declaration"
+                            f"Internal error: composite step has mismatching config_vars: {cvar.name} contradicts an earlier declaration"
                         )
                 else:
                     config_var_dict[cvar.name] = cvar
