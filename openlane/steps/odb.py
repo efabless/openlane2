@@ -21,8 +21,6 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
-from openlane.state import State
-
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
