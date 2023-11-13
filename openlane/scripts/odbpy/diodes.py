@@ -295,10 +295,6 @@ class DiodeInserter:
                 if iterm.isInputSignal():
                     self.insert_diode(net, iterm, src_pos)
 
-    def legalize(self):
-        self.reader.dpl()
-        self.reader.grt()
-
 
 @click.command()
 @click.option(
@@ -362,7 +358,6 @@ def place(
         verbose=verbose,
     )
     di.execute()
-    di.legalize()
 
     print("Inserted", len(di.inserted), "diodes.")
 

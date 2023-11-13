@@ -71,6 +71,7 @@ from ..logging import (
     info,
     warn,
     err,
+    debug,
 )
 from ..__version__ import __version__
 
@@ -393,8 +394,11 @@ class Step(ABC):
     def __init_subclass__(cls):
         if hasattr(cls, "flow_control_variable"):
             warn(
-                f"Step '{cls.id}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
+                f"Step '{cls.__name__}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
             )
+        if cls.id != NotImplemented:
+            if f".{cls.__name__}" not in cls.id:
+                debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
 
     @classmethod
     def assert_concrete(Self, action: str = "initialized"):
@@ -784,6 +788,7 @@ class Step(ABC):
         self,
         toolbox: Optional[Toolbox] = None,
         step_dir: Optional[str] = None,
+        _no_rule: bool = False,
         **kwargs,
     ) -> State:
         """
@@ -830,7 +835,8 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        rule(f"{self.long_name}")
+        if not _no_rule:
+            rule(f"{self.long_name}")
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -1131,3 +1137,71 @@ class Step(ABC):
             return [cls.id for cls in Self.__registry.values()]
 
     factory = StepFactory
+
+
+class CompositeStep(Step):
+    """
+    A step composed of other steps, run sequentially. The steps are intended
+    to run as a unit within a flow and cannot be run separately.
+
+    Composite steps are currently considered an internal object that is not
+    ready to be part of the API. The API may change at any time for any reason.
+    """
+
+    Steps: List[Type[Step]] = []
+
+    def __init_subclass__(Self):
+        super().__init_subclass__()
+        available_inputs = set()
+
+        input_set = set()
+        output_set = set()
+        config_var_dict = {}
+        for step in Self.Steps:
+            for input in step.inputs:
+                if input in available_inputs:
+                    continue
+                else:
+                    input_set.add(input)
+                    available_inputs.add(input)
+            for output in step.outputs:
+                available_inputs.add(input)
+                output_set.add(output)
+            for cvar in step.config_vars:
+                if existing := config_var_dict.get(cvar.name):
+                    if existing != cvar:
+                        raise TypeError(
+                            f"Composite step has mismatching config_vars: {cvar.name} contradicts an earlier declaration"
+                        )
+                else:
+                    config_var_dict[cvar.name] = cvar
+
+        Self.inputs = list(input_set)
+        Self.outputs = list(output_set)
+        Self.config_vars = list(config_var_dict.values())
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        state = state_in
+        step_count = len(self.Steps)
+        ordinal_length = len(str(step_count - 1))
+        for i, Step in enumerate(self.Steps):
+            step = Step(self.config, state)
+            step_dir = os.path.join(
+                self.step_dir, f"{str(i + 1).zfill(ordinal_length)}-{slugify(step.id)}"
+            )
+            state = step.start(
+                toolbox=self.toolbox,
+                step_dir=step_dir,
+                _no_rule=True,
+            )
+
+        views_updates: dict = {}
+        metrics_updates: dict = {}
+        for key in state:
+            if state_in.get(key) != state.get(key):
+                views_updates[key] = state[key]
+        for key in state.metrics:
+            if state_in.metrics.get(key) != state.metrics.get(key):
+                metrics_updates[key] = state.metrics[key]
+
+        return views_updates, metrics_updates
