@@ -69,17 +69,16 @@ proc read_extra_gds {} {
 proc read_macro_gds_blackbox {} {
     if { [info exists ::env(__MACRO_GDS)] } {
         foreach macro [split $::env(__MACRO_GDS) ,] {
-            if { [llength $macro] > 2 } {
-                puts "Error: Multiple GDS files per macro isn't supported by magic."
-            } else {
-                set macro_name [lindex $macro 0]
-                set gds_file [lindex $macro 1]
-                load $macro_name
-                property LEFview true
-                property GDS_FILE $gds_file
-                property GDS_START 0
-                puts "> set GDS_FILE of $macro_name to $gds_file"
-            }
+            set macro_name [lindex $macro 0]
+            set gds_file [lindex $macro 1]
+            set bbox [lindex $macro 2]
+            load $macro_name
+            property LEFview true
+            property GDS_FILE $gds_file
+            property GDS_START 0
+            property FIXED_BBOX "$bbox"
+            puts "[property]"
+            puts "> set GDS_FILE of $macro_name to $gds_file"
         }
     }
 }

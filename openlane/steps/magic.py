@@ -23,7 +23,7 @@ from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject, Path
+from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
 class MagicStep(TclStep):
@@ -111,13 +111,15 @@ class MagicStep(TclStep):
             str(self.config["MAGICRC"]),
         ]
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(
+        self, state_in: State, script: Optional[str] = None, **kwargs
+    ) -> Tuple[ViewsUpdate, MetricsUpdate]:
         # https://github.com/RTimothyEdwards/magic/issues/218
         kwargs, env = self.extract_env(kwargs)
         kwargs["stdin"] = open(
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
         )
-        env["MAGIC_SCRIPT"] = self.get_script_path()
+        env["MAGIC_SCRIPT"] = script or self.get_script_path()
 
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
@@ -138,7 +140,9 @@ class MagicStep(TclStep):
                 r".*is an abstract view.*",
             ]
 
-            for line in open(self.get_log_path(), encoding="utf8"):
+            for line in open(
+                kwargs.get("log_to") or self.get_log_path(), encoding="utf8"
+            ):
                 for pattern in error_patterns:
                     if re.match(pattern, line):
                         raise StepError(
@@ -241,12 +245,42 @@ class StreamOut(MagicStep):
 
         env["MAGTYPE"] = "mag"
 
-        if self.config["MACROS"] is not None:
+        if (
+            self.config["MACROS"] is not None
+            and self.config["MAGIC_MACRO_STD_CELL_SOURCE"] == "macro"
+        ):
             macro_gds = []
+            env_copy = env.copy()
             for macro in self.config["MACROS"].keys():
+                macro_gdses = [str(path) for path in self.config["MACROS"][macro].gds]
+                if len(macro_gdses) > 1:
+                    raise StepException(
+                        "Multiple gds per macro not supported when MAGIC_MACRO_STD_CELL_SOURCE is set to 'macro'"
+                    )
+                env_copy["_GDS_IN"] = [
+                    str(path) for path in self.config["MACROS"][macro].gds
+                ][0]
+                env_copy["_MACRO_NAME_IN"] = macro
+                log_folder = os.path.join(self.step_dir, "get_bbox")
+                mkdirp(log_folder)
+
+                _, metrics_updates = super().run(
+                    state_in,
+                    env=env_copy,
+                    script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
+                    log_to=os.path.join(log_folder, f"{macro}.log"),
+                )
+
+                if metrics_updates == {}:
+                    raise StepError(
+                        f"{macro} doesn't have pr boundary in it's GDS view"
+                    )
+                bbox = " ".join([str(value) for value in metrics_updates.values()])
                 macro_gds.append(macro)
                 macro_gds += [str(path) for path in self.config["MACROS"][macro].gds]
+                macro_gds.append(bbox)
                 macro_gds += ","
+
             from ..common import TclUtils
 
             env["__MACRO_GDS"] = TclUtils.join(macro_gds[:-1])
