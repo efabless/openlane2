@@ -257,9 +257,7 @@ class StreamOut(MagicStep):
                     raise StepException(
                         "Multiple gds per macro not supported when MAGIC_MACRO_STD_CELL_SOURCE is set to 'macro'"
                     )
-                env_copy["_GDS_IN"] = [
-                    str(path) for path in self.config["MACROS"][macro].gds
-                ][0]
+                env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
                 log_folder = os.path.join(self.step_dir, "get_bbox")
                 mkdirp(log_folder)
@@ -277,7 +275,7 @@ class StreamOut(MagicStep):
                     )
                 bbox = " ".join([str(value) for value in metrics_updates.values()])
                 macro_gds.append(macro)
-                macro_gds += [str(path) for path in self.config["MACROS"][macro].gds]
+                macro_gds += macro_gdses
                 macro_gds.append(bbox)
                 macro_gds += ","
 
