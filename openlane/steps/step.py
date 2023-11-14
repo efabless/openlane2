@@ -65,15 +65,7 @@ from ..common import (
     format_size,
     format_elapsed_time,
 )
-from ..logging import (
-    rule,
-    verbose,
-    info,
-    warn,
-    err,
-    get_log_level,
-    LogLevels
-)
+from ..logging import rule, verbose, info, warn, err, get_log_level, LogLevels
 from ..__version__ import __version__
 
 
@@ -833,7 +825,7 @@ class Step(ABC):
         state_in_result = self.state_in.result()
 
         if get_log_level() == LogLevels.DEBUG:
-            log_relpath = f"{os.path.join('./', os.path.relpath(self.get_log_path(), '.'))}" # for rich to color the path
+            log_relpath = f"{os.path.join('./', os.path.relpath(self.get_log_path(), '.'))}"  # for rich to color the path
             info(f"'{self.id}' {log_relpath}")
         else:
             rule(f"{self.long_name}")
@@ -1038,7 +1030,9 @@ class Step(ABC):
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
                 elif (
-                    not get_log_level() == LogLevels.DEBUG and not silent and "table template" not in line
+                    not get_log_level() == LogLevels.DEBUG
+                    and not silent
+                    and "table template" not in line
                 ):  # sky130 ff hack
                     verbose(line.strip(), markup=False)
         process_stats_thread.join()
