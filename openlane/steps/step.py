@@ -68,6 +68,7 @@ from ..common import (
 from ..logging import (
     rule,
     verbose,
+    info,
     warn,
     err,
     debug,
