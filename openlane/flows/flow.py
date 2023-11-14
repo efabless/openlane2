@@ -532,10 +532,10 @@ class Flow(ABC):
         # Stored until next start()
         self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
-        log_path = os.path.join(self.run_dir, "flow.log")
-        log_handler = logging.FileHandler(log_path, mode="a+")
-        log_handler.setLevel("INFO")
-        register_additional_handler(log_handler)
+        # log_path = os.path.join(self.run_dir, "flow.log")
+        # log_handler = logging.FileHandler(log_path, mode="a+")
+        # log_handler.setLevel("INFO")
+        # register_additional_handler(log_handler)
 
         warning_log_path = os.path.join(self.run_dir, "warnings.log")
         warning_handler = logging.FileHandler(warning_log_path, mode="a+")
@@ -570,7 +570,7 @@ class Flow(ABC):
         finally:
             deregister_additional_handler(warning_handler)
             deregister_additional_handler(error_handler)
-            deregister_additional_handler(log_handler)
+            # deregister_additional_handler(log_handler)
 
     @protected
     @abstractmethod
