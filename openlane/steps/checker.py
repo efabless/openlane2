@@ -18,7 +18,7 @@ from typing import Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
-from ..logging import err, warn, info
+from ..logging import err, warn, info, success
 
 
 class MetricChecker(Step):
@@ -73,7 +73,7 @@ class MetricChecker(Step):
                         raise StepError(error_msg)
 
                 else:
-                    info(f"Check for {self.metric_description} clear.")
+                    success(f"Check for {self.metric_description} clear.")
             else:
                 warn(
                     f"The {self.metric_description} metric was not found. Are you sure the relevant step was run?"

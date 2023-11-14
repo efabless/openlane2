@@ -71,6 +71,8 @@ from ..logging import (
     info,
     warn,
     err,
+    get_log_level,
+    LogLevels
 )
 from ..__version__ import __version__
 
@@ -830,7 +832,11 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        rule(f"{self.long_name}")
+        if get_log_level() == LogLevels.DEBUG:
+            log_relpath = f"{os.path.join('./', os.path.relpath(self.get_log_path(), '.'))}" # for rich to color the path
+            info(f"'{self.id}' {log_relpath}")
+        else:
+            rule(f"{self.long_name}")
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -1031,7 +1037,9 @@ class Step(ABC):
                     # No echo- the timing reports especially can be very large
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
-                elif not silent and "table template" not in line:  # sky130 ff hack
+                elif (
+                    not get_log_level() == LogLevels.DEBUG and not silent and "table template" not in line
+                ):  # sky130 ff hack
                     verbose(line.strip(), markup=False)
         process_stats_thread.join()
 

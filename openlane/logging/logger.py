@@ -18,6 +18,44 @@ import logging
 import rich.console
 from typing import ClassVar, Union
 from rich.logging import RichHandler
+from rich.text import Text
+from rich.style import Style
+
+
+class MyRichHandler(RichHandler):
+    def get_level_text(self, record: logging.LogRecord) -> Text:
+        level_name = record.levelname
+        if level_name == "WARNING":
+            style = Style(color="yellow", bold=True)
+        else:
+            style = f"logging.level.{level_name.lower()}"
+        level_text = Text.styled(
+            f"[{level_name.ljust(8)[0]}]",
+            style,
+        )
+        return level_text
+
+    def __init__(self, console, *args, **kwargs):
+        kwargs.pop("show_time", None)
+        kwargs.pop("omit_repeated_times", None)
+        kwargs.pop("show_level", None)
+        kwargs.pop("rich_tracebacks", None)
+        kwargs.pop("markup", None)
+        kwargs.pop("tracebacks_suppress", None)
+        super().__init__(
+            console=console,
+            rich_tracebacks=True,
+            markup=True,
+            tracebacks_suppress=[
+                click,
+            ],
+            show_level=True,
+            show_time=True,
+            omit_repeated_times=False,
+            *args,
+            **kwargs,
+        )
+        self._log_render.level_width = 3
 
 
 class LogLevels:
@@ -25,7 +63,7 @@ class LogLevels:
     DEBUG: ClassVar[int] = 10
     VERBOSE: ClassVar[int] = 15
     INFO: ClassVar[int] = 20
-    WARN: ClassVar[int] = 30
+    WARNING: ClassVar[int] = 30
     ERROR: ClassVar[int] = 40
     CRITICAL: ClassVar[int] = 50
 
@@ -49,29 +87,40 @@ class NullFormatter(logging.Formatter):
         return record.getMessage()
 
 
-def __logger():
-    handler: logging.Handler
-    if __plain_output:
-        handler = logging.StreamHandler()
-        handler.setFormatter(NullFormatter())
-    else:
-        handler = RichHandler(
-            console=console,
-            rich_tracebacks=True,
-            markup=True,
-            tracebacks_suppress=[
-                click,
-            ],
-            show_level=False,
-        )
-        handler.setFormatter(logging.Formatter("%(message)s", datefmt="[%X]"))
-    logger = logging.getLogger("__openlane__")
-    logger.setLevel(LogLevels.VERBOSE)
-    logger.addHandler(handler)
-    return logger
+class LoggingWrapper:
+    def __init__(self, plain_output: bool, console: rich.console.Console):
+        self.handler: logging.Handler
+        self.console = console
+        self.rich_format = logging.Formatter("%(message)s", datefmt="[%X]")
+
+        if plain_output:
+            self.handler = logging.StreamHandler()
+            self.handler.setFormatter(NullFormatter())
+        else:
+            self.handler = RichHandler(
+                console=console,
+                rich_tracebacks=True,
+                markup=True,
+                tracebacks_suppress=[
+                    click,
+                ],
+                show_level=False,
+            )
+            self.handler.setFormatter(self.rich_format)
+
+        self.logger = logging.getLogger("__openlane__")
+        self.logger.setLevel(LogLevels.VERBOSE)
+        self.logger.addHandler(self.handler)
+
+    def set_debug_handler(self):
+        self.logger.removeHandler(self.handler)
+        self.handler = MyRichHandler(self.console)
+        self.handler.setFormatter(self.rich_format)
+        self.logger.addHandler(self.handler)
 
 
-__openlane_logger = __logger()
+__openlane_logger_handler = LoggingWrapper(__plain_output, console)
+__openlane_logger = __openlane_logger_handler.logger
 
 
 def register_additional_handler(handler: logging.Handler):
@@ -101,6 +150,8 @@ def set_log_level(lv: Union[str, int]):
     :param lv: Either the name or number of the desired log level.
     """
     __openlane_logger.setLevel(lv)
+    if lv == "DEBUG" or LogLevels.DEBUG:
+        __openlane_logger_handler.set_debug_handler()
 
 
 def reset_log_level():
@@ -163,7 +214,7 @@ def rule(title: str = "", /, **kwargs):  # pragma: no cover
 
     :param title: A title string to enclose in the console rule
     """
-    if get_log_level() > LogLevels.INFO:
+    if get_log_level() > LogLevels.INFO or get_log_level() == LogLevels.DEBUG:
         return
     if __plain_output:
         print(("-" * 10) + str(title) + ("-" * 10))
@@ -180,7 +231,7 @@ def success(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.info(f"⭕ [green][bold] {msg}", **kwargs)
+    __openlane_logger.info(f"⭕[green][bold] {msg}", **kwargs)
 
 
 def warn(msg: object, /, **kwargs):
@@ -192,7 +243,7 @@ def warn(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.warning(f"⚠️  [gold][bold] {msg}", **kwargs)
+    __openlane_logger.warning(f"⚠️[yellow][bold] {msg}", **kwargs)
 
 
 def err(msg: object, /, **kwargs):
@@ -202,7 +253,7 @@ def err(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.error(f"❌ [red][bold] {msg}", **kwargs)
+    __openlane_logger.error(f"❌[red][bold] {msg}", **kwargs)
 
 
 if __name__ == "__main__":

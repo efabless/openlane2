@@ -847,7 +847,7 @@ class GlobalPlacement(OpenROADStep):
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
             warn(
-                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
+                f"PL_TARGET_DENSITY_PCT not explicitly set, using dynamically calculated target density: {expr}…"
             )
         return super().run(state_in, env=env, **kwargs)
 
@@ -880,7 +880,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
             warn(
-                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
+                f"PL_TARGET_DENSITY_PCT not explicitly set, using dynamically calculated target density: {expr}…"
             )
         env["__PL_SKIP_IO"] = "1"
         return OpenROADStep.run(self, state_in, env=env, **kwargs)
@@ -1368,7 +1368,7 @@ class ResizerStep(OpenROADStep):
                 continue
             lib_set_set.add(lib_set)
             env[f"RSZ_CORNER_{count}"] = f"{corner} {shlex.join(libs)}"
-            debug(f"Liberty files for '{corner}' added: {libs}")
+            debug(f"Liberty files for '{corner}' added: {','.join(libs)}")
             count += 1
 
         return super().run(state_in, env=env, **kwargs)
