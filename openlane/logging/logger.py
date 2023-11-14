@@ -23,16 +23,14 @@ from rich.style import Style, StyleType
 
 
 class DebugRichHandler(RichHandler):
-    def __init__(self, rich_console, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         kwargs.pop("show_time", None)
         kwargs.pop("omit_repeated_times", None)
         kwargs.pop("show_level", None)
         kwargs.pop("rich_tracebacks", None)
         kwargs.pop("markup", None)
         kwargs.pop("tracebacks_suppress", None)
-        kwargs.pop("console", None)  # why ?
         super().__init__(
-            console=rich_console,
             rich_tracebacks=True,
             markup=True,
             tracebacks_suppress=[
@@ -116,7 +114,7 @@ class LoggingWrapper:
 
     def set_debug_handler(self):
         self.logger.removeHandler(self.handler)
-        self.handler = DebugRichHandler(self.console)
+        self.handler = DebugRichHandler(console=self.console)
         self.handler.setFormatter(self.rich_format)
         self.logger.addHandler(self.handler)
 
