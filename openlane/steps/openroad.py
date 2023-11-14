@@ -783,6 +783,15 @@ class GeneratePDN(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
 
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        if self.config["FP_PDN_CFG"] is None:
+            env["FP_PDN_CFG"] = os.path.join(
+                get_script_dir(), "openroad/common/pdn_cfg.tcl"
+            )
+            info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
+        return super().run(state_in, env=env, **kwargs)
+
 
 @Step.factory.register()
 class GlobalPlacement(OpenROADStep):
