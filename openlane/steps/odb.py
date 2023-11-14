@@ -491,6 +491,10 @@ class DiodesOnPorts(CompositeStep):
 
     The placement is legalized by performing detailed placement and global
     routing after inserting the diodes.
+
+    Prior to beta 16, this step did not legalize its placement: if you would
+    like to retain the old behavior without legalization, try
+    ``Odb.PortDiodePlacement``.
     """
 
     id = "Odb.DiodesOnPorts"
@@ -587,6 +591,10 @@ class HeuristicDiodeInsertion(CompositeStep):
     routing after inserting the diodes.
 
     The original script was written by `Sylvain "tnt" Munaut <https://github.com/smunaut>`_.
+
+    Prior to beta 16, this step did not legalize its placement: if you would
+    like to retain the old behavior without legalization, try
+    ``Odb.FuzzyDiodePlacement``.
     """
 
     id = "Odb.HeuristicDiodeInsertion"

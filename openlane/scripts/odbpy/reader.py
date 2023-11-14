@@ -85,18 +85,14 @@ class OdbReader(object):
     def add_lef(self, new_lef):
         odb.read_lef(self.db, new_lef)
 
-    def dpl(self):
+    def _dpl(self):
+        """
+        The ``._dpl()`` method is EXPERIMENTAL and SHOULD NOT BE USED YET.
+
+        Use a composite step with ``OpenROAD.DetailedPlacement``.
+        """
         if self.config is None:
             raise RuntimeError("Attempted to call dpl without config file")
-        for variable in [
-            "PL_MAX_DISPLACEMENT_X",
-            "PL_MAX_DISPLACEMENT_Y",
-            "DPL_CELL_PADDING",
-            "DIODE_PADDING",
-            "DIODE_CELL",
-        ]:
-            if variable not in self.config:
-                raise RuntimeError(f"dpl variable {variable} missing from config")
 
         cell_pad_value = int(self.config["DPL_CELL_PADDING"])
         cell_pad_side = cell_pad_value // 2
@@ -121,21 +117,14 @@ class OdbReader(object):
         dpl.reportLegalizationStats()
         dpl.optimizeMirroring()
 
-    def grt(self):
+    def _grt(self):
+        """
+        The ``._grt()`` method is EXPERIMENTAL and SHOULD NOT BE USED YET.
+
+        Use a composite step with ``OpenROAD.GlobalRouting``.
+        """
         if self.config is None:
             raise RuntimeError("Attempted to call grt without config file")
-        for variable in [
-            "GRT_LAYER_ADJUSTMENTS",
-            "RT_MIN_LAYER",
-            "RT_MAX_LAYER",
-            "RT_CLOCK_MIN_LAYER",
-            "RT_CLOCK_MAX_LAYER",
-            "GRT_MACRO_EXTENSION",
-            "GRT_OVERFLOW_ITERS",
-            "GRT_ALLOW_CONGESTION",
-        ]:
-            if variable not in self.config:
-                raise RuntimeError(f"grt variable {variable} missing from config")
 
         grt = self.design.getGlobalRouter()
         routing_layers = [l for l in self.layers.values() if l.getRoutingLevel() >= 1]

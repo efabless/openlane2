@@ -1147,6 +1147,12 @@ class CompositeStep(Step):
 
     Composite steps are currently considered an internal object that is not
     ready to be part of the API. The API may change at any time for any reason.
+
+    ``inputs`` and ``config_vars`` are automatically generated based on the
+    constituent steps.
+
+    ``outputs`` may be set explicitly. If not set, it is automatically generated
+    based on the constituent steps.
     """
 
     Steps: List[Type[Step]] = []
@@ -1160,13 +1166,11 @@ class CompositeStep(Step):
         config_var_dict: Dict[str, Variable] = {}
         for step in Self.Steps:
             for input in step.inputs:
-                if input in available_inputs:
-                    continue
-                else:
+                if input not in available_inputs:
                     input_set.add(input)
                     available_inputs.add(input)
             for output in step.outputs:
-                available_inputs.add(input)
+                available_inputs.add(output)
                 output_set.add(output)
             for cvar in step.config_vars:
                 if existing := config_var_dict.get(cvar.name):
@@ -1178,7 +1182,8 @@ class CompositeStep(Step):
                     config_var_dict[cvar.name] = cvar
 
         Self.inputs = list(input_set)
-        Self.outputs = list(output_set)
+        if Self.outputs == NotImplemented:  # Allow for setting explicit outputs
+            Self.outputs = list(output_set)
         Self.config_vars = list(config_var_dict.values())
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -1199,7 +1204,10 @@ class CompositeStep(Step):
         views_updates: dict = {}
         metrics_updates: dict = {}
         for key in state:
-            if state_in.get(key) != state.get(key):
+            if (
+                state_in.get(key) != state.get(key)
+                and DesignFormat[key] in self.outputs
+            ):
                 views_updates[key] = state[key]
         for key in state.metrics:
             if state_in.metrics.get(key) != state.metrics.get(key):
