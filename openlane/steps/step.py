@@ -776,8 +776,8 @@ class Step(ABC):
         if hasattr(os, "chmod"):
             os.chmod(script_path, 0o755)
 
-        print("Reproducible created at:")
-        print(f"{os.path.relpath(target_dir)}")
+        info("Reproducible created at:")
+        verbose(f"{os.path.relpath(target_dir)}")
 
     @final
     def start(
