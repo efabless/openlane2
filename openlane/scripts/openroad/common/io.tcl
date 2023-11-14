@@ -266,7 +266,7 @@ proc write_views {args} {
 
     if { [info exists ::env(SAVE_POWERED_NETLIST_NO_FILL_DIODE)] } {
         set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(FP_WELLTAP_CELL)] [join $::env(FP_ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_FILL_DIODE)'…"
+        puts "Writing nofilldiode powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_FILL_DIODE)'…"
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \
             -remove_cells "$exclude_cells"\
