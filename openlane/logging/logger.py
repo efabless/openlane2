@@ -47,7 +47,8 @@ class DebugRichHandler(RichHandler):
         self._log_render.level_width = 3
 
     def get_level_text(self, record: logging.LogRecord) -> Text:
-        level_name: StyleType = record.levelname
+        level_name = record.levelname
+        style: StyleType
         if level_name == "WARNING":
             style = Style(color="yellow", bold=True)
         else:
