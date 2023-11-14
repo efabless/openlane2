@@ -23,7 +23,7 @@ from rich.style import Style, StyleType
 
 
 class DebugRichHandler(RichHandler):
-    def __init__(self, console, *args, **kwargs):
+    def __init__(self, rich_console, *args, **kwargs):
         kwargs.pop("show_time", None)
         kwargs.pop("omit_repeated_times", None)
         kwargs.pop("show_level", None)
@@ -32,7 +32,7 @@ class DebugRichHandler(RichHandler):
         kwargs.pop("tracebacks_suppress", None)
         kwargs.pop("console", None)  # why ?
         super().__init__(
-            console=console,
+            console=rich_console,
             rich_tracebacks=True,
             markup=True,
             tracebacks_suppress=[
