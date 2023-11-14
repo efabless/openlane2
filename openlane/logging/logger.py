@@ -22,19 +22,7 @@ from rich.text import Text
 from rich.style import Style
 
 
-class MyRichHandler(RichHandler):
-    def get_level_text(self, record: logging.LogRecord) -> Text:
-        level_name = record.levelname
-        if level_name == "WARNING":
-            style = Style(color="yellow", bold=True)
-        else:
-            style = f"logging.level.{level_name.lower()}"
-        level_text = Text.styled(
-            f"[{level_name.ljust(8)[0]}]",
-            style,
-        )
-        return level_text
-
+class DebugRichHandler(RichHandler):
     def __init__(self, console, *args, **kwargs):
         kwargs.pop("show_time", None)
         kwargs.pop("omit_repeated_times", None)
@@ -42,6 +30,7 @@ class MyRichHandler(RichHandler):
         kwargs.pop("rich_tracebacks", None)
         kwargs.pop("markup", None)
         kwargs.pop("tracebacks_suppress", None)
+        kwargs.pop("console", None)  # why ?
         super().__init__(
             console=console,
             rich_tracebacks=True,
@@ -56,6 +45,18 @@ class MyRichHandler(RichHandler):
             **kwargs,
         )
         self._log_render.level_width = 3
+
+    def get_level_text(self, record: logging.LogRecord) -> Text:
+        level_name: Union[str, Style] = record.levelname
+        if level_name == "WARNING":
+            style = Style(color="yellow", bold=True)
+        else:
+            style = f"logging.level.{level_name.lower()}"
+        level_text = Text.styled(
+            f"[{level_name.ljust(8)[0]}]",
+            style,
+        )
+        return level_text
 
 
 class LogLevels:
@@ -114,7 +115,7 @@ class LoggingWrapper:
 
     def set_debug_handler(self):
         self.logger.removeHandler(self.handler)
-        self.handler = MyRichHandler(self.console)
+        self.handler = DebugRichHandler(self.console)
         self.handler.setFormatter(self.rich_format)
         self.logger.addHandler(self.handler)
 
