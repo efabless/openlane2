@@ -19,7 +19,7 @@ import rich.console
 from typing import ClassVar, Union
 from rich.logging import RichHandler
 from rich.text import Text
-from rich.style import Style
+from rich.style import Style, StyleType
 
 
 class DebugRichHandler(RichHandler):
@@ -47,7 +47,7 @@ class DebugRichHandler(RichHandler):
         self._log_render.level_width = 3
 
     def get_level_text(self, record: logging.LogRecord) -> Text:
-        level_name: Union[str, Style] = record.levelname
+        level_name: StyleType = record.levelname
         if level_name == "WARNING":
             style = Style(color="yellow", bold=True)
         else:
