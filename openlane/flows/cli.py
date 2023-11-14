@@ -37,7 +37,7 @@ from openlane.state.state import InvalidState
 
 from .flow import Flow
 from ..common import set_tpe, get_opdks_rev
-from ..logging import set_log_level, err, LogLevelsDict
+from ..logging import set_log_level, set_debug_handler, err, LogLevelsDict, LogLevels
 from ..state import State
 
 
@@ -52,7 +52,9 @@ def set_log_level_cb(
             level = int(value)
         except ValueError:
             pass
-        set_log_level(level)
+        print(ctx.command, ctx.args, ctx.params, ctx.obj, ctx.params["_debug"])
+        if not ctx.params["_debug"]:
+            set_log_level(level)
     except ValueError as e:
         err(f"Invalid logging level {value}: {e}.")
         echo(ctx.get_help())
@@ -101,6 +103,16 @@ def only_cb(
         ctx.obj = ctx.obj or {}
         ctx.obj["only"] = value
     return value
+
+
+def _debug_cb(
+    ctx: Context,
+    param: Parameter,
+    value: bool,
+):
+    if value:
+        set_log_level(LogLevels.DEBUG)
+        set_debug_handler()
 
 
 def from_to_cb(
@@ -257,6 +269,15 @@ def cloup_flow_opts(
                         ),
                         hidden=True,
                         default=None,
+                    ),
+                    o(
+                        "--debugg",
+                        "_debug",
+                        is_flag=True,
+                        is_eager=True,
+                        expose_value=True,
+                        default=False,
+                        callback=_debug_cb,
                     ),
                 )(f)
             f = option_group(

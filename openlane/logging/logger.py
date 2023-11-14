@@ -119,8 +119,12 @@ class LoggingWrapper:
         self.logger.addHandler(self.handler)
 
 
-__openlane_logger_handler = LoggingWrapper(__plain_output, console)
-__openlane_logger = __openlane_logger_handler.logger
+__openlane_logger_wrapper = LoggingWrapper(__plain_output, console)
+__openlane_logger = __openlane_logger_wrapper.logger
+
+
+def set_debug_handler():
+    __openlane_logger_wrapper.set_debug_handler()
 
 
 def register_additional_handler(handler: logging.Handler):
@@ -150,8 +154,6 @@ def set_log_level(lv: Union[str, int]):
     :param lv: Either the name or number of the desired log level.
     """
     __openlane_logger.setLevel(lv)
-    if lv == "DEBUG" or LogLevels.DEBUG:
-        __openlane_logger_handler.set_debug_handler()
 
 
 def reset_log_level():

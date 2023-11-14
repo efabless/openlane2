@@ -67,6 +67,7 @@ def run(
     config_override_strings: List[str],
     _force_run_dir: Optional[str],
     _force_design_dir: Optional[str],
+    _debug: bool,
 ) -> int:
 
     config_file = config_files[0]
@@ -232,6 +233,7 @@ def run_smoke_test(
             config_override_strings=[],
             _force_run_dir=None,
             _force_design_dir=None,
+            _debug=False,
         )
         if status == 0:
             info("Smoke test passed.")

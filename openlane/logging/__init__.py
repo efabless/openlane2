@@ -24,6 +24,7 @@ from .logger import (
     LogLevelsDict,
     console,
     set_log_level,
+    set_debug_handler,
     reset_log_level,
     get_log_level,
     register_additional_handler,
