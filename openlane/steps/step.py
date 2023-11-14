@@ -777,7 +777,7 @@ class Step(ABC):
             os.chmod(script_path, 0o755)
 
         info("Reproducible created at:")
-        verbose(f"{os.path.relpath(target_dir)}")
+        verbose(f"'{os.path.relpath(target_dir)}'")
 
     @final
     def start(
