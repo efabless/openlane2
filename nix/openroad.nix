@@ -30,10 +30,6 @@ in clangStdenv.mkDerivation rec {
     sha256 = "sha256-lLToR+c2oOmgfuw7RX1W/QxwBWhoZWUmdzix3CrxWmA=";
   };
 
-  patches = [
-    ./patches/openroad/rcx-merge-vias.patch
-  ];
-
   cmakeFlags = [
     "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"

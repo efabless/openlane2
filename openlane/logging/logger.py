@@ -126,7 +126,7 @@ def debug(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    print("[DEBUG]", msg)
+    __openlane_logger.debug(msg, **kwargs)
 
 
 def verbose(*args, **kwargs):
