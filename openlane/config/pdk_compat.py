@@ -210,6 +210,12 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         new["CVCRC"] = os.path.join(config["CVC_SCRIPTS_DIR"], "cvcrc")
         new["CVC_MODELS"] = os.path.join(config["CVC_SCRIPTS_DIR"], "models")
 
+    # 11. Heuristic Antenna Threshold
+    if new["PDK"].startswith("sky130"):
+        new["HEURISTIC_ANTENNA_THRESHOLD"] = 90
+    elif new["PDK"].startswith("gf180mcu"):
+        new["HEURISTIC_ANTENNA_THRESHOLD"] = 130
+
     # x1. Disconnected Modules (sky130)
     if new["PDK"].startswith("sky130"):
         new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"

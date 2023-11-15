@@ -23,7 +23,7 @@ from ..logging import err, warn, info, success
 
 class MetricChecker(Step):
     """
-    Raises a (deferred) error if a Decimal metric exceeds a ccertain threshold.
+    Raises a (deferred) error if a Decimal metric exceeds a certain threshold.
     """
 
     inputs = []
