@@ -490,7 +490,7 @@ class Step(ABC):
                             f"Output '{output}' is not a valid DesignFormat enum object."
                         )
                     output_str = f"{output.value.name} (.{output.value.extension})"
-                result += f"| {input_str} | {output_str} |"
+                result += f"| {input_str} | {output_str} |\n"
 
         if len(Self.config_vars):
             result += textwrap.dedent(
@@ -1180,7 +1180,7 @@ class CompositeStep(Step):
                         )
                 else:
                     config_var_dict[cvar.name] = cvar
-
+        print(output_set)
         Self.inputs = list(input_set)
         if Self.outputs == NotImplemented:  # Allow for setting explicit outputs
             Self.outputs = list(output_set)

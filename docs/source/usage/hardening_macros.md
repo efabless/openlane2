@@ -246,13 +246,12 @@ TODO:
 Most configurations here were optimized based on a large design set and are
 best left as is.
 
-Routing in general goes through four phases:
+Routing in general goes through these phases:
 
-*  [`OpenROAD.GlobalRouting`](../reference/step_config_vars.md#OpenROAD.GlobalRouting): using OpenROAD.GlobalRouting
-* [`OpenROAD.DetailedRouting`](../reference/step_config_vars.md#OpenROAD.DetailedRouting)
+* **Global Routing**: Using [`OpenROAD.GlobalRouting`](../reference/step_config_vars.md#OpenROAD.GlobalRouting)
+* **Detailed Routing**: Using [`OpenROAD.DetailedRouting`](../reference/step_config_vars.md#OpenROAD.DetailedRouting)
 
 The subsections include some notes:
-
 
 #### Antenna Mitigation
 To help mitigate the antenna effect, after Global Placement there are also three
