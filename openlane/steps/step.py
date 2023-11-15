@@ -66,7 +66,7 @@ from ..common import (
     format_size,
     format_elapsed_time,
 )
-from ..logging import rule, verbose, info, warn, err, get_log_level, LogLevels
+from ..logging import debug, rule, verbose, info, warn, err, get_log_level, LogLevels
 from ..__version__ import __version__
 
 
@@ -335,6 +335,7 @@ class Step(ABC):
         **kwargs,
     ):
         self.__class__.assert_concrete()
+        self.json_stats = {}
 
         if flow is not None:
             warn(
@@ -888,6 +889,13 @@ class Step(ABC):
         if Config.current_interactive:
             LastState = self.state_out
 
+        if get_log_level() == LogLevels.DEBUG and self.json_stats:
+            info(
+                f"'{self.id}' {self.json_stats['peak_resources']['cpu_percent']}% {self.json_stats['peak_resources']['memory_vms']}"
+            )
+        else:
+            rule(f"{self.long_name}")
+
         return self.state_out
 
     @protected
@@ -1042,6 +1050,7 @@ class Step(ABC):
                     verbose(line.strip(), markup=False)
         process_stats_thread.join()
 
+        self.json_stats = process_stats_thread.stats_as_dict()
         json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"
 
         with open(json_stats, "w") as f:
