@@ -52,7 +52,6 @@ def set_log_level_cb(
             level = int(value)
         except ValueError:
             pass
-        print(ctx.command, ctx.args, ctx.params, ctx.obj, ctx.params["_debug"])
         if not ctx.params["_debug"]:
             set_log_level(level)
     except ValueError as e:
@@ -113,6 +112,7 @@ def _debug_cb(
     if value:
         set_log_level(LogLevels.DEBUG)
         set_debug_handler()
+    return value
 
 
 def from_to_cb(
@@ -271,7 +271,7 @@ def cloup_flow_opts(
                         default=None,
                     ),
                     o(
-                        "--debugg",
+                        "--debug",
                         "_debug",
                         is_flag=True,
                         is_eager=True,
