@@ -225,9 +225,19 @@ class Variable:
         must be represented in terms of their official symbols.
 
     :param pdk: Whether this variable is expected to be given a default value
-        by a PDK or not. If this variable is not of an option type and the PDK
-        does not provide this value, the PDK is considered incompatible with
-        the Step declaring this value.
+        by a PDK or not.
+
+        If this is true, and the variable is not of an option type, a PDK *must*
+        give this variable a default value in order to be marked compatible
+        with a step.
+
+        If this is true and the variable is of an option type, a PDK may
+        optionally provide a default value for this variable, however steps
+        must presume it is ``null``.
+
+        If this is false, a PDK is not allowed to set a default value for
+        this variable. In current versions of OpenLane, the value will be
+        silently ignored, but warnings or errors may occur in future versions.
     """
 
     known_variable_names: ClassVar[Set[str]] = set()

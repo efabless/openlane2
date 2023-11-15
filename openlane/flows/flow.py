@@ -207,7 +207,7 @@ class FlowProgressBar(object):
             used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
-        return f"%0{max_stage_digits}d-" % self.__ordinal
+        return f"{str(self.__ordinal).zfill(max_stage_digits)}-"
 
 
 class Flow(ABC):
@@ -532,6 +532,11 @@ class Flow(ABC):
         # Stored until next start()
         self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
+        # log_path = os.path.join(self.run_dir, "flow.log")
+        # log_handler = logging.FileHandler(log_path, mode="a+")
+        # log_handler.setLevel("INFO")
+        # register_additional_handler(log_handler)
+
         warning_log_path = os.path.join(self.run_dir, "warnings.log")
         warning_handler = logging.FileHandler(warning_log_path, mode="a+")
         warning_handler.setLevel("WARNING")
@@ -543,7 +548,6 @@ class Flow(ABC):
         register_additional_handler(error_handler)
 
         try:
-
             config_res_path = os.path.join(self.run_dir, "resolved.json")
             with open(config_res_path, "w") as f:
                 f.write(self.config.dumps())
@@ -566,6 +570,7 @@ class Flow(ABC):
         finally:
             deregister_additional_handler(warning_handler)
             deregister_additional_handler(error_handler)
+            # deregister_additional_handler(log_handler)
 
     @protected
     @abstractmethod
