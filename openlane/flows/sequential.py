@@ -118,22 +118,17 @@ class SequentialFlow(Flow):
                 id == NotImplemented
             ):  # Will be validated later by initialization: ignore for now
                 continue
-            name = step.__name__
             while id in ids_used:
                 counter += 1
                 id = f"{step.id}-{counter}"
-                name = f"{step.__name__}_{counter}"
             if id != step.id:
-                new_step = type(name, (step,), {"id": id})
-                target.Steps[i] = new_step
+                target.Steps[i] = step.with_id(id)
             ids_used.add(id)
 
     def __init__(
         self,
         *args,
-        Substitute: Optional[
-            Dict[str, Union[str, Type[Step]]],
-        ] = None,
+        Substitute: Optional[Dict[str, Union[str, Type[Step]]]] = None,
         **kwargs,
     ):
         self.Steps = self.Steps.copy()  # Break global reference

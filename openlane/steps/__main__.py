@@ -417,7 +417,6 @@ def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk
 )
 @pass_context
 def create_test(ctx, step_dir, output):
-
     config = os.path.join(step_dir, "config.json")
     state_in = os.path.join(step_dir, "state_in.json")
     if output is None:

@@ -217,22 +217,6 @@ This will treat cells as "wider" than they are, which has an impact on routing
 and diode insertion. If you increase the padding, make sure to recalculate the
 `PL_TARGET_DENSITY_PCT` as such: {math}`util \approx FP\_CORE\_UTIL + 10 + 5 * GPL\_CELL\_PADDING`.
 
-
-#### Antenna Mitigation
-To help mitigate the antenna effect, after Global Placement there are also two
-other steps you may choose to enable, requiring {math}`GPL\_CELL\_PADDING \ge 2`:
-
-* [`Odb.DiodesOnPorts`](../reference/step_config_vars.md#Odb.DiodesOnPorts):
-  Unconditionally inserts diodes on design ports. This is helpful for hardening
-  macros, where you don't know how long the wires external to the macro are
-  going to be.
-* [`Odb.HeuristicDiodeInsertion`](../reference/step_config_vars.md#Odb.HeuristicDiodeInsertion):
-  Inserts diodes based on the virtual wire length, s.t. nets longer than
-  a specific threshold get a diode inserted by default.
-
-Both are disabled by default, as a later mitigation during Global Routing is
-sufficient for most designs.
-
 ### Detailed Placement
 
 For a rundown of what detailed placement does, please see the Detailed Placement
@@ -260,17 +244,33 @@ TODO:
 ## Routing
 
 Most configurations here were optimized based on a large design set and are
-best left as is; see the steps here:
-* [`OpenROAD.GlobalRouting`](../reference/step_config_vars.md#OpenROAD.GlobalRouting)
-* [`OpenROAD.DetailedRouting`](../reference/step_config_vars.md#OpenROAD.DetailedRouting)
+best left as is.
+
+Routing in general goes through these phases:
+
+* **Global Routing**: Using [`OpenROAD.GlobalRouting`](../reference/step_config_vars.md#OpenROAD.GlobalRouting)
+* **Detailed Routing**: Using [`OpenROAD.DetailedRouting`](../reference/step_config_vars.md#OpenROAD.DetailedRouting)
 
 The subsections include some notes:
 
-### Antenna Mitigation
-During global routing, you can set [`GRT_REPAIR_ANTENNAS`](../reference/step_config_vars.md#OpenROAD.GlobalRouting.GRT_REPAIR_ANTENNAS).
+#### Antenna Mitigation
+To help mitigate the antenna effect, after Global Placement there are also three
+other steps you may choose to enable:
 
-This will enable diode insertion during global routing for long nets, which will
-mitigate the effect. This is enabled by default.
+* [`Odb.DiodesOnPorts`](../reference/step_config_vars.md#Odb.DiodesOnPorts):
+  Unconditionally inserts diodes on design ports. This is helpful for hardening
+  macros, where you don't know how long the wires external to the macro are
+  going to be. Requires {math}`GPL\_CELL\_PADDING \ge 2`.
+* [`Odb.HeuristicDiodeInsertion`](../reference/step_config_vars.md#Odb.HeuristicDiodeInsertion):
+  Inserts diodes based on the virtual wire length, s.t. nets longer than
+  a specific threshold get a diode inserted by default. Disabled by default, but
+  can be enabled by setting flow config variable `RUN_HEURISTIC_DIODE_INSERTION` to `true`.
+  Requires {math}`GPL\_CELL\_PADDING \ge 2`.
+* [`OpenROAD.RepairAntennas`](../reference/step_config_vars.md#OpenROAD.RepairAntennas):
+  Uses a more advanced antenna repair algorithm built into OpenROAD. Enabled by
+  default, can be disabled by setting flow config variable `RUN_ANTENNA_REPAIR`
+  to `false`.
+
 
 ### `DRT_THREADS`
 
