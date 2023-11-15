@@ -1206,7 +1206,7 @@ class CompositeStep(Step):
         for key in state:
             if (
                 state_in.get(key) != state.get(key)
-                and DesignFormat[key] in self.outputs
+                and DesignFormat.by_id(key) in self.outputs
             ):
                 views_updates[key] = state[key]
         for key in state.metrics:
