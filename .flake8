@@ -17,7 +17,7 @@ exclude =
     pdk/,
     venv/,
     test/designs/*.py,
-    test/steps/all/*,
-    examples
+    examples,
+    sandbox/
 per-file-ignores =
     */__init__.py:F401

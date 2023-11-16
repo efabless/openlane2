@@ -19,7 +19,7 @@ from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
-from ..logging import info, success, err
+from ..logging import info, success, err, debug
 from ..steps import (
     Step,
     StepError,
@@ -292,6 +292,7 @@ class SequentialFlow(Flow):
         assert self.run_dir is not None
         final_views_path = os.path.join(self.run_dir, "final")
         info(f"Saving final views to '{final_views_path}'…")
+        debug(f"'{self.run_dir}'")
         try:
             current_state.save_snapshot(final_views_path)
         except Exception as e:
