@@ -327,6 +327,7 @@ class Classic(SequentialFlow):
         Netgen.LVS,
         Checker.LVS,
         Yosys.EQY,
+        Checker.QoR,
     ]
 
     config_vars = _common_config_vars + [
