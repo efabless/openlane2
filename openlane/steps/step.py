@@ -1005,6 +1005,9 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
+        if get_log_level() == LogLevels.DEBUG:
+            with open(os.path.join(self.step_dir, "env.json"), "w") as f:
+                f.write(json.dumps({key: str(value) for key, value in env.items()}, indent=4))
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
