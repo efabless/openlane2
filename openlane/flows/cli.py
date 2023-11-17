@@ -36,8 +36,8 @@ from openlane.state.state import InvalidState
 
 
 from .flow import Flow
-from ..common import set_tpe, get_opdks_rev
-from ..logging import set_log_level, set_debug_handler, err, LogLevelsDict, LogLevels
+from ..common import set_tpe, get_opdks_rev, set_debug_mode
+from ..logging import set_log_level, err, LogLevelsDict, LogLevels
 from ..state import State
 
 
@@ -110,8 +110,7 @@ def _debug_cb(
     value: bool,
 ):
     if value:
-        set_log_level(LogLevels.DEBUG)
-        set_debug_handler()
+        set_debug_mode()
     return value
 
 

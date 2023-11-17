@@ -47,6 +47,7 @@ from .misc import (
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation
+from .debug import set_debug_mode, _DEBUG_HANDLER, _SAVE_ENV
 
 
 ## TPE

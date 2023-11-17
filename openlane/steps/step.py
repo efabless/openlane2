@@ -66,7 +66,18 @@ from ..common import (
     format_size,
     format_elapsed_time,
 )
-from ..logging import debug, rule, verbose, info, warn, err, get_log_level, LogLevels
+from ..logging import (
+    debug,
+    rule,
+    verbose,
+    info,
+    warn,
+    err,
+    get_log_level,
+    LogLevels,
+)
+from ..logging import log_subprocess
+
 from ..__version__ import __version__
 
 
@@ -1014,7 +1025,11 @@ class Step(ABC):
                     )
         if get_log_level() == LogLevels.DEBUG:
             with open(os.path.join(self.step_dir, "env.json"), "w") as f:
-                f.write(json.dumps({key: str(value) for key, value in env.items()}, indent=4))
+                f.write(
+                    json.dumps(
+                        {key: str(value) for key, value in env.items()}, indent=4
+                    )
+                )
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
@@ -1052,12 +1067,8 @@ class Step(ABC):
                     # No echo- the timing reports especially can be very large
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
-                elif (
-                    not get_log_level() == LogLevels.DEBUG
-                    and not silent
-                    and "table template" not in line
-                ):  # sky130 ff hack
-                    verbose(line.strip(), markup=False)
+                elif not silent and "table template" not in line:  # sky130 ff hack
+                    log_subprocess(line.strip())
         process_stats_thread.join()
 
         self.json_stats = process_stats_thread.stats_as_dict()
@@ -1079,6 +1090,9 @@ class Step(ABC):
                     err(escape(log))
                 err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
+
+        with open(os.path.join(self.step_dir, "cmd.log"), "w") as f:
+            f.write(" ".join([str(item) for item in cmd]))
 
         return generated_metrics
 

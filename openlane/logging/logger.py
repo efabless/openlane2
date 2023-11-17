@@ -22,45 +22,10 @@ from rich.text import Text
 from rich.style import Style, StyleType
 
 
-class DebugRichHandler(RichHandler):
-    def __init__(self, *args, **kwargs):
-        kwargs.pop("show_time", None)
-        kwargs.pop("omit_repeated_times", None)
-        kwargs.pop("show_level", None)
-        kwargs.pop("rich_tracebacks", None)
-        kwargs.pop("markup", None)
-        kwargs.pop("tracebacks_suppress", None)
-        super().__init__(
-            rich_tracebacks=True,
-            markup=True,
-            tracebacks_suppress=[
-                click,
-            ],
-            show_level=True,
-            show_time=True,
-            omit_repeated_times=False,
-            *args,
-            **kwargs,
-        )
-        self._log_render.level_width = 3
-
-    def get_level_text(self, record: logging.LogRecord) -> Text:
-        level_name = record.levelname
-        style: StyleType
-        if level_name == "WARNING":
-            style = Style(color="yellow", bold=True)
-        else:
-            style = f"logging.level.{level_name.lower()}"
-        level_text = Text.styled(
-            f"[{level_name.ljust(8)[0]}]",
-            style,
-        )
-        return level_text
-
-
 class LogLevels:
     ALL: ClassVar[int] = 0
     DEBUG: ClassVar[int] = 10
+    SUBPROCESS: ClassVar[int] = 13
     VERBOSE: ClassVar[int] = 15
     INFO: ClassVar[int] = 20
     WARNING: ClassVar[int] = 30
@@ -87,45 +52,40 @@ class NullFormatter(logging.Formatter):
         return record.getMessage()
 
 
-class LoggingWrapper:
-    def __init__(self, plain_output: bool, console: rich.console.Console):
-        self.handler: logging.Handler
-        self.console = console
-        self.rich_format = logging.Formatter("%(message)s", datefmt="[%X]")
-
-        if plain_output:
-            self.handler = logging.StreamHandler()
-            self.handler.setFormatter(NullFormatter())
-        else:
-            self.handler = RichHandler(
-                console=console,
-                rich_tracebacks=True,
-                markup=True,
-                tracebacks_suppress=[
-                    click,
-                ],
-                show_level=False,
-            )
-            self.handler.setFormatter(self.rich_format)
-
-        self.logger = logging.getLogger("__openlane__")
-        self.logger.setLevel(LogLevels.VERBOSE)
-        self.logger.addHandler(self.handler)
-
-    def set_debug_handler(self):
-        self.logger.removeHandler(self.handler)
-        self.handler = DebugRichHandler(console=self.console)
-        self.handler.setFormatter(self.rich_format)
-        self.logger.addHandler(self.handler)
+__handler: logging.Handler
+def __logger() -> logging.Logger:
+    global __handler
+    if __plain_output:
+        __handler = logging.StreamHandler()
+        __handler.setFormatter(NullFormatter())
+    else:
+        __handler = RichHandler(
+            console=console,
+            rich_tracebacks=True,
+            markup=True,
+            tracebacks_suppress=[
+                click,
+            ],
+            show_level=False,
+        )
+        __handler.setFormatter(logging.Formatter("%(message)s", datefmt="[%X]"))
+    logger = logging.getLogger("__openlane__")
+    logger.setLevel(LogLevels.VERBOSE)
+    logger.addHandler(__handler)
+    return logger
 
 
-__openlane_logger_wrapper = LoggingWrapper(__plain_output, console)
-__openlane_logger = __openlane_logger_wrapper.logger
+__openlane_logger = __logger()
 
+def set_handler(handler: logging.Handler):
+    global __openlane_logger
+    global __handler
+    __openlane_logger.removeHandler(__handler)
+    __openlane_logger.addHandler(handler)
 
-def set_debug_handler():
-    __openlane_logger_wrapper.set_debug_handler()
-
+def add_filter(filter: logging.Filter):
+    global __openlane_logger
+    __openlane_logger.addFilter(filter)
 
 def register_additional_handler(handler: logging.Handler):
     """
@@ -180,6 +140,16 @@ def debug(msg: object, /, **kwargs):
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
     __openlane_logger.debug(msg, **kwargs)
+
+def log_subprocess(msg: object, /, **kwargs):
+    """
+    Logs to the OpenLane logger with the log level SUBPROCESS.
+
+    :param msg: The message to log
+    """
+    if kwargs.get("stacklevel") is None:
+        kwargs["stacklevel"] = 2
+    __openlane_logger.log(level=LogLevels.SUBPROCESS, msg=msg, **kwargs)
 
 
 def verbose(*args, **kwargs):
