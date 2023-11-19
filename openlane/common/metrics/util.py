@@ -82,10 +82,17 @@ def aggregate_metrics(
             # No modifiers = final aggregate, don't double-represent in sums
             # >1 modifiers = n-level nesting, not supported atm
             continue
+
+        modifier = list(modifiers.keys())[0]
+
+        dont_aggregate = []
         entry = aggregator_by_metric.get(metric_name)
         if isinstance(entry, Metric):
+            dont_aggregate = entry.dont_aggregate or []
             entry = entry.aggregator
         if entry is None:
+            continue
+        if modifier in dont_aggregate:
             continue
         start, aggregator = entry
         current = aggregated.get(metric_name) or start

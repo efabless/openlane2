@@ -48,6 +48,7 @@ class Metric(object):
     name: str
     aggregator: Optional[AggregationInfo] = None
     higher_is_better: Optional[bool] = None
+    dont_aggregate: Optional[Iterable[str]] = None
 
     by_name: ClassVar[Dict[str, "Metric"]] = {}
 
@@ -57,10 +58,12 @@ class Metric(object):
         *,
         aggregator: Optional[AggregationInfo] = None,
         higher_is_better: Optional[bool] = None,
+        dont_aggregate: Optional[Iterable[str]] = None,
     ) -> None:
         self.name = name
         self.aggregator = aggregator
         self.higher_is_better = higher_is_better
+        self.dont_aggregate = dont_aggregate
 
         Metric.by_name[name] = self
 
@@ -166,6 +169,7 @@ Metric(
     "route__drc_errors",
     aggregator=sum_aggregator,
     higher_is_better=False,
+    dont_aggregate=["iter"],
 )
 Metric(
     "magic__drc_error__count",
@@ -181,6 +185,7 @@ Metric(
     "route__antenna_violations__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
+    dont_aggregate=["iter"],
 )
 Metric(
     "design__disconnected_pins__count",
@@ -264,16 +269,19 @@ Metric(
     "route__wirelength__max",
     aggregator=max_aggregator,
     higher_is_better=False,
+    dont_aggregate=["iter"],
 )
 Metric(
     "route__wirelength",
     aggregator=sum_aggregator,
     higher_is_better=False,
+    dont_aggregate=["iter"],
 )
 Metric(
     "route__wirelength__estimated",
     aggregator=sum_aggregator,
     higher_is_better=False,
+    dont_aggregate=["iter"],
 )
 Metric(
     "design__instance__displacement__max",
