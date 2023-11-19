@@ -38,7 +38,8 @@ import libparse
 from deprecated.sphinx import deprecated
 
 
-from .misc import Path, mkdirp
+from .misc import mkdirp
+from .types import Path
 from .metrics import aggregate_metrics
 from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string

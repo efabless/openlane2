@@ -25,9 +25,6 @@ from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
 from typing import (
-    Any,
-    Callable,
-    Iterable,
     List,
     Dict,
     Literal,
@@ -77,24 +74,6 @@ met4 Y 0.46 0.92
 met5 X 1.70 3.40
 met5 Y 1.70 3.40
 """
-
-timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
-    "timing__hold_vio__count": (0, lambda x: sum(x)),
-    "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
-    "design__max_slew_violation__count": (0, lambda x: sum(x)),
-    "design__max_fanout_violation__count": (0, lambda x: sum(x)),
-    "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (-inf, max),
-    "clock__skew__worst_setup": (-inf, max),
-    "timing__hold__ws": (inf, min),
-    "timing__setup__ws": (inf, min),
-    "timing__hold__wns": (inf, min),
-    "timing__setup__wns": (inf, min),
-    "timing__hold__tns": (0, lambda x: sum(x)),
-    "timing__setup__tns": (0, lambda x: sum(x)),
-}
 
 
 def old_to_new_tracks(old_tracks: str) -> str:
@@ -272,10 +251,7 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = -inf
             metrics_updates.update(or_metrics_out)
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates,
-            timing_metric_aggregation,
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         return views_updates, metric_updates_with_aggregates
 
@@ -498,9 +474,7 @@ class STAPostPNR(STAPrePNR):
         for corner, updates_future in futures.items():
             metrics_updates.update(updates_future.result())
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates, timing_metric_aggregation
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
             if count is None:

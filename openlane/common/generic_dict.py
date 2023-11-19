@@ -32,6 +32,7 @@ from typing import (
 )
 
 from .misc import idem
+from .types import is_string
 
 
 class GenericDictEncoder(json.JSONEncoder):
@@ -254,10 +255,6 @@ class GenericImmutableDict(GenericDict[KT, VT]):
 
     def copy_mut(self) -> GenericDict[KT, VT]:
         return GenericDict(self)
-
-
-def is_string(obj: Any) -> bool:
-    return isinstance(obj, str) or isinstance(obj, UserString)
 
 
 # Screw this, if you can figure out how to type hint mapping in dictionary out

@@ -1180,7 +1180,6 @@ class CompositeStep(Step):
                         )
                 else:
                     config_var_dict[cvar.name] = cvar
-        print(output_set)
         Self.inputs = list(input_set)
         if Self.outputs == NotImplemented:  # Allow for setting explicit outputs
             Self.outputs = list(output_set)

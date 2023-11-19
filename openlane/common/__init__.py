@@ -28,7 +28,6 @@ from .generic_dict import (
     GenericDict,
     GenericImmutableDict,
     copy_recursive,
-    is_string,
 )
 from .misc import (
     idem,
@@ -40,10 +39,14 @@ from .misc import (
     final,
     mkdirp,
     StringEnum,
-    Path,
     zip_first,
     format_size,
     format_elapsed_time,
+)
+from .types import (
+    is_number,
+    is_string,
+    Path,
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation
