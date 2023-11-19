@@ -472,7 +472,8 @@ class QoR(Step):
             "timing__setup__ws",
         ]
         metric_values = {value: str(state_in.metrics.get(value)) for value in white_list}
-        for key, value in metric_values.values():
-            print(f"{key:20} {value}")
+        for key, value in metric_values.items():
+            print(f"{key:}:")
+            print(f"\t({value})")
 
         return {}, {}
