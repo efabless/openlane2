@@ -82,7 +82,6 @@ def main(reader, corner, checks_report):
             ],
         )
         for net in nets
-        # filter out nets that are not connected to any internal net of the design
         if (net.getName() in reported_nets) and filter_net(net)
     ]
     print("Filtered nets:")
