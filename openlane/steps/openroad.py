@@ -416,7 +416,7 @@ class STAPostPNR(STAPrePNR):
         ),
     ]
 
-    inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
+    inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
 
     def filter_unanottated_report(
@@ -624,10 +624,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        libs = sorted(glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True))
-        for lib in libs:
-            _, corner = os.path.basename(lib)[:-4].split("__")
-            lib_dict[corner] = Path(lib)
+        for corner in self.config["STA_CORNERS"]:
+            lib_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.lib"
+                )
+            )
 
         views_updates[DesignFormat.LIB] = lib_dict
 
@@ -637,10 +639,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = sorted(glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True))
-        for sdf in sdfs:
-            _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(sdf)
+        for corner in self.config["STA_CORNERS"]:
+            sdf_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.sdf"
+                )
+            )
 
         views_updates[DesignFormat.SDF] = sdf_dict
 
