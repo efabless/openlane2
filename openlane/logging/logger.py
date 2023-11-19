@@ -53,6 +53,8 @@ class NullFormatter(logging.Formatter):
 
 
 __handler: logging.Handler
+
+
 def __logger() -> logging.Logger:
     global __handler
     if __plain_output:
@@ -77,15 +79,18 @@ def __logger() -> logging.Logger:
 
 __openlane_logger = __logger()
 
+
 def set_handler(handler: logging.Handler):
     global __openlane_logger
     global __handler
     __openlane_logger.removeHandler(__handler)
     __openlane_logger.addHandler(handler)
 
+
 def add_filter(filter: logging.Filter):
     global __openlane_logger
     __openlane_logger.addFilter(filter)
+
 
 def register_additional_handler(handler: logging.Handler):
     """
@@ -140,6 +145,7 @@ def debug(msg: object, /, **kwargs):
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
     __openlane_logger.debug(msg, **kwargs)
+
 
 def log_subprocess(msg: object, /, **kwargs):
     """

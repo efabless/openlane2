@@ -1024,7 +1024,7 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
-        if  _SAVE_ENV:
+        if _SAVE_ENV:
             with open(os.path.join(self.step_dir, "env.json"), "w") as f:
                 f.write(
                     json.dumps(
