@@ -18,8 +18,6 @@ import logging
 import rich.console
 from typing import ClassVar, Union
 from rich.logging import RichHandler
-from rich.text import Text
-from rich.style import Style, StyleType
 
 
 class LogLevels:
