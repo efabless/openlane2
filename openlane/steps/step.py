@@ -73,12 +73,9 @@ from ..logging import (
     info,
     warn,
     err,
-    get_log_level,
     log_subprocess,
-    LogLevels,
 )
-from ..common.debug import _SAVE_ENV, _DEBUG_HANDLER
-breakpoint()
+from ..common.debug import get_flags
 from ..__version__ import __version__
 
 
@@ -846,8 +843,7 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        breakpoint()
-        if _DEBUG_HANDLER:
+        if get_flags().logging_handler:
             log_relpath = f"{os.path.join('./', os.path.relpath(self.get_log_path(), '.'))}"  # for rich to color the path
             info(f"'{self.id}' {log_relpath}")
         else:
@@ -907,7 +903,7 @@ class Step(ABC):
         if Config.current_interactive:
             LastState = self.state_out
 
-        if not _DEBUG_HANDLER:
+        if not get_flags().logging_handler:
             rule(f"{self.long_name}")
 
         return self.state_out
@@ -1019,7 +1015,7 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
-        if _SAVE_ENV:
+        if get_flags().save_env:
             assert env is not None
             with open(os.path.join(self.step_dir, "env.json"), "w") as f:
                 f.write(
@@ -1076,7 +1072,7 @@ class Step(ABC):
                 f,
                 indent=4,
             )
-        if _DEBUG_HANDLER:
+        if get_flags().logging_handler:
             info(
                 f"'{self.id}' {process_stats_thread.stats_as_dict()['peak_resources']['cpu_percent']}% {process_stats_thread.stats_as_dict()['peak_resources']['memory_vms']}"
             )

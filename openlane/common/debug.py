@@ -61,15 +61,26 @@ class DebugFilter(logging.Filter):
         return not record.levelno == LogLevels.SUBPROCESS
 
 
-_DEBUG_HANDLER = False
-_SAVE_ENV = False
-_PDB = True
+class DebugFlags:
+    def __init__(self, logging_handler=False, save_env=False, pdb=False):
+        self.logging_handler = logging_handler
+        self.save_env = save_env
+        self.pdb = pdb
+
+
+flags = DebugFlags()
+
+
+def get_flags():
+    global flags
+    return flags
 
 
 def set_debug_mode():
-    global _DEBUG_HANDLER, _SAVE_ENV, _PDB
-    _DEBUG_HANDLER = True
-    _SAVE_ENV = True
+    global flags
+    flags.logging_handler = True
+    flags.save_env = True
+    flags.pdb = True
 
     handler = DebugRichHandler(console=console)
     formatter = logging.Formatter("%(message)s", datefmt="[%X]")
@@ -78,7 +89,7 @@ def set_debug_mode():
     set_log_level(LogLevels.DEBUG)
     add_filter(DebugFilter())
 
-    if _PDB:
+    if flags.pdb:
         import sys
 
         def info(type, value, tb):
