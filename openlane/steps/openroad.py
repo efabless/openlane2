@@ -94,8 +94,8 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
-    "timing__unannottated_nets__count": (0, max),
-    "timing__unannottated_nets_filtered__count": (0, max),
+    "timing__unannotated_nets__count": (0, max),
+    "timing__unannotated_nets_filtered__count": (0, max),
 }
 
 
@@ -419,7 +419,7 @@ class STAPostPNR(STAPrePNR):
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
 
-    def filter_unannottated_report(
+    def filter_unannotated_report(
         self,
         corner: str,
         corner_dir: str,
@@ -441,15 +441,15 @@ class STAPostPNR(STAPrePNR):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        metrics_path = os.path.join(corner_dir, "filter_unannottated_metrics.json")
-        filter_unannottated_cmd = [
+        metrics_path = os.path.join(corner_dir, "filter_unannotated_metrics.json")
+        filter_unannotated_cmd = [
             "openroad",
             "-exit",
             "-no_splash",
             "-metrics",
             metrics_path,
             "-python",
-            os.path.join(get_script_dir(), "odbpy", "filter_unannottated.py"),
+            os.path.join(get_script_dir(), "odbpy", "filter_unannotated.py"),
             "--corner",
             corner,
             "--checks-report",
@@ -457,9 +457,9 @@ class STAPostPNR(STAPrePNR):
             odb_design,
         ] + lefs
 
-        filter_unannottated_metrics = self.run_subprocess(
-            filter_unannottated_cmd,
-            log_to=os.path.join(corner_dir, "filter_unannottated.log"),
+        filter_unannotated_metrics = self.run_subprocess(
+            filter_unannotated_cmd,
+            log_to=os.path.join(corner_dir, "filter_unannotated.log"),
             env=env,
             silent=True,
             report_dir=corner_dir,
@@ -467,9 +467,9 @@ class STAPostPNR(STAPrePNR):
 
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read())
-            filter_unannottated_metrics.update(or_metrics_out)
+            filter_unannotated_metrics.update(or_metrics_out)
 
-        return filter_unannottated_metrics
+        return filter_unannotated_metrics
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -535,7 +535,7 @@ class STAPostPNR(STAPrePNR):
                     report_dir=corner_dir,
                 )
 
-                filter_unannottated_metrics = self.filter_unannottated_report(
+                filter_unannotated_metrics = self.filter_unannotated_report(
                     corner=corner,
                     checks_report=os.path.join(corner_dir, "checks.rpt"),
                     corner_dir=corner_dir,
@@ -547,7 +547,7 @@ class STAPostPNR(STAPrePNR):
                 err(f"Failed STA for the {corner} timing corner:")
                 raise e
 
-            return {**generated_metrics, **filter_unannottated_metrics}
+            return {**generated_metrics, **filter_unannotated_metrics}
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
         for corner in self.config["STA_CORNERS"]:
