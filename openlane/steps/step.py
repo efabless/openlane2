@@ -402,6 +402,12 @@ class Step(ABC):
                 debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
 
     @classmethod
+    def get_implementation_id(Self) -> str:
+        if hasattr(Self, "_implementation_id"):
+            return getattr(Self, "_implementation_id")
+        return Self.id
+
+    @classmethod
     def assert_concrete(Self, action: str = "initialized"):
         """
         Checks if the Step class in question is concrete, with abstract methods
@@ -726,7 +732,7 @@ class Step(ABC):
         dumpable_config = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
-            "step": self.__class__.id,
+            "step": self.__class__.get_implementation_id(),
         }
 
         del dumpable_config["DESIGN_DIR"]
@@ -847,10 +853,11 @@ class Step(ABC):
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
-                "step": self.__class__.id,
+                "step": self.__class__.get_implementation_id(),
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
+        debug(f"{self.step_dir}")
         self.start_time = time.time()
 
         for input in self.inputs:
@@ -1092,7 +1099,11 @@ class Step(ABC):
         Useful in flows, where you want different IDs for different instance of the
         same step.
         """
-        return type(Self.__name__, (Self,), {"id": id, "__original_id": Self.id})
+        return type(
+            Self.__name__,
+            (Self,),
+            {"id": id, "_implementation_id": Self.get_implementation_id()},
+        )
 
     class StepFactory(object):
         """

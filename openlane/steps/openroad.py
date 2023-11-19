@@ -694,6 +694,7 @@ class IOPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             # Skip - Step just checks and copies
+            warn(f"FP_PIN_ORDER_CFG is set. Skipping {self.id}…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -755,6 +756,15 @@ class GeneratePDN(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        if self.config["FP_PDN_CFG"] is None:
+            env["FP_PDN_CFG"] = os.path.join(
+                get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
+            )
+            info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
