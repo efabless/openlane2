@@ -68,7 +68,7 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
     reset_log_level()
 
     cli_fn(
-        ["--log-level", "WARN"],
+        ["--log-level", "WARNING"],
         standalone_mode=False,
     )
     assert get_log_level() == 30, "--log-level callback failed"

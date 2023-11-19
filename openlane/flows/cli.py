@@ -32,13 +32,11 @@ from cloup.constraints import (
 )
 from cloup.typing import Decorator
 
-from openlane.state.state import InvalidState
-
 
 from .flow import Flow
 from ..common import set_tpe, get_opdks_rev
-from ..logging import set_log_level, err, LogLevelsDict
-from ..state import State
+from ..logging import set_log_level, err, set_condensed_mode, LogLevelsDict
+from ..state import State, InvalidState
 
 
 def set_log_level_cb(
@@ -142,6 +140,14 @@ def pdk_scl_cb(
 
             volare.enable(pdk_root, pdk_family, get_opdks_rev())
     return value
+
+
+def condensed_cb(
+    ctx: Context,
+    param: Parameter,
+    value: bool,
+):
+    set_condensed_mode(value)
 
 
 def cloup_flow_opts(
@@ -323,10 +329,10 @@ def cloup_flow_opts(
             f = o(
                 "--log-level",
                 type=str,
-                default="VERBOSE",
+                default="SUBPROCESS",
                 help=dedent(
                     """
-                    A logging level. Set to INFO or higher to silence subprocess logs.
+                    A logging level. Set to VERBOSE or higher to silence subprocess logs.
 
                     You can provide either a number or a string out of the following (higher is more silent):
                     """
@@ -335,6 +341,14 @@ def cloup_flow_opts(
                     [f"{name}={value}" for name, value in LogLevelsDict.items()]
                 ),
                 callback=set_log_level_cb,
+                expose_value=False,
+            )(f)
+            f = o(
+                "--condensed/--full",
+                type=bool,
+                help="",
+                callback=condensed_cb,
+                is_eager=True,
                 expose_value=False,
             )(f)
         if pdk_options:

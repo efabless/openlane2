@@ -11,21 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
 import click
 import atexit
 import logging
+from typing import ClassVar, Iterable, Union
+
 import rich.console
-from typing import ClassVar, Union
-from rich.logging import RichHandler
+import rich.logging
+from rich.text import Text
+from rich.style import Style, StyleType
 
 
 class LogLevels:
     ALL: ClassVar[int] = 0
     DEBUG: ClassVar[int] = 10
+    SUBPROCESS: ClassVar[int] = 12
     VERBOSE: ClassVar[int] = 15
     INFO: ClassVar[int] = 20
-    WARN: ClassVar[int] = 30
+    WARNING: ClassVar[int] = 30
     ERROR: ClassVar[int] = 40
     CRITICAL: ClassVar[int] = 50
 
@@ -39,9 +42,20 @@ def __log_levels_dict():
 
 LogLevelsDict = __log_levels_dict()
 
+
 console = rich.console.Console()
 atexit.register(lambda: rich.console.Console().show_cursor())
-__plain_output = "pytest" in sys.modules
+__event_logger: logging.Logger = logging.getLogger("__openlane__")
+__condensed_mode: bool = False
+
+
+def set_condensed_mode(value: bool):
+    global __condensed_mode
+    __condensed_mode = value
+
+
+def get_condensed_mode() -> bool:
+    return __condensed_mode
 
 
 class NullFormatter(logging.Formatter):
@@ -49,29 +63,107 @@ class NullFormatter(logging.Formatter):
         return record.getMessage()
 
 
-def __logger():
-    handler: logging.Handler
-    if __plain_output:
-        handler = logging.StreamHandler()
-        handler.setFormatter(NullFormatter())
-    else:
-        handler = RichHandler(
-            console=console,
-            rich_tracebacks=True,
-            markup=True,
-            tracebacks_suppress=[
-                click,
-            ],
-            show_level=False,
+class LevelFormatter(logging.Formatter):
+    def format(self, record):
+        message = record.getMessage()
+        if record.levelname == "WARNING":
+            message = f"[yellow]{message}"
+        elif record.levelname == "ERROR":
+            message = f"[red]{message}"
+        elif record.levelname == "CRITICAL":
+            message = f"[red][bold]{message}"
+        else:
+            message = f"{message}"
+        return message
+
+
+class RichHandler(rich.logging.RichHandler):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+    def get_level_text(self, record: logging.LogRecord) -> Text:
+        if not get_condensed_mode():
+            return super().get_level_text(record)
+        level_name = record.levelname
+        style: StyleType
+        if level_name == "WARNING":
+            style = Style(color="yellow", bold=True)
+        else:
+            style = f"logging.level.{level_name.lower()}"
+        level_text = Text.styled(
+            f"[{level_name.ljust(8)[0]}]",
+            style,
         )
-        handler.setFormatter(logging.Formatter("%(message)s", datefmt="[%X]"))
+        return level_text
+
+
+class KeywordFilter(logging.Filter):
+    def __init__(self, matching_values: dict) -> None:
+        super().__init__()
+        self.matching_values = matching_values.copy()
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        for key, value in self.matching_values.items():
+            if value is None:
+                if hasattr(record, key) and getattr(record, key) is not None:
+                    return False
+            else:
+                if not hasattr(record, key) or getattr(record, key) != value:
+                    return False
+        return True
+
+
+class LevelFilter(logging.Filter):
+    def __init__(self, levels: Iterable[str], invert: bool = False) -> None:
+        self.levels = levels
+        self.invert = invert
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if self.invert:
+            return record.levelname not in self.levels
+        else:
+            return record.levelname in self.levels
+
+
+def initialize_logger():
+    global __event_logger, console, __plain_only_mode, __condensed_mode
+    subprocess_handler = RichHandler(
+        console=console,
+        show_time=False,
+        omit_repeated_times=False,
+        show_level=False,
+        show_path=False,
+        enable_link_path=False,
+        tracebacks_word_wrap=False,
+        keywords=[],
+        markup=False,
+    )
+    subprocess_handler.addFilter(LevelFilter(["SUBPROCESS"]))
+
+    rich_handler = RichHandler(
+        console=console,
+        rich_tracebacks=True,
+        omit_repeated_times=False,
+        markup=True,
+        tracebacks_suppress=[
+            click,
+        ],
+        show_level=True,
+        keywords=[],
+    )
+    rich_handler.setFormatter(LevelFormatter("%(message)s", datefmt="[%X]"))
+    rich_handler.addFilter(LevelFilter(["SUBPROCESS"], invert=True))
+
     logger = logging.getLogger("__openlane__")
-    logger.setLevel(LogLevels.VERBOSE)
-    logger.addHandler(handler)
-    return logger
+    logger.setLevel(LogLevels.SUBPROCESS)
+
+    logger.handlers.clear()
+
+    logger.addHandler(subprocess_handler)
+    logger.addHandler(rich_handler)
 
 
-__openlane_logger = __logger()
+initialize_logger()
 
 
 def register_additional_handler(handler: logging.Handler):
@@ -81,7 +173,7 @@ def register_additional_handler(handler: logging.Handler):
     :param handler: The new handler. Must be of type ``logging.Handler``
         or its subclasses.
     """
-    __openlane_logger.addHandler(handler)
+    __event_logger.addHandler(handler)
 
 
 def deregister_additional_handler(handler: logging.Handler):
@@ -91,7 +183,7 @@ def deregister_additional_handler(handler: logging.Handler):
     :param handler: The handler. If not registered, the behavior
         of this function is undefined.
     """
-    __openlane_logger.removeHandler(handler)
+    __event_logger.removeHandler(handler)
 
 
 def set_log_level(lv: Union[str, int]):
@@ -100,7 +192,7 @@ def set_log_level(lv: Union[str, int]):
 
     :param lv: Either the name or number of the desired log level.
     """
-    __openlane_logger.setLevel(lv)
+    __event_logger.setLevel(lv)
 
 
 def reset_log_level():
@@ -108,14 +200,14 @@ def reset_log_level():
     Sets the log level of the default OpenLane logger back to the
     default log level.
     """
-    set_log_level("VERBOSE")
+    set_log_level("SUBPROCESS")
 
 
 def get_log_level() -> int:
     """
     Obtains the numeric log level of the OpenLane logger.
     """
-    return __openlane_logger.getEffectiveLevel()
+    return __event_logger.getEffectiveLevel()
 
 
 def debug(msg: object, /, **kwargs):
@@ -126,21 +218,20 @@ def debug(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.debug(msg, **kwargs)
+    __event_logger.debug(msg, **kwargs)
 
 
 def verbose(*args, **kwargs):
     """
-    Prints to the console if the log level is <= VERBOSE.
+    Logs to the OpenLane logger with the log level VERBOSE.
 
     All args and kwargs are passed to https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
     """
-    if get_log_level() > LogLevels.VERBOSE:
-        return
-    if __plain_output:
-        print(*args)
-    else:
-        console.print(*args, **kwargs)
+    __event_logger.log(
+        LogLevels.VERBOSE,
+        *args,
+        **kwargs,
+    )
 
 
 def info(msg: object, /, **kwargs):
@@ -151,7 +242,18 @@ def info(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.info(msg, **kwargs)
+    __event_logger.info(msg, **kwargs)
+
+
+def subprocess(msg: object, /, **kwargs):
+    """
+    Logs to the OpenLane logger with the log level SUBPROCESS.
+
+    :param msg: The message to log
+    """
+    if kwargs.get("stacklevel") is None:
+        kwargs["stacklevel"] = 2
+    __event_logger.log(LogLevels.SUBPROCESS, msg, **kwargs)
 
 
 def rule(title: str = "", /, **kwargs):  # pragma: no cover
@@ -163,12 +265,7 @@ def rule(title: str = "", /, **kwargs):  # pragma: no cover
 
     :param title: A title string to enclose in the console rule
     """
-    if get_log_level() > LogLevels.INFO:
-        return
-    if __plain_output:
-        print(("-" * 10) + str(title) + ("-" * 10))
-    else:
-        console.rule(title, **kwargs)
+    console.rule(title)
 
 
 def success(msg: object, /, **kwargs):
@@ -180,19 +277,19 @@ def success(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.info(f"⭕ [green][bold] {msg}", **kwargs)
+    __event_logger.info(f"{msg}", **kwargs)
 
 
 def warn(msg: object, /, **kwargs):
     """
     Logs an item to the OpenLane logger with a warning unicode character and
-    gold/bold rich formatting syntax with the log level WARN.
+    gold/bold rich formatting syntax with the log level WARNING.
 
     :param msg: The message to log
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.warning(f"⚠️  [gold][bold] {msg}", **kwargs)
+    __event_logger.warning(f"{msg}", **kwargs)
 
 
 def err(msg: object, /, **kwargs):
@@ -202,14 +299,17 @@ def err(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __openlane_logger.error(f"❌ [red][bold] {msg}", **kwargs)
+    __event_logger.error(f"{msg}", **kwargs)
 
 
 if __name__ == "__main__":
+    initialize_logger()
     debug("Debug")
     verbose("Verbose")
-    rule()
+    subprocess("Subprocess")
+    rule("Rule")
     info("Info")
     success("Success")
     warn("Warn")
     err("Err")
+    print("\n")

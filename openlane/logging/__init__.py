@@ -26,6 +26,8 @@ from .logger import (
     set_log_level,
     reset_log_level,
     get_log_level,
+    get_condensed_mode,
+    set_condensed_mode,
     register_additional_handler,
     deregister_additional_handler,
     verbose,
@@ -35,4 +37,5 @@ from .logger import (
     success,
     warn,
     err,
+    subprocess,
 )

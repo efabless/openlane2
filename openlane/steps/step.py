@@ -65,6 +65,7 @@ from ..common import (
     format_size,
     format_elapsed_time,
 )
+from .. import logging
 from ..logging import (
     rule,
     verbose,
@@ -830,7 +831,11 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        rule(f"{self.long_name}")
+        if not logging.get_condensed_mode():
+            rule(f"{self.long_name}")
+        verbose(
+            f"Running '{self.id}'… (Log: {os.path.join('.', os.path.relpath(self.get_log_path()))})"
+        )
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -1032,7 +1037,7 @@ class Step(ABC):
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
-                    verbose(line.strip(), markup=False)
+                    logging.subprocess(line.strip())
         process_stats_thread.join()
 
         json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"

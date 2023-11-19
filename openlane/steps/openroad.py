@@ -53,7 +53,7 @@ from .common_variables import (
 from ..config import Variable
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, verbose
+from ..logging import debug, err, info, warn, verbose, console
 from ..common import (
     Path,
     TclUtils,
@@ -166,11 +166,11 @@ class CheckSDCFiles(Step):
         fallback_descriptor = "generic" if is_generic_fallback else "user-defined"
         if self.config["PNR_SDC_FILE"] is None:
             warn(
-                f"PNR_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+                f"'PNR_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         if self.config["SIGNOFF_SDC_FILE"] is None:
             warn(
-                f"SIGNOFF_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+                f"'SIGNOFF_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         return {}, {}
 
@@ -551,7 +551,7 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        verbose(table)
+        console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 
