@@ -19,7 +19,7 @@ from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
 from ..state import State
-from ..logging import info, success, err
+from ..logging import info, success, err, debug
 from ..steps import (
     Step,
     StepError,
@@ -118,22 +118,17 @@ class SequentialFlow(Flow):
                 id == NotImplemented
             ):  # Will be validated later by initialization: ignore for now
                 continue
-            name = step.__name__
             while id in ids_used:
                 counter += 1
                 id = f"{step.id}-{counter}"
-                name = f"{step.__name__}_{counter}"
             if id != step.id:
-                new_step = type(name, (step,), {"id": id})
-                target.Steps[i] = new_step
+                target.Steps[i] = step.with_id(id)
             ids_used.add(id)
 
     def __init__(
         self,
         *args,
-        Substitute: Optional[
-            Dict[str, Union[str, Type[Step]]],
-        ] = None,
+        Substitute: Optional[Dict[str, Union[str, Type[Step]]]] = None,
         **kwargs,
     ):
         self.Steps = self.Steps.copy()  # Break global reference
@@ -297,6 +292,7 @@ class SequentialFlow(Flow):
         assert self.run_dir is not None
         final_views_path = os.path.join(self.run_dir, "final")
         info(f"Saving final views to '{final_views_path}'…")
+        debug(f"'{self.run_dir}'")
         try:
             current_state.save_snapshot(final_views_path)
         except Exception as e:

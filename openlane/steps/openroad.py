@@ -720,6 +720,7 @@ class IOPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             # Skip - Step just checks and copies
+            warn(f"FP_PIN_ORDER_CFG is set. Skipping {self.id}…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -781,6 +782,15 @@ class GeneratePDN(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "pdn.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        if self.config["FP_PDN_CFG"] is None:
+            env["FP_PDN_CFG"] = os.path.join(
+                get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
+            )
+            info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -938,7 +948,36 @@ class DetailedPlacement(OpenROADStep):
 
 
 @Step.factory.register()
-class GlobalRouting(OpenROADStep):
+class CheckAntennas(OpenROADStep):
+    """
+    Runs OpenROAD to check if one or more long nets may constitute an
+    `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    The metric ``route__antenna_violations__count`` will be updated with the number of violating nets.
+    """
+
+    id = "OpenROAD.CheckAntennas"
+    name = "Check Antennas"
+
+    # default inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "antenna_check.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+
+        metrics_updates["route__antenna_violations__count"] = get_antenna_nets(
+            open(os.path.join(self.step_dir, "antenna.rpt")),
+            open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
+        )
+
+        return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class GlobalRouting(CheckAntennas):
     """
     The initial phase of routing. Given a detailed-placed ODB file, this
     phase starts assigning coarse-grained routing "regions" for each net so they
@@ -947,56 +986,37 @@ class GlobalRouting(OpenROADStep):
     Estimated capacitance and resistance values are much more accurate for
     global routing.
 
-    Updates the ``antenna__count`` metric.
+    Updates the ``route__antenna_violations__count`` metric.
 
     At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
-    mitigations may also be applied, updating the `antenna__count` count.
+    mitigations may also be applied, updating the `route__antenna_violations__count` count.
     See the variables for more info.
     """
 
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
+    outputs = [DesignFormat.ODB, DesignFormat.DEF]
+
     config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        antenna_rpt_path = os.path.join(self.step_dir, "antenna.rpt")
-        net_count = get_antenna_nets(
-            open(antenna_rpt_path),
-            open(os.path.join(self.step_dir, "antenna_nets.txt"), "w"),
-        )
+@Step.factory.register()
+class RepairAntennas(GlobalRouting):
+    """
+    Applies `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
+    mitigations using global-routing information, then re-runs detailed placement
+    and global routing to legalize any inserted diodes.
+    """
 
-        antenna_report_post_fix_path = os.path.join(
-            self.step_dir, "antenna_post_fix.rpt"
-        )
-        if os.path.exists(antenna_report_post_fix_path):
-            net_count_after = get_antenna_nets(
-                open(antenna_report_post_fix_path),
-                open(os.path.join(self.step_dir, "antenna_nets_post_fix.txt"), "w"),
-            )
+    id = "OpenROAD.RepairAntennas"
+    name = "Antenna Repair"
 
-            if net_count == net_count_after:
-                info(
-                    f"Antenna count unchanged after OpenROAD antenna fixer. ({net_count})"
-                )
-            elif net_count_after > net_count:
-                warn(
-                    f"Inexplicably, the OpenROAD antenna fixer has generated more antennas ({net_count} -> {net_count_after}). The flow will continue, but you may want to report a bug."
-                )
-            else:
-                info(
-                    f"Antenna count reduced using OpenROAD antenna fixer: {net_count} -> {net_count_after}"
-                )
-            net_count = net_count_after
-
-        metrics_updates["antenna__count"] = net_count
-
-        return views_updates, metrics_updates
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "antenna_repair.tcl")
 
 
 @Step.factory.register()
@@ -1228,35 +1248,6 @@ def get_antenna_nets(report: io.TextIOWrapper, output: io.TextIOWrapper) -> int:
         count += 1
 
     return count
-
-
-@Step.factory.register()
-class CheckAntennas(OpenROADStep):
-    """
-    Runs OpenROAD to check if one or more long nets may constitute an
-    `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
-
-    The metric ``antenna__count`` will be updated with the number of violating nets.
-    """
-
-    id = "OpenROAD.CheckAntennas"
-    name = "Check Antennas"
-
-    # default inputs
-    outputs = []
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "check_antennas.tcl")
-
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        views_updates, metrics_updates = super().run(state_in, **kwargs)
-
-        metrics_updates["antenna__count"] = get_antenna_nets(
-            open(os.path.join(self.step_dir, "antenna.rpt")),
-            open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
-        )
-
-        return views_updates, metrics_updates
 
 
 @Step.factory.register()

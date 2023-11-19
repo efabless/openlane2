@@ -15,10 +15,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-if {![info exists ::env(FP_PDN_CFG)]} {
-    set ::env(FP_PDN_CFG) $::env(SCRIPTS_DIR)/openroad/common/pdn_cfg.tcl
-}
-
 source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 
 # load the grid definitions

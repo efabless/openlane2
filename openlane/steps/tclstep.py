@@ -19,7 +19,7 @@ from enum import Enum
 from decimal import Decimal
 from abc import abstractmethod
 from dataclasses import is_dataclass, asdict
-from typing import Any, ClassVar, List, Tuple
+from typing import Any, ClassVar, Iterable, List, Mapping, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
@@ -30,6 +30,7 @@ from ..common import (
     GenericDictEncoder,
     get_script_dir,
     protected,
+    is_string,
 )
 
 
@@ -62,16 +63,16 @@ class TclStep(Step):
         """
         if is_dataclass(value):
             return json.dumps(asdict(value), cls=GenericDictEncoder)
-        elif isinstance(value, list) or isinstance(value, tuple):
-            result = []
-            for item in value:
-                result.append(TclStep.value_to_tcl(item))
-            return TclUtils.join(result)
-        elif isinstance(value, dict):
+        elif isinstance(value, Mapping):
             result = []
             for v_key, v_value in value.items():
                 result.append(TclStep.value_to_tcl(v_key))
                 result.append(TclStep.value_to_tcl(v_value))
+            return TclUtils.join(result)
+        elif isinstance(value, Iterable) and not is_string(value):
+            result = []
+            for item in value:
+                result.append(TclStep.value_to_tcl(item))
             return TclUtils.join(result)
         elif isinstance(value, Enum):
             return value.name

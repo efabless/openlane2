@@ -35,6 +35,7 @@ from typing import (
     List,
     Callable,
     Optional,
+    Set,
     Union,
     Tuple,
     Sequence,
@@ -72,6 +73,7 @@ from ..logging import (
     info,
     warn,
     err,
+    debug,
 )
 from ..__version__ import __version__
 
@@ -394,8 +396,17 @@ class Step(ABC):
     def __init_subclass__(cls):
         if hasattr(cls, "flow_control_variable"):
             warn(
-                f"Step '{cls.id}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
+                f"Step '{cls.__name__}' uses deprecated property 'flow_control_variable'. Flow control should now be done using the Flow class's 'gating_config_vars' property."
             )
+        if cls.id != NotImplemented:
+            if f".{cls.__name__}" not in cls.id:
+                debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
+
+    @classmethod
+    def get_implementation_id(Self) -> str:
+        if hasattr(Self, "_implementation_id"):
+            return getattr(Self, "_implementation_id")
+        return Self.id
 
     @classmethod
     def assert_concrete(Self, action: str = "initialized"):
@@ -486,7 +497,7 @@ class Step(ABC):
                             f"Output '{output}' is not a valid DesignFormat enum object."
                         )
                     output_str = f"{output.value.name} (.{output.value.extension})"
-                result += f"| {input_str} | {output_str} |"
+                result += f"| {input_str} | {output_str} |\n"
 
         if len(Self.config_vars):
             result += textwrap.dedent(
@@ -722,7 +733,7 @@ class Step(ABC):
         dumpable_config = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
-            "step": self.__class__.id,
+            "step": self.__class__.get_implementation_id(),
         }
 
         del dumpable_config["DESIGN_DIR"]
@@ -785,6 +796,7 @@ class Step(ABC):
         self,
         toolbox: Optional[Toolbox] = None,
         step_dir: Optional[str] = None,
+        _no_rule: bool = False,
         **kwargs,
     ) -> State:
         """
@@ -831,7 +843,8 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        rule(f"{self.long_name}")
+        if not _no_rule:
+            rule(f"{self.long_name}")
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -841,10 +854,11 @@ class Step(ABC):
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
-                "step": self.__class__.id,
+                "step": self.__class__.get_implementation_id(),
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
+        debug(f"{self.step_dir}")
         self.start_time = time.time()
 
         for input in self.inputs:
@@ -1080,6 +1094,20 @@ class Step(ABC):
             del kwargs["env"]
         return (kwargs, env)
 
+    @classmethod
+    def with_id(Self, id: str) -> Type["Step"]:
+        """
+        Syntactic sugar for creating a subclass of a step with a different ID.
+
+        Useful in flows, where you want different IDs for different instance of the
+        same step.
+        """
+        return type(
+            Self.__name__,
+            (Self,),
+            {"id": id, "_implementation_id": Self.get_implementation_id()},
+        )
+
     class StepFactory(object):
         """
         A factory singleton for Steps, allowing steps types to be registered and then
@@ -1124,3 +1152,78 @@ class Step(ABC):
             return [cls.id for cls in Self.__registry.values()]
 
     factory = StepFactory
+
+
+class CompositeStep(Step):
+    """
+    A step composed of other steps, run sequentially. The steps are intended
+    to run as a unit within a flow and cannot be run separately.
+
+    Composite steps are currently considered an internal object that is not
+    ready to be part of the API. The API may change at any time for any reason.
+
+    ``inputs`` and ``config_vars`` are automatically generated based on the
+    constituent steps.
+
+    ``outputs`` may be set explicitly. If not set, it is automatically generated
+    based on the constituent steps.
+    """
+
+    Steps: List[Type[Step]] = []
+
+    def __init_subclass__(Self):
+        super().__init_subclass__()
+        available_inputs = set()
+
+        input_set: Set[DesignFormat] = set()
+        output_set: Set[DesignFormat] = set()
+        config_var_dict: Dict[str, Variable] = {}
+        for step in Self.Steps:
+            for input in step.inputs:
+                if input not in available_inputs:
+                    input_set.add(input)
+                    available_inputs.add(input)
+            for output in step.outputs:
+                available_inputs.add(output)
+                output_set.add(output)
+            for cvar in step.config_vars:
+                if existing := config_var_dict.get(cvar.name):
+                    if existing != cvar:
+                        raise TypeError(
+                            f"Internal error: composite step has mismatching config_vars: {cvar.name} contradicts an earlier declaration"
+                        )
+                else:
+                    config_var_dict[cvar.name] = cvar
+        Self.inputs = list(input_set)
+        if Self.outputs == NotImplemented:  # Allow for setting explicit outputs
+            Self.outputs = list(output_set)
+        Self.config_vars = list(config_var_dict.values())
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        state = state_in
+        step_count = len(self.Steps)
+        ordinal_length = len(str(step_count - 1))
+        for i, Step in enumerate(self.Steps):
+            step = Step(self.config, state)
+            step_dir = os.path.join(
+                self.step_dir, f"{str(i + 1).zfill(ordinal_length)}-{slugify(step.id)}"
+            )
+            state = step.start(
+                toolbox=self.toolbox,
+                step_dir=step_dir,
+                _no_rule=True,
+            )
+
+        views_updates: dict = {}
+        metrics_updates: dict = {}
+        for key in state:
+            if (
+                state_in.get(key) != state.get(key)
+                and DesignFormat.by_id(key) in self.outputs
+            ):
+                views_updates[key] = state[key]
+        for key in state.metrics:
+            if state_in.metrics.get(key) != state.metrics.get(key):
+                metrics_updates[key] = state.metrics[key]
+
+        return views_updates, metrics_updates

@@ -22,7 +22,8 @@ from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
 from .common_variables import io_layer_variables
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException
+from .openroad import DetailedPlacement, GlobalRouting
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
 from ..logging import warn, info
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
@@ -430,18 +431,19 @@ class CustomIOPlacement(OdbpyStep):
 
 
 @Step.factory.register()
-class DiodesOnPorts(OdbpyStep):
+class PortDiodePlacement(OdbpyStep):
     """
     Unconditionally inserts diodes on design ports diodes on ports,
     to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
 
     Useful for hardening macros, where ports may get long wires that are
     unaccounted for when hardening a top-level chip.
+
+    The placement is **not legalized**.
     """
 
-    id = "Odb.DiodesOnPorts"
-    name = "Diodes on Ports"
-    long_name = "Diode on Port Insertion Script"
+    id = "Odb.PortDiodePlacement"
+    name = "Port Diode Placement Script"
 
     config_vars = [
         Variable(
@@ -468,6 +470,8 @@ class DiodesOnPorts(OdbpyStep):
             pin,
             "--port-protect",
             self.config["DIODE_ON_PORTS"],
+            "--threshold",
+            "Infinity",
         ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -484,9 +488,43 @@ class DiodesOnPorts(OdbpyStep):
 
 
 @Step.factory.register()
-class HeuristicDiodeInsertion(OdbpyStep):
+class DiodesOnPorts(CompositeStep):
     """
-    Runs a custom diode insertion script to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+    Unconditionally inserts diodes on design ports diodes on ports,
+    to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    Useful for hardening macros, where ports may get long wires that are
+    unaccounted for when hardening a top-level chip.
+
+    The placement is legalized by performing detailed placement and global
+    routing after inserting the diodes.
+
+    Prior to beta 16, this step did not legalize its placement: if you would
+    like to retain the old behavior without legalization, try
+    ``Odb.PortDiodePlacement``.
+    """
+
+    id = "Odb.DiodesOnPorts"
+    name = "Diodes on Ports"
+    long_name = "Diodes on Ports Protection Routine"
+
+    Steps = [
+        PortDiodePlacement,
+        DetailedPlacement,
+        GlobalRouting,
+    ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["DIODE_ON_PORTS"] == "none":
+            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class FuzzyDiodePlacement(OdbpyStep):
+    """
+    Runs a custom diode placement script to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
 
     This script uses the `Manhattan length <https://en.wikipedia.org/wiki/Manhattan_distance>`_
     of a (non-existent) wire at the global placement stage, and places diodes
@@ -494,22 +532,21 @@ class HeuristicDiodeInsertion(OdbpyStep):
     `GPL_CELL_PADDING` and `DPL_CELL_PADDING` must be higher than 0 for this
     script to work reliably.
 
-    This step is unique in that it is the only step with a ``RUN_`` variable that
-    is disabled by default. This is for compatibility with OpenLane 1 configs.
+    The placement is *not* legalized.
 
     The original script was written by `Sylvain "tnt" Munaut <https://github.com/smunaut>`_.
     """
 
-    id = "Odb.HeuristicDiodeInsertion"
-    name = "Heuristic Diode Insertion"
-    long_name = "Heuristic Diode Insertion Script"
+    id = "Odb.FuzzyDiodePlacement"
+    name = "Fuzzy Diode Placement"
 
     config_vars = [
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
-            Optional[Decimal],
-            "A manhattan distance above which a diode is recommended to be inserted by a heuristic inserter. If not specified, the heuristic inserter will typically use a default value.",
+            Decimal,
+            "A manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
+            pdk=True,
         ),
     ]
 
@@ -544,3 +581,35 @@ class HeuristicDiodeInsertion(OdbpyStep):
             )
 
         return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class HeuristicDiodeInsertion(CompositeStep):
+    """
+    Runs a custom diode insertion routine to mitigate the `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_.
+
+    This script uses the `Manhattan length <https://en.wikipedia.org/wiki/Manhattan_distance>`_
+    of a (non-existent) wire at the global placement stage, and places diodes
+    if they exceed a certain threshold. This, however, requires some padding:
+    `GPL_CELL_PADDING` and `DPL_CELL_PADDING` must be higher than 0 for this
+    script to work reliably.
+
+    The placement is then legalized by performing detailed placement and global
+    routing after inserting the diodes.
+
+    The original script was written by `Sylvain "tnt" Munaut <https://github.com/smunaut>`_.
+
+    Prior to beta 16, this step did not legalize its placement: if you would
+    like to retain the old behavior without legalization, try
+    ``Odb.FuzzyDiodePlacement``.
+    """
+
+    id = "Odb.HeuristicDiodeInsertion"
+    name = "Heuristic Diode Insertion"
+    long_name = "Heuristic Diode Insertion Routine"
+
+    Steps = [
+        FuzzyDiodePlacement,
+        DetailedPlacement,
+        GlobalRouting,
+    ]
