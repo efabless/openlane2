@@ -85,7 +85,7 @@ def aggregate_metrics(
 
         modifier = list(modifiers.keys())[0]
 
-        dont_aggregate = []
+        dont_aggregate: Iterable[str] = []
         entry = aggregator_by_metric.get(metric_name)
         if isinstance(entry, Metric):
             dont_aggregate = entry.dont_aggregate or []
