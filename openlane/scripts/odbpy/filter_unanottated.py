@@ -18,10 +18,11 @@ from collections import namedtuple
 
 from reader import click_odb, click
 
+import odb
 import utl
 
 
-def filter_net(net):
+def filter_net(net: odb.dbNet) -> bool:
     # wire is the physical implementation of a net.
     # if a net has no wire. there is no problem for it being unannotated
     return net.getWire() is not None
