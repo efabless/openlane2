@@ -77,8 +77,8 @@ from ..logging import (
     log_subprocess,
     LogLevels,
 )
-from ..common.debug import _SAVE_ENV
-
+from ..common.debug import _SAVE_ENV, _DEBUG_HANDLER
+breakpoint()
 from ..__version__ import __version__
 
 
@@ -347,7 +347,6 @@ class Step(ABC):
         **kwargs,
     ):
         self.__class__.assert_concrete()
-        self.json_stats = {}
 
         if flow is not None:
             warn(
@@ -801,7 +800,6 @@ class Step(ABC):
         self,
         toolbox: Optional[Toolbox] = None,
         step_dir: Optional[str] = None,
-        _no_rule: bool = False,
         **kwargs,
     ) -> State:
         """
@@ -848,7 +846,8 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        if get_log_level() == LogLevels.DEBUG:
+        breakpoint()
+        if _DEBUG_HANDLER:
             log_relpath = f"{os.path.join('./', os.path.relpath(self.get_log_path(), '.'))}"  # for rich to color the path
             info(f"'{self.id}' {log_relpath}")
         else:
@@ -908,11 +907,7 @@ class Step(ABC):
         if Config.current_interactive:
             LastState = self.state_out
 
-        if get_log_level() == LogLevels.DEBUG and self.json_stats:
-            info(
-                f"'{self.id}' {self.json_stats['peak_resources']['cpu_percent']}% {self.json_stats['peak_resources']['memory_vms']}"
-            )
-        else:
+        if not _DEBUG_HANDLER:
             rule(f"{self.long_name}")
 
         return self.state_out
@@ -1025,6 +1020,7 @@ class Step(ABC):
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
         if _SAVE_ENV:
+            assert env is not None
             with open(os.path.join(self.step_dir, "env.json"), "w") as f:
                 f.write(
                     json.dumps(
@@ -1072,7 +1068,6 @@ class Step(ABC):
                     log_subprocess(line.strip())
         process_stats_thread.join()
 
-        self.json_stats = process_stats_thread.stats_as_dict()
         json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"
 
         with open(json_stats, "w") as f:
@@ -1080,6 +1075,10 @@ class Step(ABC):
                 process_stats_thread.stats_as_dict(),
                 f,
                 indent=4,
+            )
+        if _DEBUG_HANDLER:
+            info(
+                f"'{self.id}' {process_stats_thread.stats_as_dict()['peak_resources']['cpu_percent']}% {process_stats_thread.stats_as_dict()['peak_resources']['memory_vms']}"
             )
         returncode = process.wait()
         log_file.close()
