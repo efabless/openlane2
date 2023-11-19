@@ -94,8 +94,8 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
-    "timing__unannotated_nets__count": (0, max),
-    "timing__unannotated_nets_filtered__count": (0, max),
+    "timing__unannottated_nets__count": (0, max),
+    "timing__unannottated_nets_filtered__count": (0, max),
 }
 
 

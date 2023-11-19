@@ -87,10 +87,10 @@ def main(reader, corner, checks_report):
     print("Filtered nets:")
     pprint.pprint(connected_nets)
     utl.metric_integer(
-        f"timing__unannotated_nets__count__corner:{corner}", len(reported_nets)
+        f"timing__unannottated_nets__count__corner:{corner}", len(reported_nets)
     )
     utl.metric_integer(
-        f"timing__unannotated_nets_filtered__count__corner:{corner}",
+        f"timing__unannottated_nets_filtered__count__corner:{corner}",
         len(connected_nets),
     )
     print("done")
