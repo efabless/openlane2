@@ -77,6 +77,13 @@ _common_config_vars = [
         default=False,  # For compatibility with OL1
     ),
     Variable(
+        "RUN_ANTENNA_REPAIR",
+        bool,
+        "Enables the OpenROAD.RepairAntennas step.",
+        default=True,
+        deprecated_names=["GRT_REPAIR_ANTENNAS"],
+    ),
+    Variable(
         "RUN_DRT",
         bool,
         "Enables the OpenROAD.DetailedRouting step.",
@@ -212,6 +219,7 @@ _common_gating_config_vars = {
     "OpenROAD.RCX": ["RUN_SPEF_EXTRACTION"],
     "OpenROAD.TapEndcapInsertion": ["RUN_TAP_ENDCAP_INSERTION"],
     "Odb.HeuristicDiodeInsertion": ["RUN_HEURISTIC_DIODE_INSERTION"],
+    "OpenROAD.RepairAntennas": ["RUN_ANTENNA_REPAIR"],
     "OpenROAD.DetailedRouting": ["RUN_DRT"],
     "OpenROAD.FillInsertion": ["RUN_FILL_INSERTION"],
     "OpenROAD.STAPostPNR": ["RUN_MCSTA"],
@@ -284,8 +292,6 @@ class Classic(SequentialFlow):
         Odb.RemovePDNObstructions,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
-        Odb.DiodesOnPorts,
-        Odb.HeuristicDiodeInsertion,
         OpenROAD.DetailedPlacement,
         OpenROAD.CTS,
         OpenROAD.STAMidPNR,
@@ -293,9 +299,13 @@ class Classic(SequentialFlow):
         OpenROAD.STAMidPNR,
         OpenROAD.GlobalRouting,
         OpenROAD.RepairDesignPostGRT,
+        Odb.DiodesOnPorts,
+        Odb.HeuristicDiodeInsertion,
+        OpenROAD.RepairAntennas,
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.STAMidPNR,
         OpenROAD.DetailedRouting,
+        OpenROAD.CheckAntennas,
         Checker.TrDRC,
         Odb.ReportDisconnectedPins,
         Checker.DisconnectedPins,
@@ -373,6 +383,23 @@ Classic.gating_config_vars.update(
 )
 
 
+def _vhdlclassic_substitute_verilog_steps(
+    steps_in: List[Type[Step]],
+) -> List[Type[Step]]:
+    result: List[Type[Step]] = [Yosys.VHDLSynthesis]
+    for step in steps_in:
+        # Ignore Verilog-dependent header steps and such
+        if (
+            step.id.startswith("Yosys.")
+            or step.id.startswith("Checker.Lint")
+            or step.id.startswith("Verilator.")
+            or step.id == "Odb.SetPowerConnections"
+        ):
+            continue
+        result.append(step)
+    return result
+
+
 @Flow.factory.register()
 class VHDLClassic(SequentialFlow):
     """
@@ -380,58 +407,7 @@ class VHDLClassic(SequentialFlow):
     input instead of Verilog.
     """
 
-    Steps: List[Type[Step]] = [
-        Yosys.VHDLSynthesis,
-        Checker.YosysUnmappedCells,
-        Checker.YosysSynthChecks,
-        OpenROAD.CheckSDCFiles,
-        OpenROAD.STAPrePNR,
-        OpenROAD.Floorplan,
-        Odb.ManualMacroPlacement,
-        OpenROAD.TapEndcapInsertion,
-        OpenROAD.GlobalPlacementSkipIO,
-        OpenROAD.IOPlacement,
-        Odb.ApplyDEFTemplate,
-        Odb.CustomIOPlacement,
-        OpenROAD.GlobalPlacement,
-        Odb.AddPDNObstructions,
-        OpenROAD.GeneratePDN,
-        Odb.RemovePDNObstructions,
-        OpenROAD.STAMidPNR,
-        OpenROAD.RepairDesignPostGPL,
-        Odb.DiodesOnPorts,
-        Odb.HeuristicDiodeInsertion,
-        OpenROAD.DetailedPlacement,
-        OpenROAD.CTS,
-        OpenROAD.STAMidPNR,
-        OpenROAD.ResizerTimingPostCTS,
-        OpenROAD.STAMidPNR,
-        OpenROAD.GlobalRouting,
-        OpenROAD.RepairDesignPostGRT,
-        OpenROAD.ResizerTimingPostGRT,
-        OpenROAD.STAMidPNR,
-        OpenROAD.DetailedRouting,
-        Checker.TrDRC,
-        Odb.ReportDisconnectedPins,
-        Checker.DisconnectedPins,
-        Odb.ReportWireLength,
-        Checker.WireLength,
-        OpenROAD.FillInsertion,
-        OpenROAD.RCX,
-        OpenROAD.STAPostPNR,
-        OpenROAD.IRDropReport,
-        Magic.StreamOut,
-        KLayout.StreamOut,
-        Magic.WriteLEF,
-        KLayout.XOR,
-        Checker.XOR,
-        Magic.DRC,
-        Checker.MagicDRC,
-        Magic.SpiceExtraction,
-        Checker.IllegalOverlap,
-        Netgen.LVS,
-        Checker.LVS,
-    ]
+    Steps: List[Type[Step]] = _vhdlclassic_substitute_verilog_steps(Classic.Steps)
 
     config_vars = _common_config_vars.copy()
     gating_config_vars = _common_gating_config_vars.copy()

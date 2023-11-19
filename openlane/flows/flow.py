@@ -207,7 +207,7 @@ class FlowProgressBar(object):
             used to create a step directory.
         """
         max_stage_digits = len(str(self.__max_stage))
-        return f"%0{max_stage_digits}d-" % self.__ordinal
+        return f"{str(self.__ordinal).zfill(max_stage_digits)}-"
 
 
 class Flow(ABC):

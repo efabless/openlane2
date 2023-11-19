@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2020-2022 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,13 @@ set_propagated_clock [all_clocks]
 
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
-# Check Antennas (Pre-Repair)
+set diode_split [split $::env(DIODE_CELL) "/"]
+repair_antennas "[lindex $diode_split 0]" -iterations $::env(GRT_ANTENNA_ITERS) -ratio_margin $::env(GRT_ANTENNA_MARGIN)
+
+source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+
+# Check Antennas (Post-Repair)
 puts "%OL_CREATE_REPORT antenna.rpt"
 check_antennas -verbose
 puts "%OL_END_REPORT"
