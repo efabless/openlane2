@@ -74,9 +74,10 @@ from ..logging import (
     warn,
     err,
     get_log_level,
+    log_subprocess,
     LogLevels,
 )
-from ..logging import log_subprocess
+from ..common.debug import _SAVE_ENV
 
 from ..__version__ import __version__
 
@@ -1023,7 +1024,7 @@ class Step(ABC):
                     raise StepException(
                         f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                     )
-        if get_log_level() == LogLevels.DEBUG:
+        if  _SAVE_ENV:
             with open(os.path.join(self.step_dir, "env.json"), "w") as f:
                 f.write(
                     json.dumps(
@@ -1090,9 +1091,6 @@ class Step(ABC):
                     err(escape(log))
                 err(f"Log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
-
-        with open(os.path.join(self.step_dir, "cmd.log"), "w") as f:
-            f.write(" ".join([str(item) for item in cmd]))
 
         return generated_metrics
 

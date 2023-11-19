@@ -37,7 +37,7 @@ from openlane.state.state import InvalidState
 
 from .flow import Flow
 from ..common import set_tpe, get_opdks_rev, set_debug_mode
-from ..logging import set_log_level, err, LogLevelsDict, LogLevels
+from ..logging import set_log_level, err, LogLevelsDict
 from ..state import State
 
 
@@ -274,7 +274,6 @@ def cloup_flow_opts(
                         "_debug",
                         is_flag=True,
                         is_eager=True,
-                        expose_value=True,
                         default=False,
                         callback=_debug_cb,
                     ),
