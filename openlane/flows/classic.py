@@ -281,6 +281,7 @@ class Classic(SequentialFlow):
         OpenROAD.Floorplan,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
+        OpenROAD.CutRows,
         OpenROAD.GlobalPlacementSkipIO,
         OpenROAD.IOPlacement,
         Odb.ApplyDEFTemplate,

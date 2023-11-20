@@ -1328,6 +1328,38 @@ class IRDropReport(OpenROADStep):
         return views_updates, metrics_updates
 
 
+@Step.factory.register()
+class CutRows(OpenROADStep):
+    id = "OpenROAD.CutRows"
+    name = "CutRows"
+
+    inputs = [DesignFormat.ODB]
+    outputs = [
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_TAP_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros during tap insertion.",
+            default=10,
+            units="µm",
+        ),
+        Variable(
+            "FP_TAP_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros during tap insertion.",
+            default=10,
+            units="µm",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cutrows.tcl")
+
+
 # Resizer Steps
 
 
