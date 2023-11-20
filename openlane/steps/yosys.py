@@ -260,6 +260,18 @@ class SynthesisCommon(YosysStep):
             deprecated_names=["SYNTH_BUFFERING"],
         ),
         Variable(
+            "SYNTH_ABC_LEGACY_REFACTOR",
+            bool,
+            "Replaces the ABC command `drf -l` with `refactor` which matches older versions of OpenLane but is more unstable.",
+            default=False,
+        ),
+        Variable(
+            "SYNTH_ABC_LEGACY_REWRITE",
+            bool,
+            "Replaces the ABC command `drw -l` with `rewrite` which matches older versions of OpenLane but is more unstable.",
+            default=False,
+        ),
+        Variable(
             "SYNTH_DIRECT_WIRE_BUFFERING",
             bool,
             "Enables inserting buffer cells for directly connected wires.",
