@@ -44,16 +44,16 @@ class DesignFormat(Enum):
         "pnl.v",
         "Powered Verilog Netlist",
     )
-    POWERED_NETLIST_NO_FILL: DesignFormatObject = DesignFormatObject(
-        "pnl-nofill",
-        "pnl.nofill.v",
-        "Powered Verilog Netlist Without Fill Cells",
+    POWERED_NETLIST_SIMULATION: DesignFormatObject = DesignFormatObject(
+        "pnl-simulation",
+        "pnl-sim.v",
+        "Powered Verilog Netlist For Simulation (Without Fill Cells)",
         folder_override="pnl",
     )
-    POWERED_NETLIST_NO_FILL_DIODE: DesignFormatObject = DesignFormatObject(
-        "pnl-nofilldiode",
-        "pnl.nofilldiode.v",
-        "Powered Verilog Netlist Without Fill Cells and Without Diodes",
+    POWERED_NETLIST_NO_PHYSICAL_CELLS: DesignFormatObject = DesignFormatObject(
+        "pnl-npc",
+        "pnl-npc.v",
+        "Powered Verilog Netlist Without Physical Cells (Fill Cells and Diode Cells)",
         folder_override="pnl",
     )
 

@@ -1346,8 +1346,8 @@ class WriteViews(OpenROADStep):
     id = "OpenROAD.WriteViews"
     name = "OpenROAD Write Views"
     outputs = OpenROADStep.outputs + [
-        DesignFormat.POWERED_NETLIST_NO_FILL,
-        DesignFormat.POWERED_NETLIST_NO_FILL_DIODE,
+        DesignFormat.POWERED_NETLIST_SIMULATION,
+        DesignFormat.POWERED_NETLIST_NO_PHYSICAL_CELLS,
         DesignFormat.OPENROAD_LEF,
     ]
 
