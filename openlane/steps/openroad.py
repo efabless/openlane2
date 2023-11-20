@@ -738,18 +738,20 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
@@ -1330,6 +1332,10 @@ class IRDropReport(OpenROADStep):
 
 @Step.factory.register()
 class CutRows(OpenROADStep):
+    """
+    Cut floorplan rows with respect to placed macros.
+    """
+
     id = "OpenROAD.CutRows"
     name = "CutRows"
 
@@ -1341,18 +1347,20 @@ class CutRows(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
