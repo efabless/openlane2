@@ -417,7 +417,6 @@ def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk
 )
 @pass_context
 def create_test(ctx, step_dir, output):
-
     config = os.path.join(step_dir, "config.json")
     state_in = os.path.join(step_dir, "state_in.json")
     if output is None:
@@ -426,6 +425,8 @@ def create_test(ctx, step_dir, output):
     step = load_step_from_inputs(ctx, None, config, state_in)
     step.create_reproducible(output, include_pdk=False, _flatten=True)
     os.remove(os.path.join(output, "run_ol.sh"))
+    if os.path.exists(os.path.join(output, "base.sdc")):
+        os.remove(os.path.join(output, "base.sdc"))
 
 
 @group(formatter_settings=formatter_settings)

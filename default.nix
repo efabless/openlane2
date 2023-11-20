@@ -22,8 +22,10 @@
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
+  opensta ? import ./nix/opensta.nix { inherit pkgs; },
   openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
     inherit pkgs;
+    inherit opensta;
   },
   surelog ? import ./nix/surelog.nix { inherit pkgs; },
   verilator ? import ./nix/verilator.nix { inherit pkgs; },
@@ -57,6 +59,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
       lighter
       synlig-sv
     ] ++ (if builtins.currentSystem == "x86_64-linux" then [ys-ghdl] else []) ))
+    opensta
     openroad
     klayout
     netgen

@@ -13,6 +13,7 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix {},
+  opensta ? import ./opensta.nix {},
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
@@ -20,14 +21,13 @@ with pkgs; let
   abc = import ./openroad-abc.nix { inherit pkgs; };
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "0a584d123190322b0725d5440c2c486d91d3afd8";
+  rev = "6f9b2bb8b808b1bb5831d4525d868212ae50517a";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-VA/AV7eCdjA6NWVahjZFKs3zP512+XEIMhwVJOwT4lY=";
-    fetchSubmodules = true;
+    sha256 = "sha256-lLToR+c2oOmgfuw7RX1W/QxwBWhoZWUmdzix3CrxWmA=";
   };
 
   cmakeFlags = [
@@ -35,6 +35,8 @@ in clangStdenv.mkDerivation rec {
     "-DTCL_HEADER=${tcl}/include/tcl.h"
     "-DUSE_SYSTEM_ABC:BOOL=ON"
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
+    "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
+    "-DOPENSTA_HOME=${opensta}"
     "-DABC_LIBRARY=${abc}/lib/libabc.a"
     "-DCMAKE_CXX_FLAGS=-I${abc}/include"
     "-DENABLE_TESTS:BOOL=OFF"
@@ -44,10 +46,11 @@ in clangStdenv.mkDerivation rec {
   preConfigure = ''
     sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake
     patchShebangs ./etc/find_messages.py
-    
+
     sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
     sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
+    sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
   '';
 
   buildInputs = [
@@ -62,9 +65,10 @@ in clangStdenv.mkDerivation rec {
     libffi
     libsForQt5.qtbase
     llvmPackages.openmp
-    
+
     lemon-graph
     or-tools
+    opensta
     glpk
     zlib
     clp

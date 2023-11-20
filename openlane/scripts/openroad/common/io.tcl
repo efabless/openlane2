@@ -88,7 +88,7 @@ proc read_timing_info {args} {
     set macro_nls [list]
     set corner_models $::env(CURRENT_CORNER_TIMING_VIEWS)
     foreach model $corner_models {
-        if { [string match *.spef $model]} {
+        if { [string match *.spef $model] || [string match *.spef.gz $model] } {
             lappend macro_spefs $corner_name $model
         } elseif { [string match *.v $model] } {
             lappend macro_nls $model
