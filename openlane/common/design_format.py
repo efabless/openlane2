@@ -44,10 +44,10 @@ class DesignFormat(Enum):
         "pnl.v",
         "Powered Verilog Netlist",
     )
-    POWERED_NETLIST_SIMULATION: DesignFormatObject = DesignFormatObject(
-        "pnl-simulation",
-        "pnl-sim.v",
-        "Powered Verilog Netlist For Simulation (Without Fill Cells)",
+    POWERED_NETLIST_SDF_FRIENDLY: DesignFormatObject = DesignFormatObject(
+        "pnl-sdf-friendly",
+        "pnl-sdf.v",
+        "Powered Verilog Netlist For SDF Simulation (Without Fill Cells)",
         folder_override="pnl",
     )
     POWERED_NETLIST_NO_PHYSICAL_CELLS: DesignFormatObject = DesignFormatObject(

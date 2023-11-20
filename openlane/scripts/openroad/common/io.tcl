@@ -255,13 +255,13 @@ proc write_views {args} {
         write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST_SIMULATION)] } {
+    if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
         set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(FP_WELLTAP_CELL)] [join $::env(FP_ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SIMULATION)'…"
+        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \
             -remove_cells "$exclude_cells"\
-            $::env(SAVE_POWERED_NETLIST_SIMULATION)
+            $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
     }
 
     if { [info exists ::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)] } {
