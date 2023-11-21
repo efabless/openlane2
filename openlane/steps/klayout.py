@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import os
 import sys
 import shutil
@@ -352,7 +353,63 @@ class DRC(KLayoutStep):
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        raise NotImplementedError()
+        drc_script_path = os.path.join(
+            self.config["PDK_ROOT"],
+            self.config["PDK"],
+            "libs.tech/klayout/drc/sky130A_mr.drc",
+        )
+        kwargs, env = self.extract_env(kwargs)
+        xml_report = os.path.join(self.step_dir, "violations.xml")
+        json_report = os.path.join(self.step_dir, "violations.json")
+        metrics_updates: MetricsUpdate = {}
+
+        self.run_subprocess(
+            [
+                "klayout",
+                "-b",
+                "-zz",
+                "-rm",
+                drc_script_path,
+                "-rd",
+                f"input={str(state_in[DesignFormat.GDS])}",
+                "-rd",
+                f"topcell={str(self.config['DESIGN_NAME'])}",
+                "-rd",
+                f"report={xml_report}",
+                "-rd",
+                "feol=true",
+                "-rd",
+                "beol=true",
+                "-rd",
+                "floating_metal=true",
+                "-rd",
+                "offgrid=true",
+                "-rd",
+                "seal=true",
+                "-rd",
+                f"threads={str(os.cpu_count())}",
+            ],
+            env=env,
+        )
+        self.run_subprocess(
+            [
+                "python3",
+                os.path.join(
+                    get_script_dir(),
+                    "klayout",
+                    "xml_drc_report_to_json.py",
+                ),
+                f"--xml-file={xml_report}",
+                f"--json-file={json_report}",
+            ],
+            env=env,
+            log_to=os.path.join(self.step_dir, "xml_drc_report_to_json.log"),
+        )
+
+        with open(json_report, "r") as f:
+            metrics_updates["klayout__drc_error__count"] = sum(json.load(f).values())
+
+        return {}, metrics_updates
 
 
 @Step.factory.register()

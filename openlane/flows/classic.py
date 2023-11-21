@@ -321,6 +321,7 @@ class Classic(SequentialFlow):
         KLayout.XOR,
         Checker.XOR,
         Magic.DRC,
+        KLayout.DRC,
         Checker.MagicDRC,
         Magic.SpiceExtraction,
         Checker.IllegalOverlap,

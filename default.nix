@@ -96,6 +96,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   # Make PATH/PYTHONPATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
-    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"  
+    "--prefix PYTHONPATH : ${computed_PYTHONPATH}:${klayout}/lib/pymod"
   ];
 }
