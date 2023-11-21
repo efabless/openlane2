@@ -960,7 +960,7 @@ class Config(GenericImmutableDict[str, Any]):
             ):
                 if on_unknown_key == "error":
                     if key in Variable.known_variable_names:
-                        warnings.append(
+                        errors.append(
                             f"Key '{key}' provided is unused by the current flow."
                         )
                     else:
