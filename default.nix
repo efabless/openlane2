@@ -19,6 +19,7 @@
   klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
     inherit pkgs;
   },
+  klayout-python ? import ./nix/klayout-python.nix { inherit pkgs; inherit klayout; },
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
@@ -72,6 +73,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
 
   propagatedBuildInputs = [
     # Python
+    klayout-python
     click
     cloup
     pyyaml
@@ -96,6 +98,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   # Make PATH/PYTHONPATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
-    "--prefix PYTHONPATH : ${computed_PYTHONPATH}:${klayout}/lib/pymod"
+    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"
   ];
 }
