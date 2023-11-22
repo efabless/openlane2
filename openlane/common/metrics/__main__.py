@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import cloup
 import json
-import rich
+from decimal import Decimal
 
-from .util import MetricDiffRow
+import rich
+import cloup
+
+from .util import MetricDiff
 
 
 @cloup.command()
@@ -23,14 +25,14 @@ from .util import MetricDiffRow
 @cloup.argument("metric_files", nargs=2)
 def compare(metric_files, rich_table):
     a, b = metric_files
-    a = json.load(open(a, encoding="utf8"))
-    b = json.load(open(b, encoding="utf8"))
+    a = json.load(open(a, encoding="utf8"), parse_float=Decimal)
+    b = json.load(open(b, encoding="utf8"), parse_float=Decimal)
 
-    rows = MetricDiffRow.from_metrics(a, b)
+    diff = MetricDiff.from_metrics(a, b)
     if rich_table:
-        rich.print(MetricDiffRow.render_rich(rows))
+        rich.print(diff.render_rich())
     else:
-        rich.print(MetricDiffRow.render_md(rows))
+        rich.print(diff.render_md())
 
 
 @cloup.group()

@@ -11,5 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .util import parse_metric_modifiers, aggregate_metrics, MetricDiffRow
-from .library import Metric
+from . import library
+from .metric import MetricAggregator, MetricComparisonResult, Metric
+from .util import parse_metric_modifiers, aggregate_metrics, MetricDiff

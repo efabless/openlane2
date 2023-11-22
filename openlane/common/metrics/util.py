@@ -13,25 +13,21 @@
 # limitations under the License.
 
 import re
-from decimal import Decimal
-from dataclasses import dataclass
 import textwrap
 from typing import (
+    List,
     Mapping,
     Tuple,
     Dict,
     Any,
     Iterable,
     Optional,
-    Sequence,
     Union,
 )
 
 import rich.table
 
-from .library import Metric, AggregationInfo
-
-from ..types import is_number
+from .metric import Metric, MetricAggregator, MetricComparisonResult
 
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
 
@@ -47,19 +43,17 @@ def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
     """
     mn_mut = metric_name.split("__")
     modifiers = {}
-    i = len(mn_mut) - 1
-    if ":" in mn_mut[i]:
-        modifier_list = mn_mut[i].split(":")
-        if len(modifier_list) % 2 == 0:
-            for i in range(0, len(modifier_list) - 1, 2):
-                modifiers[modifier_list[i]] = modifier_list[i + 1]
-            mn_mut.pop()
+    while ":" in mn_mut[-1]:
+        key, value = mn_mut.pop().split(":")
+        modifiers[key] = value
     return "__".join(mn_mut), modifiers
 
 
 def aggregate_metrics(
     input: Mapping[str, Any],
-    aggregator_by_metric: Optional[Mapping[str, Union[AggregationInfo, Metric]]] = None,
+    aggregator_by_metric: Optional[
+        Mapping[str, Union[MetricAggregator, Metric]]
+    ] = None,
 ) -> Dict[str, Any]:
     """
     Takes a set of metrics generated according to the `Metrics4ML standard <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_.
@@ -103,81 +97,63 @@ def aggregate_metrics(
     return final_values
 
 
-@dataclass
-class MetricDiffRow:
-    metric_name: str
-    before: Any
-    after: Any
-    delta: Optional[Decimal]
-    delta_pct: Optional[Decimal]
-    delta_good: Optional[bool]
+class MetricDiff(object):
+    differences: List[MetricComparisonResult]
 
-    def format_values(self) -> Tuple[str, str, str]:
-        before_str = str(self.before)
-        if is_number(self.before):
-            before_str = str(round(self.before, 6))
+    def __init__(self, differences: Iterable[MetricComparisonResult]) -> None:
+        self.differences = list(differences)
 
-        after_str = str(self.after)
-        if is_number(self.after):
-            after_str = str(round(self.after, 6))
-
-        delta_str = "N/A"
-        if self.delta is not None:
-            delta_str = str(round(self.delta, 6))
-            if self.delta_pct is not None:
-                delta_pct_str = str(round(self.delta_pct, 2))
-                if self.delta_pct >= 0:
-                    delta_pct_str = f"+{delta_pct_str}"
-                delta_str = f"{delta_str} ({delta_pct_str}%)"
-
-        return before_str, after_str, delta_str
-
-    @classmethod
-    def render_rich(Self, rows: Iterable["MetricDiffRow"]) -> rich.table.Table:
+    def render_rich(self) -> rich.table.Table:
         table = rich.table.Table()
         table.add_column("Metric")
         table.add_column("Before")
         table.add_column("After")
         table.add_column("Delta")
 
-        for row in rows:
-            before_color = "blue"
-            color = "blue"
-            if row.delta_good is not None:
-                if row.delta_good:
-                    before_color = "red"
-                    color = "green"
+        for row in self.differences:
+            before_format = "[blue]"
+            after_format = "[blue]"
+            emoji = ""
+            if row.better is not None:
+                if row.better:
+                    before_format = "[red]"
+                    after_format = "[green]"
                 else:
-                    before_color = "green"
-                    color = "red"
+                    before_format = "[green]"
+                    after_format = "[red]"
+            
+            if row.critical:
+                emoji = "‼️"
+                after_format = f"[bold]{after_format}"
 
             before, after, delta = row.format_values()
 
             table.add_row(
                 row.metric_name,
-                f"[{before_color}]{before}",
-                f"[{color}]{after}",
-                f"[{color}]{delta}",
+                f"{before_format}{before}",
+                f"{after_format}{after}",
+                f"{after_format}{delta} {emoji}",
             )
 
         return table
 
-    @classmethod
-    def render_md(Self, rows: Iterable["MetricDiffRow"]) -> str:
+    def render_md(self) -> str:
         table = textwrap.dedent(
             """
             | Metric | Before | After | Delta |
             | - | - | - | - |
             """
         )
-        for row in rows:
+        for row in self.differences:
             before, after, delta = row.format_values()
             emoji = ""
-            if row.delta_good is not None:
-                if row.delta_good:
+            if row.better is not None:
+                if row.better:
                     emoji = "⭕"
                 else:
                     emoji = "❗"
+            if row.critical:
+                emoji = "‼️"
             table += f"| {row.metric_name} | {before} | {after} | {delta} {emoji} |\n"
         return table
 
@@ -187,47 +163,19 @@ class MetricDiffRow:
         lhs: dict,
         rhs: dict,
         ignore_modified: bool = True,
-    ) -> Sequence["MetricDiffRow"]:
-        rows = []
-        for metric in sorted(rhs.keys()):
-            if metric not in lhs:
-                continue
-            metric, modifiers = parse_metric_modifiers(metric)
-            if ignore_modified and len(modifiers) != 0:
-                continue
+    ) -> "MetricDiff":
+        def generator(lhs, rhs):
+            for metric in sorted(rhs.keys()):
+                if metric not in lhs:
+                    continue
+                base_metric, modifiers = parse_metric_modifiers(metric)
+                if ignore_modified and len(modifiers) != 0:
+                    continue
+                lhs_value, rhs_value = lhs[metric], rhs[metric]
+                if type(lhs_value) != type(rhs_value):
+                    lhs_value = type(rhs_value)(lhs_value)
 
-            lhs_value, rhs_value = lhs[metric], rhs[metric]
-            if type(lhs_value) != type(rhs_value):
-                lhs_value = type(rhs_value)(lhs_value)
+                if metric_object := Metric.by_name.get(base_metric):
+                    yield metric_object.compare(lhs_value, rhs_value, modifiers=modifiers)
 
-            delta = None
-            delta_pct = None
-            delta_good = None
-            if is_number(rhs_value):
-                rhs_value = Decimal(rhs_value)
-                lhs_value = Decimal(lhs_value)
-                delta = rhs_value - lhs_value
-                if lhs_value == 0:
-                    if rhs_value == 0:
-                        delta_pct = Decimal(0)
-                else:
-                    delta_pct = ((rhs_value - lhs_value) / lhs_value) * 100
-                if metric_object := Metric.by_name.get(metric):
-                    higher_is_better = metric_object.higher_is_better
-                    if higher_is_better is not None:
-                        if higher_is_better:
-                            delta_good = delta >= 0
-                        else:
-                            delta_good = delta <= 0
-
-            rows.append(
-                Self(
-                    metric,
-                    lhs_value,
-                    rhs_value,
-                    delta,
-                    delta_pct,
-                    delta_good,
-                )
-            )
-        return rows
+        return MetricDiff(generator(lhs, rhs))
