@@ -21,6 +21,8 @@
     - io_placer
     - test_sram_macro
     - manual_macro_placement_test
+    - aes_user_project_wrapper
+    - user_proj_timer
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
