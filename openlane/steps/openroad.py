@@ -1394,6 +1394,24 @@ class IRDropReport(OpenROADStep):
         return views_updates, metrics_updates
 
 
+@Step.factory.register()
+class WriteViews(OpenROADStep):
+    """
+    Write various layout views of an ODB design
+    """
+
+    id = "OpenROAD.WriteViews"
+    name = "OpenROAD Write Views"
+    outputs = OpenROADStep.outputs + [
+        DesignFormat.POWERED_NETLIST_SDF_FRIENDLY,
+        DesignFormat.POWERED_NETLIST_NO_PHYSICAL_CELLS,
+        DesignFormat.OPENROAD_LEF,
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
+
+
 # Resizer Steps
 
 
