@@ -41,8 +41,8 @@ click
 Table
 
 write_fn: Dict[str, Callable] = {
-    "def": lambda reader, file: odb.write_def(reader.block, file),
-    "odb": lambda reader, file: odb.write_db(reader.db, file),
+    "def": lambda reader, file: file and odb.write_def(reader.block, file),
+    "odb": lambda reader, file: file and odb.write_db(reader.db, file),
 }
 
 

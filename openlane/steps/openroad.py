@@ -94,6 +94,8 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
+    "timing__unannotated_nets__count": (0, max),
+    "timing__unannotated_nets_filtered__count": (0, max),
 }
 
 
@@ -414,8 +416,60 @@ class STAPostPNR(STAPrePNR):
         ),
     ]
 
-    inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
+    inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
+
+    def filter_unannotated_report(
+        self,
+        corner: str,
+        corner_dir: str,
+        env: Dict,
+        checks_report: str,
+        odb_design: str,
+    ):
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lefs = ["--input-lef", tech_lefs[0]]
+        for lef in self.config["CELL_LEFS"]:
+            lefs.append("--input-lef")
+            lefs.append(lef)
+        if extra_lefs := self.config["EXTRA_LEFS"]:
+            for lef in extra_lefs:
+                lefs.append("--input-lef")
+                lefs.append(lef)
+        metrics_path = os.path.join(corner_dir, "filter_unannotated_metrics.json")
+        filter_unannotated_cmd = [
+            "openroad",
+            "-exit",
+            "-no_splash",
+            "-metrics",
+            metrics_path,
+            "-python",
+            os.path.join(get_script_dir(), "odbpy", "filter_unannotated.py"),
+            "--corner",
+            corner,
+            "--checks-report",
+            checks_report,
+            odb_design,
+        ] + lefs
+
+        filter_unannotated_metrics = self.run_subprocess(
+            filter_unannotated_cmd,
+            log_to=os.path.join(corner_dir, "filter_unannotated.log"),
+            env=env,
+            silent=True,
+            report_dir=corner_dir,
+        )
+
+        if os.path.exists(metrics_path):
+            or_metrics_out = json.loads(open(metrics_path).read())
+            filter_unannotated_metrics.update(or_metrics_out)
+
+        return filter_unannotated_metrics
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -480,12 +534,20 @@ class STAPostPNR(STAPrePNR):
                     silent=True,
                     report_dir=corner_dir,
                 )
+
+                filter_unannotated_metrics = self.filter_unannotated_report(
+                    corner=corner,
+                    checks_report=os.path.join(corner_dir, "checks.rpt"),
+                    corner_dir=corner_dir,
+                    env=env,
+                    odb_design=str(state_in[DesignFormat.ODB]),
+                )
                 info(f"Finished STA for the {corner} timing corner.")
             except subprocess.CalledProcessError as e:
                 err(f"Failed STA for the {corner} timing corner:")
                 raise e
 
-            return generated_metrics
+            return {**generated_metrics, **filter_unannotated_metrics}
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
         for corner in self.config["STA_CORNERS"]:
@@ -562,10 +624,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        libs = sorted(glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True))
-        for lib in libs:
-            _, corner = os.path.basename(lib)[:-4].split("__")
-            lib_dict[corner] = Path(lib)
+        for corner in self.config["STA_CORNERS"]:
+            lib_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.lib"
+                )
+            )
 
         views_updates[DesignFormat.LIB] = lib_dict
 
@@ -575,10 +639,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = sorted(glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True))
-        for sdf in sdfs:
-            _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(sdf)
+        for corner in self.config["STA_CORNERS"]:
+            sdf_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.sdf"
+                )
+            )
 
         views_updates[DesignFormat.SDF] = sdf_dict
 
