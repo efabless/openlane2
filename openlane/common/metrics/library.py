@@ -140,6 +140,16 @@ Metric(
     critical=True,
 )
 Metric(
+    "timing__unannotated_nets__count",
+    aggregator=max_aggregator,
+    higher_is_better=False,
+)
+Metric(
+    "timing__unannotated_nets_filtered__count",
+    aggregator=max_aggregator,
+    higher_is_better=False,
+)
+Metric(
     "timing__setup__tns",
     aggregator=sum_aggregator,
     higher_is_better=True,
