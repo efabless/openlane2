@@ -225,10 +225,10 @@ jobs:
         run: |
           nix-shell --run "\
             python3 -m openlane\
-            --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
-            --pdk ${{ matrix.design.pdk }}\
-            --scl ${{ matrix.design.scl }}\
-            ${{ matrix.design.config }}\
+              --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
+              --pdk ${{ matrix.design.pdk }}\
+              --scl ${{ matrix.design.scl }}\
+              ${{ matrix.design.config }}\
           "
       - name: Upload Run Folder
         if: ${{ always() }}
@@ -239,7 +239,11 @@ jobs:
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
-          python3 ./.github/scripts/get_latest_metrics.py ${{ matrix.design.run_folder }} -o ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}.metrics.json
+          nix-shell --run "\
+            python3 -m openlane.state latest\
+              ${{ matrix.design.run_folder }}\
+              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json\
+          "
       - name: Upload Metrics
         uses: actions/upload-artifact@v3
         with:

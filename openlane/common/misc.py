@@ -13,22 +13,27 @@
 # limitations under the License.
 import os
 import re
+import glob
 import typing
 import fnmatch
 import pathlib
 import unicodedata
+from math import inf
 from enum import Enum
 from typing import (
     Any,
     Generator,
     Iterable,
+    Optional,
     Sequence,
     SupportsFloat,
     TypeVar,
+    Union,
 )
 
 from deprecated.sphinx import deprecated
 
+from .types import Path
 
 T = TypeVar("T")
 
@@ -280,3 +285,21 @@ class Filter(object):
                     break
             if allowed:
                 yield input
+
+
+def get_latest_file(in_path: Union[str, os.PathLike], filename: str) -> Optional[Path]:
+    """
+    :param in_path: A directory to search in
+    :param filename: The final filename
+    :returns: The latest file matching the parameters, by modification time
+    """
+    glob_results = glob.glob(os.path.join(in_path, "**", filename), recursive=True)
+    latest_time = -inf
+    latest_json = None
+    for result in glob_results:
+        time = os.path.getmtime(result)
+        if time > latest_time:
+            latest_time = time
+            latest_json = Path(result)
+
+    return latest_json

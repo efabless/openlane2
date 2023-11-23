@@ -43,6 +43,7 @@ from .misc import (
     format_size,
     format_elapsed_time,
     Filter,
+    get_latest_file,
 )
 from .types import (
     is_number,
@@ -51,7 +52,7 @@ from .types import (
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation
-
+from . import cli
 
 ## TPE
 

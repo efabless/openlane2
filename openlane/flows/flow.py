@@ -58,7 +58,15 @@ from ..logging import (
     register_additional_handler,
     deregister_additional_handler,
 )
-from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
+from ..common import (
+    get_tpe,
+    mkdirp,
+    protected,
+    final,
+    slugify,
+    Toolbox,
+    get_latest_file,
+)
 
 
 class FlowError(RuntimeError):
@@ -503,18 +511,7 @@ class Flow(ABC):
 
             # Extract Maximum State
             if with_initial_state is None:
-                latest_time = 0
-                latest_json: Optional[str] = None
-                state_out_jsons = sorted(
-                    glob.glob(os.path.join(self.run_dir, "*", "state_out.json"))
-                )
-                for state_out_json in state_out_jsons:
-                    time = os.path.getmtime(state_out_json)
-                    if time > latest_time:
-                        latest_time = time
-                        latest_json = state_out_json
-
-                if latest_json is not None:
+                if latest_json := get_latest_file(self.run_dir, "state_out.json"):
                     verbose(f"Using state at '{latest_json}'.")
 
                     initial_state = State.loads(

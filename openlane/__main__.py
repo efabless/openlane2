@@ -68,7 +68,6 @@ def run(
     _force_run_dir: Optional[str],
     _force_design_dir: Optional[str],
 ) -> int:
-
     config_file = config_files[0]
 
     # Enforce Mutual Exclusion

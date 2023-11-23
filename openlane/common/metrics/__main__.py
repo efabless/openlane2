@@ -19,6 +19,7 @@ import cloup
 
 from .util import MetricDiff
 from ..misc import Filter
+from ..cli import formatter_settings
 
 
 default_filter_set = [
@@ -33,6 +34,14 @@ default_filter_set = [
     "*errors*",
     "!*__iter:*",
 ]
+
+
+@cloup.group(
+    no_args_is_help=True,
+    formatter_settings=formatter_settings,
+)
+def cli():
+    pass
 
 
 @cloup.command()
@@ -56,11 +65,6 @@ def compare(metric_files, rich_table, filters):
         rich.print(diff.render_rich(sort_by=("corner", "")))
     else:
         rich.print(diff.render_md(sort_by=("corner", "")))
-
-
-@cloup.group()
-def cli():
-    pass
 
 
 cli.add_command(compare)
