@@ -15,7 +15,6 @@ import os
 import re
 import uuid
 import shutil
-import fnmatch
 import tempfile
 import subprocess
 from enum import IntEnum
@@ -43,6 +42,7 @@ from .types import Path
 from .metrics import aggregate_metrics
 from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string
+from ..common import Filter
 from ..logging import debug, warn, err
 
 
@@ -95,9 +95,8 @@ class Toolbox(object):
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         result: List[Path] = []
 
-        for key, value in views_by_corner.items():
-            if not fnmatch.fnmatch(timing_corner, key):
-                continue
+        for key in Filter(views_by_corner).get_matching_wildcards(timing_corner):
+            value = views_by_corner[key]
             if is_string(value):
                 result += [value]  # type: ignore
             else:

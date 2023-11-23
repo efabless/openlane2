@@ -175,7 +175,7 @@ class LVS(MetricChecker):
     name = "LVS Error Checker"
     long_name = "Layout vs. Schematic Error Checker"
 
-    metric_name = "design__lvs_errors__count"
+    metric_name = "design__lvs_error__count"
     metric_description = "LVS errors"
 
 

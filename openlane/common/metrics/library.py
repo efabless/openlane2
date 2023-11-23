@@ -112,11 +112,6 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__max_slew_violation__count",
-    aggregator=sum_aggregator,
-    higher_is_better=False,
-)
-Metric(
     "timing__hold__ws",
     aggregator=min_aggregator,
     higher_is_better=True,
@@ -161,6 +156,22 @@ Metric(
     higher_is_better=False,
 )
 
+# Constraint Violation
+Metric(
+    "design__max_slew_violation__count",
+    aggregator=sum_aggregator,
+    higher_is_better=False,
+)
+Metric(
+    "design__max_fanout_violation__count",
+    aggregator=sum_aggregator,
+    higher_is_better=False,
+)
+Metric(
+    "design__max_cap_violation__count",
+    aggregator=sum_aggregator,
+    higher_is_better=False,
+)
 
 # Placement and Routing
 Metric(
@@ -230,16 +241,6 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "design__max_fanout_violation__count",
-    aggregator=sum_aggregator,
-    higher_is_better=False,
-)
-Metric(
-    "design__max_cap_violation__count",
-    aggregator=sum_aggregator,
-    higher_is_better=False,
-)
-Metric(
     "design__instance_unmapped__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
@@ -293,13 +294,13 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__lvs_device_difference__count",
+    "design__lvs_error__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
 )
 Metric(
-    "design__lvs_errors__count",
+    "design__lvs_device_difference__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
@@ -311,19 +312,19 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__lvs_property_fails__count",
+    "design__lvs_property_fail__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
 )
 Metric(
-    "design__lvs_unmatched_devices__count",
+    "design__lvs_unmatched_device__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
 )
 Metric(
-    "design__lvs_unmatched_nets__count",
+    "design__lvs_unmatched_net__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,

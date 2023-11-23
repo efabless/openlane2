@@ -86,10 +86,10 @@ def get_metrics(stats: Dict) -> Dict:
     metrics = {}
     metrics["design__lvs_device_difference__count"] = device_differences
     metrics["design__lvs_net_differences__count"] = net_differences
-    metrics["design__lvs_property_fails__count"] = property_fails
-    metrics["design__lvs_errors__count"] = total_errors
-    metrics["design__lvs_unmatched_devices__count"] = device_fails
-    metrics["design__lvs_unmatched_nets__count"] = net_fails
+    metrics["design__lvs_property_fail__count"] = property_fails
+    metrics["design__lvs_error__count"] = total_errors
+    metrics["design__lvs_unmatched_device__count"] = device_fails
+    metrics["design__lvs_unmatched_net__count"] = net_fails
     metrics["design__lvs_unmatched_pins__count"] = pin_fails
 
     return metrics

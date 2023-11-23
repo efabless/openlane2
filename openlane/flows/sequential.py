@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-import fnmatch
 
 import os
 from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
+from ..common import Filter
 from ..state import State
 from ..logging import info, success, err, debug
 from ..steps import (
@@ -72,16 +72,11 @@ class SequentialFlow(Flow):
             step_id_set.add(step.id)
 
         for id, variable_names in Self.gating_config_vars.items():
-            if id not in step_id_set:
-                found = False
-                for step_id in step_id_set:
-                    if fnmatch.fnmatch(step_id, id):
-                        found = True
-                        break
-                if not found:
-                    raise TypeError(
-                        f"Gated Step '{id}' does not match any Step in Flow '{Self.__qualname__}'"
-                    )
+            matching_steps = list(Filter([id]).filter(step_id_set))
+            if id not in step_id_set and len(matching_steps) < 1:
+                raise TypeError(
+                    f"Gated Step '{id}' does not match any Step in Flow '{Self.__qualname__}'"
+                )
             for var_name in variable_names:
                 if var_name not in variables_by_name:
                     raise TypeError(
@@ -233,9 +228,8 @@ class SequentialFlow(Flow):
             if key in step_ids.values():
                 gating_cvars_expanded[key] = value
                 continue
-            for id in step_ids.values():
-                if fnmatch.fnmatch(id, key):
-                    gating_cvars_expanded[id] = value
+            for id in Filter([key]).filter(step_ids.values()):
+                gating_cvars_expanded[id] = value
 
         current_state = initial_state
         for cls in self.Steps:

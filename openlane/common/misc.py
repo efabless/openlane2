@@ -14,11 +14,13 @@
 import os
 import re
 import typing
+import fnmatch
 import pathlib
 import unicodedata
 from enum import Enum
 from typing import (
     Any,
+    Generator,
     Iterable,
     Sequence,
     TypeVar,
@@ -214,3 +216,39 @@ def format_elapsed_time(elapsed_seconds: float) -> str:
     milliseconds = int((leftover % 1) * 1000)
 
     return f"{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}"
+
+
+class Filter(object):
+    def __init__(self, filters: Iterable[str]):
+        self.allow = []
+        self.deny = []
+        for filter in filters:
+            if filter.startswith("!"):
+                self.deny.append(filter[1:])
+            else:
+                self.allow.append(filter)
+
+    def get_matching_wildcards(self, input: str) -> Generator[str, Any, None]:
+        for wildcard in self.allow:
+            if fnmatch.fnmatch(input, wildcard):
+                yield wildcard
+        for wildcard in self.deny:
+            if not fnmatch.fnmatch(input, wildcard):
+                yield wildcard
+
+    def filter(
+        self,
+        inputs: Iterable[str],
+    ) -> Generator[str, Any, None]:
+        for input in inputs:
+            allowed = False
+            for wildcard in self.allow:
+                if fnmatch.fnmatch(input, wildcard):
+                    allowed = True
+                    break
+            for wildcard in self.deny:
+                if fnmatch.fnmatch(input, wildcard):
+                    allowed = False
+                    break
+            if allowed:
+                yield input

@@ -42,6 +42,7 @@ from .misc import (
     zip_first,
     format_size,
     format_elapsed_time,
+    Filter,
 )
 from .types import (
     is_number,

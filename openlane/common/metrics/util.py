@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import re
 import textwrap
 from typing import (
@@ -28,6 +27,7 @@ from typing import (
 import rich.table
 
 from .metric import Metric, MetricAggregator, MetricComparisonResult
+from ..misc import Filter
 
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
 
@@ -97,20 +97,37 @@ def aggregate_metrics(
     return final_values
 
 
+def _key_from_metrics(fields: Iterable[str], metric: str) -> List[str]:
+    base, modifiers = parse_metric_modifiers(metric)
+    result = []
+    for field in fields:
+        if field == "":
+            result.append(base)
+        else:
+            result.append(modifiers.get(field, ""))
+    return result
+
+
 class MetricDiff(object):
     differences: List[MetricComparisonResult]
 
     def __init__(self, differences: Iterable[MetricComparisonResult]) -> None:
         self.differences = list(differences)
 
-    def render_rich(self) -> rich.table.Table:
+    def render_rich(self, sort_by: Optional[Iterable[str]] = None) -> rich.table.Table:
         table = rich.table.Table()
         table.add_column("Metric")
         table.add_column("Before")
         table.add_column("After")
         table.add_column("Delta")
 
-        for row in self.differences:
+        differences = self.differences
+        if fields := sort_by:
+            differences = sorted(
+                differences, key=lambda x: _key_from_metrics(fields, x.metric_name)
+            )
+
+        for row in differences:
             before_format = "[blue]"
             after_format = "[blue]"
             emoji = ""
@@ -121,7 +138,7 @@ class MetricDiff(object):
                 else:
                     before_format = "[green]"
                     after_format = "[red]"
-            
+
             if row.critical:
                 emoji = "‼️"
                 after_format = f"[bold]{after_format}"
@@ -137,14 +154,22 @@ class MetricDiff(object):
 
         return table
 
-    def render_md(self) -> str:
+    def render_md(self, sort_by: Optional[Iterable[str]] = None) -> str:
         table = textwrap.dedent(
             """
             | Metric | Before | After | Delta |
             | - | - | - | - |
             """
         )
-        for row in self.differences:
+
+        differences = self.differences
+        if fields := sort_by:
+            differences = sorted(
+                differences,
+                key=lambda x: _key_from_metrics(fields, x.metric_name),
+            )
+
+        for row in differences:
             before, after, delta = row.format_values()
             emoji = ""
             if row.better is not None:
@@ -162,20 +187,20 @@ class MetricDiff(object):
         Self,
         lhs: dict,
         rhs: dict,
-        ignore_modified: bool = True,
+        filter: Filter = Filter(["*"]),
     ) -> "MetricDiff":
         def generator(lhs, rhs):
-            for metric in sorted(rhs.keys()):
+            for metric in filter.filter(sorted(rhs.keys())):
                 if metric not in lhs:
                     continue
                 base_metric, modifiers = parse_metric_modifiers(metric)
-                if ignore_modified and len(modifiers) != 0:
-                    continue
                 lhs_value, rhs_value = lhs[metric], rhs[metric]
                 if type(lhs_value) != type(rhs_value):
                     lhs_value = type(rhs_value)(lhs_value)
 
                 if metric_object := Metric.by_name.get(base_metric):
-                    yield metric_object.compare(lhs_value, rhs_value, modifiers=modifiers)
+                    yield metric_object.compare(
+                        lhs_value, rhs_value, modifiers=modifiers
+                    )
 
         return MetricDiff(generator(lhs, rhs))

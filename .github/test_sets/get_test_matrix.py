@@ -41,7 +41,6 @@ TEST_SETS_FILE = os.path.join(__dir__, "test_sets.yml")
 )
 @click.argument("test_sets", nargs=-1)
 def main(scls, use_json, test_sets):
-
     data_str = open(TEST_SETS_FILE).read()
     data = yaml.safe_load(data_str)
     test_set_data = filter(lambda e: e["scl"] in scls and e["name"] in test_sets, data)
@@ -59,7 +58,7 @@ def main(scls, use_json, test_sets):
                 ol_dir, "test", "designs", design_name, config_filename
             )
             run_folder = os.path.join(
-                ol_dir, "test", "designs", design_name, "runs", "CI"
+                ol_dir, "test", "designs", design_name, "runs", f"{pdk}-{scl}"
             )
             designs.append(
                 {

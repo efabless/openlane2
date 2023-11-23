@@ -18,21 +18,44 @@ import rich
 import cloup
 
 from .util import MetricDiff
+from ..misc import Filter
+
+
+default_filter_set = [
+    "design__*__area",
+    "design__max_*",
+    "design__lvs_error__count",
+    "antenna__violating*",
+    "clock__*",
+    "ir__*",
+    "power__*",
+    "timing__*_vio__*",
+    "*errors*",
+    "!*__iter:*",
+]
 
 
 @cloup.command()
+@cloup.option("-f", "--filter", "filters", multiple=True, default=("DEFAULT",))
 @cloup.option("--rich-table/--markdown-table", default=True)
 @cloup.argument("metric_files", nargs=2)
-def compare(metric_files, rich_table):
+def compare(metric_files, rich_table, filters):
     a, b = metric_files
     a = json.load(open(a, encoding="utf8"), parse_float=Decimal)
     b = json.load(open(b, encoding="utf8"), parse_float=Decimal)
 
-    diff = MetricDiff.from_metrics(a, b)
+    final_filters = []
+    for filter in filters:
+        if filter == "DEFAULT":
+            final_filters += default_filter_set
+        else:
+            final_filters.append(filter)
+
+    diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
     if rich_table:
-        rich.print(diff.render_rich())
+        rich.print(diff.render_rich(sort_by=("corner", "")))
     else:
-        rich.print(diff.render_md())
+        rich.print(diff.render_md(sort_by=("corner", "")))
 
 
 @cloup.group()

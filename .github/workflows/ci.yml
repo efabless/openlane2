@@ -225,9 +225,9 @@ jobs:
         run: |
           nix-shell --run "\
             python3 -m openlane\
-            --run-tag CI\
+            --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
             --pdk ${{ matrix.design.pdk }}\
-            --scl ${{matrix.design.scl}}\
+            --scl ${{ matrix.design.scl }}\
             ${{ matrix.design.config }}\
           "
       - name: Upload Run Folder
@@ -235,6 +235,15 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
+          path: ${{ matrix.design.run_folder }}
+      - name: Fetch Metrics
+        if: ${{ always() }}
+        run: |
+          python3 ./.github/scripts/get_latest_metrics.py ${{ matrix.design.run_folder }} -o ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}.metrics.json
+      - name: Upload Metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics
           path: ${{ matrix.design.run_folder }}
   publish:
     runs-on: ubuntu-22.04

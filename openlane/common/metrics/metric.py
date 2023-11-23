@@ -98,7 +98,9 @@ class Metric(object):
     def modified_name(self, modifiers: Mapping[str, str]) -> str:
         return "__".join([self.name] + [f"{k}:{v}" for k, v in modifiers.items()])
 
-    def compare(self, lhs: Any, rhs: Any, modifiers: Optional[Mapping[str, str]] = None) -> MetricComparisonResult:
+    def compare(
+        self, lhs: Any, rhs: Any, modifiers: Optional[Mapping[str, str]] = None
+    ) -> MetricComparisonResult:
         is_better = None
         is_critical = self.critical and (lhs != rhs)
         delta = None
@@ -133,5 +135,11 @@ class Metric(object):
                 )
 
         return MetricComparisonResult(
-            self.modified_name(modifiers), lhs, rhs, delta, delta_pct, is_better, is_critical
+            self.modified_name(modifiers),
+            lhs,
+            rhs,
+            delta,
+            delta_pct,
+            is_better,
+            is_critical,
         )
