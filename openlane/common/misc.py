@@ -23,6 +23,7 @@ from typing import (
     Generator,
     Iterable,
     Sequence,
+    SupportsFloat,
     TypeVar,
 )
 
@@ -205,7 +206,13 @@ def format_size(byte_count: int) -> str:
     return f"{so_far}{units[tracker]}"
 
 
-def format_elapsed_time(elapsed_seconds: float) -> str:
+def format_elapsed_time(elapsed_seconds: SupportsFloat) -> str:
+    """
+    :param elapsed_seconds: Total time elapsed in seconds
+    :returns: A string in the format ``{hours}:{minutes}:{seconds}:{milliseconds}``
+    """
+    elapsed_seconds = float(elapsed_seconds)
+
     hours = int(elapsed_seconds // 3600)
     leftover = elapsed_seconds % 3600
 
@@ -219,6 +226,16 @@ def format_elapsed_time(elapsed_seconds: float) -> str:
 
 
 class Filter(object):
+    """
+    Encapsulates commonly used wildcard-based filtering functions into an object.
+
+    :param filters: A list of a wildcards supporting the
+        `fnmatch spec <https://docs.python.org/3.10/library/fnmatch.html>`_.
+
+        The wildcards will be split into an "allow" and "deny" list based on whether
+        the filter is prefixed with a ``!``.
+    """
+
     def __init__(self, filters: Iterable[str]):
         self.allow = []
         self.deny = []
@@ -229,6 +246,11 @@ class Filter(object):
                 self.allow.append(filter)
 
     def get_matching_wildcards(self, input: str) -> Generator[str, Any, None]:
+        """
+        :param input: An input to match wildcards against.
+        :returns: An iterable object for *all* wildcards in the allow list accepting
+            ``input``, and *all* wildcards in the deny list rejecting ``input``.
+        """
         for wildcard in self.allow:
             if fnmatch.fnmatch(input, wildcard):
                 yield wildcard
@@ -240,6 +262,12 @@ class Filter(object):
         self,
         inputs: Iterable[str],
     ) -> Generator[str, Any, None]:
+        """
+        :param inputs: A series of inputs to filter according to the wildcards.
+        :returns: An iterable object of any values in ``inputs`` that:
+            * Have matched at least one wildcard in the allow list
+            * Have matched exactly 0 inputs in the deny list
+        """
         for input in inputs:
             allowed = False
             for wildcard in self.allow:
