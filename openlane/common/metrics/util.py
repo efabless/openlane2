@@ -44,7 +44,7 @@ def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
     mn_mut = metric_name.split("__")
     modifiers = {}
     while ":" in mn_mut[-1]:
-        key, value = mn_mut.pop().split(":")
+        key, value = mn_mut.pop().split(":", maxsplit=1)
         modifiers[key] = value
     return "__".join(mn_mut), modifiers
 
