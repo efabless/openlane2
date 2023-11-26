@@ -260,7 +260,7 @@ jobs:
           fetch-depth: 0
       - name: Setup
         run: |
-          apt-get install -y python3-tk
+          sudo apt-get install -y python3-tk
           python3 -m pip install -e .
           echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - name: Download Metrics
@@ -272,7 +272,6 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           export GH_TOKEN=${{ github.token }} # Read-only for a public repo, CI token should be fine
-          sudo apt install -y jq
           MAIN_SHA=$(gh api /repos/${{ github.repository }}/branches/main | jq -r .commit.sha )
           TARBALL_URL=https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA
           mkdir -p gold
