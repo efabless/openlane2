@@ -89,9 +89,16 @@ def compare_multiple(
     def add_designs(in_dir: str, to_set: Set[Tuple[str, str, str]]):
         for file in os.listdir(in_dir):
             basename = os.path.basename(file)
-            pdk, scl, design = basename.split("-", maxsplit=2)
-            if ".metrics.json" in design:
-                design = design[: -len(".metrics.json")]
+            if not basename.endswith(".metrics.json"):
+                continue
+            basename = basename[: -len(".metrics.json")]
+
+            parts = basename.split("-", maxsplit=2)
+            if len(parts) != 3:
+                raise ValueError(
+                    f"Invalid filename {basename}: not in the format {{pdk}}-{{scl}}-{{design_name}}"
+                )
+            pdk, scl, design = parts
             to_set.add((pdk, scl, design))
 
     add_designs(path_a, a)
