@@ -263,10 +263,13 @@ jobs:
           python3 -m pip install -e .
       - name: Get Main Metrics
         run: |
+          export GH_TOKEN=${{ github.token }} # Read-only for a public repo, CI token should be fine
           sudo apt install -y jq
           MAIN_SHA=$(gh api /repos/${{ github.repository }}/branches/main | jq -r .commit.sha )
+          TARBALL_URL=https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA
           mkdir -p gold
-          curl -L https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA | tar -xzvC gold
+          echo "Curling '$TARBALL_URL'…"
+          curl -L $TARBALL_URL | tar -xzvC gold
       - name: Download Metrics
         uses: actions/download-artifact@v3
         with:
