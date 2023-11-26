@@ -13,6 +13,7 @@
 # limitations under the License.
 import re
 import textwrap
+from dataclasses import dataclass
 from typing import (
     List,
     Mapping,
@@ -108,6 +109,14 @@ def _key_from_metrics(fields: Iterable[str], metric: str) -> List[str]:
     return result
 
 
+@dataclass
+class MetricStatistics:
+    better: int = 0
+    worse: int = 0
+    critical: int = 0
+    unchanged: int = 0
+
+
 class MetricDiff(object):
     differences: List[MetricComparisonResult]
 
@@ -156,9 +165,10 @@ class MetricDiff(object):
 
     def render_md(self, sort_by: Optional[Iterable[str]] = None) -> str:
         table = textwrap.dedent(
-            """
-            | Metric | Before | After | Delta |
-            | - | - | - | - |
+            f"""
+            
+            | {'Metric':<70} | {'Before':<10} | {'After':<10} | {'Delta':<20} |
+            | {'-':<70} | {'-':<10} | {'-':<10} | {'-':<20} |
             """
         )
 
@@ -174,13 +184,30 @@ class MetricDiff(object):
             emoji = ""
             if row.better is not None:
                 if row.better:
-                    emoji = "⭕"
+                    emoji = " ⭕"
                 else:
-                    emoji = "❗"
+                    emoji = " ❗"
             if row.critical:
-                emoji = "‼️"
-            table += f"| {row.metric_name} | {before} | {after} | {delta} {emoji} |\n"
+                emoji = " ‼️"
+            table += f"| {row.metric_name:<70} | {before:<10} | {after:<10} | {f'{delta}{emoji}':<20} |\n"
+
+        table += "\n"
         return table
+
+    def stats(self) -> MetricStatistics:
+        stats = MetricStatistics()
+        for row in self.differences:
+            if row.delta == 0 or row.before == row.after:
+                stats.unchanged += 1
+            elif row.critical:
+                stats.critical += 1
+                stats.worse += 1
+            elif row.better is not None:
+                if row.better:
+                    stats.better += 1
+                else:
+                    stats.worse += 1
+        return stats
 
     @classmethod
     def from_metrics(

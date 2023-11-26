@@ -36,7 +36,6 @@ def cli():
 )
 @cloup.argument("run_dir")
 def latest(extract_metrics_to: Optional[str], run_dir: str):
-    metrics = {}
     exit_code = 0
 
     if latest_state := get_latest_file(run_dir, "state_*.json"):
@@ -47,12 +46,11 @@ def latest(extract_metrics_to: Optional[str], run_dir: str):
             exit(1)
         metrics = state["metrics"]
         print(latest_state, end="")
+        if output := extract_metrics_to:
+            json.dump(metrics, open(output, "w", encoding="utf8"))
     else:
         print("No state_*.json files found", file=sys.stderr)
         exit_code = 1
-
-    if output := extract_metrics_to:
-        json.dump(metrics, open(output, "w", encoding="utf8"))
 
     exit(exit_code)
 

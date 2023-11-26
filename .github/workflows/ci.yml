@@ -248,7 +248,44 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: metrics
+          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+  manage_metrics:
+    runs-on: ubuntu-22.04
+    needs: [test]
+    if: ${{ always() }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install OpenLane
+        run: |
+          python3 -m pip install -e .
+      - name: Get Main Metrics
+        run: |
+          sudo apt install -y jq
+          MAIN_SHA=$(gh api /repos/${{ github.repository }}/branches/main | jq -r .commit.sha )
+          mkdir -p gold
+          curl -L https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA | tar -xzvC gold
+      - name: Download Metrics
+        uses: actions/download-artifact@v3
+        with:
+          name: current
           path: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}.metrics.json
+      - uses: actions/github-script@v6
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const { execSync } = require("child_process");
+            let table = spawnSync("openlane.common.metrics", ["compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: table
+            })
+
   publish:
     runs-on: ubuntu-22.04
     needs: [
