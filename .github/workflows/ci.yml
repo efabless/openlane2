@@ -276,7 +276,7 @@ jobs:
           TARBALL_URL=https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA
           mkdir -p gold
           echo "Curling '$TARBALL_URL'…"
-          curl -L $TARBALL_URL | tar -xzvC gold
+          curl -L $TARBALL_URL | tar -xzvC gold --strip-components 1
       - uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
@@ -284,6 +284,7 @@ jobs:
           script: |
             const { spawnSync } = require("child_process");
             var child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
+            console.log(child);
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
