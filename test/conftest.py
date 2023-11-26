@@ -20,6 +20,7 @@ from typing import Any, Literal, Optional, Iterable, Callable, List, Dict
 
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
+from _pytest.fixtures import SubRequest
 
 from openlane.config import Variable, Macro
 from openlane.common import Path, GenericDict
@@ -125,11 +126,19 @@ class chdir_tmp(chdir):
 
 
 @pytest.fixture()
-def _chdir_tmp():
+def _chdir_tmp(request: SubRequest):
+    keep_tmp = request.config.getoption("--keep-tmp")
     import tempfile
 
-    with tempfile.TemporaryDirectory() as dir, chdir(dir):
-        yield
+    if not keep_tmp:
+        with tempfile.TemporaryDirectory() as dir, chdir(dir):
+            yield
+    else:
+        dir = tempfile.mkdtemp()
+        with chdir(dir):
+            print(f"TMP: {dir}")
+            yield
+            print(f"TMP: {dir}")
 
 
 MOCK_PDK_VARS = [
@@ -326,3 +335,4 @@ def pytest_configure():
 def pytest_addoption(parser):
     parser.addoption("--step-rx", action="store", default="^$")
     parser.addoption("--pdk-root", action="store", default=None)
+    parser.addoption("--keep-tmp", action="store_true", default=False)

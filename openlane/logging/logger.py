@@ -49,7 +49,7 @@ class NullFormatter(logging.Formatter):
         return record.getMessage()
 
 
-def __logger():
+def __logger() -> logging.Logger:
     handler: logging.Handler
     if __plain_output:
         handler = logging.StreamHandler()
