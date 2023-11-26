@@ -260,6 +260,7 @@ jobs:
           fetch-depth: 0
       - name: Setup
         run: |
+          apt-get install -y python3-tk
           python3 -m pip install -e .
           echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - name: Download Metrics
