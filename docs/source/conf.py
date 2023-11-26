@@ -128,7 +128,6 @@ numfig = True
 
 # Autodoc
 generate_module_autodocs = [("openlane", "reference/api")]
-autodoc_typehints = "both"
 autodoc_member_order = "bysource"
 autosectionlabel_prefix_document = True
 
