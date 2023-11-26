@@ -268,28 +268,17 @@ jobs:
         with:
           name: metrics
           path: current
-      - name: Get Main Metrics
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          export GH_TOKEN=${{ github.token }} # Read-only for a public repo, CI token should be fine
-          MAIN_SHA=$(gh api /repos/${{ github.repository }}/branches/main | jq -r .commit.sha )
-          TARBALL_URL=https://github.com/efabless/openlane-metrics/tarball/commit-$MAIN_SHA
-          mkdir -p gold
-          echo "Curling '$TARBALL_URL'…"
-          curl -L $TARBALL_URL | tar -xzvC gold --strip-components 1
-      - uses: actions/github-script@v6
+      - name: "[PRs] Compare to main and comment result"
+        uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
-            const { spawnSync } = require("child_process");
-            var child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
-            console.log(child);
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: child.stdout
+              body: require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
             })
       # TODO: UPLOAD METRICS
   publish:

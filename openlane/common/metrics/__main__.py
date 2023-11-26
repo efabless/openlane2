@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import sys
 import json
+import gzip
+import click
+import tarfile
+import tempfile
+from io import BytesIO
 from decimal import Decimal
-from typing import Set, Tuple
+from typing import Literal, Optional, Set, Tuple
 
-import rich
 import cloup
-from rich.markdown import Markdown
+import httpx
 
 from .util import MetricDiff
-from ..misc import Filter
+from ..misc import Filter, get_github_session, mkdirp
 from ..cli import formatter_settings
-
 
 default_filter_set = [
     "design__*__area",
@@ -64,25 +68,21 @@ def compare(metric_files: Tuple[str, str], filters: Tuple[str, ...]):
 
     diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
     md_str = diff.render_md(sort_by=("corner", ""))
-    rich.print(md_str)
+    print(md_str)
+
+    # When we upgrade to rich 13 (when NixOS 23.11 comes out,
+    # it has a proper markdown table renderer, but until then, this will have to do)
 
 
 cli.add_command(compare)
 
 
-@cloup.command(hidden=True)
-@cloup.option("--include-tables/--no-tables", default=False)
-@cloup.option("--render/--plain", default=True)
-@cloup.option("-f", "--filter", "filter_wildcards", multiple=True, default=("DEFAULT",))
-@cloup.argument("metric_folders", nargs=2)
-def compare_multiple(
+def compare_metric_folders(
     filter_wildcards: Tuple[str, ...],
-    render: bool,
-    include_tables: bool,
-    metric_folders: Tuple[str, str],
+    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    path_a: str,
+    path_b: str,
 ):
-    path_a, path_b = metric_folders
-
     a: Set[Tuple[str, str, str]] = set()
     b: Set[Tuple[str, str, str]] = set()
 
@@ -107,7 +107,6 @@ def compare_multiple(
     not_in_a = b - a
     not_in_b = a - b
     common = a.intersection(b)
-
     difference_report = ""
     for tup in not_in_a:
         pdk, scl, design = tup
@@ -129,8 +128,6 @@ def compare_multiple(
     critical_change_report = ""
     tables = ""
     total_critical = 0
-    if include_tables:
-        tables += "## Per-design breakdown\n\n"
     for pdk, scl, design in sorted(common):
         metrics_a = json.load(
             open(
@@ -166,12 +163,10 @@ def compare_multiple(
                     f"    * `{row.metric_name}` ({row.before} -> {row.after}) \n"
                 )
 
-        if include_tables:
-            tables += (
-                f"<details><summary><code>{pdk}/{scl}/{design}</code></summary>\n\n"
-            )
-            tables += diff.render_md(("corner", ""))
-            tables += "\n</details>\n\n"
+        if table_format != "NONE":
+            rendered = diff.render_md(("corner", ""), table_format)
+            if rendered.strip() != "":
+                tables += f"<details><summary><code>{pdk}/{scl}/{design}</code></summary>\n{rendered}</details>"
 
     if total_critical == 0:
         critical_change_report = (
@@ -186,16 +181,140 @@ def compare_multiple(
     report = "# CI Report\n\n"
     report += difference_report
     report += critical_change_report
-    report += tables
+    if tables.strip() != "":
+        report += "\n\n## Per-design breakdown\n\n"
+        report += tables
 
-    if render:
-        rich.print(Markdown(report))
-    else:
-        rich.print(report)
+    return report
+
+
+@cloup.command(hidden=True)
+@cloup.option(
+    "--table-format",
+    type=click.Choice(
+        [
+            "NONE",
+            "CRITICAL",
+            "WORSE",
+            "CHANGED",
+            "ALL",
+        ],
+        case_sensitive=False,
+    ),
+    default="NONE",
+)
+@cloup.option("-f", "--filter", "filter_wildcards", multiple=True, default=("DEFAULT",))
+@cloup.argument("metric_folders", nargs=2)
+def compare_multiple(
+    filter_wildcards: Tuple[str, ...],
+    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    metric_folders: Tuple[str, str],
+):
+    path_a, path_b = metric_folders
+    print(compare_metric_folders(filter_wildcards, table_format, path_a, path_b))
 
 
 cli.add_command(compare_multiple)
 
+
+@cloup.command(hidden=True)
+@cloup.option(
+    "--table-format",
+    type=click.Choice(
+        [
+            "NONE",
+            "CRITICAL",
+            "WORSE",
+            "CHANGED",
+            "ALL",
+        ],
+        case_sensitive=False,
+    ),
+    default="NONE",
+)
+@cloup.option("-r", "--repo", default="efabless/openlane2")
+@cloup.option("-m", "--metric-repo", default="efabless/openlane-metrics")
+@cloup.option("-c", "--commit", default=None)
+@cloup.option("-t", "--token", default=None)
+@cloup.option("-f", "--filter", "filter_wildcards", multiple=True, default=("DEFAULT",))
+@cloup.argument("metric_folder", nargs=1)
+def compare_main(
+    filter_wildcards: Tuple[str, ...],
+    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    repo: str,
+    metric_repo: str,
+    commit: Optional[str],
+    token: str,
+    metric_folder: str,
+):
+    session = get_github_session(token)
+
+    if commit is None:
+        try:
+            result = session.get(f"https://api.github.com/repos/{repo}/branches/main")
+        except httpx.HTTPStatusError as e:
+            if e.response is not None and e.response.status_code == 404:
+                print(f"main branch of repo {repo} not found.", file=sys.stderr)
+            else:
+                print(f"failed to get info from github API: {404}", file=sys.stderr)
+            sys.exit(-1)
+        result.raise_for_status()
+        commit = str(result.json()["commit"]["sha"])
+    url = f"https://github.com/{metric_repo}/tarball/commit-{commit}"
+
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            bio_gz = BytesIO()
+            with session.stream("GET", url) as r:
+                r.raise_for_status()
+                for chunk in r.iter_bytes(chunk_size=8192):
+                    bio_gz.write(chunk)
+            bio_gz.seek(0)
+            with gzip.GzipFile(fileobj=bio_gz) as bio, tarfile.TarFile(
+                fileobj=bio, mode="r"
+            ) as tf:
+                for file in tf:
+                    if file.isdir():
+                        continue
+                    stripped = os.path.sep.join(file.name.split(os.path.sep)[1:])
+                    final_path = os.path.join(d, stripped)
+                    final_dir = os.path.dirname(final_path)
+                    mkdirp(final_dir)
+                    io = tf.extractfile(file)
+                    if io is None:
+                        print(
+                            f"Failed to unpack file in tarball: {file.name}.",
+                            file=sys.stderr,
+                        )
+                    else:
+                        with open(final_path, "wb") as f:
+                            f.write(io.read())
+
+            report = compare_metric_folders(
+                filter_wildcards,
+                table_format,
+                d,
+                metric_folder,
+            )
+            print(report)
+    except httpx.HTTPStatusError as e:
+        if e.response is not None and e.response.status_code == 404:
+            print(f"Metrics not found for commit: {commit}.", file=sys.stderr)
+        else:
+            if e.response is not None:
+                print(
+                    f"Failed to obtain metrics for {commit} remotely: {e.response}.",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"Failed to request metrics for {commit} from server: {e}.",
+                    file=sys.stderr,
+                )
+        sys.exit(-1)
+
+
+cli.add_command(compare_main)
 
 if __name__ == "__main__":
     cli()

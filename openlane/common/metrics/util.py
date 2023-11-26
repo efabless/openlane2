@@ -16,6 +16,7 @@ import textwrap
 from dataclasses import dataclass
 from typing import (
     List,
+    Literal,
     Mapping,
     Tuple,
     Dict,
@@ -123,7 +124,11 @@ class MetricDiff(object):
     def __init__(self, differences: Iterable[MetricComparisonResult]) -> None:
         self.differences = list(differences)
 
-    def render_rich(self, sort_by: Optional[Iterable[str]] = None) -> rich.table.Table:
+    def render_rich(
+        self,
+        sort_by: Optional[Iterable[str]] = None,
+        table_format: Literal["ALL", "CHANGED", "WORSE", "CRITICAL"] = "ALL",
+    ) -> rich.table.Table:
         table = rich.table.Table()
         table.add_column("Metric")
         table.add_column("Before")
@@ -137,6 +142,15 @@ class MetricDiff(object):
             )
 
         for row in differences:
+            if table_format in ["CHANGED", "WORSE", "CRITICAL"]:
+                if (row.delta is None and row.delta == 0) or row.before == row.after:
+                    continue
+            if table_format == ["WORSE", "CRITICAL"]:
+                if row.better is True:
+                    continue
+            if table_format == "CRITICAL":
+                if not row.critical:
+                    continue
             before_format = "[blue]"
             after_format = "[blue]"
             emoji = ""
@@ -163,15 +177,11 @@ class MetricDiff(object):
 
         return table
 
-    def render_md(self, sort_by: Optional[Iterable[str]] = None) -> str:
-        table = textwrap.dedent(
-            f"""
-            
-            | {'Metric':<70} | {'Before':<10} | {'After':<10} | {'Delta':<20} |
-            | {'-':<70} | {'-':<10} | {'-':<10} | {'-':<20} |
-            """
-        )
-
+    def render_md(
+        self,
+        sort_by: Optional[Iterable[str]] = None,
+        table_format: Literal["ALL", "CHANGED", "WORSE", "CRITICAL"] = "ALL",
+    ) -> str:
         differences = self.differences
         if fields := sort_by:
             differences = sorted(
@@ -179,7 +189,18 @@ class MetricDiff(object):
                 key=lambda x: _key_from_metrics(fields, x.metric_name),
             )
 
+        table = ""
+
         for row in differences:
+            if table_format in ["CHANGED", "WORSE", "CRITICAL"]:
+                if (row.delta is None and row.delta == 0) or row.before == row.after:
+                    continue
+            if table_format == ["WORSE", "CRITICAL"]:
+                if row.better is True:
+                    continue
+            if table_format == "CRITICAL":
+                if not row.critical:
+                    continue
             before, after, delta = row.format_values()
             emoji = ""
             if row.better is not None:
@@ -191,7 +212,17 @@ class MetricDiff(object):
                 emoji = " ‼️"
             table += f"| {row.metric_name:<70} | {before:<10} | {after:<10} | {f'{delta}{emoji}':<20} |\n"
 
-        table += "\n"
+        if table.strip() != "":
+            table = (
+                textwrap.dedent(
+                    f"""
+                    | {'Metric':<70} | {'Before':<10} | {'After':<10} | {'Delta':<20} |
+                    | {'-':<70} | {'-':<10} | {'-':<10} | {'-':<20} |
+                    """
+                )
+                + table
+                + "\n"
+            )
         return table
 
     def stats(self) -> MetricStatistics:

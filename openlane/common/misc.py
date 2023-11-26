@@ -32,8 +32,10 @@ from typing import (
 )
 
 from deprecated.sphinx import deprecated
+import httpx
 
 from .types import Path
+from ..__version__ import __version__
 
 T = TypeVar("T")
 
@@ -303,3 +305,14 @@ def get_latest_file(in_path: Union[str, os.PathLike], filename: str) -> Optional
             latest_json = Path(result)
 
     return latest_json
+
+def get_github_session(token: Optional[str] = None) -> httpx.Client:
+    session = httpx.Client(follow_redirects=True)
+    if token is not None and token.strip() != "":
+        session.headers = httpx.Headers(
+            {
+                "Authorization": f"token {token}",
+                "User-Agent": f"openlane2/{__version__}",
+            }
+        )
+    return session
