@@ -267,8 +267,6 @@ jobs:
         with:
           name: metrics
           path: current
-      - name: Check extracted
-        run: find current
       - name: Get Main Metrics
         if: ${{ github.event_name == 'pull_request' }}
         run: |
@@ -282,9 +280,9 @@ jobs:
       - uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.GH_TOKEN }}
           script: |
-            const { execSync } = require("child_process");
+            const { spawnSync } = require("child_process");
             let table = spawnSync("openlane.common.metrics", ["compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
             github.rest.issues.createComment({
               issue_number: context.issue.number,
