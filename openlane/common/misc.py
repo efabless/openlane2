@@ -306,6 +306,7 @@ def get_latest_file(in_path: Union[str, os.PathLike], filename: str) -> Optional
 
     return latest_json
 
+
 def get_github_session(token: Optional[str] = None) -> httpx.Client:
     session = httpx.Client(follow_redirects=True)
     if token is not None and token.strip() != "":
