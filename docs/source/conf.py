@@ -48,8 +48,6 @@ extensions = [
     "sphinx_design",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
-    "sphinx_rtd_dark_mode",
-    "sphinx_rtd_theme",
 ]
 try:
     import sphinxcontrib.spelling  # noqa: F401
@@ -100,7 +98,7 @@ exclude_patterns = [
 #
 html_title = "OpenLane Documentation"
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
 
 html_static_path = ["../_static"]
 
