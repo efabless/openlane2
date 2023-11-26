@@ -346,7 +346,7 @@ class DRC(KLayoutStep):
         ),
         Variable(
             "KLAYOUT_DRC_OPTIONS",
-            [Dict[str, Union[bool, int]]],
+            Optional[Dict[str, Union[bool, int]]],
             "Options availble to KLayout DRC. They vary from one PDK to another.",
             pdk=True,
         ),
@@ -378,7 +378,7 @@ class DRC(KLayoutStep):
                 "klayout",
                 "-b",
                 "-zz",
-                "-rm",
+                "-r",
                 drc_script_path,
                 "-rd",
                 f"input={str(state_in[DesignFormat.GDS])}",
