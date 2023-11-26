@@ -339,10 +339,11 @@ class DRC(KLayoutStep):
 
     config_vars = KLayoutStep.config_vars + [
         Variable(
-            "KLAYOUT_DRC_TECH_SCRIPT",
+            "KLAYOUT_DRC_RUNSET",
             Path,
-            "A path to a KLayout DRC tech script.",
+            "A path to a KLayout DRC runset.",
             pdk=True,
+            deprecated_names=["KLAYOUT_DRC_TECH_SCRIPT"],
         ),
         Variable(
             "KLAYOUT_DRC_OPTIONS",
@@ -353,13 +354,14 @@ class DRC(KLayoutStep):
         Variable(
             "KLAYOUT_DRC_THREADS",
             Optional[int],
-            "A path to a KLayout DRC tech script.",
+            "Specifies the number of threads to be used in KLayout DRC"
+            + "If unset, this will be equal to your machine's thread count.",
         ),
     ]
 
     def run_sky130A(self, state_in: State, **kwargs) -> MetricsUpdate:
         metrics_updates: MetricsUpdate = {}
-        drc_script_path = self.config["KLAYOUT_DRC_TECH_SCRIPT"]
+        drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
         kwargs, env = self.extract_env(kwargs)
         xml_report = os.path.join(self.step_dir, "violations.xml")
         json_report = os.path.join(self.step_dir, "violations.json")
