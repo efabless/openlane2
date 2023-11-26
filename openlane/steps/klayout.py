@@ -347,7 +347,7 @@ class DRC(KLayoutStep):
         ),
         Variable(
             "KLAYOUT_DRC_OPTIONS",
-            Optional[Dict[str, Union[bool, int]]],
+            Dict[str, Union[bool, int]],
             "Options availble to KLayout DRC. They vary from one PDK to another.",
             pdk=True,
         ),
