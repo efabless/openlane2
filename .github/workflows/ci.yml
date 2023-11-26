@@ -283,12 +283,12 @@ jobs:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
             const { spawnSync } = require("child_process");
-            let table = spawnSync("openlane.common.metrics", ["compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
+            var child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-multiple", "gold", "current", "--plain", "--include-tables"], { encoding: "utf8" });
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: table
+              body: child.stdout
             })
       # TODO: UPLOAD METRICS
   publish:
