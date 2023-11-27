@@ -283,7 +283,7 @@ jobs:
               body: `# Metrics Report for Run ${context.runId}\n\n` + require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
             })
       - name: "[Push] Upload Metrics"
-        if: ${{ github.event_name == 'push' }}
+        if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}
         run: |
           CURRENT_SHA=$(git rev-parse HEAD)
           REPO=efabless/openlane-metrics
@@ -295,8 +295,8 @@ jobs:
           git config user.name "${{ vars.BOT_NAME }}"
           git config user.email "${{ vars.BOT_EMAIL }}"
           git commit -m "Upload"
-          git remote add origin "${{ secrets.GH_TOKEN }}@github.com:$REPO"
-          git push -u origin $BRANCH_NAME
+          git remote add origin "https://${{ vars.BOT_USERNAME }}:${{ secrets.GH_TOKEN }}@github.com/$REPO.git"
+          git push -fu origin $BRANCH_NAME # Force for if we have to re-run the CI for some reason
   publish:
     runs-on: ubuntu-22.04
     needs: [
