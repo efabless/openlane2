@@ -290,7 +290,7 @@ jobs:
           BRANCH_NAME="commit-$CURRENT_SHA"
           echo "Uploading to 'github.com/$REPO@BRANCH_NAME'…"
           cd current
-          git init -b 
+          git init -b $BRANCH_NAME
           git add .
           git commit -m "Upload"
           git remote add origin "git@github.com:$REPO"
