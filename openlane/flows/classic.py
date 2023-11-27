@@ -213,8 +213,8 @@ _common_config_vars = [
 _common_gating_config_vars = {
     "OpenROAD.RepairDesignPostGPL": ["RUN_POST_GPL_DESIGN_REPAIR"],
     "OpenROAD.RepairDesignPostGRT": ["RUN_POST_GRT_DESIGN_REPAIR"],
-    #"OpenROAD.ResizerTimingPostCTS": ["RUN_POST_CTS_RESIZER_TIMING"],
-    #"OpenROAD.ResizerTimingPostGRT": ["RUN_POST_GRT_RESIZER_TIMING"],
+    # "OpenROAD.ResizerTimingPostCTS": ["RUN_POST_CTS_RESIZER_TIMING"],
+    # "OpenROAD.ResizerTimingPostGRT": ["RUN_POST_GRT_RESIZER_TIMING"],
     "OpenROAD.CTS": ["RUN_CTS"],
     "OpenROAD.RCX": ["RUN_SPEF_EXTRACTION"],
     "OpenROAD.TapEndcapInsertion": ["RUN_TAP_ENDCAP_INSERTION"],
