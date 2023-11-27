@@ -805,10 +805,10 @@ class Step(ABC):
 
         :param toolbox: The flow's :class:`Toolbox` object, required.
 
-            If running in interactive mode, you may omit this argument as ``None``\,
+            If running in interactive mode, you may omit this argument as ``None``\\,
             where a global toolbox will be used instead.
 
-            If running inside a flow, you may also omit this argument as ``None``\,
+            If running inside a flow, you may also omit this argument as ``None``\\,
             where the flow's toolbox will used to be instead.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
@@ -908,7 +908,7 @@ class Step(ABC):
         The "core" of a step.
 
         This step is considered per-object private, i.e., if a Step's run is
-        called anywhere outside of the same object's :meth:`start`\, its behavior
+        called anywhere outside of the same object's :meth:`start`\\, its behavior
         is undefined.
 
         :param state_in: The input state.
@@ -917,7 +917,7 @@ class Step(ABC):
             resolved before use first otherwise.
 
             For reference, ``start()`` is responsible for resolving it
-            for ``.run()``\.
+            for ``.run()``\\.
 
         :param **kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
@@ -951,21 +951,21 @@ class Step(ABC):
         makes a number of special functions accessible to subprocesses by simply
         printing keywords in the terminal, such as:
 
-        * ``%OL_CREATE_REPORT <file>``\: Starts redirecting all output from
+        * ``%OL_CREATE_REPORT <file>``\\: Starts redirecting all output from
           standard output to a report file inside the step directory, with the
           name <file>.
         * ``%OL_END_REPORT``: Stops redirection behavior.
-        * ``%OL_METRIC <name> <value>``\: Adds a string metric with the name <name>
+        * ``%OL_METRIC <name> <value>``\\: Adds a string metric with the name <name>
           and the value <value> to this function's returned object.
-        * ``%OL_METRIC_F <name> <value>``\: Adds a floating-point metric with the
+        * ``%OL_METRIC_F <name> <value>``\\: Adds a floating-point metric with the
           name <name> and the value <value> to this function's returned object.
-        * ``%OL_METRIC_I <name> <value>``\: Adds an integer metric with the name
+        * ``%OL_METRIC_I <name> <value>``\\: Adds an integer metric with the name
           <name> and the value <value> to this function's returned object.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
         :param log_to: An optional override for the log path from
-            :meth:`get_log_path`\. Useful for if you run multiple subprocesses
+            :meth:`get_log_path`\\. Useful for if you run multiple subprocesses
             within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.

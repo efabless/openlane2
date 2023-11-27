@@ -189,12 +189,12 @@ class Toolbox(object):
             Do not return lib files for macros that have gate-Level Netlists and
             SPEF views.
 
-            If set to ``false``\, only lib files are returned.
+            If set to ``false``\\, only lib files are returned.
         :returns: A tuple of:
             * The name of the timing corner
             * A heterogenous list of files composed of: Lib files are returned as-is,
-            Netlists are returned as-is, and SPEF files are returned in the
-            format "{instance_name}@{spef_path}"
+              Netlists are returned as-is, and SPEF files are returned in the
+              format "{instance_name}@{spef_path}"
 
             It is left up to the step or tool to process this list as they see
             fit.

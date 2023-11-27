@@ -33,12 +33,12 @@ class MetricComparisonResult:
     :param gold: The "gold" value being compared against
     :param new: The new value being evaluated
     :param delta: Non-``None`` if and only if ``before`` - ``after`` is a valid number.
-        Evaluates to ``after - before``\.
+        Evaluates to ``after - before``\\.
     :param delta_pct: Non-``None`` if ``delta`` is not None and before is non-zero.
-        Evaluates to ``(after - before) / before * 100``\.
+        Evaluates to ``(after - before) / before * 100``\\.
     :param better: Whether the change in the value is considered a good thing or
         not. ``None`` if ``delta`` is None or has no value set for
-        ``Metric.higher_is_better``\.
+        ``Metric.higher_is_better``\\.
     :param critical: Whether this change of value very likely results in a dead
         chip, i.e., an increase in DRC values, or an inexplicable change in
         the number of I/O pins.
@@ -46,7 +46,7 @@ class MetricComparisonResult:
         If the :class:`Metric` has ``higher_is_better`` set, a change is critical
         only if it's worse.
 
-        Otherwise, any change is considered ``critical``\.
+        Otherwise, any change is considered ``critical``\\.
     """
 
     metric_name: str
@@ -155,7 +155,7 @@ class Metric(object):
             else:
                 delta_pct = Decimal((delta / gold) * 100)
                 if delta_pct == 0:
-                    delta_pct = Decimal(0) # Fix negative zero
+                    delta_pct = Decimal(0)  # Fix negative zero
 
             if self.higher_is_better is not None:
                 if self.higher_is_better:

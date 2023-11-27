@@ -293,7 +293,7 @@ jobs:
           git init -b $BRANCH_NAME
           git add .
           git commit -m "Upload"
-          git remote add origin "git@github.com:$REPO"
+          git remote add origin "${{ secrets.GH_TOKEN }}@github.com:$REPO"
           git push -u origin $BRANCH_NAME
   publish:
     runs-on: ubuntu-22.04

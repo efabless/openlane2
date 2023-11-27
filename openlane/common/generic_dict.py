@@ -270,8 +270,8 @@ def copy_recursive(input, translator: Callable = idem):
         By default, :func:`idem` is called.
     :returns: The copy.
 
-        All sequences will become built-in ``list``\s and all mappings will
-        become built-in ``dict``\s.
+        All sequences will become built-in ``list``\\s and all mappings will
+        become built-in ``dict``\\s.
     """
 
     def recursive(input, visit_stack: list, *, sequence_cls=list, mapping_cls=dict):
