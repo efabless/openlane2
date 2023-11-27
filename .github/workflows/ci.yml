@@ -245,6 +245,7 @@ jobs:
               --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json\
           "
       - name: Upload Metrics
+        if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: metrics
