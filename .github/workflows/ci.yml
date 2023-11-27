@@ -278,7 +278,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
+              body: `# Metrics Report for Run ${context.runId}\n\n` + require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
             })
       # TODO: UPLOAD METRICS
   publish:

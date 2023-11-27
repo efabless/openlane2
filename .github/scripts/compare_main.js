@@ -16,16 +16,23 @@
 function get(token = "") {
     const { spawnSync } = require("child_process");
 
-    var child;
+    let child;
     // Must fit in the body of a comment, try being less verbose
     for (const verbosity of ["CHANGED", "WORSE", "CRITICAL", "NONE"]) {
         child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-main", "current", "--table-format", verbosity, "--token", token], { encoding: "utf8" });
-        if (child.stdout.length < 65535) {
+        if (child.stdout.length < 60000) {
             break;
         }
     }
 
-    return child.status ? child.stderr : child.stdout;
+    let result = "";
+    if (child.status != 0) {
+        result = "Failed to create report: \n\n```\n" + child.stderr + "\n```";
+    } else {
+        result = "> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke `python3 -m openlane.common.metrics compare-main <path to directory>`.\n\n" + child.stdout;
+    }
+
+    return result;
 };
 
 module.exports = get;
