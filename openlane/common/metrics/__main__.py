@@ -20,13 +20,13 @@ import tarfile
 import tempfile
 from io import BytesIO
 from decimal import Decimal
-from typing import Literal, Optional, Set, Tuple
+from typing import Optional, Set, Tuple, get_args
 
 import cloup
 import httpx
 
-from .util import MetricDiff
-from ..misc import Filter, get_github_session, mkdirp
+from .util import MetricDiff, TableFormat, _table_format_help
+from ..misc import Filter, get_httpx_session, mkdirp
 from ..cli import formatter_settings
 
 default_filter_set = [
@@ -51,23 +51,55 @@ def cli():
     pass
 
 
-@cloup.command()
-@cloup.option("-f", "--filter", "filters", multiple=True, default=("DEFAULT",))
+def common_opts(f):
+    f = cloup.option(
+        "-f",
+        "--filter",
+        "filter_wildcards",
+        multiple=True,
+        default=("DEFAULT",),
+        help="A list of wildcards to filter by. Wildcards prefixed with ! exclude rather than include and take priority. 'DEFAULT' is replaced by a set of default wildcards.",
+    )(f)
+    f = cloup.option(
+        "--table-format",
+        type=click.Choice(
+            get_args(TableFormat),
+            case_sensitive=False,
+        ),
+        default="ALL",
+        help=_table_format_help,
+    )(f)
+    return f
+
+
+@cloup.command(no_args_is_help=True)
+@common_opts
 @cloup.argument("metric_files", nargs=2)
-def compare(metric_files: Tuple[str, str], filters: Tuple[str, ...]):
+def compare(
+    metric_files: Tuple[str, str],
+    table_format: TableFormat,
+    filter_wildcards: Tuple[str, ...],
+):
+    """
+    Creates a small summary of the differences between two ``metrics.json`` files.
+    """
+    if table_format == "NONE":
+        print("Table is empty.", file=sys.stderr)
+        exit(0)
+
     a_path, b_path = metric_files
     a = json.load(open(a_path, encoding="utf8"), parse_float=Decimal)
     b = json.load(open(b_path, encoding="utf8"), parse_float=Decimal)
 
     final_filters = []
-    for filter in filters:
+    for wildcard in filter_wildcards:
         if filter == "DEFAULT":
             final_filters += default_filter_set
         else:
-            final_filters.append(filter)
+            final_filters.append(wildcard)
 
     diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
-    md_str = diff.render_md(sort_by=("corner", ""))
+    md_str = diff.render_md(sort_by=("corner", ""), table_format=table_format)
     print(md_str)
 
     # When we upgrade to rich 13 (when NixOS 23.11 comes out,
@@ -77,9 +109,9 @@ def compare(metric_files: Tuple[str, str], filters: Tuple[str, ...]):
 cli.add_command(compare)
 
 
-def compare_metric_folders(
+def _compare_metric_folders(
     filter_wildcards: Tuple[str, ...],
-    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    table_format: TableFormat,
     path_a: str,
     path_b: str,
 ):
@@ -178,7 +210,7 @@ def compare_metric_folders(
             + critical_change_report
         )
 
-    report = "# CI Report\n\n"
+    report = ""
     report += difference_report
     report += critical_change_report
     if tables.strip() != "":
@@ -188,30 +220,23 @@ def compare_metric_folders(
     return report
 
 
-@cloup.command(hidden=True)
-@cloup.option(
-    "--table-format",
-    type=click.Choice(
-        [
-            "NONE",
-            "CRITICAL",
-            "WORSE",
-            "CHANGED",
-            "ALL",
-        ],
-        case_sensitive=False,
-    ),
-    default="NONE",
-)
-@cloup.option("-f", "--filter", "filter_wildcards", multiple=True, default=("DEFAULT",))
+@cloup.command(no_args_is_help=True)
+@common_opts
 @cloup.argument("metric_folders", nargs=2)
 def compare_multiple(
     filter_wildcards: Tuple[str, ...],
-    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    table_format: TableFormat,
     metric_folders: Tuple[str, str],
 ):
+    """
+    Creates a small summary/report of the differences between two folders with
+    metrics files.
+
+    The metrics files must be named in the format ``{pdk}-{scl}-{design}.metrics.json``.
+    All other files are ignored.
+    """
     path_a, path_b = metric_folders
-    print(compare_metric_folders(filter_wildcards, table_format, path_a, path_b))
+    print(_compare_metric_folders(filter_wildcards, table_format, path_a, path_b))
 
 
 cli.add_command(compare_multiple)
@@ -219,35 +244,49 @@ cli.add_command(compare_multiple)
 
 @cloup.command(hidden=True)
 @cloup.option(
-    "--table-format",
-    type=click.Choice(
-        [
-            "NONE",
-            "CRITICAL",
-            "WORSE",
-            "CHANGED",
-            "ALL",
-        ],
-        case_sensitive=False,
-    ),
-    default="NONE",
+    "-r",
+    "--repo",
+    default="efabless/openlane2",
+    help="The GitHub repository for OpenLane",
 )
-@cloup.option("-r", "--repo", default="efabless/openlane2")
-@cloup.option("-m", "--metric-repo", default="efabless/openlane-metrics")
-@cloup.option("-c", "--commit", default=None)
-@cloup.option("-t", "--token", default=None)
-@cloup.option("-f", "--filter", "filter_wildcards", multiple=True, default=("DEFAULT",))
+@cloup.option(
+    "-m",
+    "--metric-repo",
+    default="efabless/openlane-metrics",
+    help="The repository storing metrics for --repo",
+)
+@cloup.option(
+    "-c",
+    "--commit",
+    default=None,
+    help="The commit of --repo to fetch the metrics for. By default, that's the latest commit in the main branch.",
+)
+@cloup.option(
+    "-t",
+    "--token",
+    default=None,
+    help="A GitHub token to use to query the API and fetch the metrics. Not strictly required, but helps avoid rate-limiting.",
+)
+@common_opts
 @cloup.argument("metric_folder", nargs=1)
 def compare_main(
     filter_wildcards: Tuple[str, ...],
-    table_format: Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"],
+    table_format: TableFormat,
     repo: str,
     metric_repo: str,
     commit: Optional[str],
     token: str,
     metric_folder: str,
 ):
-    session = get_github_session(token)
+    """
+    Creates a small summary/report of the differences between a folder and
+    a set of metrics stored in --metric-repo. Requires Internet access and
+    access to GitHub.
+
+    The metrics files must be named in the format ``{pdk}-{scl}-{design}.metrics.json``.
+    All other files are ignored.
+    """
+    session = get_httpx_session(token)
 
     if commit is None:
         try:
@@ -290,7 +329,7 @@ def compare_main(
                         with open(final_path, "wb") as f:
                             f.write(io.read())
 
-            report = compare_metric_folders(
+            report = _compare_metric_folders(
                 filter_wildcards,
                 table_format,
                 d,

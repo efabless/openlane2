@@ -26,12 +26,13 @@ from typing import (
     Union,
 )
 
-import rich.table
-
 from .metric import Metric, MetricAggregator, MetricComparisonResult
 from ..misc import Filter
 
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
+
+TableFormat = Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"]
+_table_format_help = "The verbosity of the table: whether to include everything, just changes, only bad changes or only critical changes. Or just nothing."
 
 
 def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
@@ -110,78 +111,53 @@ def _key_from_metrics(fields: Iterable[str], metric: str) -> List[str]:
     return result
 
 
-@dataclass
-class MetricStatistics:
-    better: int = 0
-    worse: int = 0
-    critical: int = 0
-    unchanged: int = 0
-
-
 class MetricDiff(object):
+    """
+    Aggregates a number of ``MetricComparisonResult`` and allows a number of
+    functions to be performed on them.
+
+    :param differences: The metric comparison results.
+    """
+
+    @dataclass
+    class MetricStatistics:
+        """
+        A glorified namespace encapsulating a number of statistics of
+        :class:`MetricDiff`.
+
+        Should be generated using :meth:`MetricDiff.stats`.
+
+        :param better: The number of datapoints that represent a positive change.
+        :param worse: The number of datapoints that represent a negative change.
+        :param critical: The number of changes that are likely to result
+            in a dead chip.
+        :param unchanged: Values that are unchanged.
+        """
+
+        better: int = 0
+        worse: int = 0
+        critical: int = 0
+        unchanged: int = 0
+
     differences: List[MetricComparisonResult]
 
     def __init__(self, differences: Iterable[MetricComparisonResult]) -> None:
         self.differences = list(differences)
 
-    def render_rich(
-        self,
-        sort_by: Optional[Iterable[str]] = None,
-        table_format: Literal["ALL", "CHANGED", "WORSE", "CRITICAL"] = "ALL",
-    ) -> rich.table.Table:
-        table = rich.table.Table()
-        table.add_column("Metric")
-        table.add_column("Before")
-        table.add_column("After")
-        table.add_column("Delta")
-
-        differences = self.differences
-        if fields := sort_by:
-            differences = sorted(
-                differences, key=lambda x: _key_from_metrics(fields, x.metric_name)
-            )
-
-        for row in differences:
-            if table_format in ["CHANGED", "WORSE", "CRITICAL"]:
-                if (row.delta is None and row.delta == 0) or row.before == row.after:
-                    continue
-            if table_format == ["WORSE", "CRITICAL"]:
-                if row.better is True:
-                    continue
-            if table_format == "CRITICAL":
-                if not row.critical:
-                    continue
-            before_format = "[blue]"
-            after_format = "[blue]"
-            emoji = ""
-            if row.better is not None:
-                if row.better:
-                    before_format = "[red]"
-                    after_format = "[green]"
-                else:
-                    before_format = "[green]"
-                    after_format = "[red]"
-
-            if row.critical:
-                emoji = "‼️"
-                after_format = f"[bold]{after_format}"
-
-            before, after, delta = row.format_values()
-
-            table.add_row(
-                row.metric_name,
-                f"{before_format}{before}",
-                f"{after_format}{after}",
-                f"{after_format}{delta} {emoji}",
-            )
-
-        return table
-
     def render_md(
         self,
         sort_by: Optional[Iterable[str]] = None,
-        table_format: Literal["ALL", "CHANGED", "WORSE", "CRITICAL"] = "ALL",
+        table_format: TableFormat = "ALL",
     ) -> str:
+        """
+        :param sort_by: A list of tuples corresponding to modifiers to sort
+            metrics ascendingly by.
+        :param table_format: The verbosity of the table: whether to include everything, just changes, only bad changes or only critical changes. Or just nothing.
+        :returns: A table of the differences in Markdown format.
+        """
+        if table_format == "NONE":
+            return ""
+
         differences = self.differences
         if fields := sort_by:
             differences = sorted(
@@ -226,7 +202,10 @@ class MetricDiff(object):
         return table
 
     def stats(self) -> MetricStatistics:
-        stats = MetricStatistics()
+        """
+        :returns: A :class:`MetricStatistics` object based on this aggregate.
+        """
+        stats = MetricDiff.MetricStatistics()
         for row in self.differences:
             if row.delta == 0 or row.before == row.after:
                 stats.unchanged += 1
@@ -247,6 +226,16 @@ class MetricDiff(object):
         rhs: dict,
         filter: Filter = Filter(["*"]),
     ) -> "MetricDiff":
+        """
+        Creates a :class:`MetricDiff` object from two sets of metrics.
+
+        :param lhs: The metrics to compare against
+        :param rhs: The metrics being evaluated
+        :param filter: A :class:`Filter` for the names of the metrics to include
+            or exclude certain metrics.
+        :returns: The aggregate of the differences between lhs and rhs
+        """
+
         def generator(lhs, rhs):
             for metric in filter.filter(sorted(rhs.keys())):
                 if metric not in lhs:

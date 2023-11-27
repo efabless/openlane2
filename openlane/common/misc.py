@@ -307,13 +307,18 @@ def get_latest_file(in_path: Union[str, os.PathLike], filename: str) -> Optional
     return latest_json
 
 
-def get_github_session(token: Optional[str] = None) -> httpx.Client:
+def get_httpx_session(token: Optional[str] = None) -> httpx.Client:
+    """
+    Creates an ``httpx`` session client that follows redirects and has the
+    User-Agent header set to ``openlane2/{__version__}``.
+
+    :param token: If this parameter is non-None and not empty, another header,
+        Authorization: Bearer {token}, is included.
+    :returns: The created client
+    """
     session = httpx.Client(follow_redirects=True)
+    headers_raw = {"User-Agent": f"openlane2/{__version__}"}
     if token is not None and token.strip() != "":
-        session.headers = httpx.Headers(
-            {
-                "Authorization": f"token {token}",
-                "User-Agent": f"openlane2/{__version__}",
-            }
-        )
+        headers_raw["Authorization"] = f"Bearer {token}"
+    session.headers = httpx.Headers(headers_raw)
     return session

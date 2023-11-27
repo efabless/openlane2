@@ -31,5 +31,5 @@ function get(token = "") {
 module.exports = get;
 
 if (require.main === module) {
-    console.log(get());
+    console.log(get(process.argv[2]));
 }
