@@ -250,7 +250,8 @@ jobs:
         with:
           name: metrics
           path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
-  manage_metrics:
+  upload_metrics:
+    name: Upload Metrics
     runs-on: ubuntu-22.04
     needs: [test]
     if: ${{ always() }}
@@ -281,7 +282,19 @@ jobs:
               repo: context.repo.repo,
               body: `# Metrics Report for Run ${context.runId}\n\n` + require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
             })
-      # TODO: UPLOAD METRICS
+      - name: "[Push] Upload Metrics"
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          CURRENT_SHA=$(git rev-parse HEAD)
+          REPO=efabless/openlane-metrics
+          BRANCH_NAME="commit-$CURRENT_SHA"
+          echo "Uploading to 'github.com/$REPO@BRANCH_NAME'…"
+          cd current
+          git init -b 
+          git add .
+          git commit -m "Upload"
+          git remote add origin "git@github.com:$REPO"
+          git push -u origin $BRANCH_NAME
   publish:
     runs-on: ubuntu-22.04
     needs: [

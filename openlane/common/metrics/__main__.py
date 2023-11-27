@@ -187,14 +187,7 @@ def _compare_metric_folders(
 
         total_critical += stats.critical
         if stats.critical > 0:
-            critical_change_report += f"  * `{pdk}/{scl}/{design}`: \n"
-            for row in diff.differences:
-                if not row.critical:
-                    continue
-                critical_change_report += (
-                    f"    * `{row.metric_name}` ({row.before} -> {row.after}) \n"
-                )
-
+            critical_change_report += f"  * `{pdk}/{scl}/{design}` \n"
         if table_format != "NONE":
             rendered = diff.render_md(("corner", ""), table_format)
             if rendered.strip() != "":
@@ -206,7 +199,7 @@ def _compare_metric_folders(
         )
     else:
         critical_change_report = (
-            "* **A number of critical regressions were detected:**\n"
+            "* **Critical regressions were detected in the following designs:**\n"
             + critical_change_report
         )
 
