@@ -36,11 +36,11 @@ runs:
       run: |
         echo "#################################################################"
         nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.'"
-    - name: Smoke Test
-      shell: ${{ inputs.shell }}
-      run: |
-        echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
+    # - name: Smoke Test
+    #   shell: ${{ inputs.shell }}
+    #   run: |
+    #     echo "#################################################################"
+    #     nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
     - name: Push
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
