@@ -292,8 +292,8 @@ jobs:
           cd current
           git init -b $BRANCH_NAME
           git add .
-          git config --user.name "${{ vars.BOT_NAME }}"
-          git config --user.email "${{ vars.BOT_EMAIL }}""
+          git config user.name "${{ vars.BOT_NAME }}"
+          git config user.email "${{ vars.BOT_EMAIL }}""
           git commit -m "Upload"
           git remote add origin "${{ secrets.GH_TOKEN }}@github.com:$REPO"
           git push -u origin $BRANCH_NAME
