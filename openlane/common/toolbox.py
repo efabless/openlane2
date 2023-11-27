@@ -183,19 +183,18 @@ class Toolbox(object):
         :param timing_corner:
             A fully qualified IPVT corner to get SCL libs for.
 
-            If not specified, the value for `DEFAULT_CORNER` from the SCL will
+            If not specified, the value for ``DEFAULT_CORNER`` from the SCL will
             be used.
         :param prioritize_nl:
             Do not return lib files for macros that have gate-Level Netlists and
             SPEF views.
 
-            If set to ``false``, only lib files are returned.
+            If set to ``false``\, only lib files are returned.
         :returns: A tuple of:
             * The name of the timing corner
-            * A heterogenous list of files
-                - Lib files are returned as-is
-                - Netlists are returned as-is
-                - SPEF files are returned in the format "{instance_name}@{spef_path}"
+            * A heterogenous list of files composed of: Lib files are returned as-is,
+            Netlists are returned as-is, and SPEF files are returned in the
+            format "{instance_name}@{spef_path}"
 
             It is left up to the step or tool to process this list as they see
             fit.

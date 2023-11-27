@@ -59,13 +59,13 @@ def aggregate_metrics(
     ] = None,
 ) -> Dict[str, Any]:
     """
-    Takes a set of metrics generated according to the `Metrics4ML standard <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_.
+    Takes a set of metrics generated according to the
+    `Metrics4ML standard <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_.
 
     :param input: A mapping of strings to values of metrics.
     :param aggregator_by_metric: A mapping of metric names to either:
-        - A tuple of the initial accumulator and reducer to aggregate the values
-          from all modifier metrics
-        - A :ref:`Metric` class
+        - A tuple of the initial accumulator and reducer to aggregate the values from all modifier metrics
+        - A :class:`Metric` class
     :returns: A tuple of the base part as a string, then the modifiers as
         a key-value mapping.
     """
@@ -169,7 +169,7 @@ class MetricDiff(object):
 
         for row in differences:
             if table_format in ["CHANGED", "WORSE", "CRITICAL"]:
-                if (row.delta is None and row.delta == 0) or row.before == row.after:
+                if (row.delta is None and row.delta == 0) or row.gold == row.new:
                     continue
             if table_format == ["WORSE", "CRITICAL"]:
                 if row.better is True:
@@ -207,7 +207,7 @@ class MetricDiff(object):
         """
         stats = MetricDiff.MetricStatistics()
         for row in self.differences:
-            if row.delta == 0 or row.before == row.after:
+            if row.delta == 0 or row.gold == row.new:
                 stats.unchanged += 1
             elif row.critical:
                 stats.critical += 1
@@ -222,26 +222,26 @@ class MetricDiff(object):
     @classmethod
     def from_metrics(
         Self,
-        lhs: dict,
-        rhs: dict,
+        gold: dict,
+        new: dict,
         filter: Filter = Filter(["*"]),
     ) -> "MetricDiff":
         """
         Creates a :class:`MetricDiff` object from two sets of metrics.
 
-        :param lhs: The metrics to compare against
-        :param rhs: The metrics being evaluated
+        :param gold: The "gold-standard" metrics to compare against
+        :param new: The metrics being evaluated
         :param filter: A :class:`Filter` for the names of the metrics to include
             or exclude certain metrics.
-        :returns: The aggregate of the differences between lhs and rhs
+        :returns: The aggregate of the differences between gold and good
         """
 
-        def generator(lhs, rhs):
-            for metric in filter.filter(sorted(rhs.keys())):
-                if metric not in lhs:
+        def generator(g, n):
+            for metric in filter.filter(sorted(n.keys())):
+                if metric not in g:
                     continue
                 base_metric, modifiers = parse_metric_modifiers(metric)
-                lhs_value, rhs_value = lhs[metric], rhs[metric]
+                lhs_value, rhs_value = g[metric], n[metric]
                 if type(lhs_value) != type(rhs_value):
                     lhs_value = type(rhs_value)(lhs_value)
 
@@ -250,4 +250,4 @@ class MetricDiff(object):
                         lhs_value, rhs_value, modifiers=modifiers
                     )
 
-        return MetricDiff(generator(lhs, rhs))
+        return MetricDiff(generator(gold, new))

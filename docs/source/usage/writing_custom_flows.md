@@ -215,7 +215,7 @@ its `StepError`s:
 ---
 language: python
 start-after: "step_list.append(step)"
-end-before: "self.end_stage()"
+end-before: "raise FlowError(str(e))"
 ---
 ```
 

@@ -288,7 +288,7 @@ jobs:
           CURRENT_SHA=$(git rev-parse HEAD)
           REPO=efabless/openlane-metrics
           BRANCH_NAME="commit-$CURRENT_SHA"
-          echo "Uploading to 'github.com/$REPO@BRANCH_NAME'…"
+          echo "Uploading to 'github.com/$REPO@$BRANCH_NAME'…"
           cd current
           git init -b $BRANCH_NAME
           git add .

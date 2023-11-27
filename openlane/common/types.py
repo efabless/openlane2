@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import sys
+from math import isfinite
 from decimal import Decimal
 from collections import UserString
 from typing import Any, Union, ClassVar, Tuple, Optional
@@ -28,6 +29,8 @@ Number = Union[int, float, Decimal]
 def is_number(obj: Any) -> bool:
     return isinstance(obj, int) or isinstance(obj, float) or isinstance(obj, Decimal)
 
+def is_real_number(obj: Any) -> bool:
+    return is_number(obj) and isfinite(obj)
 
 class Path(UserString, os.PathLike):
     """

@@ -42,6 +42,18 @@ default_filter_set = [
     "!*__iter:*",
 ]
 
+# passing_filter_set = [
+#     "design__*__area",
+#     "route__wirelength__max",
+#     "design__instance__utilization",
+#     "antenna__violating*",
+#     "timing__*__ws",
+#     "clock__skew__*",
+#     "ir__*",
+#     "power__*",
+#     "!*__iter:*",
+# ]
+
 
 @cloup.group(
     no_args_is_help=True,
