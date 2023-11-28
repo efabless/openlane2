@@ -255,6 +255,29 @@ proc write_views {args} {
         write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
     }
 
+    if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
+        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(FP_WELLTAP_CELL)] [join $::env(FP_ENDCAP_CELL)]"
+        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
+        puts "Excluding $exclude_cells"
+        write_verilog -include_pwr_gnd \
+            -remove_cells "$exclude_cells"\
+            $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
+    }
+
+    if { [info exists ::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)] } {
+        set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(FP_WELLTAP_CELL)] [join $::env(FP_ENDCAP_CELL)]"
+        puts "Writing nofilldiode powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)'…"
+        puts "Excluding $exclude_cells"
+        write_verilog -include_pwr_gnd \
+            -remove_cells "$exclude_cells"\
+            $::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)
+    }
+
+    if { [info exists ::env(SAVE_OPENROAD_LEF)] } {
+        puts "Writing LEF to '$::env(SAVE_OPENROAD_LEF)'…"
+        write_abstract_lef $::env(SAVE_OPENROAD_LEF)
+    }
+
     if { [info exists ::env(SAVE_DEF)] } {
         puts "Writing layout to '$::env(SAVE_DEF)'…"
         write_def $::env(SAVE_DEF)
