@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Copyright 2020 - 2021 Efabless Corporation
+// Copyright 2023 Efabless Corporation
 //
 // Licensed under the Apache License, Version 2.0(the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,11 @@
 //     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+/**
+ * 
+ * @param {string} token
+ * @returns {string}
+ */
 function get(token = "") {
     const { spawnSync } = require("child_process");
 

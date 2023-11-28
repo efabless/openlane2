@@ -276,12 +276,9 @@ jobs:
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `# Metrics Report for Run ${context.runId}\n\n` + require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}")
-            })
+            let body = `# Metrics Report for Run ${context.runId}\n\n` + require("./.github/scripts/compare_main.js")("${{ secrets.GH_TOKEN }}");
+            let createOrUpdateComment = require("./.github/scripts/post_or_update_comment.js");
+            createOrUpdateComment(github, context, "${{ vars.BOT_USERNAME }}", body).then(()=>{ console.log("Done"); })
       - name: "[Push] Upload Metrics"
         if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}
         run: |

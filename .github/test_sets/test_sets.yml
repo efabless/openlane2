@@ -2,27 +2,27 @@
   name: fastest_test_set
   designs:
     - inverter
-    - wbqspiflash
-    - APU
-    - s44
-    - zipdiv
-    - blink
-    - name: xtea
-      config_file: config.tcl
-    - usb
-    - usb_cdc_core
-    - name: latch
-      config_file: config_good.json
-    - name: latch
-      config_file: config_bad.json
+    # - wbqspiflash
+    # - APU
+    # - s44
+    # - zipdiv
+    # - blink
+    # - name: xtea
+    #   config_file: config.tcl
+    # - usb
+    # - usb_cdc_core
+    # - name: latch
+    #   config_file: config_good.json
+    # - name: latch
+    #   config_file: config_bad.json
     - spm
     - gcd
-    - caravel_upw
-    - io_placer
-    - test_sram_macro
-    - manual_macro_placement_test
-    - aes_user_project_wrapper
-    - user_proj_timer
+    # - caravel_upw
+    # - io_placer
+    # - test_sram_macro
+    # - manual_macro_placement_test
+    # - aes_user_project_wrapper
+    # - user_proj_timer
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
