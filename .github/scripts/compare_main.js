@@ -13,34 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 /**
- * 
+ * @param {string} verbosity
  * @param {string} token
  * @returns {string}
  */
-function get(token = "") {
+function get(verbosity, table_out = null, token = "") {
     const { spawnSync } = require("child_process");
 
-    let child;
-    // Must fit in the body of a comment, try being less verbose
-    for (const verbosity of ["CHANGED", "WORSE", "CRITICAL", "NONE"]) {
-        child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-main", "current", "--table-format", verbosity, "--token", token], { encoding: "utf8" });
-        if (child.stdout.length < 60000) {
-            break;
-        }
-    }
+    let tableOutOpts = table_out ? ["--table-out", table_out] : [];
+
+    let child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-main", "current", "--table-format", verbosity, "--token", token].concat(tableOutOpts), { encoding: "utf8" });
 
     let result = "";
     if (child.status != 0) {
-        result = "Failed to create report: \n\n```\n" + child.stderr + "\n```";
+        throw new Error("Failed to create report: \n\n```\n" + child.stderr + "\n```");
     } else {
         result = "> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke `python3 -m openlane.common.metrics compare-main <path to directory>`.\n\n" + child.stdout;
     }
 
-    return result;
+    return result.trim();
 };
 
 module.exports = get;
 
 if (require.main === module) {
-    console.log(get(process.argv[2]));
+    console.log(get("ALL", null, process.argv[2]));
 }

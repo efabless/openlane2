@@ -81,6 +81,12 @@ def common_opts(f):
         default="ALL",
         help=_table_format_help,
     )(f)
+    f = cloup.option(
+        "--table-out",
+        type=click.Path(file_okay=True, dir_okay=False, writable=True),
+        help="The place to write the table to.",
+        default=None
+    )(f)
     return f
 
 
@@ -91,6 +97,7 @@ def compare(
     metric_files: Tuple[str, str],
     table_format: TableFormat,
     filter_wildcards: Tuple[str, ...],
+    table_out: Optional[str],
 ):
     """
     Creates a small summary of the differences between two ``metrics.json`` files.
@@ -111,8 +118,13 @@ def compare(
             final_filters.append(wildcard)
 
     diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
+    
     md_str = diff.render_md(sort_by=("corner", ""), table_format=table_format)
-    print(md_str)
+
+    file = sys.stdout
+    if table_out is not None:
+        file = open(table_out, "w", encoding="utf8")
+    print(md_str, file=file)
 
     # When we upgrade to rich 13 (when NixOS 23.11 comes out,
     # it has a proper markdown table renderer, but until then, this will have to do)
@@ -126,7 +138,7 @@ def _compare_metric_folders(
     table_format: TableFormat,
     path_a: str,
     path_b: str,
-):
+) -> Tuple[str, str]: # (summary, table)
     a: Set[Tuple[str, str, str]] = set()
     b: Set[Tuple[str, str, str]] = set()
 
@@ -207,7 +219,7 @@ def _compare_metric_folders(
 
     if total_critical == 0:
         critical_change_report = (
-            "* No critical regressions were detected.\n" + critical_change_report
+            "* No critical regressions were detected in analyzed designs.\n" + critical_change_report
         )
     else:
         critical_change_report = (
@@ -218,11 +230,8 @@ def _compare_metric_folders(
     report = ""
     report += difference_report
     report += critical_change_report
-    if tables.strip() != "":
-        report += "\n\n## Per-design breakdown\n\n"
-        report += tables
 
-    return report
+    return report, tables.strip()
 
 
 @cloup.command(no_args_is_help=True)
@@ -232,6 +241,7 @@ def compare_multiple(
     filter_wildcards: Tuple[str, ...],
     table_format: TableFormat,
     metric_folders: Tuple[str, str],
+    table_out: Optional[str],
 ):
     """
     Creates a small summary/report of the differences between two folders with
@@ -241,7 +251,11 @@ def compare_multiple(
     All other files are ignored.
     """
     path_a, path_b = metric_folders
-    print(_compare_metric_folders(filter_wildcards, table_format, path_a, path_b))
+    summary, tables = _compare_metric_folders(filter_wildcards, table_format, path_a, path_b)
+    print(summary)
+    if table_out is not None:
+        file = open(table_out, "w", encoding="utf8")
+    print(tables, file=file)
 
 
 cli.add_command(compare_multiple)
@@ -282,6 +296,7 @@ def compare_main(
     commit: Optional[str],
     token: str,
     metric_folder: str,
+    table_out: Optional[str],
 ):
     """
     Creates a small summary/report of the differences between a folder and
@@ -334,13 +349,17 @@ def compare_main(
                         with open(final_path, "wb") as f:
                             f.write(io.read())
 
-            report = _compare_metric_folders(
+            summary, tables = _compare_metric_folders(
                 filter_wildcards,
                 table_format,
                 d,
                 metric_folder,
             )
-            print(report)
+            print(summary)
+            table_file = sys.stdout
+            if table_out is not None:
+                table_file = open(table_out, "w", encoding="utf8")
+            print(tables, file=table_file)
     except httpx.HTTPStatusError as e:
         if e.response is not None and e.response.status_code == 404:
             print(f"Metrics not found for commit: {commit}.", file=sys.stderr)

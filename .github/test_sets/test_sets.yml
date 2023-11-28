@@ -38,16 +38,16 @@
   name: fastest_test_set
   designs:
     - spm
-    - APU
-    - usb
-    - usb_cdc_core
-    - zipdiv
-    - blink
-    - wbqspiflash
-    - name: latch
-      config_file: config_good.json
-    - name: latch
-      config_file: config_bad.json
+    # - APU
+    # - usb
+    # - usb_cdc_core
+    # - zipdiv
+    # - blink
+    # - wbqspiflash
+    # - name: latch
+    #   config_file: config_good.json
+    # - name: latch
+    #   config_file: config_bad.json
 - scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set
   designs:

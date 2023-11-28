@@ -34,3 +34,9 @@ slpp_all/
 htmlcov/
 prof/
 sandbox/
+
+# Testing CI
+package.json
+node_modules
+yarn.lock
+tables_*.md

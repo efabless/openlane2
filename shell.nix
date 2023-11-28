@@ -43,5 +43,7 @@ with pkgs; let
     # Docs + Testing
     jupyter
     graphviz
+    nodejs
+    yarn
   ] ++ openlane.includedTools ++ pluginIncludedTools;
 }

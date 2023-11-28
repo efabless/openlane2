@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const compareMain = require("./compare_main.js");
+
 /**
  * 
  * @param {Octokit} github 
@@ -20,7 +22,7 @@
  * @param {string} botUsername 
  * @param {string} body 
  */
-module.exports = async function (github, context, botUsername, body) {
+async function postOrUpdateComment(github, context, botUsername, body) {
     const METRIC_REPORT_MARK = "<!-- MARK: METRICS REPORT -->";
 
     let page = 1;
@@ -60,4 +62,68 @@ module.exports = async function (github, context, botUsername, body) {
     }
 
     await fn(request);
+}
+
+/**
+ * 
+ * @param {Octokit} github 
+ * @param {object} context 
+ * @param {string} botUsername 
+ * @param {string} botToken 
+ */
+async function main(github, context, botUsername, botToken) {
+    const fs = require("fs");
+
+    let body;
+    try {
+        body = compareMain("ALL", "./tables_all.md", botToken);
+        let tables = fs.readFileSync("./tables_all.md", { encoding: "utf8" });
+
+        let gistResponse = await github.gists.create({
+            public: true,
+            description: `Results for ${context.repo.owner} / ${context.repo.repo}#${context.issue.number} (Run ${context.runId})`,
+            files: {
+                "10-ALL.md": {
+                    content: tables
+                }
+            }
+        });
+
+        body += `\n\nFull tables ► ${gistResponse.data.url}\n`;
+    } catch (e) {
+        body = e.message;
+        console.error(e.message)
+    }
+
+    await postOrUpdateComment(github, context, botUsername, body)
+}
+
+module.exports = main;
+
+if (require.main === module) {
+    // Test
+    try {
+        require("@octokit/rest");
+    } catch (error) {
+        console.error("Run 'yarn add @octokit/rest @octokit/plugin-paginate-rest'")
+        process.exit(-1);
+    }
+    const { Octokit } = require("@octokit/rest");
+
+    const context = {
+        repo: {
+            owner: "efabless",
+            repo: "openlane2"
+        },
+        issue: {
+            number: process.argv[3]
+        },
+        runId: "api_test"
+    };
+
+    let octokit = new Octokit({
+        auth: process.argv[2],
+    });
+
+    main(octokit, context, "openlane-bot", process.argv[2]);
 }
