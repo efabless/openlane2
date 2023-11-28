@@ -804,18 +804,20 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
@@ -1395,6 +1397,43 @@ class IRDropReport(OpenROADStep):
 
 
 @Step.factory.register()
+class CutRows(OpenROADStep):
+    """
+    Cut floorplan rows with respect to placed macros.
+    """
+
+    id = "OpenROAD.CutRows"
+    name = "CutRows"
+
+    inputs = [DesignFormat.ODB]
+    outputs = [
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_MACRO_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
+        ),
+        Variable(
+            "FP_MACRO_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
+
+
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design

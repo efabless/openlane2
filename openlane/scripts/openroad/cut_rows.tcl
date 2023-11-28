@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Efabless Corporation
+# Copyright 2023 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-tapcell\
-    -distance $::env(FP_TAPCELL_DIST)\
-    -tapcell_master "$::env(FP_WELLTAP_CELL)"\
-    -endcap_master "$::env(FP_ENDCAP_CELL)"\
+cut_rows\
+    -endcap_master $::env(FP_ENDCAP_CELL)\
     -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
 
 write_views
 
 report_design_area_metrics
-
