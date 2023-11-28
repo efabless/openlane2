@@ -79,7 +79,7 @@ async function main(github, context, botUsername, botToken) {
         body = compareMain("ALL", "./tables_all.md", botToken);
         let tables = fs.readFileSync("./tables_all.md", { encoding: "utf8" });
 
-        let gistResponse = await github.gists.create({
+        let gistResponse = await github.rest.gists.create({
             public: true,
             description: `Results for ${context.repo.owner} / ${context.repo.repo}#${context.issue.number} (Run ${context.runId})`,
             files: {
