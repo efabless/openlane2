@@ -89,7 +89,7 @@ async function main(github, context, botUsername, botToken) {
             }
         });
 
-        body += `\n\nFull tables ► ${gistResponse.data.url}\n`;
+        body += `\n\nFull tables ► ${gistResponse.data.html_url}\n`;
     } catch (e) {
         body = e.message;
         console.error(e.message)

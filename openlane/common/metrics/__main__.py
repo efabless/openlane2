@@ -85,7 +85,7 @@ def common_opts(f):
         "--table-out",
         type=click.Path(file_okay=True, dir_okay=False, writable=True),
         help="The place to write the table to.",
-        default=None
+        default=None,
     )(f)
     return f
 
@@ -118,7 +118,7 @@ def compare(
             final_filters.append(wildcard)
 
     diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
-    
+
     md_str = diff.render_md(sort_by=("corner", ""), table_format=table_format)
 
     file = sys.stdout
@@ -138,7 +138,7 @@ def _compare_metric_folders(
     table_format: TableFormat,
     path_a: str,
     path_b: str,
-) -> Tuple[str, str]: # (summary, table)
+) -> Tuple[str, str]:  # (summary, table)
     a: Set[Tuple[str, str, str]] = set()
     b: Set[Tuple[str, str, str]] = set()
 
@@ -219,7 +219,8 @@ def _compare_metric_folders(
 
     if total_critical == 0:
         critical_change_report = (
-            "* No critical regressions were detected in analyzed designs.\n" + critical_change_report
+            "* No critical regressions were detected in analyzed designs.\n"
+            + critical_change_report
         )
     else:
         critical_change_report = (
@@ -251,7 +252,9 @@ def compare_multiple(
     All other files are ignored.
     """
     path_a, path_b = metric_folders
-    summary, tables = _compare_metric_folders(filter_wildcards, table_format, path_a, path_b)
+    summary, tables = _compare_metric_folders(
+        filter_wildcards, table_format, path_a, path_b
+    )
     print(summary)
     if table_out is not None:
         file = open(table_out, "w", encoding="utf8")
