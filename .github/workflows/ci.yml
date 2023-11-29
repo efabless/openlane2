@@ -31,7 +31,7 @@ jobs:
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }};
           cd ./test/designs
-          ipm install-deps --ip-root $(pwd)/IPS
+          ipm install-dep --ip-root $(pwd)/IPS
       - name: Determine If Running Extended Test Set
         run: |
           export EVENT_NAME=${{ github.event_name }};
