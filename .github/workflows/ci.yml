@@ -24,6 +24,14 @@ jobs:
       - name: Python Dependencies
         run: |
           python3 -m pip install -r ./requirements.txt
+          git clone https://github.com/efabless/IPM.git
+          cd IPM
+          python3 -m pip install .
+      - name: Install IPM designs
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }};
+          cd ./test/design
+          ipm install-deps --ip-root $(pwd)/IPS
       - name: Determine If Running Extended Test Set
         run: |
           export EVENT_NAME=${{ github.event_name }};
