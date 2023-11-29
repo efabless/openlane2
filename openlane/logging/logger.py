@@ -15,29 +15,23 @@ import sys
 import click
 import atexit
 import logging
+from typing import Union
+from enum import IntEnum
+
+
 import rich.console
-from typing import ClassVar, Union
 from rich.logging import RichHandler
 
 
-class LogLevels:
-    ALL: ClassVar[int] = 0
-    DEBUG: ClassVar[int] = 10
-    VERBOSE: ClassVar[int] = 15
-    INFO: ClassVar[int] = 20
-    WARN: ClassVar[int] = 30
-    ERROR: ClassVar[int] = 40
-    CRITICAL: ClassVar[int] = 50
+class LogLevels(IntEnum):
+    ALL: int = 0
+    DEBUG: int = 10
+    VERBOSE: int = 15
+    INFO: int = 20
+    WARN: int = 30
+    ERROR: int = 40
+    CRITICAL: int = 50
 
-
-def __log_levels_dict():
-    result = {k: v for k, v in LogLevels.__dict__.items() if not k.startswith("__")}
-    for name, value in result.items():
-        logging.addLevelName(value, name)
-    return result
-
-
-LogLevelsDict = __log_levels_dict()
 
 console = rich.console.Console()
 atexit.register(lambda: rich.console.Console().show_cursor())

@@ -36,8 +36,8 @@ from openlane.state.state import InvalidState
 
 
 from .flow import Flow
-from ..common import set_tpe, get_opdks_rev
-from ..logging import set_log_level, err, LogLevelsDict
+from ..common import set_tpe, get_opdks_rev, cli
+from ..logging import set_log_level, err, LogLevels
 from ..state import State
 
 
@@ -322,17 +322,12 @@ def cloup_flow_opts(
         if log_level:
             f = o(
                 "--log-level",
-                type=str,
+                type=cli.IntEnumChoice(LogLevels),
                 default="VERBOSE",
                 help=dedent(
                     """
                     A logging level. Set to INFO or higher to silence subprocess logs.
-
-                    You can provide either a number or a string out of the following (higher is more silent):
                     """
-                )
-                + ",".join(
-                    [f"{name}={value}" for name, value in LogLevelsDict.items()]
                 ),
                 callback=set_log_level_cb,
                 expose_value=False,

@@ -20,14 +20,14 @@ import tarfile
 import tempfile
 from io import BytesIO
 from decimal import Decimal
-from typing import Optional, Set, Tuple, get_args
+from typing import Optional, Set, Tuple
 
 import cloup
 import httpx
 
-from .util import MetricDiff, TableFormat, _table_format_help
+from .util import MetricDiff, TableVerbosity
 from ..misc import Filter, get_httpx_session, mkdirp
-from ..cli import formatter_settings
+from ..cli import formatter_settings, IntEnumChoice
 
 default_filter_set = [
     "design__*__area",
@@ -73,13 +73,10 @@ def common_opts(f):
         help="A list of wildcards to filter by. Wildcards prefixed with ! exclude rather than include and take priority. 'DEFAULT' is replaced by a set of default wildcards.",
     )(f)
     f = cloup.option(
-        "--table-format",
-        type=click.Choice(
-            get_args(TableFormat),
-            case_sensitive=False,
-        ),
+        "--table-verbosity",
+        type=IntEnumChoice(TableVerbosity),
         default="ALL",
-        help=_table_format_help,
+        help=TableVerbosity.__doc__,
     )(f)
     f = cloup.option(
         "--table-out",
@@ -95,14 +92,14 @@ def common_opts(f):
 @cloup.argument("metric_files", nargs=2)
 def compare(
     metric_files: Tuple[str, str],
-    table_format: TableFormat,
+    table_verbosity: TableVerbosity,
     filter_wildcards: Tuple[str, ...],
     table_out: Optional[str],
 ):
     """
     Creates a small summary of the differences between two ``metrics.json`` files.
     """
-    if table_format == "NONE":
+    if table_verbosity == "NONE":
         print("Table is empty.", file=sys.stderr)
         exit(0)
 
@@ -119,7 +116,7 @@ def compare(
 
     diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
 
-    md_str = diff.render_md(sort_by=("corner", ""), table_format=table_format)
+    md_str = diff.render_md(sort_by=("corner", ""), table_verbosity=table_verbosity)
 
     file = sys.stdout
     if table_out is not None:
@@ -135,7 +132,7 @@ cli.add_command(compare)
 
 def _compare_metric_folders(
     filter_wildcards: Tuple[str, ...],
-    table_format: TableFormat,
+    table_verbosity: TableVerbosity,
     path_a: str,
     path_b: str,
 ) -> Tuple[str, str]:  # (summary, table)
@@ -212,8 +209,8 @@ def _compare_metric_folders(
         total_critical += stats.critical
         if stats.critical > 0:
             critical_change_report += f"  * `{pdk}/{scl}/{design}` \n"
-        if table_format != "NONE":
-            rendered = diff.render_md(("corner", ""), table_format)
+        if table_verbosity != "NONE":
+            rendered = diff.render_md(("corner", ""), table_verbosity)
             if rendered.strip() != "":
                 tables += f"<details><summary><code>{pdk}/{scl}/{design}</code></summary>\n{rendered}</details>"
 
@@ -240,7 +237,7 @@ def _compare_metric_folders(
 @cloup.argument("metric_folders", nargs=2)
 def compare_multiple(
     filter_wildcards: Tuple[str, ...],
-    table_format: TableFormat,
+    table_verbosity: TableVerbosity,
     metric_folders: Tuple[str, str],
     table_out: Optional[str],
 ):
@@ -253,7 +250,7 @@ def compare_multiple(
     """
     path_a, path_b = metric_folders
     summary, tables = _compare_metric_folders(
-        filter_wildcards, table_format, path_a, path_b
+        filter_wildcards, table_verbosity, path_a, path_b
     )
     print(summary)
     if table_out is not None:
@@ -293,7 +290,7 @@ cli.add_command(compare_multiple)
 @cloup.argument("metric_folder", nargs=1)
 def compare_main(
     filter_wildcards: Tuple[str, ...],
-    table_format: TableFormat,
+    table_verbosity: TableVerbosity,
     repo: str,
     metric_repo: str,
     commit: Optional[str],
@@ -354,7 +351,7 @@ def compare_main(
 
             summary, tables = _compare_metric_folders(
                 filter_wildcards,
-                table_format,
+                table_verbosity,
                 d,
                 metric_folder,
             )

@@ -22,7 +22,7 @@ function get(verbosity, table_out = null, token = "") {
 
     let tableOutOpts = table_out ? ["--table-out", table_out] : [];
 
-    let child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-main", "current", "--table-format", verbosity, "--token", token].concat(tableOutOpts), { encoding: "utf8" });
+    let child = spawnSync("python3", ["-m", "openlane.common.metrics", "compare-main", "current", "--table-verbosity", verbosity, "--token", token].concat(tableOutOpts), { encoding: "utf8" });
 
     let result = "";
     if (child.status != 0) {

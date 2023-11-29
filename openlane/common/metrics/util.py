@@ -13,10 +13,10 @@
 # limitations under the License.
 import re
 import textwrap
+from enum import IntEnum
 from dataclasses import dataclass
 from typing import (
     List,
-    Literal,
     Mapping,
     Tuple,
     Dict,
@@ -31,8 +31,18 @@ from ..misc import Filter
 
 modifier_rx = re.compile(r"([\w\-]+)\:([\w\-]+)")
 
-TableFormat = Literal["NONE", "CRITICAL", "WORSE", "CHANGED", "ALL"]
-_table_format_help = "The verbosity of the table: whether to include everything, just changes, only bad changes or only critical changes. Or just nothing."
+
+class TableVerbosity(IntEnum):
+    """
+    The verbosity of the table: whether to include everything, just changes, only
+    bad changes or only critical change. Or just nothing.
+    """
+
+    NONE = 0
+    CRITICAL = 1
+    WORSE = 2
+    CHANGED = 3
+    ALL = 4
 
 
 def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
@@ -147,15 +157,15 @@ class MetricDiff(object):
     def render_md(
         self,
         sort_by: Optional[Iterable[str]] = None,
-        table_format: TableFormat = "ALL",
+        table_verbosity: TableVerbosity = TableVerbosity.ALL,
     ) -> str:
         """
         :param sort_by: A list of tuples corresponding to modifiers to sort
             metrics ascendingly by.
-        :param table_format: The verbosity of the table: whether to include everything, just changes, only bad changes or only critical changes. Or just nothing.
+        :param table_verbosity: The verbosity of the table: whether to include everything, just changes, only bad changes or only critical changes. Or just nothing.
         :returns: A table of the differences in Markdown format.
         """
-        if table_format == "NONE":
+        if table_verbosity == TableVerbosity.NONE:
             return ""
 
         differences = self.differences
@@ -168,13 +178,13 @@ class MetricDiff(object):
         table = ""
 
         for row in differences:
-            if table_format in ["CHANGED", "WORSE", "CRITICAL"]:
+            if table_verbosity < TableVerbosity.CHANGED:
                 if (row.delta is None and row.delta == 0) or row.gold == row.new:
                     continue
-            if table_format == ["WORSE", "CRITICAL"]:
+            if table_verbosity < TableVerbosity.WORSE:
                 if row.better is True:
                     continue
-            if table_format == "CRITICAL":
+            if table_verbosity == TableVerbosity.CRITICAL:
                 if not row.critical:
                     continue
             before, after, delta = row.format_values()

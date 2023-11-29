@@ -21,7 +21,6 @@ module and the ``rich`` library.
 
 from .logger import (
     LogLevels,
-    LogLevelsDict,
     console,
     set_log_level,
     reset_log_level,

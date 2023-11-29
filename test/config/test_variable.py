@@ -197,13 +197,6 @@ def test_compile_deprecated(variable):
 
 
 @pytest.fixture()
-def test_enum():
-    from openlane.common import StringEnum
-
-    return StringEnum("x", ["AValue", "AnotherValue"])
-
-
-@pytest.fixture()
 def variable_set(variable, test_enum):
     from openlane.config import Variable
 
