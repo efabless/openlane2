@@ -340,14 +340,14 @@ class DRC(KLayoutStep):
     config_vars = KLayoutStep.config_vars + [
         Variable(
             "KLAYOUT_DRC_RUNSET",
-            Path,
+            Optional[Path],
             "A path to a KLayout DRC runset.",
             pdk=True,
             deprecated_names=["KLAYOUT_DRC_TECH_SCRIPT"],
         ),
         Variable(
             "KLAYOUT_DRC_OPTIONS",
-            Dict[str, Union[bool, int]],
+            Optional[Dict[str, Union[bool, int]]],
             "Options availble to KLayout DRC. They vary from one PDK to another.",
             pdk=True,
         ),
