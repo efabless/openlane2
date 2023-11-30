@@ -359,7 +359,7 @@ class DRC(KLayoutStep):
         ),
     ]
 
-    def run_sky130A(self, state_in: State, **kwargs) -> MetricsUpdate:
+    def run_sky130(self, state_in: State, **kwargs) -> MetricsUpdate:
         metrics_updates: MetricsUpdate = {}
         drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
         kwargs, env = self.extract_env(kwargs)
@@ -424,8 +424,8 @@ class DRC(KLayoutStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metrics_updates: MetricsUpdate = {}
-        if self.config["PDK"] == "sky130A":
-            metrics_updates = self.run_sky130A(state_in, **kwargs)
+        if self.config["PDK"] in ["sky130A", "sky130B"]:
+            metrics_updates = self.run_sky130(state_in, **kwargs)
         else:
             raise NotImplementedError(
                 f"{self.config['PDK']} is not supported. Disable KLayout DRC"
