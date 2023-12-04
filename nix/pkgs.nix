@@ -12,39 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-let
-    newpkgs = import (
-    fetchTarball "https://github.com/NixOS/nixpkgs/archive/3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58.tar.gz"
-    ) {};
-in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
+args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/352689710b6fa907439870e3068176134226da89.tar.gz") {
     overlays = [
         (new: old: {
-            # aarch64-related
-            clp = old.clp.overrideAttrs(finalAttrs: previousAttrs: {
-                meta = {
-                    platforms = previousAttrs.meta.platforms ++ ["aarch64-linux"];
-                };
-            });
-
-            # Darwin-related
             lemon-graph = old.lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
-                meta = { broken = false; };
-                doCheck = false;
-            });
-            
-            or-tools = old.or-tools.overrideAttrs (finalAttrs: previousAttrs: {
-                meta = {
-                    platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
-                };
-                doCheck = false;
+                postPatch = "sed -i 's/register //' lemon/random.h";
             });
 
-            # # Hack to get GHDL to maybe work on macOS- use at your own risk
-            # ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
-            #     meta = {
-            #         platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
-            #     };
-            # }) else (old.ghdl-llvm);
+            cbc = old.cbc.overrideAttrs(finalAttrs: previousAttrs: {
+                # Clang 16's Default is C++17, which CBC does not support
+                configureFlags = previousAttrs.configureFlags ++ ["CXXFLAGS=-std=c++14"]; 
+            });
+
+            spdlog-internal-fmt = (old.spdlog.overrideAttrs(finalAttrs: previousAttrs: {
+                cmakeFlags = builtins.filter (flag: (!old.lib.strings.hasPrefix "-DSPDLOG_FMT_EXTERNAL" flag)) previousAttrs.cmakeFlags;
+                doCheck = false;
+            }));
         })
     ];
 } // args

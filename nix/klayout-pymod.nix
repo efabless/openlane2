@@ -13,15 +13,16 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix {},
+  klayout ? import ./klayout.nix { inherit pkgs; },
 }:
-let
-  rev = "727e2be84a9d8eb62cf3a2756ab959670f891019";
-  sha256 = "sha256-Yb2LtsMJJwETbelWic8GLGxSYAw2PQjb9RufKnEY+zI=";
-in let src = pkgs.fetchFromGitHub {
-  owner = "efabless";
-  repo = "volare";
-  inherit rev;
-  inherit sha256;
-}; in import "${src}" {
-  inherit pkgs;
-}
+
+with pkgs; python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
+  name = "klayout-pymod";
+  buildInputs = [klayout];
+  unpackPhase = "true";
+  installPhase = ''
+    mkdir -p $out/${python3.sitePackages}
+    ln -s ${klayout}/lib/pymod/klayout $out/${python3.sitePackages}/klayout
+    ln -s ${klayout}/lib/pymod/pya $out/${python3.sitePackages}/pya
+  '';
+})

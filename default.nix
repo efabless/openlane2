@@ -17,14 +17,13 @@
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
 
-  klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
-    inherit pkgs;
-  },
+  klayout ? import ./nix/klayout.nix { inherit pkgs; },
+  klayout-pymod ? import ./nix/klayout-pymod.nix { inherit pkgs; inherit klayout; },
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
   opensta ? import ./nix/opensta.nix { inherit pkgs; },
-  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
+  openroad ? import ./nix/openroad.nix {
     inherit pkgs;
     inherit opensta;
   },
@@ -86,6 +85,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     immutabledict
     libparse
     psutil
+    klayout-pymod
   ] ++ includedTools;
 
   doCheck = false;

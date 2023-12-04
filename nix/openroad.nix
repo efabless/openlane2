@@ -55,13 +55,13 @@ in clangStdenv.mkDerivation rec {
 
   buildInputs = [
     abc
-    boost
+    boost183
     eigen
-    spdlog
     tcl
     python3
     readline
     tclreadline
+    spdlog-internal-fmt
     libffi
     libsForQt5.qtbase
     llvmPackages.openmp

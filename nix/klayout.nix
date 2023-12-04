@@ -38,17 +38,19 @@
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
-with pkgs; let
-   rev = "8212b7cefd5b774f82f53cf9080ffc109f1e66ea";
-in clangStdenv.mkDerivation {
+with pkgs; clangStdenv.mkDerivation {
   name = "klayout";
 
   src = fetchFromGitHub {
     owner = "KLayout";
     repo = "klayout";
-    rev = "${rev}";
-    sha256 = "sha256-QvEoXKJ9sH5WIarYPsYEWwoFwA/pZa2etegA+AD8rPo=";
+    rev = "5961eab84bd2d394f3ca94f9482622180d796010";
+    sha256 = "sha256-omeWS72J6mbA5mxsqwmsq1ytuhHa0rLZ+ErN66o+fiY=";
   };
+  
+  patches = [
+    ./patches/klayout/abspath.patch
+  ];
 
   postPatch = ''
     substituteInPlace src/klayout.pri --replace "-Wno-reserved-user-defined-literal" ""
@@ -71,38 +73,41 @@ in clangStdenv.mkDerivation {
     qtxmlpatterns
     curl
     gcc
+    libgit2
   ];
 
   propagatedBuildInputs = [
     ruby
   ];
-  
-  buildPhase = ''
-    mkdir -p $out/lib
-    echo "Using $NIX_BUILD_CORES threads…"
+
+  configurePhase = ''
     ./build.sh\
-      -option -j$NIX_BUILD_CORES\
+      -prefix $out/lib\
       -without-qtbinding\
       -python $(which python3)\
       -ruby $(which ruby)\
-      -prefix $out/lib\
       -expert\
-      -verbose
-    runHook postBuild
+      -verbose\
+      -dry-run
+  '';
+  
+  buildPhase = ''
+    echo "Using $NIX_BUILD_CORES threads…"
+    make -j$NIX_BUILD_CORES -C build-release PREFIX=$out
   '';
 
-  postBuild = if stdenv.isDarwin then ''
-    mkdir $out/bin
-    cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
-  '' else ''
-    mkdir $out/bin
-    cp $out/lib/klayout $out/bin/
+  installPhase = ''
+    mkdir -p $out/bin
+    make  -C build-release install
+    if [ "${if stdenv.isDarwin then "1" else "0" }" = "1" ]; then
+      cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
+    else
+      cp $out/lib/klayout $out/bin/
+    fi
   '';
 
-  # Make libraries also accessible to standalone binary on macOS
-  postFixup = if stdenv.isDarwin then ''
-    sed -Ei "2iexport DYLD_LIBRARY_PATH=$out/lib:\$DYLD_LIBRARY_PATH" $out/bin/klayout
-  '' else '''';
-
-  dontInstall = true; # "Installation" already happens as part of "build.sh"
+  # The automatic Qt wrapper overrides makeWrapperArgs
+  preFixup = if stdenv.isDarwin then ''
+    python3 ${./supporting/klayout/patch_binaries.py} $out/lib $out/lib/pymod/klayout $out/bin/klayout
+  '' else "";
 }
