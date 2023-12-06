@@ -165,6 +165,7 @@ def stream_out(
         print("[INFO] Done.")
     except Exception as e:
         print(e)
+        exit(1)
 
 
 if __name__ == "__main__":

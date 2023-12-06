@@ -114,7 +114,7 @@ def render(
             f.write(pixels.to_png_data())
     except Exception as e:
         print(e)
-        exit(-1)
+        exit(1)
 
 
 if __name__ == "__main__":
