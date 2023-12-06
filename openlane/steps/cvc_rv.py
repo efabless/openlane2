@@ -167,4 +167,4 @@ class ERC(Step):
             return {}, {}
         except CVCNoSupport as e:
             warn(f"Could not run CVC: {e}. Skipping…")
-            return Step.run(self, state_in, **kwargs)
+            return {}, {}

@@ -1560,7 +1560,7 @@ class CTS(ResizerStep):
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
-                return Step.run(self, state_in, **kwargs)
+                return {}, {}
 
         views_updates, metrics_updates = super().run(
             state_in, corners_key="CTS_CORNERS", env=env, **kwargs
@@ -1737,6 +1737,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
             default=False,
         ),
+        Variable(
+            "PL_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1797,6 +1803,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "Allows setup violations when fixing hold.",
             default=False,
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+        Variable(
+            "GRT_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
         ),
     ]
 
