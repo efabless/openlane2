@@ -427,9 +427,7 @@ class DRC(KLayoutStep):
         if self.config["PDK"] in ["sky130A", "sky130B"]:
             metrics_updates = self.run_sky130(state_in, **kwargs)
         else:
-            raise NotImplementedError(
-                f"{self.config['PDK']} is not supported. Disable KLayout DRC"
-            )
+            warn(f"{self.config['PDK']} is not supported. Disable KLayout DRC")
 
         return {}, metrics_updates
 
