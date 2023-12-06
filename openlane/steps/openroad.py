@@ -804,18 +804,20 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
@@ -1395,6 +1397,43 @@ class IRDropReport(OpenROADStep):
 
 
 @Step.factory.register()
+class CutRows(OpenROADStep):
+    """
+    Cut floorplan rows with respect to placed macros.
+    """
+
+    id = "OpenROAD.CutRows"
+    name = "CutRows"
+
+    inputs = [DesignFormat.ODB]
+    outputs = [
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_MACRO_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
+        ),
+        Variable(
+            "FP_MACRO_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
+
+
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design
@@ -1698,6 +1737,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
             default=False,
         ),
+        Variable(
+            "PL_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1758,6 +1803,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "Allows setup violations when fixing hold.",
             default=False,
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+        Variable(
+            "GRT_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
         ),
     ]
 
