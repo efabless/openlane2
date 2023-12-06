@@ -64,7 +64,7 @@ jobs:
       - name: Tarball ipm designs
         run: |
           tree $HOME/.ipm
-          tar -cf /tmp/IPS.tar -C $HOME/.ipm
+          tar -cf /tmp/IPS.tar -C $HOME/.ipm .
       - name: Upload ipm designs
         uses: actions/upload-artifact@v3
         with:
