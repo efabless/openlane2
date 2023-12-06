@@ -150,8 +150,7 @@ def pdk_scl_cb(
                 get_opdks_rev(),
                 include_libraries=include_libraries,
             )
-            print(version.get_dir(volare_home))
-            values["pdk_root"] = version.get_dir(volare_home)
+            ctx.params["pdk_root"] = version.get_dir(volare_home)
     return value
 
 

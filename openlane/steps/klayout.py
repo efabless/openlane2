@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import shlex
 import sys
 import shutil
 import subprocess
@@ -380,23 +381,28 @@ class OpenGUI(KLayoutStep):
         lefs = get_lef_args(self.config, self.toolbox)
         kwargs, env = self.extract_env(kwargs)
 
+        env["KLAYOUT_ARGV"] = shlex.join(
+            [
+                "--lyt",
+                str(lyt),
+                "--lyp",
+                str(lyp),
+                "--lym",
+                str(lym),
+                str(state_in[DesignFormat.DEF]),
+            ]
+            + lefs
+        )
+
         cmd = [
-            sys.executable,
+            shutil.which("klayout") or "klayout",
+            "-rm",
             os.path.join(
                 get_script_dir(),
                 "klayout",
                 "open_design.py",
             ),
-            "--lyt",
-            str(lyt),
-            "--lyp",
-            str(lyp),
-            "--lym",
-            str(lym),
-            str(state_in[DesignFormat.DEF]),
-        ] + lefs
-
-        print(" ".join(cmd))
+        ]
 
         subprocess.check_call(
             cmd,

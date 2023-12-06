@@ -44,108 +44,78 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from typing import Tuple
+
+import pya
+import click
 
 
-import os
-import sys
-from typing import TYPE_CHECKING
+@click.command()
+@click.option("-o", "--output", required=True)
+@click.option(
+    "-l",
+    "--input-lef",
+    "input_lefs",
+    multiple=True,
+)
+@click.option(
+    "-T",
+    "--lyt",
+    required=True,
+    help="KLayout .lyt file",
+)
+@click.option(
+    "-P",
+    "--lyp",
+    required=True,
+    help="KLayout .lyp file",
+)
+@click.option(
+    "-M",
+    "--lym",
+    required=True,
+    help="KLayout .map (LEF/DEF layer map) file",
+)
+@click.argument("input")
+def render(
+    input_lefs: Tuple[str, ...],
+    output: str,
+    lyt: str,
+    lyp: str,
+    lym: str,
+    input: str,
+):
+    try:
+        gds = input.endswith(".gds")
 
-if "klayout" in os.path.basename(sys.executable):
-    import pya
-else:
-    import click
+        # Load technology file
+        tech = pya.Technology()
+        tech.load(lyt)
 
-    @click.command()
-    @click.option("-o", "--output", required=True)
-    @click.option(
-        "-l",
-        "--input-lef",
-        "input_lefs",
-        multiple=True,
-    )
-    @click.option(
-        "-T",
-        "--lyt",
-        required=True,
-        help="KLayout .lyt file",
-    )
-    @click.option(
-        "-P",
-        "--lyp",
-        required=True,
-        help="KLayout .lyp file",
-    )
-    @click.option(
-        "-M",
-        "--lym",
-        required=True,
-        help="KLayout .map (LEF/DEF layer map) file",
-    )
-    @click.argument("input")
-    def cli(**kwargs):
-        args = [
-            "klayout",
-            "-b",
-            "-rm",
-            __file__,
-        ]
-        for key, value in kwargs.items():
-            args.append("-rd")
-            if isinstance(value, tuple) or isinstance(value, list):
-                value = ";".join([os.path.abspath(element) for element in value])
-            elif (
-                isinstance(value, str)
-                and os.path.exists(value)
-                and key != "design_name"
-            ):
-                value = os.path.abspath(value)
+        layout_options = None
+        if not gds:
+            layout_options = tech.load_layout_options
+            layout_options.lefdef_config.map_file = lym
+            layout_options.lefdef_config.macro_resolution_mode = 1
+            layout_options.lefdef_config.read_lef_with_def = False
+            layout_options.lefdef_config.lef_files = list(input_lefs)
 
-            args.append(f"{key}={value or 'NULL'}")
+        view = pya.LayoutView()
+        view.load_layer_props(lyp)
 
-        os.execlp("klayout", *args)
+        if gds:
+            view.load_layout(input)
+        else:
+            view.load_layout(input, layout_options, lyt)
+        view.max_hier()
+        pixels = view.get_pixels_with_options(1000, 1000)
 
-    if __name__ == "__main__":
-        cli()
+        with open(output, "wb") as f:
+            f.write(pixels.to_png_data())
+    except Exception as e:
+        print(e)
+        exit(-1)
 
 
-if TYPE_CHECKING:
-    # Dummy data for type-checking
-    input: str = ""
-    output: str = ""
-    input_lefs: str = ""
-    lyp: str = ""
-    lyt: str = ""
-    lym: str = ""
-
-try:
-    gds = input.endswith(".gds")
-
-    # Load technology file
-    tech = pya.Technology()
-    tech.load(lyt)
-
-    layout_options = None
-    if not gds:
-        layout_options = tech.load_layout_options
-        layout_options.lefdef_config.map_file = lym
-        layout_options.lefdef_config.macro_resolution_mode = 1
-        layout_options.lefdef_config.read_lef_with_def = False
-        layout_options.lefdef_config.lef_files = input_lefs.split(";")
-
-    view = pya.LayoutView()
-    view.load_layer_props(lyp)
-
-    if gds:
-        view.load_layout(input)
-    else:
-        view.load_layout(input, layout_options, lyt)
-    view.max_hier()
-    pixels = view.get_pixels_with_options(1000, 1000)
-
-    with open(output, "wb") as f:
-        f.write(pixels.to_png_data())
-
-    pya.Application.instance().exit(0)
-except Exception as e:
-    print(e)
-    pya.Application.instance().exit(1)
+if __name__ == "__main__":
+    render()
