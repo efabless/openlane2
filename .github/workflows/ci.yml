@@ -61,15 +61,22 @@ jobs:
       - name: Download ipm designs
         run: |
           ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root $HOME/.ipm
-      - name: Tarball ipm designs
+      - name: Tarball ip-root
         run: |
-          tree $HOME/.ipm
-          tar -cf /tmp/IPS.tar -C $HOME/.ipm .
-      - name: Upload ipm designs
+          tar -cf /tmp/ip-root.tar -C $(realpath $IPS_ROOT) .
+      - name: Upload ip-root
         uses: actions/upload-artifact@v3
         with:
-          name: ipm-designs
-          path: /tmp/IPS.tar
+          name: ip-root
+          path: /tmp/ip-root.tar
+      - name: Tarball ipm-root
+        run: |
+          tar -cf /tmp/ipm-root.tar -C $HOME/.ipm .
+      - name: Upload ipm-root
+        uses: actions/upload-artifact@v3
+        with:
+          name: ipm-root
+          path: /tmp/ipm-root.tar
 
   lint:
     name: Lint
@@ -247,19 +254,26 @@ jobs:
           pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Download ipm designs tarball
+      - name: Download ip-root
         uses: actions/download-artifact@v3
         with:
-          name: ipm-designs
+          name: ip-root
           path: /tmp
-      - name: Unpack ipm designs Tarball
+      - name: Unpack ip-root
+        run: |
+          sudo mkdir -p $(realpath $IPS_ROOT)
+          sudo chown -R $USER:$USER $(realpath $IPS_ROOT)
+          tar -xf /tmp/ip-root.tar -C $(realpath $IPS_ROOT)
+      - name: Download ipm-root
+        uses: actions/download-artifact@v3
+        with:
+          name: ipm-root
+          path: /tmp
+      - name: Unpack ipm-root
         run: |
           sudo mkdir -p $HOME/.ipm
           sudo chown -R $USER:$USER $HOME/.ipm
-          tar -xf /tmp/IPS.tar -C $HOME/.ipm
-      - name: Create ipm designs symlinks
-        run: |
-          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root $HOME/.ipm
+          tar -xf /tmp/ipm-root.tar -C $HOME/.ipm
       - name: Run Test
         run: |
           nix-shell --run "\
