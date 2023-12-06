@@ -81,5 +81,6 @@ with pkgs; clangStdenv.mkDerivation rec {
 
   fixupPhase = ''
     sed -i "13iexport CAD_ROOT='$out/lib'" $out/bin/magic
+    patchShebangs $out/bin/magic
   '';
 }
