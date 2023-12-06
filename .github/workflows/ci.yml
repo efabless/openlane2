@@ -55,8 +55,9 @@ jobs:
           cd IPM
           python3 -m pip install .
       - name: Download ipm designs
+        with:
+          submodules: true
         run: |
-          (cd ./test/designs && tree)
           ipm install-dep --ip-root $(realpath $IPS_ROOT)
       - name: Tarball ipm designs
         run: |
@@ -243,7 +244,7 @@ jobs:
           pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Install ipm designs tarball
+      - name: Download ipm designs tarball
         uses: actions/download-artifact@v3
         with:
           name: ipm-designs
