@@ -63,6 +63,7 @@ jobs:
           ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root $HOME/.ipm
       - name: Tarball ipm designs
         run: |
+          tree $HOME/.ipm
           tar -cf /tmp/IPS.tar -C $HOME/.ipm
       - name: Upload ipm designs
         uses: actions/upload-artifact@v3
