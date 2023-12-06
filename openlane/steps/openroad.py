@@ -94,6 +94,8 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
     "timing__setup__tns": (0, lambda x: sum(x)),
+    "timing__unannotated_nets__count": (0, max),
+    "timing__unannotated_nets_filtered__count": (0, max),
 }
 
 
@@ -414,8 +416,60 @@ class STAPostPNR(STAPrePNR):
         ),
     ]
 
-    inputs = STAPrePNR.inputs + [DesignFormat.SPEF]
+    inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
+
+    def filter_unannotated_report(
+        self,
+        corner: str,
+        corner_dir: str,
+        env: Dict,
+        checks_report: str,
+        odb_design: str,
+    ):
+        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+        if len(tech_lefs) != 1:
+            raise StepException(
+                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+            )
+
+        lefs = ["--input-lef", tech_lefs[0]]
+        for lef in self.config["CELL_LEFS"]:
+            lefs.append("--input-lef")
+            lefs.append(lef)
+        if extra_lefs := self.config["EXTRA_LEFS"]:
+            for lef in extra_lefs:
+                lefs.append("--input-lef")
+                lefs.append(lef)
+        metrics_path = os.path.join(corner_dir, "filter_unannotated_metrics.json")
+        filter_unannotated_cmd = [
+            "openroad",
+            "-exit",
+            "-no_splash",
+            "-metrics",
+            metrics_path,
+            "-python",
+            os.path.join(get_script_dir(), "odbpy", "filter_unannotated.py"),
+            "--corner",
+            corner,
+            "--checks-report",
+            checks_report,
+            odb_design,
+        ] + lefs
+
+        filter_unannotated_metrics = self.run_subprocess(
+            filter_unannotated_cmd,
+            log_to=os.path.join(corner_dir, "filter_unannotated.log"),
+            env=env,
+            silent=True,
+            report_dir=corner_dir,
+        )
+
+        if os.path.exists(metrics_path):
+            or_metrics_out = json.loads(open(metrics_path).read())
+            filter_unannotated_metrics.update(or_metrics_out)
+
+        return filter_unannotated_metrics
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -480,12 +534,20 @@ class STAPostPNR(STAPrePNR):
                     silent=True,
                     report_dir=corner_dir,
                 )
+
+                filter_unannotated_metrics = self.filter_unannotated_report(
+                    corner=corner,
+                    checks_report=os.path.join(corner_dir, "checks.rpt"),
+                    corner_dir=corner_dir,
+                    env=env,
+                    odb_design=str(state_in[DesignFormat.ODB]),
+                )
                 info(f"Finished STA for the {corner} timing corner.")
             except subprocess.CalledProcessError as e:
                 err(f"Failed STA for the {corner} timing corner:")
                 raise e
 
-            return generated_metrics
+            return {**generated_metrics, **filter_unannotated_metrics}
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
         for corner in self.config["STA_CORNERS"]:
@@ -562,10 +624,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        libs = sorted(glob(os.path.join(self.step_dir, "**", "*.lib"), recursive=True))
-        for lib in libs:
-            _, corner = os.path.basename(lib)[:-4].split("__")
-            lib_dict[corner] = Path(lib)
+        for corner in self.config["STA_CORNERS"]:
+            lib_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.lib"
+                )
+            )
 
         views_updates[DesignFormat.LIB] = lib_dict
 
@@ -575,10 +639,12 @@ class STAPostPNR(STAPrePNR):
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
-        sdfs = sorted(glob(os.path.join(self.step_dir, "**", "*.sdf"), recursive=True))
-        for sdf in sdfs:
-            _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(sdf)
+        for corner in self.config["STA_CORNERS"]:
+            sdf_dict[corner] = Path(
+                os.path.join(
+                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.sdf"
+                )
+            )
 
         views_updates[DesignFormat.SDF] = sdf_dict
 
@@ -738,18 +804,20 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
@@ -1337,6 +1405,61 @@ class IRDropReport(OpenROADStep):
         return views_updates, metrics_updates
 
 
+@Step.factory.register()
+class CutRows(OpenROADStep):
+    """
+    Cut floorplan rows with respect to placed macros.
+    """
+
+    id = "OpenROAD.CutRows"
+    name = "CutRows"
+
+    inputs = [DesignFormat.ODB]
+    outputs = [
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_MACRO_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
+        ),
+        Variable(
+            "FP_MACRO_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
+
+
+class WriteViews(OpenROADStep):
+    """
+    Write various layout views of an ODB design
+    """
+
+    id = "OpenROAD.WriteViews"
+    name = "OpenROAD Write Views"
+    outputs = OpenROADStep.outputs + [
+        DesignFormat.POWERED_NETLIST_SDF_FRIENDLY,
+        DesignFormat.POWERED_NETLIST_NO_PHYSICAL_CELLS,
+        DesignFormat.OPENROAD_LEF,
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
+
+
 # Resizer Steps
 
 
@@ -1446,7 +1569,7 @@ class CTS(ResizerStep):
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
-                return Step.run(self, state_in, **kwargs)
+                return {}, {}
 
         views_updates, metrics_updates = super().run(
             state_in, corners_key="CTS_CORNERS", env=env, **kwargs
@@ -1623,6 +1746,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
             default=False,
         ),
+        Variable(
+            "PL_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1683,6 +1812,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "Allows setup violations when fixing hold.",
             default=False,
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+        Variable(
+            "GRT_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
         ),
     ]
 

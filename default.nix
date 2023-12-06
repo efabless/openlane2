@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
+  system ? builtins.currentSystem,
   pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
@@ -59,7 +60,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
       eqy
       lighter
       synlig-sv
-    ] ++ (if builtins.currentSystem == "x86_64-linux" then [ys-ghdl] else []) ))
+    ] ++ (if system == "x86_64-linux" then [ys-ghdl] else []) ))
     opensta
     openroad
     klayout
