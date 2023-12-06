@@ -48,7 +48,22 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   version_list = builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' version_file;
   version = builtins.head version_list;
 
-  src = gitignore-src.gitignoreSource ./.;
+  src = [
+    ./Readme.md
+    ./setup.py
+    ./openlane
+    ./type_stubs
+    ./requirements.txt
+  ];
+
+  unpackPhase = ''
+    echo $src
+    for file in $src; do
+      BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
+      cp -r $file $PWD/$BASENAME
+    done
+    ls -lah
+  '';
   
   buildInputs = [];
 

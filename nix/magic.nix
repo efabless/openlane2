@@ -48,13 +48,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ python3 gnused ];
-
-  # So here's the situation:
-  ## * Magic will not compile without X11 libraries, even for headless use.
-  ## * Magic with Cairo will use Cairo-X11 headers that are not available on
-  ## pre-built Mac versions of Cairo which presume you're going to use Quartz.
-  ## -> Unintuitively, that means X11 libraries must be present on Mac, but not
-  ## Cairo.
+  
   buildInputs = [
     xorg.libX11
     m4
@@ -62,7 +56,8 @@ with pkgs; clangStdenv.mkDerivation rec {
     tcl
     tcsh
     tk
-  ] ++ lib.optionals stdenv.isLinux [cairo];
+    cairo
+  ];
 
   configureFlags = [
     "--with-tcl=${tcl}"

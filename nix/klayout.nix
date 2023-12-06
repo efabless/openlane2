@@ -81,6 +81,9 @@ with pkgs; clangStdenv.mkDerivation {
   ];
 
   configurePhase = ''
+    if [ "${if stdenv.isDarwin then "1" else "0" }" = "1" ]; then
+      export LDFLAGS="-headerpad_max_install_names"
+    fi
     ./build.sh\
       -prefix $out/lib\
       -without-qtbinding\

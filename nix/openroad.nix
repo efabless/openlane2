@@ -13,7 +13,7 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix {},
-  opensta ? import ./opensta.nix {},
+  opensta ? import ./opensta.nix { inherit pkgs; },
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
