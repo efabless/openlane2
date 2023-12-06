@@ -37,5 +37,5 @@ function get(verbosity, table_out = null, token = "") {
 module.exports = get;
 
 if (require.main === module) {
-    console.log(get("ALL", null, process.argv[2]));
+    console.log(get("WORSE", null, process.argv[2]));
 }

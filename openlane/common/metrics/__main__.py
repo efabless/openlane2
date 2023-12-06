@@ -114,7 +114,7 @@ def compare(
         else:
             final_filters.append(wildcard)
 
-    diff = MetricDiff.from_metrics(a, b, Filter(final_filters))
+    diff = MetricDiff.from_metrics(a, b)
 
     md_str = diff.render_md(sort_by=("corner", ""), table_verbosity=table_verbosity)
 
@@ -201,7 +201,6 @@ def _compare_metric_folders(
         diff = MetricDiff.from_metrics(
             metrics_a,
             metrics_b,
-            filter,
         )
 
         stats = diff.stats()

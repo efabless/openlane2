@@ -44,7 +44,7 @@ class IntEnumChoice(Choice):
         self,
         value: Union[str, int],
         param: Optional[Parameter],
-        ctx: Optional[Parameter],
+        ctx: Optional[Context],
     ) -> IntEnum:
         try:
             if isinstance(value, int):
