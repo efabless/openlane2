@@ -17,20 +17,16 @@ import sys
 import typing
 import pathlib
 import unicodedata
-from enum import Enum
 from collections import UserString
 from typing import (
     Any,
     ClassVar,
     Iterable,
-    Sequence,
     TypeVar,
     Optional,
     Union,
     Tuple,
 )
-
-from deprecated.sphinx import deprecated
 
 
 T = TypeVar("T")
