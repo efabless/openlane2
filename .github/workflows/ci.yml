@@ -228,7 +228,6 @@ jobs:
           python3 -m pip install .
       - name: Install IPM designs
         run: |
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }};
           cd ./test/designs
           tree
           ipm install-dep --ip-root $(pwd)/IPS
