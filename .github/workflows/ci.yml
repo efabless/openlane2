@@ -56,7 +56,6 @@ jobs:
           python3 -m pip install .
       - name: Download ipm designs
         run: |
-          cd ./test/designs
           ipm install-dep --ip-root $(realpath -m $IPS_ROOT)
       - name: Tarball ipm designs
         run: |
