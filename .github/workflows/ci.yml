@@ -56,7 +56,8 @@ jobs:
           python3 -m pip install .
       - name: Download ipm designs
         run: |
-          ipm install-dep --ip-root $(realpath -m $IPS_ROOT)
+          (cd ./test/designs && tree)
+          ipm install-dep --ip-root $(realpath $IPS_ROOT)
       - name: Tarball ipm designs
         run: |
           tar -cf /tmp/IPS.tar -C $(realpath $IPS_ROOT)
@@ -249,7 +250,7 @@ jobs:
           path: /tmp
       - name: Unpack ipm designs Tarball
         run: |
-          sudo mkdir -p $(realpath -m $IPS_ROOT)
+          sudo mkdir -p $(realpath $IPS_ROOT)
           sudo chown -R $USER:$USER $(realpath $IPS_ROOT)
           tar -xf /tmp/IPS.tar -C $(realpath $IPS_ROOT)
       - name: Run Test
