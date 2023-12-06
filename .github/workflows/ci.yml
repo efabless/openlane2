@@ -54,10 +54,11 @@ jobs:
           git clone https://github.com/efabless/IPM.git
           cd IPM
           python3 -m pip install .
-      - name: Download ipm designs
+      - name: Checkout submodules
         uses: actions/checkout@v3
         with:
           submodules: true
+      - name: Download ipm designs
         run: |
           ipm install-dep --ip-root $(realpath $IPS_ROOT)
       - name: Tarball ipm designs
