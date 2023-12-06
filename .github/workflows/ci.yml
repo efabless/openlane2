@@ -61,11 +61,9 @@ jobs:
       - name: Download ipm designs
         run: |
           ipm install-dep --ip-root $(realpath $IPS_ROOT)
-          tree $(realpath $IPS_ROOT)
       - name: Tarball ipm designs
         run: |
-          tree $(realpath $IPS_ROOT)
-          tar -cf /tmp/IPS.tar -C $(realpath $IPS_ROOT)
+          tar -cf /tmp/IPS.tar -C $HOME/.ipm
       - name: Upload ipm designs
         uses: actions/upload-artifact@v3
         with:
@@ -255,9 +253,12 @@ jobs:
           path: /tmp
       - name: Unpack ipm designs Tarball
         run: |
-          sudo mkdir -p $(realpath $IPS_ROOT)
-          sudo chown -R $USER:$USER $(realpath $IPS_ROOT)
-          tar -xf /tmp/IPS.tar -C $(realpath $IPS_ROOT)
+          sudo mkdir -p $HOME/.ipm
+          sudo chown -R $USER:$USER $HOME/.ipm
+          tar -xf /tmp/IPS.tar -C $HOME/.ipm
+      - name: Create ipm designs symlinks
+        run: |
+          ipm install-dep --ip-root $(realpath $IPS_ROOT)
       - name: Run Test
         run: |
           nix-shell --run "\
