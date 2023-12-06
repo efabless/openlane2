@@ -1560,7 +1560,7 @@ class CTS(ResizerStep):
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
-                return Step.run(self, state_in, **kwargs)
+                return {}, {}
 
         views_updates, metrics_updates = super().run(
             state_in, corners_key="CTS_CORNERS", env=env, **kwargs
