@@ -1,5 +1,8 @@
 name: CI
 
+# Variables
+env:
+  IPS_ROOT: ./test/designs/IPS
 # Events that trigger workflow
 on:
   # Runs on all pushes to branches
@@ -16,8 +19,6 @@ jobs:
   prepare-test-matrices:
     name: Prepare Test Matrices and Cache PDKs
     runs-on: ubuntu-22.04
-    env:
-      IPS_ROOT: ./test/designs/IPS
     outputs:
       design_matrix: ${{ steps.set-matrix.outputs.design_matrix }}
       opdks_rev: ${{ steps.set-rev.outputs.opdks_rev }}
@@ -51,32 +52,21 @@ jobs:
           volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download ipm
         run: |
-          git clone https://github.com/efabless/IPM.git
-          cd IPM
-          python3 -m pip install .
+          python3 -m pip install git+https://github.com/efabless/IPM
       - name: Checkout submodules
         uses: actions/checkout@v3
         with:
           submodules: true
       - name: Download ipm designs
+        id: download-ipm-design
         run: |
-          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root $HOME/.ipm
-      - name: Tarball ip-root
-        run: |
-          tar -cf /tmp/ip-root.tar -C $(realpath $IPS_ROOT) .
-      - name: Upload ip-root
-        uses: actions/upload-artifact@v3
+          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
+          echo "dependencies_sha256sum=$(sha256sum $(IPS_ROOT)/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
+      - name: Cache IPM
+        uses: actions/cache@v3
         with:
-          name: ip-root
-          path: /tmp/ip-root.tar
-      - name: Tarball ipm-root
-        run: |
-          tar -cf /tmp/ipm-root.tar -C $HOME/.ipm .
-      - name: Upload ipm-root
-        uses: actions/upload-artifact@v3
-        with:
-          name: ipm-root
-          path: /tmp/ipm-root.tar
+          path: ~/.ipm
+          key: cache-ipm-designs-${{ steps.download-ipm-design.outputs.dependencies_sha256sum }}
 
   lint:
     name: Lint
@@ -254,26 +244,15 @@ jobs:
           pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Download ip-root
-        uses: actions/download-artifact@v3
+      - name: Cache IPM designs
+        uses: actions/cache@v3
         with:
-          name: ip-root
-          path: /tmp
-      - name: Unpack ip-root
-        run: |
-          sudo mkdir -p $(realpath $IPS_ROOT)
-          sudo chown -R $USER:$USER $(realpath $IPS_ROOT)
-          tar -xf /tmp/ip-root.tar -C $(realpath $IPS_ROOT)
-      - name: Download ipm-root
-        uses: actions/download-artifact@v3
-        with:
-          name: ipm-root
-          path: /tmp
-      - name: Unpack ipm-root
-        run: |
-          sudo mkdir -p $HOME/.ipm
-          sudo chown -R $USER:$USER $HOME/.ipm
-          tar -xf /tmp/ipm-root.tar -C $HOME/.ipm
+          path: ~/.ipm
+          key: cache-ipm-designs-${{ needs.prepare-test-matrice.outputsteps.dependencies_sha256sum }}
+      - name: Setup IPM designs
+        run:
+          python3 -m pip install git+https://github.com/efabless/IPM
+          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
       - name: Run Test
         run: |
           nix-shell --run "\
