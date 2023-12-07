@@ -2,6 +2,11 @@
   name: fastest_test_set
   designs:
     - EF_UART
+    - MS_SPI_XIP_CACHE
+    - MS_DMAC_AHBL
+    - MS_CLK_RST
+    - EF_GPIO
+    - EF_TCC32
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
