@@ -61,7 +61,7 @@ jobs:
         id: download-ipm-design
         run: |
           ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
-          echo "dependencies_sha256sum=$(sha256sum $(IPS_ROOT)/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
+          echo "dependencies_sha256sum=$(sha256sum $IPS_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
       - name: Cache IPM
         uses: actions/cache@v3
         with:
