@@ -324,6 +324,7 @@ class Classic(SequentialFlow):
         Magic.DRC,
         KLayout.DRC,
         Checker.MagicDRC,
+        Checker.KLayoutDRC,
         Magic.SpiceExtraction,
         Checker.IllegalOverlap,
         Netgen.LVS,
