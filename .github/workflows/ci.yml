@@ -250,7 +250,7 @@ jobs:
           path: ~/.ipm
           key: cache-ipm-designs-${{ needs.prepare-test-matrice.outputsteps.dependencies_sha256sum }}
       - name: Setup IPM designs
-        run:
+        run: |
           python3 -m pip install git+https://github.com/efabless/IPM
           ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
       - name: Run Test
