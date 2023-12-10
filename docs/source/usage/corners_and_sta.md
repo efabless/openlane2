@@ -9,7 +9,10 @@ being as a result of the process:
 * **Parasitic/Interconnect Corners**: Metal layers may have slightly different
   geometry based on manufacturing, which will affect the wires' parasitics
   (capacitance and resistance.)
-* **Transistor Corners**: Also called "process corners", more commonly, variance in transistor carrier mobility:
+* **Transistor Corners**: Also called "process corners", more commonly, variance
+  in transistor carrier mobility. These are typically denoted in the speed of the
+  rise and fall of the output value, i.e., a transistor that's slow going
+  from 0 to 1 and fast going from 1 to 0 is called an "sf" transistor.
   See https://en.wikipedia.org/wiki/Process_corners#FEOL_corners for more info.
 
 And two that are dependent on the operation environment:
@@ -35,6 +38,21 @@ Common EDA files incorporate these corners as follows:
 The default extraction utility for OpenLane, OpenROAD OpenRCX, only accounts for
 the interconnect corner.
 ```
+
+## Violations
+
+STA reports two kinds of violations:
+* Setup violations: A register's data input was changed too soon before a clock edge.
+  Setup violations do not necessarily mean a dead chip, however the final chip
+  may have to run at a lower clock, which is not acceptable for some applications.
+* Hold violations: A register's data output was changed too soon AFTER a clock edge.
+  Chips with hold violations are effectively dead- infamously, MPW-1's management
+  controller had a hold violation and designers had to resort to extraordinary
+  measures to revive them.
+
+Here are some good videos about the MPW-1 saga:
+  * M. Venn, "MPW1 silicon arrived! What went wrong?", *ZeroToASIC*, YouTube. Online: https://www.youtube.com/watch?v=lw9ucvgQJjk
+  * S. Munaut, "Bringing chips back from the dead : MPW-1 Show-off", *Sylvain Munaut's Channel*, YouTube. Online: https://www.youtube.com/watch?v=f_G5ad8SbHo
 
 ## Default Flow Configuration
 In its current state, the default OpenLane flow allows SCLs to configure the following:

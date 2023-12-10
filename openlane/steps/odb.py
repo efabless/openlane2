@@ -52,9 +52,6 @@ class OdbpyStep(Step):
         command += [
             str(state_in[DesignFormat.ODB]),
         ]
-        env[
-            "PYTHONPATH"
-        ] = f"{env['PYTHONPATH']}:{os.path.join(get_script_dir(), 'odbpy')}"
 
         generated_metrics = self.run_subprocess(
             command,

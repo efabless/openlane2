@@ -602,7 +602,7 @@ parameterized cells.
 * Created a `Macro` definition object to replace a litany of variables.
     * `libs`, `spefs` and `sdf` files now use wildcards as keys, which will be
     matched against timing corners for loading, i.e., a SPEF with key `nom_*` will
-    match timing corner `nom_tt_025C_1V80`.
+    match timing corner `nom_tt_025C_1v80`.
         * This has been applied to PDK lib files, RCX rulesets and technology LEF
         files as well.
         * `Toolbox` object now has methods for matching the proper LIB/SPEF files.

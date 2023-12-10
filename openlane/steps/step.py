@@ -14,8 +14,9 @@
 from __future__ import annotations
 from decimal import Decimal
 
-import json
 import os
+import site
+import json
 import psutil
 import shutil
 import subprocess
@@ -65,6 +66,7 @@ from ..common import (
     copy_recursive,
     format_size,
     format_elapsed_time,
+    get_script_dir,
 )
 from ..logging import (
     rule,
@@ -998,16 +1000,26 @@ class Step(ABC):
         if "stderr" not in kwargs:
             kwargs["stderr"] = subprocess.STDOUT
 
-        if env_dict := env:
-            for key, value in env_dict.items():
-                if not (
-                    isinstance(value, str)
-                    or isinstance(value, bytes)
-                    or isinstance(value, os.PathLike)
-                ):
-                    raise StepException(
-                        f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
-                    )
+        env = env or os.environ.copy()
+        for key, value in env.items():
+            if not (
+                isinstance(value, str)
+                or isinstance(value, bytes)
+                or isinstance(value, os.PathLike)
+            ):
+                raise StepException(
+                    f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
+                )
+
+        # Hack for Python subprocesses to get access to libraries
+        python_path_elements = site.getsitepackages() + [
+            os.path.join(get_script_dir(), "odbpy")
+        ]
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+
+        env["PYTHONPATH"] = ":".join(python_path_elements)
+
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
