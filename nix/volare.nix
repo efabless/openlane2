@@ -15,8 +15,8 @@
   pkgs ? import ./pkgs.nix {},
 }:
 let
-  rev = "22c2920f406232f8ddff0e3ac1ff35edfe71edad";
-  sha256 = "sha256-xb08SSt1l2walSuQ/9bkEfXBjX+jW9kvx4d4uLGzpF0=";
+  rev = "8221a19ff69dda55590bd0b2ff676d4ed53e8e3d";
+  sha256 = "sha256-J10jufeYwKE9t76XJA2bCiVRfwA/FuuuvuHjafUNN58=";
 in let src = pkgs.fetchFromGitHub {
   owner = "efabless";
   repo = "volare";
