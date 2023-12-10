@@ -42,18 +42,24 @@ the interconnect corner.
 
 ## Violations
 
-STA reports two kinds of violations:
-* Setup violations: A register's data input was changed too soon before a clock edge.
+STA reports many kinds of timing-related violations in the design, including but
+not limited to:
+* Setup violation: A register's data input was changed too soon before a clock edge.
   Setup violations do not necessarily mean a dead chip, however the final chip
   may have to run at a lower clock, which is not acceptable for some applications.
-* Hold violations: A register's data output was changed too soon AFTER a clock edge.
-  Chips with hold violations are effectively dead- infamously, MPW-1's management
-  controller had a hold violation and designers had to resort to extraordinary
-  measures to revive them.
+* Hold violation: A register's data output was changed too soon AFTER a clock edge.
+  Chips with hold violations are effectively dead.
+* Slew violation: A signal taking too long to transition from LO to HI, or HI
+  to LO. This typically happens when a cell is too small for the capacitance
+  load it is handling, or when a cell's input has a slew violation.
 
-Here are some good videos about the MPW-1 saga:
-  * M. Venn, "MPW1 silicon arrived! What went wrong?", *ZeroToASIC*, YouTube. Online: https://www.youtube.com/watch?v=lw9ucvgQJjk
-  * S. Munaut, "Bringing chips back from the dead : MPW-1 Show-off", *Sylvain Munaut's Channel*, YouTube. Online: https://www.youtube.com/watch?v=f_G5ad8SbHo
+<!--
+  * Fanout violation: One gate is driving too many other gates, which may lead
+    to slew violations.
+  * Max capacitance violation: One gate is driving gates with a total capacitive
+    load exceeding the one rated for by this gate (or the value set by the
+    designer's constraints), which may lead to slew violations.
+-->
 
 ## Default Flow Configuration
 In its current state, the default OpenLane flow allows SCLs to configure the following:

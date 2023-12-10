@@ -15,6 +15,7 @@ import io
 import os
 import re
 import json
+import site
 import shlex
 import tempfile
 import subprocess
@@ -246,6 +247,12 @@ class OpenROADStep(TclStep):
                 if cell.strip() != ""
             ]
         )
+
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
+        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         return env
 
