@@ -66,7 +66,7 @@ def open_design(input_lefs: Tuple[str, ...], lyt: str, lyp: str, lym: str, input
         layout_view.load_layer_props(lyp)
     except Exception as e:
         print(e, file=sys.stderr)
-        exit(1)
+        pya.Application.instance().exit(1)
 
 
 if __name__ == "__main__":
