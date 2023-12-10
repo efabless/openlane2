@@ -13,10 +13,11 @@
 # limitations under the License.
 import os
 import sys
+import site
 import shutil
 import subprocess
 from base64 import b64encode
-from typing import Optional, List, Tuple
+from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
@@ -76,6 +77,24 @@ class KLayoutStep(Step):
             pdk=True,
         ),
     ]
+
+    def run_subprocess(
+        self,
+        cmd: Sequence[Union[str, os.PathLike]],
+        log_to: Optional[Union[str, os.PathLike]] = None,
+        silent: bool = False,
+        report_dir: Optional[Union[str, os.PathLike]] = None,
+        env: Optional[Dict[str, Any]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        env = env or os.environ.copy()
+        # Hack for Python subprocesses to get access to installed libraries
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+
+        env["PYTHONPATH"] = ":".join(python_path_elements)
+        return super().run_subprocess(cmd, log_to, silent, report_dir, env, **kwargs)
 
 
 @Step.factory.register()

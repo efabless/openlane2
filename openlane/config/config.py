@@ -466,7 +466,7 @@ class Config(GenericImmutableDict[str, Any]):
 
                 <br />
 
-                ```yml
+                ```yaml
                 %s
                 ```
                 """
