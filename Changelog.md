@@ -12,8 +12,7 @@
   * Added new variable, `KLAYOUT_XOR_TILE_SIZE`, which is the size of the side
     of a tile in microns (the tile size must be sufficiently smaller than the
     design for KLayout to bother threading)
-  * Added `info` prints for thread counts for both `KLayout.XOR` and
-    `OpenROAD.DetailedRouting`
+  * Added `info` prints for thread count
 * `Magic.*`:
   * `openlane/scripts/magic/common/read.tcl` is now a list of read-related Tcl
     functions used across all Magic scripts
@@ -45,8 +44,6 @@
     and:
     * Multiple GDS files are defined per macro
     * A macro's GDS file does not have a PR boundary
-  * Fixed issue where black-boxed macros with non-north orientations are rotated
-    around the incorrect point
 * `Magic.*`
   * Base `MagicStep` no longer overrides `run`, but does override
     `run_subprocess`
@@ -58,23 +55,22 @@
     * Enhanced obstructions regex matching to account for >5 items in an
       obstruction definition.
 * Created obstruction-related steps
-  * `Odb.AddRoutingObstructions`: Base step for adding obstructions to a design
-  * `Odb.RemoveRoutingObstructions`: Base step for removing obstructions from a
+  * `Odb.AddRoutingObstructions`: Step for adding obstructions to a design
+  * `Odb.RemoveRoutingObstructions`: Step for removing obstructions from a
     design.
     * The preceding two steps, and their derivatives, should be used in tandem,
       i.e., obstructions should be added then removed later in the flow.
-  * `Odb.AddPDNObstructions`: Inherits from `Odb.AddRoutingObstructions`. Runs
-    before PDN generation.
-  * `Odb.RemovePDNObstructions`: Inherits from `Odb.RemoveRoutingObstructions`.
-    Runs after PDN generation.
+  * `Odb.AddPDNObstructions`: A subclass of `Odb.AddRoutingObstructions` that
+    adds routing (metal-layer) obstructions that apply only to the PDN, using
+    the variable `PDN_OBSTRUCTIONS`. Runs before PDN generation.
+  * `Odb.RemovePDNObstructions`: A subclass `Odb.RemoveRoutingObstructions` that
+    removes obstructions added by `Odb.AddPDNObstructions`.
 * `Odb.DiodesOnPorts`, `Odb.HeuristicDiodeInsertion`:
   * Now automatically runs DPL and GRT to legalize after insertion
   * Old behavior kept using new steps: `Odb.PortDiodePlacement` and
     `Odb.FuzzyDiodeInsertion`.
   * Updated underlying script to have some more debugging options/be more
     resilient
-  * **API Break**: Updated `HEURISTIC_ANTENNA_THRESHOLD` to be a non-optional
-    PDK variable with default variables added in `openlane/config/pdk_compat.py`
   * Fixed a bug where attempting to insert another diode of the same name would
     cause a crash
 * `OpenROAD.*`:
@@ -86,7 +82,6 @@
 * `OpenROAD.CTS`, `CVCRV.ERC` (unused):
   * Replaced legacy calls to causing crashes in some situations
 * Created `OpenROAD.CutRows`
-  * Placed in `Classic` Flow after `OpenROAD.ManualMacroPlacement`
 * `OpenROAD.CutRows`, `OpenROAD.TapDecapInsertion`:
   * Renamed `FP_TAP_VERTICAL_HALO` to `FP_MACRO_VERTICAL_HALO`,
     `FP_TAP_HORIZONTAL_HALO` to `FP_MACRO_HORIZONTAL_HALO`
@@ -94,15 +89,15 @@
     insertion, it also affects cut rows generated in the floorplan. This affects
     cell insertion and power rails and anything related to floorplan and std
     cell placement.
+* `OpenROAD.DetailedRouting`:
+  * Added `info` prints for thread count
 * `OpenROAD.Floorplan`:
   * Added new variable `FP_OBSTRUCTIONS` to specify obstructions during
     floorplanning
-  * Added a new PDK variable, `EXTRA_SITES`, which specifies alternative sites
+  * Added a new PDK variable, `EXTRA_SITES`, which specifies additional sites
     to use for floorplanning (as overlapping rows) even when:
     * Cells without double-heights are not used
-    * Double-height cells with missing or mislabeled LEF `SITE`s are used
-  * Removed `PLACE_SITE_HEIGHT` and `PLACE_SITE_WIDTH`: can be extracted via
-    OpenROAD
+    * Double-height cells with missing or mislabeled LEF `SITE`(s) are used
 * Part of `OpenROAD.GlobalRouting` spun off as `OpenROAD.RepairAntennas`
   * Added `OpenROAD.RepairAntennas` to `Classic` flow after
     `Odb.HeuristicDiodeInsertion`; gated by `RUN_ANTENNA_REPAIR` (with a
@@ -118,15 +113,14 @@
     count based on whether a net has a wire. A wire indicates if a net has
     physical implementation. If a net doesn't have a wire then ii can be waived
     and filtered out.
-  * `.lib` and `.sdf` ouputs no longer rely on globbing `self.step_dir`:
-    instead, we check against computed paths\\
 * Added a new step, `OpenROAD.WriteViews`, which simply updates views with no
   other changes
-* `Verilator.Lint`: Fixed bug where inferred latch warnings were not properly
+* `Verilator.Lint`:
+  * Fixed bug where inferred latch warnings were not properly
   processed
 * `Yosys.*Synthesis`:
-  * Per comments from Yosys Team [(1)](YosysHQ/yosys#4039 "comment")
-    [(2)](The-OpenROAD-Project/OpenLane#2051 "comment")
+  * Per comments from Yosys Team [(1)](https://github.com/YosysHQ/yosys/issues/4039#issuecomment-1817937447)
+    [(2)](https://github.com/The-OpenROAD-Project/OpenLane/pull/2051#issuecomment-1818876410)
     * Replaced instances of ABC command `rewrite` with `drw -l` with new
       variable `SYNTH_ABC_LEGACY_REWRITE` being set to `true` restoring the
       older functionality (`false` by default)
@@ -153,6 +147,8 @@
     but still before `Odb.ResizerTimingPostGRT` (as timing repairs take
     priority)
   * `OpenROAD.CheckAntennas` added after `OpenROAD.DetailedRoute`
+  * `OpenROAD.CutRows` added before `OpenROAD.TapDecapInsertion`
+  * `OpenROAD.AddPDNObstructions` and `OpenROAD.RemovePDNObstructions` now sandwich `OpenROAD.GeneratePDN`
 * Internally updated implementation of `VHDLClassic` flow to dynamically create
   `.Steps` from `Classic`
 * Updated documentation of `openlane.config.Variable::Variable.pdk` to make it a
@@ -204,15 +200,23 @@
 
 ## API Breaks
 
-* `openlane/steps/step.py::Step::load`: Argument `state_in_path` renamed
+* `openlane.steps.step.Step.load`: Argument `state_in_path` renamed
   `state_in`, also takes `State` objects
-* Removed `CTS_TOLERANCE`: no longer supported by OpenROAD
-* Removed `MAGIC_GDS_ALLOW_ABSTRACT`: Bad practice
-* For JSON configurations using `meta.version = 2`, `DIE_AREA` and `CORE_AREA`
-  can no longer be provided as strings, and must be provided as an array of four
-  numeric elements.
-* Removed `GRT_REPAIR_ANTENNAS` from steps, moved to the `Classic` flow
-
+* `openlane.config.Config`:
+  * For JSON configurations using `meta.version = 2`, `DIE_AREA` and `CORE_AREA`
+    can no longer be provided as strings, and must be provided as an array of four
+    numeric elements.
+* `OpenROAD.CTS`:
+  * Removed `CTS_TOLERANCE`: no longer supported by OpenROAD
+* `OpenROAD.Floorplan`:
+  * Removed `PLACE_SITE_HEIGHT` and `PLACE_SITE_WIDTH`: redundant
+* `OpenROAD.GlobalRouting`:
+  * Removed `GRT_REPAIR_ANTENNAS`, moved to the `Classic` flow
+* `Odb.DiodesOnPorts`, `Odb.HeuristicDiodeInsertion`:
+  * Updated `HEURISTIC_ANTENNA_THRESHOLD` to be a non-optional
+    PDK variable with default variables added in `openlane/config/pdk_compat.py`
+* `Magic.StreamOut`:
+  * Removed `MAGIC_GDS_ALLOW_ABSTRACT`: Bad practice
 ## Misc. Enhancements/Bugfixes
 
 * Added exit code propagation when a `StepError` is caused by
