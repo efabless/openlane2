@@ -293,7 +293,7 @@ class State(GenericImmutableDict[str, StateElement]):
                 value_content = f'<a href="{value_rel}">{value_rel}</a>'
                 if "google.colab" in sys.modules:
                     # Can't link in colab
-                    value_content = f"<td>{value_rel}</td>"
+                    value_content = value_rel
 
             result += f"""
                 <tr>

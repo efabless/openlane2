@@ -10,9 +10,10 @@ being as a result of the process:
   geometry based on manufacturing, which will affect the wires' parasitics
   (capacitance and resistance.)
 * **Transistor Corners**: Also called "process corners", more commonly, variance
-  in transistor carrier mobility. These are typically denoted in the speed of the
-  rise and fall of the output value, i.e., a transistor that's slow going
-  from 0 to 1 and fast going from 1 to 0 is called an "sf" transistor.
+  in transistor carrier mobility, denoted as follows:
+  * `s`, `t`, `f` for whether NMOS transistors are slow, typical, or fast respectively.
+  * Another `s`, `t`, `f` but for PMOS transistors.
+  For example, a corner with fast NMOS and PMOS would be denoted `ff`.
   See https://en.wikipedia.org/wiki/Process_corners#FEOL_corners for more info.
 
 And two that are dependent on the operation environment:
