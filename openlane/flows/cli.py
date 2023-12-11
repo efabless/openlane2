@@ -140,7 +140,7 @@ def pdk_scl_cb(
 
             pdk_root = volare.get_volare_home(values["pdk_root"])
 
-            volare.enable(pdk_root, pdk_family, get_opdks_rev(), include_libraries=[values["scl"]])
+            volare.enable(pdk_root, pdk_family, get_opdks_rev())
     return value
 
 
