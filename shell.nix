@@ -29,6 +29,7 @@ with pkgs; let
       pyfakefs
       pytest
       pillow
+      mdformat
     ] ++ openlane-plugins ))
 
     # Conveniences

@@ -39,6 +39,17 @@ in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941e
                 doCheck = false;
             });
 
+            python3 = old.python3.override {
+                packageOverrides = (pFinalAttrs: pPreviousAttrs: {
+                    mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
+                        postPatch = ''
+                            sed -i 's/primary_marker = "-"/primary_marker = "*"/' src/mdformat/renderer/_util.py
+                        '';
+                        pytestCheckPhase = "true";
+                    });
+                });
+            };
+
             # # Hack to get GHDL to maybe work on macOS- use at your own risk
             # ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
             #     meta = {
