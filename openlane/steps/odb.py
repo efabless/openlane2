@@ -14,6 +14,7 @@
 import os
 import re
 import json
+import site
 import shutil
 from math import inf
 from decimal import Decimal
@@ -52,9 +53,12 @@ class OdbpyStep(Step):
         command += [
             str(state_in[DesignFormat.ODB]),
         ]
-        env[
-            "PYTHONPATH"
-        ] = f"{env.get('PYTHONPATH', '')}:{os.path.join(get_script_dir(), 'odbpy')}"
+
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
+        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         generated_metrics = self.run_subprocess(
             command,

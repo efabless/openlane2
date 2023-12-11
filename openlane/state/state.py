@@ -14,10 +14,11 @@
 from __future__ import annotations
 
 import os
+import sys
 import json
 import shutil
 from decimal import Decimal
-from typing import List, Mapping, Union, Optional, Dict, Any
+from typing import List, Mapping, Tuple, Union, Optional, Dict, Any
 
 from ..common import (
     Path,
@@ -258,34 +259,60 @@ class State(GenericImmutableDict[str, StateElement]):
 
         return state
 
-    def _repr_html_(self) -> str:
+    def __mapping_to_html_rec(
+        self,
+        mapping: Mapping[str, Any],
+        header_optional: Optional[Tuple[str, str]] = None,
+    ):
         result = """
-        <div style="display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); grid-auto-flow: column;">
-            <table style="grid-column-start: 1; grid-column-end: 2;">
-                <tr>
-                    <th>Format</th>
-                    <th>Path</th>
-                </tr>
+        <table style="grid-column-start: 1; grid-column-end: 2; ">
         """
-        for id, value in self.to_raw_dict(metrics=False).items():
+        if header := header_optional:
+            key_h, value_h = header
+            result += f"""
+                <tr>
+                    <th style="text-align: left;">{key_h}</th>
+                    <th style="text-align: left;">{value_h}</th>
+                </tr>
+            """
+
+        for id, value in mapping.items():
             if value is None:
                 continue
 
-            format = DesignFormat.by_id(id)
-            assert format is not None
+            key_content = id
+            if format := DesignFormat.by_id(id):
+                key_content = format.value.id
 
-            value_rel = os.path.relpath(value, ".")
+            value_content = str(value)
+            if isinstance(value, Mapping):
+                value_content = self.__mapping_to_html_rec(value)
+            elif isinstance(value, Path):
+                value_rel = os.path.relpath(value, ".")
+
+                value_content = f'<a href="{value_rel}">{value_rel}</a>'
+                if "google.colab" in sys.modules:
+                    # Can't link in colab
+                    value_content = value_rel
 
             result += f"""
                 <tr>
-                    <td>{format.value.id}</td>
-                    <td><a href="{value_rel}">{value_rel}</a></td>
+                    <td style="text-align: left;">{key_content}</td>
+                    <td style="text-align: left;">{value_content}</td>
                 </tr>
             """
 
         result += """
-            </table>
-        </div>
+        </table>
         """
-
         return result
+
+    def _repr_html_(self) -> str:
+        return (
+            '<div style="display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-rows: minmax(0, 1fr); grid-auto-flow: column;">'
+            + self.__mapping_to_html_rec(
+                self.to_raw_dict(metrics=False),
+                ("Format", "Path"),
+            )
+            + "</div>"
+        )
