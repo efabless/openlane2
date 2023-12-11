@@ -97,10 +97,9 @@
 * `OpenROAD.CutRows`, `OpenROAD.TapDecapInsertion`:
   * Renamed `FP_TAP_VERTICAL_HALO` to `FP_MACRO_VERTICAL_HALO`,
     `FP_TAP_HORIZONTAL_HALO` to `FP_MACRO_HORIZONTAL_HALO`
-    * Rationale: Halo doesn't only affect tap
-    insertion, it also affects cut rows generated in the floorplan. This affects
-    cell insertion and power rails and anything related to floorplan and std
-    cell placement.
+    * Rationale: Halo doesn't only affect tap insertion, it also affects cut
+      rows generated in the floorplan. This affects cell insertion and power
+      rails and anything related to floorplan and std cell placement.
 * `OpenROAD.DetailedRouting`:
   * Added `info` prints for thread count
 * `OpenROAD.Floorplan`:
@@ -116,11 +115,11 @@
     deprecated name of `GRT_REPAIR_ANTENNAS` for backwards compat)
 * `OpenROAD.ResizerTiming*`:
   * Added `PL_RESIZER_GATE_CLONING` and `GRT_RESIZER_GATE_CLONING` respectively,
-    which control OpenROAD's ability when doing gate cloning while running `repair_timing` (default:
-    `true`)
+    which control OpenROAD's ability to perform gate cloning while running
+    `repair_timing` (default: `true`)
 * `OpenROAD.STAPostPNR`
   * Added `timing__unannotated_nets__count` to record number of annotated nets
-    reports during PostPnR sta
+    reports during post-PnR STA
   * Added `timing__unannotated_nets_filtered__count` which filters the former's
     count based on whether a net has a wire. A wire indicates if a net has
     physical implementation. If a net doesn't have a wire then it can be waived
@@ -172,9 +171,9 @@
   * Hid top-level `toctree` polluting the landing page
   * Fixed links to incorrect repository
 * Corners and STA: Now indexed; details some violations
-* Updated documentation of `openlane.config.Variable::Variable.pdk` to make it a
-  bit clearer
-  
+* Updated documentation of `openlane.config.Variable.pdk` to make it a bit
+  clearer
+
 ## Tool Updates
 
 * Additions and changes to Nix to support the `aarch64-linux` and
