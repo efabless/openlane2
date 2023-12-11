@@ -1,3 +1,8 @@
+<!--
+  * Using the modified version of mdformat from the shell.nix:
+  mdformat --wrap 80 --end-of-line lf Changelog.md
+-->
+
 # 2.0.0b16
 
 ## Steps
@@ -6,7 +11,7 @@
   * Changed type of `DIE_AREA` and and `CORE_AREA` to
     `Optional[Tuple[Decimal, Decimal, Decimal, Decimal]]`
 * `KLayout.*`:
-  * Propagated `venv` sitepackages to `PYTHONPATH` 
+  * Propagated `venv` sitepackages to `PYTHONPATH`
 * `KLayout.XOR`:
   * Fixed threads not working properly
   * `KLAYOUT_XOR_THREADS` is now optional, with the thread count being equal to
@@ -56,10 +61,10 @@
     * Enhanced obstructions regex matching to account for >5 items in an
       obstruction definition.
     * Added `openlane/scripts/odbpy` to `PYTHONPATH`
-    * Propagated `venv` sitepackages to `PYTHONPATH` 
+    * Propagated `venv` sitepackages to `PYTHONPATH`
 * Created obstruction-related steps
-  * `Odb.AddRoutingObstructions`: Step for adding metal-layer obstructions to
-    a design
+  * `Odb.AddRoutingObstructions`: Step for adding metal-layer obstructions to a
+    design
   * `Odb.RemoveRoutingObstructions`: Step for removing metal-layer obstructions
     from a design.
     * The preceding two steps, and their derivatives, should be used in tandem,
@@ -100,8 +105,8 @@
 * `OpenROAD.Floorplan`:
   * Added new variable `FP_OBSTRUCTIONS` to specify obstructions during
     floorplanning
-  * Added a new PDK variable, `EXTRA_SITES`, which specifies additional sites
-    to use for floorplanning (as overlapping rows) even when:
+  * Added a new PDK variable, `EXTRA_SITES`, which specifies additional sites to
+    use for floorplanning (as overlapping rows) even when:
     * Cells without double-heights are not used
     * Double-height cells with missing or mislabeled LEF `SITE`(s) are used
 * Part of `OpenROAD.GlobalRouting` spun off as `OpenROAD.RepairAntennas`
@@ -122,10 +127,10 @@
 * Added a new step, `OpenROAD.WriteViews`, which simply updates views with no
   other changes
 * `Verilator.Lint`:
-  * Fixed bug where inferred latch warnings were not properly
-  processed
+  * Fixed bug where inferred latch warnings were not properly processed
 * `Yosys.*Synthesis`:
-  * Per comments from Yosys Team [(1)](https://github.com/YosysHQ/yosys/issues/4039#issuecomment-1817937447)
+  * Per comments from Yosys Team
+    [(1)](https://github.com/YosysHQ/yosys/issues/4039#issuecomment-1817937447)
     [(2)](https://github.com/The-OpenROAD-Project/OpenLane/pull/2051#issuecomment-1818876410)
     * Replaced instances of ABC command `rewrite` with `drw -l` with new
       variable `SYNTH_ABC_LEGACY_REWRITE` being set to `true` restoring the
@@ -154,7 +159,8 @@
     priority)
   * `OpenROAD.CheckAntennas` added after `OpenROAD.DetailedRoute`
   * `OpenROAD.CutRows` added before `OpenROAD.TapDecapInsertion`
-  * `OpenROAD.AddPDNObstructions` and `OpenROAD.RemovePDNObstructions` now sandwich `OpenROAD.GeneratePDN`
+  * `OpenROAD.AddPDNObstructions` and `OpenROAD.RemovePDNObstructions` now
+    sandwich `OpenROAD.GeneratePDN`
 * Internally updated implementation of `VHDLClassic` flow to dynamically create
   `.Steps` from `Classic`
 * Updated documentation of `openlane.config.Variable::Variable.pdk` to make it a
@@ -180,15 +186,17 @@
   * Changed KLayout build script in an attempt to make it faster (I failed)
   * Reworked Nix derivations for the OpenLane shell, OpenLane, and the Docker
     image
-    * Added a new argument to `default.nix`, `system`, as `builtins.currentSystem`
-      is not available when using nix flakes (where in documentation it is
-      described as "non-hermetic and impure": see https://nixos.wiki/wiki/Flakes).
-      This change allows passing the system as argument and thus restores
-      compatibility with nix flakes.
+    * Added a new argument to `default.nix`, `system`, as
+      `builtins.currentSystem` is not available when using nix flakes (where in
+      documentation it is described as "non-hermetic and impure": see
+      https://nixos.wiki/wiki/Flakes). This change allows passing the system as
+      argument and thus restores compatibility with nix flakes.
 * Completely revamp Notebook
   * Rewrite Nix setup section to be more tolerant of non-Colab setups
-  * Rewrite OpenLane dependencies to use a better method of installing OpenLane's dependencies/hack in `tkinter` if it's missing (as it will be on local environments)
-  *  Added descriptions for *all steps used*
+  * Rewrite OpenLane dependencies to use a better method of installing
+    OpenLane's dependencies/hack in `tkinter` if it's missing (as it will be on
+    local environments)
+  * Added descriptions for *all steps used*
   * Added RCX, STAPostPNR, LVS and DRC
 * Added [Surelog](https://github.com/chipsalliance/surelog) to the included
   utilities
@@ -212,17 +220,17 @@
 
 ## API Breaks
 
-* `openlane.steps.step.Step.load`: Argument `state_in_path` renamed
-  `state_in`, also takes `State` objects
+* `openlane.steps.step.Step.load`: Argument `state_in_path` renamed `state_in`,
+  also takes `State` objects
 * `openlane.config.Config`:
   * For JSON configurations using `meta.version = 2`, `DIE_AREA` and `CORE_AREA`
-    can no longer be provided as strings, and must be provided as an array of four
-    numeric elements.
+    can no longer be provided as strings, and must be provided as an array of
+    four numeric elements.
   * Removed global state when `Config.interactive` is used, `state_in` now
     explicitly required
     * Rationale: the little convenience offered is far outdone by the annoyance
-      of most steps being non re-entrant, so trying to run the same cell twice is
-      almost always a crash.
+      of most steps being non re-entrant, so trying to run the same cell twice
+      is almost always a crash.
 * `OpenROAD.CTS`:
   * Removed `CTS_TOLERANCE`: no longer supported by OpenROAD
 * `OpenROAD.Floorplan`:
@@ -230,8 +238,8 @@
 * `OpenROAD.GlobalRouting`:
   * Removed `GRT_REPAIR_ANTENNAS`, moved to the `Classic` flow
 * `Odb.DiodesOnPorts`, `Odb.HeuristicDiodeInsertion`:
-  * Updated `HEURISTIC_ANTENNA_THRESHOLD` to be a non-optional
-    PDK variable with default variables added in `openlane/config/pdk_compat.py`
+  * Updated `HEURISTIC_ANTENNA_THRESHOLD` to be a non-optional PDK variable with
+    default variables added in `openlane/config/pdk_compat.py`
 * `Magic.StreamOut`:
   * Removed `MAGIC_GDS_ALLOW_ABSTRACT`: Bad practice
 
@@ -246,16 +254,16 @@
 * Expanded `openlane.common.copy_recursive` to support dataclasses
 * `openlane.state.State._repr_html_` to better handle recursive outputs.
 * `openlane.config.Config`
-  * Fixed bug in private methods where `pdkpath` was not
-    being set in some scenarios
-  * Fixed `_repr_markdown_` to use correct syntax identifier for YAML in Markdown
+  * Fixed bug in private methods where `pdkpath` was not being set in some
+    scenarios
+  * Fixed `_repr_markdown_` to use correct syntax identifier for YAML in
+    Markdown
 * Fixes and tweaks for step reproducibles:
   * `openlane.steps create-reproducible` has new flag, `--no-include-pdk`, which
     excludes PDK files from reproducibles and make any reference to them utilize
     `pdk_dir::`
-  * Slight internal rework for
-    `openlane.steps.Step.create_reproducible` to support flattened
-    file structures suitable for testing
+  * Slight internal rework for `openlane.steps.Step.create_reproducible` to
+    support flattened file structures suitable for testing
   * Reproducibles now no longer include views of the design not explicitly
     declared in step `.inputs`
 * Fixed tuple loading for config variables
