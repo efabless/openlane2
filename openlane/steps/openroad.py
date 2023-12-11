@@ -768,7 +768,7 @@ class IOPlacement(OpenROADStep):
         + [
             Variable(
                 "FP_IO_MODE",
-                Literal["matching", "random_equidistant"],
+                Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
             ),
@@ -945,7 +945,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
     config_vars = GlobalPlacement.config_vars + [
         Variable(
             "FP_IO_MODE",
-            Literal["matching", "random_equidistant"],
+            Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
         )
