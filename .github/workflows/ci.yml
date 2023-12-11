@@ -2,7 +2,7 @@ name: CI
 
 # Variables
 env:
-  IPS_ROOT: ./test/designs/IPS
+  IP_ROOT: ./test/designs/.ip-root
 # Events that trigger workflow
 on:
   # Runs on all pushes to branches
@@ -60,8 +60,8 @@ jobs:
       - name: Download ipm designs
         id: download-ipm-design
         run: |
-          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
-          echo "dependencies_sha256sum=$(sha256sum $IPS_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
+          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
+          echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
       - name: Cache IPM
         uses: actions/cache@v3
         with:
@@ -215,7 +215,7 @@ jobs:
     needs: [build-linux-amd64, prepare-test-matrices]
     name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     env:
-      IPS_ROOT: ./test/designs/IPS
+      IP_ROOT: ./test/designs/IPS
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
@@ -252,7 +252,7 @@ jobs:
       - name: Setup IPM designs
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
-          ipm install-dep --ip-root $(realpath $IPS_ROOT) --ipm-root ~/.ipm
+          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
       - name: Run Test
         run: |
           nix-shell --run "\
