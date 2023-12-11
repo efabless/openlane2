@@ -35,11 +35,11 @@ def pdk_root(request):
     import volare
     from openlane.common import get_opdks_rev
 
-    pdk_root = volare.get_volare_home(request.config.option.pdk_root)
+    volare_home = volare.get_volare_home(request.config.option.pdk_root)
 
-    volare.enable(pdk_root, "sky130", get_opdks_rev())
+    version = volare.fetch(volare_home, "sky130", get_opdks_rev())
 
-    return pdk_root
+    return version.get_dir(volare_home)
 
 
 def try_call(fn: Callable, /, **kwargs):

@@ -36,11 +36,8 @@ with pkgs; clangStdenv.mkDerivation rec {
     ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
   '';
 
-  propagatedBuildInputs = [
-    yosys
-  ];
-
   buildInputs = [
+    yosys
     yosys.py3
     surelog
     capnproto
@@ -64,7 +61,7 @@ with pkgs; clangStdenv.mkDerivation rec {
     mv build/release/systemverilog-plugin/systemverilog.so $out/share/yosys/plugins/synlig-sv.so
   '';
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
+  computed_PATH = lib.makeBinPath buildInputs;
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];

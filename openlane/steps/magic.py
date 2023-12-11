@@ -109,6 +109,7 @@ class MagicStep(TclStep):
             "-noconsole",
             "-rcfile",
             str(self.config["MAGICRC"]),
+            os.path.join(get_script_dir(), "magic", "wrapper.tcl"),
         ]
 
     def prepare_env(self, env: dict, state: State) -> dict:
@@ -129,11 +130,6 @@ class MagicStep(TclStep):
         env: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        # https://github.com/RTimothyEdwards/magic/issues/218
-        stdin = open(
-            os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
-        )
-
         env = (env or {}).copy()
         env["MAGIC_SCRIPT"] = self.get_script_path()
         if alternate_script := kwargs.get("_script"):
@@ -148,7 +144,6 @@ class MagicStep(TclStep):
             silent,
             report_dir,
             env,
-            stdin=stdin,
             **kwargs,
         )
 

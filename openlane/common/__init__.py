@@ -39,7 +39,6 @@ from .misc import (
     protected,
     final,
     mkdirp,
-    StringEnum,
     Path,
     zip_first,
     format_size,

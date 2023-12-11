@@ -15,6 +15,7 @@ import io
 import os
 import re
 import json
+import site
 import shlex
 import tempfile
 import subprocess
@@ -246,6 +247,12 @@ class OpenROADStep(TclStep):
                 if cell.strip() != ""
             ]
         )
+
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
+        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         return env
 
@@ -1560,7 +1567,7 @@ class CTS(ResizerStep):
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
-                return Step.run(self, state_in, **kwargs)
+                return {}, {}
 
         views_updates, metrics_updates = super().run(
             state_in, corners_key="CTS_CORNERS", env=env, **kwargs
@@ -1737,6 +1744,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
             default=False,
         ),
+        Variable(
+            "PL_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1797,6 +1810,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "Allows setup violations when fixing hold.",
             default=False,
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+        Variable(
+            "GRT_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
         ),
     ]
 

@@ -11,7 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-__version__ = "2.0.0b16"
+{
+  pkgs ? import ./pkgs.nix {},
+  klayout ? import ./klayout.nix { inherit pkgs; },
+}:
 
-if __name__ == "__main__":
-    print(__version__, end="")
+with pkgs; python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
+  name = "klayout-pymod";
+  buildInputs = [klayout];
+  unpackPhase = "true";
+  installPhase = ''
+    mkdir -p $out/${python3.sitePackages}
+    ln -s ${klayout}/lib/pymod/klayout $out/${python3.sitePackages}/klayout
+    ln -s ${klayout}/lib/pymod/pya $out/${python3.sitePackages}/pya
+  '';
+})

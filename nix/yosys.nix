@@ -49,8 +49,8 @@ with pkgs; let
       dylibs = lib.lists.flatten (map (n: n.dylibs) plugins);
     in let module_flags = with builtins; concatStringsSep " "
         (map (so: "--add-flags -m --add-flags ${so}") dylibs);
-    in lib.appendToName "with-plugins" ( symlinkJoin {
-      inherit (yosys) name;
+    in ( symlinkJoin {
+      name = "${yosys.name}-with-plugins";
       paths = paths ++ [ yosys ] ;
       nativeBuildInputs = [ makeWrapper ];
       postBuild = ''
