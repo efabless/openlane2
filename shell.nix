@@ -29,6 +29,7 @@ with pkgs; let
       pyfakefs
       pytest
       pillow
+      mdformat
     ] ++ openlane-plugins ))
 
     # Conveniences
@@ -44,4 +45,6 @@ with pkgs; let
     jupyter
     graphviz
   ] ++ openlane.includedTools ++ pluginIncludedTools;
+
+  PYTHONPATH = openlane.computed_PYTHONPATH;
 }

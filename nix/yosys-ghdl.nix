@@ -54,7 +54,7 @@ with pkgs; clangStdenv.mkDerivation {
     libedit
     libbsd
     zlib
-    ghdl-llvm
+    ghdl
   ];
 
   checkInputs = [
