@@ -54,14 +54,14 @@
     * Multiple GDS files are defined per macro
     * A macro's GDS file does not have a PR boundary
 * `Odb.*`
+  * Added `openlane/scripts/odbpy` to `PYTHONPATH`
+  * Propagated `venv` sitepackages to `PYTHONPATH`
   * `openlane/scripts/odbpy/defutil.py`:
     * Added validation for obstruction commands
     * Added exit codes for validation errors in obstruction commands
     * Added a command to remove obstructions
     * Enhanced obstructions regex matching to account for >5 items in an
       obstruction definition.
-    * Added `openlane/scripts/odbpy` to `PYTHONPATH`
-    * Propagated `venv` sitepackages to `PYTHONPATH`
 * Created obstruction-related steps
   * `Odb.AddRoutingObstructions`: Step for adding metal-layer obstructions to a
     design
@@ -87,16 +87,17 @@
     * `POWERED_NETLIST_SDF_FRIENDLY`
     * `POWERED_NETLIST_NO_PHYSICAL_CELLS`
     * `OPENROAD_LEF`
-  * Updated all OpenROAD steps to write the aforementioned new design formats
   * Added `openlane/scripts/odbpy` to `PYTHONPATH`
   * Propagated `venv` sitepackages to `PYTHONPATH`
+* `OpenROAD.WriteViews`
+  * Writes the aforementioned new design formats
 * `OpenROAD.CTS`, `CVCRV.ERC` (unused):
-  * Replaced legacy calls to causing crashes in some situations
+  * Replaced legacy calls to `Step.run` causing crashes in some situations
 * Created `OpenROAD.CutRows`
 * `OpenROAD.CutRows`, `OpenROAD.TapDecapInsertion`:
   * Renamed `FP_TAP_VERTICAL_HALO` to `FP_MACRO_VERTICAL_HALO`,
     `FP_TAP_HORIZONTAL_HALO` to `FP_MACRO_HORIZONTAL_HALO`
-  * Reason for the above renames is that the halo doesn't only affect tap
+    * Rationale: Halo doesn't only affect tap
     insertion, it also affects cut rows generated in the floorplan. This affects
     cell insertion and power rails and anything related to floorplan and std
     cell placement.
@@ -114,18 +115,16 @@
     `Odb.HeuristicDiodeInsertion`; gated by `RUN_ANTENNA_REPAIR` (with a
     deprecated name of `GRT_REPAIR_ANTENNAS` for backwards compat)
 * `OpenROAD.ResizerTiming*`:
-  * Added `PL_RESIZER_GATE_CLONING` and `GRT_RESIZER_GATE_CLONING` rspectively,
-    which control OpenROAD's ability when calling `repair_timing` (default:
+  * Added `PL_RESIZER_GATE_CLONING` and `GRT_RESIZER_GATE_CLONING` respectively,
+    which control OpenROAD's ability when doing gate cloning while running `repair_timing` (default:
     `true`)
 * `OpenROAD.STAPostPNR`
   * Added `timing__unannotated_nets__count` to record number of annotated nets
     reports during PostPnR sta
   * Added `timing__unannotated_nets_filtered__count` which filters the former's
     count based on whether a net has a wire. A wire indicates if a net has
-    physical implementation. If a net doesn't have a wire then ii can be waived
+    physical implementation. If a net doesn't have a wire then it can be waived
     and filtered out.
-* Added a new step, `OpenROAD.WriteViews`, which simply updates views with no
-  other changes
 * `Verilator.Lint`:
   * Fixed bug where inferred latch warnings were not properly processed
 * `Yosys.*Synthesis`:
@@ -157,14 +156,12 @@
     `OpenROAD.RepairDesignPostGRT` (as the latter may create some long wires)
     but still before `Odb.ResizerTimingPostGRT` (as timing repairs take
     priority)
-  * `OpenROAD.CheckAntennas` added after `OpenROAD.DetailedRoute`
+  * `OpenROAD.CheckAntennas` added after `OpenROAD.DetailedRouting`
   * `OpenROAD.CutRows` added before `OpenROAD.TapDecapInsertion`
   * `OpenROAD.AddPDNObstructions` and `OpenROAD.RemovePDNObstructions` now
     sandwich `OpenROAD.GeneratePDN`
 * Internally updated implementation of `VHDLClassic` flow to dynamically create
   `.Steps` from `Classic`
-* Updated documentation of `openlane.config.Variable::Variable.pdk` to make it a
-  bit clearer
 
 ## Documentation
 
@@ -175,7 +172,9 @@
   * Hid top-level `toctree` polluting the landing page
   * Fixed links to incorrect repository
 * Corners and STA: Now indexed; details some violations
-
+* Updated documentation of `openlane.config.Variable::Variable.pdk` to make it a
+  bit clearer
+  
 ## Tool Updates
 
 * Additions and changes to Nix to support the `aarch64-linux` and
@@ -236,7 +235,7 @@
 * `OpenROAD.Floorplan`:
   * Removed `PLACE_SITE_HEIGHT` and `PLACE_SITE_WIDTH`: redundant
 * `OpenROAD.GlobalRouting`:
-  * Removed `GRT_REPAIR_ANTENNAS`, moved to the `Classic` flow
+  * Removed `GRT_REPAIR_ANTENNAS`. See details above.
 * `Odb.DiodesOnPorts`, `Odb.HeuristicDiodeInsertion`:
   * Updated `HEURISTIC_ANTENNA_THRESHOLD` to be a non-optional PDK variable with
     default variables added in `openlane/config/pdk_compat.py`
@@ -272,8 +271,6 @@
 
 ## Testing
 
-* Created a new internal subcommand, `openlane.steps create-test`, which creates
-  a flat reproducible that can be more easily added as a step unit
 * Created step unit testing infrastructure, relying on specially-laid out
   folders that provide input data with the ability to add a per-step input data
   preprocessor and output
@@ -282,6 +279,8 @@
   * Added step to Nix build that utilizes the step unit testing infrastructure
   * Some space/data duplication avoidance measures: Allow missing `state.json`
     for empty state and creation of `.ref` files
+* Created a new internal subcommand, `openlane.steps create-test`, which creates
+  a flat reproducible that can be more easily added as a step unit
 * Ported `aes_user_project_wrapper` from OpenLane 1
 * Added `user_proj_timer` from
   https://github.com/efabless/openframe_timer_example/tree/main/openlane/user_proj_timer
