@@ -26,6 +26,18 @@ args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/8078ceb2777
                 doCheck = false;
             }));
 
+            # Formatter for the Changelog
+            python3 = old.python3.override {
+                packageOverrides = (pFinalAttrs: pPreviousAttrs: {
+                    mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
+                        postPatch = ''
+                            sed -i 's/primary_marker = "-"/primary_marker = "*"/' src/mdformat/renderer/_util.py
+                        '';
+                        pytestCheckPhase = "true";
+                    });
+                });
+            };
+
             # Platform-specific
             ## Undeclared Platform
             clp = if old.system == "aarch64-linux" then (old.clp.overrideAttrs(finalAttrs: previousAttrs: {
