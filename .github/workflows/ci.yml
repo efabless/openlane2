@@ -264,9 +264,11 @@ jobs:
         with:
           name: docker-image-aarch64
           path: /tmp/docker
-      - name: Load Image (Docker)
+      - name: Load Images (Docker)
         run: |
-          cat /tmp/docker/* | docker load
+          for file in /tmp/docker/*; do
+            cat $file | docker load
+          done
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
