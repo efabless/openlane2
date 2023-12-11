@@ -26,25 +26,6 @@ class MyString(UserString):
     pass
 
 
-def test_stringenum():
-    from openlane.common import StringEnum
-
-    breeds = ["Siamese", "Persian", "Ragdoll", "Maine Coon"]
-
-    with pytest.raises(TypeError, match="Attempted to reuse key"):
-        StringEnum("CatBreeds", breeds + ["Siamese"])
-
-    valid_enum = StringEnum("CatBreeds", breeds)
-
-    for breed in breeds:
-        assert (
-            getattr(valid_enum, breed).value == breed
-        ), f"Enum member '{breed}' did not get a matching string"
-        assert (
-            valid_enum[breed].value == breed
-        ), f"Enum member '{breed}' could not be properly indexed"
-
-
 def test_is_string():
     from openlane.common import is_string
 

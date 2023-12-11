@@ -198,9 +198,13 @@ def test_compile_deprecated(variable):
 
 @pytest.fixture()
 def test_enum():
-    from openlane.common import StringEnum
+    from enum import IntEnum
 
-    return StringEnum("x", ["AValue", "AnotherValue"])
+    class TestEnum(IntEnum):
+        AValue = 0
+        AnotherValue = 1
+
+    return TestEnum
 
 
 @pytest.fixture()
@@ -346,7 +350,7 @@ def test_compile_permissive(variable_set: list, test_enum: Type):
         "OTHER_DICT_VAR": {"key1": "value1", "key2": "value2"},
         "UNION_VAR": 4,
         "BOOL_VAR": False,
-        "ENUM_VAR": test_enum("AValue"),
+        "ENUM_VAR": test_enum["AValue"],
         "NUMBER_VAR": Decimal("90123"),
         "LITERAL_VAR": "yes",
     }, "Permissive parsing mode returned an unexpected result"

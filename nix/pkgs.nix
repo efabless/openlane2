@@ -12,33 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-let
-    newpkgs = import (
-    fetchTarball "https://github.com/NixOS/nixpkgs/archive/3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58.tar.gz"
-    ) {};
-in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941ea68b4c625533bead7bbb94ccce52dceb.tar.gz") {
+args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/8078ceb2777d790d3fbc53589ed3753532185d77.tar.gz") {
     overlays = [
         (new: old: {
-            # aarch64-related
-            clp = old.clp.overrideAttrs(finalAttrs: previousAttrs: {
-                meta = {
-                    platforms = previousAttrs.meta.platforms ++ ["aarch64-linux"];
-                };
-            });
-
-            # Darwin-related
+            # Clang 16 flags "register" as an error by default
             lemon-graph = old.lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
-                meta = { broken = false; };
-                doCheck = false;
-            });
-            
-            or-tools = old.or-tools.overrideAttrs (finalAttrs: previousAttrs: {
-                meta = {
-                    platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
-                };
-                doCheck = false;
+                postPatch = "sed -i 's/register //' lemon/random.h";
             });
 
+            # Version mismatch causes OpenROAD to fail otherwise
+            spdlog-internal-fmt = (old.spdlog.overrideAttrs(finalAttrs: previousAttrs: {
+                cmakeFlags = builtins.filter (flag: (!old.lib.strings.hasPrefix "-DSPDLOG_FMT_EXTERNAL" flag)) previousAttrs.cmakeFlags;
+                doCheck = false;
+            }));
+
+            # Formatter for the Changelog
             python3 = old.python3.override {
                 packageOverrides = (pFinalAttrs: pPreviousAttrs: {
                     mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
@@ -50,12 +38,28 @@ in args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0218941e
                 });
             };
 
-            # # Hack to get GHDL to maybe work on macOS- use at your own risk
-            # ghdl-llvm = if old.stdenv.isDarwin then newpkgs.ghdl-llvm.overrideAttrs (finalAttrs: previousAttrs: {
-            #     meta = {
-            #         platforms = previousAttrs.meta.platforms ++ old.lib.platforms.darwin;
-            #     };
-            # }) else (old.ghdl-llvm);
+            # Platform-specific
+            ## Undeclared Platform
+            clp = if old.system == "aarch64-linux" then (old.clp.overrideAttrs(finalAttrs: previousAttrs: {
+                meta = {
+                    platforms = previousAttrs.meta.platforms ++ [old.system];
+                };
+            })) else (old.clp);
+
+            # Clang 16's Default is C++17, which cbc does not support
+            cbc = if (old.lib.strings.hasSuffix "-darwin" old.system) then old.cbc.overrideAttrs(finalAttrs: previousAttrs: {
+                configureFlags = previousAttrs.configureFlags ++ ["CXXFLAGS=-std=c++14"]; 
+            }) else (old.cbc);
+
+            ## Cairo X11 on Mac
+            cairo = if (old.lib.strings.hasSuffix "-darwin" old.system) then (old.cairo.override {
+                x11Support = true;
+            }) else (old.cairo);
+
+            ## Alligned alloc not available on the default SDK for x86_64-darwin (10.12!!)
+            or-tools = if old.system == "x86_64-darwin" then (old.or-tools.override {
+                stdenv = old.overrideSDK old.stdenv "11.0";
+            }) else (old.or-tools);
         })
     ];
 } // args

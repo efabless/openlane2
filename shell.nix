@@ -45,4 +45,6 @@ with pkgs; let
     jupyter
     graphviz
   ] ++ openlane.includedTools ++ pluginIncludedTools;
+
+  PYTHONPATH = openlane.computed_PYTHONPATH;
 }

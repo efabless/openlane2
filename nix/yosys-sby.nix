@@ -31,7 +31,8 @@ with pkgs; clangStdenv.mkDerivation rec {
     "YOSYS_CONFIG=${yosys}/bin/yosys-config"
   ];
 
-  propagatedBuildInputs = [
+  buildInputs = [
+    yosys.py3
     yosys
     libedit
     libbsd
@@ -41,10 +42,6 @@ with pkgs; clangStdenv.mkDerivation rec {
     boolector
     z3
     yices
-  ];
-
-  buildInputs = [
-    yosys.py3
   ];
 
   preConfigure = ''
@@ -59,7 +56,7 @@ with pkgs; clangStdenv.mkDerivation rec {
 
   doCheck = false;
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
+  computed_PATH = lib.makeBinPath buildInputs;
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];
