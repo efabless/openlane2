@@ -207,7 +207,7 @@ class StreamOut(MagicStep):
     """
     Converts DEF views into GDSII streams using Magic.
 
-    If ``PRIMARY_SIGNOFF_TOOL`` is set to ``"magic"``, both GDS and MAG_GDS
+    If ``PRIMARY_GDSII_STREAMOUT_TOOL`` is set to ``"magic"``, both GDS and MAG_GDS
     will be updated, and if set to another tool, only ``MAG_GDS`` will be
     updated.
     """
@@ -297,7 +297,7 @@ class StreamOut(MagicStep):
             **kwargs,
         )
 
-        if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
+        if self.config["PRIMARY_GDSII_STREAMOUT_TOOL"] == "magic":
             magic_gds_out = str(views_updates[DesignFormat.MAG_GDS])
             gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
             shutil.copy(magic_gds_out, gds_path)

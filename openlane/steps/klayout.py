@@ -165,7 +165,7 @@ class StreamOut(KLayoutStep):
     The PDK must support KLayout for this step to work, otherwise
     it will be skipped.
 
-    If ``PRIMARY_SIGNOFF_TOOL`` is set to ``"klayout"``, both GDS and KLAYOUT_GDS
+    If ``PRIMARY_GDSII_STREAMOUT_TOOL`` is set to ``"klayout"``, both GDS and KLAYOUT_GDS
     will be updated, and if set to another tool, only ``KLAYOUT_GDS`` will be
     updated.
     """
@@ -181,7 +181,7 @@ class StreamOut(KLayoutStep):
         lyt = self.config["KLAYOUT_TECH"]
         lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
         if None in [lyp, lyt, lym]:
-            if self.config["PRIMARY_SIGNOFF_TOOL"] == "klayout":
+            if self.config["PRIMARY_GDSII_STREAMOUT_TOOL"] == "klayout":
                 raise StepError(
                     "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset, yet, KLayout is set as the primary sign-off tool."
                 )
@@ -239,7 +239,7 @@ class StreamOut(KLayoutStep):
 
         views_updates[DesignFormat.KLAYOUT_GDS] = Path(klayout_gds_out)
 
-        if self.config["PRIMARY_SIGNOFF_TOOL"] == "klayout":
+        if self.config["PRIMARY_GDSII_STREAMOUT_TOOL"] == "klayout":
             gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
             shutil.copy(klayout_gds_out, gds_path)
             views_updates[DesignFormat.GDS] = Path(gds_path)
