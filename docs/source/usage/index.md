@@ -11,6 +11,7 @@ hardening macros and writing custom flows and scripts.
 hardening_macros
 chip_integration
 about_pdks
+corners_and_sta
 writing_custom_flows
 writing_custom_steps
 migration/index

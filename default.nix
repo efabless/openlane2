@@ -17,14 +17,13 @@
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
   
 
-  klayout ? pkgs.libsForQt5.callPackage ./nix/klayout.nix {
-    inherit pkgs;
-  },
+  klayout ? import ./nix/klayout.nix { inherit pkgs; },
+  klayout-pymod ? import ./nix/klayout-pymod.nix { inherit pkgs; inherit klayout; },
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
   opensta ? import ./nix/opensta.nix { inherit pkgs; },
-  openroad ? pkgs.libsForQt5.callPackage ./nix/openroad.nix {
+  openroad ? import ./nix/openroad.nix {
     inherit pkgs;
     inherit opensta;
   },
@@ -49,7 +48,22 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   version_list = builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' version_file;
   version = builtins.head version_list;
 
-  src = gitignore-src.gitignoreSource ./.;
+  src = [
+    ./Readme.md
+    ./setup.py
+    ./openlane
+    ./type_stubs
+    ./requirements.txt
+  ];
+
+  unpackPhase = ''
+    echo $src
+    for file in $src; do
+      BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
+      cp -r $file $PWD/$BASENAME
+    done
+    ls -lah
+  '';
   
   buildInputs = [];
 
@@ -86,6 +100,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     immutabledict
     libparse
     psutil
+    klayout-pymod
   ] ++ includedTools;
 
   doCheck = false;
