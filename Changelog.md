@@ -5,7 +5,9 @@
 * All:
   * Changed type of `DIE_AREA` and and `CORE_AREA` to
     `Optional[Tuple[Decimal, Decimal, Decimal, Decimal]]`
-* `KLayout.XOR`
+* `KLayout.*`:
+  * Propagated `venv` sitepackages to `PYTHONPATH` 
+* `KLayout.XOR`:
   * Fixed threads not working properly
   * `KLAYOUT_XOR_THREADS` is now optional, with the thread count being equal to
     your thread count by default
@@ -14,6 +16,8 @@
     design for KLayout to bother threading)
   * Added `info` prints for thread count
 * `Magic.*`:
+  * Base `MagicStep` no longer overrides `run`, but does override
+    `run_subprocess`
   * `openlane/scripts/magic/common/read.tcl` is now a list of read-related Tcl
     functions used across all Magic scripts
   * Added new variable `MAGIC_CAPTURE_ERRORS` to best-effort capture and throw
@@ -44,9 +48,6 @@
     and:
     * Multiple GDS files are defined per macro
     * A macro's GDS file does not have a PR boundary
-* `Magic.*`
-  * Base `MagicStep` no longer overrides `run`, but does override
-    `run_subprocess`
 * `Odb.*`
   * `openlane/scripts/odbpy/defutil.py`:
     * Added validation for obstruction commands
@@ -54,10 +55,13 @@
     * Added a command to remove obstructions
     * Enhanced obstructions regex matching to account for >5 items in an
       obstruction definition.
+    * Added `openlane/scripts/odbpy` to `PYTHONPATH`
+    * Propagated `venv` sitepackages to `PYTHONPATH` 
 * Created obstruction-related steps
-  * `Odb.AddRoutingObstructions`: Step for adding obstructions to a design
-  * `Odb.RemoveRoutingObstructions`: Step for removing obstructions from a
-    design.
+  * `Odb.AddRoutingObstructions`: Step for adding metal-layer obstructions to
+    a design
+  * `Odb.RemoveRoutingObstructions`: Step for removing metal-layer obstructions
+    from a design.
     * The preceding two steps, and their derivatives, should be used in tandem,
       i.e., obstructions should be added then removed later in the flow.
   * `Odb.AddPDNObstructions`: A subclass of `Odb.AddRoutingObstructions` that
@@ -79,6 +83,8 @@
     * `POWERED_NETLIST_NO_PHYSICAL_CELLS`
     * `OPENROAD_LEF`
   * Updated all OpenROAD steps to write the aforementioned new design formats
+  * Added `openlane/scripts/odbpy` to `PYTHONPATH`
+  * Propagated `venv` sitepackages to `PYTHONPATH`
 * `OpenROAD.CTS`, `CVCRV.ERC` (unused):
   * Replaced legacy calls to causing crashes in some situations
 * Created `OpenROAD.CutRows`
@@ -162,6 +168,7 @@
   * Removed reference to unused utilities
   * Hid top-level `toctree` polluting the landing page
   * Fixed links to incorrect repository
+* Corners and STA: Now indexed; details some violations
 
 ## Tool Updates
 
@@ -171,11 +178,18 @@
     * Removed custom `or-tools` derivation
     * Removed `lemon-graph` override in `nix/openroad.nix`
   * Changed KLayout build script in an attempt to make it faster (I failed)
-  * Added a new argument to `default.nix`, `system`, as `builtins.currentSystem`
-    is not available when using nix flakes (where in documentation it is
-    described as "non-hermetic and impure": see https://nixos.wiki/wiki/Flakes).
-    This change allows passing the system as argument and thus restores
-    compatibility with nix flakes.
+  * Reworked Nix derivations for the OpenLane shell, OpenLane, and the Docker
+    image
+    * Added a new argument to `default.nix`, `system`, as `builtins.currentSystem`
+      is not available when using nix flakes (where in documentation it is
+      described as "non-hermetic and impure": see https://nixos.wiki/wiki/Flakes).
+      This change allows passing the system as argument and thus restores
+      compatibility with nix flakes.
+* Completely revamp Notebook
+  * Rewrite Nix setup section to be more tolerant of non-Colab setups
+  * Rewrite OpenLane dependencies to use a better method of installing OpenLane's dependencies/hack in `tkinter` if it's missing (as it will be on local environments)
+  *  Added descriptions for *all steps used*
+  * Added RCX, STAPostPNR, LVS and DRC
 * Added [Surelog](https://github.com/chipsalliance/surelog) to the included
   utilities
 * Extended CI to handle Linux aarch64 builds
@@ -195,8 +209,6 @@
 * Updated Yosys to `0.34`/`daad9ed`
   * Added the
     [Synlig Yosys SystemVerilog Plugin](https://github.com/chipsalliance/synlig)
-* Reworked Nix derivations for the OpenLane shell, OpenLane, and the Docker
-  image
 
 ## API Breaks
 
@@ -206,6 +218,11 @@
   * For JSON configurations using `meta.version = 2`, `DIE_AREA` and `CORE_AREA`
     can no longer be provided as strings, and must be provided as an array of four
     numeric elements.
+  * Removed global state when `Config.interactive` is used, `state_in` now
+    explicitly required
+    * Rationale: the little convenience offered is far outdone by the annoyance
+      of most steps being non re-entrant, so trying to run the same cell twice is
+      almost always a crash.
 * `OpenROAD.CTS`:
   * Removed `CTS_TOLERANCE`: no longer supported by OpenROAD
 * `OpenROAD.Floorplan`:
@@ -217,6 +234,7 @@
     PDK variable with default variables added in `openlane/config/pdk_compat.py`
 * `Magic.StreamOut`:
   * Removed `MAGIC_GDS_ALLOW_ABSTRACT`: Bad practice
+
 ## Misc. Enhancements/Bugfixes
 
 * Added exit code propagation when a `StepError` is caused by
@@ -224,17 +242,19 @@
 * Added default Toolbox when Toolbox is not defined for a step
 * Created a `.process_stats.json` file for every subprocess that has general
   statistics about a process's total elapsed time and resource consumption
-* Created method `openlane/common/misc.py::Path::startswith`
-* Expanded `openlane/common/generic_dict.py::copy_recursive` to support
-  dataclasses
-* Fixed bug in `openlane/config/config.py::__load_dict` where `pdkpath` was not
-  being set in some scenarios
+* Created method `openlane.common.Path.startswith`
+* Expanded `openlane.common.copy_recursive` to support dataclasses
+* `openlane.state.State._repr_html_` to better handle recursive outputs.
+* `openlane.config.Config`
+  * Fixed bug in private methods where `pdkpath` was not
+    being set in some scenarios
+  * Fixed `_repr_markdown_` to use correct syntax identifier for YAML in Markdown
 * Fixes and tweaks for step reproducibles:
   * `openlane.steps create-reproducible` has new flag, `--no-include-pdk`, which
     excludes PDK files from reproducibles and make any reference to them utilize
     `pdk_dir::`
   * Slight internal rework for
-    `openlane/steps/step.py::Step::create_reproducible` to support flattened
+    `openlane.steps.Step.create_reproducible` to support flattened
     file structures suitable for testing
   * Reproducibles now no longer include views of the design not explicitly
     declared in step `.inputs`
@@ -246,27 +266,20 @@
 
 * Created a new internal subcommand, `openlane.steps create-test`, which creates
   a flat reproducible that can be more easily added as a step unit
-
 * Created step unit testing infrastructure, relying on specially-laid out
   folders that provide input data with the ability to add a per-step input data
   preprocessor and output
-
   * Requires `--step-rx` flag to be passed to `pytest`
   * Created submodule to host step tests
   * Added step to Nix build that utilizes the step unit testing infrastructure
   * Some space/data duplication avoidance measures: Allow missing `state.json`
     for empty state and creation of `.ref` files
-
 * Ported `aes_user_project_wrapper` from OpenLane 1
-
 * Added `user_proj_timer` from
   https://github.com/efabless/openframe_timer_example/tree/main/openlane/user_proj_timer
-
 * Changed `manual_macro_placement_test` design to have a macro with orientation
   `FN` as a test for the aforemention
-
 * Enable post-GRT resizer for `aes_core`, `spm` and `aes`
-
 * Disabled latch linting for `salsa20`
 
 # 2.0.0b15
