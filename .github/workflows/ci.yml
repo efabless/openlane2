@@ -50,19 +50,19 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
-      - name: Download ipm
+      - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
       - name: Checkout submodules
         uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Download ipm designs
+      - name: Download IPM designs
         id: download-ipm-design
         run: |
           ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
           echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
-      - name: Cache IPM
+      - name: Cache IPM designs
         uses: actions/cache@v3
         with:
           path: ~/.ipm
