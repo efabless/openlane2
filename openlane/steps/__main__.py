@@ -288,13 +288,18 @@ def eject(ctx, output, state_in, config, id):
             f.write(found_stdin_data)
         cat_in = "cat STDIN | "
 
+    found_cmd_filtered = []
+    for cmd in found_cmd:
+        cmd = str(cmd).replace(canon_scripts_dir, target_scripts_dir)
+        found_cmd_filtered.append(cmd)
+
     with open(output, "w", encoding="utf8") as f:
         f.write("#!/bin/sh\n")
         for key, value in filtered_env.items():
             f.write(f"export {key}={shlex.quote(str(value))}\n")
         f.write("\n")
         f.write(cat_in)
-        f.write(shlex.join([str(e) for e in found_cmd]))
+        f.write(shlex.join([str(e) for e in found_cmd_filtered]))
         f.write("\n")
 
     if hasattr(os, "chmod"):
@@ -358,8 +363,15 @@ def eject(ctx, output, state_in, config, id):
     type=bool,
     default=True,
 )
+@o(
+    "--keep-tree/--no-keep-tree",
+    type=bool,
+    default=True,
+)
 @pass_context
-def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk):
+def create_reproducible(
+    ctx, output, step_dir, id, config, state_in, include_pdk, keep_tree
+):
     """
     Creates a filesystem-independent step reproducible.
 
@@ -393,7 +405,7 @@ def create_reproducible(ctx, output, step_dir, id, config, state_in, include_pdk
             state_in = os.path.join(step_dir, "state_in.json")
 
     step = load_step_from_inputs(ctx, id, config, state_in)
-    step.create_reproducible(output, include_pdk)
+    step.create_reproducible(output, include_pdk, _keep_tree=keep_tree)
 
 
 @command(formatter_settings=formatter_settings, hidden=True)

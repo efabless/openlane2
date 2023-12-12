@@ -658,6 +658,7 @@ class Step(ABC):
         target_dir: str,
         include_pdk: bool = True,
         _flatten: bool = False,
+        _keep_tree: bool = True,
     ):
         """
         Creates a folder that, given a specific version of OpenLane being
@@ -688,37 +689,60 @@ class Step(ABC):
 
         pdk_path = os.path.join(self.config["PDK_ROOT"], self.config["PDK"], "")
 
+        if not _keep_tree:
+            design_files_target_dir_relative = "./design-files/"
+            pdk_files_target_dir_relative = "./pdk-files/"
+            mkdirp(os.path.join(target_dir, design_files_target_dir_relative))
+            mkdirp(os.path.join(target_dir, pdk_files_target_dir_relative))
+
         def visitor(x: Any) -> Any:
             nonlocal files_path, include_pdk, pdk_path
+            nonlocal _keep_tree, design_files_target_dir_relative, pdk_files_target_dir_relative
             if not isinstance(x, Path):
                 return x
 
-            if not include_pdk and x.startswith(pdk_path):
-                return x.replace(pdk_path, "pdk_dir::")
+            if not _keep_tree:
+                if x.startswith(pdk_path) and include_pdk:
+                    target_relpath = str(
+                        x.replace(pdk_path, pdk_files_target_dir_relative)
+                    )
+                    target_abspath = os.path.join(target_dir, target_relpath)
+                    mkdirp(os.path.dirname(target_abspath))
+                elif x.startswith(pdk_path) and not include_pdk:
+                    return x.replace(pdk_path, "pdk_dir::")
+                else:
+                    counter = 0
+                    filename = str(os.path.basename(x))
+                    target_relpath = os.path.join(
+                        design_files_target_dir_relative, filename
+                    )
+                    target_abspath = os.path.join(target_dir, target_relpath)
+                    while os.path.exists(target_abspath):
+                        counter += 1
+                        target_relpath = os.path.join(
+                            design_files_target_dir_relative, f"{counter}-{filename}"
+                        )
+                        target_abspath = os.path.join(target_dir, target_relpath)
+            else:
+                if not include_pdk and x.startswith(pdk_path):
+                    return x.replace(pdk_path, "pdk_dir::")
 
-            target_relpath = os.path.join(".", "files", x[1:])
-            target_abspath = os.path.join(files_path, x[1:])
+                target_relpath = os.path.join(".", "files", x[1:])
+                target_abspath = os.path.join(files_path, x[1:])
 
-            if _flatten:
-                counter = 0
-                filename = os.path.basename(x)
+                if _flatten:
+                    counter = 0
+                    filename = os.path.basename(x)
 
-                def filename_with_counter():
-                    nonlocal counter, filename
-                    if counter == 0:
-                        return filename
-                    else:
-                        return f"{counter}-{filename}"
+                    target_relpath = ""
+                    target_abspath = "/"
+                    while os.path.exists(target_abspath):
+                        current = filename if counter == 0 else f"{counter}-{filename}"
+                        target_relpath = os.path.join(".", current)
+                        target_abspath = os.path.join(files_path, current)
+                        counter += 1
 
-                target_relpath = ""
-                target_abspath = "/"
-                while os.path.exists(target_abspath):
-                    current = filename_with_counter()
-                    target_relpath = os.path.join(".", current)
-                    target_abspath = os.path.join(files_path, current)
-                    counter += 1
-
-            mkdirp(os.path.dirname(target_abspath))
+                mkdirp(os.path.dirname(target_abspath))
 
             if os.path.isdir(x):
                 if not _flatten:
