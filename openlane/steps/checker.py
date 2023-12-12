@@ -227,3 +227,13 @@ class LintTimingConstructs(MetricChecker):
             )
 
         return {}, {}
+
+
+@Step.factory.register()
+class KLayoutDRC(MetricChecker):
+    id = "Checker.KLayoutDRC"
+    name = "KLayout DRC Checker"
+    long_name = "KLayout Design Rule Checker"
+
+    metric_name = "klayout__drc_error__count"
+    metric_description = "KLayout DRC errors"

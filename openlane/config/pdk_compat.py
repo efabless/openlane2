@@ -203,7 +203,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
     # 9. Primary Signoff Tool
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
-        new["PRIMARY_SIGNOFF_TOOL"] = "magic"
+        new["PRIMARY_GDSII_STREAMOUT_TOOL"] = "magic"
 
     # 10. CVC
     if "CVC_SCRIPTS_DIR" in config:
