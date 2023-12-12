@@ -296,9 +296,11 @@ jobs:
         with:
           name: docker-image-aarch64
           path: /tmp/docker
-      - name: Load Image (Docker)
+      - name: Load Images (Docker)
         run: |
-          cat /tmp/docker/* | docker load
+          for file in /tmp/docker/*; do
+            cat $file | docker load
+          done
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
@@ -313,7 +315,7 @@ jobs:
             ghcr.io/${{ github.repository }}:$NEW_TAG-amd64\
             ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
 
-          docker push ghcr.io/${{ github.repository }}:$NEW_TAG
+          docker manifest push ghcr.io/${{ github.repository }}:$NEW_TAG
       - name: Set Up Python
         if: ${{ env.PUBLISH == '1' }}
         uses: actions/setup-python@v4

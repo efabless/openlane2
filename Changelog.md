@@ -12,6 +12,8 @@
     `Optional[Tuple[Decimal, Decimal, Decimal, Decimal]]`
 * `KLayout.*`:
   * Propagated `venv` sitepackages to `PYTHONPATH`
+  * Rewrote scripts to use either the Python API or use arguments passed via
+    `KLAYOUT_ARGV` instead of the weird `-rd` pseudo-serialization
 * `KLayout.XOR`:
   * Fixed threads not working properly
   * `KLAYOUT_XOR_THREADS` is now optional, with the thread count being equal to
@@ -113,6 +115,8 @@
   * Added `OpenROAD.RepairAntennas` to `Classic` flow after
     `Odb.HeuristicDiodeInsertion`; gated by `RUN_ANTENNA_REPAIR` (with a
     deprecated name of `GRT_REPAIR_ANTENNAS` for backwards compat)
+* `OpenROAD.IOPlacement`, `OpenROAD.GlobalPlacementSkipIO`
+  * Added new value for `FP_IO_MODE` which places I/O pins by annealing
 * `OpenROAD.ResizerTiming*`:
   * Added `PL_RESIZER_GATE_CLONING` and `GRT_RESIZER_GATE_CLONING` respectively,
     which control OpenROAD's ability to perform gate cloning while running
@@ -176,14 +180,22 @@
 
 ## Tool Updates
 
-* Additions and changes to Nix to support the `aarch64-linux` and
-  `aarch64-darwin` platforms
-  * Added overlays for `clp`, `or-tools` and `lemon-graph`
-    * Removed custom `or-tools` derivation
-    * Removed `lemon-graph` override in `nix/openroad.nix`
-  * Changed KLayout build script in an attempt to make it faster (I failed)
+* Nix:
+  * Upgraded Nix Package Pin to `3526897`
+  * Added support for `aarch64-linux` and `aarch64-darwin`
+  * Created new overlays:
+    * `cbc`: Use c++14 instead of the default c++17 (`register` declarations)
+    * `lemon-graph`: `sed` patch `register` declaration
+    * `spdlog-internal-fmt`: `spdlog` but with its internal `fmt` as the
+      external `fmt` causes some problems\* `clp` to support `aarch64-linux`
+    * `cairo`: to enable X11 support on macOS
+    * `or-tools`: to use a new SDK on `x86-64-darwin` (see
+      [this](https://github.com/NixOS/nixpkgs/issues/272156#issuecomment-1839904283)
+    * `clp` to support `aarch64-linux`
   * Reworked Nix derivations for the OpenLane shell, OpenLane, and the Docker
     image
+    * Made OpenLane 2's `src` derivation allowlist-based rather than
+      gitignore-based (smaller `source` derivations)
     * Added a new argument to `default.nix`, `system`, as
       `builtins.currentSystem` is not available when using nix flakes (where in
       documentation it is described as "non-hermetic and impure": see
@@ -200,7 +212,19 @@
   utilities
 * Extended CI to handle Linux aarch64 builds
 * Excluded yosys-ghdl plugin from ARM-based builds and from macOS - never worked
-* Updated KLayout to `0.28.11`
+* Upgraded KLayout to `0.28.13`
+  * Made KLayout derivation more orthodox- distinct configure, build and install
+    steps
+  * Made KLayout Python modules available to all Python scripts
+  * macOS: All KLayout Mach-O binaries patched to find the correct dylibs
+    without `DYLD_LIBRARY_PATH`
+* Upgraded Magic to `83ed73a`
+  * Enabled `cairo` support on macOS, which allows Mac users to use the Magic
+    GUI
+  * Removed `mesa_glu` on macOS
+* Fixed Yosys plugins propagating Yosys, causing conflicts
+* Updated unit tests to work with some env changes in Python 3.11
+* Removed `StringEnum`
 * Updated OpenPDKs to `e0f692f`
 * Updated OpenROAD to `6f9b2bb`
   * OpenSTA is now built **standalone** just like `openroad-abc` for modularity
@@ -209,9 +233,11 @@
     of hand: see
     https://github.com/The-OpenROAD-Project/OpenROAD/issues/4121#issuecomment-1758154668
     for one example
-* Updated Verilator to `v5.018`/`67dfa37` to fix a couple crashes, including a
-  persistent one with `spm` on Apple Silicon
-* Updated Volare to `0.13.0`
+* Updated Verilator to `v5.018` to fix a couple crashes, including a persistent
+  one with `spm` on Apple Silicon
+* Updated Volare to `0.15.1`
+  * OpenLane now doesn't attempt to `enable` when using `volare`- it points the
+    `Config` object to the specific version directory for said PDK
 * Updated Yosys to `0.34`/`daad9ed`
   * Added the
     [Synlig Yosys SystemVerilog Plugin](https://github.com/chipsalliance/synlig)
@@ -240,6 +266,7 @@
     default variables added in `openlane/config/pdk_compat.py`
 * `Magic.StreamOut`:
   * Removed `MAGIC_GDS_ALLOW_ABSTRACT`: Bad practice
+* Removed `openlane.common.StringEnum`: Use `Literal['string1', 'string2', …]`
 
 ## Misc. Enhancements/Bugfixes
 
