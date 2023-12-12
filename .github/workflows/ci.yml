@@ -214,8 +214,6 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, prepare-test-matrices]
     name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
-    env:
-      IP_ROOT: ./test/designs/IPS
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
