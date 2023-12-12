@@ -15,7 +15,7 @@
   system ? builtins.currentSystem,
   pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
-
+  
 
   klayout ? import ./nix/klayout.nix { inherit pkgs; },
   klayout-pymod ? import ./nix/klayout-pymod.nix { inherit pkgs; inherit klayout; },
@@ -37,7 +37,7 @@
   sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
   eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
   ys-ghdl ? import ./nix/yosys-ghdl.nix { inherit pkgs; inherit yosys; inherit sby; },
-
+  
   ...
 }:
 
@@ -64,7 +64,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     done
     ls -lah
   '';
-
+  
   buildInputs = [];
 
   includedTools = [
@@ -112,6 +112,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   # Make PATH/PYTHONPATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
-    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"
+    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"  
   ];
 }
