@@ -1419,7 +1419,7 @@ class CutRows(OpenROADStep):
     """
 
     id = "OpenROAD.CutRows"
-    name = "CutRows"
+    name = "Cut Rows"
 
     inputs = [DesignFormat.ODB]
     outputs = [

@@ -506,18 +506,16 @@ class OpenGUI(KLayoutStep):
             + lefs
         )
 
-        cmd = (
-            [
-                shutil.which("klayout") or "klayout",
-                mode_arg,
-                "-rm",
-                os.path.join(
-                    get_script_dir(),
-                    "klayout",
-                    "open_design.py",
-                ),
-            ]
-        )
+        cmd = [
+            shutil.which("klayout") or "klayout",
+            mode_arg,
+            "-rm",
+            os.path.join(
+                get_script_dir(),
+                "klayout",
+                "open_design.py",
+            ),
+        ]
 
         subprocess.check_call(
             cmd,

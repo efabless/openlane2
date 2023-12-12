@@ -15,8 +15,8 @@
   pkgs ? import ./pkgs.nix {},
 }:
 let
-  rev = "e932ca71c29d86b21f314be60e7b7bfecb7d96d0";
-  sha256 = "sha256-s6CAL7YA4dnylmsJpXO6lPmCc25lmN4MkWVEUCq1s90=";
+  rev = "41092c79a2a08f3c4364c4e5269cf871a0cd75e6";
+  sha256 = "sha256-MBzXiRFHgacG72+qzxvI+POe23wYsil9K3eidAZ5JxY=";
 in let src = pkgs.fetchFromGitHub {
   owner = "efabless";
   repo = "ioplace_parser";

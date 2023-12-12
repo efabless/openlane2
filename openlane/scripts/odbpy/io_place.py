@@ -153,9 +153,8 @@ def sorter(bterm, order: ioplace_parser.Order):
 @click.command()
 @click.option(
     "-u",
-    "--unmatched-error",
-    is_flag=True,
-    default=False,
+    "--unmatched-error/--ignore-unmatched",
+    default=True,
     help="Treat unmatched pins as error",
 )
 @click.option(
@@ -251,7 +250,7 @@ def io_place(
     try:
         info_by_side = ioplace_parser.parse(config_file_str)
     except ValueError as e:
-        print(f"An exception occurred: {e}", file=sys.stderr)
+        print(f"An exception occurred: {e}")
         exit(os.EX_DATAERR)
 
     print("Top-level design name:", reader.name)
@@ -268,8 +267,7 @@ def io_place(
             side_info.min_distance = min
         if side_info.min_distance < min:
             print(
-                f"[WARN]: Using min_distance {min} for {side} pins to avoid overlap",
-                file=sys.stderr,
+                f"[WARN]: Using min_distance {min} for {side} pins to avoid overlap.",
             )
             side_info.min_distance = min
 
@@ -322,12 +320,11 @@ def io_place(
                 )
             else:
                 print(
-                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout.",
-                    file=sys.stderr,
+                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout."
                 )
 
     if mismatches_found and unmatched_error:
-        print("Mismatches found: ", file=sys.stderr)
+        print("Mismatches found.")
         exit(os.EX_DATAERR)
 
     if len(not_in_config) > 0:
