@@ -348,6 +348,7 @@ class XOR(KLayoutStep):
         return {}, {"design__xor_difference__count": difference_count}
 
 
+@Step.factory.register()
 class DRC(KLayoutStep):
     id = "KLayout.DRC"
     name = "Design Rule Check (KLayout)"
@@ -439,7 +440,7 @@ class DRC(KLayoutStep):
         )
 
         with open(json_report, "r") as f:
-            metrics_updates["klayout__drc_error__count"] = sum(json.load(f).values())
+            metrics_updates["klayout__drc_error__count"] = json.load(f)["total"]
         return metrics_updates
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -447,7 +448,9 @@ class DRC(KLayoutStep):
         if self.config["PDK"] in ["sky130A", "sky130B"]:
             metrics_updates = self.run_sky130(state_in, **kwargs)
         else:
-            warn(f"{self.config['PDK']} is not supported. Disable KLayout DRC")
+            warn(
+                f"KLayout DRC is not supported for the {self.config['PDK']} PDK. This step will be skipped."
+            )
 
         return {}, metrics_updates
 
