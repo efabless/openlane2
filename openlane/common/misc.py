@@ -17,20 +17,16 @@ import sys
 import typing
 import pathlib
 import unicodedata
-from enum import Enum
 from collections import UserString
 from typing import (
     Any,
     ClassVar,
     Iterable,
-    Sequence,
     TypeVar,
     Optional,
     Union,
     Tuple,
 )
-
-from deprecated.sphinx import deprecated
 
 
 T = TypeVar("T")
@@ -150,17 +146,6 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     :param path: A filesystem path for the directory
     """
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-
-
-@deprecated(
-    reason="Use Literal['str1', 'str2', …], which is more idiomatic to Python.",
-    version="2.0.0b11",
-)
-def StringEnum(name: str, values: Sequence[str]):
-    """
-    Creates a string enumeration class where the keys and values are the same.
-    """
-    return Enum(name, [(value, value) for value in values])
 
 
 class Path(UserString, os.PathLike):

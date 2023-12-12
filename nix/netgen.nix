@@ -29,6 +29,8 @@ with pkgs; clangStdenv.mkDerivation {
     "--with-tcl=${tcl}"
   ];
 
+  NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined";
+
   buildInputs = [
     tcl
     tk
