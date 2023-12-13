@@ -233,8 +233,7 @@ jobs:
               ${{ matrix.design.config }}\
             "
           else
-            pwd
-            echo ${{matrix.design.script}}
+            ${{matrix.design.script}}
           fi
       - name: Upload Run Folder
         if: ${{ always() }}
