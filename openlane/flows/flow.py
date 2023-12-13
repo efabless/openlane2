@@ -57,6 +57,7 @@ from ..logging import (
     verbose,
     register_additional_handler,
     deregister_additional_handler,
+    options,
 )
 from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
 
@@ -135,6 +136,7 @@ class FlowProgressBar(object):
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             console=console,
+            disable=not options.show_progress_bar,
         )
 
     def start(self):

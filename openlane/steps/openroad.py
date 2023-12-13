@@ -54,7 +54,7 @@ from .common_variables import (
 from ..config import Variable
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, verbose, console
+from ..logging import debug, err, info, warn, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -620,7 +620,8 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        console.print(table)
+        if not options.condensed_mode:
+            console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 
@@ -792,8 +793,7 @@ class IOPlacement(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
-            # Skip - Step just checks and copies
-            warn(f"FP_PIN_ORDER_CFG is set. Skipping {self.id}…")
+            info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)

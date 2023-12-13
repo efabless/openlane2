@@ -21,13 +21,11 @@ module and the ``rich`` library.
 
 from .logger import (
     LogLevels,
-    LogLevelsDict,
+    options,
     console,
     set_log_level,
     reset_log_level,
     get_log_level,
-    get_condensed_mode,
-    set_condensed_mode,
     register_additional_handler,
     deregister_additional_handler,
     verbose,

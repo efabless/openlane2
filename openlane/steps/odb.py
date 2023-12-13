@@ -237,7 +237,7 @@ class ManualMacroPlacement(OdbpyStep):
                             )
 
         if not cfg_file.exists():
-            warn("No instances found, skipping…")
+            info(f"No instances found, skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -318,7 +318,7 @@ class AddRoutingObstructions(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config[self.get_obstruction_variable().name] is None:
-            warn(
+            info(
                 f"'{self.get_obstruction_variable().name}' is not defined. Skipping {self.id}…"
             )
             return {}, {}

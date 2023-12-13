@@ -14,6 +14,7 @@
 import click
 import atexit
 import logging
+from enum import IntEnum
 from typing import ClassVar, Iterable, Union
 
 import rich.console
@@ -22,40 +23,25 @@ from rich.text import Text
 from rich.style import Style, StyleType
 
 
-class LogLevels:
-    ALL: ClassVar[int] = 0
-    DEBUG: ClassVar[int] = 10
-    SUBPROCESS: ClassVar[int] = 12
-    VERBOSE: ClassVar[int] = 15
-    INFO: ClassVar[int] = 20
-    WARNING: ClassVar[int] = 30
-    ERROR: ClassVar[int] = 40
-    CRITICAL: ClassVar[int] = 50
-
-
-def __log_levels_dict():
-    result = {k: v for k, v in LogLevels.__dict__.items() if not k.startswith("__")}
-    for name, value in result.items():
-        logging.addLevelName(value, name)
-    return result
-
-
-LogLevelsDict = __log_levels_dict()
+class LogLevels(IntEnum):
+    ALL = 0
+    DEBUG = 10
+    SUBPROCESS = 12
+    VERBOSE = 15
+    INFO = 20
+    WARNING = 30
+    ERROR = 40
+    CRITICAL = 50
 
 
 console = rich.console.Console()
 atexit.register(lambda: rich.console.Console().show_cursor())
 __event_logger: logging.Logger = logging.getLogger("__openlane__")
-__condensed_mode: bool = False
 
 
-def set_condensed_mode(value: bool):
-    global __condensed_mode
-    __condensed_mode = value
-
-
-def get_condensed_mode() -> bool:
-    return __condensed_mode
+class options:
+    condensed_mode: ClassVar[bool] = False
+    show_progress_bar: ClassVar[bool] = True
 
 
 class NullFormatter(logging.Formatter):
@@ -82,7 +68,7 @@ class RichHandler(rich.logging.RichHandler):
         super().__init__(**kwargs)
 
     def get_level_text(self, record: logging.LogRecord) -> Text:
-        if not get_condensed_mode():
+        if not options.condensed_mode:
             return super().get_level_text(record)
         level_name = record.levelname
         style: StyleType
@@ -127,6 +113,10 @@ class LevelFilter(logging.Filter):
 
 def initialize_logger():
     global __event_logger, console, __plain_only_mode, __condensed_mode
+
+    for level in LogLevels:
+        logging.addLevelName(level.value, level.name)
+
     subprocess_handler = RichHandler(
         console=console,
         show_time=False,

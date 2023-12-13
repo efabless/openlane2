@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-from decimal import Decimal
 
 import os
+import sys
 import json
+import time
 import psutil
 import shutil
-import subprocess
 import textwrap
-import time
-import sys
-
+import functools
+import subprocess
+from decimal import Decimal
 from signal import Signals
 from inspect import isabstract
 from itertools import zip_longest
@@ -42,6 +42,7 @@ from typing import (
     ClassVar,
     Type,
 )
+
 from rich.markup import escape
 
 from ..config import (
@@ -186,7 +187,13 @@ class ProcessStatsThread(Thread):
                     time.sleep(self.interval)
                     status = self.process.status()
         except psutil.Error as e:
-            warn(e)
+            message = e.msg
+            if functools.reduce(
+                lambda acc, c: acc and c not in message,
+                ["process no longer exists", "but it's a zombie"],
+                False,
+            ):
+                warn(f"Process resource tracker encountered an error: {e}")
 
     def stats_as_dict(self):
         return {
@@ -841,7 +848,7 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        if not logging.get_condensed_mode():
+        if not logging.options.condensed_mode:
             rule(f"{self.long_name}")
         verbose(
             f"Running '{self.id}'… (Log: {os.path.join('.', os.path.relpath(self.get_log_path()))})"
