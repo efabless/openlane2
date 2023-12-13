@@ -109,6 +109,7 @@ class MagicStep(TclStep):
             "-noconsole",
             "-rcfile",
             str(self.config["MAGICRC"]),
+            os.path.join(get_script_dir(), "magic", "wrapper.tcl"),
         ]
 
     def prepare_env(self, env: dict, state: State) -> dict:
@@ -129,11 +130,6 @@ class MagicStep(TclStep):
         env: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        # https://github.com/RTimothyEdwards/magic/issues/218
-        stdin = open(
-            os.path.join(get_script_dir(), "magic", "wrapper.tcl"), encoding="utf8"
-        )
-
         env = (env or {}).copy()
         env["MAGIC_SCRIPT"] = self.get_script_path()
         if alternate_script := kwargs.get("_script"):
@@ -148,7 +144,6 @@ class MagicStep(TclStep):
             silent,
             report_dir,
             env,
-            stdin=stdin,
             **kwargs,
         )
 
@@ -212,7 +207,7 @@ class StreamOut(MagicStep):
     """
     Converts DEF views into GDSII streams using Magic.
 
-    If ``PRIMARY_SIGNOFF_TOOL`` is set to ``"magic"``, both GDS and MAG_GDS
+    If ``PRIMARY_GDSII_STREAMOUT_TOOL`` is set to ``"magic"``, both GDS and MAG_GDS
     will be updated, and if set to another tool, only ``MAG_GDS`` will be
     updated.
     """
@@ -302,7 +297,7 @@ class StreamOut(MagicStep):
             **kwargs,
         )
 
-        if self.config["PRIMARY_SIGNOFF_TOOL"] == "magic":
+        if self.config["PRIMARY_GDSII_STREAMOUT_TOOL"] == "magic":
             magic_gds_out = str(views_updates[DesignFormat.MAG_GDS])
             gds_path = os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.gds")
             shutil.copy(magic_gds_out, gds_path)

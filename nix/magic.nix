@@ -38,42 +38,38 @@
 
 with pkgs; clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "0afe4d87d4aacfbbb2659129a1858a22d216a920";
+  rev = "83ed73ac522c6bbd5900240c2d02e399820cbc26";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-vj20c+RTu1FDFeQIR1u8wr6RBBsN1O57yrF8bzvSYjM=";
+    sha256 = "sha256-iDEYgwtotCJ6gXcNaMohSPmHeYFCplKYD8SXwnNF3/E=";
   };
 
-  patches = [
-    ./patches/magic/csh.patch
-  ];
-
-  nativeBuildInputs = [ python3 tcsh gnused ];
-
-  # So here's the situation:
-  ## * Magic will not compile without X11 libraries, even for headless use.
-  ## * Magic with Cairo will use Cairo-X11 headers that are not available on
-  ## pre-built Mac versions of Cairo which presume you're going to use Quartz.
-  ## -> Unintuitively, that means X11 libraries must be present on Mac, but not
-  ## Cairo.
+  nativeBuildInputs = [ python3 gnused ];
+  
   buildInputs = [
     xorg.libX11
     m4
-    mesa_glu
     ncurses
     tcl
     tcsh
     tk
-  ] ++ lib.optionals stdenv.isLinux [cairo];
+    cairo
+  ];
 
   configureFlags = [
     "--with-tcl=${tcl}"
     "--with-tk=${tk}"
     "--disable-werror"
   ];
+
+  NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined";
+
+  postPatch = ''
+    sed -i "s/dbReadOpen(cellDef, name,/dbReadOpen(cellDef, name != NULL,/" database/DBio.c
+  '';
 
   preConfigure = ''
     # nix shebang fix
@@ -83,8 +79,8 @@ with pkgs; clangStdenv.mkDerivation rec {
     sed -i 's@`git rev-parse HEAD`@${rev}@' ./scripts/defs.mak.in
   '';
 
-  NIX_CFLAGS_COMPILE = "-Wno-implicit-function-declaration -Wno-parentheses -Wno-macro-redefined";
-
-  # Fairly sure this is deprecated?
-  enableParallelBuilding = true;
+  fixupPhase = ''
+    sed -i "13iexport CAD_ROOT='$out/lib'" $out/bin/magic
+    patchShebangs $out/bin/magic
+  '';
 }

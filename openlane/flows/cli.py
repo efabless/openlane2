@@ -136,9 +136,19 @@ def pdk_scl_cb(
         if ctx.obj and ctx.obj.get("use_volare"):
             import volare
 
-            pdk_root = volare.get_volare_home(values["pdk_root"])
+            volare_home = volare.get_volare_home(values["pdk_root"])
 
-            volare.enable(pdk_root, pdk_family, get_opdks_rev())
+            include_libraries = ["default"]
+            if scl := values["scl"]:
+                include_libraries.append(scl)
+
+            version = volare.fetch(
+                volare_home,
+                pdk_family,
+                get_opdks_rev(),
+                include_libraries=include_libraries,
+            )
+            ctx.params["pdk_root"] = version.get_dir(volare_home)
     return value
 
 

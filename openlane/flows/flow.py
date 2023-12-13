@@ -645,9 +645,7 @@ class Flow(ABC):
         :param kwargs: Keyword arguments to `step.start`
         :returns: A ``Future`` encapsulating a State object, which can be used
             as an input to the next step (where the next step will wait for the
-            ``Future`` to be realized before calling :meth:`Step.run`).
-
-
+            ``Future`` to be realized before calling :meth:`Step.run`)
         """
 
         kwargs["toolbox"] = self.toolbox

@@ -9,7 +9,11 @@ being as a result of the process:
 * **Parasitic/Interconnect Corners**: Metal layers may have slightly different
   geometry based on manufacturing, which will affect the wires' parasitics
   (capacitance and resistance.)
-* **Transistor Corners**: Also called "process corners", more commonly, variance in transistor carrier mobility:
+* **Transistor Corners**: Also called "process corners", more commonly, variance
+  in transistor carrier mobility, denoted as follows:
+  * `s`, `t`, `f` for whether NMOS transistors are slow, typical, or fast respectively.
+  * Another `s`, `t`, `f` but for PMOS transistors.
+  For example, a corner with fast NMOS and PMOS would be denoted `ff`.
   See https://en.wikipedia.org/wiki/Process_corners#FEOL_corners for more info.
 
 And two that are dependent on the operation environment:
@@ -35,6 +39,27 @@ Common EDA files incorporate these corners as follows:
 The default extraction utility for OpenLane, OpenROAD OpenRCX, only accounts for
 the interconnect corner.
 ```
+
+## Violations
+
+STA reports many kinds of timing-related violations in the design, including but
+not limited to:
+* Setup violation: A register's data input was changed too soon before a clock edge.
+  Setup violations do not necessarily mean a dead chip, however the final chip
+  may have to run at a lower clock, which is not acceptable for some applications.
+* Hold violation: A register's data output was changed too soon AFTER a clock edge.
+  Chips with hold violations are effectively dead.
+* Slew violation: A signal taking too long to transition from LO to HI, or HI
+  to LO. This typically happens when a cell is too small for the capacitance
+  load it is handling, or when a cell's input has a slew violation.
+
+<!--
+  * Fanout violation: One gate is driving too many other gates, which may lead
+    to slew violations.
+  * Max capacitance violation: One gate is driving gates with a total capacitive
+    load exceeding the one rated for by this gate (or the value set by the
+    designer's constraints), which may lead to slew violations.
+-->
 
 ## Default Flow Configuration
 In its current state, the default OpenLane flow allows SCLs to configure the following:

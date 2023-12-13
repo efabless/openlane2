@@ -14,8 +14,8 @@
 from __future__ import annotations
 from decimal import Decimal
 
-import json
 import os
+import json
 import psutil
 import shutil
 import subprocess
@@ -121,8 +121,6 @@ REPORT_END_LOCUS = "%OL_END_REPORT"
 METRIC_LOCUS = "%OL_METRIC"
 
 GlobalToolbox = Toolbox(os.path.join(os.getcwd(), "openlane_run", "tmp"))
-LastState: State = State()
-
 ViewsUpdate = Dict[DesignFormat, StateElement]
 MetricsUpdate = Dict[str, Any]
 
@@ -359,8 +357,10 @@ class Step(ABC):
                 raise TypeError("Missing required argument 'config'")
 
         if state_in is None:
-            if Config.current_interactive:
-                state_in = LastState
+            if Config.current_interactive is not None:
+                raise TypeError(
+                    "Using an implicit input state in interactive mode is no longer supported- pass the last state in as follows: `state_in=last_step.state_out`"
+                )
             else:
                 raise TypeError("Missing required argument 'state_in'")
 
@@ -401,6 +401,12 @@ class Step(ABC):
         if cls.id != NotImplemented:
             if f".{cls.__name__}" not in cls.id:
                 debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
+
+    @classmethod
+    def get_implementation_id(Self) -> str:
+        if hasattr(Self, "_implementation_id"):
+            return getattr(Self, "_implementation_id")
+        return Self.id
 
     @classmethod
     def assert_concrete(Self, action: str = "initialized"):
@@ -727,7 +733,7 @@ class Step(ABC):
         dumpable_config = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
-            "step": self.__class__.id,
+            "step": self.__class__.get_implementation_id(),
         }
 
         del dumpable_config["DESIGN_DIR"]
@@ -811,27 +817,25 @@ class Step(ABC):
 
         :returns: An altered State object.
         """
-        global LastState
 
         if step_dir is None:
-            if not Config.current_interactive:
-                raise TypeError("Missing required argument 'step_dir'")
-            else:
+            if Config.current_interactive is not None:
                 self.step_dir = os.path.join(
                     os.getcwd(),
                     "openlane_run",
                     f"{Step.counter}-{slugify(self.id)}",
                 )
                 Step.counter += 1
+            else:
+                raise TypeError("Missing required argument 'step_dir'")
         else:
             self.step_dir = step_dir
 
         if toolbox is None:
-            if not Config.current_interactive:
-                self.toolbox = Toolbox(self.step_dir)
-            else:
-                # Use the default global value.
+            if Config.current_interactive is not None:
                 pass
+            else:
+                self.toolbox = Toolbox(self.step_dir)
         else:
             self.toolbox = toolbox
 
@@ -851,10 +855,11 @@ class Step(ABC):
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
-                "step": self.__class__.id,
+                "step": self.__class__.get_implementation_id(),
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
+        debug(f"{self.step_dir}")
         self.start_time = time.time()
 
         for input in self.inputs:
@@ -892,9 +897,6 @@ class Step(ABC):
 
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
-
-        if Config.current_interactive:
-            LastState = self.state_out
 
         return self.state_out
 
@@ -995,16 +997,17 @@ class Step(ABC):
         if "stderr" not in kwargs:
             kwargs["stderr"] = subprocess.STDOUT
 
-        if env_dict := env:
-            for key, value in env_dict.items():
-                if not (
-                    isinstance(value, str)
-                    or isinstance(value, bytes)
-                    or isinstance(value, os.PathLike)
-                ):
-                    raise StepException(
-                        f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
-                    )
+        env = env or os.environ.copy()
+        for key, value in env.items():
+            if not (
+                isinstance(value, str)
+                or isinstance(value, bytes)
+                or isinstance(value, os.PathLike)
+            ):
+                raise StepException(
+                    f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
+                )
+
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
@@ -1096,7 +1099,11 @@ class Step(ABC):
         Useful in flows, where you want different IDs for different instance of the
         same step.
         """
-        return type(Self.__name__, (Self,), {"id": id, "__original_id": Self.id})
+        return type(
+            Self.__name__,
+            (Self,),
+            {"id": id, "_implementation_id": Self.get_implementation_id()},
+        )
 
     class StepFactory(object):
         """
@@ -1184,7 +1191,6 @@ class CompositeStep(Step):
                         )
                 else:
                     config_var_dict[cvar.name] = cvar
-        print(output_set)
         Self.inputs = list(input_set)
         if Self.outputs == NotImplemented:  # Allow for setting explicit outputs
             Self.outputs = list(output_set)
