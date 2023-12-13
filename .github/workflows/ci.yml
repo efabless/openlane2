@@ -223,13 +223,19 @@ jobs:
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Test
         run: |
-          nix-shell --run "\
-            python3 -m openlane\
-            --run-tag CI\
-            --pdk ${{ matrix.design.pdk }}\
-            --scl ${{matrix.design.scl}}\
-            ${{ matrix.design.config }}\
-          "
+          if test ${{matrix.design.script}} = "None"
+          then
+            nix-shell --run "\
+              python3 -m openlane\
+              --run-tag CI\
+              --pdk ${{ matrix.design.pdk }}\
+              --scl ${{matrix.design.scl}}\
+              ${{ matrix.design.config }}\
+            "
+          else
+            pwd
+            echo ${{matrix.design.script}}
+          fi
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3

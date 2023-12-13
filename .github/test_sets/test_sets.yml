@@ -23,6 +23,8 @@
     - manual_macro_placement_test
     - aes_user_project_wrapper
     - user_proj_timer
+    - name: caravel_user_project
+      script: harden.py
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
