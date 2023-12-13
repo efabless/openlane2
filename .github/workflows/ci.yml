@@ -199,7 +199,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: recursive
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
