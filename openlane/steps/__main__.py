@@ -364,13 +364,13 @@ def eject(ctx, output, state_in, config, id):
     default=True,
 )
 @o(
-    "--keep-tree/--no-keep-tree",
+    "--flatten/--no-flatten",
     type=bool,
-    default=True,
+    default=False,
 )
 @pass_context
 def create_reproducible(
-    ctx, output, step_dir, id, config, state_in, include_pdk, keep_tree
+    ctx, output, step_dir, id, config, state_in, include_pdk, flatten
 ):
     """
     Creates a filesystem-independent step reproducible.
@@ -405,7 +405,7 @@ def create_reproducible(
             state_in = os.path.join(step_dir, "state_in.json")
 
     step = load_step_from_inputs(ctx, id, config, state_in)
-    step.create_reproducible(output, include_pdk, _keep_tree=keep_tree)
+    step.create_reproducible(output, include_pdk, flatten=flatten)
 
 
 @command(formatter_settings=formatter_settings, hidden=True)
@@ -435,7 +435,7 @@ def create_test(ctx, step_dir, output):
         output = os.path.join(step_dir, "test")
 
     step = load_step_from_inputs(ctx, None, config, state_in)
-    step.create_reproducible(output, include_pdk=False, _flatten=True)
+    step.create_reproducible(output, include_pdk=False, flatten=True)
     os.remove(os.path.join(output, "run_ol.sh"))
     if os.path.exists(os.path.join(output, "base.sdc")):
         os.remove(os.path.join(output, "base.sdc"))

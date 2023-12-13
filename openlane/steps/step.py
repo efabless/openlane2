@@ -657,8 +657,7 @@ class Step(ABC):
         self,
         target_dir: str,
         include_pdk: bool = True,
-        _flatten: bool = False,
-        _keep_tree: bool = True,
+        flatten: bool = False,
     ):
         """
         Creates a folder that, given a specific version of OpenLane being
@@ -677,75 +676,65 @@ class Step(ABC):
         :param include_pdk: Include PDK files. If set to false, Path pointing
             to PDK files will be prefixed with ``pdk_dir::`` instead of being
             copied.
-        :param _flatten: Creates a reproducible with a flat (single-directory)
-            file structure. For internal use only.
+        :param flatten: Creates a reproducible with a flat (single-directory)
+            file structure. Except for the PDK which is sensitive to its tree
+            (if included).
         """
         # 0. Create Directories
         mkdirp(target_dir)
 
         files_path = target_dir
-        if not _flatten:
+        pdk_flat_dirname = "pdk-files/"
+        pdk_flat_path = os.path.join(target_dir, pdk_flat_dirname)
+        if flatten:
+            mkdirp(pdk_flat_path)
+        if not flatten:
             files_path = os.path.join(target_dir, "files")
 
         pdk_path = os.path.join(self.config["PDK_ROOT"], self.config["PDK"], "")
 
-        if not _keep_tree:
-            design_files_target_dir_relative = "./design-files/"
-            pdk_files_target_dir_relative = "./pdk-files/"
-            mkdirp(os.path.join(target_dir, design_files_target_dir_relative))
-            mkdirp(os.path.join(target_dir, pdk_files_target_dir_relative))
-
         def visitor(x: Any) -> Any:
-            nonlocal files_path, include_pdk, pdk_path
-            nonlocal _keep_tree, design_files_target_dir_relative, pdk_files_target_dir_relative
+            nonlocal files_path, include_pdk, pdk_path, pdk_flat_dirname
             if not isinstance(x, Path):
                 return x
 
-            if not _keep_tree:
-                if x.startswith(pdk_path) and include_pdk:
-                    target_relpath = str(
-                        x.replace(pdk_path, pdk_files_target_dir_relative)
+            if not include_pdk and x.startswith(pdk_path):
+                return x.replace(pdk_path, "pdk_dir::")
+
+            target_relpath = os.path.join(".", "files", x[1:])
+            target_abspath = os.path.join(files_path, x[1:])
+
+            if flatten:
+                if include_pdk and x.startswith(pdk_path):
+                    target_relpath = os.path.join(
+                        ".", x.replace(pdk_path, pdk_flat_dirname)
                     )
                     target_abspath = os.path.join(target_dir, target_relpath)
-                    mkdirp(os.path.dirname(target_abspath))
-                elif x.startswith(pdk_path) and not include_pdk:
-                    return x.replace(pdk_path, "pdk_dir::")
+                    print(target_relpath)
+                    print(target_abspath)
                 else:
                     counter = 0
-                    filename = str(os.path.basename(x))
-                    target_relpath = os.path.join(
-                        design_files_target_dir_relative, filename
-                    )
-                    target_abspath = os.path.join(target_dir, target_relpath)
-                    while os.path.exists(target_abspath):
-                        counter += 1
-                        target_relpath = os.path.join(
-                            design_files_target_dir_relative, f"{counter}-{filename}"
-                        )
-                        target_abspath = os.path.join(target_dir, target_relpath)
-            else:
-                if not include_pdk and x.startswith(pdk_path):
-                    return x.replace(pdk_path, "pdk_dir::")
-
-                target_relpath = os.path.join(".", "files", x[1:])
-                target_abspath = os.path.join(files_path, x[1:])
-
-                if _flatten:
-                    counter = 0
                     filename = os.path.basename(x)
+
+                    def filename_with_counter():
+                        nonlocal counter, filename
+                        if counter == 0:
+                            return filename
+                        else:
+                            return f"{counter}-{filename}"
 
                     target_relpath = ""
                     target_abspath = "/"
                     while os.path.exists(target_abspath):
-                        current = filename if counter == 0 else f"{counter}-{filename}"
+                        current = filename_with_counter()
                         target_relpath = os.path.join(".", current)
                         target_abspath = os.path.join(files_path, current)
                         counter += 1
 
-                mkdirp(os.path.dirname(target_abspath))
+            mkdirp(os.path.dirname(target_abspath))
 
             if os.path.isdir(x):
-                if not _flatten:
+                if not flatten:
                     mkdirp(target_abspath)
             else:
                 shutil.copy(x, target_abspath)
@@ -763,6 +752,8 @@ class Step(ABC):
 
         if not include_pdk:
             del dumpable_config["PDK_ROOT"]
+        if flatten and include_pdk:
+            dumpable_config["PDK_ROOT"] = pdk_flat_dirname
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
