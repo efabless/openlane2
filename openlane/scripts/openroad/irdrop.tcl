@@ -20,13 +20,34 @@ source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
 read_spef $::env(CURRENT_SPEF_DEFAULT_CORNER)
 
-if {[info exists ::env(LIB_VOLTAGE)]} {
-    puts "\[INFO] Setting voltage extracted from liberty to $::env(LIB_VOLTAGE)..."
-    set_pdnsim_net_voltage -net $::env(VDD_NET) -voltage  $::env(LIB_VOLTAGE)
+if { [info exists ::env(VSRC_LOC_FILES)] } {
+    foreach {net vsrc_file} "$::env(VSRC_LOC_FILES)" {
+        set arg_list [list]
+        lappend arg_list -net $net
+        lappend arg_list -outfile $::env(STEP_DIR)/net-$net.csv
+        lappend arg_list -vsrc $vsrc_file
+        puts "%OL_CREATE_REPORT irdrop.rpt"
+        analyze_power_grid {*}$arg_list
+        puts "%OL_END_REPORT"
+    }
+} else {
+    puts "\[INFO] Using voltage extracted from lib ($::env(LIB_VOLTAGE)) for power nets and 0V for ground nets…"
+    foreach net "$::env(VDD_NETS)" {
+        set arg_list [list]
+        lappend arg_list -net $net
+        lappend arg_list -outfile $::env(STEP_DIR)/net-$net.csv
+        set_pdnsim_net_voltage -net $net -voltage $::env(LIB_VOLTAGE)
+        puts "%OL_CREATE_REPORT irdrop.rpt"
+        analyze_power_grid {*}$arg_list
+        puts "%OL_END_REPORT"
+    }
+    foreach net "$::env(GND_NETS)" {
+        set arg_list [list]
+        lappend arg_list -net $net
+        lappend arg_list -outfile $::env(STEP_DIR)/net-$net.csv
+        set_pdnsim_net_voltage -net $net -voltage 0
+        puts "%OL_CREATE_REPORT irdrop.rpt"
+        analyze_power_grid {*}$arg_list
+        puts "%OL_END_REPORT"
+    }
 }
-
-set voltages $::env(STEP_DIR)/voltages.csv
-
-puts "%OL_CREATE_REPORT irdrop.rpt"
-analyze_power_grid -net $::env(VDD_NET) -outfile $voltages
-puts "%OL_END_REPORT"

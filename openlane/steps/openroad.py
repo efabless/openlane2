@@ -1319,7 +1319,9 @@ def get_antenna_nets(report: io.TextIOWrapper, output: io.TextIOWrapper) -> int:
 @Step.factory.register()
 class IRDropReport(OpenROADStep):
     """
-    Performs voltage-drop analysis on the power distribution network.
+    Performs static IR-drop analysis on the power distribution network. For power
+    nets, this constitutes a decrease in voltage, and for ground nets, it constitutes
+    an increase in voltage.
     """
 
     id = "OpenROAD.IRDropReport"
@@ -1328,6 +1330,14 @@ class IRDropReport(OpenROADStep):
 
     inputs = [DesignFormat.ODB, DesignFormat.SPEF]
     outputs = []
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "VSRC_LOC_FILES",
+            Optional[Dict[str, Path]],
+            help="Map of power and ground nets to OpenROAD PSM location files. See [this](https://github.com/The-OpenROAD-Project/OpenROAD/tree/master/src/psm#commands) for more info.",
+        )
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
@@ -1359,6 +1369,12 @@ class IRDropReport(OpenROADStep):
             raise StepException("No SPEF file found for the default corner.")
 
         libs_in = self.toolbox.filter_views(self.config, self.config["LIB"])
+
+        if self.config["VSRC_LOC_FILES"] is None:
+            warn(
+                "VSRC_LOC_FILES was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for VSRC_LOC_FILES."
+            )
+
         if voltage := self.toolbox.get_lib_voltage(str(libs_in[0])):
             env["LIB_VOLTAGE"] = str(voltage)
 
