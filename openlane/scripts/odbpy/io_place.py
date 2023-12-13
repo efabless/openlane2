@@ -316,11 +316,11 @@ def io_place(
             mismatches_found = True
             if not unmatched_error:
                 print(
-                    f"[WARN]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    f"[WARN]: {name} not found in {not_in} but found in {is_in}.",
                 )
             else:
                 print(
-                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout."
+                    f"[ERROR]: {name} not found in {not_in} but found in {is_in}."
                 )
 
     if mismatches_found and unmatched_error:

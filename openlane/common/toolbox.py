@@ -388,7 +388,6 @@ class Toolbox(object):
 
         with open(out_path, "w", encoding="utf8") as out:
             for model in input_models:
-                print(model)
                 patched_path = os.path.join(
                     self.tmp_dir, f"{uuid.uuid4().hex}.patched.v"
                 )

@@ -470,7 +470,7 @@ class OpenGUI(KLayoutStep):
 
     config_vars = KLayoutStep.config_vars + [
         Variable(
-            "EDITOR_MODE",
+            "KLAYOUT_EDITOR_MODE",
             bool,
             "Whether to run the KLayout GUI in editor mode or in viewer mode.",
             default=False,
@@ -490,7 +490,7 @@ class OpenGUI(KLayoutStep):
         kwargs, env = self.extract_env(kwargs)
 
         mode_arg = "--viewer"
-        if self.config["EDITOR_MODE"]:
+        if self.config["KLAYOUT_EDITOR_MODE"]:
             mode_arg = "--editor"
 
         env["KLAYOUT_ARGV"] = shlex.join(
