@@ -1,5 +1,8 @@
 name: CI
 
+# Variables
+env:
+  IP_ROOT: ./test/designs/.ip-root
 # Events that trigger workflow
 on:
   # Runs on all pushes to branches
@@ -47,6 +50,24 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Download IPM
+        run: |
+          python3 -m pip install git+https://github.com/efabless/IPM
+      - name: Checkout submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Download IPM designs
+        id: download-ipm-design
+        run: |
+          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
+          echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
+      - name: Cache IPM designs
+        uses: actions/cache@v3
+        with:
+          path: ~/.ipm
+          key: cache-ipm-designs-${{ steps.download-ipm-design.outputs.dependencies_sha256sum }}
+
   lint:
     name: Lint
     runs-on: ubuntu-22.04
@@ -221,6 +242,15 @@ jobs:
           pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Cache IPM designs
+        uses: actions/cache@v3
+        with:
+          path: ~/.ipm
+          key: cache-ipm-designs-${{ needs.prepare-test-matrice.outputsteps.dependencies_sha256sum }}
+      - name: Setup IPM designs
+        run: |
+          python3 -m pip install git+https://github.com/efabless/IPM
+          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
       - name: Run Test
         run: |
           nix-shell --run "\

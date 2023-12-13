@@ -23,6 +23,13 @@
     - manual_macro_placement_test
     - aes_user_project_wrapper
     - user_proj_timer
+    - EF_PSRAM_CTRL_V2
+    - MS_SPI_XIP_CACHE
+    - MS_DMAC_AHBL
+    - MS_CLK_RST
+    - EF_GPIO
+    - EF_TCC32
+    - EF_UART
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
