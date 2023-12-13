@@ -233,7 +233,9 @@ jobs:
               ${{ matrix.design.config }}\
             "
           else
-            ${{matrix.design.script}}
+            nix-shell --run "\
+              ${{matrix.design.script}}\
+          "
           fi
       - name: Upload Run Folder
         if: ${{ always() }}
