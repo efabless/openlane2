@@ -163,6 +163,9 @@ class Path(UserString, os.PathLike):
     def __fspath__(self) -> str:
         return str(self)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}('{self}')"
+
     def exists(self) -> bool:
         """
         A convenience method calling :meth:`os.path.exists`
@@ -193,9 +196,9 @@ class Path(UserString, os.PathLike):
         my_abspath = os.path.abspath(self)
         start_abspath = os.path.abspath(start)
         if my_abspath.startswith(start_abspath):
-            return os.path.relpath(self, start_abspath)
+            return Path(os.path.relpath(self, start_abspath))
         else:
-            return my_abspath
+            return Path(my_abspath)
 
 
 class zip_first(object):
