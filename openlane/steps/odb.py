@@ -319,7 +319,7 @@ class AddRoutingObstructions(OdbpyStep):
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config[self.get_obstruction_variable().name] is None:
             info(
-                f"'{self.get_obstruction_variable().name}' is not defined. Skipping {self.id}…"
+                f"'{self.get_obstruction_variable().name}' is not defined. Skipping '{self.id}'…"
             )
             return {}, {}
         return super().run(state_in, **kwargs)

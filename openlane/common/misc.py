@@ -186,6 +186,17 @@ class Path(UserString, os.PathLike):
             prefix = str(prefix)
         return super().startswith(prefix, start, end)
 
+    def rel_if_child(
+        self,
+        start: Union[str, os.PathLike] = os.getcwd(),
+    ) -> "Path":
+        my_abspath = os.path.abspath(self)
+        start_abspath = os.path.abspath(start)
+        if my_abspath.startswith(start_abspath):
+            return os.path.relpath(self, start_abspath)
+        else:
+            return my_abspath
+
 
 class zip_first(object):
     """

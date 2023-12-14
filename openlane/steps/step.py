@@ -851,7 +851,7 @@ class Step(ABC):
         if not logging.options.condensed_mode:
             rule(f"{self.long_name}")
         verbose(
-            f"Running '{self.id}'… (Log: {os.path.join('.', os.path.relpath(self.get_log_path()))})"
+            f"Running '{self.id}'… (Log: {Path(self.get_log_path()).rel_if_child()})"
         )
 
         mkdirp(self.step_dir)

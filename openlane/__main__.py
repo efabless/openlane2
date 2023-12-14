@@ -180,28 +180,40 @@ def print_bare_version(
     ctx.exit(0)
 
 
-def run_smoke_test(
+def run_example(
     ctx: Context,
     param: Parameter,
-    value: bool,
+    value: Union[str, bool],
 ):
     if not value:
         return
 
+    if isinstance(value, bool):
+        value = "spm"
+
+    example_path = os.path.join(common.get_openlane_root(), "examples", value)
+    if not os.path.isdir(example_path):
+        print(f"Unknown example '{value}'.", file=sys.stderr)
+        ctx.exit(1)
+
     status = 0
-    d = tempfile.mkdtemp("openlane2")
-    final_path = os.path.join(d, "smoke_test_design")
+    final_path = os.path.join(os.getcwd(), value)
+    cleanup = False
+    if param.name == "smoke_test":
+        d = tempfile.mkdtemp("openlane2")
+        final_path = os.path.join(d, "smoke_test_design")
+        cleanup = True
     try:
         # 1. Copy the files
         shutil.copytree(
-            os.path.join(common.get_openlane_root(), "smoke_test_design"),
+            example_path,
             final_path,
             symlinks=False,
         )
 
         # 2. Make files writable
         if os.name == "posix":
-            subprocess.check_call(["chmod", "-R", "777", final_path])
+            subprocess.check_call(["chmod", "-R", "755", final_path])
 
         pdk_root = ctx.params.get("pdk_root")
         if ctx.obj["use_volare"]:
@@ -241,7 +253,8 @@ def run_smoke_test(
         status = -1
     finally:
         try:
-            shutil.rmtree(final_path)
+            if cleanup:
+                shutil.rmtree(final_path)
         except FileNotFoundError:
             pass
 
@@ -343,8 +356,14 @@ o = partial(option, show_default=True)
     o(
         "--smoke-test",
         is_flag=True,  # Cannot be eager- PDK options need to be processed
-        help="Runs a basic OpenLane smoke test.",
-        callback=run_smoke_test,
+        help="Runs a basic OpenLane smoke test, the results of which are temporary and discarded.",
+        callback=run_example,
+    ),
+    o(
+        "--run-example",
+        default=None,  # Cannot be eager- PDK options need to be processed
+        help="Copies one of the OpenLane examples.",
+        callback=run_example,
     ),
     constraint=mutually_exclusive,
 )
@@ -372,6 +391,7 @@ def cli(ctx, /, **kwargs):
         "version",
         "bare_version",
         "smoke_test",
+        "run_example",
     ]:
         if subcommand_flag in run_kwargs:
             del run_kwargs[subcommand_flag]
