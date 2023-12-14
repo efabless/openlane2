@@ -30,8 +30,6 @@
     - EF_GPIO
     - EF_TCC32
     - EF_UART
-    - name: caravel_user_project
-      script: harden.py
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
@@ -43,6 +41,8 @@
     - PPU
     - y_huff
     - aes
+    - name: caravel_user_project_example_full
+      script: harden.py
 - scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: fastest_test_set
   designs:
