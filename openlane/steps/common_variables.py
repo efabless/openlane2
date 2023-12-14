@@ -99,9 +99,9 @@ pdn_variables = [
         units="µm",
     ),
     Variable(
-        "FP_PDN_FULL_STACK",
+        "FP_PDN_MULTILAYER",
         bool,
-        "Controls the layers used in the power grid. If set to false, only the lower, vertical layer will be used, which is useful when hardening a macro for integrating into a larger top-level design.",
+        "Controls the layers used in the power grid. If set to false, only the lower layer will be used, which is useful when hardening a macro for integrating into a larger top-level design.",
         default=True,
         deprecated_names=["DESIGN_IS_CORE"],
     ),
