@@ -1335,7 +1335,7 @@ class IRDropReport(OpenROADStep):
         Variable(
             "VSRC_LOC_FILES",
             Optional[Dict[str, Path]],
-            help="Map of power and ground nets to OpenROAD PSM location files. See [this](https://github.com/The-OpenROAD-Project/OpenROAD/tree/master/src/psm#commands) for more info.",
+            "Map of power and ground nets to OpenROAD PSM location files. See [this](https://github.com/The-OpenROAD-Project/OpenROAD/tree/master/src/psm#commands) for more info.",
         )
     ]
 
