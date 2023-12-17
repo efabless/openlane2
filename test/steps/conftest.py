@@ -27,6 +27,8 @@ def collect_step_tests():
             recursive=True,
         )
     ):
+        if not os.path.isdir(os.path.abspath(p)):
+            continue
         basename = os.path.basename(p)
         if test_rx.match(basename) is None:
             continue

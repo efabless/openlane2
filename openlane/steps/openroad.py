@@ -939,6 +939,15 @@ class GlobalPlacement(OpenROADStep):
 
 @Step.factory.register()
 class GlobalPlacementSkipIO(GlobalPlacement):
+    """
+    Performs global placement without taking I/O into consideration.
+
+    This is useful for flows where the:
+    * Cells are placed
+    * I/Os are placed to match the cells
+    * Cells are then re-placed for an optimal placement
+    """
+
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
@@ -1410,7 +1419,7 @@ class CutRows(OpenROADStep):
     """
 
     id = "OpenROAD.CutRows"
-    name = "CutRows"
+    name = "Cut Rows"
 
     inputs = [DesignFormat.ODB]
     outputs = [
