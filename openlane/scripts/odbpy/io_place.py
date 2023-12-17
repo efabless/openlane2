@@ -294,7 +294,7 @@ def io_place(
                         f"[ERROR]: Multiple regexes matched {pin_name}. Those are {regex_by_bterm[bterm]} and {pin}"
                     )
                     sys.exit(os.EX_DATAERR)
-                regex_by_bterm[bterm] = anchored_regex
+                regex_by_bterm[bterm] = pin
                 collected.append(bterm)
                 matched = True
             collected.sort(key=partial(sorter, order=side_info.sort_mode))
