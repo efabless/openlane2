@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import partial
 import odb
 
 import os
@@ -19,8 +20,10 @@ import sys
 import math
 import click
 import random
+from decimal import Decimal
 
 from reader import click_odb
+import ioplace_parser
 
 
 def grid_to_tracks(origin, count, step):
@@ -98,7 +101,7 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
     print("Unused track count: ", unused_tracks)
     print("Starting track index: ", starting_track_index)
 
-    VISUALIZE_PLACEMENT = True
+    VISUALIZE_PLACEMENT = False
     if VISUALIZE_PLACEMENT:
         print("Placement Map:")
         print("[", end="")
@@ -116,50 +119,56 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
     return result, side_pin_placement
 
 
-# HUMAN SORTING: https://stackoverflow.com/questions/5967500/how-to-correctly-sort-a-string-with-a-number-inside
-def natural_keys(enum):
-    def atof(text):
-        try:
-            retval = float(text)
-        except ValueError:
-            retval = text
-        return retval
-
-    text = enum[0]
-    text = re.sub(r"(\[|\]|\.|\$)", "", text)
-    """
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    (see toothy's implementation in the comments)
-    float regex comes from https://stackoverflow.com/a/12643073/190597
-    """
-    return [atof(c) for c in re.split(r"[+-]?([0-9]+(?:[.][0-9]*)?|[.][0-9]+)", text)]
+identifiers = re.compile(r"\b[A-Za-z_][A-Za-z_0-9]*\b")
+standalone_numbers = re.compile(r"\b\d+\b")
+trash = re.compile(r"^[^\w\d]+$")
 
 
-def bus_keys(enum):
-    text = enum[0]
-    m = re.match(r"^.*\[(\d+)\]$", text)
-    if not m:
-        return -1
-    else:
-        return int(m.group(1))
+def sorter(bterm, order: ioplace_parser.Order):
+    text: str = bterm.getName()
+    keys = []
+    priority_keys = []
+    # tokenize and add to key
+    while trash.match(text) is None:
+        if match := identifiers.search(text):
+            bus = match[0]
+            start, end = match.span(0)
+            if order == ioplace_parser.Order.busMajor:
+                priority_keys.append(bus)
+            else:
+                keys.append(bus)
+            text = text[:start] + text[end + 1 :]
+        elif match := standalone_numbers.search(text):
+            index = int(match[0])
+            if order == ioplace_parser.Order.bitMajor:
+                priority_keys.append(index)
+            else:
+                keys.append(index)
+            text = text[: match.pos] + text[match.endpos + 1 :]
+        else:
+            break
+    return [priority_keys, keys]
 
 
 @click.command()
 @click.option(
     "-u",
-    "--unmatched-error",
-    is_flag=True,
-    default=False,
+    "--unmatched-error/--ignore-unmatched",
+    default=True,
     help="Treat unmatched pins as error",
 )
-@click.option("-c", "--config", required=False, help="Optional configuration file.")
 @click.option(
-    "-r",
-    "--reverse",
-    default="",
-    type=str,
-    help="Reverse along comma,delimited,cardinals: e.g. N,E",
+    "-c",
+    "--config",
+    required=True,
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        resolve_path=True,
+    ),
+    help="Input configuration file",
 )
 @click.option("-L", "--length", default=2, type=float, help="Pin length in microns.")
 @click.option(
@@ -192,11 +201,6 @@ def bus_keys(enum):
 @click.option(
     "--hor-width-mult", default=2, type=float, help="Multiplier for horizontal pins."
 )
-@click.option(
-    "--bus-sort/--no-bus-sort",
-    default=False,
-    help="Misnomer: pins are grouped by index instead of bus, i.e. a[0] goes with b[0] instead of a[1].",
-)
 @click_odb
 def io_place(
     reader,
@@ -208,8 +212,6 @@ def io_place(
     length,
     hor_extension,
     ver_extension,
-    reverse,
-    bus_sort,
     unmatched_error,
 ):
     """
@@ -224,15 +226,6 @@ def io_place(
     #S|#N|#E|#W
     """
     config_file_name = config
-    bus_sort_flag = bus_sort
-    unmatched_error_flag = unmatched_error
-
-    h_layer_name = hor_layer
-    v_layer_name = ver_layer
-
-    h_width_mult = float(hor_width_mult)
-    v_width_mult = float(ver_width_mult)
-
     micron_in_units = reader.dbunits
 
     LENGTH = int(micron_in_units * length)
@@ -245,136 +238,100 @@ def io_place(
 
     if V_EXTENSION < 0:
         V_EXTENSION = 0
+    H_LAYER = reader.tech.findLayer(hor_layer)
+    V_LAYER = reader.tech.findLayer(ver_layer)
 
-    reverse_arr_raw = reverse.split(",")
-    reverse_arr = []
-    for element in reverse_arr_raw:
-        if element.strip() != "":
-            reverse_arr.append(f"#{element}")
-    # read config
+    H_WIDTH = int(Decimal(hor_width_mult) * H_LAYER.getWidth())
+    V_WIDTH = int(Decimal(ver_width_mult) * V_LAYER.getWidth())
 
-    pin_placement_cfg = {"#N": [], "#E": [], "#S": [], "#W": []}
-    cur_side = None
-    if config_file_name is not None and config_file_name != "":
-        with open(config_file_name, "r") as config_file:
-            for line in config_file:
-                line = line.split()
-                if len(line) == 0:
-                    continue
+    # read config + calculate minima
+    config_file_str = open(config_file_name, "r", encoding="utf8").read()
 
-                if len(line) > 1:
-                    print("Only one entry allowed per line.")
-                    sys.exit(1)
-
-                token = line[0]
-
-                if cur_side is not None and token[0] != "#":
-                    pin_placement_cfg[cur_side].append(token)
-                elif token not in [
-                    "#N",
-                    "#E",
-                    "#S",
-                    "#W",
-                    "#NR",
-                    "#ER",
-                    "#SR",
-                    "#WR",
-                    "#BUS_SORT",
-                ]:
-                    print(
-                        "Valid directives are #N, #E, #S, or #W. Append R for reversing the default order.",
-                        "Use #BUS_SORT to group 'bus bits' by index.",
-                        "Please make sure you have set a valid side first before listing pins",
-                    )
-                    sys.exit(1)
-                elif token == "#BUS_SORT":
-                    bus_sort_flag = True
-                else:
-                    if len(token) == 3:
-                        token = token[0:2]
-                        reverse_arr.append(token)
-                    cur_side = token
-
-    # build a list of pins
-    H_LAYER = reader.tech.findLayer(h_layer_name)
-    V_LAYER = reader.tech.findLayer(v_layer_name)
-
-    H_WIDTH = int(h_width_mult * H_LAYER.getWidth())
-    V_WIDTH = int(v_width_mult * V_LAYER.getWidth())
+    try:
+        info_by_side = ioplace_parser.parse(config_file_str)
+    except ValueError as e:
+        print(f"An exception occurred: {e}")
+        exit(os.EX_DATAERR)
 
     print("Top-level design name:", reader.name)
 
     bterms = reader.block.getBTerms()
-    bterms_enum = []
-    for bterm in bterms:
-        pin_name = bterm.getName()
-        bterms_enum.append((pin_name, bterm))
 
-    # sort them "humanly"
-    bterms_enum.sort(key=natural_keys)
-    if bus_sort_flag:
-        bterms_enum.sort(key=bus_keys)
-    bterms = [bterm[1] for bterm in bterms_enum]
+    for side, side_info in info_by_side.items():
+        min = (
+            (V_WIDTH + V_LAYER.getSpacing())
+            if side in ["N", "S"]
+            else (H_WIDTH + H_LAYER.getSpacing())
+        ) / reader.dbunits
+        if side_info.min_distance is None:
+            side_info.min_distance = min
+        if side_info.min_distance < min:
+            print(
+                f"[WARN]: Using min_distance {min} for {side} pins to avoid overlap.",
+            )
+            side_info.min_distance = min
 
-    pin_placement = {"#N": [], "#E": [], "#S": [], "#W": []}
-    pin_distance_min = {
-        "#N": V_WIDTH + V_LAYER.getSpacing(),
-        "#S": V_WIDTH + V_LAYER.getSpacing(),
-        "#E": H_WIDTH + H_LAYER.getSpacing(),
-        "#W": H_WIDTH + H_LAYER.getSpacing(),
-    }
-    pin_distance = pin_distance_min.copy()
-    bterm_regex_map = {}
-    for side in pin_placement_cfg:
-        for regex in pin_placement_cfg[side]:  # going through them in order
-            if regex[0] == "$":  # Sign of Virtual Pins
-                try:
-                    virtual_pins_count = int(regex[1:])
-                    pin_placement[side].append(virtual_pins_count)
-                except ValueError:
-                    print("You provided invalid values for virtual pins")
-                    sys.exit(1)
-            elif regex[0] == "@":
-                variable = regex[1:].split("=")
-                if variable[0] == "min_distance":
-                    pin_distance[side] = float(variable[1]) * reader.dbunits
-                    if pin_distance[side] < pin_distance_min[side]:
-                        print(
-                            f"Warning: Using min_distance {pin_distance_min[side] / reader.dbunits} for {side} pins to avoid overlap"
-                        )
-                        pin_distance[side] = pin_distance_min[side]
+    # build a list of pins
+    pin_placement = {"N": [], "E": [], "W": [], "S": []}
+
+    regex_by_bterm = {}
+    unmatched_regexes = set()
+    for side, side_info in info_by_side.items():
+        for pin in side_info.pins:
+            if isinstance(pin, int):  # Virtual pins
+                pin_placement[side].append(pin)
+                continue
+
+            anchored_regex = f"^{pin}$"  # anchor
+            matched = False
+            collected = []
+            for bterm in bterms:
+                pin_name = bterm.getName()
+                if re.match(anchored_regex, pin_name) is None:
+                    continue
+                if bterm in regex_by_bterm:
+                    print(
+                        f"[ERROR]: Multiple regexes matched {pin_name}. Those are {regex_by_bterm[bterm]} and {pin}"
+                    )
+                    sys.exit(os.EX_DATAERR)
+                regex_by_bterm[bterm] = pin
+                collected.append(bterm)
+                matched = True
+            collected.sort(key=partial(sorter, order=side_info.sort_mode))
+            pin_placement[side] += collected
+            if not matched:
+                unmatched_regexes.add(pin)
+
+    # check for extra or missing pins
+    not_in_design = unmatched_regexes
+    not_in_config = set(
+        [bterm.getName() for bterm in bterms if bterm not in regex_by_bterm]
+    )
+    mismatches_found = False
+    for is_in, not_in, pins in [
+        ("config", "design", not_in_design),
+        ("design", "config", not_in_config),
+    ]:
+        for name in pins:
+            mismatches_found = True
+            if not unmatched_error:
+                print(
+                    f"[WARN]: {name} not found in {not_in} but found in {is_in}.",
+                )
             else:
-                regex += "$"  # anchor
-                for bterm in bterms:
-                    # if a pin name matches multiple regexes, their order will be
-                    # arbitrary. More refinement requires more strict regexes (or just
-                    # the exact pin name).
-                    pin_name = bterm.getName()
-                    if re.match(regex, pin_name) is not None:
-                        if bterm in bterm_regex_map:
-                            print(
-                                f"Error: Multiple regexes matched {pin_name}. Those are {bterm_regex_map[bterm]} and {regex}"
-                            )
-                            sys.exit(os.EX_DATAERR)
-                        bterm_regex_map[bterm] = regex
-                        pin_placement[side].append(bterm)  # to maintain the order
+                print(f"[ERROR]: {name} not found in {not_in} but found in {is_in}.")
 
-    unmatched_bterms = [bterm for bterm in bterms if bterm not in bterm_regex_map]
+    if mismatches_found and unmatched_error:
+        print("Mismatches found.")
+        exit(os.EX_DATAERR)
 
-    if len(unmatched_bterms) > 0:
-        print("Warning: Some pins weren't matched by the config file")
-        print("Those are:", [bterm.getName() for bterm in unmatched_bterms])
-        if unmatched_error_flag:
-            print("Treating unmatched pins as errors. Exiting..")
-            sys.exit(1)
-        else:
-            print("Assigning random sides to the above pins")
-            for bterm in unmatched_bterms:
-                random_side = random.choice(list(pin_placement.keys()))
-                pin_placement[random_side].append(bterm)
+    if len(not_in_config) > 0:
+        print("Assigning random sides to unmatched pins…")
+        for bterm in not_in_config:
+            random_side = random.choice(list(pin_placement.keys()))
+            pin_placement[random_side].append(bterm)
 
     # generate slots
-
     DIE_AREA = reader.block.getDieArea()
     BLOCK_LL_X = DIE_AREA.xMin()
     BLOCK_LL_Y = DIE_AREA.yMin()
@@ -391,23 +348,34 @@ def io_place(
     print(f"Vertical Tracks Origin: {origin}, Count: {count}, Step: {v_step}")
     v_tracks = grid_to_tracks(origin, count, v_step)
 
-    for rev in reverse_arr:
-        pin_placement[rev].reverse()
-
     pin_tracks = {}
     for side in pin_placement:
-        if side in ["#N", "#S"]:
+        if side in ["N", "S"]:
+            min_distance = info_by_side[side].min_distance * micron_in_units
             pin_tracks[side] = [
                 v_tracks[i]
                 for i in range(len(v_tracks))
-                if (i % (math.ceil(pin_distance[side] / v_step))) == 0
+                if (i % (math.ceil(min_distance / v_step))) == 0
             ]
-        elif side in ["#W", "#E"]:
+        elif side in ["W", "E"]:
             pin_tracks[side] = [
                 h_tracks[i]
                 for i in range(len(h_tracks))
-                if (i % (math.ceil(pin_distance[side] / h_step))) == 0
+                if (
+                    i
+                    % (
+                        math.ceil(
+                            info_by_side[side].min_distance * micron_in_units / h_step
+                        )
+                    )
+                )
+                == 0
             ]
+
+    # reversals (including randomly-assigned pins, if needed)
+    for side, side_info in info_by_side.items():
+        if side_info.reverse_result:
+            pin_placement[side].reverse()
 
     # create the pins
     for side in pin_placement:
@@ -420,12 +388,12 @@ def io_place(
         for i in range(len(pin_placement[side])):
             bterm = pin_placement[side][i]
             slot = slots[i]
-            # print(f"Pin name: {bterm.getName()}, placed at slot: {slot}")
-
             pin_name = bterm.getName()
             pins = bterm.getBPins()
             if len(pins) > 0:
-                print(f"Warning: {pin_name} already has shapes. Modifying them")
+                print(
+                    f"[WARN]: {pin_name} already has shapes. The shapes will be modified."
+                )
                 assert len(pins) == 1
                 pin_bpin = pins[0]
             else:
@@ -433,9 +401,9 @@ def io_place(
 
             pin_bpin.setPlacementStatus("PLACED")
 
-            if side in ["#N", "#S"]:
+            if side in ["N", "S"]:
                 rect = odb.Rect(0, 0, V_WIDTH, LENGTH + V_EXTENSION)
-                if side == "#N":
+                if side == "N":
                     y = BLOCK_UR_Y - LENGTH
                 else:
                     y = BLOCK_LL_Y - V_EXTENSION
@@ -443,7 +411,7 @@ def io_place(
                 odb.dbBox_create(pin_bpin, V_LAYER, *rect.ll(), *rect.ur())
             else:
                 rect = odb.Rect(0, 0, LENGTH + H_EXTENSION, H_WIDTH)
-                if side == "#E":
+                if side == "E":
                     x = BLOCK_UR_X - LENGTH
                 else:
                     x = BLOCK_LL_X - H_EXTENSION

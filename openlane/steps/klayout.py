@@ -468,6 +468,15 @@ class OpenGUI(KLayoutStep):
     inputs = [DesignFormat.DEF]
     outputs = []
 
+    config_vars = KLayoutStep.config_vars + [
+        Variable(
+            "KLAYOUT_EDITOR_MODE",
+            bool,
+            "Whether to run the KLayout GUI in editor mode or in viewer mode.",
+            default=False,
+        )
+    ]
+
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         lyp = self.config["KLAYOUT_PROPERTIES"]
         lyt = self.config["KLAYOUT_TECH"]
@@ -479,6 +488,10 @@ class OpenGUI(KLayoutStep):
 
         lefs = get_lef_args(self.config, self.toolbox)
         kwargs, env = self.extract_env(kwargs)
+
+        mode_arg = "--viewer"
+        if self.config["KLAYOUT_EDITOR_MODE"]:
+            mode_arg = "--editor"
 
         env["KLAYOUT_ARGV"] = shlex.join(
             [
@@ -495,6 +508,7 @@ class OpenGUI(KLayoutStep):
 
         cmd = [
             shutil.which("klayout") or "klayout",
+            mode_arg,
             "-rm",
             os.path.join(
                 get_script_dir(),
