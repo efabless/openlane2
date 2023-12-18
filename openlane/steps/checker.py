@@ -180,6 +180,15 @@ class LVS(MetricChecker):
 
 
 @Step.factory.register()
+class PowerGridViolations(MetricChecker):
+    id = "Checker.PowerGridViolations"
+    name = "Power Grid Violation Checker"
+
+    metric_name = "power_grid__violation__count"
+    metric_description = "power grid violations (as reported by OpenROAD PSM- you may ignore these if LVS passes)"
+
+
+@Step.factory.register()
 class LintErrors(MetricChecker):
     id = "Checker.LintErrors"
     name = "Lint Errors Checker"

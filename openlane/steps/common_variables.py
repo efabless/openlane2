@@ -79,12 +79,6 @@ pdn_variables = [
         default=True,
     ),
     Variable(
-        "FP_PDN_CHECK_NODES",
-        bool,
-        "Enables checking for unconnected nodes in the power grid.",
-        default=True,
-    ),
-    Variable(
         "FP_PDN_HORIZONTAL_HALO",
         Decimal,
         "Sets the horizontal halo around the macros during power grid insertion.",

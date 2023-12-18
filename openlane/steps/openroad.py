@@ -18,6 +18,7 @@ import json
 import site
 import shlex
 import tempfile
+import functools
 import subprocess
 from math import inf
 from glob import glob
@@ -37,6 +38,7 @@ from typing import (
     Union,
 )
 
+import yaml
 import rich
 import rich.table
 
@@ -832,6 +834,27 @@ class TapEndcapInsertion(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
 
 
+def get_psm_error_count(rpt: io.TextIOWrapper) -> int:
+    sio = io.StringIO()
+
+    # Turn almost-YAML into YAML
+    VIO_TYPE_PFX = "violation type: "
+    for line in rpt:
+        if line.startswith(VIO_TYPE_PFX):
+            vio_type = line[len(VIO_TYPE_PFX) :].strip()
+            sio.write(f"- type: {vio_type}\n")
+        elif "bbox = " in line:
+            sio.write(line.replace("bbox = ", "- bbox ="))
+        else:
+            sio.write(line)
+
+    sio.seek(0)
+    violations = yaml.load(sio, Loader=yaml.SafeLoader)
+    return functools.reduce(
+        lambda acc, current: acc + len(current["srcs"]), violations, 0
+    )
+
+
 @Step.factory.register()
 class GeneratePDN(OpenROADStep):
     """
@@ -866,7 +889,20 @@ class GeneratePDN(OpenROADStep):
             )
             info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
         env["DESIGN_IS_CORE"] = "1" if self.config["FP_PDN_MULTILAYER"] else "0"
-        return super().run(state_in, env=env, **kwargs)
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+
+        error_reports = glob(os.path.join(self.step_dir, "*-grid-errors.rpt"))
+        for report in error_reports:
+            net = os.path.basename(report).split("-", maxsplit=1)[0]
+            count = get_psm_error_count(open(report, encoding="utf8"))
+            metrics_updates[f"power_grid__violation__count__net:{net}"] = count
+
+        metric_updates_with_aggregates = aggregate_metrics(
+            metrics_updates,
+            {"power_grid__violation__count": (0, lambda x: sum(x))},
+        )
+
+        return views_updates, metric_updates_with_aggregates
 
 
 @Step.factory.register()
@@ -1427,7 +1463,7 @@ class CutRows(OpenROADStep):
     """
 
     id = "OpenROAD.CutRows"
-    name = "CutRows"
+    name = "Cut Rows"
 
     inputs = [DesignFormat.ODB]
     outputs = [

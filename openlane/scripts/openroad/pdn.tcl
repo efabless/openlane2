@@ -33,14 +33,11 @@ if {[catch {pdngen {*}$arg_list} errmsg]} {
     exit 1
 }
 
-# https://github.com/The-OpenROAD-Project/OpenROAD/issues/2126
-# checks for unconnected nodes (e.g., isolated rails or stripes)
-if { $::env(FP_PDN_CHECK_NODES) } {
-    check_power_grid -net $::env(VDD_NET)
-    check_power_grid -net $::env(GND_NET)
-}
-
 write_views
-
 report_design_area_metrics
 
+foreach {net} "$::env(VDD_NETS) $::env(GND_NETS)" {
+    if { [catch {check_power_grid -net $net -error_file $::env(STEP_DIR)/$net-grid-errors.rpt} err] } {
+        puts stderr "\[WARNING\] Grid check for $net failed: $err"
+    }
+}
