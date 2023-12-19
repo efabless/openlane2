@@ -863,7 +863,7 @@ class Step(ABC):
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
-        debug(f"{self.step_dir}")
+        debug(f"Step directory ▶ '{self.step_dir}'")
         self.start_time = time.time()
 
         for input in self.inputs:

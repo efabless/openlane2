@@ -157,7 +157,6 @@ def condensed_cb(ctx: Context, param: Parameter, value: bool):
     if value:
         options.set_condensed_mode(True)
         options.set_show_progress_bar(False)
-        set_log_level(LogLevels.VERBOSE)
 
 
 def progressbar_cb(ctx: Context, param: Parameter, value: Optional[bool]):
@@ -361,7 +360,7 @@ def cloup_flow_opts(
             f = o(
                 "--condensed/--full",
                 type=bool,
-                help="In condensed mode, the default log level is VERBOSE, --hide-progress-bar is the default, and the log messages themselves are a bit more terse. Useful for debugging.",
+                help="In condensed mode, subprocess logs are suppressed regardless of step, --hide-progress-bar is the default, and the log messages themselves are a bit more terse. Useful for debugging.",
                 default=False,
                 is_eager=True,
                 callback=condensed_cb,

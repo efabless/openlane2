@@ -121,6 +121,9 @@ class LevelFilter(logging.Filter):
         self.invert = invert
 
     def filter(self, record: logging.LogRecord) -> bool:
+        if options.get_condensed_mode():
+            if record.levelname == "SUBPROCESS":
+                return False
         if self.invert:
             return record.levelname not in self.levels
         else:
@@ -128,7 +131,7 @@ class LevelFilter(logging.Filter):
 
 
 def initialize_logger():
-    global __event_logger, console, __plain_only_mode, __condensed_mode
+    global __event_logger, console
 
     for level in LogLevels:
         logging.addLevelName(level.value, level.name)
