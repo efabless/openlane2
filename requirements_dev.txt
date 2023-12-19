@@ -20,7 +20,6 @@ types-docutils
 types-decorator
 types-commonmark
 types-colorama
-types-requests
 types-Pygments
 types-Deprecated
 types-psutil

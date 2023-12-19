@@ -92,7 +92,6 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     cloup
     pyyaml
     rich
-    requests
     pcpp
     volare
     tkinter
