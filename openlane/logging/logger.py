@@ -40,8 +40,24 @@ __event_logger: logging.Logger = logging.getLogger("__openlane__")
 
 
 class options:
-    condensed_mode: ClassVar[bool] = False
-    show_progress_bar: ClassVar[bool] = True
+    _condensed_mode: ClassVar[bool] = False
+    _show_progress_bar: ClassVar[bool] = True
+
+    @classmethod
+    def get_condensed_mode(Self) -> bool:
+        return Self._condensed_mode
+
+    @classmethod
+    def set_condensed_mode(Self, condensed: bool):
+        Self._condensed_mode = condensed
+
+    @classmethod
+    def get_show_progress_bar(Self) -> bool:
+        return Self._show_progress_bar
+
+    @classmethod
+    def set_show_progress_bar(Self, show: bool):
+        Self._show_progress_bar = show
 
 
 class NullFormatter(logging.Formatter):
@@ -68,7 +84,7 @@ class RichHandler(rich.logging.RichHandler):
         super().__init__(**kwargs)
 
     def get_level_text(self, record: logging.LogRecord) -> Text:
-        if not options.condensed_mode:
+        if not options.get_condensed_mode():
             return super().get_level_text(record)
         level_name = record.levelname
         style: StyleType
@@ -77,7 +93,7 @@ class RichHandler(rich.logging.RichHandler):
         else:
             style = f"logging.level.{level_name.lower()}"
         level_text = Text.styled(
-            f"[{level_name.ljust(8)[0]}]",
+            f"[{level_name[0]}]",
             style,
         )
         return level_text
@@ -200,7 +216,7 @@ def get_log_level() -> int:
     return __event_logger.getEffectiveLevel()
 
 
-def debug(msg: object, /, **kwargs):
+def debug(*args, **kwargs):
     """
     Logs to the OpenLane logger with the log level DEBUG.
 
@@ -208,15 +224,15 @@ def debug(msg: object, /, **kwargs):
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
-    __event_logger.debug(msg, **kwargs)
+    __event_logger.debug(*args, **kwargs)
 
 
 def verbose(*args, **kwargs):
     """
     Logs to the OpenLane logger with the log level VERBOSE.
-
-    All args and kwargs are passed to https://rich.readthedocs.io/en/stable/reference/console.html#rich.console.Console.print
     """
+    if kwargs.get("stacklevel") is None:
+        kwargs["stacklevel"] = 2
     __event_logger.log(
         LogLevels.VERBOSE,
         *args,

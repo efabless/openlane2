@@ -192,11 +192,13 @@ class Path(UserString, os.PathLike):
     def rel_if_child(
         self,
         start: Union[str, os.PathLike] = os.getcwd(),
+        *,
+        relative_prefix: str = "",
     ) -> "Path":
         my_abspath = os.path.abspath(self)
         start_abspath = os.path.abspath(start)
         if my_abspath.startswith(start_abspath):
-            return Path(os.path.relpath(self, start_abspath))
+            return Path(relative_prefix + os.path.relpath(self, start_abspath))
         else:
             return Path(my_abspath)
 

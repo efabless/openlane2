@@ -155,14 +155,14 @@ def pdk_scl_cb(
 
 def condensed_cb(ctx: Context, param: Parameter, value: bool):
     if value:
-        options.condensed_mode = value
-        options.show_progress_bar = False
+        options.set_condensed_mode(True)
+        options.set_show_progress_bar(False)
         set_log_level(LogLevels.VERBOSE)
 
 
 def progressbar_cb(ctx: Context, param: Parameter, value: Optional[bool]):
     if value is not None:
-        options.show_progress_bar = value
+        options.set_show_progress_bar(value)
 
 
 def cloup_flow_opts(
@@ -363,6 +363,7 @@ def cloup_flow_opts(
                 type=bool,
                 help="In condensed mode, the default log level is VERBOSE, --hide-progress-bar is the default, and the log messages themselves are a bit more terse. Useful for debugging.",
                 default=False,
+                is_eager=True,
                 callback=condensed_cb,
                 expose_value=False,
             )(f)

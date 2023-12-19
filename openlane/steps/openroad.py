@@ -620,7 +620,7 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        if not options.condensed_mode:
+        if not options.get_condensed_mode():
             console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)

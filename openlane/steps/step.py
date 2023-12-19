@@ -20,10 +20,9 @@ import time
 import psutil
 import shutil
 import textwrap
-import functools
 import subprocess
-from decimal import Decimal
 from signal import Signals
+from decimal import Decimal
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
@@ -188,12 +187,10 @@ class ProcessStatsThread(Thread):
                     status = self.process.status()
         except psutil.Error as e:
             message = e.msg
-            if functools.reduce(
-                lambda acc, c: acc and c not in message,
-                ["process no longer exists", "but it's a zombie"],
-                False,
-            ):
-                warn(f"Process resource tracker encountered an error: {e}")
+            for normal in ["process no longer exists", "but it's a zombie"]:
+                if normal in message:
+                    return
+            warn(f"Process resource tracker encountered an error: {e}")
 
     def stats_as_dict(self):
         return {
@@ -848,10 +845,10 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        if not logging.options.condensed_mode:
+        if not logging.options.get_condensed_mode():
             rule(f"{self.long_name}")
         verbose(
-            f"Running '{self.id}'… (Log: {Path(self.get_log_path()).rel_if_child()})"
+            f"Running '{self.id}'… (Log: {Path(self.get_log_path()).rel_if_child(relative_prefix=f'.{os.path.sep}')})"
         )
 
         mkdirp(self.step_dir)

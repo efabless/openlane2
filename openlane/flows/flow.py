@@ -136,7 +136,7 @@ class FlowProgressBar(object):
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             console=console,
-            disable=not options.show_progress_bar,
+            disable=not options.get_show_progress_bar(),
         )
 
     def start(self):

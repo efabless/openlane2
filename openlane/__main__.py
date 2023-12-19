@@ -204,6 +204,9 @@ def run_example(
         final_path = os.path.join(d, "smoke_test_design")
         cleanup = True
     try:
+        if os.path.isdir(final_path):
+            print(f"A directory named {value} already exists.", file=sys.stderr)
+            ctx.exit(1)
         # 1. Copy the files
         shutil.copytree(
             example_path,
@@ -362,7 +365,7 @@ o = partial(option, show_default=True)
     o(
         "--run-example",
         default=None,  # Cannot be eager- PDK options need to be processed
-        help="Copies one of the OpenLane examples.",
+        help="Copies one of the OpenLane examples to the current working directory and runs it.",
         callback=run_example,
     ),
     constraint=mutually_exclusive,
