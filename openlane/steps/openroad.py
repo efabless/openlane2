@@ -849,7 +849,7 @@ def get_psm_error_count(rpt: io.TextIOWrapper) -> int:
             sio.write(line)
 
     sio.seek(0)
-    violations = yaml.load(sio, Loader=yaml.SafeLoader)
+    violations = yaml.load(sio, Loader=yaml.SafeLoader) or []
     return functools.reduce(
         lambda acc, current: acc + len(current["srcs"]), violations, 0
     )
