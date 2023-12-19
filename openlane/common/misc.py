@@ -19,19 +19,15 @@ import fnmatch
 import pathlib
 import unicodedata
 from math import inf
-from enum import Enum
 from typing import (
     Any,
     Generator,
     Iterable,
-    Optional,
-    Sequence,
-    SupportsFloat,
     TypeVar,
+    Optional,
+    SupportsFloat,
     Union,
 )
-
-from deprecated.sphinx import deprecated
 import httpx
 
 from .types import Path
@@ -154,17 +150,6 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     :param path: A filesystem path for the directory
     """
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
-
-
-@deprecated(
-    reason="Use Literal['str1', 'str2', …], which is more idiomatic to Python.",
-    version="2.0.0b11",
-)
-def StringEnum(name: str, values: Sequence[str]):
-    """
-    Creates a string enumeration class where the keys and values are the same.
-    """
-    return Enum(name, [(value, value) for value in values])
 
 
 class zip_first(object):

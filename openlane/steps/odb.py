@@ -14,6 +14,7 @@
 import os
 import re
 import json
+import site
 import shutil
 from math import inf
 from decimal import Decimal
@@ -52,9 +53,12 @@ class OdbpyStep(Step):
         command += [
             str(state_in[DesignFormat.ODB]),
         ]
-        env[
-            "PYTHONPATH"
-        ] = f"{env['PYTHONPATH']}:{os.path.join(get_script_dir(), 'odbpy')}"
+
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
+        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         generated_metrics = self.run_subprocess(
             command,
@@ -134,6 +138,12 @@ class ApplyDEFTemplate(OdbpyStep):
             Optional[Path],
             "Points to the DEF file to be used as a template.",
         ),
+        Variable(
+            "FP_TEMPLATE_MATCH_MODE",
+            Literal["strict", "permissive"],
+            "Whether to require that the pin set of the DEF template and the design should be identical. In permissive mode, pins that are in the design and not in the template will be excluded, and vice versa.",
+            default="strict",
+        ),
     ]
 
     def get_script_path(self):
@@ -147,6 +157,7 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().get_command() + [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
+            f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:

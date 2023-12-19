@@ -201,6 +201,7 @@ def _compare_metric_folders(
         diff = MetricDiff.from_metrics(
             metrics_a,
             metrics_b,
+            filter,
         )
 
         stats = diff.stats()

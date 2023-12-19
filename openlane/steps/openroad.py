@@ -15,6 +15,7 @@ import io
 import os
 import re
 import json
+import site
 import shlex
 import tempfile
 import subprocess
@@ -223,6 +224,12 @@ class OpenROADStep(TclStep):
                 if cell.strip() != ""
             ]
         )
+
+        python_path_elements = site.getsitepackages()
+        if current_pythonpath := env.get("PYTHONPATH"):
+            python_path_elements.append(current_pythonpath)
+        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
+        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         return env
 
@@ -733,7 +740,7 @@ class IOPlacement(OpenROADStep):
         + [
             Variable(
                 "FP_IO_MODE",
-                Literal["matching", "random_equidistant"],
+                Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
             ),
@@ -776,18 +783,20 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_TAP_HORIZONTAL_HALO",
+            "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros during tap insertion.",
+            "Specify the horizontal halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
         ),
         Variable(
-            "FP_TAP_VERTICAL_HALO",
+            "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros during tap insertion.",
+            "Specify the vertical halo size around macros while cutting rows.",
             default=10,
             units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
     ]
 
@@ -902,13 +911,22 @@ class GlobalPlacement(OpenROADStep):
 
 @Step.factory.register()
 class GlobalPlacementSkipIO(GlobalPlacement):
+    """
+    Performs global placement without taking I/O into consideration.
+
+    This is useful for flows where the:
+    * Cells are placed
+    * I/Os are placed to match the cells
+    * Cells are then re-placed for an optimal placement
+    """
+
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
     config_vars = GlobalPlacement.config_vars + [
         Variable(
             "FP_IO_MODE",
-            Literal["matching", "random_equidistant"],
+            Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
         )
@@ -1367,6 +1385,43 @@ class IRDropReport(OpenROADStep):
 
 
 @Step.factory.register()
+class CutRows(OpenROADStep):
+    """
+    Cut floorplan rows with respect to placed macros.
+    """
+
+    id = "OpenROAD.CutRows"
+    name = "Cut Rows"
+
+    inputs = [DesignFormat.ODB]
+    outputs = [
+        DesignFormat.ODB,
+        DesignFormat.DEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "FP_MACRO_HORIZONTAL_HALO",
+            Decimal,
+            "Specify the horizontal halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
+        ),
+        Variable(
+            "FP_MACRO_VERTICAL_HALO",
+            Decimal,
+            "Specify the vertical halo size around macros while cutting rows.",
+            default=10,
+            units="µm",
+            deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
+
+
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design
@@ -1493,7 +1548,7 @@ class CTS(ResizerStep):
                 warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
-                return Step.run(self, state_in, **kwargs)
+                return {}, {}
 
         views_updates, metrics_updates = super().run(
             state_in, corners_key="CTS_CORNERS", env=env, **kwargs
@@ -1670,6 +1725,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Allows the creation of setup violations when fixing hold violations. Setup violations are less dangerous as they simply mean a chip may not run at its rated speed, however, chips with hold violations are essentially dead-on-arrival.",
             default=False,
         ),
+        Variable(
+            "PL_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -1730,6 +1791,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "Allows setup violations when fixing hold.",
             default=False,
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
+        ),
+        Variable(
+            "GRT_RESIZER_GATE_CLONING",
+            bool,
+            "Enables gate cloning when attempting to fix setup violations",
+            default=True,
         ),
     ]
 

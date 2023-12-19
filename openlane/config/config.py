@@ -466,7 +466,7 @@ class Config(GenericImmutableDict[str, Any]):
 
                 <br />
 
-                ```yml
+                ```yaml
                 %s
                 ```
                 """
@@ -709,16 +709,20 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(processed)
 
     @classmethod
-    def __resolve_pdk_root(Self, pdk_root: Optional[str]) -> str:
-        try:
-            import volare
+    def __resolve_pdk_root(
+        Self,
+        pdk_root: Optional[str],
+    ) -> str:
+        if pdk_root is None:
+            try:
+                import volare
 
-            pdk_root = volare.get_volare_home(pdk_root)
-        except ImportError:
-            if pdk_root is None:
+                pdk_root = volare.get_volare_home(pdk_root)
+            except ImportError:
                 raise ValueError(
                     "The pdk_root argument is required as Volare is not installed."
                 )
+
         return os.path.abspath(pdk_root)
 
     @staticmethod

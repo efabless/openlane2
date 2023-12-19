@@ -29,6 +29,7 @@ with pkgs; let
       pyfakefs
       pytest
       pillow
+      mdformat
     ] ++ openlane-plugins ))
 
     # Conveniences
@@ -46,4 +47,6 @@ with pkgs; let
     nodejs
     yarn
   ] ++ openlane.includedTools ++ pluginIncludedTools;
+
+  PYTHONPATH = openlane.computed_PYTHONPATH;
 }

@@ -207,9 +207,9 @@ def run_smoke_test(
         if ctx.obj["use_volare"]:
             import volare
 
-            pdk_root = volare.get_volare_home(ctx.params.get("pdk_root"))
-            common.mkdirp(pdk_root)
-            volare.enable(pdk_root, "sky130", common.get_opdks_rev())
+            volare_home = volare.get_volare_home(ctx.params.get("pdk_root"))
+            fetched = volare.fetch(volare_home, "sky130", common.get_opdks_rev())
+            pdk_root = fetched.get_dir(volare_home)
 
         config_file = os.path.join(final_path, "config.json")
 

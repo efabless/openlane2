@@ -13,7 +13,7 @@
 # limitations under the License.
 {
   pkgs ? import ./pkgs.nix {},
-  opensta ? import ./opensta.nix {},
+  opensta ? import ./opensta.nix { inherit pkgs; },
   libsForQt5 ? pkgs.libsForQt5,
 }:
 
@@ -55,13 +55,13 @@ in clangStdenv.mkDerivation rec {
 
   buildInputs = [
     abc
-    boost
+    boost183
     eigen
-    spdlog
     tcl
     python3
     readline
     tclreadline
+    spdlog-internal-fmt
     libffi
     libsForQt5.qtbase
     llvmPackages.openmp

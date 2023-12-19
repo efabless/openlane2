@@ -84,10 +84,11 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
-        "PRIMARY_SIGNOFF_TOOL",
+        "PRIMARY_GDSII_STREAMOUT_TOOL",
         str,
-        "Specify the primary signoff tool for taping out with this PDK. For most open-source PDKs, that would be 'magic'.",
+        "Specify the primary GDSII streamout tool for this PDK. For most open-source PDKs, that would be 'magic'.",
         pdk=True,
+        deprecated_names=["PRIMARY_SIGNOFF_TOOL"],
     ),
     # Timing and Power
     Variable(

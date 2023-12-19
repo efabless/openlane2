@@ -132,7 +132,7 @@ def verbose(*args, **kwargs):
     if get_log_level() > LogLevels.VERBOSE:
         return
     if __plain_output:
-        print(*args)
+        __openlane_logger.log(LogLevels.VERBOSE, *args)
     else:
         console.print(*args, **kwargs)
 

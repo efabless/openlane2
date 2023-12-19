@@ -11,7 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-__version__ = "2.0.0b16"
+source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+read_current_odb
 
-if __name__ == "__main__":
-    print(__version__, end="")
+cut_rows\
+    -endcap_master $::env(FP_ENDCAP_CELL)\
+    -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
+    -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
+
+write_views
+
+report_design_area_metrics
