@@ -125,7 +125,7 @@ def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate
         return True
 
 
-def relocate_pins(db, input_lefs, template_def):
+def relocate_pins(db, input_lefs, template_def, permissive):
     # --------------------------------
     # 1. Find list of all bterms in existing database
     # --------------------------------
@@ -207,6 +207,14 @@ def relocate_pins(db, input_lefs, template_def):
                     )
                 )
 
+    template_bterm_names = set(
+        [
+            bterm.getName()
+            for bterm in template_bterms
+            if bterm.getSigType() not in ["POWER", "GROUND"]
+        ]
+    )
+
     print(f"Found {len(template_bterm_locations)} template_bterms:")
 
     for name in template_bterm_locations.keys():
@@ -219,76 +227,99 @@ def relocate_pins(db, input_lefs, template_def):
     output_tech = output_db.getTech()
     output_block = output_db.getChip().getBlock()
     output_bterms = output_block.getBTerms()
+
+    output_bterm_names = set([bterm.getName() for bterm in output_bterms])
+
+    not_in_design = template_bterm_names - output_bterm_names
+    not_in_template = output_bterm_names - template_bterm_names
+    mismatches_found = False
+    for is_in, not_in, pins in [
+        ("template", "design", not_in_design),
+        ("design", "template", not_in_template),
+    ]:
+        for name in pins:
+            mismatches_found = True
+            if permissive:
+                print(
+                    f"[WARN]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                )
+            else:
+                print(
+                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    file=sys.stderr,
+                )
+
+    if mismatches_found and not permissive:
+        exit(os.EX_DATAERR)
+
     grid_errors = False
     for output_bterm in output_bterms:
         name = output_bterm.getName()
         output_bpins = output_bterm.getBPins()
 
-        if name in template_bterm_locations and name in all_bterm_names:
-            for output_bpin in output_bpins:
-                odb.dbBPin.destroy(output_bpin)
+        if name not in template_bterm_locations or name not in all_bterm_names:
+            continue
 
-            for template_bterm_location_tuple in template_bterm_locations[name]:
-                layer = output_tech.findLayer(template_bterm_location_tuple[0])
+        for output_bpin in output_bpins:
+            odb.dbBPin.destroy(output_bpin)
 
-                # --------------------------------
-                # 6.2 Create new pin
-                # --------------------------------
+        for template_bterm_location_tuple in template_bterm_locations[name]:
+            layer = output_tech.findLayer(template_bterm_location_tuple[0])
 
-                output_new_bpin = odb.dbBPin.create(output_bterm)
+            # --------------------------------
+            # 6.2 Create new pin
+            # --------------------------------
 
-                print(
-                    f"Wrote pin {name} at layer {layer.getName()} at {template_bterm_location_tuple[1:]}..."
-                )
-                grid_errors = (
-                    check_pin_grid(
-                        manufacturing_grid,
-                        dbu_per_microns,
-                        name,
-                        template_bterm_location_tuple[1],
-                    )
-                    or grid_errors
-                )
-                grid_errors = (
-                    check_pin_grid(
-                        manufacturing_grid,
-                        dbu_per_microns,
-                        name,
-                        template_bterm_location_tuple[2],
-                    )
-                    or grid_errors
-                )
-                grid_errors = (
-                    check_pin_grid(
-                        manufacturing_grid,
-                        dbu_per_microns,
-                        name,
-                        template_bterm_location_tuple[3],
-                    )
-                    or grid_errors
-                )
-                grid_errors = (
-                    check_pin_grid(
-                        manufacturing_grid,
-                        dbu_per_microns,
-                        name,
-                        template_bterm_location_tuple[4],
-                    )
-                    or grid_errors
-                )
-                odb.dbBox.create(
-                    output_new_bpin,
-                    layer,
+            output_new_bpin = odb.dbBPin.create(output_bterm)
+
+            print(
+                f"Wrote pin {name} at layer {layer.getName()} at {template_bterm_location_tuple[1:]}..."
+            )
+            grid_errors = (
+                check_pin_grid(
+                    manufacturing_grid,
+                    dbu_per_microns,
+                    name,
                     template_bterm_location_tuple[1],
+                )
+                or grid_errors
+            )
+            grid_errors = (
+                check_pin_grid(
+                    manufacturing_grid,
+                    dbu_per_microns,
+                    name,
                     template_bterm_location_tuple[2],
+                )
+                or grid_errors
+            )
+            grid_errors = (
+                check_pin_grid(
+                    manufacturing_grid,
+                    dbu_per_microns,
+                    name,
                     template_bterm_location_tuple[3],
+                )
+                or grid_errors
+            )
+            grid_errors = (
+                check_pin_grid(
+                    manufacturing_grid,
+                    dbu_per_microns,
+                    name,
                     template_bterm_location_tuple[4],
                 )
-                output_new_bpin.setPlacementStatus("PLACED")
-        else:
-            print(
-                f"{name} not found in donor def, but found in output def. Leaving as-is.",
+                or grid_errors
             )
+            odb.dbBox.create(
+                output_new_bpin,
+                layer,
+                template_bterm_location_tuple[1],
+                template_bterm_location_tuple[2],
+                template_bterm_location_tuple[3],
+                template_bterm_location_tuple[4],
+            )
+            output_new_bpin.setPlacementStatus("PLACED")
 
     if grid_errors:
         print(

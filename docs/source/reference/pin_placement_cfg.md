@@ -1,12 +1,17 @@
 # Pin Placer Configuration Files
 
-If you're using the step [Odb.CustomIOPlacement](./step_config_vars.md#Odb.CustomIOPlacement), the variable `FP_PIN_ORDER_CFG` asks you to create a `.cfg` file that can be used to configure this placement step.
+If you're using the step [Odb.CustomIOPlacement](./step_config_vars.md#Odb.CustomIOPlacement),
+the variable `FP_PIN_ORDER_CFG` asks you to create a `.cfg` file that can be used
+to configure this placement step.
 
-This document outlines the structrure of this file.
+## Parsing and Grammar
+
+The grammar is expressed in [antlr4](https://github.com/antlr/antlr4) and is
+available at the repository [efabless/ioplace_parser](https://github.com/efabless/ioplace_parser).
 
 ## Instructions
 
-The document is a **line-delimited** set of instructions.
+The document is a **whitespace-delimited** set of instructions.
 
 ## Sections
 
@@ -15,13 +20,6 @@ cardinal directions.
 
 The sections are marked using a `#` instruction. For example, `#N` marks the
 beginning of the section for the pins on the north of the chip.
-
-## Section Minimum Distance
-
-You can set the minimum distance between two pins for a specific section
-using the `@min_distance=<distance>` instruction, where the distance is in microns.
-Be advised, if this distance is less than the legal minimum distance
-for this section, the legal minimum will be used.
 
 ## Pins
 
@@ -35,6 +33,69 @@ with `x\[\d+\]` will match `x[0]`, `x[1]`, `x[2]`, ..., `x[10]`, et cetera.
 A line with just `x[0]` is still a regular expression which will match the string
 `x0`. Be sure to escape all special regex characters: `x\[0\]` would match `x[0]`.
 ```
+
+## Annotations
+
+Some statements can be preceeded with `@`s and are referred to as annotations.
+
+Annotations placed before declaring any sections are known as **global annotations**
+and affect default behaviors of all sections.
+
+Annotations placed inside a section only affect the specific section.
+
+### Minimum Distance
+
+You can set the minimum distance between two pins using the
+`@min_distance=<distance>` annotation, where the distance is in microns.
+
+If set globally, the minimum distance applies to all sections, unless another
+`@min_distance` is declared inside a section.
+
+Be advised, if this distance is less than the legal minimum distance
+for a section, the legal minimum will be used.
+
+### Regex Sorting
+
+The results of regular expressions can be sorted according to two ways.
+
+Like minimum distance, setting these annotations globally applies to all sections
+unless another annotation is specified inside a section.
+
+#### `@bus_major` (default)
+
+If two buses are matched with the same regular expression, the buses are sorted
+in a bus-major fashion: i.e. alphabetically by any found bus name(s) and then ascendingly
+by any found bit number(s).
+
+For example, for a regular expression `l.*` matching pins:
+* `lemon[1]`
+* `lime[0]`
+* `lemon[0]`
+* `lime[1]`
+
+The order returned would be:
+* `lemon[0]`
+* `lemon[1]`
+* `lime[0]`
+* `lime[1]`
+
+#### `@bit_major`
+
+If two buses are matched with the same regular expression, the buses are sorted
+in a bit-major fashion: i.e., ascendingly by any found bit number(s) then
+alphabetically by any found bus name(s).
+
+For example, for a regular expression `l.*` matching pins:
+* `lemon[1]`
+* `lime[0]`
+* `lemon[0]`
+* `lime[1]`
+
+The order returned would be:
+* `lemon[0]`
+* `lime[0]`
+* `lemon[1]`
+* `lime[1]`.
 
 ## Virtual Pins
 
