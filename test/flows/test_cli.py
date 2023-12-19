@@ -68,20 +68,20 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
     reset_log_level()
 
     cli_fn(
-        ["--log-level", "WARN"],
+        ["--log-level", "WARNING"],
         standalone_mode=False,
     )
     assert get_log_level() == 30, "--log-level callback failed"
 
     reset_log_level()
 
-    cli_fn(
-        ["--log-level", "NOT A REAL LOG LEVEL"],
-        standalone_mode=False,
-    )
-    assert (
-        "Invalid logging level" in caplog.text
-    ), "Invalid logging level did not raise an error"
+    with pytest.raises(
+        click.exceptions.BadParameter, match="not a valid key nor value"
+    ):
+        cli_fn(
+            ["--log-level", "NOT A REAL LOG LEVEL"],
+            standalone_mode=False,
+        )
     caplog.clear()
 
 

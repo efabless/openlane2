@@ -25,7 +25,7 @@ proc load_rsz_corners {args} {
     }
 
     if { $i == "0" } {
-        puts "\[WARN] No resizer-specific timing information read."
+        puts "\[WARNING] No resizer-specific timing information read."
         return
     }
 

@@ -21,7 +21,7 @@ module and the ``rich`` library.
 
 from .logger import (
     LogLevels,
-    LogLevelsDict,
+    options,
     console,
     set_log_level,
     reset_log_level,
@@ -35,4 +35,5 @@ from .logger import (
     success,
     warn,
     err,
+    subprocess,
 )

@@ -1,11 +1,15 @@
+# Compared to the implementation SDC, the signoff SDC relaxes
+# max capacitance and transition constraints. (Which are intentionally over-
+# constrained for implementation to yield better results.)
+
 set clock_port __VIRTUAL_CLK__
 if { [info exists ::env(CLOCK_PORT)] } {
     set port_count [llength $::env(CLOCK_PORT)]
 
     if { $port_count == "0" } {
-        puts "\[WARNING] No CLOCK_PORT found. A dummy clock will be used."
+        puts "\[WARN] No CLOCK_PORT found. A dummy clock will be used."
     } elseif { $port_count != "1" } {
-        puts "\[WARNING] Multi-clock files are not currently supported by the base SDC file. Only the first clock will be constrained."
+        puts "\[WARN] Multi-clock files are not currently supported by the base SDC file. Only the first clock will be constrained."
     }
 
     if { $port_count > "0" } {
@@ -22,9 +26,6 @@ puts "\[INFO] Setting output delay to: $output_delay_value"
 puts "\[INFO] Setting input delay to: $input_delay_value"
 
 set_max_fanout $::env(MAX_FANOUT_CONSTRAINT) [current_design]
-if { [info exists ::env(MAX_TRANSITION_CONSTRAINT)] } {
-    set_max_transition $::env(MAX_TRANSITION_CONSTRAINT) [current_design]
-}
 
 set clk_input [get_port $clock_port]
 set clk_indx [lsearch [all_inputs] $clk_input]
@@ -59,11 +60,8 @@ set cap_load [expr $::env(OUTPUT_CAP_LOAD) / 1000.0]
 puts "\[INFO] Setting load to: $cap_load"
 set_load $cap_load [all_outputs]
 
-puts "\[INFO] Setting clock uncertainty to: $::env(CLOCK_UNCERTAINTY_CONSTRAINT)"
-set_clock_uncertainty $::env(CLOCK_UNCERTAINTY_CONSTRAINT) $clocks
-
-puts "\[INFO] Setting clock transition to: $::env(CLOCK_TRANSITION_CONSTRAINT)"
-set_clock_transition $::env(CLOCK_TRANSITION_CONSTRAINT) $clocks
+puts "\[INFO] Setting clock uncertainty to: 0.1"
+set_clock_uncertainty 0.1 $clocks
 
 puts "\[INFO] Setting timing derate to: $::env(TIME_DERATING_CONSTRAINT)%"
 set_timing_derate -early [expr 1-[expr $::env(TIME_DERATING_CONSTRAINT) / 100]]

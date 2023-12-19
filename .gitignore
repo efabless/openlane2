@@ -29,6 +29,7 @@ logs/
 failures_report.json
 abc.history
 slpp_all/
+*/runs
 
 # Testing
 .coverage
