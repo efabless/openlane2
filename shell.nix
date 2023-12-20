@@ -24,7 +24,9 @@ with pkgs; let
       pytest
       pillow
       mdformat
-    ] ++ openlane-plugins ));
+    ] ++ openlane-plugins )
+  ); in let
+  openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
 in mkShell {
   name = "openlane-shell";
@@ -45,4 +47,6 @@ in mkShell {
     jupyter
     graphviz
   ] ++ openlane.includedTools ++ pluginIncludedTools;
+  
+  PYTHONPATH = "${openlane-env-sitepackages}"; # Allows venvs to work properly
 }
