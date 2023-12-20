@@ -18,20 +18,20 @@
 }:
 
 with pkgs; let
-  pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins)
-  
-; in mkShell {
-  name = "openlane-shell";
-
-  propagatedBuildInputs = [
-    (python3.withPackages(pp: with pp; [
+  openlane-env = (python3.withPackages(pp: with pp; [
       openlane
       pyfakefs
       pytest
       pillow
       mdformat
-    ] ++ openlane-plugins ))
+    ] ++ openlane-plugins ));
+  pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
+in mkShell {
+  name = "openlane-shell";
 
+  propagatedBuildInputs = [
+    openlane-env
+    
     # Conveniences
     git
     zsh
@@ -45,6 +45,4 @@ with pkgs; let
     jupyter
     graphviz
   ] ++ openlane.includedTools ++ pluginIncludedTools;
-
-  PYTHONPATH = openlane.computed_PYTHONPATH;
 }
