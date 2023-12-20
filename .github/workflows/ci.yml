@@ -60,6 +60,7 @@ jobs:
       - name: Download IPM designs
         id: download-ipm-design
         run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
           echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
       - name: Cache IPM designs
