@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from textwrap import dedent
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
@@ -32,20 +31,20 @@ from cloup.constraints import (
 )
 from cloup.typing import Decorator
 
-from openlane.state.state import InvalidState
-
-
 from .flow import Flow
-from ..common import set_tpe, get_opdks_rev
-from ..logging import set_log_level, err, LogLevelsDict
-from ..state import State
+from ..common import set_tpe, get_opdks_rev, cli
+from ..logging import set_log_level, err, options, LogLevels
+from ..state import State, InvalidState
 
 
 def set_log_level_cb(
     ctx: Context,
     param: Parameter,
-    value: str,
+    value: Optional[str],
 ):
+    if value is None:
+        return
+
     level: Union[str, int] = value
     try:
         try:
@@ -152,6 +151,17 @@ def pdk_scl_cb(
             )
             ctx.params["pdk_root"] = version.get_dir(volare_home)
     return value
+
+
+def condensed_cb(ctx: Context, param: Parameter, value: bool):
+    if value:
+        options.set_condensed_mode(True)
+        options.set_show_progress_bar(False)
+
+
+def progressbar_cb(ctx: Context, param: Parameter, value: Optional[bool]):
+    if value is not None:
+        options.set_show_progress_bar(value)
 
 
 def cloup_flow_opts(
@@ -332,19 +342,28 @@ def cloup_flow_opts(
         if log_level:
             f = o(
                 "--log-level",
-                type=str,
-                default="VERBOSE",
-                help=dedent(
-                    """
-                    A logging level. Set to INFO or higher to silence subprocess logs.
-
-                    You can provide either a number or a string out of the following (higher is more silent):
-                    """
-                )
-                + ",".join(
-                    [f"{name}={value}" for name, value in LogLevelsDict.items()]
-                ),
+                type=cli.IntEnumChoice(LogLevels),
+                default=None,
+                help="A logging level. Set to VERBOSE or higher to silence subprocess logs. [default: unchanged from SUBPROCESS]",
                 callback=set_log_level_cb,
+                expose_value=False,
+                show_default=False,
+            )(f)
+            f = o(
+                "--show-progress-bar/--hide-progress-bar",
+                type=bool,
+                help="Whether to show the progress bar when running Flows. [default: show]",
+                default=None,
+                callback=progressbar_cb,
+                expose_value=False,
+            )(f)
+            f = o(
+                "--condensed/--full",
+                type=bool,
+                help="In condensed mode, subprocess logs are suppressed regardless of step, --hide-progress-bar is the default, and the log messages themselves are a bit more terse. Useful for debugging.",
+                default=False,
+                is_eager=True,
+                callback=condensed_cb,
                 expose_value=False,
             )(f)
         if pdk_options:
