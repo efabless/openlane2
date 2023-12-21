@@ -613,7 +613,7 @@ class Step(ABC):
         Self,
         config: Union[str, Config],
         state_in: Union[str, State],
-        pdk_root: str = ".",
+        pdk_root: Optional[str] = None,
     ) -> Step:
         """
         Creates a step object, but instead of using a Flow or a global state,
@@ -632,6 +632,7 @@ class Step(ABC):
             as-is.
         :returns: The created step object
         """
+        pdk_root = pdk_root or "."
         if not isinstance(config, Config):
             config = Self._load_config_from_file(config, pdk_root)
         if not isinstance(state_in, State):
@@ -682,19 +683,21 @@ class Step(ABC):
             to PDK files will be prefixed with ``pdk_dir::`` instead of being
             copied.
         :param flatten: Creates a reproducible with a flat (single-directory)
-            file structure. Except for the PDK which is sensitive to its tree
-            (if included).
+            file structure, except for the PDK which will maintain its internal
+            folder structure (as it is sensitive to it.)
         """
         # 0. Create Directories
+        try:
+            shutil.rmtree(target_dir, ignore_errors=False)
+        except FileNotFoundError:
+            pass
         mkdirp(target_dir)
 
-        files_path = target_dir
-        pdk_flat_dirname = "pdk-files/"
+        files_path = target_dir if flatten else os.path.join(target_dir, "files")
+        pdk_flat_dirname = "pdk/"
         pdk_flat_path = os.path.join(target_dir, pdk_flat_dirname)
-        if flatten:
+        if flatten and include_pdk:
             mkdirp(pdk_flat_path)
-        if not flatten:
-            files_path = os.path.join(target_dir, "files")
 
         pdk_path = os.path.join(self.config["PDK_ROOT"], self.config["PDK"], "")
 
@@ -715,8 +718,6 @@ class Step(ABC):
                         ".", x.replace(pdk_path, pdk_flat_dirname)
                     )
                     target_abspath = os.path.join(target_dir, target_relpath)
-                    print(target_relpath)
-                    print(target_abspath)
                 else:
                     counter = 0
                     filename = os.path.basename(x)
@@ -743,6 +744,8 @@ class Step(ABC):
                     mkdirp(target_abspath)
             else:
                 shutil.copy(x, target_abspath)
+                if hasattr(os, "chmod"):
+                    os.chmod(target_abspath, 0o755)
 
             return Path(target_relpath)
 
@@ -755,10 +758,16 @@ class Step(ABC):
 
         del dumpable_config["DESIGN_DIR"]
 
-        if not include_pdk:
-            del dumpable_config["PDK_ROOT"]
+        del dumpable_config["PDK_ROOT"]
         if flatten and include_pdk:
-            dumpable_config["PDK_ROOT"] = pdk_flat_dirname
+            # So it's always the first one:
+            dumpable_config = {"PDK_ROOT": pdk_flat_dirname, **dumpable_config}
+        else:
+            # If not flattened; there's no explicit PDK root needed, as all
+            # the files are symlinked.
+            # If not including the PDK, pdk_root is going to have to be
+            # passed to the config when running the reproducibkle.
+            pass
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
@@ -794,11 +803,11 @@ class Step(ABC):
                         exit -1
                     fi
 
-                    command=run
-                    if [ "$1" == "eject" ]; then
-                        command=eject
+                    ARGS="$@"
+                    if [ "$1" != "eject" ] && [ "$1" != "run" ]; then
+                        ARGS="run $@"
                     fi
-                    python3 -m openlane.steps $command\\
+                    python3 -m openlane.steps $ARGS\\
                         --config ./config.json\\
                         --state-in ./state_in.json
                     """

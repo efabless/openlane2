@@ -50,6 +50,7 @@ def load_step_from_inputs(
     id: Optional[str],
     config: str,
     state_in: str,
+    pdk_root: Optional[str] = None,
 ) -> Step:
     if id is None:
         id = extract_step_id(ctx, config)
@@ -68,6 +69,7 @@ def load_step_from_inputs(
     return Target.load(
         config=config,
         state_in=state_in,
+        pdk_root=pdk_root,
     )
 
 
@@ -116,8 +118,19 @@ o = partial(option, show_default=True)
     ),
     required=False,
 )
+@o(
+    "--pdk-root",
+    type=Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    is_eager=True,
+    default=os.environ.pop("PDK_ROOT", None),
+    help="Use this folder as the PDK root, if running a reproducible that doesn't include the PDK.",
+)
 @pass_context
-def run(ctx, output, state_in, config, id):
+def run(ctx, output, state_in, config, id, pdk_root):
     """
     Runs a step using a step-specific configuration object and an input state.
 
@@ -125,7 +138,7 @@ def run(ctx, output, state_in, config, id):
     filesystem-independent reproducibles.
     """
 
-    step = load_step_from_inputs(ctx, id, config, state_in)
+    step = load_step_from_inputs(ctx, id, config, state_in, pdk_root)
 
     if step.config.meta.openlane_version != __version__:
         warn(
@@ -369,8 +382,27 @@ def eject(ctx, output, state_in, config, id):
     default=False,
 )
 @pass_context
+@argument(
+    "step_dir_arg",
+    type=Path(
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    default=None,
+    required=False,
+    nargs=1,
+)
 def create_reproducible(
-    ctx, output, step_dir, id, config, state_in, include_pdk, flatten
+    ctx,
+    output,
+    step_dir,
+    step_dir_arg,
+    id,
+    config,
+    state_in,
+    include_pdk,
+    flatten,
 ):
     """
     Creates a filesystem-independent step reproducible.
@@ -380,6 +412,9 @@ def create_reproducible(
     * Both a configuration object (--config) and an input state (--state-in)
 
     * A step directory (--step-dir) generated from a previous run
+      * If not provided, the fallbacks are, in order of priority:
+        * The first non-flag argument
+        * The current working directory
 
     These reproducibles are filesystem-independent, i.e. they can be run
     on any computer that has the appropriate version of OpenLane 2 installed
@@ -389,6 +424,8 @@ def create_reproducible(
     emit a warning if the installed version of OpenLane mismatches the one
     declared in the config file.
     """
+    step_dir = step_dir or step_dir_arg or os.getcwd()
+
     if step_dir is None:
         if config is None or state_in is None:
             err("Either --step-dir or both --config and --state-in must be provided.")
