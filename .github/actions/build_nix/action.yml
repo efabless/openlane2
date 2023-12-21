@@ -35,7 +35,7 @@ runs:
       shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.'"
+        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.' -n auto"
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       run: |

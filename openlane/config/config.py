@@ -80,7 +80,8 @@ class InvalidConfig(ValueError):
         if message is None:
             message = "The following errors were encountered: \n"
             for error in self.errors:
-                message += f"\t* {error}"
+                message += f"\t* {error}\n"
+            message = message.strip()
         super().__init__(message, *args, **kwargs)
 
 

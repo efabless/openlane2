@@ -40,6 +40,7 @@ from .misc import (
     final,
     mkdirp,
     Path,
+    ScopedFile,
     zip_first,
     format_size,
     format_elapsed_time,

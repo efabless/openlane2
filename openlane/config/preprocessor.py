@@ -267,6 +267,10 @@ def process_string(
         if not mutable.startswith(REFG_PREFIX):
             return concatenated
 
+        # Glob only if * or ? in string (results in better error messages)
+        if "?" not in mutable and "*" not in mutable:
+            return concatenated
+
         ## If we're refg, all returns beyond this point must be of type
         ## List[str]
 
