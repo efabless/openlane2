@@ -21,26 +21,29 @@ with pkgs; let
   abc = import ./openroad-abc.nix { inherit pkgs; };
 in clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "6f9b2bb8b808b1bb5831d4525d868212ae50517a";
+  rev = "75f2f325b7a42e56a92404f33af8e96530d9b202";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-lLToR+c2oOmgfuw7RX1W/QxwBWhoZWUmdzix3CrxWmA=";
+    sha256 = "sha256-QZ6Oui4JF4Z6e7SeAGI6pE8knbkOrdhVegABzmJHYhs=";
   };
-
-  cmakeFlags = [
+  
+  cmakeFlagsAll = [
     "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
-    "-DUSE_SYSTEM_ABC:BOOL=ON"
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
-    "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
-    "-DOPENSTA_HOME=${opensta}"
-    "-DABC_LIBRARY=${abc}/lib/libabc.a"
     "-DCMAKE_CXX_FLAGS=-I${abc}/include"
     "-DENABLE_TESTS:BOOL=OFF"
     "-DVERBOSE=1"
+  ];
+
+  cmakeFlags = cmakeFlagsAll ++ [
+    "-DUSE_SYSTEM_ABC:BOOL=ON"
+    "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
+    "-DOPENSTA_HOME=${opensta}"
+    "-DABC_LIBRARY=${abc}/lib/libabc.a"
   ];
 
   preConfigure = ''
@@ -77,12 +80,17 @@ in clangStdenv.mkDerivation rec {
   ];
 
   nativeBuildInputs = [
-    swig
+    swig4
     pkg-config
     cmake
     gnumake
     flex
     bison
     libsForQt5.wrapQtAppsHook
+    clang-tools_14
   ];
+  
+  shellHook = ''
+    export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " cmakeFlagsAll}"
+  '';
 }
