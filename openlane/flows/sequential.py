@@ -175,6 +175,7 @@ class SequentialFlow(Flow):
         reproducible: Optional[str] = None,
         **kwargs,
     ) -> Tuple[State, List[Step]]:
+        debug(f"Starting run ▶ '{self.run_dir}'")
         step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}
         skipped_ids = []
 
@@ -286,7 +287,7 @@ class SequentialFlow(Flow):
         assert self.run_dir is not None
         final_views_path = os.path.join(self.run_dir, "final")
         info(f"Saving final views to '{final_views_path}'…")
-        debug(f"'{self.run_dir}'")
+        debug(f"Run concluded ▶ '{self.run_dir}'")
         try:
             current_state.save_snapshot(final_views_path)
         except Exception as e:

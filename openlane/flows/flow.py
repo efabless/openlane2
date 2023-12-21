@@ -57,6 +57,7 @@ from ..logging import (
     verbose,
     register_additional_handler,
     deregister_additional_handler,
+    options,
 )
 from ..common import (
     get_tpe,
@@ -143,6 +144,7 @@ class FlowProgressBar(object):
             MofNCompleteColumn(),
             TimeElapsedColumn(),
             console=console,
+            disable=not options.get_show_progress_bar(),
         )
 
     def start(self):
@@ -529,20 +531,13 @@ class Flow(ABC):
         # Stored until next start()
         self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
-        # log_path = os.path.join(self.run_dir, "flow.log")
-        # log_handler = logging.FileHandler(log_path, mode="a+")
-        # log_handler.setLevel("INFO")
-        # register_additional_handler(log_handler)
-
-        warning_log_path = os.path.join(self.run_dir, "warnings.log")
-        warning_handler = logging.FileHandler(warning_log_path, mode="a+")
-        warning_handler.setLevel("WARNING")
-        register_additional_handler(warning_handler)
-
-        error_log_path = os.path.join(self.run_dir, "errors.log")
-        error_handler = logging.FileHandler(error_log_path, mode="a+")
-        error_handler.setLevel("ERROR")
-        register_additional_handler(error_handler)
+        handlers = []
+        for level in ["INFO", "WARNING", "ERROR"]:
+            path = os.path.join(self.run_dir, f"{level.lower()}.log")
+            handler = logging.FileHandler(path, mode="a+")
+            handler.setLevel(level)
+            handlers.append(handler)
+            register_additional_handler(handler)
 
         try:
             config_res_path = os.path.join(self.run_dir, "resolved.json")
@@ -565,9 +560,8 @@ class Flow(ABC):
 
             return final_state
         finally:
-            deregister_additional_handler(warning_handler)
-            deregister_additional_handler(error_handler)
-            # deregister_additional_handler(log_handler)
+            for handler in handlers:
+                deregister_additional_handler(handler)
 
     @protected
     @abstractmethod

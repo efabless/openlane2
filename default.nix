@@ -108,12 +108,10 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   doCheck = false;
   checkInputs = [ pytestCheckHook pyfakefs ];
 
-  computed_PATH = lib.makeBinPath (propagatedBuildInputs ++ buildInputs);
-  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" (propagatedBuildInputs ++ buildInputs);
-
-  # Make PATH/PYTHONPATH available to OpenLane subprocesses
+  computed_PATH = lib.makeBinPath (propagatedBuildInputs);
+  
+  # Make PATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
-    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"
   ];
 }

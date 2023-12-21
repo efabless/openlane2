@@ -49,6 +49,9 @@ class Path(UserString, os.PathLike):
     def __fspath__(self) -> str:
         return str(self)
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}('{self}')"
+
     def exists(self) -> bool:
         """
         A convenience method calling :meth:`os.path.exists`
@@ -71,3 +74,16 @@ class Path(UserString, os.PathLike):
         if isinstance(prefix, UserString) or isinstance(prefix, os.PathLike):
             prefix = str(prefix)
         return super().startswith(prefix, start, end)
+
+    def rel_if_child(
+        self,
+        start: Union[str, os.PathLike] = os.getcwd(),
+        *,
+        relative_prefix: str = "",
+    ) -> "Path":
+        my_abspath = os.path.abspath(self)
+        start_abspath = os.path.abspath(start)
+        if my_abspath.startswith(start_abspath):
+            return Path(relative_prefix + os.path.relpath(self, start_abspath))
+        else:
+            return Path(my_abspath)
