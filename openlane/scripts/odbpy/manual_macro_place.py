@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 from reader import click_odb, click
 
 LEF2OA_MAP = {
@@ -97,7 +98,11 @@ def manual_macro_place(reader, config, fixed):
                 inst.setPlacementStatus("PLACED")
             del macros[inst_name]
 
-    assert not macros, ("Macros not found:", macros)
+    if len(macros):
+        print("Declared macros not instantiated in design:", file=sys.stderr)
+        for macro in macros:
+            print(f"* {macro}", file=sys.stderr)
+        exit(1)
 
     print(f"Successfully placed {macros_cnt} instances.")
 

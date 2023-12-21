@@ -15,11 +15,12 @@
   system ? builtins.currentSystem,
   pkgs ? import ./nix/pkgs.nix {},
   gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
-  
+
 
   klayout ? import ./nix/klayout.nix { inherit pkgs; },
   klayout-pymod ? import ./nix/klayout-pymod.nix { inherit pkgs; inherit klayout; },
   libparse ? import ./nix/libparse.nix { inherit pkgs; },
+  ioplace-parser ? import ./nix/ioplace-parser.nix { inherit pkgs; },
   magic ? import ./nix/magic.nix { inherit pkgs; },
   netgen ? import ./nix/netgen.nix { inherit pkgs; },
   opensta ? import ./nix/opensta.nix { inherit pkgs; },
@@ -37,7 +38,7 @@
   sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
   eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
   ys-ghdl ? import ./nix/yosys-ghdl.nix { inherit pkgs; inherit yosys; inherit sby; },
-  
+
   ...
 }:
 
@@ -64,7 +65,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     done
     ls -lah
   '';
-  
+
   buildInputs = [];
 
   includedTools = [
@@ -99,6 +100,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     deprecated
     immutabledict
     libparse
+    ioplace-parser
     psutil
     klayout-pymod
   ] ++ includedTools;
@@ -106,12 +108,10 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   doCheck = false;
   checkInputs = [ pytestCheckHook pyfakefs ];
 
-  computed_PATH = lib.makeBinPath (propagatedBuildInputs ++ buildInputs);
-  computed_PYTHONPATH = lib.makeSearchPath "lib/${python3.libPrefix}/site-packages" (propagatedBuildInputs ++ buildInputs);
-
-  # Make PATH/PYTHONPATH available to OpenLane subprocesses
+  computed_PATH = lib.makeBinPath (propagatedBuildInputs);
+  
+  # Make PATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
-    "--prefix PYTHONPATH : ${computed_PYTHONPATH}"  
   ];
 }

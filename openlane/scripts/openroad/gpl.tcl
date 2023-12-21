@@ -27,9 +27,9 @@ foreach inst $::insts {
 }
 
 if { !$placement_needed } {
-	puts "\[WARN] All instances are FIXED/FIRM."
-	puts "\[WARN] No need to perform global placement."
-	puts "\[WARN] Skipping…"
+	puts "\[WARNING] All instances are FIXED/FIRM."
+	puts "\[WARNING] No need to perform global placement."
+	puts "\[WARNING] Skipping…"
 	write_views
 	exit 0
 }

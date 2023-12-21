@@ -209,6 +209,8 @@ class YosysStep(TclStep):
 @Step.factory.register()
 class JsonHeader(YosysStep):
     id = "Yosys.JsonHeader"
+    name = "Generate JSON Header"
+
     inputs = []
     outputs = [DesignFormat.JSON_HEADER]
 

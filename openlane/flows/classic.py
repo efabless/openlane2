@@ -154,6 +154,12 @@ _common_config_vars = [
         default=True,
     ),
     Variable(
+        "RUN_KLAYOUT_DRC",
+        bool,
+        "Enables the KLayout.DRC step.",
+        default=True,
+    ),
+    Variable(
         "QUIT_ON_UNMAPPED_CELLS",
         bool,
         "Checks for unmapped cells after synthesis and quits immediately if so.",
@@ -208,6 +214,12 @@ _common_config_vars = [
         "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
         default=True,
     ),
+    Variable(
+        "QUIT_ON_KLAYOUT_DRC",
+        bool,
+        "Checks for DRC violations after KLayout DRC is executed and exits the flow if any was found.",
+        default=True,
+    ),
 ]
 
 _common_gating_config_vars = {
@@ -228,6 +240,7 @@ _common_gating_config_vars = {
     "KLayout.StreamOut": ["RUN_KLAYOUT_STREAMOUT"],
     "Magic.WriteLEF": ["RUN_MAGIC_WRITE_LEF"],
     "Magic.DRC": ["RUN_MAGIC_DRC"],
+    "KLayout.DRC": ["RUN_KLAYOUT_DRC"],
     "KLayout.XOR": [
         "RUN_KLAYOUT_XOR",
         "RUN_MAGIC_STREAMOUT",
@@ -248,12 +261,7 @@ _common_gating_config_vars = {
     ],
     "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
     "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
-    # "KLayout.DRC": Variable(
-    #     "RUN_KLAYOUT_DRC",
-    #     bool,
-    #     "Enables running KLayout DRC on GDSII produced by magic.",
-    #     default=False,
-    # ),
+    "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
 }
 
 
@@ -285,8 +293,8 @@ class Classic(SequentialFlow):
         OpenROAD.TapEndcapInsertion,
         OpenROAD.GlobalPlacementSkipIO,
         OpenROAD.IOPlacement,
-        Odb.ApplyDEFTemplate,
         Odb.CustomIOPlacement,
+        Odb.ApplyDEFTemplate,
         OpenROAD.GlobalPlacement,
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,
@@ -322,7 +330,9 @@ class Classic(SequentialFlow):
         KLayout.XOR,
         Checker.XOR,
         Magic.DRC,
+        KLayout.DRC,
         Checker.MagicDRC,
+        Checker.KLayoutDRC,
         Magic.SpiceExtraction,
         Checker.IllegalOverlap,
         Netgen.LVS,
