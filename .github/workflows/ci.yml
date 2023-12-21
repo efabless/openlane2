@@ -57,16 +57,17 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Download IPM designs
-        id: download-ipm-design
-        run: |
-          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
-          echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
       - name: Cache IPM designs
         uses: actions/cache@v3
         with:
           path: ~/.ipm
           key: cache-ipm-designs-${{ steps.download-ipm-design.outputs.dependencies_sha256sum }}
+      - name: Download IPM designs
+        id: download-ipm-design
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
+          echo "dependencies_sha256sum=$(sha256sum $IP_ROOT/dependencies.json | cut -d ' ' -f1)" >> $GITHUB_OUTPUT
 
   lint:
     name: Lint
