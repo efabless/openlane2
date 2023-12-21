@@ -11,29 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-The Logging Module
-------------------
-
-As the name implies, this handles OpenLane's logging using the ``logging``
-module and the ``rich`` library.
-"""
-
-from .logger import (
-    LogLevels,
-    options,
-    console,
-    set_log_level,
-    reset_log_level,
-    get_log_level,
-    register_additional_handler,
-    deregister_additional_handler,
-    verbose,
-    debug,
-    info,
-    rule,
-    success,
-    warn,
-    err,
-    subprocess,
-)
+{
+  pkgs ? import ./pkgs.nix {},
+}:
+let
+  rev = "41092c79a2a08f3c4364c4e5269cf871a0cd75e6";
+  sha256 = "sha256-MBzXiRFHgacG72+qzxvI+POe23wYsil9K3eidAZ5JxY=";
+in let src = pkgs.fetchFromGitHub {
+  owner = "efabless";
+  repo = "ioplace_parser";
+  inherit rev;
+  inherit sha256;
+}; in import "${src}" {
+  inherit pkgs;
+}

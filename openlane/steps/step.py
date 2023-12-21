@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-from decimal import Decimal
 
 import os
+import sys
 import json
+import time
 import psutil
 import shutil
-import subprocess
 import textwrap
-import time
-import sys
-
+import subprocess
 from signal import Signals
+from decimal import Decimal
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
@@ -42,6 +41,7 @@ from typing import (
     ClassVar,
     Type,
 )
+
 from rich.markup import escape
 
 from ..config import (
@@ -66,6 +66,7 @@ from ..common import (
     format_size,
     format_elapsed_time,
 )
+from .. import logging
 from ..logging import (
     rule,
     verbose,
@@ -185,7 +186,11 @@ class ProcessStatsThread(Thread):
                     time.sleep(self.interval)
                     status = self.process.status()
         except psutil.Error as e:
-            warn(e)
+            message = e.msg
+            for normal in ["process no longer exists", "but it's a zombie"]:
+                if normal in message:
+                    return
+            warn(f"Process resource tracker encountered an error: {e}")
 
     def stats_as_dict(self):
         return {
@@ -840,8 +845,11 @@ class Step(ABC):
 
         state_in_result = self.state_in.result()
 
-        if not _no_rule:
+        if not logging.options.get_condensed_mode():
             rule(f"{self.long_name}")
+        verbose(
+            f"Running '{self.id}'… (Log: {Path(self.get_log_path()).rel_if_child(relative_prefix=f'.{os.path.sep}')})"
+        )
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -855,7 +863,7 @@ class Step(ABC):
             }
             f.write(json.dumps(config_mut, cls=GenericDictEncoder, indent=4))
 
-        debug(f"{self.step_dir}")
+        debug(f"Step directory ▶ '{self.step_dir}'")
         self.start_time = time.time()
 
         for input in self.inputs:
@@ -1042,7 +1050,7 @@ class Step(ABC):
                     # and terminal emulators will slow the flow down.
                     current_rpt.write(line)
                 elif not silent and "table template" not in line:  # sky130 ff hack
-                    verbose(line.strip(), markup=False)
+                    logging.subprocess(line.strip())
         process_stats_thread.join()
 
         json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"

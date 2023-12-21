@@ -54,7 +54,7 @@ from .common_variables import (
 from ..config import Variable
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, verbose
+from ..logging import debug, err, info, warn, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -169,11 +169,11 @@ class CheckSDCFiles(Step):
         fallback_descriptor = "generic" if is_generic_fallback else "user-defined"
         if self.config["PNR_SDC_FILE"] is None:
             warn(
-                f"PNR_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+                f"'PNR_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         if self.config["SIGNOFF_SDC_FILE"] is None:
             warn(
-                f"SIGNOFF_SDC_FILE is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
+                f"'SIGNOFF_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         return {}, {}
 
@@ -620,7 +620,8 @@ class STAPostPNR(STAPrePNR):
                 )
             table.add_row(*row)
 
-        verbose(table)
+        if not options.get_condensed_mode():
+            console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
             rich.print(table, file=f)
 
@@ -792,8 +793,7 @@ class IOPlacement(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
-            # Skip - Step just checks and copies
-            warn(f"FP_PIN_ORDER_CFG is set. Skipping {self.id}…")
+            info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -939,6 +939,15 @@ class GlobalPlacement(OpenROADStep):
 
 @Step.factory.register()
 class GlobalPlacementSkipIO(GlobalPlacement):
+    """
+    Performs global placement without taking I/O into consideration.
+
+    This is useful for flows where the:
+    * Cells are placed
+    * I/Os are placed to match the cells
+    * Cells are then re-placed for an optimal placement
+    """
+
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
@@ -1410,7 +1419,7 @@ class CutRows(OpenROADStep):
     """
 
     id = "OpenROAD.CutRows"
-    name = "CutRows"
+    name = "Cut Rows"
 
     inputs = [DesignFormat.ODB]
     outputs = [

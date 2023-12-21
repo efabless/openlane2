@@ -18,7 +18,11 @@
     tag-override ? null
 }:
 
-with pkgs; dockerTools.buildImage rec {
+with pkgs; let
+    openlane-env = (python3.withPackages(ps: with ps; [ openlane ])); in let
+    openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
+    openlane-env-bin = "${openlane-env}/bin";
+in dockerTools.buildImage rec {
     inherit name;
     tag = if tag-override == null then "${openlane.version}" else tag-override;
 
@@ -45,10 +49,11 @@ with pkgs; dockerTools.buildImage rec {
             silver-searcher
 
             # OpenLane
-            (python3.withPackages(ps: with ps; [ openlane ]))
+            openlane-env
         ];
 
         postBuild = ''
+        mkdir -p $out/tmp
         mkdir -p $out/etc
         cat <<HEREDOC > $out/etc/zshrc
         autoload -U compinit && compinit
@@ -68,8 +73,9 @@ with pkgs; dockerTools.buildImage rec {
             "LC_ALL=C.UTF-8"
             "LC_CTYPE=C.UTF-8"
             "EDITOR=nvim"
-            "PYTHONPATH=${openlane.computed_PYTHONPATH}"
-            "PATH=${openlane}/bin:${openlane.computed_PATH}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            "PYTHONPATH=${openlane-env-sitepackages}"
+            "PATH=${openlane-env-bin}:${openlane.computed_PATH}:/bin"
+            "TMPDIR=/tmp"
         ];
     };
 }

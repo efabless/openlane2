@@ -40,15 +40,18 @@ class OdbpyStep(Step):
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
-        out_paths = {}
+        automatic_outputs = set(self.outputs).intersection(
+            [DesignFormat.ODB, DesignFormat.DEF]
+        )
 
+        views_updates: ViewsUpdate = {}
         command = self.get_command()
-        for output in [DesignFormat.ODB, DesignFormat.DEF]:
+        for output in automatic_outputs:
             filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
             file_path = os.path.join(self.step_dir, filename)
             command.append(f"--output-{output.value.id}")
             command.append(file_path)
-            out_paths[output] = Path(file_path)
+            views_updates[output] = Path(file_path)
 
         command += [
             str(state_in[DesignFormat.ODB]),
@@ -76,10 +79,6 @@ class OdbpyStep(Step):
                 elif value == "-Infinity":
                     or_metrics_out[key] = -inf
             metrics_updates.update(or_metrics_out)
-
-        views_updates: ViewsUpdate = {}
-        for output in [DesignFormat.ODB, DesignFormat.DEF]:
-            views_updates[output] = out_paths[output]
 
         return views_updates, metrics_updates
 
@@ -138,6 +137,12 @@ class ApplyDEFTemplate(OdbpyStep):
             Optional[Path],
             "Points to the DEF file to be used as a template.",
         ),
+        Variable(
+            "FP_TEMPLATE_MATCH_MODE",
+            Literal["strict", "permissive"],
+            "Whether to require that the pin set of the DEF template and the design should be identical. In permissive mode, pins that are in the design and not in the template will be excluded, and vice versa.",
+            default="strict",
+        ),
     ]
 
     def get_script_path(self):
@@ -151,6 +156,7 @@ class ApplyDEFTemplate(OdbpyStep):
         return super().get_command() + [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
+            f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -237,7 +243,7 @@ class ManualMacroPlacement(OdbpyStep):
                             )
 
         if not cfg_file.exists():
-            warn("No instances found, skipping…")
+            info(f"No instances found, skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -318,8 +324,8 @@ class AddRoutingObstructions(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config[self.get_obstruction_variable().name] is None:
-            warn(
-                f"{self.get_obstruction_variable().name} is not defined. Skipping {self.id}…"
+            info(
+                f"'{self.get_obstruction_variable().name}' is not defined. Skipping '{self.id}'…"
             )
             return {}, {}
         return super().run(state_in, **kwargs)

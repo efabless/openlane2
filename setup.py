@@ -29,8 +29,8 @@ setup(
             "scripts/*",
             "scripts/**/*",
             "scripts/**/**/*",
-            "smoke_test_design/*",
-            "smoke_test_design/**/*",
+            "examples/*",
+            "examples/**/*",
         ]
     },
     version=version,
