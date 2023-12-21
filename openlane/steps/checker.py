@@ -184,7 +184,7 @@ class PowerGridViolations(MetricChecker):
     id = "Checker.PowerGridViolations"
     name = "Power Grid Violation Checker"
 
-    metric_name = "power_grid__violation__count"
+    metric_name = "design__power_grid_violation__count"
     metric_description = "power grid violations (as reported by OpenROAD PSM- you may ignore these if LVS passes)"
 
 

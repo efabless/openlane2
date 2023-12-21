@@ -895,11 +895,11 @@ class GeneratePDN(OpenROADStep):
         for report in error_reports:
             net = os.path.basename(report).split("-", maxsplit=1)[0]
             count = get_psm_error_count(open(report, encoding="utf8"))
-            metrics_updates[f"power_grid__violation__count__net:{net}"] = count
+            metrics_updates[f"design__power_grid_violation__count__net:{net}"] = count
 
         metric_updates_with_aggregates = aggregate_metrics(
             metrics_updates,
-            {"power_grid__violation__count": (0, lambda x: sum(x))},
+            {"design__power_grid_violation__count": (0, lambda x: sum(x))},
         )
 
         return views_updates, metric_updates_with_aggregates
