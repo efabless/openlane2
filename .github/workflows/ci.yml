@@ -221,7 +221,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: true
+          submodules: recursive
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
@@ -254,13 +254,20 @@ jobs:
           ipm install-dep --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm
       - name: Run Test
         run: |
-          nix-shell --run "\
-            python3 -m openlane\
-            --run-tag CI\
-            --pdk ${{ matrix.design.pdk }}\
-            --scl ${{matrix.design.scl}}\
-            ${{ matrix.design.config }}\
+          if test ${{matrix.design.script}} = "None"
+          then
+            nix-shell --run "\
+              python3 -m openlane\
+              --run-tag CI\
+              --pdk ${{ matrix.design.pdk }}\
+              --scl ${{matrix.design.scl}}\
+              ${{ matrix.design.config }}\
+            "
+          else
+            nix-shell --run "\
+              ${{matrix.design.script}}\
           "
+          fi
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
