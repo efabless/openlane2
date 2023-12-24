@@ -89,12 +89,12 @@ def test_process_string():
             ["/cwd"],
         )
 
-    assert (
-        process_string("refg::$A/*", {"A": "B"}, ["/cwd"]) == []
-    ), "refg:: on non-existent directory not working"
-    assert (
-        process_string("refg::$A", {"A": "B"}, ["/cwd"]) == "B"
-    ), "refg:: without asterisks or ? did not return the same file path"
+    assert process_string("refg::$A/*", {"A": "B"}, ["/cwd"]) == [
+        "B/*"
+    ], "refg:: on non-existent directory not working"
+    assert process_string("refg::$A", {"A": "B"}, ["/cwd"]) == [
+        "B"
+    ], "refg:: without asterisks or ? did not return the same file path"
 
 
 mmpt_raw = {

@@ -141,9 +141,10 @@ asterisk as a wildcard to pick multiple files in a specific folder.
 
 * Outside the design directory, this is disabled for security reasons and the
   final path will continue to include the asterisk.
-* As long as the value is a glob (i.e. has `*` or `?` characters,) `refg::` will
-  always return an array, even if only one element was found, for consistency.
-  * If the value is not a glob, the return value is scalar.
+* `refg::` will always return an array, even if only one element was found, for
+  consistency.
+  * If no elements were found, the glob string is returned verbatim as a single
+    element in array.
   
 As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
 in the `src` folder inside the design directory.
