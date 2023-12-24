@@ -49,6 +49,7 @@ from .types import (
     is_number,
     is_string,
     Path,
+    ScopedFile,
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation

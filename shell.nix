@@ -22,6 +22,7 @@ with pkgs; let
       openlane
       pyfakefs
       pytest
+      pytest-xdist
       pillow
       mdformat
     ] ++ openlane-plugins )

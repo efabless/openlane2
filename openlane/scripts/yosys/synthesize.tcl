@@ -249,21 +249,21 @@ if { $::env(SYNTH_ELABORATE_ONLY) } {
 
 # Infer tri-state buffers.
 set tbuf_map false
-if { [info exists ::env(TRISTATE_BUFFER_MAP)] } {
+if { [info exists ::env(SYNTH_TRISTATE_MAP)] } {
     set tbuf_map true
     tribuf
 }
 
 # Handle technology mapping of RCS/CSA adders
 if { $adder_type == "RCA"} {
-    if { [info exists ::env(RIPPLE_CARRY_ADDER_MAP)] } {
+    if { [info exists ::env(SYNTH_RCA_MAP)] } {
         log "\[INFO] Applying ripple carry adder mapping from '$::env(RIPPLE_CARRY_ADDER_MAP)'…"
         techmap -map $::env(RIPPLE_CARRY_ADDER_MAP)
     }
 } elseif { $adder_type == "CSA"} {
-    if { [info exists ::env(CARRY_SELECT_ADDER_MAP)] } {
-        log "\[INFO] Applying carry-select adder mapping from '$::env(CARRY_SELECT_ADDER_MAP)'…"
-        techmap -map $::env(CARRY_SELECT_ADDER_MAP)
+    if { [info exists ::env(SYNTH_CSA_MAP)] } {
+        log "\[INFO] Applying carry-select adder mapping from '$::env(SYNTH_CSA_MAP)'…"
+        techmap -map $::env(SYNTH_CSA_MAP)
     }
 }
 
@@ -328,7 +328,7 @@ if { $::env(SYNTH_SHARE_RESOURCES) } {
 
 set fa_map false
 if { $adder_type == "FA" } {
-    if { [info exists ::env(FULL_ADDER_MAP)] } {
+    if { [info exists ::env(SYNTH_FA_MAP)] } {
         extract_fa -fa -v
         extract_fa -ha -v
         set fa_map true
@@ -343,8 +343,8 @@ tee -o "$report_dir/pre_techmap.json" stat -json
 # Map tri-state buffers
 if { $tbuf_map } {
     log {mapping tbuf}
-    log "\[INFO] Applying tri-state buffer mapping from '$::env(TRISTATE_BUFFER_MAP)'…"
-    techmap -map $::env(TRISTATE_BUFFER_MAP)
+    log "\[INFO] Applying tri-state buffer mapping from '$::env(SYNTH_TRISTATE_MAP)'…"
+    techmap -map $::env(SYNTH_TRISTATE_MAP)
     simplemap
 }
 

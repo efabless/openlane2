@@ -42,6 +42,60 @@ def test_macro_validation():
         Macro(gds=["test"], lef=["test"], lefs=[])
 
 
+def test_macro_from_state():
+    from openlane.common import Path
+    from openlane.config import Macro
+    from openlane.state import State
+
+    state_in = State(
+        {
+            "nl": Path._dummy_path,
+            "pnl": Path._dummy_path,
+            "def": Path._dummy_path,
+            "odb": Path._dummy_path,
+            "sdf": {
+                "corner_1": Path._dummy_path,
+                "corner_2": Path._dummy_path,
+            },
+            "spef": {
+                "corner_*": Path._dummy_path,
+            },
+            "lib": {
+                "corner_1": Path._dummy_path,
+                "corner_2": Path._dummy_path,
+            },
+            "gds": Path._dummy_path,
+        },
+        metrics={},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Macro cannot be made out of input state: View lef is missing",
+    ):
+        Macro.from_state(state_in)
+
+    state_fixed = State(state_in, overrides={"lef": Path._dummy_path})
+    macro = Macro.from_state(state_fixed)
+    assert macro == Macro(
+        gds=[Path("__openlane_dummy_path")],
+        lef=[Path("__openlane_dummy_path")],
+        instances={},
+        nl=[Path("__openlane_dummy_path")],
+        spef={"corner_*": [Path("__openlane_dummy_path")]},
+        lib={
+            "corner_1": [Path("__openlane_dummy_path")],
+            "corner_2": [Path("__openlane_dummy_path")],
+        },
+        spice=[],
+        sdf={
+            "corner_1": [Path("__openlane_dummy_path")],
+            "corner_2": [Path("__openlane_dummy_path")],
+        },
+        json_h=None,
+    ), "Macro was not derived from State correctly"
+
+
 def test_is_optional():
     from openlane.config.variable import is_optional
 

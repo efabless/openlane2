@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import sys
+import tempfile
 from math import isfinite
 from decimal import Decimal
 from collections import UserString
@@ -58,12 +59,12 @@ class Path(UserString, os.PathLike):
         """
         return os.path.exists(self)
 
-    def validate(self):
+    def validate(self, message_on_err: str = ""):
         """
         Raises an error if the path does not exist.
         """
         if not self.exists() and not self == Path._dummy_path:
-            raise ValueError(f"'{self}' does not exist")
+            raise ValueError(f"{message_on_err}: '{self}' does not exist")
 
     def startswith(
         self,
@@ -87,3 +88,27 @@ class Path(UserString, os.PathLike):
             return Path(relative_prefix + os.path.relpath(self, start_abspath))
         else:
             return Path(my_abspath)
+
+
+class ScopedFile(Path):
+    """
+    Creates a temporary file that remains valid while this variable is in scope,
+    and is deleted upon deconstruction.
+
+    The object itself is a string pointing to that file path.
+
+    :param contents: The contents of the temporary file to create.
+    """
+
+    def __init__(self, *, contents="") -> None:
+        self._ntf = tempfile.NamedTemporaryFile(
+            "w",
+            delete=False,
+            encoding="utf8",
+        )
+        super().__init__(self._ntf.name)
+        self._ntf.write(contents)
+        self._ntf.close()
+
+    def __del__(self):
+        os.unlink(self._ntf.name)

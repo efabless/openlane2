@@ -220,6 +220,9 @@ class Toolbox(object):
                 )
             if prioritize_nl:
                 netlists = macro.nl
+                if isinstance(netlists, Path):
+                    netlists = [netlists]
+
                 spefs = self.filter_views(
                     config,
                     macro.spef,

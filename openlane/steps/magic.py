@@ -108,7 +108,7 @@ class MagicStep(TclStep):
             "-dnull",
             "-noconsole",
             "-rcfile",
-            str(self.config["MAGICRC"]),
+            os.path.abspath(self.config["MAGICRC"]),
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"),
         ]
 
