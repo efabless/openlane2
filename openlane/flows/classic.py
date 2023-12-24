@@ -221,7 +221,7 @@ _common_config_vars = [
         default=True,
     ),
     Variable(
-        "QUIT_ON_GRID_VIOS",
+        "QUIT_ON_PDN_VIOLATIONS",
         bool,
         "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
         default=True,
@@ -269,7 +269,7 @@ _common_gating_config_vars = {
     "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
     "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
     "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
-    "Checker.PowerGridViolations": ["QUIT_ON_GRID_VIOS"],
+    "Checker.PowerGridViolations": ["QUIT_ON_PDN_VIOLATIONS"],
 }
 
 
