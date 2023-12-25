@@ -383,13 +383,16 @@ class Variable:
             key_type, value_type = type_args
             if isinstance(raw, dict):
                 pass
-            elif isinstance(raw, str):
+            elif isinstance(raw, list) or is_string(raw):
                 if not permissive_typing:
                     raise ValueError(
                         f"Refusing to automatically convert string at '{key_path}' to dict"
                     )
+                components = raw
+                if is_string(raw):
+                    components = shlex.split(raw)
+                assert isinstance(components, list)
                 # Assuming Tcl format:
-                components = shlex.split(value)
                 if len(components) % 2 != 0:
                     raise ValueError(
                         f"Tcl-style flat dictionary provided for variable '{key_path}' is invalid: uneven number of components ({len(components)})"
