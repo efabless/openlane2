@@ -79,12 +79,6 @@ pdn_variables = [
         default=True,
     ),
     Variable(
-        "FP_PDN_CHECK_NODES",
-        bool,
-        "Enables checking for unconnected nodes in the power grid.",
-        default=True,
-    ),
-    Variable(
         "FP_PDN_HORIZONTAL_HALO",
         Decimal,
         "Sets the horizontal halo around the macros during power grid insertion.",
@@ -99,10 +93,11 @@ pdn_variables = [
         units="µm",
     ),
     Variable(
-        "DESIGN_IS_CORE",
+        "FP_PDN_MULTILAYER",
         bool,
-        "Controls the layers used in the power grid. Depending on whether the design is the core of a chip or a macro inside the core.",
+        "Controls the layers used in the power grid. If set to false, only the lower layer will be used, which is useful when hardening a macro for integrating into a larger top-level design.",
         default=True,
+        deprecated_names=["DESIGN_IS_CORE"],
     ),
     Variable(
         "FP_PDN_RAIL_OFFSET",

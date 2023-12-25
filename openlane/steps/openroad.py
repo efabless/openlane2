@@ -18,6 +18,7 @@ import json
 import site
 import shlex
 import tempfile
+import functools
 import subprocess
 from math import inf
 from glob import glob
@@ -37,6 +38,7 @@ from typing import (
     Union,
 )
 
+import yaml
 import rich
 import rich.table
 
@@ -832,6 +834,27 @@ class TapEndcapInsertion(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
 
 
+def get_psm_error_count(rpt: io.TextIOWrapper) -> int:
+    sio = io.StringIO()
+
+    # Turn almost-YAML into YAML
+    VIO_TYPE_PFX = "violation type: "
+    for line in rpt:
+        if line.startswith(VIO_TYPE_PFX):
+            vio_type = line[len(VIO_TYPE_PFX) :].strip()
+            sio.write(f"- type: {vio_type}\n")
+        elif "bbox = " in line:
+            sio.write(line.replace("bbox = ", "- bbox ="))
+        else:
+            sio.write(line)
+
+    sio.seek(0)
+    violations = yaml.load(sio, Loader=yaml.SafeLoader) or []
+    return functools.reduce(
+        lambda acc, current: acc + len(current["srcs"]), violations, 0
+    )
+
+
 @Step.factory.register()
 class GeneratePDN(OpenROADStep):
     """
@@ -865,7 +888,21 @@ class GeneratePDN(OpenROADStep):
                 get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
             )
             info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
-        return super().run(state_in, env=env, **kwargs)
+        env["DESIGN_IS_CORE"] = "1" if self.config["FP_PDN_MULTILAYER"] else "0"
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+
+        error_reports = glob(os.path.join(self.step_dir, "*-grid-errors.rpt"))
+        for report in error_reports:
+            net = os.path.basename(report).split("-", maxsplit=1)[0]
+            count = get_psm_error_count(open(report, encoding="utf8"))
+            metrics_updates[f"design__power_grid_violation__count__net:{net}"] = count
+
+        metric_updates_with_aggregates = aggregate_metrics(
+            metrics_updates,
+            {"design__power_grid_violation__count": (0, lambda x: sum(x))},
+        )
+
+        return views_updates, metric_updates_with_aggregates
 
 
 @Step.factory.register()
@@ -1328,7 +1365,9 @@ def get_antenna_nets(report: io.TextIOWrapper, output: io.TextIOWrapper) -> int:
 @Step.factory.register()
 class IRDropReport(OpenROADStep):
     """
-    Performs voltage-drop analysis on the power distribution network.
+    Performs static IR-drop analysis on the power distribution network. For power
+    nets, this constitutes a decrease in voltage, and for ground nets, it constitutes
+    an increase in voltage.
     """
 
     id = "OpenROAD.IRDropReport"
@@ -1337,6 +1376,14 @@ class IRDropReport(OpenROADStep):
 
     inputs = [DesignFormat.ODB, DesignFormat.SPEF]
     outputs = []
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "VSRC_LOC_FILES",
+            Optional[Dict[str, Path]],
+            "Map of power and ground nets to OpenROAD PSM location files. See [this](https://github.com/The-OpenROAD-Project/OpenROAD/tree/master/src/psm#commands) for more info.",
+        )
+    ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "irdrop.tcl")
@@ -1368,6 +1415,12 @@ class IRDropReport(OpenROADStep):
             raise StepException("No SPEF file found for the default corner.")
 
         libs_in = self.toolbox.filter_views(self.config, self.config["LIB"])
+
+        if self.config["VSRC_LOC_FILES"] is None:
+            warn(
+                "VSRC_LOC_FILES was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for VSRC_LOC_FILES."
+            )
+
         if voltage := self.toolbox.get_lib_voltage(str(libs_in[0])):
             env["LIB_VOLTAGE"] = str(voltage)
 
