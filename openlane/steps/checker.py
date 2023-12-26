@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import ClassVar, Tuple
+import fnmatch
+
+from typing import ClassVar, Tuple, List
 from decimal import Decimal
 from typing import Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
-from ..logging import err, warn, info
+from ..logging import err, warn, info, debug, verbose
+from ..config import Variable
 
 
 class MetricChecker(Step):
@@ -246,3 +249,93 @@ class KLayoutDRC(MetricChecker):
 
     metric_name = "klayout__drc_error__count"
     metric_description = "KLayout DRC errors"
+
+
+@Step.factory.register()
+class TimingViolations(MetricChecker):
+    id = "Checker.TimingViolations"
+    name = "Timing Violations Checker"
+    long_name = "Timing Violations Checker"
+
+    config_vars = [
+        Variable(
+            "TIMING_VIOLATIONS_CORNERS",
+            List[str],
+            "A list of fully-qualifiedd IPVT corners to use during checking for timing violations.",
+            default=["nom_*"],
+        ),
+    ]
+
+    def check_timing_violations(
+        self,
+        metric_basename: str,
+        state_in: State,
+        threshold: int,
+        violation_type: str,
+    ):
+        metrics = {
+            key: value
+            for key, value in state_in.metrics.items()
+            if metric_basename in key
+        }
+        debug("metrics ▶")
+        debug(metrics)
+        if not metrics:
+            warn(f"No metrics found for {metric_basename}")
+        else:
+            metric_corners = set([key.split(":")[1] for key in metrics.keys()])
+            unmatched_config_corners = set(
+                [
+                    config_corner
+                    for config_corner in self.config["TIMING_VIOLATIONS_CORNERS"]
+                    if not [
+                        corner
+                        for corner in metric_corners
+                        if fnmatch.fnmatch(corner, config_corner)
+                    ]
+                ]
+            )
+            matched_corners = set(
+                [
+                    corner
+                    for corner in metric_corners
+                    if [
+                        config_corner
+                        for config_corner in self.config["TIMING_VIOLATIONS_CORNERS"]
+                        if fnmatch.fnmatch(corner, config_corner)
+                    ]
+                ]
+            )
+            violating_corners = [
+                corner
+                for corner in matched_corners
+                if metrics[f"{metric_basename}:{corner}"] > threshold
+            ]
+
+            debug("corners ▶")
+            debug(metric_corners)
+            debug("unmatched config corners ▶")
+            debug(unmatched_config_corners)
+            debug("matched corners ▶")
+            debug(matched_corners)
+            debug("violating corners ▶")
+            debug(violating_corners)
+
+            if unmatched_config_corners:
+                msg = "The following specified TIMING_VIOLATIONS_CORNERS:\n"
+                msg += "\n".join(unmatched_config_corners)
+                raise DeferredStepError(msg)
+            if violating_corners:
+                msg = f"{violation_type} violations found in the following corners:\n"
+                msg += "\n".join(violating_corners)
+                raise DeferredStepError(msg)
+            else:
+                verbose(f"No {violation_type} found")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        hold_metric_basename = "timing__hold_vio__count__corner"
+        setup_metric_basename = "timing__setup_vio__count__corner"
+        self.check_timing_violations(setup_metric_basename, state_in, 0, "Setup")
+        self.check_timing_violations(hold_metric_basename, state_in, 0, "Hold")
+
+        return {}, {}
