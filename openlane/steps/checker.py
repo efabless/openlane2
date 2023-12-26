@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import fnmatch
-import re
 
 from typing import ClassVar, Tuple, List
 from decimal import Decimal
@@ -257,6 +256,7 @@ class TimingViolations(MetricChecker):
     id = "Checker.TimingViolations"
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
+    violation_type = "Timing"
 
     config_vars = [
         Variable(
@@ -271,9 +271,12 @@ class TimingViolations(MetricChecker):
         self,
         metric_basename: str,
         state_in: State,
-        threshold: Decimal,
+        threshold: Optional[Decimal],
         violation_type: str,
     ):
+        if not threshold:
+            threshold = Decimal(0)
+
         metrics = {
             key: value
             for key, value in state_in.metrics.items()
@@ -334,20 +337,12 @@ class TimingViolations(MetricChecker):
                 verbose(f"No {violation_type} violations found")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        violation_type = "unkown"
-        matches = re.match(r"timing__(\S+)_vio__count", self.metric_name)
-        if matches:
-            violation_type = matches[1]
-            self.check_timing_violations(
-                f"{self.metric_name}__corner",
-                state_in,
-                self.get_threshold() or Decimal(0),  # linter
-                violation_type,
-            )
-        else:
-            raise StepError(
-                "Unable to determine timing violation type. Please follow timing violations metrics naming convention"
-            )
+        self.check_timing_violations(
+            f"{self.metric_name}__corner",
+            state_in,
+            self.get_threshold(),
+            self.violation_type,
+        )
 
         return {}, {}
 
@@ -357,6 +352,7 @@ class SetupViolations(TimingViolations):
     id = "Checker.SetupViolations"
     name = "Setup Timing Violations Checker"
     long_name = "Setup Timing Violations Checker"
+    violation_type = "setup"
 
     metric_name = "timing__setup_vio__count"
 
@@ -366,5 +362,6 @@ class HoldViolations(TimingViolations):
     id = "Checker.HoldViolations"
     name = "Hold Timing Violations Checker"
     long_name = "Hold Timing Violations Checker"
+    violation_type = "hold"
 
     metric_name = "timing__hold_vio__count"
