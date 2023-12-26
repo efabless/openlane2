@@ -352,6 +352,7 @@ class TimingViolations(MetricChecker):
         return {}, {}
 
 
+@Step.factory.register()
 class SetupViolations(TimingViolations):
     id = "Checker.SetupViolations"
     name = "Setup Timing Violations Checker"
@@ -360,6 +361,7 @@ class SetupViolations(TimingViolations):
     metric_name = "timing__setup_vio__count"
 
 
+@Step.factory.register()
 class HoldViolations(TimingViolations):
     id = "Checker.HoldViolations"
     name = "Hold Timing Violations Checker"
