@@ -66,6 +66,9 @@ class Orientation(str, Enum):
     R270 = "E"
     MYR90 = "FE"
 
+    def __str__(self) -> str:
+        return self.value
+
 
 @dataclass
 class Instance:
