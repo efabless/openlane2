@@ -227,6 +227,24 @@ _common_config_vars = [
         default=True,
         deprecated_names=["FP_PDN_CHECK_NODES"],
     ),
+    Variable(
+        "QUIT_ON_SETUP_VIOLATIONS",
+        bool,
+        "Check for setup violations in selected corners",
+        default=True,
+    ),
+    Variable(
+        "QUIT_ON_HOLD_VIOLATIONS",
+        bool,
+        "Check for setup violations in selected corners",
+        default=True,
+    ),
+    Variable(
+        "QUIT_ON_TIMING_VIOLATIONS",
+        bool,
+        "Check for timing violations in selected corners",
+        default=True,
+    ),
 ]
 
 _common_gating_config_vars = {
@@ -270,6 +288,11 @@ _common_gating_config_vars = {
     "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
     "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
     "Checker.PowerGridViolations": ["QUIT_ON_PDN_VIOLATIONS"],
+    "Checker.SetupViolations": [
+        "QUIT_ON_TIMING_VIOLATIONS",
+        "QUIT_ON_SETUP_VIOLATIONS",
+    ],
+    "Checker.HoldViolations": ["QUIT_ON_TIMING_VIOLATIONS", "QUIT_ON_HOLD_VIOLATIONS"],
 }
 
 
@@ -347,7 +370,8 @@ class Classic(SequentialFlow):
         Netgen.LVS,
         Checker.LVS,
         Yosys.EQY,
-        Checker.TimingViolations,
+        Checker.SetupViolations,
+        Checker.HoldViolations,
     ]
 
     config_vars = _common_config_vars + [
