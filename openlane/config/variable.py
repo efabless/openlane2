@@ -41,10 +41,30 @@ from typing import (
     get_args,
 )
 from ..state import DesignFormat, State
-from ..common import GenericDict, Path, is_string, zip_first
+from ..common import GenericDict, Path, is_string, zip_first, Number
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
+
+
+class Orientation(str, Enum):
+    N = "N"
+    FN = "FN"
+    W = "W"
+    FW = "FW"
+    S = "S"
+    FS = "FS"
+    E = "E"
+    FE = "FE"
+    # OpenAccess
+    R0 = "N"
+    MY = "FN"
+    R90 = "W"
+    MXR90 = "FW"
+    R180 = "S"
+    MX = "FS"
+    R270 = "E"
+    MYR90 = "FE"
 
 
 @dataclass
@@ -57,7 +77,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Literal["N", "S", "FN", "FS", "E", "W", "FW", "FE"]
+    orientation: Orientation
 
 
 @dataclass
@@ -167,6 +187,15 @@ class Macro:
             kwargs[macro_field.name] = final
 
         return Self(**kwargs)  # type: ignore
+
+    def instantiate(
+        self,
+        instance_name: str,
+        location: Tuple[Number, Number],
+        orientation: Orientation = Orientation.N,
+    ):
+        location = (Decimal(location[0]), Decimal(location[1]))
+        self.instances[instance_name] = Instance(location, Orientation[orientation])
 
 
 def is_optional(t: Type[Any]) -> bool:

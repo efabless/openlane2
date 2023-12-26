@@ -490,7 +490,9 @@ class Flow(ABC):
                 raise FlowException("last_run used without any existing runs")
 
         # Stored until next start()
-        self.run_dir = _force_run_dir or os.path.join(self.design_dir, "runs", tag)
+        self.run_dir = os.path.abspath(
+            _force_run_dir or os.path.join(self.design_dir, "runs", tag)
+        )
         initial_state = with_initial_state or State()
 
         starting_ordinal = 1
@@ -502,7 +504,7 @@ class Flow(ABC):
 
             # Extract maximum step ordinal
             for entry in entries:
-                components = entry.split("-")
+                components = entry.split("-", maxsplit=1)
                 if len(components) < 2:
                     continue
                 try:

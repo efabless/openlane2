@@ -48,6 +48,7 @@ from .misc import (
 from .types import (
     is_number,
     is_string,
+    Number,
     Path,
     ScopedFile,
 )
