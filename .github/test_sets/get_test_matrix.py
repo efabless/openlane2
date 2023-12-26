@@ -46,14 +46,21 @@ def main(scls, use_json, test_sets):
     test_set_data = filter(lambda e: e["scl"] in scls and e["name"] in test_sets, data)
 
     designs = list()
+    empty_runner_script = "None"
     for test_set in list(test_set_data):
         pdk, scl = test_set["scl"].split("/")
         for design in test_set["designs"]:
             design_name = design
+            script = empty_runner_script
             config_filename = "config.json"
             if not isinstance(design, str):
                 design_name = design["name"]
                 config_filename = design.get("config_file") or config_filename
+                script_filename = design.get("script")
+                if script_filename:
+                    script = os.path.join(
+                        ol_dir, "test", "designs", design_name, script_filename
+                    )
             config_file = os.path.join(
                 ol_dir, "test", "designs", design_name, config_filename
             )
@@ -67,6 +74,7 @@ def main(scls, use_json, test_sets):
                     "run_folder": run_folder,
                     "pdk": pdk,
                     "scl": scl,
+                    "script": script,
                 }
             )
 

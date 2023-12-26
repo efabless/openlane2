@@ -40,15 +40,13 @@ contain these variables:
 * [`DESIGN_NAME`](../reference/flow_config_vars.md#DESIGN_NAME)
 * [`VERILOG_FILES`](../reference/step_config_vars.md#Yosys.Synthesis.VERILOG_FILES)
 * [`CLOCK_PORT`](../reference/flow_config_vars.md#CLOCK_PORT)
-* [`DESIGN_IS_CORE`](../reference/flow_config_vars.md#DESIGN_IS_CORE)
 
 So, for example:
     
 ```json
     "DESIGN_NAME": "spm",
     "VERILOG_FILES": "dir::src/*.v",
-    "CLOCK_PORT": "clk",
-    "DESIGN_IS_CORE": false
+    "CLOCK_PORT": "clk"
 ```
 
 These configurations should get you through the flow with the all other

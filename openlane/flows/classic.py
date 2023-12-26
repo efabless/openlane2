@@ -220,6 +220,13 @@ _common_config_vars = [
         "Checks for DRC violations after KLayout DRC is executed and exits the flow if any was found.",
         default=True,
     ),
+    Variable(
+        "QUIT_ON_PDN_VIOLATIONS",
+        bool,
+        "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
+        default=True,
+        deprecated_names=["FP_PDN_CHECK_NODES"],
+    ),
 ]
 
 _common_gating_config_vars = {
@@ -262,6 +269,7 @@ _common_gating_config_vars = {
     "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
     "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
     "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
+    "Checker.PowerGridViolations": ["QUIT_ON_PDN_VIOLATIONS"],
 }
 
 
@@ -299,6 +307,7 @@ class Classic(SequentialFlow):
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,
         Odb.RemovePDNObstructions,
+        Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
         OpenROAD.DetailedPlacement,

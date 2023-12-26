@@ -33,14 +33,22 @@ if {[catch {pdngen {*}$arg_list} errmsg]} {
     exit 1
 }
 
-# https://github.com/The-OpenROAD-Project/OpenROAD/issues/2126
-# checks for unconnected nodes (e.g., isolated rails or stripes)
-if { $::env(FP_PDN_CHECK_NODES) } {
-    check_power_grid -net $::env(VDD_NET)
-    check_power_grid -net $::env(GND_NET)
-}
-
 write_views
-
 report_design_area_metrics
 
+foreach {net} "$::env(VDD_NETS) $::env(GND_NETS)" {
+    set report_file $::env(STEP_DIR)/$net-grid-errors.rpt
+
+    # For some reason, check_power_grid is… totally okay if no nodes are found
+    # at all. i.e. PDN generation has completely failed.
+    # This is a fallback file.
+    set f [open $report_file "w"]
+    puts $f "violation type: no nodes"
+    puts $f "  srcs: "
+    puts $f "  - N/A"
+    close $f
+
+    if { [catch {check_power_grid -net $net -error_file $report_file} err] } {
+        puts stderr "\[WARNING\] Grid check for $net failed: $err"
+    }
+}

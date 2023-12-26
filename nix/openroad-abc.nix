@@ -21,8 +21,8 @@ with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "abc";
-    rev = "95b3543e928640dfa25f9e882e72a090a8883a9c";
-    sha256 = "sha256-U1E9wvEK5G4zo5Pepvsb5q885qSYyixIViweLacO5+U=";
+    rev = "4700df8a06df57a1b4997969f861f695e50c747f";
+    sha256 = "sha256-nheFL0pw/xrShWCrNUe49a7n9pQogGbQ7G7b7wFbWSQ=";
   };
 
   patches = [
