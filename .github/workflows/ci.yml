@@ -258,7 +258,7 @@ jobs:
           then
             nix-shell --run "\
               python3 -m openlane\
-              --run-tag CI\
+              --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{matrix.design.scl}}\
               ${{ matrix.design.config }}\

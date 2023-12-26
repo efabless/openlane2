@@ -177,38 +177,51 @@ class MetricDiff(object):
 
         table = ""
 
-        for row in differences:
-            if table_verbosity < TableVerbosity.CHANGED:
-                if (row.delta is None and row.delta == 0) or row.gold == row.new:
-                    continue
-            if table_verbosity < TableVerbosity.WORSE:
-                if row.better is True:
-                    continue
-            if table_verbosity == TableVerbosity.CRITICAL:
-                if not row.critical:
-                    continue
-            before, after, delta = row.format_values()
-            emoji = ""
-            if row.better is not None:
-                if row.better:
-                    emoji = " ⭕"
-                else:
-                    emoji = " ❗"
-            if row.critical:
-                emoji = " ‼️"
-            table += f"| {row.metric_name:<70} | {before:<10} | {after:<10} | {f'{delta}{emoji}':<20} |\n"
+        changed = []
+        worse = []
+        critical = []
+        remaining = []
 
-        if table.strip() != "":
-            table = (
-                textwrap.dedent(
-                    f"""
-                    | {'Metric':<70} | {'Before':<10} | {'After':<10} | {'Delta':<20} |
-                    | {'-':<70} | {'-':<10} | {'-':<10} | {'-':<20} |
-                    """
-                )
-                + table
-                + "\n"
+        for row in differences:
+            if row.critical is True:
+                critical.append(row)
+            elif row.better is False:
+                worse.append(row)
+            elif (row.delta is not None and row.delta == 0) or row.gold == row.new:
+                changed.append(row)
+            else:
+                remaining.append(row)
+
+        listed_differences = []
+        if table_verbosity >= TableVerbosity.CRITICAL:
+            listed_differences += critical
+        elif table_verbosity >= TableVerbosity.WORSE:
+            listed_differences += worse
+        elif table_verbosity >= TableVerbosity.CHANGED:
+            listed_differences += changed
+        elif table_verbosity >= TableVerbosity.ALL:
+            listed_differences += remaining
+
+        if len(listed_differences) > 0:
+            table = textwrap.dedent(
+                f"""
+                | {'Metric':<70} | {'Before':<10} | {'After':<10} | {'Delta':<20} |
+                | {'-':<70} | {'-':<10} | {'-':<10} | {'-':<20} |
+                """
             )
+
+            for row in listed_differences:
+                before, after, delta = row.format_values()
+                emoji = ""
+                if row.better is not None:
+                    if row.better:
+                        emoji = " ⭕"
+                    else:
+                        emoji = " ❗"
+                if row.critical:
+                    emoji = " ‼️"
+                table += f"| {row.metric_name:<70} | {before:<10} | {after:<10} | {f'{delta}{emoji}':<20} |\n"
+
         return table
 
     def stats(self) -> MetricStatistics:
