@@ -48,6 +48,7 @@ extensions = [
     "sphinx_design",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
+    "migration_comparison",  # CUSTOM
 ]
 try:
     import sphinxcontrib.spelling  # noqa: F401
@@ -97,11 +98,7 @@ exclude_patterns = [
 # a list of builtin themes.
 #
 html_title = "OpenLane Documentation"
-
 html_theme = "furo"
-
-html_static_path = ["../_static"]
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -122,6 +119,11 @@ html_theme_options = {
         },
     ],
 }
+
+html_static_path = ["../_static"]
+html_css_files = [
+    "css/custom.css",
+]
 
 numfig = True
 

@@ -1,0 +1,14 @@
+.link-button {
+    background-color: #333;
+    color: white;
+    padding: 14px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    width: 200px;
+}
+
+.link-button:hover {
+    background-color: #555;
+    color: white;
+}

@@ -1,22 +1,19 @@
-# Windows 10+
-OpenLane in Windows uses WSL 2 and Docker Destop on Windows.
-
 A recent version of Windows 10 or Windows 11 is required, for more information consult Microsoft's documentation.
 
 The following is the recommended installation method under Windows. Other virtualization-based methods, such as VMWare, are not supported, and some such as VirtualBox are known to impair the operation of OpenLane.
+
+## Setting up WSL
 
 1. Follow [official Microsoft documentation for WSL located here](https://docs.microsoft.com/en-us/windows/wsl/install) to install the WSL 2. Make sure your OS version supports WSL 2.
 2. Follow [official steps to Install Docker Desktop on Windows located here](https://docs.docker.com/desktop/install/windows-install/).
 3. Make sure that `WSL 2 Docker engine` is enabled and `Settings` -> `Resource` -> `WSL Integration` is enabled
 4. Make sure that option `Start Docker Desktop when you login` is enabled in `Docker Desktop` -> `Settings`
 
-:::{figure} ../../../_static/installation/wsl_docker_settings.png
-:::
+![](./wsl_docker_settings.png)
 
 5. Click the Windows icon, type in "Windows PowerShell" and open it.
 
-:::{figure} ../../../_static/installation/powershell.png
-:::
+![](./powershell.png)
 
 6. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
 7. Check the verison of WSL using following command: `wsl --list --verbose`
@@ -57,13 +54,9 @@ https://docs.docker.com/go/wsl2/
 8. Launch "Ubuntu" from your Start Menu.
 
 
-:::{figure} ../../../_static/installation/wsl.png
-:::
+![](./wsl.png)
 
 9. Follow the steps shown below.
 
-```{include} wsl_ubuntu_packages.md
-```
-
-```{include} _common.md
+```{include} ../ubuntu_packages.md
 ```
