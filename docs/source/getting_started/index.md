@@ -26,9 +26,9 @@ Just show me installation instructions.
 :hidden:
 :glob:
 :maxdepth: 2
-  
+
 migrators/index
-newcomers
+newcomers/index
 installation_overview
 common/nix_installation/index
 common/docker_installation/index
