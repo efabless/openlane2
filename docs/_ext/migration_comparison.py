@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 # SPDX-License-Identifier: Apache-2.0
-
+import re
 from typing import List
 from enum import IntEnum
 
@@ -25,6 +25,11 @@ from sphinx.application import Sphinx
 def setup(app):
     app.connect("source-read", subst_migration_comparison)
     return {"version": "1.0", "parallel_read_safe": True}
+
+
+migration_comparison_rx = re.compile(
+    r"^(`{3,})!migration_comparison(\[\w*\])?(?:\s+(.+))?"
+)
 
 
 def subst_migration_comparison(app: Sphinx, docname: str, sourceRef: List[str]):
@@ -41,18 +46,23 @@ def subst_migration_comparison(app: Sphinx, docname: str, sourceRef: List[str]):
     before = ""
     after = ""
     rationale = ""
+    closing = ""
     lines_in = source.splitlines()
-    START_PFX = "```!migration_comparison"
+    highlighting = None
     if lines_in[0] != "!register migration_comparison":
         return
     for line in lines_in[1:]:
         if state == State.default:
-            if line.startswith(START_PFX):
-                final_string += line[len(START_PFX) :] + "\n"
+            if match := migration_comparison_rx.match(line):
+                final_string += (match[3] or "") + "\n"
                 state = State.before
                 before = ""
                 after = ""
                 rationale = ""
+                highlighting = None
+                closing = match[1]
+                if match[2] is not None:
+                    highlighting = match[2].strip("[]")
             else:
                 final_string += line + "\n"
         elif state == State.before:
@@ -66,28 +76,31 @@ def subst_migration_comparison(app: Sphinx, docname: str, sourceRef: List[str]):
                 continue
             after += line + "\n"
         elif state == State.rationale:
-            if line == "```":
+            if line == closing:
                 state = State.default
+                if highlighting is not None:
+                    before = f"```{highlighting}\n{before}\n```\n"
+                    after = f"```{highlighting}\n{after}\n```\n"
                 final_string += f"""
-<table style="width: 100%">
+<table style="width: 100%; table-layout:fixed;">
 <tr>
 <th style="width: 50%;"> OpenLane &lt;2.0 </th>
 <th style="width: 50%;"> OpenLane ≥2.0    </th>
 </tr>
 <tr>
-<td>
+<td style="width: 50%;">
+<div style="overflow:scroll; width:100%;">
 
-```bash
 {before}
-```
 
+</div>
 </td>
-<td>
+<td style="width: 50%;">
+<div style="overflow:scroll; width:100%;">
 
-```bash
 {after}
-```
 
+</div>
 </td>
 </tr>
 </table>
@@ -99,4 +112,3 @@ def subst_migration_comparison(app: Sphinx, docname: str, sourceRef: List[str]):
             rationale += line + "\n"
 
     sourceRef[0] = final_string
-    print(final_string)

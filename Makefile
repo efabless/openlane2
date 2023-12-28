@@ -28,6 +28,10 @@ docs: venv
 .PHONY: host-docs
 host-docs: venv
 	./venv/bin/python3 -m http.server --directory ./docs/build/html
+	
+.PHONY: watch-docs
+watch-docs: venv
+	nodemon -w docs -e md,py,css -i "docs/build" -i "docs/source/reference/*_vars.md" -i "docs/source/reference/flows.md" -x "$(MAKE) docs && python3 -m http.server --directory docs/build/html  "
 
 .PHONY: lint
 lint: venv/manifest.txt
