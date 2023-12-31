@@ -199,6 +199,21 @@ For example, these are the contents of `14-openroad-tapendcapinsertion`:
 └── state_out.json
 ```
 
+Here is a small description of each file inside a `Step` directory.
+:::{dropdown} step directory
+
+- `COMMANDS`: the CLI command of the underlying tool used by a `Step`
+- `config.json`: contains `Variables` used by the `Step`
+- `*.log`: one or more log file of the `Step`
+- `*.process_stats.json`: statistics about total elapsed time and resource consumption
+- `state_in.json`: contains a dictionary of design artifacts (TODO:correct word?) (such as `DEF` file)
+  and design `Metrics` available as inputs to a `Step` .
+- `state_out.json`: An updated `state_in.json`. For example, If a step generates
+  a new `DEF` file it would be updated otherwise, it is a copy of `state_in.json`.
+- `or_metrics_out.json`: It contains new or updated `Metrics`.
+
+:::
+
 The run directory structure looks like this:
 
 ```text
