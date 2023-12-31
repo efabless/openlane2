@@ -387,8 +387,8 @@ class DRC(KLayoutStep):
         metrics_updates: MetricsUpdate = {}
         drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
         kwargs, env = self.extract_env(kwargs)
-        xml_report = os.path.realpath(os.path.join(self.step_dir, "violations.xml"))
-        json_report = os.path.realpath(os.path.join(self.step_dir, "violations.json"))
+        xml_report = os.path.realpath(os.path.join(reports_folder, "violations.xml"))
+        json_report = os.path.realpath(os.path.join(reports_folder, "violations.json"))
         feol = str(self.config["KLAYOUT_DRC_OPTIONS"]["feol"]).lower()
         beol = str(self.config["KLAYOUT_DRC_OPTIONS"]["beol"]).lower()
         floating_metal = str(

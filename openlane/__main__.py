@@ -209,7 +209,6 @@ def run_example(
         d = tempfile.mkdtemp("openlane2")
         final_path = os.path.join(d, "smoke_test_design")
         cleanup = True
-        options.set_condensed_mode(True)
     try:
         if os.path.isdir(final_path):
             print(f"A directory named {value} already exists.", file=sys.stderr)

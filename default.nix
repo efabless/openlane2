@@ -51,7 +51,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   src = [
     ./Readme.md
     ./setup.py
-    (nix-gitignore.gitignoreSourcePure "__pycache__" ./openlane)
+    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n" ./openlane)
     ./type_stubs
     ./requirements.txt
   ];
