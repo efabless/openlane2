@@ -251,18 +251,16 @@ class KLayoutDRC(MetricChecker):
     metric_description = "KLayout DRC errors"
 
 
-@Step.factory.register()
 class TimingViolations(MetricChecker):
-    id = "Checker.TimingViolations"
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
-    violation_type = "Timing"
+    violation_type: str = NotImplemented
 
     config_vars = [
         Variable(
             "TIMING_VIOLATIONS_CORNERS",
             List[str],
-            "A list of fully-qualifiedd IPVT corners to use during checking for timing violations.",
+            "A list of wildcards matching IPVT corners to use during checking for timing violations.",
             default=["*tt*"],
         ),
     ]
