@@ -212,7 +212,7 @@ def _compare_metric_folders(
         if table_verbosity != "NONE":
             rendered = diff.render_md(("corner", ""), table_verbosity)
             if rendered.strip() != "":
-                tables += f"<details><summary><code>{pdk}/{scl}/{design}</code></summary>\n{rendered}</details>"
+                tables += f"<details><summary><code>{pdk}/{scl}/{design}</code></summary>\n{rendered}\n</details>\n\n"
 
     if total_critical == 0:
         critical_change_report = (

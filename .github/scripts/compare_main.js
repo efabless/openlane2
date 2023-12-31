@@ -28,7 +28,8 @@ function get(verbosity, table_out = null, token = "") {
     if (child.status != 0) {
         throw new Error("Failed to create report: \n\n```\n" + child.stderr + "\n```");
     } else {
-        result = "> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke `python3 -m openlane.common.metrics compare-main <path to directory>`.\n\n" + child.stdout;
+        result += "Metric comparisons are in beta. Please report bugs under the issues tab.\n---\n";
+        result += "> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke `python3 -m openlane.common.metrics compare-main <path to directory>`.\n\n" + child.stdout;
     }
 
     return result.trim();
@@ -37,5 +38,5 @@ function get(verbosity, table_out = null, token = "") {
 module.exports = get;
 
 if (require.main === module) {
-    console.log(get("WORSE", null, process.argv[2]));
+    console.log(get("ALL", "table.md", process.argv[2]));
 }

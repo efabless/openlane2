@@ -195,11 +195,11 @@ class MetricDiff(object):
         listed_differences = []
         if table_verbosity >= TableVerbosity.CRITICAL:
             listed_differences += critical
-        elif table_verbosity >= TableVerbosity.WORSE:
+        if table_verbosity >= TableVerbosity.WORSE:
             listed_differences += worse
-        elif table_verbosity >= TableVerbosity.CHANGED:
+        if table_verbosity >= TableVerbosity.CHANGED:
             listed_differences += changed
-        elif table_verbosity >= TableVerbosity.ALL:
+        if table_verbosity >= TableVerbosity.ALL:
             listed_differences += remaining
 
         if len(listed_differences) > 0:
