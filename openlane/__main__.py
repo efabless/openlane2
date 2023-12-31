@@ -37,7 +37,6 @@ from cloup.constraints import (
 from .__version__ import __version__
 from .state import State
 from .logging import (
-    options,
     debug,
     err,
     warn,
