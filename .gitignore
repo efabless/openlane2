@@ -36,6 +36,7 @@ runs/
 htmlcov/
 prof/
 sandbox/
+/designs
 
 # Testing CI
 package.json
