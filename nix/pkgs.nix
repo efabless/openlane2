@@ -47,12 +47,17 @@ args: import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/8078ceb2777
             })) else (old.clp);
 
             # Clang 16's Default is C++17, which cbc does not support
-            cbc = if (old.lib.strings.hasSuffix "-darwin" old.system) then old.cbc.overrideAttrs(finalAttrs: previousAttrs: {
+            cbc = if (old.stdenv.isDarwin) then old.cbc.overrideAttrs(finalAttrs: previousAttrs: {
                 configureFlags = previousAttrs.configureFlags ++ ["CXXFLAGS=-std=c++14"]; 
             }) else (old.cbc);
+            
+            ## Clang 16 breaks Jshon
+            jshon = if (old.stdenv.isDarwin) then old.jshon.override {
+                stdenv = old.gccStdenv;
+            } else (old.jshon);
 
             ## Cairo X11 on Mac
-            cairo = if (old.lib.strings.hasSuffix "-darwin" old.system) then (old.cairo.override {
+            cairo = if (old.stdenv.isDarwin) then (old.cairo.override {
                 x11Support = true;
             }) else (old.cairo);
 
