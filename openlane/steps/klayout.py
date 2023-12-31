@@ -26,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 from ..logging import info, warn
 from ..config import Variable, Config
 from ..state import DesignFormat, State
-from ..common import Path, get_script_dir, Toolbox
+from ..common import Path, get_script_dir, Toolbox, mkdirp
 
 
 def get_lef_args(config: Config, toolbox: Toolbox) -> List[str]:
@@ -381,11 +381,14 @@ class DRC(KLayoutStep):
     ]
 
     def run_sky130(self, state_in: State, **kwargs) -> MetricsUpdate:
+        reports_folder = os.path.join(self.step_dir, "reports")
+        mkdirp(reports_folder)
+
         metrics_updates: MetricsUpdate = {}
         drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
         kwargs, env = self.extract_env(kwargs)
         xml_report = os.path.realpath(os.path.join(self.step_dir, "violations.xml"))
-        json_report = os.path.join(self.step_dir, "violations.json")
+        json_report = os.path.realpath(os.path.join(self.step_dir, "violations.json"))
         feol = str(self.config["KLAYOUT_DRC_OPTIONS"]["feol"]).lower()
         beol = str(self.config["KLAYOUT_DRC_OPTIONS"]["beol"]).lower()
         floating_metal = str(
@@ -474,7 +477,13 @@ class OpenGUI(KLayoutStep):
             bool,
             "Whether to run the KLayout GUI in editor mode or in viewer mode.",
             default=False,
-        )
+        ),
+        Variable(
+            "KLAYOUT_PRIORITIZE_GDS",
+            bool,
+            "Whether to prioritize GDS (if found) when running htis step.",
+            default=True,
+        ),
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -489,9 +498,14 @@ class OpenGUI(KLayoutStep):
         lefs = get_lef_args(self.config, self.toolbox)
         kwargs, env = self.extract_env(kwargs)
 
-        mode_arg = "--viewer"
+        mode_args = []
         if self.config["KLAYOUT_EDITOR_MODE"]:
-            mode_arg = "--editor"
+            mode_args.append("--editor")
+
+        layout = state_in[DesignFormat.DEF]
+        if self.config["KLAYOUT_PRIORITIZE_GDS"]:
+            if gds := state_in[DesignFormat.GDS]:
+                layout = gds
 
         env["KLAYOUT_ARGV"] = shlex.join(
             [
@@ -501,25 +515,30 @@ class OpenGUI(KLayoutStep):
                 str(lyp),
                 "--lym",
                 str(lym),
-                str(state_in[DesignFormat.DEF]),
+                str(layout),
             ]
             + lefs
         )
 
-        cmd = [
-            shutil.which("klayout") or "klayout",
-            mode_arg,
-            "-rm",
-            os.path.join(
-                get_script_dir(),
-                "klayout",
-                "open_design.py",
-            ),
-        ]
+        cmd = (
+            [
+                shutil.which("klayout") or "klayout",
+            ]
+            + mode_args
+            + [
+                "-rm",
+                os.path.join(
+                    get_script_dir(),
+                    "klayout",
+                    "open_design.py",
+                ),
+            ]
+        )
 
         subprocess.check_call(
             cmd,
             env=env,
+            cwd=self.step_dir,
         )
 
         return {}, {}

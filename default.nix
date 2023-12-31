@@ -14,7 +14,6 @@
 {
   system ? builtins.currentSystem,
   pkgs ? import ./nix/pkgs.nix {},
-  gitignore-src ? import ./nix/gitignore.nix { inherit pkgs; },
 
 
   klayout ? import ./nix/klayout.nix { inherit pkgs; },
@@ -52,7 +51,7 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   src = [
     ./Readme.md
     ./setup.py
-    ./openlane
+    (nix-gitignore.gitignoreSourcePure "__pycache__" ./openlane)
     ./type_stubs
     ./requirements.txt
   ];

@@ -20,7 +20,7 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from typing import Tuple, Type, Optional, List, Union
+from typing import Sequence, Tuple, Type, Optional, List, Union
 
 from click import Parameter, pass_context
 from cloup import (
@@ -37,6 +37,7 @@ from cloup.constraints import (
 from .__version__ import __version__
 from .state import State
 from .logging import (
+    options,
     debug,
     err,
     warn,
@@ -56,7 +57,7 @@ def run(
     pdk_root: Optional[str],
     pdk: str,
     scl: Optional[str],
-    config_files: List[str],
+    config_files: Sequence[str],
     tag: Optional[str],
     last_run: bool,
     frm: Optional[str],
@@ -68,8 +69,13 @@ def run(
     _force_run_dir: Optional[str],
     _force_design_dir: Optional[str],
 ) -> int:
+    if len(config_files) == 0:
+        err("No config file has been provided.")
+        ctx.exit(1)
+    elif len(config_files) > 1:
+        err("OpenLane does not currently support multiple configuration files.")
+        ctx.exit(1)
     config_file = config_files[0]
-
     # Enforce Mutual Exclusion
 
     flow_description: Union[str, List[str]] = flow_name or "Classic"
@@ -203,6 +209,7 @@ def run_example(
         d = tempfile.mkdtemp("openlane2")
         final_path = os.path.join(d, "smoke_test_design")
         cleanup = True
+        options.set_condensed_mode(True)
     try:
         if os.path.isdir(final_path):
             print(f"A directory named {value} already exists.", file=sys.stderr)

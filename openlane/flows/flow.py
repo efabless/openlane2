@@ -52,6 +52,7 @@ from ..config import (
 from ..state import State
 from ..steps import Step
 from ..logging import (
+    LevelFilter,
     console,
     info,
     verbose,
@@ -535,12 +536,19 @@ class Flow(ABC):
         self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
         handlers = []
-        for level in ["INFO", "WARNING", "ERROR"]:
+        for level in ["WARNING", "ERROR"]:
             path = os.path.join(self.run_dir, f"{level.lower()}.log")
             handler = logging.FileHandler(path, mode="a+")
             handler.setLevel(level)
+            handler.addFilter(LevelFilter([level]))
             handlers.append(handler)
             register_additional_handler(handler)
+
+        path = os.path.join(self.run_dir, "flow.log")
+        handler = logging.FileHandler(path, mode="a+")
+        handler.setLevel("VERBOSE")
+        handlers.append(handler)
+        register_additional_handler(handler)
 
         try:
             config_res_path = os.path.join(self.run_dir, "resolved.json")
