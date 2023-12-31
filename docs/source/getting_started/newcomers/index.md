@@ -79,7 +79,7 @@ TODO INSERT SCREENSHOT COLLAB
    This also installs [sky130A](#glossary) [PDK](#glossary).
 
    ```console
-   [nix-shell:~/openlane2]$ openlane --smoke-test
+   [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
    ```
 
 That's it. Everything is setup. Now, let's try OpenLane.
