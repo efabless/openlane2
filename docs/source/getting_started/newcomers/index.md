@@ -436,11 +436,12 @@ Here is a small description of each file:
   2. Max slew violations
   3. Max fanout violations
   4. Unconstrained paths
-  5. Unannotated paths
+  5. Unannotated and partially annotated nets
   6. Checks the `SDC` for comobinationals loops, register/latch with multiple clocks
-  7. Setup and hold violating paths (not a fully detailed path).
+     or no clocks, ports missing input delay and generated clocks
+  7. Worst setup or hold violating path
 
-You should check out our [STA guide](#some-other-file) for more in depth details.
+Should check out our [STA guide](#doc-shalaan-docu) for more in depth details.
 
 ---
 
