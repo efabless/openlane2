@@ -2,7 +2,10 @@
 
 ## What is OpenLane?
 
-TODO: INSERT DIAGRAM HERE
+```{image} ./flow.png
+:scale: 30 %
+:align: right
+```
 
 OpenLane is a powerful and versatile infrastructure library that enables the
 construction of digital ASIC implementation flows based on open-source and
@@ -88,12 +91,19 @@ That's it. Everything is setup. Now, let's try OpenLane.
 
 ## Running the default flow
 
-We are going to harden a macro. A macro by itself has no function. It needs to be
-integerated with a chip in order to server its purpose.
-
 ### SPM example
 
-Let's try the following example `spm` design:
+We are going to use a simple design: a serial-by-parallel signed
+32-bit multiplier `SPM`. This multiplier performs the familiar shift-add algorithm.
+The parallel input `x` is multiplied by each bit of the serial input `y` as it is
+shifted in. The output is generated serially on `p`. Typically, SPM is interfaced
+with 3 registers. One parallel register to provide the multiplier. Two shift
+registers to provide the multiplicand and to get the serial product (64-bit).
+
+```{image} ./spm-block-diagram.png
+:scale: 40 %
+:align: center
+```
 
 #### RTL
 
@@ -114,39 +124,77 @@ This is the source [RTL](#glossary) of the design.
 
 Designs in OpenLane have configuration files. A configuration file contains
 [Variable](#glossary)(s). With them you control the OpenLane flow and set your
-design's source files. For example, this is configuration file of `spm` design:
+design's source files. This is configuration file for `spm` design:
 
 :::{dropdown} config.json
 
-```{literalinclude} ../../../../openlane/examples/spm/config.json
-:language: json
+```json
+{
+  "DESIGN_NAME": "spm",
+  "VERILOG_FILES": "dir::spm.v",
+  "CLOCK_PERIOD": 10,
+  "CLOCK_PORT": "clk"
+}
 ```
 
 :::
 
+:::{warning}
+You need to at least specify `DESIGN_NAME`, `VERILOG_FILES`, `CLOCK_PERIOD`
+and `CLOCK_PORT` for any design.
+:::
+
+:::
+
 ```{seealso}
-For a full list of available configuration variables [click here]()
+The [full list](#glossary) of available configuration variables.
 ```
 
 Notice variable `RT_MAX_LAYER` is set to `met4` and `FP_PDN_MULTILAYER`
 is set to `False` such that the maxium routing layer `met5` is available
 for [PDN](#glossary) connectivity while integrating the macro inside the chip.
 
-#### How to run ?
+#### How to run?
 
-```console
-[nix-shell:~/openlane2]$ mkdir ~/my_designs
-[nix-shell:~/openlane2]$ cd ~/my_designs/
-[nix-shell:~/openlane2]$ openlane --run-example spm
+1. Let's create a folder to add our source files to:
+
+   ```console
+   [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm
+   ```
+
+2. Create the file `~/my_designs/spm/config.json` and add [configuration](#configuration)
+   contents to it.
+
+3. Create the file `~/my_designs/spm/spm.v` and add [RTL](#rtl) contents to it.
+
+4. Inside a nix-shell run the following command:
+
+   ```console
+   [nix-shell:~/openlane2]$ openlane ~/my_designs/spm/config.json
+   ```
+
+---
+
+#### SPM As a macro for [Caravel user project](#https://caravel-user-project.readthedocs.io/en/latest/)
+
+Usually a design is integerated as a macro inside a chip and by itslef it surves
+no purpose.
+
+We are going to change the `RTL` to the following:
+
+:::{dropdown} spm.v
+
+```{literalinclude} ../../../../openlane/examples/spm-user_project_example/SPM_example.v
+
 ```
 
-That's it. Let's take a look at the results.
+:::
 
 ---
 
 ### Results
 
-#### Viewing the layout
+#### Viewing the Layout
 
 To open the final [GDSII](#glossary) layout run this command:
 
@@ -168,7 +216,7 @@ If you wish to use [OpenROAD](#glossary) GUI use the following:
 
 ---
 
-#### Output directory
+#### Run folder
 
 A new **run folder** (named something like `runs/RUN_2023-12-27_16-59-15`)
 should have been created.
@@ -200,7 +248,7 @@ For example, these are the contents of `14-openroad-tapendcapinsertion`:
 ```
 
 Here is a small description of each file inside a `Step` directory.
-:::{dropdown} An example of Step directory contents
+:::{dropdown} `OpenROAD.TapEndCapInsertion` `Step` directory contents
 
 - `COMMANDS`: the CLI command of the underlying tool used by a `Step`
 - `config.json`: contains `Variables` used by the `Step`
@@ -260,7 +308,7 @@ Additionally, you can view the layout at each `Step`:
 #### Final Results
 
 Inside the run folder, there is a folder called `final`. This folder contains
-other folders that contina all the different layout views produced by the flow
+other folders that contains all the different layout views produced by the flow
 such as [DEF](#glossary), [LEF](#glossary), `GDSII` and others. It looks like
 this:
 
@@ -290,10 +338,13 @@ final `metrics` in `JSON` and [CSV](#glossary) formats
 
 ---
 
-### Important Steps
+### Signoff Steps
 
-OpenLane runs a couple of `Step`(s) as checks attempting to verify the manufacturability
-and functionality of the design:
+An ASIC design’s signoff is the last phase of implementation. It requires physical
+and timing verifications before committing to the silicon manufacturing process,
+which is commonly known as design tape-out.
+
+OpenLane runs a couple of `Step`(s) for the final signoff.
 
 1. [DRC](#glossary)
 2. [LVS](#glossary)
@@ -301,20 +352,33 @@ and functionality of the design:
 
 #### DRC
 
+TODO: block digram describing DRC flow
+
 `DRC` stands for Design Rule Checking which are set by the [foundary](#glossary)
-,sometimes as guidlines, but mostly strict rules that the design has to satisfy
-in order to be manufacturable. Such as, the spacing between two `met1` layers.
+rules that the layout has to satisfy in order to be manufacturable.
+Such as, checking for minimum allowed spacing between two `met1` shapes.
 
-OpenLane runs two `DRC` steps using different layout tools: `Magic.DRC` and
-`KLayout.DRC`. Inside each step folder you will a report file viewable using
-KLayout called TODO:INSERT_FILE_NAME_HERE
+OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
+`KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputed to the tools running
+DRC, as shown in the diagram bellow:
 
-In addition, if `DRC` errors are found OpenLane will generate an error reporting
-the total count of violations found by each`Step`.
+```{image} ./OL-DRC.png
+:align: center
+:scale: 60 %
+```
 
-To view `DRC` errors. Open the layout, as mentioned [here](#viewing-the-layout)
+If `DRC` errors are found OpenLane will generate an error reporting
+the total count of violations found by each `Step`.
+
+To view `DRC` errors graphically. Open the layout, as mentioned in [Viewing the Layout](#viewing-the-layout).
 Then in the menu bar select Tools -> Marker Browser. A new window should open.
-Then select File -> import.
+Then select File -> import and then select the report file you would like to open.
+Report files will be found under `52-magic-drc/reports/drc.klayout.xml` and
+`53-klayout-drc/report/drc.klayout.xml`
+
+:::{tip}
+The intial number in `53-klayout-drc` (`53`) may vary according to a design configuration.
+:::
 
 ```{image} ./klayout-markerbrowser-menu.png
 :align: center
@@ -327,8 +391,24 @@ Then select File -> import.
 that connectivity in both views are matching. Sometimes, user configuration or
 even the tools have errors and such check is important to catch them.
 
+Common `LVS` errors include but are not limited to:
+
+- Shorts: Two or more wires that should not be connected have been and must be
+  separated. The most problematic is power and ground shorts.
+- Opens: Wires or components that should be connected are left dangling or only
+  partially connected. These must be connected properly.
+- Missing Components: An expected component has been left out of the layout.
+
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called [Netgen](#glossary).
-It will generate multiple files which can be browsed in case of `LVS` errors.
+First, the layout is converted to [SPICE](#glossary). Next the layout and the
+schematic are inputed to Netgen, as shown in the digram bellow.
+
+```{image} ./OL-LVS.png
+:align: center
+:scale: 60 %
+```
+
+Netgen will generate multiple files which can be browsed in case of `LVS` errors.
 As all `Step`(s), these will be inside the `Step`'s folder.
 
 You would want to look at `netgen-lvs.log`. This has a summary of the results of
@@ -339,10 +419,10 @@ Final result:
 Circuits match uniquely.
 ```
 
-In case of errors, there is also `lvs.rpt` which contains the detailed comparison
-between the layout and the schematic. It contains table comparing nodes between them.
+In case of errors, there is also `lvs.rpt` which more detailed. Inside it you will
+find tables comparing nodes between the layout and the schematic.
 On the left is the layout (`GDS`) and the schematic (`Verilog`) is on the other side.
-Here is a sample of these tables.
+Here is a sample of these tables:
 
 ```text
 Subcircuit summary:
@@ -356,19 +436,25 @@ sky130_fd_sc_hd__dfrtp_1 (64)              |sky130_fd_sc_hd__dfrtp_1 (64)
 sky130_ef_sc_hd__decap_12 (132->1)         |sky130_ef_sc_hd__decap_12 (132->1)
 ```
 
-```{seealso}
-TODO Checkout our guide of common LVS errors.
-```
-
 #### STA
 
-`STA` stands for Static Timing Analysis. TODO: Insert description here
+`STA` stands for Static Timing Analysis. The STA tool identifies the design timing
+paths and then calculates the data earliest and latest actual and required arrival
+times at every timing path endpoint. If the data arrives after
+(in case of setup checking) or before (hold checking) it is required,
+then we have a timing violation (negative slack). STA makes sure that a circuit
+will correctly perform its function (yet it tells nothing about correctness of
+that function)
+
+:::{tip}
+Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/edit#heading=h.9y68197ebff7) for more in depth details.
+:::
 
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
 
-Inside its run folder there is a file called `summary.rpt` which summarizes
-important metrics for each <TODO: Check TIMNING?> [corner](#glossary):
+Inside the `Step` folder there is a file called `summary.rpt` which summarizes
+important metrics for each [IPVT corner](#glossary):
 
 ```text
 ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
@@ -389,30 +475,31 @@ important metrics for each <TODO: Check TIMNING?> [corner](#glossary):
 ```
 
 There is also a folder per corner inside the `Step` directory which contains all
-the log files and reports generated for each `corner`.
+the log files and reports generated for each `IPVT corner`.
 
 ```text
-nom_tt_025C_1v80/
-├── checks.rpt
-├── filter_unannotated.log
-├── filter_unannotated.process_stats.json
-├── filter_unannotated_metrics.json
-├── max.rpt
-├── min.rpt
-├── power.rpt
-├── skew.max.rpt
-├── skew.min.rpt
-├── spm__nom_tt_025C_1v80.lib
-├── spm__nom_tt_025C_1v80.sdf
-├── sta.log
-├── sta.process_stats.json
-├── tns.max.rpt
-├── tns.min.rpt
-├── violator_list.rpt
-├── wns.max.rpt
-├── wns.min.rpt
-├── ws.max.rpt
-└── ws.min.rpt
+45-openroad-stapostpnr/
+└── nom_tt_025C_1v80/
+    ├── checks.rpt
+    ├── filter_unannotated.log
+    ├── filter_unannotated.process_stats.json
+    ├── filter_unannotated_metrics.json
+    ├── max.rpt
+    ├── min.rpt
+    ├── power.rpt
+    ├── skew.max.rpt
+    ├── skew.min.rpt
+    ├── spm__nom_tt_025C_1v80.lib
+    ├── spm__nom_tt_025C_1v80.sdf
+    ├── sta.log
+    ├── sta.process_stats.json
+    ├── tns.max.rpt
+    ├── tns.min.rpt
+    ├── violator_list.rpt
+    ├── wns.max.rpt
+    ├── wns.min.rpt
+    ├── ws.max.rpt
+    └── ws.min.rpt
 ```
 
 Here is a small description of each file:
@@ -440,8 +527,6 @@ Here is a small description of each file:
   6. Checks the `SDC` for comobinationals loops, register/latch with multiple clocks
      or no clocks, ports missing input delay and generated clocks
   7. Worst setup or hold violating path
-
-Should check out our [STA guide](#doc-shalaan-docu) for more in depth details.
 
 ---
 
