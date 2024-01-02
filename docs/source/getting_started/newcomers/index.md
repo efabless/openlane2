@@ -2,9 +2,11 @@
 
 ## What is OpenLane?
 
-```{image} ./flow.png
+```{figure} ./flow.png
 :scale: 30 %
 :align: right
+
+OpenLane Flow
 ```
 
 OpenLane is a powerful and versatile infrastructure library that enables the
@@ -32,8 +34,8 @@ Here are some of the key benefits of using OpenLane:
   encounter.
 
 ```{seealso}
-[Click here](https://developers.google.com/silicon/guides/digital-inverter-openlane)
-to try out OpenLane using Google Colab directly in your browser.
+[Checkout out](https://developers.google.com/silicon/guides/digital-inverter-openlane)
+OpenLane using Google Colab directly in your browser.
 You do not even need to install anything on your machine!
 ```
 
@@ -41,8 +43,6 @@ You do not even need to install anything on your machine!
 This guide assumes that the reader has some basic knowledge of ASIC, Digital Design,
 JSON and RTL
 ```
-
-TODO INSERT SCREENSHOT COLLAB
 
 ---
 
@@ -95,14 +95,16 @@ That's it. Everything is setup. Now, let's try OpenLane.
 
 We are going to use a simple design: a serial-by-parallel signed
 32-bit multiplier `SPM`. This multiplier performs the familiar shift-add algorithm.
-The parallel input `x` is multiplied by each bit of the serial input `y` as it is
-shifted in. The output is generated serially on `p`. Typically, SPM is interfaced
+The parallel input `a` is multiplied by each bit of the serial input `x` as it is
+shifted in. The output is generated serially on `y`. Typically, SPM is interfaced
 with 3 registers. One parallel register to provide the multiplier. Two shift
 registers to provide the multiplicand and to get the serial product (64-bit).
 
-```{image} ./spm-block-diagram.png
-:scale: 40 %
+```{figure} ./spm-block-diagram.png
+:scale: 60 %
 :align: center
+
+SPM (Serial-by-Parallel Multiplier)
 ```
 
 #### RTL
@@ -113,7 +115,6 @@ This is the source [RTL](#glossary) of the design.
 
 ```{literalinclude} ../../../../openlane/examples/spm/src/spm.v
 :language: verilog
-:lines: 14-
 ```
 
 :::
@@ -139,6 +140,8 @@ design's source files. This is configuration file for `spm` design:
 
 :::
 
+(required-variables)=
+
 :::{warning}
 You need to at least specify `DESIGN_NAME`, `VERILOG_FILES`, `CLOCK_PERIOD`
 and `CLOCK_PORT` for any design.
@@ -149,10 +152,6 @@ and `CLOCK_PORT` for any design.
 ```{seealso}
 The [full list](#glossary) of available configuration variables.
 ```
-
-Notice variable `RT_MAX_LAYER` is set to `met4` and `FP_PDN_MULTILAYER`
-is set to `False` such that the maxium routing layer `met5` is available
-for [PDN](#glossary) connectivity while integrating the macro inside the chip.
 
 #### How to run?
 
@@ -175,14 +174,18 @@ for [PDN](#glossary) connectivity while integrating the macro inside the chip.
 
 ---
 
-#### SPM As a macro for [Caravel user project](#https://caravel-user-project.readthedocs.io/en/latest/)
+#### SPM as a macro for [Caravel User Project](#https://caravel-user-project.readthedocs.io/en/latest/)
 
 Usually a design is integerated as a macro inside a chip and by itslef it surves
-no purpose.
+no purpose. We are going to harden `spm` as a macro inside to be integrated inside
+[Caravel User Project Wrapper](#https://caravel-user-project.readthedocs.io/en/latest/)
 
-We are going to change the `RTL` to the following:
+##### New RTL
 
-:::{dropdown} spm.v
+Create a new folder `~/my_designs/spm-user_project_example/` and
+add the following new `RTL` to `~/my_designs/spm-user_project_example/SPM_example.v`:
+
+:::{dropdown} SPM_example.v
 
 ```{literalinclude} ../../../../openlane/examples/spm-user_project_example/SPM_example.v
 
@@ -190,9 +193,61 @@ We are going to change the `RTL` to the following:
 
 :::
 
+We need an additional file `~/my_designs/spm-user_project_example/defines.v` required
+by `Caravel User Project`.
+
+:::{dropdown} defines.v
+
+```{literalinclude} ../../../../openlane/examples/spm-user_project_example/defines.v
+
+```
+
+:::
+
+Checkout [Caravel User Project:Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
+for information about the `RTL` changes.
+
+##### New Configuration
+
+We also need to update the configuration as follows.
+
+:::{dropdown} config.json
+
+```json
+{
+  "DESIGN_NAME": "SPM_example",
+  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
+  "CLOCK_PERIOD": 25,
+  "CLOCK_PORT": "wb_clk_i",
+  "CLOCK_NET": "SPM.clk",
+  "RT_MAX_LAYER": "met4",
+  "FP_SIZING": "absolute",
+  "VDD_NETS": ["vccd1"],
+  "GND_NETS": ["vssd1"],
+  "FP_PDN_MULTILAYER": false,
+  "DIE_AREA": [0, 0, 600, 600]
+}
+```
+
+:::
+
+Aside from the [required variables](#required-variables), we also change the following:
+
+- `RT_MAX_LAYER` and `FP_PDN_MULTILAYER`: `sky130A` maximum routing layer is `met5`.
+  We are going to integerate to integrate it as macro inside another design.
+  The outer design's `PDN` is going to connect to our macro via `met5`. Hence
+  we make that layer completely available by limiting maximum routing layer to
+  `met4` and disabling `FP_PDN_MULTILAYER` which disable `met5` `PDN` pins in our
+  macro.
+- `FP_SIZING` and `DIE_AREA`: Due to requirements set by `Caravel User Project`,
+  we need a fixed area for our macro. We do that by setting `FP_SIZING` to `absolute`
+  and setting `DIE_AREA` to our required area.
+- `VDD_NETS` and `GND_NETS`: Also due to requirements set by `Caravel User Project`,
+  we set power and ground nets to `vccd1` and `vssd1`.
+
 ---
 
-### Results
+### Results of SPM as core ?
 
 #### Viewing the Layout
 
@@ -204,8 +259,10 @@ To open the final [GDSII](#glossary) layout run this command:
 
 This opens [KLayout](#glossary) and you should be able to see the following:
 
-```{image} ./spm-gds.png
+```{figure} ./spm-gds.png
 :align: center
+
+Final GDSII view of SPM
 ```
 
 If you wish to use [OpenROAD](#glossary) GUI use the following:
@@ -248,7 +305,7 @@ For example, these are the contents of `14-openroad-tapendcapinsertion`:
 ```
 
 Here is a small description of each file inside a `Step` directory.
-:::{dropdown} `OpenROAD.TapEndCapInsertion` `Step` directory contents
+:::{dropdown} OpenROAD.TapEndCapInsertion Step directory contents
 
 - `COMMANDS`: the CLI command of the underlying tool used by a `Step`
 - `config.json`: contains `Variables` used by the `Step`
@@ -352,8 +409,6 @@ OpenLane runs a couple of `Step`(s) for the final signoff.
 
 #### DRC
 
-TODO: block digram describing DRC flow
-
 `DRC` stands for Design Rule Checking which are set by the [foundary](#glossary)
 rules that the layout has to satisfy in order to be manufacturable.
 Such as, checking for minimum allowed spacing between two `met1` shapes.
@@ -362,9 +417,11 @@ OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
 `KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputed to the tools running
 DRC, as shown in the diagram bellow:
 
-```{image} ./OL-DRC.png
+```{figure} ./OL-DRC.png
 :align: center
 :scale: 60 %
+
+DRC (Design Rule Checking) Flow
 ```
 
 If `DRC` errors are found OpenLane will generate an error reporting
@@ -403,9 +460,11 @@ Common `LVS` errors include but are not limited to:
 First, the layout is converted to [SPICE](#glossary). Next the layout and the
 schematic are inputed to Netgen, as shown in the digram bellow.
 
-```{image} ./OL-LVS.png
+```{figure} ./OL-LVS.png
+:scale: 40 %
 :align: center
-:scale: 60 %
+
+LVS (Layout-versus-Schematic) Flow
 ```
 
 Netgen will generate multiple files which can be browsed in case of `LVS` errors.
