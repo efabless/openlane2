@@ -34,8 +34,7 @@ Here are some of the key benefits of using OpenLane:
   encounter.
 
 ```{seealso}
-[Checkout out](https://developers.google.com/silicon/guides/digital-inverter-openlane)
-OpenLane using Google Colab directly in your browser.
+Checkout [OpenLane using Google Colab directly in your browser](https://developers.google.com/silicon/guides/digital-inverter-openlane)
 You do not even need to install anything on your machine!
 ```
 
@@ -61,7 +60,7 @@ JSON and RTL
    the packages bundled with OpenLane
 
    ```console
-   $ nix-shell --pure
+   $ nix-shell --pure ~/openlane2/shell.nix
    ```
 
    Some packages will be downloaded (about 3GBs) and the terminal prompt should change
@@ -119,12 +118,10 @@ This is the source [RTL](../../glossary.md#term-RTL) of the design.
 
 :::
 
----
-
 #### Configuration
 
 Designs in OpenLane have configuration files. A configuration file contains
-[Variable](../../glossary.md#term-Variable)(s). With them you control the OpenLane flow 
+[Variable](../../glossary.md#term-Variable)(s). With them you control the OpenLane flow
 and set your design's source files. This is configuration file for `spm` design:
 
 :::{dropdown} config.json
@@ -162,15 +159,30 @@ The [full list INSERT REFERENE HERE](#glossary) of available configuration varia
    ```
 
 2. Create the file `~/my_designs/spm/config.json` and add [configuration](#configuration)
-   contents to it.
+   content to it.
 
-3. Create the file `~/my_designs/spm/spm.v` and add [RTL](#rtl) contents to it.
+3. Create the file `~/my_designs/spm/spm.v` and add [RTL](#rtl) content to it.
 
-4. Inside a nix-shell run the following command:
+4. Run the following command:
 
    ```console
    [nix-shell:~/openlane2]$ openlane ~/my_designs/spm/config.json
    ```
+
+:::{tip}
+Are you inside a `nix-shell` ? Your terminal prompt should look like this:
+
+```console
+[nix-shell:~/openlane2]$
+```
+
+If not, enter the following command in your terminal
+
+```console
+$ nix-shell --pure ~/openlane2/shell.nix
+```
+
+:::
 
 ---
 
@@ -204,8 +216,10 @@ by `Caravel User Project`.
 
 :::
 
-Checkout [Caravel User Project:Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
+:::{seealso}
+Checkout [Caravel User Project#Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
 for information about the `RTL` changes.
+:::
 
 ##### New Configuration
 
@@ -262,7 +276,7 @@ This opens [KLayout](../../glossary.md#term-KLayout) and you should be able to s
 ```{figure} ./spm-gds.png
 :align: center
 
-Final GDSII view of SPM
+Final GDSII view of SPM #TODO CROP
 ```
 
 If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the following:
@@ -278,7 +292,7 @@ If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the follo
 A new **run folder** (named something like `runs/RUN_2023-12-27_16-59-15`)
 should have been created.
 
-By default, OpenLane runs a [Flow](../../glossary.md#term-Flow) composed of a 
+By default, OpenLane runs a [Flow](../../glossary.md#term-Flow) composed of a
 sequence of [Step](../../glossary.md#term-Step)(s).
 Each `Step` has its separate folder.
 
@@ -357,7 +371,9 @@ RUN_2023-12-27_16-59-15
 └── warning.log
 ```
 
-Additionally, you can view the layout at each `Step`:
+##### Viewing Intermediate Layout
+
+Additionally, you can view the intermediate layout at each `Step`:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json --with-initial-state ~/my_designs/spm/runs/RUN_2023-12-27_16-59-15/14-openroad-tapendcapinsertion/state_out.json"
@@ -391,7 +407,7 @@ final
 └── metrics.json
 ```
 
-Additionally, it contains `metrics.csv` and `metric.json` which represents the
+Moreover, it contains `metrics.csv` and `metric.json` which represents the
 final `metrics` in `JSON` and [CSV](../../glossary.md#term-CSV) formats
 
 ---
@@ -442,6 +458,8 @@ The intial number in `53-klayout-drc` (`53`) may vary according to a design conf
 :align: center
 ```
 
+TODO: MORE SCREENSHOTS AND HIGLIGHT BOXES
+
 #### LVS
 
 `LVS` stands for Layout Versus Schematic. It compares the layout `GDSII` or
@@ -471,7 +489,7 @@ bellow.
 LVS (Layout-versus-Schematic) Flow
 ```
 
-Netgen will generate multiple files which can be browsed in case of `LVS` errors.
+`Netgen` will generate multiple files which can be browsed in case of `LVS` errors.
 As all `Step`(s), these will be inside the `Step`'s folder.
 
 You would want to look at `netgen-lvs.log`. This has a summary of the results of
@@ -509,7 +527,7 @@ then we have a timing violation (negative slack). STA makes sure that a circuit
 will correctly perform its function (yet it tells nothing about correctness of
 that function)
 
-:::{tip}
+:::{seealso}
 Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/edit#heading=h.9y68197ebff7) for more in depth details.
 :::
 
@@ -590,3 +608,5 @@ Here is a small description of each file:
   6. Checks the `SDC` for comobinationals loops, register/latch with multiple clocks
      or no clocks, ports missing input delay and generated clocks
   7. Worst setup or hold violating path
+
+TODO: NEXT SHOULDN'T BE MIGRATING FROM OPENLANE1?
