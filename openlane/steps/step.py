@@ -482,8 +482,8 @@ class Step(ABC):
         )
         if len(Self.inputs) + len(Self.outputs):
             result += textwrap.dedent(
-                """
-                #### Inputs and Outputs
+                f"""
+                #### Inputs and Outputs {{#{Self.id}-inputs-and-outputs}}
 
                 | Inputs | Outputs |
                 | - | - |
@@ -505,8 +505,9 @@ class Step(ABC):
 
         if len(Self.config_vars):
             result += textwrap.dedent(
-                """
-                #### Configuration Variables
+                f"""
+                #### Configuration Variables {{#{Self.id}-configuration-variables}}
+
 
                 | Variable Name | Type | Description | Default | Units |
                 | - | - | - | - | - |
@@ -521,9 +522,8 @@ class Step(ABC):
         result = (
             textwrap.dedent(
                 f"""
-                ### {Self.__get_desc()}
+                ### {Self.__get_desc()} {{#{Self.id.lower()}}}
                 
-                <a name="{Self.id.lower()}"></a>
                 """
             )
             + result

@@ -466,7 +466,7 @@ class OpenGUI(KLayoutStep):
     """
 
     id = "KLayout.OpenGUI"
-    name = "Open In GUI"
+    name = "KLayout Open In GUI"
 
     inputs = [DesignFormat.DEF]
     outputs = []

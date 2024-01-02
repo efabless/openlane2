@@ -262,6 +262,7 @@ def is_string(obj: Any) -> bool:
 
 # Screw this, if you can figure out how to type hint mapping in dictionary out
 # and non-mapping in sequence out in Python, be my guest
+# docstring
 def copy_recursive(input, translator: Callable = idem):
     """
     Copies any arbitrarily-deep nested structure of Mappings and/or Sequences.

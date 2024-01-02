@@ -1713,7 +1713,7 @@ class RepairDesign(RepairDesignPostGPL):
     """
 
     id = "OpenROAD.RepairDesign"
-    name = "Repair Design (Post-Global Placement)"
+    name = "Repair Design (Post-Global Placement) - Deprecated"
 
 
 @Step.factory.register()
@@ -1893,7 +1893,7 @@ class OpenGUI(Step):
     """
 
     id = "OpenROAD.OpenGUI"
-    name = "Open In GUI"
+    name = "OpenROAD Open In GUI"
 
     inputs = [DesignFormat.ODB]
     outputs = []
