@@ -49,7 +49,7 @@ JSON and RTL
 ## Installation
 
 1. Follow instructions [here](https://app.cachix.org/cache/openlane) to install
-   [Nix](#glossary) and setup [cachix](#glossary).
+   [Nix](../../glossary.md#term-Nix) and setup [cachix](../../glossary.md#term-cachix).
 
 2. Open up a terminal and clone OpenLane:
 
@@ -79,7 +79,7 @@ JSON and RTL
    :::
 
 4. Run the smoke test to ensure everything is fine.
-   This also downloads [sky130A](#glossary) [PDK](#glossary).
+   This also downloads [sky130A](../../glossary.md#term-sky130A) [PDK](../../glossary.md#term-PDK).
 
    ```console
    [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
@@ -109,7 +109,7 @@ SPM (Serial-by-Parallel Multiplier)
 
 #### RTL
 
-This is the source [RTL](#glossary) of the design.
+This is the source [RTL](../../glossary.md#term-RTL) of the design.
 
 :::{dropdown} spm.v
 
@@ -124,8 +124,8 @@ This is the source [RTL](#glossary) of the design.
 #### Configuration
 
 Designs in OpenLane have configuration files. A configuration file contains
-[Variable](#glossary)(s). With them you control the OpenLane flow and set your
-design's source files. This is configuration file for `spm` design:
+[Variable](../../glossary.md#term-Variable)(s). With them you control the OpenLane flow 
+and set your design's source files. This is configuration file for `spm` design:
 
 :::{dropdown} config.json
 
@@ -150,7 +150,7 @@ and `CLOCK_PORT` for any design.
 :::
 
 ```{seealso}
-The [full list](#glossary) of available configuration variables.
+The [full list INSERT REFERENE HERE](#glossary) of available configuration variables.
 ```
 
 #### How to run?
@@ -251,13 +251,13 @@ Aside from the [required variables](#required-variables), we also change the fol
 
 #### Viewing the Layout
 
-To open the final [GDSII](#glossary) layout run this command:
+To open the final [GDSII](../../glossary.md#term-GDSII) layout run this command:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json
 ```
 
-This opens [KLayout](#glossary) and you should be able to see the following:
+This opens [KLayout](../../glossary.md#term-KLayout) and you should be able to see the following:
 
 ```{figure} ./spm-gds.png
 :align: center
@@ -265,7 +265,7 @@ This opens [KLayout](#glossary) and you should be able to see the following:
 Final GDSII view of SPM
 ```
 
-If you wish to use [OpenROAD](#glossary) GUI use the following:
+If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the following:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinopenroad ~/my_designs/spm/config.json
@@ -278,13 +278,14 @@ If you wish to use [OpenROAD](#glossary) GUI use the following:
 A new **run folder** (named something like `runs/RUN_2023-12-27_16-59-15`)
 should have been created.
 
-By default, OpenLane runs a [Flow](#glossary) composed of a sequence of [Step](#glossary)(s).
+By default, OpenLane runs a [Flow](../../glossary.md#term-Flow) composed of a 
+sequence of [Step](../../glossary.md#term-Step)(s).
 Each `Step` has its separate folder.
 
 For example, the `OpenROAD.TapEndCapInsertion` `Step` creates the following
 folder `14-openroad-tapendcapinsertion` which would be inside the run folder.
 
-A `Step` folder has log files, report files, [metrics](#glossary)
+A `Step` folder has log files, report files, [Metrics](../../glossary.md#term-Metrics)
 and output artifacts created by the `Step`.
 For example, these are the contents of `14-openroad-tapendcapinsertion`:
 
@@ -366,8 +367,8 @@ Additionally, you can view the layout at each `Step`:
 
 Inside the run folder, there is a folder called `final`. This folder contains
 other folders that contains all the different layout views produced by the flow
-such as [DEF](#glossary), [LEF](#glossary), `GDSII` and others. It looks like
-this:
+such as [DEF](../../glossary.md#term-DEF), [LEF](../../glossary.md#term-LEF),
+`GDSII` and others. It looks like this:
 
 ```text
 final
@@ -391,7 +392,7 @@ final
 ```
 
 Additionally, it contains `metrics.csv` and `metric.json` which represents the
-final `metrics` in `JSON` and [CSV](#glossary) formats
+final `metrics` in `JSON` and [CSV](../../glossary.md#term-CSV) formats
 
 ---
 
@@ -403,13 +404,13 @@ which is commonly known as design tape-out.
 
 OpenLane runs a couple of `Step`(s) for the final signoff.
 
-1. [DRC](#glossary)
-2. [LVS](#glossary)
-3. [STA](#glossary)
+1. [DRC](#drc)
+2. [LVS](#lvs)
+3. [STA](#sta)
 
 #### DRC
 
-`DRC` stands for Design Rule Checking which are set by the [foundary](#glossary)
+`DRC` stands for Design Rule Checking which are set by the FOUNDRY/Chip Manfucturer?
 rules that the layout has to satisfy in order to be manufacturable.
 Such as, checking for minimum allowed spacing between two `met1` shapes.
 
@@ -419,7 +420,7 @@ DRC, as shown in the diagram bellow:
 
 ```{figure} ./OL-DRC.png
 :align: center
-:scale: 60 %
+:scale: 50 %
 
 DRC (Design Rule Checking) Flow
 ```
@@ -444,9 +445,10 @@ The intial number in `53-klayout-drc` (`53`) may vary according to a design conf
 #### LVS
 
 `LVS` stands for Layout Versus Schematic. It compares the layout `GDSII` or
-`DEF`/`LEF`, with the schematic which is usually in [Verliog](#glossary) ensuring
-that connectivity in both views are matching. Sometimes, user configuration or
-even the tools have errors and such check is important to catch them.
+`DEF`/`LEF`, with the schematic which is usually in
+[Verilog](../../glossary.md#term-Verilog) ensuring that connectivity in both
+views are matching. Sometimes, user configuration or even the tools have errors
+and such check is important to catch them.
 
 Common `LVS` errors include but are not limited to:
 
@@ -456,12 +458,14 @@ Common `LVS` errors include but are not limited to:
   partially connected. These must be connected properly.
 - Missing Components: An expected component has been left out of the layout.
 
-`Netgen.LVS` is the `Step` ran for `LVS` using a tool called [Netgen](#glossary).
-First, the layout is converted to [SPICE](#glossary). Next the layout and the
-schematic are inputed to Netgen, as shown in the digram bellow.
+`Netgen.LVS` is the `Step` ran for `LVS` using a tool called
+[Netgen](../../glossary.md#term-Netgen). First, the layout is converted to
+[SPICE](../../glossary.md#term-SPICE). Next
+the layout and the schematic are inputed to Netgen, as shown in the digram
+bellow.
 
 ```{figure} ./OL-LVS.png
-:scale: 40 %
+:scale: 50 %
 :align: center
 
 LVS (Layout-versus-Schematic) Flow
@@ -513,7 +517,7 @@ The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
 
 Inside the `Step` folder there is a file called `summary.rpt` which summarizes
-important metrics for each [IPVT corner](#glossary):
+important metrics for each [IPVT](../../glossary.md#term-IPVT) [timing corner](../../glossary.md#term-timing-corner):
 
 ```text
 ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
@@ -586,7 +590,3 @@ Here is a small description of each file:
   6. Checks the `SDC` for comobinationals loops, register/latch with multiple clocks
      or no clocks, ports missing input delay and generated clocks
   7. Worst setup or hold violating path
-
----
-
-## Glossary
