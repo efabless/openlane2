@@ -47,5 +47,6 @@ getting_started/index
 usage/index
 reference/index
 additional_material
+glossary
 contributors/index
 ```

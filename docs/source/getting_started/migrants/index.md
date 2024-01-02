@@ -26,6 +26,11 @@ backwards compatible, with some conveniences:
   design at a certain part of the flow, without worrying about surprises related
   to state variables missing.
 
+
+```{figure} ./configurable_flow.png
+Writing custom flows and steps using OpenLane 2.
+```
+
 Additionally, if you're a more savvy user, a *whole new world* of possibilities
 await with OpenLane 2. Built around "flows" composed of "steps," OpenLane 2 can
 implement hardware flows for ASIC implementation by relying on basic Python
@@ -39,7 +44,7 @@ object-oriented programming principles, and this naturally allows you to:
   proceed with the best result.
   * You can even do this in a Python Notebook!
 * Access a standardized and more formal form of design metrics based on
-  https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML.
+  [the Metrics4ML standard](https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML).
 
 For example, using a custom OpenLane 2-based flow, the team over at
 [TinyTapeout](https://tinytapeout.com) were able to integrate dozens of tiny
@@ -56,7 +61,7 @@ OpenLane 2 uses a deterministic and reproducible environment builder called
 [Nix](https://nixos.org) to both build its underlying utilities and distribute
 them.
 
-While using a Dockerized environment is still supported yields a number of
+While using a Dockerized environment is still supported, Nix yields a number of
 advantages and is overall recommended.
 
 ### Nix-based Installation (Recommended)
@@ -75,7 +80,7 @@ Afterwards, you can run an example as follows:
 ```{include} ../common/nix_installation/_running_example.md
 ```
 
-### Docker-based Installation
+### Docker-based Installation (Not Preferred)
 
 Docker is still supported if you have it installed from OpenLane 1, although the
 Docker image is built with a Nix environment instead of CentOS. The way it is
@@ -138,10 +143,15 @@ OpenLane 2 will automatically download and install the default PDK(s) version
 using Volare.
 ```
 
+```{tip}
+Don't forget to add `--dockerized` to `openlane` invocations if you're using
+the Docker-based installation.
+```
+
 ```!migration_comparison[bash] ### Installation Smoke-Testing
 make test
 ---
-openlane [--dockerized] --smoke-test 
+openlane --smoke-test 
 ---
 Being built into the command-line interface of OpenLane makes it runnable from
 anywhere.
@@ -159,7 +169,7 @@ run, instead of relying on a global "OpenLane installation" directory.
 ```!migration_comparison[bash] ### Running your own design
 ./flow.tcl ~/my_designs/picorv32
 ---
-openlane --run-example spm
+openlane ~/my_designs/picorv32/config.json
 ---
 We've done away with providing the design folder and automatically trying to
 detect which configuration file should be run, instead opting to use the
@@ -235,8 +245,8 @@ to exist.
 
 ````!migration_comparison[] #### Final Resolved Configuration
 ./config.tcl
----
 OPENLANE_VERSION
+---
 ./resolved.json
 ---
 The final resolved configuration after loading defaults, values from the PDK,
@@ -247,7 +257,7 @@ The generated `resolved.json` is a valid OpenLane configuration file for the
 same flow; so you may re-run the flow with the same exact configuration as follows:
 
 ```bash
-openlane --dockerized <path to run folder>/resolved.json
+openlane <path to run folder>/resolved.json
 ```
 ````
 

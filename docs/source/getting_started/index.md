@@ -15,8 +15,7 @@ I am new to OpenLane
 I have previously used OpenLane 1
 </a></p>
 
-<p>
-<a href="./installation_overview.html">
+<p><a href="./installation_overview.html">
 Just show me installation instructions.
 </a></p>
 
