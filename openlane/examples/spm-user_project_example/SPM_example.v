@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Efabless Corporation
+// Copyright 2023 Efabless Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ module SPM_example #(
     wire [31:0] la_write;
 
     //addresses for registers
-    localparam X_OFF = 805306368, Y_OFF = 805306372, Y0_OFF = 805306376, Y1_OFF = 805306380;
+    localparam X_OFF = 805306368, Y_OFF = 805306372, Y0_OFF = 805306376, Y1_OFF = 805306380, STAT_OFF = 32'h30000010;
     //states of the state machine
     localparam S0 = 0, S1 = 1, S2 = 2, S3 = 3;
     reg [3:0] STATE, nstate;
@@ -95,6 +95,8 @@ module SPM_example #(
     //Registers for the multiplicand, multiplier, product
     reg [31:0] A, X;
     reg [63:0] Y0;
+    wire status; // status register
+    assign status = STATE == S0 ? 1:0; // if status reg == 1 means data is ready to be read or change the existing data
     //wire for the current product bit
     wire y;   
     //Registers for the WB bus
@@ -162,8 +164,12 @@ module SPM_example #(
         else if(valid && !wbs_we_i && (wbs_adr_i==Y0_OFF)) begin
             wbs_dat_o <= Y0[31:0];
             // wbs_ack_o <= 1'b1;
-        end if(valid && !wbs_we_i && (wbs_adr_i==Y1_OFF)) begin
+        end 
+        else if(valid && !wbs_we_i && (wbs_adr_i==Y1_OFF)) begin
           wbs_dat_o <= Y0[63:32];
+        end
+        else if(valid && !wbs_we_i && (wbs_adr_i==STAT_OFF)) begin
+          wbs_dat_o <= status;
         end
     end
 
@@ -171,7 +177,7 @@ module SPM_example #(
         if(wbs_ack_o) begin
           wbs_ack_o <= 1'b0;
         end
-        else if((valid && !wbs_we_i && (wbs_adr_i==Y1_OFF)) || (valid && !wbs_we_i && (wbs_adr_i==Y0_OFF)) || (valid && wbs_we_i && (wbs_adr_i==Y_OFF)) || (valid && wbs_we_i && (wbs_adr_i==X_OFF))) begin
+        else if((valid && !wbs_we_i && (wbs_adr_i==Y1_OFF)) || (valid && !wbs_we_i && (wbs_adr_i==Y0_OFF)) || (valid && wbs_we_i && (wbs_adr_i==Y_OFF)) || (valid && wbs_we_i && (wbs_adr_i==X_OFF)) || (valid && !wbs_we_i && (wbs_adr_i==STAT_OFF))) begin
             wbs_ack_o <= 1'b1;
         end
     end
@@ -214,7 +220,7 @@ module SPM_example #(
         if(CNT==64) ncnt <=0;
         else if(STATE==S1) ncnt = CNT + 1;
     end
-    spm spm(.clk(clk), .rst(rst), .a(A), .x(X[0]), .y(y));
+    spm spm(.clk(clk), .rst(!rst), .a(A), .x(X[0]), .y(y));
     
 
 endmodule
