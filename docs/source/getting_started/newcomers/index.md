@@ -478,7 +478,7 @@ Common `LVS` errors include but are not limited to:
 
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called
 [Netgen](../../glossary.md#term-Netgen). First, the layout is converted to
-[SPICE](../../glossary.md#term-SPICE). Next
+[SPICE] netlist (../../glossary.md#term-SPICE). Next
 the layout and the schematic are inputed to Netgen, as shown in the digram
 bellow.
 
