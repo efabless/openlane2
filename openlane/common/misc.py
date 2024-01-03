@@ -148,8 +148,6 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-# readthedocs
-# duplicate object description of openlane.common.misc.Path, other instance in reference/api/state/index, use :no-index: for one of them
 class Path(UserString, os.PathLike):
     """
     A Path type for OpenLane configuration variables.

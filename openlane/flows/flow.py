@@ -213,7 +213,6 @@ class FlowProgressBar(object):
         return f"{str(self.__ordinal).zfill(max_stage_digits)}-"
 
 
-# docstring ````
 class Flow(ABC):
     """
     An abstract base class for a flow.
@@ -339,13 +338,13 @@ class Flow(ABC):
                 %s
                 ```
 
-                #### Using from the CLI {{(#{Self.__name__}-using-from-the-cli)}}
+                #### Using from the CLI
 
                 ```sh
                 openlane --flow {Self.__name__} [...]
                 ```
 
-                #### Importing {{(#{Self.__name__}-importing)}}
+                #### Importing
 
                 ```python
                 from openlane.flows import Flow
@@ -360,8 +359,8 @@ class Flow(ABC):
 
         if len(flow_config_vars):
             result += textwrap.dedent(
-                f"""
-                #### Flow-specific Configuration Variables {{(#{Self.__name__}-flow-specific-configuration-variables)}}
+                """
+                #### Flow-specific Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units |
                 | - | - | - | - | - |
@@ -374,7 +373,7 @@ class Flow(ABC):
             result += "\n"
 
         if len(Self.Steps):
-            result += f"#### Included Steps {{#{Self.__name__}-included-steps}}\n"
+            result += "#### Included Steps\n"
             for step in Self.Steps:
                 result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
 
