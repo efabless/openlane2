@@ -375,7 +375,13 @@ class Flow(ABC):
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
-                result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
+                if hasattr(step, "long_name"):
+                    name = step.long_name
+                elif hasattr(step, "name"):
+                    name = step.name
+                else:
+                    name = step.id
+                result += f"* [`{step.id}`](./step_config_vars.md#{slugify(name)})\n"
 
         return result
 

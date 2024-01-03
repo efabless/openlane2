@@ -130,6 +130,7 @@ class LVS(NetgenStep):
     """
 
     id = "Netgen.LVS"
+    name = "Netgen LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
 
     def get_command(self) -> List[str]:

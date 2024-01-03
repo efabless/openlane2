@@ -27,6 +27,8 @@ class Lint(Step):
     """Lint design verilog source files"""
 
     id = "Verilator.Lint"
+    name = "Verilator Lint"
+    long_name = "Verilator Lint"
     inputs = []  # The input RTL is part of the configuration
     outputs = []
 

@@ -210,6 +210,7 @@ class YosysStep(TclStep):
 class JsonHeader(YosysStep):
     id = "Yosys.JsonHeader"
     name = "Generate JSON Header"
+    long_name = "Generate JSON Header"
 
     inputs = []
     outputs = [DesignFormat.JSON_HEADER]
