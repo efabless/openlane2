@@ -26,9 +26,6 @@ sky130
     developed internally by Cypress Semiconductor before being spun out into
     SkyWater Technology and made accessible to general industry.
 
-sky130A
-    Insert description here
-
 PDK
     Stands for Process Design Kit
 
@@ -69,16 +66,26 @@ Metrics
     Insert description here
 
 DEF
-    Insert description here
+    Stands for Design Exchange Format. A DEF file contains representation of the
+    design at any point during the layout process. It contains the
+    design-specific information of a circuit.
 
 LEF
-    Insert description here
+    Stands for Library Exchange Format.
+    A LEF file contains the abstract view of a digital
+    standard cell library’s cells layout. It only gives the idea about the cell
+    bounding box (PR boundary), pin position and metal layer information of
+    every cell.
 
 CSV
-    Insert description here
+    Stands for Comma-separated Values. It is a text file that represents tabular
+    data.
 
 Verilog
-    Insert description here
+    Verilog is a hardware description language (HDL) used to model electronic
+    systems. It is most commonly used in the design and verification of digital
+    circuits at the register-transfer level (RTL) of abstraction.
+    TODO (from wiki.. is that bad ?)
 
 Netgen
     Insert description here

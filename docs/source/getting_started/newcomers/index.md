@@ -1,6 +1,6 @@
 # Newcomers
 
-## What is OpenLane?
+## What is OpenLane ?
 
 ```{figure} ./flow.png
 :scale: 30 %
@@ -78,7 +78,7 @@ JSON and RTL
    :::
 
 4. Run the smoke test to ensure everything is fine.
-   This also downloads [sky130A](../../glossary.md#term-sky130A) [PDK](../../glossary.md#term-PDK).
+   This also downloads [sky130](../../glossary.md#term-sky130) [PDK](../../glossary.md#term-PDK).
 
    ```console
    [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
@@ -458,7 +458,7 @@ The intial number in `53-klayout-drc` (`53`) may vary according to a design conf
 :align: center
 ```
 
-TODO: MORE SCREENSHOTS AND HIGLIGHT BOXES
+TODO: MORE SCREENSHOTS AND HIGHLIGHT BOXES
 
 #### LVS
 
