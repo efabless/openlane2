@@ -11,11 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./pkgs.nix {},
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, tcl
+, tk
+, m4
+, python3
 }:
 
-with pkgs; clangStdenv.mkDerivation {
+clangStdenv.mkDerivation {
   name = "netgen";
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
@@ -37,4 +42,12 @@ with pkgs; clangStdenv.mkDerivation {
     m4
     python3
   ];
+
+  meta = with lib; {
+    description = "Complete LVS tool for comparing SPICE or verilog netlists";
+    homepage = "http://opencircuitdesign.com/netgen/";
+    # The code is technically distributed under GPLv1(!!)+
+    license = licenses.gpl2Plus;
+    platforms = platforms.unix;
+  };
 }

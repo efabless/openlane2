@@ -11,29 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./nix/pkgs.nix {},
-  openlane ? import ./. { inherit pkgs; },
-  openlane-plugins ? [],
+{ openlane-pkgs ? import ./nix { }
+, openlane-plugins ? [ ]
 }:
 
-with pkgs; let
-  openlane-env = (python3.withPackages(pp: with pp; [
-      openlane
-      pyfakefs
-      pytest
-      pillow
-      mdformat
-    ] ++ openlane-plugins )
-  ); in let
+with openlane-pkgs; with openlane-pkgs.nixpkgs; let
+  openlane-env = (python3.withPackages (pp: with pp; [
+    openlane
+    pyfakefs
+    pytest
+    pillow
+    mdformat
+  ] ++ openlane-plugins)
+  );
+in
+let
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
-in mkShell {
+in
+mkShell {
   name = "openlane-shell";
 
   propagatedBuildInputs = [
     openlane-env
-    
+
     # Conveniences
     git
     zsh
@@ -47,6 +48,6 @@ in mkShell {
     jupyter
     graphviz
   ] ++ openlane.includedTools ++ pluginIncludedTools;
-  
+
   PYTHONPATH = "${openlane-env-sitepackages}"; # Allows venvs to work properly
 }

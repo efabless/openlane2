@@ -32,15 +32,20 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-{
-  pkgs ? import ./pkgs.nix {},
-  yosys ? import ./yosys.nix { inherit pkgs; },
-  sby ? import ./yosys-sby.nix { inherit pkgs; inherit yosys; },
+{ lib
+, yosys
+, fetchFromGitHub
+, clangStdenv
+, libedit
+, libbsd
+, zlib
+, ghdl
+, pkg-config
 }:
 
-with pkgs; clangStdenv.mkDerivation {
+clangStdenv.mkDerivation {
   name = "yosys-ghdl";
-  dylibs = ["ghdl"];
+  dylibs = [ "ghdl" ];
 
   src = fetchFromGitHub {
     owner = "ghdl";
@@ -57,10 +62,6 @@ with pkgs; clangStdenv.mkDerivation {
     ghdl
   ];
 
-  checkInputs = [
-    sby
-  ];
-
   nativeBuildInputs = [
     pkg-config
   ];
@@ -71,4 +72,11 @@ with pkgs; clangStdenv.mkDerivation {
     mkdir -p $out/share/yosys/plugins
     cp ghdl.so $out/share/yosys/plugins/ghdl.so
   '';
+
+  meta = with lib; {
+    description = "VHDL synthesis (based on GHDL and Yosys)";
+    homepage = "http://ghdl.github.io/ghdl/using/Synthesis.html";
+    license = licenses.gpl3Plus;
+    platforms = [ "x86_64-linux" ];
+  };
 }

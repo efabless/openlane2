@@ -32,11 +32,21 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-{
-  pkgs ? import ./pkgs.nix {},
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, xorg
+, m4
+, ncurses
+, tcl
+, tcsh
+, tk
+, cairo
+, python3
+, gnused
 }:
 
-with pkgs; clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
   rev = "83ed73ac522c6bbd5900240c2d02e399820cbc26";
 
@@ -48,7 +58,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = [ python3 gnused ];
-  
+
   buildInputs = [
     xorg.libX11
     m4
@@ -83,4 +93,11 @@ with pkgs; clangStdenv.mkDerivation rec {
     sed -i "13iexport CAD_ROOT='$out/lib'" $out/bin/magic
     patchShebangs $out/bin/magic
   '';
+
+  meta = with lib; {
+    description = "VLSI layout tool written in Tcl";
+    homepage = "http://opencircuitdesign.com/magic/";
+    license = licenses.mit;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

@@ -11,37 +11,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  system ? builtins.currentSystem,
-  pkgs ? import ./nix/pkgs.nix {},
-
-
-  klayout ? import ./nix/klayout.nix { inherit pkgs; },
-  klayout-pymod ? import ./nix/klayout-pymod.nix { inherit pkgs; inherit klayout; },
-  libparse ? import ./nix/libparse.nix { inherit pkgs; },
-  ioplace-parser ? import ./nix/ioplace-parser.nix { inherit pkgs; },
-  magic ? import ./nix/magic.nix { inherit pkgs; },
-  netgen ? import ./nix/netgen.nix { inherit pkgs; },
-  opensta ? import ./nix/opensta.nix { inherit pkgs; },
-  openroad ? import ./nix/openroad.nix {
-    inherit pkgs;
-    inherit opensta;
-  },
-  surelog ? import ./nix/surelog.nix { inherit pkgs; },
-  verilator ? import ./nix/verilator.nix { inherit pkgs; },
-  volare ? import ./nix/volare.nix { inherit pkgs; },
-  yosys ? import ./nix/yosys.nix { inherit pkgs; },
-
-  synlig-sv ? import ./nix/yosys-synlig-sv.nix { inherit pkgs; inherit yosys; inherit surelog; },
-  lighter ? import ./nix/yosys-lighter.nix { inherit pkgs; inherit yosys; },
-  sby ? import ./nix/yosys-sby.nix { inherit pkgs; inherit yosys; },
-  eqy ? import ./nix/yosys-eqy.nix { inherit pkgs; inherit yosys; inherit sby; },
-  ys-ghdl ? import ./nix/yosys-ghdl.nix { inherit pkgs; inherit yosys; inherit sby; },
-
-  ...
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, nix-gitignore
+, buildPythonPackage
+  # Tools
+, klayout
+, klayout-pymod
+, libparse
+, ioplace-parser
+, immutabledict
+, magic
+, netgen
+, opensta
+, openroad
+, surelog
+, tcl
+, verilator
+, verilog
+, volare
+, yosys
+, yosys-synlig-sv
+, yosys-lighter
+, yosys-sby
+, yosys-eqy
+, yosys-ghdl
+  # PIP
+, click
+, cloup
+, pyyaml
+, rich
+, requests
+, pcpp
+, tkinter
+, lxml
+, deprecated
+, psutil
+, pytestCheckHook
+, pyfakefs
+, system
 }:
 
-with pkgs; with python3.pkgs; buildPythonPackage rec {
+buildPythonPackage rec {
   name = "openlane";
 
   version_file = builtins.readFile ./openlane/__version__.py;
@@ -65,15 +77,15 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
     ls -lah
   '';
 
-  buildInputs = [];
+  buildInputs = [ ];
 
   includedTools = [
-    (yosys.withPlugins([
-      sby
-      eqy
-      lighter
-      synlig-sv
-    ] ++ (if system == "x86_64-linux" then [ys-ghdl] else []) ))
+    (yosys.withPlugins ([
+      yosys-sby
+      yosys-eqy
+      yosys-lighter
+      yosys-synlig-sv
+    ] ++ lib.optionals (system == "x86_64-linux") [ yosys-ghdl ]))
     opensta
     openroad
     klayout
@@ -108,9 +120,16 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   checkInputs = [ pytestCheckHook pyfakefs ];
 
   computed_PATH = lib.makeBinPath (propagatedBuildInputs);
-  
+
   # Make PATH available to OpenLane subprocesses
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];
+
+  meta = with lib; {
+    description = "Hardware design and implementation infrastructure library and ASIC flow";
+    homepage = "https://efabless.com/openlane";
+    license = licenses.asl20;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

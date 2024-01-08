@@ -104,6 +104,7 @@ jobs:
         uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-amd64-${{ github.run_id }}
+          file: shell.nix
   build-linux-aarch64:
     needs: lint
     runs-on: ubuntu-22.04
@@ -127,6 +128,7 @@ jobs:
         uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-aarch64-${{ github.run_id }}
+          file: shell.nix
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
@@ -181,6 +183,7 @@ jobs:
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
+          file: shell.nix
           key: derivation-${{ matrix.arch }}-${{ github.run_id }}
           other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Build Docker Image
@@ -229,6 +232,7 @@ jobs:
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
+          file: shell.nix
           key: derivation-amd64-${{ github.run_id }}
           other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
       - name: Cache PDKs

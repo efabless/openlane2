@@ -33,11 +33,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-{
-  pkgs ? import ./pkgs.nix {},
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, cmake
+, libedit
 }:
 
-with pkgs; clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "yosys-abc";
 
   src = fetchFromGitHub {
@@ -52,7 +55,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   ];
 
   postPatch = ''
-  sed -i "s@-lreadline@-ledit@" ./Makefile
+    sed -i "s@-lreadline@-ledit@" ./Makefile
   '';
 
   nativeBuildInputs = [ cmake ];
@@ -64,6 +67,10 @@ with pkgs; clangStdenv.mkDerivation rec {
   passthru.rev = src.rev;
 
   meta = with lib; {
+    description = "A tool for squential logic synthesis and formal verification (YosysHQ's Fork)";
+    homepage = "https://people.eecs.berkeley.edu/~alanmi/abc";
     license = licenses.mit;
+    mainProgram = "abc";
+    platforms = platforms.unix;
   };
 }

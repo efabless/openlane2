@@ -11,12 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./pkgs.nix {},
+{ lib
+, abc-verifier
+, fetchFromGitHub
+, zlib
 }:
 
-with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
-  name = "or-abc";
+abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
+  name = "openroad-abc";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
@@ -51,4 +53,12 @@ with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     cp ../src/$header $header_tgt
     done
   '';
+
+  meta = with lib; {
+    description = "A tool for squential logic synthesis and formal verification (OpenROAD's Fork)";
+    homepage = "https://people.eecs.berkeley.edu/~alanmi/abc";
+    license = licenses.mit;
+    mainProgram = "abc";
+    platforms = platforms.unix;
+  };
 })

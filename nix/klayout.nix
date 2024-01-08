@@ -33,12 +33,21 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-{
-  pkgs ? import ./pkgs.nix {},
-  libsForQt5 ? pkgs.libsForQt5,
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, libsForQt5
+, which
+, perl
+, python3
+, ruby
+, gnused
+, curl
+, gcc
+, libgit2
 }:
 
-with pkgs; clangStdenv.mkDerivation {
+clangStdenv.mkDerivation {
   name = "klayout";
 
   src = fetchFromGitHub {
@@ -47,7 +56,7 @@ with pkgs; clangStdenv.mkDerivation {
     rev = "5961eab84bd2d394f3ca94f9482622180d796010";
     sha256 = "sha256-omeWS72J6mbA5mxsqwmsq1ytuhHa0rLZ+ErN66o+fiY=";
   };
-  
+
   patches = [
     ./patches/klayout/abspath.patch
   ];
@@ -81,7 +90,7 @@ with pkgs; clangStdenv.mkDerivation {
   ];
 
   configurePhase = ''
-    if [ "${if stdenv.isDarwin then "1" else "0" }" = "1" ]; then
+    if [ "${if clangStdenv.isDarwin then "1" else "0" }" = "1" ]; then
       export LDFLAGS="-headerpad_max_install_names"
     fi
     ./build.sh\
@@ -93,7 +102,7 @@ with pkgs; clangStdenv.mkDerivation {
       -verbose\
       -dry-run
   '';
-  
+
   buildPhase = ''
     echo "Using $NIX_BUILD_CORES threads…"
     make -j$NIX_BUILD_CORES -C build-release PREFIX=$out
@@ -102,7 +111,7 @@ with pkgs; clangStdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/bin
     make  -C build-release install
-    if [ "${if stdenv.isDarwin then "1" else "0" }" = "1" ]; then
+    if [ "${if clangStdenv.isDarwin then "1" else "0" }" = "1" ]; then
       cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
     else
       cp $out/lib/klayout $out/bin/
@@ -110,7 +119,16 @@ with pkgs; clangStdenv.mkDerivation {
   '';
 
   # The automatic Qt wrapper overrides makeWrapperArgs
-  preFixup = if stdenv.isDarwin then ''
-    python3 ${./supporting/klayout/patch_binaries.py} $out/lib $out/lib/pymod/klayout $out/bin/klayout
-  '' else "";
+  preFixup =
+    if clangStdenv.isDarwin then ''
+      python3 ${./supporting/klayout/patch_binaries.py} $out/lib $out/lib/pymod/klayout $out/bin/klayout
+    '' else "";
+
+  meta = with lib; {
+    description = "High performance layout viewer and editor with support for GDS and OASIS";
+    license = with licenses; [ gpl2Plus ];
+    homepage = "https://www.klayout.de/";
+    changelog = "https://www.klayout.de/development.html#${version}";
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

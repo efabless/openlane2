@@ -11,15 +11,38 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./pkgs.nix {},
-  opensta ? import ./opensta.nix { inherit pkgs; },
-  libsForQt5 ? pkgs.libsForQt5,
+{ lib
+, clangStdenv
+, fetchFromGitHub
+, openroad-abc
+, libsForQt5
+, opensta
+, boost183
+, eigen
+, tcl
+, python3
+, readline
+, tclreadline
+, spdlog-internal-fmt
+, libffi
+, llvmPackages
+, lemon-graph
+, or-tools
+, glpk
+, zlib
+, clp
+, cbc
+, re2
+, swig4
+, pkg-config
+, cmake
+, gnumake
+, flex
+, bison
+, clang-tools_14
 }:
 
-with pkgs; let
-  abc = import ./openroad-abc.nix { inherit pkgs; };
-in clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "openroad";
   rev = "75f2f325b7a42e56a92404f33af8e96530d9b202";
 
@@ -29,12 +52,12 @@ in clangStdenv.mkDerivation rec {
     inherit rev;
     sha256 = "sha256-QZ6Oui4JF4Z6e7SeAGI6pE8knbkOrdhVegABzmJHYhs=";
   };
-  
+
   cmakeFlagsAll = [
-    "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
-    "-DCMAKE_CXX_FLAGS=-I${abc}/include"
+    "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
     "-DENABLE_TESTS:BOOL=OFF"
     "-DVERBOSE=1"
   ];
@@ -43,7 +66,7 @@ in clangStdenv.mkDerivation rec {
     "-DUSE_SYSTEM_ABC:BOOL=ON"
     "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
     "-DOPENSTA_HOME=${opensta}"
-    "-DABC_LIBRARY=${abc}/lib/libabc.a"
+    "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
   ];
 
   preConfigure = ''
@@ -57,7 +80,7 @@ in clangStdenv.mkDerivation rec {
   '';
 
   buildInputs = [
-    abc
+    openroad-abc
     boost183
     eigen
     tcl
@@ -89,8 +112,17 @@ in clangStdenv.mkDerivation rec {
     libsForQt5.wrapQtAppsHook
     clang-tools_14
   ];
-  
+
   shellHook = ''
     export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " cmakeFlagsAll}"
   '';
+
+  meta = with lib; {
+    description = "OpenROAD's unified application implementing an RTL-to-GDS flow";
+    homepage = "https://theopenroadproject.org";
+    # OpenROAD code is BSD-licensed, but OpenSTA is GPLv3 licensed,
+    # so the combined work is GPLv3
+    license = licenses.gpl3Plus;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

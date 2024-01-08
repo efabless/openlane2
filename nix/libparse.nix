@@ -11,11 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{
-  pkgs ? import ./pkgs.nix {}
+{ fetchFromGitHub
+, python3
+, clang
+, swig
 }:
 
-with pkgs; with python3.pkgs; buildPythonPackage rec {
+with python3.pkgs; buildPythonPackage rec {
   name = "libparse";
 
   src = fetchFromGitHub {
@@ -32,4 +34,12 @@ with pkgs; with python3.pkgs; buildPythonPackage rec {
   ];
 
   doCheck = false;
+
+  meta = with lib; {
+    description = "Python wrapper around Yosys's ";
+    license = with licenses; [ asl20 ];
+    homepage = "https://www.klayout.de/";
+    changelog = "https://www.klayout.de/development.html#${version}";
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

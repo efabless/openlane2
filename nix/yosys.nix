@@ -33,25 +33,104 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-{
-  pkgs ? import ./pkgs.nix {},
-  py3 ? pkgs.python3.withPackages (pp: with pp; [
-    click
-    xmlschema
-  ]),
+{ symlinkJoin
+, python3
+, lib
+, makeWrapper
+, clangStdenv
+, fetchFromGitHub
+, pkg-config
+, bison
+, flex
+, yosys-abc
+, tcl
+, libedit
+, libbsd
+, libffi
+, zlib
 }:
 
-with pkgs; let
-  yosys-abc = import ./yosys-abc.nix { inherit pkgs; };
+let
+  py3env = python3.withPackages (pp: with pp; [
+    click
+    xmlschema
+  ]);
+  self = clangStdenv.mkDerivation rec {
+    name = "yosys";
+
+    src = fetchFromGitHub {
+      owner = "YosysHQ";
+      repo = "yosys";
+      rev = "4a1b5599258881f579a2d95274754bcd8fc171bd";
+      sha256 = "sha256-GHDsMBj7DRb9ffESgzd1HzDAA6Cyft5PomidvIMzn9g=";
+    };
+
+    nativeBuildInputs = [ pkg-config bison flex ];
+    propagatedBuildInputs = [ yosys-abc ];
+
+    buildInputs = [
+      tcl
+      libedit
+      libbsd
+      libffi
+      zlib
+      py3env
+    ];
+
+    passthru = { inherit py3env; inherit withPlugins; };
+
+    patches = [
+      ./patches/yosys/fix-clang-build.patch
+      ./patches/yosys/plugin-search-dirs.patch
+    ];
+
+    postPatch = ''
+      substituteInPlace ./Makefile \
+        --replace 'echo UNKNOWN' 'echo ${builtins.substring 0 10 src.rev}'
+
+      chmod +x ./misc/yosys-config.in
+      patchShebangs tests ./misc/yosys-config.in
+
+      sed -i 's@ENABLE_EDITLINE := 0@ENABLE_EDITLINE := 1@' Makefile
+      sed -i 's@ENABLE_READLINE := 1@ENABLE_READLINE := 0@' Makefile
+      sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
+    '';
+
+    preBuild =
+      let
+        shortAbcRev = builtins.substring 0 7 yosys-abc.rev;
+      in
+      ''
+        chmod -R u+w .
+        make config-clang
+      
+        echo 'ABCEXTERNAL = ${yosys-abc}/bin/abc' >> Makefile.conf
+
+        if ! grep -q "ABCREV = ${shortAbcRev}" Makefile; then
+          echo "ERROR: yosys isn't compatible with the provided abc (${yosys-abc}), failing."
+          exit 1
+        fi
+      '';
+
+    postBuild = "ln -sfv ${yosys-abc}/bin/abc ./yosys-abc";
+    postInstall = "ln -sfv ${yosys-abc}/bin/abc $out/bin/yosys-abc";
+
+    makeFlags = [ "PREFIX=${placeholder "out"}" ];
+    doCheck = false;
+    enableParallelBuilding = true;
+  };
   withPlugins = plugins:
     let
       paths = lib.closePropagation plugins;
       dylibs = lib.lists.flatten (map (n: n.dylibs) plugins);
-    in let module_flags = with builtins; concatStringsSep " "
+    in
+    let
+      module_flags = with builtins; concatStringsSep " "
         (map (so: "--add-flags -m --add-flags ${so}") dylibs);
-    in ( symlinkJoin {
-      name = "${yosys.name}-with-plugins";
-      paths = paths ++ [ yosys ] ;
+    in
+    (symlinkJoin {
+      name = "${self.name}-with-plugins";
+      paths = paths ++ [ self ];
       nativeBuildInputs = [ makeWrapper ];
       postBuild = ''
         wrapProgram $out/bin/yosys \
@@ -59,65 +138,5 @@ with pkgs; let
           ${module_flags}
       '';
     });
-in clangStdenv.mkDerivation rec {
-  name = "yosys";
-
-  src = fetchFromGitHub {
-    owner = "YosysHQ";
-    repo = "yosys";
-    rev = "4a1b5599258881f579a2d95274754bcd8fc171bd";
-    sha256 = "sha256-GHDsMBj7DRb9ffESgzd1HzDAA6Cyft5PomidvIMzn9g=";
-  };
-
-  nativeBuildInputs = [ pkg-config bison flex ];
-  propagatedBuildInputs = [ yosys-abc ];
-
-  buildInputs = [
-    tcl
-    libedit
-    libbsd
-    libffi
-    zlib
-    py3
-  ];
-
-  passthru = { inherit py3; inherit withPlugins; };
-
-  patches = [
-    ./patches/yosys/fix-clang-build.patch
-    ./patches/yosys/plugin-search-dirs.patch
-  ];
-
-  postPatch = ''
-    substituteInPlace ./Makefile \
-      --replace 'echo UNKNOWN' 'echo ${builtins.substring 0 10 src.rev}'
-
-    chmod +x ./misc/yosys-config.in
-    patchShebangs tests ./misc/yosys-config.in
-
-    sed -i 's@ENABLE_EDITLINE := 0@ENABLE_EDITLINE := 1@' Makefile
-    sed -i 's@ENABLE_READLINE := 1@ENABLE_READLINE := 0@' Makefile
-    sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
-  '';
-
-  preBuild = let
-    shortAbcRev = builtins.substring 0 7 yosys-abc.rev;
-  in ''
-    chmod -R u+w .
-    make config-clang
-    
-    echo 'ABCEXTERNAL = ${yosys-abc}/bin/abc' >> Makefile.conf
-
-    if ! grep -q "ABCREV = ${shortAbcRev}" Makefile; then
-      echo "ERROR: yosys isn't compatible with the provided abc (${yosys-abc}), failing."
-      exit 1
-    fi
-  '';
-
-  postBuild   = "ln -sfv ${yosys-abc}/bin/abc ./yosys-abc";
-  postInstall = "ln -sfv ${yosys-abc}/bin/abc $out/bin/yosys-abc";
-
-  makeFlags = [ "PREFIX=${placeholder "out"}"];
-  doCheck = false;
-  enableParallelBuilding = true;
-}
+in
+self
