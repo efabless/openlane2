@@ -25,6 +25,9 @@ set_max_fanout $::env(MAX_FANOUT_CONSTRAINT) [current_design]
 if { [info exists ::env(MAX_TRANSITION_CONSTRAINT)] } {
     set_max_transition $::env(MAX_TRANSITION_CONSTRAINT) [current_design]
 }
+if { [info exists ::env(MAX_CAPACITANCE_CONSTRAINT)] } {
+    set_max_capacitance $::env(MAX_CAPACITANCE_CONSTRAINT) [current_design]
+} 
 
 set clk_input [get_port $clock_port]
 set clk_indx [lsearch [all_inputs] $clk_input]
