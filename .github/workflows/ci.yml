@@ -204,11 +204,15 @@ jobs:
         run: |
           mkdir -p $HOME/.volare
           chmod -R 755 $HOME/.volare
-          OPENLANE_IMAGE_OVERRIDE=openlane:tmp-${{ matrix.arch }}\
-            ./venv/bin/python3 -m openlane\
-              --docker-no-tty\
-              --dockerized\
-              --smoke-test
+          if [ "${{ matrix.arch }}" == "aarch64" ]; then
+            export OPENLANE_IMAGE_OVERRIDE=openlane:tmp-aarch64-linux
+          elif [ "${{ matrix.arch }}" == "amd64" ]; then
+            export OPENLANE_IMAGE_OVERRIDE=openlane:tmp-x86_64-linux
+          fi
+          ./venv/bin/python3 -m openlane\
+            --docker-no-tty\
+            --dockerized\
+            --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -314,10 +318,10 @@ jobs:
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          docker tag openlane:tmp-x86-64_linux ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
+          docker tag openlane:tmp-x86_64-linux ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
 
-          docker tag openlane:tmp-aarch64_linux ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
+          docker tag openlane:tmp-aarch64-linux ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
 
           docker manifest create\
