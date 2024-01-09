@@ -191,7 +191,7 @@ jobs:
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
             arch_flags="--option system aarch64-linux --extra-platforms aarch64-linux"
           fi
-          IMAGE_PATH=$(nix-build --argstr name openlane --argstr tag-override tmp-${{ matrix.arch }} $arch_flags docker.nix)
+          IMAGE_PATH=$(nix build .#openlane-docker --print-out-paths --no-link $arch_flags)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -314,10 +314,10 @@ jobs:
       - name: Push (Docker)
         if: ${{ env.PUBLISH == '1' }}
         run: |
-          docker tag openlane:tmp-amd64 ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
+          docker tag openlane:tmp-x86-64_linux ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG-amd64
 
-          docker tag openlane:tmp-aarch64 ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
+          docker tag openlane:tmp-aarch64_linux ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
           docker push ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
 
           docker manifest create\

@@ -1,4 +1,4 @@
-(new: old: {
+new: old: {
   # Clang 16 flags "register" as an error by default
   lemon-graph = old.lemon-graph.overrideAttrs (finalAttrs: previousAttrs: {
     postPatch = "sed -i 's/register //' lemon/random.h";
@@ -71,4 +71,4 @@
         stdenv = old.overrideSDK old.stdenv "11.0";
       })
     else (old.or-tools);
-})
+}

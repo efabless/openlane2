@@ -12,24 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  openlane-pkgs ? import ./. {inherit pkgs;},
-  name ? "ghcr.io/efabless/openlane2",
-  tag-override ? null,
-}:
-with openlane-pkgs;
-with openlane-pkgs.nixpkgs; let
+  dockerTools,
+  buildEnv,
+  python3,
+  openlane,
+  system,
+  coreutils-full,
+  findutils,
+  bashInteractive,
+  gnugrep,
+  gnused,
+  which,
+  cacert,
+  iana-etc,
+  git,
+  neovim,
+  zsh,
+  silver-searcher,
+}: let
   openlane-env = python3.withPackages (ps: with ps; [openlane]);
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   openlane-env-bin = "${openlane-env}/bin";
 in
   dockerTools.buildImage rec {
-    inherit name;
-    tag =
-      if tag-override == null
-      then "${openlane.version}"
-      else tag-override;
+    name = "openlane";
+    tag = "tmp-${system}";
 
-    copyToRoot = pkgs.buildEnv {
+    copyToRoot = buildEnv {
       name = "image-root";
       paths = [
         # Base OS
