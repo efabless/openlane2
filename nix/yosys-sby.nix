@@ -11,20 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, yosys
-, fetchFromGitHub
-, libedit
-, libbsd
-, zlib
-, boolector
-, z3
-, yices
+{
+  lib,
+  yosys,
+  fetchFromGitHub,
+  libedit,
+  libbsd,
+  zlib,
+  boolector,
+  z3,
+  yices,
 }:
-
 yosys.stdenv.mkDerivation rec {
   name = "yosys-sby";
-  dylibs = [ ];
+  dylibs = [];
 
   src = fetchFromGitHub {
     owner = "yosyshq";

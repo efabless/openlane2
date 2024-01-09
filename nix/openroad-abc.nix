@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, abc-verifier
-, fetchFromGitHub
-, zlib
+{
+  lib,
+  abc-verifier,
+  fetchFromGitHub,
+  zlib,
 }:
-
 abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   name = "openroad-abc";
 
@@ -36,7 +36,7 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     "-DUSE_SYSTEM_ZLIB:BOOL=ON"
   ];
 
-  buildInputs = [ zlib ];
+  buildInputs = [zlib];
 
   installPhase = ''
     mkdir -p $out/bin
@@ -48,7 +48,7 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     mkdir -p $out/include
     for header in $(find  ../src | grep "\\.h$" | sed "s@../src/@@"); do
     header_tgt=$out/include/$header
-    header_dir=$(dirname $header_tgt) 
+    header_dir=$(dirname $header_tgt)
     mkdir -p $header_dir
     cp ../src/$header $header_tgt
     done

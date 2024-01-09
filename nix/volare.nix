@@ -11,13 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ pkgs ? import ./pkgs.nix { }
-}:
-let
+{pkgs ? import ./pkgs.nix {}}: let
   rev = "727e2be84a9d8eb62cf3a2756ab959670f891019";
   sha256 = "sha256-Yb2LtsMJJwETbelWic8GLGxSYAw2PQjb9RufKnEY+zI=";
-in
-let
+in let
   src = pkgs.fetchFromGitHub {
     owner = "efabless";
     repo = "volare";
@@ -25,6 +22,6 @@ let
     inherit sha256;
   };
 in
-import "${src}" {
-  inherit pkgs;
-}
+  import "${src}" {
+    inherit pkgs;
+  }

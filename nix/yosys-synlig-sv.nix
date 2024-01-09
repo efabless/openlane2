@@ -11,20 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, yosys
-, clangStdenv
-, fetchFromGitHub
-, surelog
-, capnproto
-, antlr4
-, pkg-config
-, writeText
+{
+  lib,
+  yosys,
+  clangStdenv,
+  fetchFromGitHub,
+  surelog,
+  capnproto,
+  antlr4,
+  pkg-config,
+  writeText,
 }:
-
 clangStdenv.mkDerivation rec {
   name = "yosys-synlig-sv";
-  dylibs = [ "synlig-sv" ];
+  dylibs = ["synlig-sv"];
 
   src = fetchFromGitHub {
     owner = "chipsalliance";

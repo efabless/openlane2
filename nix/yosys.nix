@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Copyright (c) 2003-2023 Eelco Dolstra and the Nixpkgs/NixOS contributors
-
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -21,10 +19,8 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -32,29 +28,28 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-{ symlinkJoin
-, python3
-, lib
-, makeWrapper
-, clangStdenv
-, fetchFromGitHub
-, pkg-config
-, bison
-, flex
-, yosys-abc
-, tcl
-, libedit
-, libbsd
-, libffi
-, zlib
-}:
-
-let
-  py3env = python3.withPackages (pp: with pp; [
-    click
-    xmlschema
-  ]);
+{
+  symlinkJoin,
+  python3,
+  lib,
+  makeWrapper,
+  clangStdenv,
+  fetchFromGitHub,
+  pkg-config,
+  bison,
+  flex,
+  yosys-abc,
+  tcl,
+  libedit,
+  libbsd,
+  libffi,
+  zlib,
+}: let
+  py3env = python3.withPackages (pp:
+    with pp; [
+      click
+      xmlschema
+    ]);
   self = clangStdenv.mkDerivation rec {
     name = "yosys";
 
@@ -65,8 +60,8 @@ let
       sha256 = "sha256-GHDsMBj7DRb9ffESgzd1HzDAA6Cyft5PomidvIMzn9g=";
     };
 
-    nativeBuildInputs = [ pkg-config bison flex ];
-    propagatedBuildInputs = [ yosys-abc ];
+    nativeBuildInputs = [pkg-config bison flex];
+    propagatedBuildInputs = [yosys-abc];
 
     buildInputs = [
       tcl
@@ -77,7 +72,10 @@ let
       py3env
     ];
 
-    passthru = { inherit py3env; inherit withPlugins; };
+    passthru = {
+      inherit py3env;
+      inherit withPlugins;
+    };
 
     patches = [
       ./patches/yosys/fix-clang-build.patch
@@ -96,47 +94,43 @@ let
       sed -Ei 's@PRETTY = 1@PRETTY = 0@' ./Makefile
     '';
 
-    preBuild =
-      let
-        shortAbcRev = builtins.substring 0 7 yosys-abc.rev;
-      in
-      ''
-        chmod -R u+w .
-        make config-clang
-      
-        echo 'ABCEXTERNAL = ${yosys-abc}/bin/abc' >> Makefile.conf
+    preBuild = let
+      shortAbcRev = builtins.substring 0 7 yosys-abc.rev;
+    in ''
+      chmod -R u+w .
+      make config-clang
 
-        if ! grep -q "ABCREV = ${shortAbcRev}" Makefile; then
-          echo "ERROR: yosys isn't compatible with the provided abc (${yosys-abc}), failing."
-          exit 1
-        fi
-      '';
+      echo 'ABCEXTERNAL = ${yosys-abc}/bin/abc' >> Makefile.conf
+
+      if ! grep -q "ABCREV = ${shortAbcRev}" Makefile; then
+        echo "ERROR: yosys isn't compatible with the provided abc (${yosys-abc}), failing."
+        exit 1
+      fi
+    '';
 
     postBuild = "ln -sfv ${yosys-abc}/bin/abc ./yosys-abc";
     postInstall = "ln -sfv ${yosys-abc}/bin/abc $out/bin/yosys-abc";
 
-    makeFlags = [ "PREFIX=${placeholder "out"}" ];
+    makeFlags = ["PREFIX=${placeholder "out"}"];
     doCheck = false;
     enableParallelBuilding = true;
   };
-  withPlugins = plugins:
-    let
-      paths = lib.closePropagation plugins;
-      dylibs = lib.lists.flatten (map (n: n.dylibs) plugins);
-    in
-    let
-      module_flags = with builtins; concatStringsSep " "
-        (map (so: "--add-flags -m --add-flags ${so}") dylibs);
-    in
-    (symlinkJoin {
-      name = "${self.name}-with-plugins";
-      paths = paths ++ [ self ];
-      nativeBuildInputs = [ makeWrapper ];
-      postBuild = ''
-        wrapProgram $out/bin/yosys \
-          --set NIX_YOSYS_PLUGIN_DIRS $out/share/yosys/plugins \
-          ${module_flags}
-      '';
-    });
+  withPlugins = plugins: let
+    paths = lib.closePropagation plugins;
+    dylibs = lib.lists.flatten (map (n: n.dylibs) plugins);
+  in let
+    module_flags = with builtins;
+      concatStringsSep " "
+      (map (so: "--add-flags -m --add-flags ${so}") dylibs);
+  in (symlinkJoin {
+    name = "${self.name}-with-plugins";
+    paths = paths ++ [self];
+    nativeBuildInputs = [makeWrapper];
+    postBuild = ''
+      wrapProgram $out/bin/yosys \
+        --set NIX_YOSYS_PLUGIN_DIRS $out/share/yosys/plugins \
+        ${module_flags}
+    '';
+  });
 in
-self
+  self

@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, yosys
-, libedit
-, libbsd
-, zlib
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  yosys,
+  libedit,
+  libbsd,
+  zlib,
 }:
-
 clangStdenv.mkDerivation rec {
   name = "yosys-lighter";
-  dylibs = [ "lighter" ];
+  dylibs = ["lighter"];
 
   src = fetchFromGitHub {
     owner = "aucohl";

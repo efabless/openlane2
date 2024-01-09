@@ -11,48 +11,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, nix-gitignore
-, buildPythonPackage
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  nix-gitignore,
+  buildPythonPackage,
   # Tools
-, klayout
-, klayout-pymod
-, libparse
-, ioplace-parser
-, immutabledict
-, magic
-, netgen
-, opensta
-, openroad
-, surelog
-, tcl
-, verilator
-, verilog
-, volare
-, yosys
-, yosys-synlig-sv
-, yosys-lighter
-, yosys-sby
-, yosys-eqy
-, yosys-ghdl
+  klayout,
+  klayout-pymod,
+  libparse,
+  ioplace-parser,
+  immutabledict,
+  magic,
+  netgen,
+  opensta,
+  openroad,
+  surelog,
+  tcl,
+  verilator,
+  verilog,
+  volare,
+  yosys,
+  yosys-synlig-sv,
+  yosys-lighter,
+  yosys-sby,
+  yosys-eqy,
+  yosys-ghdl,
   # PIP
-, click
-, cloup
-, pyyaml
-, rich
-, requests
-, pcpp
-, tkinter
-, lxml
-, deprecated
-, psutil
-, pytestCheckHook
-, pyfakefs
-, system
+  click,
+  cloup,
+  pyyaml,
+  rich,
+  requests,
+  pcpp,
+  tkinter,
+  lxml,
+  deprecated,
+  psutil,
+  pytestCheckHook,
+  pyfakefs,
+  system,
 }:
-
 buildPythonPackage rec {
   name = "openlane";
 
@@ -77,15 +77,16 @@ buildPythonPackage rec {
     ls -lah
   '';
 
-  buildInputs = [ ];
+  buildInputs = [];
 
   includedTools = [
     (yosys.withPlugins ([
-      yosys-sby
-      yosys-eqy
-      yosys-lighter
-      yosys-synlig-sv
-    ] ++ lib.optionals (system == "x86_64-linux") [ yosys-ghdl ]))
+        yosys-sby
+        yosys-eqy
+        yosys-lighter
+        yosys-synlig-sv
+      ]
+      ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
     opensta
     openroad
     klayout
@@ -97,29 +98,31 @@ buildPythonPackage rec {
     surelog
   ];
 
-  propagatedBuildInputs = [
-    # Python
-    click
-    cloup
-    pyyaml
-    rich
-    requests
-    pcpp
-    volare
-    tkinter
-    lxml
-    deprecated
-    immutabledict
-    libparse
-    ioplace-parser
-    psutil
-    klayout-pymod
-  ] ++ includedTools;
+  propagatedBuildInputs =
+    [
+      # Python
+      click
+      cloup
+      pyyaml
+      rich
+      requests
+      pcpp
+      volare
+      tkinter
+      lxml
+      deprecated
+      immutabledict
+      libparse
+      ioplace-parser
+      psutil
+      klayout-pymod
+    ]
+    ++ includedTools;
 
   doCheck = false;
-  checkInputs = [ pytestCheckHook pyfakefs ];
+  checkInputs = [pytestCheckHook pyfakefs];
 
-  computed_PATH = lib.makeBinPath (propagatedBuildInputs);
+  computed_PATH = lib.makeBinPath propagatedBuildInputs;
 
   # Make PATH available to OpenLane subprocesses
   makeWrapperArgs = [
@@ -129,6 +132,7 @@ buildPythonPackage rec {
   meta = with lib; {
     description = "Hardware design and implementation infrastructure library and ASIC flow";
     homepage = "https://efabless.com/openlane";
+    mainProgram = "openlane";
     license = licenses.asl20;
     platforms = platforms.linux ++ platforms.darwin;
   };

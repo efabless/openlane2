@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, klayout
-, python3
+{
+  lib,
+  clangStdenv,
+  klayout,
+  python3,
 }:
-
 python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
   name = "klayout-pymod";
-  buildInputs = [ klayout ];
+  buildInputs = [klayout];
   unpackPhase = "true";
   installPhase = ''
     mkdir -p $out/${python3.sitePackages}
@@ -28,7 +28,7 @@ python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
   '';
   meta = with lib; {
     description = "Python API access to KLayout";
-    license = with licenses; [ gpl2Plus ];
+    license = with licenses; [gpl2Plus];
     homepage = "https://www.klayout.de/";
     platforms = platforms.all;
   };

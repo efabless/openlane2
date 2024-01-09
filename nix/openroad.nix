@@ -11,37 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, openroad-abc
-, libsForQt5
-, opensta
-, boost183
-, eigen
-, tcl
-, python3
-, readline
-, tclreadline
-, spdlog-internal-fmt
-, libffi
-, llvmPackages
-, lemon-graph
-, or-tools
-, glpk
-, zlib
-, clp
-, cbc
-, re2
-, swig4
-, pkg-config
-, cmake
-, gnumake
-, flex
-, bison
-, clang-tools_14
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  openroad-abc,
+  libsForQt5,
+  opensta,
+  boost183,
+  eigen,
+  tcl,
+  python3,
+  readline,
+  tclreadline,
+  spdlog-internal-fmt,
+  libffi,
+  llvmPackages,
+  lemon-graph,
+  or-tools,
+  glpk,
+  zlib,
+  clp,
+  cbc,
+  re2,
+  swig4,
+  pkg-config,
+  cmake,
+  gnumake,
+  flex,
+  bison,
+  clang-tools_14,
 }:
-
 clangStdenv.mkDerivation rec {
   name = "openroad";
   rev = "75f2f325b7a42e56a92404f33af8e96530d9b202";
@@ -62,12 +62,14 @@ clangStdenv.mkDerivation rec {
     "-DVERBOSE=1"
   ];
 
-  cmakeFlags = cmakeFlagsAll ++ [
-    "-DUSE_SYSTEM_ABC:BOOL=ON"
-    "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
-    "-DOPENSTA_HOME=${opensta}"
-    "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
-  ];
+  cmakeFlags =
+    cmakeFlagsAll
+    ++ [
+      "-DUSE_SYSTEM_ABC:BOOL=ON"
+      "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
+      "-DOPENSTA_HOME=${opensta}"
+      "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
+    ];
 
   preConfigure = ''
     sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake

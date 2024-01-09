@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Copyright (c) 2003-2023 Eelco Dolstra and the Nixpkgs/NixOS contributors
-
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -21,10 +19,8 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -32,21 +28,20 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, libsForQt5
-, which
-, perl
-, python3
-, ruby
-, gnused
-, curl
-, gcc
-, libgit2
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  libsForQt5,
+  which,
+  perl,
+  python3,
+  ruby,
+  gnused,
+  curl,
+  gcc,
+  libgit2,
 }:
-
 clangStdenv.mkDerivation {
   name = "klayout";
 
@@ -90,7 +85,11 @@ clangStdenv.mkDerivation {
   ];
 
   configurePhase = ''
-    if [ "${if clangStdenv.isDarwin then "1" else "0" }" = "1" ]; then
+    if [ "${
+      if clangStdenv.isDarwin
+      then "1"
+      else "0"
+    }" = "1" ]; then
       export LDFLAGS="-headerpad_max_install_names"
     fi
     ./build.sh\
@@ -111,7 +110,11 @@ clangStdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/bin
     make  -C build-release install
-    if [ "${if clangStdenv.isDarwin then "1" else "0" }" = "1" ]; then
+    if [ "${
+      if clangStdenv.isDarwin
+      then "1"
+      else "0"
+    }" = "1" ]; then
       cp $out/lib/klayout.app/Contents/MacOS/klayout $out/bin/
     else
       cp $out/lib/klayout $out/bin/
@@ -120,13 +123,15 @@ clangStdenv.mkDerivation {
 
   # The automatic Qt wrapper overrides makeWrapperArgs
   preFixup =
-    if clangStdenv.isDarwin then ''
+    if clangStdenv.isDarwin
+    then ''
       python3 ${./supporting/klayout/patch_binaries.py} $out/lib $out/lib/pymod/klayout $out/bin/klayout
-    '' else "";
+    ''
+    else "";
 
   meta = with lib; {
     description = "High performance layout viewer and editor with support for GDS and OASIS";
-    license = with licenses; [ gpl2Plus ];
+    license = with licenses; [gpl2Plus];
     homepage = "https://www.klayout.de/";
     changelog = "https://www.klayout.de/development.html#${version}";
     platforms = platforms.linux ++ platforms.darwin;

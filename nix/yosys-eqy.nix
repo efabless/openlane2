@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, yosys
-, libedit
-, libbsd
-, bitwuzla
-, zlib
-, yosys-sby
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  yosys,
+  libedit,
+  libbsd,
+  bitwuzla,
+  zlib,
+  yosys-sby,
 }:
-
 clangStdenv.mkDerivation rec {
   name = "yosys-eqy";
 

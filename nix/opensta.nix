@@ -11,19 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-{ lib
-, clangStdenv
-, fetchFromGitHub
-, swig
-, pkg-config
-, cmake
-, gnumake
-, flex
-, bison
-, tcl
-, zlib
+{
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  swig,
+  pkg-config,
+  cmake,
+  gnumake,
+  flex,
+  bison,
+  tcl,
+  zlib,
 }:
-
 clangStdenv.mkDerivation rec {
   name = "opensta";
   rev = "5b374dd36ad345c9fcd5224e9fc20484393568ab";
