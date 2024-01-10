@@ -143,7 +143,7 @@ def pdk_scl_cb(
                 include_libraries.append(scl)
 
             pdk_family = None
-            if family := volare.Family.by_name[pdk]:
+            if family := volare.Family.by_name.get(pdk):
                 ctx.params["pdk"] = family.default_variant
                 pdk_family = family.name
                 verbose(f"Resolved PDK variant {family.default_variant}.")
