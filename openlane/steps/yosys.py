@@ -244,7 +244,6 @@ class SynthesisCommon(YosysStep):
                 "AREA 1",
                 "AREA 2",
                 "AREA 3",
-                "AREA 4",
                 "DELAY 0",
                 "DELAY 1",
                 "DELAY 2",
