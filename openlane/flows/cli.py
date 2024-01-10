@@ -153,6 +153,10 @@ def pdk_scl_cb(
                         pdk_family = family.name
                         break
 
+            if pdk_family is None:
+                err(f"Could not resolve the PDK '{ctx.params['pdk']}'.")
+                ctx.exit(1)
+
             version = volare.fetch(
                 volare_home,
                 pdk_family,
