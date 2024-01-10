@@ -33,7 +33,7 @@ from cloup.typing import Decorator
 
 from .flow import Flow
 from ..common import set_tpe, get_opdks_rev, cli
-from ..logging import set_log_level, err, options, LogLevels
+from ..logging import set_log_level, verbose, err, options, LogLevels
 from ..state import State, InvalidState
 
 
@@ -133,7 +133,6 @@ def pdk_scl_cb(
     values[param.name] = value
     if "pdk" in values and "scl" in values:
         pdk = values["pdk"]
-        pdk_family = pdk[:-1]
         if ctx.obj and ctx.obj.get("use_volare"):
             import volare
 
@@ -142,6 +141,17 @@ def pdk_scl_cb(
             include_libraries = ["default"]
             if scl := values["scl"]:
                 include_libraries.append(scl)
+
+            pdk_family = None
+            if family := volare.Family.by_name[pdk]:
+                ctx.params["pdk"] = family.default_variant
+                pdk_family = family.name
+                verbose(f"Resolved PDK variant {family.default_variant}.")
+            else:
+                for family in volare.Family.by_name.values():
+                    if pdk in family.variants:
+                        pdk_family = family.name
+                        break
 
             version = volare.fetch(
                 volare_home,
