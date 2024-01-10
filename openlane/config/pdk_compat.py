@@ -87,8 +87,6 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             return
         lib = lib_raw.strip()
         lib_list = ws.split(lib)
-        if new["PDK"].startswith("gf180mcu"):
-            lib_list = [file.replace("liberty", "lib") for file in lib_list]
         first_lib = os.path.basename(lib_list[0])[:-4]
         pvt = first_lib.split("__")[1]
         if default_pvt == "":
