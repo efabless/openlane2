@@ -104,29 +104,29 @@ jobs:
         uses: ./.github/actions/derivation_to_cache
         with:
           key: derivation-amd64-${{ github.run_id }}
-  # build-linux-aarch64:
-  #   needs: lint
-  #   runs-on: ubuntu-22.04
-  #   name: Build (Nix on Linux/aarch64)
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: docker/setup-qemu-action@v1
-  #     - name: Initialize Step Unit Test Submodule
-  #       run: |
-  #         git submodule update --init test/steps/all
-  #     - name: Set up GITHUB_TOKEN
-  #       run: |
-  #         echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-  #     - name: Build with Nix
-  #       uses: ./.github/actions/build_nix
-  #       with:
-  #         cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-  #         cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-  #         nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
-  #     - name: Derivation to Cache
-  #       uses: ./.github/actions/derivation_to_cache
-  #       with:
-  #         key: derivation-aarch64-${{ github.run_id }}
+  build-linux-aarch64:
+    needs: lint
+    runs-on: ubuntu-22.04
+    name: Build (Nix on Linux/aarch64)
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v1
+      - name: Initialize Step Unit Test Submodule
+        run: |
+          git submodule update --init test/steps/all
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
+        with:
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
+      - name: Derivation to Cache
+        uses: ./.github/actions/derivation_to_cache
+        with:
+          key: derivation-aarch64-${{ github.run_id }}
   build-mac-amd64:
     needs: lint
     runs-on: macos-12
