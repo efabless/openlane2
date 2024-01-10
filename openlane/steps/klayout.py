@@ -461,12 +461,6 @@ class OpenGUI(KLayoutStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        input_view = state_in[DesignFormat.DEF]
-        if gds := state_in[DesignFormat.GDS]:
-            input_view = gds
-
-        assert isinstance(input_view, Path)
-
         mode_args = []
         if self.config["KLAYOUT_EDITOR_MODE"]:
             mode_args.append("--editor")
@@ -475,10 +469,11 @@ class OpenGUI(KLayoutStep):
         if self.config["KLAYOUT_PRIORITIZE_GDS"]:
             if gds := state_in[DesignFormat.GDS]:
                 layout = gds
+        assert isinstance(layout, Path)
 
         env["KLAYOUT_ARGV"] = shlex.join(
             [
-                abspath(input_view),
+                abspath(layout),
             ]
             + self.get_cli_args(include_lefs=True)
         )

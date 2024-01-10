@@ -166,7 +166,7 @@ class Lint(Step):
             if exit_error is not None and errors_count == 0:
                 raise StepException(f"Verilator exited unexpectedly: {exit_error}")
 
-        metrics_updates.update({"design__lint_errors__count": errors_count})
+        metrics_updates.update({"design__lint_error__count": errors_count})
         metrics_updates.update(
             {"design__lint_timing_constructs__count": timing_constructs}
         )

@@ -194,7 +194,7 @@ class Toolbox(object):
             * The name of the timing corner
             * A heterogenous list of files composed of: Lib files are returned as-is,
               Netlists are returned as-is, and SPEF files are returned in the
-              format "{instance_name}@{spef_path}"
+              format ``{instance_name}@{spef_path}``\\.
 
             It is left up to the step or tool to process this list as they see
             fit.

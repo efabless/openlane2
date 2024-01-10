@@ -32,10 +32,10 @@ class MetricComparisonResult:
     :param metric_name: The name of the metric that has been compared
     :param gold: The "gold" value being compared against
     :param new: The new value being evaluated
-    :param delta: Non-``None`` if and only if ``before`` - ``after`` is a valid number.
+    :param delta: ``None`` if and only if ``before`` - ``after`` is an invalid number.
         Evaluates to ``after - before``\\.
-    :param delta_pct: Non-``None`` if ``delta`` is not None and before is non-zero.
-        Evaluates to ``(after - before) / before * 100``\\.
+    :param delta_pct: ``None`` if ``delta`` is None or before is zero.
+        Otherwise, evaluates to ``delta / before * 100``\\.
     :param better: Whether the change in the value is considered a good thing or
         not. ``None`` if ``delta`` is None or has no value set for
         ``Metric.higher_is_better``\\.

@@ -1037,7 +1037,7 @@ class CheckAntennas(OpenROADStep):
     Runs OpenROAD to check if one or more long nets may constitute an
     `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
 
-    The metric ``route__antenna_violations__count`` will be updated with the number of violating nets.
+    The metric ``route__antenna_violation__count`` will be updated with the number of violating nets.
     """
 
     id = "OpenROAD.CheckAntennas"
@@ -1052,7 +1052,7 @@ class CheckAntennas(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        metrics_updates["route__antenna_violations__count"] = get_antenna_nets(
+        metrics_updates["route__antenna_violation__count"] = get_antenna_nets(
             open(os.path.join(self.step_dir, "antenna.rpt")),
             open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
         )
@@ -1070,10 +1070,10 @@ class GlobalRouting(CheckAntennas):
     Estimated capacitance and resistance values are much more accurate for
     global routing.
 
-    Updates the ``route__antenna_violations__count`` metric.
+    Updates the ``route__antenna_violation__count`` metric.
 
     At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
-    mitigations may also be applied, updating the `route__antenna_violations__count` count.
+    mitigations may also be applied, updating the `route__antenna_violation__count` count.
     See the variables for more info.
     """
 

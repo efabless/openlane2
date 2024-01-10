@@ -118,10 +118,10 @@ def compare(
 
     md_str = diff.render_md(sort_by=("corner", ""), table_verbosity=table_verbosity)
 
-    file = sys.stdout
+    table_file = sys.stdout
     if table_out is not None:
-        file = open(table_out, "w", encoding="utf8")
-    print(md_str, file=file)
+        table_file = open(table_out, "w", encoding="utf8")
+    print(md_str, file=table_file)
 
     # When we upgrade to rich 13 (when NixOS 23.11 comes out,
     # it has a proper markdown table renderer, but until then, this will have to do)
@@ -253,9 +253,10 @@ def compare_multiple(
         filter_wildcards, table_verbosity, path_a, path_b
     )
     print(summary)
+    table_file = sys.stdout
     if table_out is not None:
-        file = open(table_out, "w", encoding="utf8")
-    print(tables, file=file)
+        table_file = open(table_out, "w", encoding="utf8")
+    print(tables, file=table_file)
 
 
 cli.add_command(compare_multiple)
@@ -315,7 +316,10 @@ def compare_main(
             if e.response is not None and e.response.status_code == 404:
                 print(f"main branch of repo {repo} not found.", file=sys.stderr)
             else:
-                print(f"failed to get info from github API: {404}", file=sys.stderr)
+                print(
+                    f"failed to get info from github API: {e.response.status_code}",
+                    file=sys.stderr,
+                )
             sys.exit(-1)
         result.raise_for_status()
         commit = str(result.json()["commit"]["sha"])

@@ -198,7 +198,7 @@ class LintErrors(MetricChecker):
     long_name = "Lint Errors Checker"
     deferred = False
 
-    metric_name = "design__lint_errors__count"
+    metric_name = "design__lint_error__count"
     metric_description = "Lint errors"
 
 

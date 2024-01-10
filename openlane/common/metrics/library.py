@@ -17,22 +17,18 @@ from .metric import Metric, sum_aggregator, min_aggregator, max_aggregator
 # Area and Counts
 Metric(
     "design__core__area",
-    aggregator=sum_aggregator,
     higher_is_better=False,
 )
 Metric(
     "design__die__area",
-    aggregator=sum_aggregator,
     higher_is_better=False,
 )
 Metric(
     "design__instance__area",
-    aggregator=sum_aggregator,
     higher_is_better=False,
 )
 Metric(
     "design__instance__count",
-    aggregator=sum_aggregator,
     higher_is_better=False,
 )
 
@@ -203,7 +199,7 @@ Metric(
     dont_aggregate=["iter"],
 )
 Metric(
-    "route__antenna_violations__count",
+    "route__antenna_violation__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     dont_aggregate=["iter"],
@@ -230,7 +226,7 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "design__lint_errors__count",
+    "design__lint_error__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
@@ -316,7 +312,7 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__lvs_net_differences__count",
+    "design__lvs_net_difference__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
@@ -340,7 +336,7 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__lvs_unmatched_pins__count",
+    "design__lvs_unmatched_pin__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,
