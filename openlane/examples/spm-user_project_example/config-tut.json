@@ -1,0 +1,13 @@
+{
+    "DESIGN_NAME": "user_project_wrapper",
+    "VERILOG_FILES": [
+        "dir::./defines.v",
+        "dir::./SPM_example.v",
+        "dir::./user_project_wrapper.v"
+    ],
+    "CLOCK_PERIOD": 25,
+    "CLOCK_PORT": "wb_clk_i",
+    "FP_DEF_TEMPLATE": "dir::./template.def",
+    "FP_SIZING": "absolute",
+    "DIE_AREA": [0, 0, 2920, 3520]
+}

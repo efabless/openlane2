@@ -186,79 +186,6 @@ $ nix-shell --pure ~/openlane2/shell.nix
 
 ---
 
-#### SPM as a macro for [Caravel User Project](#https://caravel-user-project.readthedocs.io/en/latest/)
-
-Usually a design is integerated as a macro inside a chip and by itslef it surves
-no purpose. We are going to harden `spm` as a macro inside to be integrated inside
-[Caravel User Project Wrapper](#https://caravel-user-project.readthedocs.io/en/latest/)
-
-##### New RTL
-
-Create a new folder `~/my_designs/spm-user_project_example/` and
-add the following new `RTL` to `~/my_designs/spm-user_project_example/SPM_example.v`:
-
-:::{dropdown} SPM_example.v
-
-```{literalinclude} ../../../../openlane/examples/spm-user_project_example/SPM_example.v
-
-```
-
-:::
-
-We need an additional file `~/my_designs/spm-user_project_example/defines.v` required
-by `Caravel User Project`.
-
-:::{dropdown} defines.v
-
-```{literalinclude} ../../../../openlane/examples/spm-user_project_example/defines.v
-
-```
-
-:::
-
-:::{seealso}
-Checkout [Caravel User Project#Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
-for information about the `RTL` changes.
-:::
-
-##### New Configuration
-
-We also need to update the configuration as follows.
-
-:::{dropdown} config.json
-
-```json
-{
-  "DESIGN_NAME": "SPM_example",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
-  "CLOCK_PERIOD": 25,
-  "CLOCK_PORT": "wb_clk_i",
-  "CLOCK_NET": "SPM.clk",
-  "RT_MAX_LAYER": "met4",
-  "FP_SIZING": "absolute",
-  "VDD_NETS": ["vccd1"],
-  "GND_NETS": ["vssd1"],
-  "FP_PDN_MULTILAYER": false,
-  "DIE_AREA": [0, 0, 600, 600]
-}
-```
-
-:::
-
-Aside from the [required variables](#required-variables), we also change the following:
-
-- `RT_MAX_LAYER` and `FP_PDN_MULTILAYER`: `sky130A` maximum routing layer is `met5`.
-  We are going to integerate to integrate it as macro inside another design.
-  The outer design's `PDN` is going to connect to our macro via `met5`. Hence
-  we make that layer completely available by limiting maximum routing layer to
-  `met4` and disabling `FP_PDN_MULTILAYER` which disable `met5` `PDN` pins in our
-  macro.
-- `FP_SIZING` and `DIE_AREA`: Due to requirements set by `Caravel User Project`,
-  we need a fixed area for our macro. We do that by setting `FP_SIZING` to `absolute`
-  and setting `DIE_AREA` to our required area.
-- `VDD_NETS` and `GND_NETS`: Also due to requirements set by `Caravel User Project`,
-  we set power and ground nets to `vccd1` and `vssd1`.
-
 ---
 
 ### Results of SPM as core ?
@@ -609,4 +536,226 @@ Here is a small description of each file:
      or no clocks, ports missing input delay and generated clocks
   7. Worst setup or hold violating path
 
-TODO: NEXT SHOULDN'T BE MIGRATING FROM OPENLANE1?
+### SPM as a macro for [Caravel User Project](#https://caravel-user-project.readthedocs.io/en/latest/)
+
+Often a design bystelf serves no purpose unless interfaced with and/or integrated
+into another design or a chip. We are going to harden `spm` design again but
+this time we will have it as a [Caravel User Project Wrapper](#https://caravel-user-project.readthedocs.io/en/latest/))
+macro for the chip [Caravel](#https://caravel-harness.readthedocs.io/en/latest/)
+
+#### Caravel
+
+TODO: Insert small description of Caravel
+
+#### Caravel user project
+
+TODO: Insert small description of Caravel User Project
+
+#### RTL updates
+
+Some RTL updates are needed for integration of the macro.
+
+Create a new folder `~/my_designs/spm-user_project_example/` and
+add the following new `RTL` to `~/my_designs/spm-user_project_example/SPM_example.v`:
+
+:::{dropdown} SPM_example.v
+
+```{literalinclude} ../../../../openlane/examples/spm-user_project_example/SPM_example.v
+
+```
+
+:::
+
+Also add `~/my_designs/spm-user_project_example/user_project_wrapper.v`:
+
+:::{dropdown} user_project_wrapper
+
+```{literalinclude} ../../../../openlane/examples/spm-user_project_example/user_project_wrapper.v
+
+```
+
+:::
+
+Finally, we need an additional file
+`~/my_designs/spm-user_project_example/defines.v` which is requried
+by `Caravel User Project`.
+
+:::{dropdown} defines.v
+
+```{literalinclude} ../../../../openlane/examples/spm-user_project_example/defines.v
+
+```
+
+:::
+
+:::{seealso}
+Checkout [Caravel User Project#Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
+for information about the `RTL` changes.
+:::
+
+#### Configuration Updates
+
+##### Required Variables
+
+We also need to update the configuration as follows.
+
+1. Update the design name to match our RTL:
+
+   ```json
+   {
+     "DESIGN_NAME": "user_project_wrapper"
+   }
+   ```
+
+2. Add the new RTL files to `VERILOG_FILES`
+
+   ```json
+   {
+     "DESIGN_NAME": "user_project_wrapper",
+     "VERILOG_FILES": [
+       "dir::./defines.v",
+       "dir::./SPM_example.v",
+       "dir::./user_project_wrapper.v"
+     ]
+   }
+   ```
+
+3. Set the `CLOCK_PERIOD` required by `Caravel`:
+
+   ```json
+   {
+     "DESIGN_NAME": "user_project_wrapper",
+     "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v", "dir::./user_project_wrapper.v"]
+     "CLOCK_PERIOD": 25,
+   }
+   ```
+
+4. The design has a new IO interface now so we need to update `CLOCK_PORT`
+   accordingly:
+
+   ```json
+   {
+     "DESIGN_NAME": "user_project_wrapper",
+     "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v", "dir::./user_project_wrapper.v"]
+     "CLOCK_PERIOD": 25,
+     "CLOCK_PORT": "wb_clk_i"
+   }
+   ```
+
+##### Floorplan
+
+###### IO Pins
+
+1. Lets try running the design:
+
+   ```console
+   [nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_example/config.json
+   ```
+
+   The flow will fail with the following message:
+
+   ```text
+    [ERROR PPL-0024] Number of IO pins (637) exceeds maximum number of available positions (220).
+    Error: ioplacer.tcl, 56 PPL-0024
+   ```
+
+   The reason that happens is that when we change the `RTL` of the design we
+   changed the pin interface of the design to match the IO pin interface needed by
+   `Caravel User Project`.
+   `Caravel User Project` needs lot of IO pins. By default, the flow will attempt
+   to harden using a utilization of 50%. Relative to the cells in the design,
+   there are too many IO pins. As a result the generated floorplan would be too
+   small to fit that many IO pins.
+   This can be solved by setting a lower utilization value. You will find out that
+   about 5% utilization is needed for the floorplan to succeed. This is
+   controlled by `FP_CORE_UTIL` `Variable`
+
+   ```json
+   {
+     "DESIGN_NAME": "SPM_example",
+     "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"]
+     "CLOCK_PERIOD": 25,
+     "CLOCK_PORT": "wb_clk_i",
+     "FP_CORE_UTIL": 5
+   }
+
+   ```
+
+   ```{figure} ./spm-caravel-user-project-util.png
+
+   SPM with 5% utilization
+   ```
+
+   As shown above, the are a lot of pins needed by the design and
+   certainly 50% utilization wouldn't fit all the pins.
+
+2. `Caravel User Project Wrapper` is a macro inside `Caravel`. To be able to use
+   any design as a `Caravel User Project Wrapper` it has to match the footprint
+   that `Caravel` is expecting so we can't rely on `FP_CORE_UTIL`.
+   This is done by setting an explicit die area and using `FP_DEF_TEMPLATE`.
+   `FP_DEF_TEMPLATE` is a `DEF` file used as a template for the design IO pins (and floorplan)
+   Shapes and locations of pins are copied from the template `DEF` over to our design.
+
+   ```json
+   {
+     "DESIGN_NAME": "SPM_example",
+     "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"]
+     "CLOCK_PERIOD": 25,
+     "CLOCK_PORT": "wb_clk_i",
+     "FP_DEF_TEMPLATE": "dir::./template.def",
+     "FP_SIZING": "absolute",
+     "DIE_AREA": [0, 0, 2920, 3520]
+   }
+   ```
+
+###### Power Distribution Network (PDN)
+
+A digital marco has a `PDN`. The PDN is resoponsible for power delievery to
+the cells in the design. As we have said before a macro is usually integrated
+into another design. Hence, the power is delivered by the parent design.
+For that when we design a macro we need to consider how its `PDN` is going to
+connect with the parent/outer macro.
+
+Here is another example macro that is fully integrated inside `Caravel`.
+
+TODO: insert screenshot of caravel user proejct example here higlighting the PDN.
+
+Our `PDN` of `User Project Wrapper` has to be configured to look like the figure
+show above. This is done by a collection of `Variable`(s) which are resposible for
+controlling the shape, location and metal layers for the `PDN` pins which is
+the power interface of the macro:
+
+```json
+    "FP_PDN_CORE_RING": 1,
+    "FP_PDN_CORE_RING_VWIDTH": 3.1,
+    "FP_PDN_CORE_RING_HWIDTH": 3.1,
+    "FP_PDN_CORE_RING_VOFFSET": 12.45,
+    "FP_PDN_CORE_RING_HOFFSET": 12.45,
+    "FP_PDN_CORE_RING_VSPACING": 1.7,
+    "FP_PDN_CORE_RING_HSPACING": 1.7,
+    "FP_PDN_VWIDTH": 3.1,
+    "FP_PDN_HWIDTH": 3.1,
+    "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
+    "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
+```
+
+We also need to match the power nets set by `Caravel` by using the following:
+
+```json
+    "VDD_NETS": [
+        "vccd1",
+        "vccd2",
+        "vdda1",
+        "vdda2"
+    ],
+    "GND_NETS": [
+        "vssd1",
+        "vssd2",
+        "vssa1",
+        "vssa2"
+    ],
+```
+
+##### Timing Constraints
+
+TODO: Insert a paragraph here describing user project wrapper SDC
