@@ -450,7 +450,13 @@ class OpenGUI(KLayoutStep):
             bool,
             "Whether to run the KLayout GUI in editor mode or in viewer mode.",
             default=False,
-        )
+        ),
+        Variable(
+            "KLAYOUT_PRIORITIZE_GDS",
+            bool,
+            "Whether to prioritize GDS (if found) when running htis step.",
+            default=True,
+        ),
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -461,9 +467,14 @@ class OpenGUI(KLayoutStep):
 
         assert isinstance(input_view, Path)
 
-        mode_arg = "--viewer"
+        mode_args = []
         if self.config["KLAYOUT_EDITOR_MODE"]:
-            mode_arg = "--editor"
+            mode_args.append("--editor")
+
+        layout = state_in[DesignFormat.DEF]
+        if self.config["KLAYOUT_PRIORITIZE_GDS"]:
+            if gds := state_in[DesignFormat.GDS]:
+                layout = gds
 
         env["KLAYOUT_ARGV"] = shlex.join(
             [
@@ -472,20 +483,25 @@ class OpenGUI(KLayoutStep):
             + self.get_cli_args(include_lefs=True)
         )
 
-        cmd = [
-            shutil.which("klayout") or "klayout",
-            mode_arg,
-            "-rm",
-            os.path.join(
-                get_script_dir(),
-                "klayout",
-                "open_design.py",
-            ),
-        ]
+        cmd = (
+            [
+                shutil.which("klayout") or "klayout",
+            ]
+            + mode_args
+            + [
+                "-rm",
+                os.path.join(
+                    get_script_dir(),
+                    "klayout",
+                    "open_design.py",
+                ),
+            ]
+        )
 
         subprocess.check_call(
             cmd,
             env=env,
+            cwd=self.step_dir,
         )
 
         return {}, {}
