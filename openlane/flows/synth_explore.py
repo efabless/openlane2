@@ -17,8 +17,8 @@ import os
 
 import rich
 import rich.table
-from typing import Dict, List, Optional, Tuple
 from concurrent.futures import Future
+from typing import Dict, List, Optional, Tuple
 
 from .flow import Flow
 from ..state import State
@@ -32,6 +32,33 @@ from ..steps import Step, Yosys, OpenROAD, StepError
 # strategies and shows which ones yield the best area XOR delay
 @Flow.factory.register()
 class SynthesisExploration(Flow):
+    """
+    Synthesis Exploration is a feature that tries multiple synthesis strategies
+    (in the form of different scripts for the ABC utility) to try and find which
+    strategy is better by either minimizing area or maximizing slack (and thus
+    frequency.)
+
+    The output is represented in a tabulated format, e.g.: ::
+
+      ┏━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+      ┃                ┃       ┃               ┃ Worst Setup      ┃ Total Negative   ┃
+      ┃ SYNTH_STRATEGY ┃ Gates ┃ Area (µm²)    ┃ Slack (ns)       ┃ Setup Slack (ns) ┃
+      ┡━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+      │ AREA 0         │ 8781  │ 97141.916800  │ 6.288794         │ 0.0              │
+      │ AREA 1         │ 8692  │ 96447.500800  │ 6.434102         │ 0.0              │
+      │ AREA 2         │ 8681  │ 96339.897600  │ 6.276806         │ 0.0              │
+      │ AREA 3         │ 11793 │ 111084.038400 │ 7.011374         │ 0.0              │
+      │ DELAY 0        │ 8969  │ 101418.518400 │ 6.511191         │ 0.0              │
+      │ DELAY 1        │ 8997  │ 101275.881600 │ 6.656564         │ 0.0              │
+      │ DELAY 2        │ 9013  │ 101177.036800 │ 6.691765         │ 0.0              │
+      │ DELAY 3        │ 8733  │ 99190.131200  │ 6.414865         │ 0.0              │
+      │ DELAY 4        │ 8739  │ 101011.878400 │ 6.274565         │ 0.0              │
+      └────────────────┴───────┴───────────────┴──────────────────┴──────────────────┘
+
+    You can then update your config file with the best ``SYNTH_STRATEGY`` for your
+    use-case so it can be used with other flows.
+    """
+
     Steps = [
         Yosys.Synthesis,
         OpenROAD.CheckSDCFiles,
@@ -115,12 +142,12 @@ class SynthesisExploration(Flow):
         max_slack = max(map(lambda x: x[2], successful_results.values()))
         max_tns = max(map(lambda x: x[3], successful_results.values()))
 
-        table = rich.table.Table()
+        table = rich.table.Table(width=80)
         table.add_column("SYNTH_STRATEGY")
         table.add_column("Gates")
         table.add_column("Area (µm²)")
-        table.add_column("Setup Slack (ns)")
-        table.add_column("Total Negative Slack (ns)")
+        table.add_column("Worst Setup Slack (ns)")
+        table.add_column("Total Negative Setup Slack (ns)")
         for key, result in results.items():
             gates_s = "[red]Failed"
             area_s = "[red]Failed"
