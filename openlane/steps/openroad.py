@@ -594,9 +594,11 @@ class STAPostPNR(STAPrePNR):
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
+        table.add_column("of which reg-to-reg")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Setup Worst Slack")
+        table.add_column("of which reg-to-reg")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -608,9 +610,11 @@ class STAPostPNR(STAPrePNR):
             row = [corner]
             for metric in [
                 "timing__hold__ws",
+                "timing__hold_r2r__ws",
                 "timing__hold_vio__count",
                 "timing__hold_r2r_vio__count",
                 "timing__setup__ws",
+                "timing__setup_r2r__ws",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",

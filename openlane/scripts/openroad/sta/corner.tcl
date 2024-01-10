@@ -248,6 +248,7 @@ set total_setup_vios 0
 set r2r_setup_vios 0
 
 set hold_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
+set worst_r2r_hold_slack infinity
 foreach path $hold_timing_paths {
     set from "reg"
     set to "reg"
@@ -265,6 +266,12 @@ foreach path $hold_timing_paths {
 
     incr total_hold_vios
     if { "$kind" == "reg-reg" } {
+        set slack [get_property $path slack]
+
+        if { $slack < $worst_r2r_hold_slack } {
+            set worst_r2r_hold_slack $slack
+        }
+
         incr r2r_hold_vios
     }
 
@@ -272,6 +279,7 @@ foreach path $hold_timing_paths {
 }
 
 set setup_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
+set worst_r2r_setup_slack infinity
 foreach path $setup_timing_paths {
     set from "reg"
     set to "reg"
@@ -290,6 +298,13 @@ foreach path $setup_timing_paths {
 
     incr total_setup_vios
     if { "$kind" == "reg-reg" } {
+        set slack [get_property $path slack]
+        puts $slack
+
+        if { $slack < $worst_r2r_setup_slack } {
+            set worst_r2r_setup_slack $slack
+        }
+
         incr r2r_setup_vios
     }
 
@@ -297,8 +312,10 @@ foreach path $setup_timing_paths {
 }
 
 write_metric_int "timing__hold_vio__count__corner:[$corner name]" $total_hold_vios
+write_metric_num "timing__hold_r2r__ws__corner:[$corner name]" $worst_r2r_hold_slack
 write_metric_int "timing__hold_r2r_vio__count__corner:[$corner name]" $r2r_hold_vios
 write_metric_int "timing__setup_vio__count__corner:[$corner name]" $total_setup_vios
+write_metric_num "timing__setup_r2r__ws__corner:[$corner name]" $worst_r2r_setup_slack
 write_metric_int "timing__setup_r2r_vio__count__corner:[$corner name]" $r2r_setup_vios
 puts "%OL_END_REPORT"
 
