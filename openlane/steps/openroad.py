@@ -586,19 +586,22 @@ class STAPostPNR(STAPrePNR):
             if slack is None:
                 return "[gray]?"
             slack = round(float(slack), 4)
-            if slack <= 0:
-                return f"[red]{slack}"
+            formatted_slack = f"{slack:.4f}"
+            if slack < 0:
+                return f"[red]{formatted_slack}"
             else:
-                return f"[green]{slack}"
+                return f"[green]{formatted_slack}"
 
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
         table.add_column("of which reg-to-reg")
+        table.add_column("Hold TNS")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Setup Worst Slack")
         table.add_column("of which reg-to-reg")
+        table.add_column("Setup TNS")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -611,10 +614,12 @@ class STAPostPNR(STAPrePNR):
             for metric in [
                 "timing__hold__ws",
                 "timing__hold_r2r__ws",
+                "timing__hold__tns",
                 "timing__hold_vio__count",
                 "timing__hold_r2r_vio__count",
                 "timing__setup__ws",
                 "timing__setup_r2r__ws",
+                "timing__setup__tns",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",

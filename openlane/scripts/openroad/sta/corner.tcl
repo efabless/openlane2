@@ -193,12 +193,9 @@ puts "%OL_CREATE_REPORT tns.max.rpt"
 puts "\n==========================================================================="
 puts "Total Negative Slack (Setup)"
 puts "============================================================================"
-set tns_design 0
-foreach corner [sta::corners] {
-    set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "max"] $sta_report_default_digits]
-    write_metric_num "timing__setup__tns__corner:[$corner name]" $tns
-    puts "[$corner name]: $tns"
-}
+set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "max"] $sta_report_default_digits]
+write_metric_num "timing__setup__tns__corner:[$corner name]" $tns
+puts "[$corner name]: $tns"
 puts "%OL_END_REPORT"
 
 puts "%OL_CREATE_REPORT wns.min.rpt"
