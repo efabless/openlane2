@@ -34,6 +34,7 @@ starts_with_whitespace = re.compile(r"^\s+.+$")
 
 def _parse_yosys_check(
     report: io.TextIOBase,
+    tristate_cell_prefix: Optional[str],
     tristate_okay: bool = False,
 ) -> int:
     verbose("Parsing synthesis checks…")
@@ -43,7 +44,13 @@ def _parse_yosys_check(
     for line in report:
         if line.startswith("Warning:") or line.startswith("Found and reported"):
             if current_warning is not None:
-                if tristate_okay and "tribuf" in current_warning:
+                if tristate_okay and (
+                    ("tribuf" in current_warning)
+                    or (
+                        tristate_cell_prefix is not None
+                        and tristate_cell_prefix in current_warning
+                    )
+                ):
                     debug("Ignoring tristate-related error:")
                     debug(current_warning)
                 else:
@@ -384,6 +391,7 @@ class SynthesisCommon(YosysStep):
         if os.path.exists(check_error_count_file):
             metric_updates["synthesis__check_error__count"] = _parse_yosys_check(
                 open(check_error_count_file),
+                self.config["TRISTATE_CELL_PREFIX"],
                 self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
             )
 

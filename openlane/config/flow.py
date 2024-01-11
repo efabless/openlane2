@@ -171,6 +171,12 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
+        "TRISTATE_CELL_PREFIX",
+        str,
+        "A common prefix of tristate cells.",
+        pdk=True,
+    ),
+    Variable(
         "FILL_CELL",
         List[str],
         "A list of cell names or wildcards of fill cells to be used in fill insertion.",
