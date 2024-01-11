@@ -92,7 +92,9 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "clock__skew__worst_hold": (-inf, max),
     "clock__skew__worst_setup": (-inf, max),
     "timing__hold__ws": (inf, min),
+    "timing__hold_r2r__ws": (inf, min),
     "timing__setup__ws": (inf, min),
+    "timing__setup_r2r__ws": (inf, min),
     "timing__hold__wns": (inf, min),
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
@@ -585,6 +587,8 @@ class STAPostPNR(STAPrePNR):
         def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
             if slack is None:
                 return "[gray]?"
+            if slack == float(inf):
+                return "[gray]N/A"
             slack = round(float(slack), 4)
             formatted_slack = f"{slack:.4f}"
             if slack < 0:
@@ -595,12 +599,12 @@ class STAPostPNR(STAPrePNR):
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
-        table.add_column("of which reg-to-reg")
+        table.add_column("reg-to-reg")
         table.add_column("Hold TNS")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Setup Worst Slack")
-        table.add_column("of which reg-to-reg")
+        table.add_column("reg-to-reg")
         table.add_column("Setup TNS")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")

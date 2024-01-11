@@ -245,7 +245,7 @@ set total_setup_vios 0
 set r2r_setup_vios 0
 
 set hold_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
-set worst_r2r_hold_slack infinity
+set worst_r2r_hold_slack 1e30
 foreach path $hold_timing_paths {
     set from "reg"
     set to "reg"
@@ -276,7 +276,7 @@ foreach path $hold_timing_paths {
 }
 
 set setup_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
-set worst_r2r_setup_slack infinity
+set worst_r2r_setup_slack 1e30
 foreach path $setup_timing_paths {
     set from "reg"
     set to "reg"
