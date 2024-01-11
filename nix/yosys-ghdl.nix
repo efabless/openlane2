@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Copyright (c) 2003-2023 Eelco Dolstra and the Nixpkgs/NixOS contributors
-
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -21,10 +19,8 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -33,12 +29,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 {
-  pkgs ? import ./pkgs.nix {},
-  yosys ? import ./yosys.nix { inherit pkgs; },
-  sby ? import ./yosys-sby.nix { inherit pkgs; inherit yosys; },
+  lib,
+  yosys,
+  fetchFromGitHub,
+  clangStdenv,
+  libedit,
+  libbsd,
+  zlib,
+  ghdl,
+  pkg-config,
 }:
-
-with pkgs; clangStdenv.mkDerivation {
+clangStdenv.mkDerivation {
   name = "yosys-ghdl";
   dylibs = ["ghdl"];
 
@@ -57,10 +58,6 @@ with pkgs; clangStdenv.mkDerivation {
     ghdl
   ];
 
-  checkInputs = [
-    sby
-  ];
-
   nativeBuildInputs = [
     pkg-config
   ];
@@ -71,4 +68,11 @@ with pkgs; clangStdenv.mkDerivation {
     mkdir -p $out/share/yosys/plugins
     cp ghdl.so $out/share/yosys/plugins/ghdl.so
   '';
+
+  meta = with lib; {
+    description = "VHDL synthesis (based on GHDL and Yosys)";
+    homepage = "http://ghdl.github.io/ghdl/using/Synthesis.html";
+    license = licenses.gpl3Plus;
+    platforms = ["x86_64-linux"];
+  };
 }

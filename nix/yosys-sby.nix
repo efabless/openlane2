@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
-  yosys ? import ./yosys.nix { inherit pkgs; },
+  lib,
+  yosys,
+  fetchFromGitHub,
+  libedit,
+  libbsd,
+  zlib,
+  boolector,
+  z3,
+  yices,
 }:
-
-with pkgs; clangStdenv.mkDerivation rec {
+yosys.stdenv.mkDerivation rec {
   name = "yosys-sby";
   dylibs = [];
 
@@ -32,7 +38,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   ];
 
   buildInputs = [
-    yosys.py3
+    yosys.py3env
     yosys
     libedit
     libbsd
@@ -45,13 +51,13 @@ with pkgs; clangStdenv.mkDerivation rec {
   ];
 
   preConfigure = ''
-  sed -i.bak "s@/usr/local@$out@" Makefile
-  sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" sbysrc/sby.py
-  sed -i.bak "s@\"/usr/bin/env\", @@" sbysrc/sby_core.py
+    sed -i.bak "s@/usr/local@$out@" Makefile
+    sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3env}/bin/python3@" sbysrc/sby.py
+    sed -i.bak "s@\"/usr/bin/env\", @@" sbysrc/sby_core.py
   '';
 
   checkPhase = ''
-  make test
+    make test
   '';
 
   doCheck = false;
@@ -60,4 +66,11 @@ with pkgs; clangStdenv.mkDerivation rec {
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];
+
+  meta = with lib; {
+    description = "An automatic clock gating utility.";
+    homepage = "https://github.com/AUCOHL/Lighter";
+    license = licenses.asl20;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }
