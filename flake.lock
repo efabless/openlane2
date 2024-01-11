@@ -2,7 +2,6 @@
   "nodes": {
     "flake-compat": {
       "locked": {
-        "lastModified": 1696426674,
         "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
         "rev": "0f9255e01c2351cc7d116c072cb317785dd33b33",
         "revCount": 57,
@@ -16,7 +15,6 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1704420045,
         "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
         "owner": "nixos",
         "repo": "nixpkgs",
