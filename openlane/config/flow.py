@@ -172,7 +172,7 @@ scl_variables = [
     ),
     Variable(
         "TRISTATE_CELL_PREFIX",
-        str,
+        Optional[str],
         "A common prefix of tristate cells.",
         pdk=True,
     ),
