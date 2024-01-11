@@ -229,12 +229,7 @@ class OpenROADStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-
-        lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset([str(e) for e in lib_list]),
-            frozenset([str(self.config["PNR_EXCLUSION_CELL_LIST"])]),
-            as_cell_lists=True,
-        )
+        lib_pnr = [str(lib) for lib in lib_list]
 
         env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         env["PNR_LIBS"] = " ".join(lib_pnr)
