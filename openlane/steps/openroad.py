@@ -59,6 +59,7 @@ from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
 from ..common import (
     Path,
+    TclUtils,
     get_script_dir,
     get_tpe,
     mkdirp,
@@ -239,6 +240,13 @@ class OpenROADStep(TclStep):
             [
                 str(lib)
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+            ]
+        )
+        env["PNR_EXCLUDED_CELLS"] = TclUtils.join(
+            [
+                cell.strip()
+                for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
+                if cell.strip() != ""
             ]
         )
 
