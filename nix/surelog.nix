@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # Copyright (c) 2003-2023 Eelco Dolstra and the Nixpkgs/NixOS contributors
-
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -21,10 +19,8 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -33,10 +29,21 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 {
-  pkgs ? import ./pkgs.nix {},
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  pkg-config,
+  openjdk,
+  python3,
+  gtest,
+  antlr4,
+  libuuid,
+  gperftools,
+  capnproto,
+  nlohmann_json,
 }:
-
-with pkgs; stdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "surelog";
   version = "1.76";
 
@@ -45,17 +52,18 @@ with pkgs; stdenv.mkDerivation (finalAttrs: {
     repo = finalAttrs.pname;
     rev = "v${finalAttrs.version}";
     hash = "sha256-Jfh6KGnPVksyCf2q7sQN6XSAWvbG+aW7/ynUuWKNUPs=";
-    fetchSubmodules = true;  # Use the included UHDM to avoid extreme brainrot
+    fetchSubmodules = true; # Use the included UHDM to avoid extreme brainrot
   };
 
   nativeBuildInputs = [
     cmake
     pkg-config
     openjdk
-    (python3.withPackages (p: with p; [
-      psutil
-      orderedmultidict
-    ]))
+    (python3.withPackages (p:
+      with p; [
+        psutil
+        orderedmultidict
+      ]))
     gtest
     antlr4
   ];
@@ -79,4 +87,11 @@ with pkgs; stdenv.mkDerivation (finalAttrs: {
 
   doCheck = false;
 
+  meta = with lib; {
+    description = "SystemVerilog 2017 Pre-processor, Parser, Elaborator, UHDM Compiler";
+    homepage = "https://github.com/chipsalliance/Surelog";
+    license = licenses.asl20;
+    mainProgram = "surelog";
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 })

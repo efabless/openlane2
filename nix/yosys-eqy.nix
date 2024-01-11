@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
-  yosys ? import ./yosys.nix { inherit pkgs; },
-  sby ? import ./yosys-sby.nix { inherit pkgs; inherit yosys; },
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  yosys,
+  libedit,
+  libbsd,
+  bitwuzla,
+  zlib,
+  yosys-sby,
 }:
-
-with pkgs; clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "yosys-eqy";
 
   dylibs = [
@@ -38,38 +43,45 @@ with pkgs; clangStdenv.mkDerivation rec {
   ];
 
   buildInputs = [
-    yosys.py3
+    yosys.py3env
     yosys
     libedit
     libbsd
     bitwuzla
     zlib
-    sby
+    yosys-sby
   ];
 
   preConfigure = ''
-  sed -i.bak "s@/usr/local@$out@" Makefile
-  sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3}/bin/python3@" src/eqy.py
-  sed -i.bak "s@\"/usr/bin/env\", @@" src/eqy_job.py
+    sed -i.bak "s@/usr/local@$out@" Makefile
+    sed -i.bak "s@#!/usr/bin/env python3@#!${yosys.py3env}/bin/python3@" src/eqy.py
+    sed -i.bak "s@\"/usr/bin/env\", @@" src/eqy_job.py
   '';
 
   postInstall = ''
-  cp examples/spm/formal_pdk_proc.py $out/bin/eqy.formal_pdk_proc
-  chmod +x $out/bin/eqy.formal_pdk_proc
+    cp examples/spm/formal_pdk_proc.py $out/bin/eqy.formal_pdk_proc
+    chmod +x $out/bin/eqy.formal_pdk_proc
   '';
 
   checkPhase = ''
-  sed -i.bak "s@> /dev/null@@" tests/python/Makefile
-  sed -i.bak "s/@//" tests/python/Makefile
-  sed -i.bak "s@make -C /tmp/@make -C \$(TMPDIR)@" tests/python/Makefile
-  make -C tests/python clean "EQY=${yosys.py3}/bin/python3 $PWD/src/eqy.py"
-  make -C tests/python "EQY=${yosys.py3}/bin/python3 $PWD/src/eqy.py"
+    sed -i.bak "s@> /dev/null@@" tests/python/Makefile
+    sed -i.bak "s/@//" tests/python/Makefile
+    sed -i.bak "s@make -C /tmp/@make -C \$(TMPDIR)@" tests/python/Makefile
+    make -C tests/python clean "EQY=${yosys.py3env}/bin/python3 $PWD/src/eqy.py"
+    make -C tests/python "EQY=${yosys.py3env}/bin/python3 $PWD/src/eqy.py"
   '';
 
   doCheck = true;
-  
+
   computed_PATH = lib.makeBinPath buildInputs;
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];
+
+  meta = with lib; {
+    description = "A front-end driver program for Yosys-based formal hardware verification flows.";
+    homepage = "https://github.com/yosysHQ/eqy";
+    license = licenses.mit;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }
