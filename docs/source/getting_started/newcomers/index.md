@@ -538,7 +538,7 @@ Here is a small description of each file:
 
 ---
 
-### SPM as a macro for [Caravel User Project](https://caravel-user-project.readthedocs.io/en/latest/)
+### SPM as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 Often a design by itself serves no purpose unless interfaced with and/or integrated
 into another design or a chip. We are going to harden `spm` design again but
@@ -559,7 +559,7 @@ Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more info
 
 #### RTL updates
 
-We begin by updating the `RTL` needed for integration of the macro.
+We begin by updating the `RTL` needed for integration of the spm into `Caravel`.
 
 1. Create a new folder `~/my_designs/spm-user_project_wrapper/` and
 
@@ -655,7 +655,7 @@ Then we need to create a configuration file to pass to the flow.
      ```
 
   4. The design has a new IO interface now so we need to update `CLOCK_PORT` in
-     order to generate proper clock tree.
+     order to generate a proper clock tree.
 
      ```json
      {
@@ -672,11 +672,11 @@ Then we need to create a configuration file to pass to the flow.
 
 #### Running the flow
 
-1. Lets try running the flow:
+Lets try running the flow:
 
-   ```console
-   [nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_wrapper/config.json
-   ```
+```console
+[nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_wrapper/config.json
+```
 
 #### Addressing issues
 
@@ -688,19 +688,18 @@ Error: ioplacer.tcl, 56 PPL-0024
 ```
 
 The reason that happens is that when we change the `RTL` of the design we
-changed the pin interface of the design to match the IO pin interface needed by
-`Caravel User Project`.
+changed the IO pin interface of the design to match the interface needed by
+`Caravel User Project Wrapper`.
 
-`Caravel User Project` needs lot of IO pins. By default, the flow will attempt
-to harden using a utilization of 50%. Relative to the cells in the design,
-there are too many IO pins. As a result the generated floorplan would be too
-small to fit that many IO pins.
+`Caravel User Project Wrapper` needs lot of IO pins. By default, the flow will attempt
+create a floorplan using a utilization of 50%. Relative to the cells in the design,
+there are too many IO pins to fit in such a floorplan.
 
 This can be solved by setting a lower utilization value. You will find out that
 about 5% utilization is needed for the floorplan to succeed. This is
 controlled by `FP_CORE_UTIL` `Variable`.
 
-Let's update the configuration as follows:
+Update the configuration as follows:
 
 ```json
 {
@@ -744,7 +743,7 @@ to view. In this figure, only met2.pin, met3.pin and pr.prboundary are shown.
 :::
 
 As shown above, the are a lot of pins needed by the design and
-certainly 50% utilization wouldn't fit all the pins.
+certainly a floorplan with 50% utilization wouldn't fit all the pins.
 
 ---
 
@@ -754,10 +753,10 @@ certainly 50% utilization wouldn't fit all the pins.
 any design as a `Caravel User Project Wrapper` it has to match the footprint
 that `Caravel` is expecting so we can't rely on `FP_CORE_UTIL`.
 
-##### I/O Pins
+##### IO Pins
 
 The top level design `Caravel` is expecting any `Caravel User Project Wrapper`
-to have the I/O pins at specific locations and with specific dimensions. We
+to have the IO pins at specific locations and with specific dimensions. We
 can achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
 `DEF` file used as a template for the design's floorplan. IO pins shapes and
 locations are copied from the template `DEF` file over to our design. In addition,
@@ -781,18 +780,21 @@ configuration by adding `FP_DEF_TEMPLATE` variable:
 
 ##### Power Distribution Network (PDN)
 
-A digital marco has a `PDN`. The `PDN` is resoponsible for power delievery to
-cells in the design. A macro's internal `PDN` is exposed through pins (similar
-to IO pins but much bigger) as an interface for integraion with another designs.
+A macro's Power Distribution Network (`PDN`) is resoponsible for the delivery of
+power to cells in the design. A macro's internal `PDN` is exposed through pins
+as an interface for integraion with another designs. These pins are similar to
+data IO pins but often much larger.
 
 Here is another an example of a macro that is fully integrated inside `Caravel`:
 
 TODO: insert screenshot of caravel user proejct example here higlighting the PDN.
 
-Our `PDN` of `User Project Wrapper` has to be configured to look like the figure
-shown above. This is done by a collection of variables which are resposible for
-controlling the shape, location and metal layers of the `PDN` pins offering
-the power interface of the macro:
+Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like the
+figure shown above. This is done by using a collection of variables which are resposible
+for controlling the shape, location and metal layers of the `PDN` pins offering
+the power interface of the macro.
+
+Append the following varaibles to your configuration:
 
 ```json
     "FP_PDN_CORE_RING": 1,
@@ -807,6 +809,11 @@ the power interface of the macro:
     "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
     "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
 ```
+
+:::{seealso}
+Visit TODO: Insert PDN config vars link here. For more information about
+each of the above variables
+:::
 
 `Caravel` is a chip with multiple power domains. We need to match these domains
 in our configuration by updating `VDD_NETS` and `GND_NETS` variables:
@@ -825,7 +832,7 @@ in our configuration by updating `VDD_NETS` and `GND_NETS` variables:
         "vssd2",
         "vssa1",
         "vssa2"
-    ],
+    ]
 ```
 
 ##### Timing Constraints
