@@ -203,7 +203,6 @@ This opens [KLayout](../../glossary.md#term-KLayout) and you should be able to s
 ```{figure} ./spm-gds.png
 :align: center
 
-Final GDSII view of SPM #TODO CROP
 ```
 
 If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the following:
@@ -298,7 +297,7 @@ RUN_2023-12-27_16-59-15
 └── warning.log
 ```
 
-##### Viewing Intermediate Layout
+#### Viewing Intermediate Layout
 
 Additionally, you can view the intermediate layout at each `Step`:
 
@@ -371,9 +370,19 @@ DRC (Design Rule Checking) Flow
 If `DRC` errors are found OpenLane will generate an error reporting
 the total count of violations found by each `Step`.
 
-To view `DRC` errors graphically. Open the layout, as mentioned in [Viewing the Layout](#viewing-the-layout).
+To view `DRC` errors graphically. Open the layout:
+
+```console
+[nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json
+```
+
 Then in the menu bar select Tools -> Marker Browser. A new window should open.
-Then select File -> import and then select the report file you would like to open.
+
+```{figure} ./klayout-markerbrowser-menu.png
+:align center
+```
+
+Then select File -> open and then select the report file you would like to open.
 Report files will be found under `52-magic-drc/reports/drc.klayout.xml` and
 `53-klayout-drc/report/drc.klayout.xml`
 
@@ -381,11 +390,9 @@ Report files will be found under `52-magic-drc/reports/drc.klayout.xml` and
 The intial number in `53-klayout-drc` (`53`) may vary according to a design configuration.
 :::
 
-```{image} ./klayout-markerbrowser-menu.png
-:align: center
+```{figure} ./klayout-markerbrowser-menu-2.png
+:align center
 ```
-
-TODO: MORE SCREENSHOTS AND HIGHLIGHT BOXES
 
 #### LVS
 
@@ -729,8 +736,6 @@ Let's view the layout:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm-user_project_wrapper/config.json
 ```
 
-TODO: redo screenshot to display gds
-
 ```{figure} ./spm-caravel-user-project-util.png
 
 SPM with 5% utilization
@@ -787,7 +792,25 @@ data IO pins but often much larger.
 
 Here is another an example of a macro that is fully integrated inside `Caravel`:
 
-TODO: insert screenshot of caravel user proejct example here higlighting the PDN.
+```{figure} ./caravel-1.png
+:align: center
+
+Example of a macro integrated inside Caravel
+```
+
+This figure displays `Caravel` chip. The higlighted rectangle is where
+`Caravel User Project Wrapper` is. Let's zoom in at the top right corner of
+this area.
+
+```{figure} ./caravel-pdn-2.png
+:align: center
+
+Top right corner
+```
+
+As higlighted there are power rings surrounding our wrapper. connectivity
+between the wrapper rings and the chip is done through the higlighted light blue
+`met3` wires.
 
 Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like the
 figure shown above. This is done by using a collection of variables which are resposible
