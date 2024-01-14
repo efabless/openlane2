@@ -17,5 +17,5 @@ Enter your password if prompted. This should take around 5 minutes.
 Make sure to close the Ubuntu terminal after you're done with this step and
 start it again.
 
-```{include} _common.md
+```{include} _common.md.part
 ```

@@ -15,5 +15,5 @@ optional and behave accordingly.
 | Variable Name | Type | Description | Default | Units |
 | - | - | - | - | - |
 %for var in option_variables:
-| <a name="${var.name.lower()}"></a>`${var.name}` | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
+| `${var.name}`{#var-${var.name.lower()}} | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
 %endfor

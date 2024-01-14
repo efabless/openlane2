@@ -15,35 +15,34 @@ At a minimum, the default flow for OpenLane 2, named `Classic`, is essentially a
 more robust re-implementation of the OpenLane 1 flow that is still entirely
 backwards compatible, with some conveniences:
 
-* Full configuration validation: if you have a typo, it will be caught, and if
+- Full configuration validation: if you have a typo, it will be caught, and if
   you accidentally provide a string to a number, it will be caught.
-* More graceful failures: if the design fails mid-flow, because of a more strict
+- More graceful failures: if the design fails mid-flow, because of a more strict
   separation of concerns, you still have access to metrics and reports from all
   previous steps.
-  * In OpenLane 1, they are all extracted at the end.
-* The ability to use command-line flow control options such as `--from`, `--to`,
+  - In OpenLane 1, they are all extracted at the end.
+- The ability to use command-line flow control options such as `--from`, `--to`,
   `--skip` and `--only`, with the ability to resume from a snapshot of your
   design at a certain part of the flow, without worrying about surprises related
   to state variables missing.
-
 
 ```{figure} ./configurable_flow.png
 Writing custom flows and steps using OpenLane 2.
 ```
 
-Additionally, if you're a more savvy user, a *whole new world* of possibilities
+Additionally, if you're a more savvy user, a _whole new world_ of possibilities
 await with OpenLane 2. Built around "flows" composed of "steps," OpenLane 2 can
 implement hardware flows for ASIC implementation by relying on basic Python
 object-oriented programming principles, and this naturally allows you to:
 
-* Write your own step, in Python. For example, create a custom placement step
+- Write your own step, in Python. For example, create a custom placement step
   for your design using OpenROAD Tcl or Python scripts, or even completely
   custom code.
-* Write complex flows with decision-making capabilities, including the ability
+- Write complex flows with decision-making capabilities, including the ability
   to repeat some steps or even try multiple strategies simultaneously and
   proceed with the best result.
-  * You can even do this in a Python Notebook!
-* Access a standardized and more formal form of design metrics based on
+  - You can even do this in a Python Notebook!
+- Access a standardized and more formal form of design metrics based on
   [the Metrics4ML standard](https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML).
 
 For example, using a custom OpenLane 2-based flow, the team over at
@@ -73,11 +72,12 @@ You can install Nix and set up the OpenLane binary cache by following the
 instructions at [Cachix](https://openlane.cachix.org).
 
 For more detailed instructions, see
-[Nix installation](./nix_installation/index.md).
+{ref}`nix-based-installation`
 
 Afterwards, you can run an example as follows:
 
 ```{include} ../common/nix_installation/_running_example.md
+
 ```
 
 ### Docker-based Installation (Not Preferred)
@@ -90,7 +90,7 @@ the image for you, as you can see below:
 ```!migration_comparison[bash]
 git clone https://github.com/The-OpenROAD-Project/OpenLane
 make pdk
-make mount 
+make mount
 ./flow.tcl -design spm
 ---
 pip3 install --upgrade openlane
@@ -118,7 +118,7 @@ them in JSON.
 
 ```{note}
 A small caveat is interactive scripts written in Tcl, however, are not supported
-in OpenLane 2- we've replaced them with Python-based flows, which are much 
+in OpenLane 2- we've replaced them with Python-based flows, which are much
 more flexible and stable: you can check out how to write one under
 {doc}`/usage/writing_custom_flows`.
 ```
@@ -151,7 +151,7 @@ the Docker-based installation.
 ```!migration_comparison[bash] ### Installation Smoke-Testing
 make test
 ---
-openlane --smoke-test 
+openlane --smoke-test
 ---
 Being built into the command-line interface of OpenLane makes it runnable from
 anywhere.

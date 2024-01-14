@@ -251,7 +251,7 @@ class Flow(ABC):
     :cvar config_vars:
         A list of **flow-specific** configuration variables. These configuration
         variables are used entirely within the logic of the flow itself and
-        are not exposed to ``Step``s.
+        are not exposed to ``Step``\\(s).
 
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
@@ -359,7 +359,9 @@ class Flow(ABC):
 
         if len(flow_config_vars):
             result += textwrap.dedent(
-                """
+                f"""
+                ({Self.__name__.lower()}-config-vars)=
+
                 #### Flow-specific Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units |

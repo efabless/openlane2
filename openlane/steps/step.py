@@ -505,7 +505,8 @@ class Step(ABC):
 
         if len(Self.config_vars):
             result += textwrap.dedent(
-                """
+                f"""
+                ({Self.id.lower()}-configuration-variables)=
                 #### Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units |
@@ -515,15 +516,14 @@ class Step(ABC):
             for var in Self.config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f'| <a name="{Self.id.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                result += f"| `{var.name}`{{#{slugify(Self.id.lower())}-var-{var.name.lower()}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
             result += "\n"
 
         result = (
             textwrap.dedent(
                 f"""
+                ({slugify(Self.id.lower())})=
                 ### {Self.__get_desc()}
-                
-                <a name="{Self.id.lower()}"></a>
                 """
             )
             + result
@@ -840,7 +840,7 @@ class Step(ABC):
             If running inside a flow, you may also omit this argument as ``None``,
             where the flow's toolbox will used to be instead.
 
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
+        :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
 
         :returns: An altered State object.
@@ -946,7 +946,7 @@ class Step(ABC):
             For reference, ``start()`` is responsible for resolving it
             for ``.run()``.
 
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
+        :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         """
         pass
@@ -996,7 +996,7 @@ class Step(ABC):
             within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
+        :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :returns: A dictionary of any metrics generated using the %OL_METRIC{,_I,_F}
             directive.

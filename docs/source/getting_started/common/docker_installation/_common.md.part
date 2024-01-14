@@ -89,7 +89,3 @@ You can run simply invoke `python3 -m openlane --dockerized` without any argumen
 to drop into an interactive shell inside the Docker environment, with your home
 directory and your PDK root directory mounted.
 ```
-
-## Next steps
-
-See the [Quick-start Guide](../quickstart.md).

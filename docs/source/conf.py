@@ -42,7 +42,6 @@ extensions = [
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosectionlabel",
     "sphinx.ext.graphviz",
     "sphinx.ext.mathjax",
     "sphinx_design",
@@ -137,7 +136,7 @@ autodoc_member_order = "bysource"
 autosectionlabel_prefix_document = True
 
 # MyST
-myst_heading_anchors = 3
+myst_heading_anchors = 4
 myst_enable_extensions = [
     "colon_fence",
     "attrs_block",

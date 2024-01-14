@@ -3,5 +3,5 @@
 :relative-images:
 ```
 
-```{include} _common.md
+```{include} _common.md.part
 ```

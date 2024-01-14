@@ -181,7 +181,7 @@ class TclStep(Step):
         while still respecting an `env` argument further up the call-stack.
 
         :param state_in: See superclass.
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
+        :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :returns: see superclass
         """

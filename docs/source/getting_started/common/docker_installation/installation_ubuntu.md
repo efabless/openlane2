@@ -2,7 +2,8 @@
 
 Only Ubuntu 20.04 and above are supported.
 
-```{include} wsl_ubuntu_packages.md
+```{include} ../_ubuntu_packages.md.part
+
 ```
 
 ### Installing Docker
@@ -63,7 +64,10 @@ For more examples and ideas, visit:
 https://docs.docker.com/get-started/
 ```
 
-```{include} docker_no_root.md
+```{include} docker_no_root.md.part
+
 ```
-```{include} _common.md
+
+```{include} _common.md.part
+
 ```

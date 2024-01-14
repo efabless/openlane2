@@ -48,7 +48,7 @@ JSON and RTL
 ## Installation
 
 1. Follow instructions [here](https://app.cachix.org/cache/openlane) to install
-   [Nix](../../glossary.md#term-Nix) and setup [cachix](../../glossary.md#term-cachix).
+   {term}`Nix` and setup {term}`cachix`.
 
 2. Open up a terminal and clone OpenLane:
 
@@ -78,7 +78,7 @@ JSON and RTL
    :::
 
 4. Run the smoke test to ensure everything is fine.
-   This also downloads [sky130](../../glossary.md#term-sky130) [PDK](../../glossary.md#term-PDK).
+   This also downloads {term}`sky130` {term}`PDK`.
 
    ```console
    [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
@@ -108,7 +108,7 @@ SPM (Serial-by-Parallel Multiplier)
 
 #### RTL
 
-This is the source [RTL](../../glossary.md#term-RTL) of the design.
+This is the source {term}`RTL` of the design.
 
 :::{dropdown} spm.v
 
@@ -121,7 +121,7 @@ This is the source [RTL](../../glossary.md#term-RTL) of the design.
 #### Configuration
 
 Designs in OpenLane have configuration files. A configuration file contains
-[Variable](../../glossary.md#term-Variable)(s). With them you control the OpenLane flow
+{term}`Variable`(s). With them you control the OpenLane flow
 and set your design's source files. This is configuration file for `spm` design:
 
 :::{dropdown} config.json
@@ -147,7 +147,8 @@ and `CLOCK_PORT` for any design.
 :::
 
 ```{seealso}
-The [full list INSERT REFERENE HERE](#glossary) of available configuration variables.
+Check out {doc}`../../reference/step_config_vars` and {doc}`../../reference/flows`
+for all available {term}`Variable`(s)
 ```
 
 #### How to run?
@@ -186,26 +187,24 @@ $ nix-shell --pure ~/openlane2/shell.nix
 
 ---
 
----
-
 ### Results of SPM as core ?
 
 #### Viewing the Layout
 
-To open the final [GDSII](../../glossary.md#term-GDSII) layout run this command:
+To open the final {term}`GDSII` layout run this command:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json
 ```
 
-This opens [KLayout](../../glossary.md#term-KLayout) and you should be able to see the following:
+This opens {term}`KLayout` and you should be able to see the following:
 
 ```{figure} ./spm-gds.png
 :align: center
 
 ```
 
-If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the following:
+If you wish to use {term}`OpenROAD` GUI use the following:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinopenroad ~/my_designs/spm/config.json
@@ -218,14 +217,14 @@ If you wish to use [OpenROAD](../../glossary.md#term-OpenROAD) GUI use the follo
 A new **run folder** (named something like `runs/RUN_2023-12-27_16-59-15`)
 should have been created.
 
-By default, OpenLane runs a [Flow](../../glossary.md#term-Flow) composed of a
-sequence of [Step](../../glossary.md#term-Step)(s).
+By default, OpenLane runs a {term}`Flow` composed of a
+sequence of {term}`Step`(s).
 Each `Step` has its separate folder.
 
 For example, the `OpenROAD.TapEndCapInsertion` `Step` creates the following
 folder `14-openroad-tapendcapinsertion` which would be inside the run folder.
 
-A `Step` folder has log files, report files, [Metrics](../../glossary.md#term-Metrics)
+A `Step` folder has log files, report files, {term}`Metrics`
 and output artifacts created by the `Step`.
 For example, these are the contents of `14-openroad-tapendcapinsertion`:
 
@@ -309,8 +308,8 @@ Additionally, you can view the intermediate layout at each `Step`:
 
 Inside the run folder, there is a folder called `final`. This folder contains
 other folders that contains all the different layout views produced by the flow
-such as [DEF](../../glossary.md#term-DEF), [LEF](../../glossary.md#term-LEF),
-`GDSII` and others. It looks like this:
+such as {term}`DEF` and {term}`LEF`.
+{term}`GDSII` and others. It looks like this:
 
 ```text
 final
@@ -334,7 +333,7 @@ final
 ```
 
 Moreover, it contains `metrics.csv` and `metric.json` which represents the
-final `metrics` in `JSON` and [CSV](../../glossary.md#term-CSV) formats
+final `metrics` in `JSON` and {term}`CSV` formats.
 
 ---
 
@@ -379,7 +378,7 @@ To view `DRC` errors graphically. Open the layout:
 Then in the menu bar select Tools -> Marker Browser. A new window should open.
 
 ```{figure} ./klayout-markerbrowser-menu.png
-:align center
+:align: center
 ```
 
 Then select File -> open and then select the report file you would like to open.
@@ -391,14 +390,14 @@ The initial number in `53-klayout-drc` (`53`) may vary according to a design con
 :::
 
 ```{figure} ./klayout-markerbrowser-menu-2.png
-:align center
+:align: center
 ```
 
 #### LVS
 
-`LVS` stands for Layout Versus Schematic. It compares the layout `GDSII` or
+`LVS` stands for Layout Versus Schematic. It compares the layout {term}`GDSII` or
 `DEF`/`LEF`, with the schematic which is usually in
-[Verilog](../../glossary.md#term-Verilog) ensuring that connectivity in both
+{term}`Verilog` ensuring that connectivity in both
 views are matching. Sometimes, user configuration or even the tools have errors
 and such check is important to catch them.
 
@@ -411,8 +410,8 @@ Common `LVS` errors include but are not limited to:
 - Missing Components: An expected component has been left out of the layout.
 
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called
-[Netgen](../../glossary.md#term-Netgen). First, the layout is converted to
-[SPICE] netlist (../../glossary.md#term-SPICE). Next
+{term}`Netgen`. First, the layout is converted to
+{term}`SPICE` netlist. Next
 the layout and the schematic are inputted to Netgen, as shown in the diagram
 bellow.
 
@@ -469,7 +468,7 @@ The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
 
 Inside the `Step` folder there is a file called `summary.rpt` which summarizes
-important metrics for each [IPVT](../../glossary.md#term-IPVT) [timing corner](../../glossary.md#term-timing-corner):
+important metrics for each {term}`IPVT` {term}`timing corner`:
 
 ```text
 ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
@@ -657,7 +656,7 @@ Then we need to create a configuration file to pass to the flow.
          "dir::./SPM_example.v",
          "dir::./user_project_wrapper.v"
        ]
-       "CLOCK_PERIOD": 25,
+       "CLOCK_PERIOD": 25
      }
      ```
 
@@ -704,7 +703,7 @@ there are too many IO pins to fit in such a floorplan.
 
 This can be solved by setting a lower utilization value. You will find out that
 about 5% utilization is needed for the floorplan to succeed. This is
-controlled by `FP_CORE_UTIL` `Variable`.
+controlled by `FP_CORE_UTIL` {term}`Variable`.
 
 Update the configuration as follows:
 

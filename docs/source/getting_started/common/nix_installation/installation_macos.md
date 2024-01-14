@@ -13,5 +13,5 @@ Enter your password if prompted. This should take around 5 minutes.
 
 Make sure to close all terminals after you're done with this step.
 
-```{include} _common.md
+```{include} _common.md.part
 ```

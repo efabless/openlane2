@@ -1,12 +1,13 @@
 # Other Linux
+
 ## Installating Dependencies
 
 For OpenLane you need a couple of tools installed:
 
-* Docker 19.03.12+
-    * Docker post-installation steps for running without root
-* Git 2.35+
-* Python 3.8+ with pip and tkinter
+- Docker 19.03.12+
+  - Docker post-installation steps for running without root
+- Git 2.35+
+- Python 3.8+ with pip and tkinter
 
 Please install all of these dependencies using your package manager. Please note that while alternative container services such as podman do work, they are not officially supported.
 
@@ -42,7 +43,10 @@ For more examples and ideas, visit:
 https://docs.docker.com/get-started/
 ```
 
-```{include} docker_no_root.md
+```{include} docker_no_root.md.part
+
 ```
-```{include} _common.md
+
+```{include} _common.md.part
+
 ```

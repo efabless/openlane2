@@ -58,5 +58,5 @@ https://docs.docker.com/go/wsl2/
 
 9. Follow the steps shown below.
 
-```{include} ../ubuntu_packages.md
+```{include} ../_ubuntu_packages.md.part
 ```
