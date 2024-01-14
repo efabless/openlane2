@@ -352,12 +352,12 @@ OpenLane runs a couple of `Step`(s) for the final signoff.
 
 #### DRC
 
-`DRC` stands for Design Rule Checking which are set by the FOUNDRY/Chip Manfucturer?
+`DRC` stands for Design Rule Checking which are set by the FOUNDRY/Chip Manufacturer?
 rules that the layout has to satisfy in order to be manufacturable.
 Such as, checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
-`KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputed to the tools running
+`KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputted to the tools running
 DRC, as shown in the diagram bellow:
 
 ```{figure} ./OL-DRC.png
@@ -387,7 +387,7 @@ Report files will be found under `52-magic-drc/reports/drc.klayout.xml` and
 `53-klayout-drc/report/drc.klayout.xml`
 
 :::{tip}
-The intial number in `53-klayout-drc` (`53`) may vary according to a design configuration.
+The initial number in `53-klayout-drc` (`53`) may vary according to a design configuration.
 :::
 
 ```{figure} ./klayout-markerbrowser-menu-2.png
@@ -413,7 +413,7 @@ Common `LVS` errors include but are not limited to:
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called
 [Netgen](../../glossary.md#term-Netgen). First, the layout is converted to
 [SPICE] netlist (../../glossary.md#term-SPICE). Next
-the layout and the schematic are inputed to Netgen, as shown in the digram
+the layout and the schematic are inputted to Netgen, as shown in the diagram
 bellow.
 
 ```{figure} ./OL-LVS.png
@@ -595,7 +595,7 @@ We begin by updating the `RTL` needed for integration of the spm into `Caravel`.
    :::
 
 4. Finally, we need an additional file
-   `~/my_designs/spm-user_project_wrapper/defines.v` which is requried
+   `~/my_designs/spm-user_project_wrapper/defines.v` which is required
    by `Caravel User Project`.
 
    :::{dropdown} defines.v
@@ -617,7 +617,7 @@ for information about the `RTL` changes.
 
 Then we need to create a configuration file to pass to the flow.
 
-- First, create a template configuation `JSON` file:
+- First, create a template configuration `JSON` file:
 
   ```console
   TODO: insert command here
@@ -785,9 +785,9 @@ configuration by adding `FP_DEF_TEMPLATE` variable:
 
 ##### Power Distribution Network (PDN)
 
-A macro's Power Distribution Network (`PDN`) is resoponsible for the delivery of
+A macro's Power Distribution Network (`PDN`) is responsible for the delivery of
 power to cells in the design. A macro's internal `PDN` is exposed through pins
-as an interface for integraion with another designs. These pins are similar to
+as an interface for integration with another designs. These pins are similar to
 data IO pins but often much larger.
 
 Here is another an example of a macro that is fully integrated inside `Caravel`:
@@ -798,7 +798,7 @@ Here is another an example of a macro that is fully integrated inside `Caravel`:
 Example of a macro integrated inside Caravel
 ```
 
-This figure displays `Caravel` chip. The higlighted rectangle is where
+This figure displays `Caravel` chip. The highlighted rectangle is where
 `Caravel User Project Wrapper` is. Let's zoom in at the top right corner of
 this area.
 
@@ -808,16 +808,16 @@ this area.
 Top right corner
 ```
 
-As higlighted there are power rings surrounding our wrapper. connectivity
-between the wrapper rings and the chip is done through the higlighted light blue
+As highlighted there are power rings surrounding our wrapper. connectivity
+between the wrapper rings and the chip is done through the highlighted light blue
 `met3` wires.
 
 Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like the
-figure shown above. This is done by using a collection of variables which are resposible
+figure shown above. This is done by using a collection of variables which are responsible
 for controlling the shape, location and metal layers of the `PDN` pins offering
 the power interface of the macro.
 
-Append the following varaibles to your configuration:
+Append the following variables to your configuration:
 
 ```json
     "FP_PDN_CORE_RING": 1,
