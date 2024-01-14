@@ -19,5 +19,5 @@
 }:
 symlinkJoin {
   name = "openlane-colab-env";
-  paths = openlane.includedTools ++ [python3.pkgs.tkinter];
+  paths = openlane.includedTools;
 }
