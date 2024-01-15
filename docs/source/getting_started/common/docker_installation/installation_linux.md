@@ -44,7 +44,7 @@ https://docs.docker.com/get-started/
 ```
 
 ```{include} docker_no_root.md
-:heading-offset: 1
+:heading-offset: 2
 
 ```
 

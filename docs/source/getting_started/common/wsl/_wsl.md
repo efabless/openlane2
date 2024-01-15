@@ -58,5 +58,6 @@ https://docs.docker.com/go/wsl2/
 9. Follow the steps shown below.
 
 ```{include} ../_ubuntu_packages.md
+:heading-offset: 1
 
 ```

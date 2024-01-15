@@ -2,6 +2,7 @@
 
 ```{include} ../wsl/_wsl.md
 :relative-images:
+:heading-offset: 1
 ```
 
 ## Installing Nix

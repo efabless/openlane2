@@ -1,4 +1,4 @@
-<h2> Installation of required packages </h2>
+# Installation of required packages
 
 Update the package database and upgrade the packages to avoid version mismatches then install required packages as follows:
 

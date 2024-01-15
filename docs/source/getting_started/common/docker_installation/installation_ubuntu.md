@@ -3,10 +3,11 @@
 Only Ubuntu 20.04 and above are supported.
 
 ```{include} ../_ubuntu_packages.md
+:heading-offset: 1
 
 ```
 
-<h3> Installing Docker </h3>
+## Installing Docker
 
 Next, install Docker.
 Follow [the instructions provided in the Docker documentation here](https://docs.docker.com/engine/install/ubuntu/) as the steps provided below might be outdated.

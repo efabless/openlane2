@@ -44,7 +44,7 @@ See 'docker run --help'.
 OpenLane>
 ```
 
-## Checking Installation Requirements
+# Checking Installation Requirements
 
 In order to check the installation, you can use the following commands:
 
@@ -68,7 +68,7 @@ Once an environment has been created, you may wish to activate it, e.g. by
 sourcing an activate script in its bin directory.
 ```
 
-## Download and Install OpenLane
+# Download and Install OpenLane
 
 - Download OpenLane using PIP:
 
