@@ -22,6 +22,3 @@ addition to the cumulative set of metrics created by previous Steps.
 """
 from .design_format import DesignFormat, DesignFormatObject
 from .state import State, InvalidState, StateElement
-
-# For backwards compatibility
-from ..common import Path

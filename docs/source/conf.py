@@ -152,17 +152,22 @@ mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/latest.
 # sphinx_copybutton
 copybutton_exclude = ".linenos, .gp"
 
+# sphinx_tippy
+tippy_enable_wikitips = False
 
-def skip_member(app, what, name, obj, skip, opts):
+
+def autodoc_skip_member(app, what, name, obj, skip, options):
     name_excludes = ["submit", "final"]
     module_excludes = ["concurrent.futures.thread"]
+    skip = False
     if name in name_excludes:
-        return True
+        skip = True
     if hasattr(obj, "__module__"):
-        if obj.__module__ in module_excludes:
-            return True
-    return False
+        if str(obj.__module__) in module_excludes:
+            skip = True
+
+    return skip
 
 
 def setup(app):
-    app.connect("autodoc-skip-member", skip_member)
+    app.connect("autodoc-skip-member", autodoc_skip_member)
