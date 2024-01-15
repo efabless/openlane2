@@ -16,7 +16,7 @@ The following is the recommended installation method under Windows. Other virtua
 ![](./powershell.png)
 
 6. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
-7. Check the verison of WSL using following command: `wsl --list --verbose`
+7. Check the version of WSL using following command: `wsl --list --verbose`
 
 It should produce the following output:
 

@@ -56,7 +56,7 @@ def set_tpe(tpe: ThreadPoolExecutor):
     Allows replacing OpenLane's global ``ThreadPoolExecutor`` with a customized
     one.
 
-    :param tpe: The replacemend ThreadPoolExecutor
+    :param tpe: The replacement ThreadPoolExecutor
     """
     global TPE
     TPE = tpe

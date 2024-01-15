@@ -147,7 +147,7 @@ pdk_variables = [
     Variable(
         "FP_IO_VLAYER",
         str,
-        "The metal layer on which to place vertial IO pins, i.e., the top and bottom of the die.",
+        "The metal layer on which to place vertical IO pins, i.e., the top and bottom of the die.",
         pdk=True,
     ),
     Variable("RT_MIN_LAYER", str, "The lowest metal layer to route on.", pdk=True),

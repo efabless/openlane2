@@ -1210,7 +1210,7 @@ class LayoutSTA(OpenROADStep):
 @Step.factory.register()
 class FillInsertion(OpenROADStep):
     """
-    Fills gaps in the floorplan with filler and decapacitance cells.
+    Fills gaps in the floorplan with filler and decap cells.
 
     This is run after detailed placement. After this point, the design is basically
     completely hardened.
@@ -1563,7 +1563,7 @@ class CTS(ResizerStep):
     Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
     for an ODB file with detailed-placed cells, using reasonably accurate resistance
     and capacitance estimations. Detailed Placement is then re-performed to
-    accomodate the new cells.
+    accommodate the new cells.
     """
 
     id = "OpenROAD.CTS"

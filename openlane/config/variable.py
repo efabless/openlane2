@@ -182,7 +182,7 @@ class Variable:
     """
     An object representing a configuration variable for a PDK, a Flow or a Step.
 
-    :param name: A string name for the Variable. Because of backwards compatility
+    :param name: A string name for the Variable. Because of backwards compatibility
         with OpenLane 1, the convention is ``UPPER_SNAKE_CASE``.
 
     :param type: A Python type object representing the variable.
@@ -512,7 +512,7 @@ class Variable:
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):
                 raise ValueError(
-                    f"Refusing to automatically convert '{value}' at '{key_path}' to a boolean"
+                    f"Refusing to automatically convert '{value}' at '{key_path}' to a Boolean"
                 )
             if value in ["1", "true", "True", 1, True]:
                 return True

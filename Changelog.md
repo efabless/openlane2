@@ -529,7 +529,7 @@
 # 2.0.0b7
 
 * Internally reworked `Config` module
-  * `Variable` objects now have a boolean property, `.pdk`, which is set to
+  * `Variable` objects now have a Boolean property, `.pdk`, which is set to
     `True` if the variable is expected to be provided by the PDK
   * List of common flow variables now incorporate both option config variables
     *and* PDK config variables, with the aforementioned flag used to tell them
@@ -681,8 +681,8 @@ parameterized cells.
 * JSON configuration files with `meta.version: 2` and dictionary configurations
   now both subject to stricter validation
   * Strings no longer automatically converted to lists, dicts, numbers,
-    booleans, et cetera
-  * Numbers no longer automatically converted to booleans
+    Booleans, et cetera
+  * Numbers no longer automatically converted to Booleans
   * Unrecognized keys throw an error instead of a warning
 * Steps now only keep a copy of configuration variables that are either common
   or explicitly declared
@@ -867,7 +867,7 @@ parameterized cells.
   * Create `GenericDict`, `GenericImmutableDict` to better handle immutable
     objects, i.e. `State`, `Config`
   * `State`, `Config` made immutable post-construction
-    * Various rewrites to accomodate that
+    * Various rewrites to accommodate that
   * `Step`:
     * `.run`:
       * No longer has any default implementation

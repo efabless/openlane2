@@ -217,7 +217,7 @@ As a rule of thumb, it is sufficient to forward these errors as one of these two
 - {exc}`openlane.flows.FlowError`
   - {exc}`openlane.flows.FlowException`
 
-Which share a similar hieararchy. Here is how `SequentialFlow`, for example, handles
+Which share a similar hierarchy. Here is how `SequentialFlow`, for example, handles
 its `StepError`s:
 
 ```{literalinclude} ../../../openlane/flows/sequential.py

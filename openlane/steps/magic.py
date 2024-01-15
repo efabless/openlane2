@@ -188,7 +188,7 @@ class WriteLEF(MagicStep):
         Variable(
             "MAGIC_WRITE_FULL_LEF",
             bool,
-            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view of the macro lef view via magic.",
+            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view  of the macro LEF view via magic.",
             default=False,
         ),
     ]

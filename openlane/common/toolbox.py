@@ -85,7 +85,7 @@ class Toolbox(object):
         an explicitly-provided override.
 
         :param config: The configuration. Used solely to extract the default corner.
-        :param views_by_corner: The mapping from (wild cards) of vorner names to
+        :param views_by_corner: The mapping from (wild cards) of corner names to
             views.
         :param corner: An explicit override for the default corner. Must be a
             fully qualified IPVT corner.
@@ -193,7 +193,7 @@ class Toolbox(object):
         :returns: A tuple of:
 
             * The name of the timing corner
-            * A heterogenous list of files
+            * A heterogeneous list of files
 
                 * Lib files are returned as-is
                 * Netlists are returned as-is

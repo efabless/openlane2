@@ -547,7 +547,7 @@ class FuzzyDiodePlacement(OdbpyStep):
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
             Decimal,
-            "A manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
+            "A Manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
             pdk=True,
         ),

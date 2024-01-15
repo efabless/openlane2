@@ -47,6 +47,7 @@ extensions = [
     "sphinx_design",
     "sphinx_tippy",
     "sphinx_copybutton",
+    "sphinxcontrib.spelling",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
     "migration_comparison",  # CUSTOM
@@ -154,6 +155,9 @@ copybutton_exclude = ".linenos, .gp"
 
 # sphinx_tippy
 tippy_enable_wikitips = False
+
+spelling_show_suggestions = True
+spelling_suggestion_limit = 1
 
 
 def autodoc_skip_member(app, what, name, obj, skip, options):

@@ -53,7 +53,7 @@ class SequentialFlow(Flow):
     :param kwargs: Keyword arguments for :class:`Flow`.
 
     :cvar gating_config_vars: A mapping from step ID (wildcards) to lists of
-        boolean variable names. All boolean variables must be True for a step with
+        Boolean variable names. All Boolean variables must be True for a step with
         a specific ID to execute.
     """
 
@@ -89,7 +89,7 @@ class SequentialFlow(Flow):
                     )
                 if variables_by_name[var_name].type != bool:
                     raise TypeError(
-                        f"Gating variable '{var_name}' in Flow '{Self.__qualname__}' is not a boolean"
+                        f"Gating variable '{var_name}' in Flow '{Self.__qualname__}' is not a Boolean"
                     )
 
     @classmethod

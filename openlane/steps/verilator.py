@@ -24,7 +24,7 @@ from ..common import Path
 
 @Step.factory.register()
 class Lint(Step):
-    """Lint design verilog source files"""
+    """Lint design Verilog source files"""
 
     id = "Verilator.Lint"
     name = "Verilator Lint"
@@ -41,7 +41,7 @@ class Lint(Step):
         Variable(
             "LINTER_INCLUDE_PDK_MODELS",
             bool,
-            "Include verilog models of the PDK",
+            "Include Verilog models of the PDK",
             default=False,
         ),
         Variable(

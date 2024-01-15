@@ -1,6 +1,6 @@
 # Other Linux
 
-## Installating Dependencies
+## Installing Dependencies
 
 For OpenLane you need a couple of tools installed:
 
@@ -21,7 +21,7 @@ Test if installation was successful:
 sudo docker run hello-world
 ```
 
-A sccessful installation of Docker looks like this:
+A successful installation of Docker looks like this:
 
 ```
 Hello from Docker!

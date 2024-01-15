@@ -4,7 +4,7 @@ come with a configuration file. These configuration files can be written in one
 of two grammars: JSON or Tcl.
 
 Tcl offers more flexibility at the detriment of security, while JSON is more
-straightforward at the cost of flexbility. While Tcl allows you to do all
+straightforward at the cost of flexibility. While Tcl allows you to do all
 manner of computation on your variables, JSON has a limited expression engine
 that will be detailed later in this document. Nevertheless, for security (and
 future-proofing), we recommend you use either the JSON format or write Python
@@ -27,7 +27,7 @@ The JSON files are simple key-value pairs.
 
 <a name="scalars"></a>
 
-The values can be scalars (strings, numbers, booleans, and `null`s), lists or
+The values can be scalars (strings, numbers, Booleans, and `null`s), lists or
 dictionaries, subject to validation.  
 
 All files must be ECMA404-compliant, i.e., pure JSON with no extensions such as

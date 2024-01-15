@@ -56,8 +56,8 @@ There are some conventions to writing these variables.
     variables.
 - Variables that capture a physical quantity, such as time, distance or similar,
   must declare units using their `"units"` field.
-  - In case of micro-, the only SI prefix denoted with a non-latin letter, use this
-    exact unicode codepoint: `µ`
+  - In case of micro-, the only SI prefix denoted with a non-Latin letter, use this
+    exact Unicode codepoint: `µ`
 - Variables may be declared as `pdk`, which determines the compatibility of a PDK
   with your step. If you use a PDK that does not declare one of your declared PDK
   variables, the configuration will not compile and the step will raise a

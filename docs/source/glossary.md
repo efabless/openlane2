@@ -3,7 +3,7 @@
 ```{glossary}
 
 IPVT
-    Abbrevation for Interconnect, Process, Voltage, and Temperature, the four
+    Abbreviation for Interconnect, Process, Voltage, and Temperature, the four
     components of a timing corner.
 
 timing corner
@@ -44,7 +44,7 @@ GDSII
     hierarchical form. The data can be used to reconstruct all or part of the
     artwork to be used in sharing layouts, transferring artwork between different
     tools, or creating photomasks. It captures all the layout details needed by
-    the manfacturer.
+    the manufacturer.
 
 KLayout
     A free and open-source layout viewer and editor. For more information visit

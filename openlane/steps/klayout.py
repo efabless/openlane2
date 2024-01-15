@@ -369,7 +369,7 @@ class DRC(KLayoutStep):
         Variable(
             "KLAYOUT_DRC_OPTIONS",
             Optional[Dict[str, Union[bool, int]]],
-            "Options availble to KLayout DRC runset. They vary from one PDK to another.",
+            "Options available to KLayout DRC runset. They vary from one PDK to another.",
             pdk=True,
         ),
         Variable(
@@ -481,7 +481,7 @@ class OpenGUI(KLayoutStep):
         Variable(
             "KLAYOUT_PRIORITIZE_GDS",
             bool,
-            "Whether to prioritize GDS (if found) when running htis step.",
+            "Whether to prioritize GDS (if found) when running this step.",
             default=True,
         ),
     ]

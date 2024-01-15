@@ -36,7 +36,7 @@ A line with just `x[0]` is still a regular expression which will match the strin
 
 ## Annotations
 
-Some statements can be preceeded with `@`s and are referred to as annotations.
+Some statements can be preceded with `@`s and are referred to as annotations.
 
 Annotations placed before declaring any sections are known as **global annotations**
 and affect default behaviors of all sections.

@@ -538,7 +538,7 @@ Here is a small description of each file:
   3. Max fanout violations
   4. Unconstrained paths
   5. Unannotated and partially annotated nets
-  6. Checks the `SDC` for comobinationals loops, register/latch with multiple clocks
+  6. Checks the `SDC` for combinationals loops, register/latch with multiple clocks
      or no clocks, ports missing input delay and generated clocks
   7. Worst setup or hold violating path
 

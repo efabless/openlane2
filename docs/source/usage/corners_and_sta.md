@@ -14,7 +14,7 @@ being as a result of the process:
   - `s`, `t`, `f` for whether NMOS transistors are slow, typical, or fast respectively.
   - Another `s`, `t`, `f` but for PMOS transistors.
     For example, a corner with fast NMOS and PMOS would be denoted `ff`.
-    See https://en.wikipedia.org/wiki/Process_corners#FEOL_corners for more info.
+    See [Process Corners](https://en.wikipedia.org/wiki/Process_corners#FEOL_corners) for more info.
 
 And two that are dependent on the operation environment:
 
@@ -32,7 +32,7 @@ Common EDA files incorporate these corners as follows:
   - For standard cells, the parasitic effect is minimal, leading to the common
     acronym "PVT": **P**rocess/Transistor Corner, **V**oltage and **T**emperature
     for their lib files.
-  - For macros, the parasitic effect is signficiant, and a lib file for one
+  - For macros, the parasitic effect is significant, and a lib file for one
     parasitic corner is not necessary applicable for others.
 
 ```{note}
@@ -89,7 +89,7 @@ The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for thes
 | "max" | The maximum interconnect corner | `sky130_fd_sc_hd__max.tlef`  | `rules.openrcx.sky130A.max.calibre` |
 
 As a user, you are free to override these values as you would any other PDK/SCL
-variables, however, it is your responsibility to keep the consistent: if you alte
+variables, however, it is your responsibility to keep the consistent.
 
 For most STA invocations, the **first** PVT corner will be used (timing does not
 incorporate parasitics until the very end.)

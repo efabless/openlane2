@@ -104,13 +104,13 @@ class YosysStep(TclStep):
         Variable(
             "SYNTH_LATCH_MAP",
             Optional[Path],
-            "A path to a file contianing the latch mapping for Yosys.",
+            "A path to a file containing the latch mapping for Yosys.",
             pdk=True,
         ),
         Variable(
             "SYNTH_TRISTATE_MAP",
             Optional[Path],
-            "A path to a file contianing the tri-state buffer mapping for Yosys.",
+            "A path to a file containing the tri-state buffer mapping for Yosys.",
             deprecated_names=["TRISTATE_BUFFER_MAP"],
             pdk=True,
         ),
