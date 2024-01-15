@@ -38,7 +38,7 @@ The basic configuration `config.json` file for the default flow should at least
 contain these variables:
 
 - [`DESIGN_NAME`](#var-design_name)
-- [`VERILOG_FILES`](#yosys-synthesis-var-verilog_files)
+- [`VERILOG_FILES`](#var-yosys-synthesis-verilog_files)
 - [`CLOCK_PORT`](#var-clock_port)
 
 So, for example:
@@ -60,13 +60,13 @@ Synthesis is the process by which RTL is transformed into logic primitives,
 then again transformed into a list of "standard cells"- silicon patterns.
 
 The default flow uses Yosys for Synthesis, namely,
-[this step](../reference/step_config_vars.md#Yosys.Synthesis).
+[this step](#step-yosys-synthesis)
 
 In general, there's not much to mess around with regards to
 synthesis, but here are some tips for using a couple variables:
 
 - If your macro is huge (200k+ cells), then you might want to try setting
-  [`SYNTH_NO_FLAT`](../reference/step_config_vars.md#Yosys.Synthesis.SYNTH_NO_FLAT)
+  [`SYNTH_NO_FLAT`](#var-yosys-synthesis-synth_no_flat)
   to `1` (Tcl)/`true` (JSON), which will postpone the flattening of the design
   during synthesis until the very end.
 
@@ -85,16 +85,16 @@ the timing constraints on the design are met:
 
 Here are some variables you need to consider:
 
-- [`CLOCK_PORT`](../reference/flow_config_vars.md#CLOCK_PORT): Self-explanatory.
-- [`CLOCK_PERIOD`](../reference/flow_config_vars.md#CLOCK_PERIOD): The value will
+- [`CLOCK_PORT`](#var-clock_port): Self-explanatory.
+- [`CLOCK_PERIOD`](#var-clock_period): The value will
   be used to calculate any timing violations, and also in resizer stages, attempt
   to fix the cells in question. If the clock period could not be reasonably achieved,
-- [`IO_DELAY_CONSTRAINT`](../reference/pdk_config_vars.md#IO_DELAY_CONSTRAINT)
+- [`IO_DELAY_CONSTRAINT`](#var-io_delay_constraint)
 
 You may also want to write a custom SDC file to be used in STA and CTS.
 The default SDC file in the default flow is [this file](../../../openlane/scripts/base.sdc),
 however, you can change that by pointing to a new file with the environment variable
-[`FALLBACK_SDC_FILE`](../reference/step_config_vars.md#Misc.LoadBaseSDC.FALLBACK_SDC_FILE)
+[`FALLBACK_SDC_FILE`](#var-fallback_sdc_file)
 
 Currently, static timing analysis is done:
 
@@ -117,13 +117,13 @@ You have three options for floorplanning in the default flow:
 
 1. Let the tools determine the area relative to the size and number of cells.
 
-- This is done by setting [`FP_SIZING`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_SIZING)
-  to `relative` (the default value), and setting [`FP_CORE_UTIL`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_CORE_UTIL)
+- This is done by setting [`FP_SIZING`](#var-openroad-floorplan-fp_sizing)
+  to `relative` (the default value), and setting [`FP_CORE_UTIL`](#var-openroad-floorplan-fp_core_util)
   as the core utilization percentage. You may also the aspect ratio
-  (`1` by default) by changing [`FP_ASPECT_RATIO`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_ASPECT_RATIO).
+  (`1` by default) by changing [`FP_ASPECT_RATIO`](#var-openroad-floorplan-fp_aspect_ratio).
 
-2. Set a specific die area by setting [`FP_SIZING`](../reference/step_config_vars.md#OpenROAD.Floorplan.FP_SIZING)
-   to `absolute` and setting the [`DIE_AREA` configuration variable](../reference/step_config_vars.md#OpenROAD.Floorplan.DIE_AREA).
+2. Set a specific die area by setting [`FP_SIZING`](#var-openroad-floorplan-fp_sizing)
+   to `absolute` and setting the [`DIE_AREA` configuration variable](#var-die_area).
 
 <!--
 1. Use a template DEF and apply the same dimensions of that DEF file.
@@ -140,7 +140,7 @@ file- not just the floorplan.
 ## PDN Generation
 
 You can find a full list of power distribution network configuration variables
-in the PDN step [here](../reference/step_config_vars.md#power-distribution-network-generation).
+in the PDN step [here](#step-openroad-generatepdn).
 
 Most designs would have to change these values based on the size of the floorplan:
 
@@ -166,7 +166,7 @@ flow:
 1. Letting OpenROAD randomly assign IOs using the random equidistant mode.
    This is the default.
 2. Manually setting the direction of each pin using a configuration file
-   by pointing [`FP_PIN_ORDER_CFG`](../reference/step_config_vars.md#Odb.CustomIOPlacement.FP_PIN_ORDER_CFG)
+   by pointing [`FP_PIN_ORDER_CFG`](#var-odb-customioplacement-fp_pin_order_cfg)
    to point to that file.
 
 <!--
@@ -194,10 +194,10 @@ Placement is done across two stages: "global placement" and "detailed placement"
 ### Global Placement
 
 For a rundown of what global placement does, please see the Global Placement
-step documentation [here](../reference/step_config_vars.md#OpenROAD.GlobalPlacement).
+step documentation [here](#step-openroad-globalplacement).
 
 For global placement, the most important value would be
-[`PL_TARGET_DENSITY_PCT`](../reference/step_config_vars.md#OpenROAD.GlobalPlacement.PL_TARGET_DENSITY_PCT)
+[`PL_TARGET_DENSITY_PCT`](#var-openroad-globalplacement-pl_target_density_pct)
 which should be easy to set as follows:
 
 - If your design is not a tiny design, then `PL_TARGET_DENSITY_PCT`
@@ -212,10 +212,10 @@ which should be easy to set as follows:
     manually setting an appropriate `DIE_AREA`:
     check [the floorplan section](#floorplanning) for more details.
     You may also want to reduce the values for:
-    _ [`FP_PDN_HORIZONTAL_HALO`](../reference/step_config_vars.md#OpenROAD.GeneratePDN.FP_PDN_HORIZONTAL_HALO)
-    _ [`FP_PDN_VERTICAL_HALO`](../reference/step_config_vars.md#OpenROAD.GeneratePDN.FP_PDN_VERTICAL_HALO)
+    _ [`FP_PDN_HORIZONTAL_HALO`](#var-openroad-generatepdn-fp_pdn_horizontal_halo)
+    _ [`FP_PDN_VERTICAL_HALO`](#var-openroad-generatepdn-fp_pdn_vertical_halo)
 
-There is also [`GPL_CELL_PADDING`](../reference/step_config_vars.md#OpenROAD.GlobalPlacement.GPL_CELL_PADDING).
+There is also [`GPL_CELL_PADDING`](#var-gpl_cell_padding).
 This will treat cells as "wider" than they are, which has an impact on routing
 and diode insertion. If you increase the padding, make sure to recalculate the
 `PL_TARGET_DENSITY_PCT` as such: {math}`util \approx FP\_CORE\_UTIL + 10 + 5 * GPL\_CELL\_PADDING`.
@@ -223,16 +223,16 @@ and diode insertion. If you increase the padding, make sure to recalculate the
 ### Detailed Placement
 
 For a rundown of what detailed placement does, please see the Detailed Placement
-step documentation [here](../reference/step_config_vars.md#OpenROAD.DetailedPlacement).
+step documentation [here](#step-openroad-detailedplacement).
 
 The only value to consider here is the
-[`DPL_CELL_PADDING`](../reference/step_config_vars.md#OpenROAD.GlobalPlacement.DPL_CELL_PADDING),
+[`DPL_CELL_PADDING`](#var-dpl_cell_padding),
 which must be less than or equal to the `DPL_CELL_PADDING` specified above.
 
 ## Clock Tree Synthesis
 
 It's fine to leave values as defaults for clock tree synthesis most of the time:
-see the step [`OpenROAD.CTS`](../reference/step_config_vars.md#OpenROAD.CTS) for
+see the step [`OpenROAD.CTS`](#step-openroad-cts) for
 more info.
 
 Clock tree synthesis takes some time compared to other steps you've encountered
@@ -250,8 +250,8 @@ best left as is.
 
 Routing in general goes through these phases:
 
-- **Global Routing**: Using [`OpenROAD.GlobalRouting`](../reference/step_config_vars.md#OpenROAD.GlobalRouting)
-- **Detailed Routing**: Using [`OpenROAD.DetailedRouting`](../reference/step_config_vars.md#OpenROAD.DetailedRouting)
+- **Global Routing**: Using [`OpenROAD.GlobalRouting`](#step-openroad-globalrouting)
+- **Detailed Routing**: Using [`OpenROAD.DetailedRouting`](#step-openroad-detailedrouting)
 
 The subsections include some notes:
 
@@ -260,16 +260,16 @@ The subsections include some notes:
 To help mitigate the antenna effect, after Global Placement there are also three
 other steps you may choose to enable:
 
-- [`Odb.DiodesOnPorts`](../reference/step_config_vars.md#Odb.DiodesOnPorts):
+- [`Odb.DiodesOnPorts`](#step-odb-diodesonports):
   Unconditionally inserts diodes on design ports. This is helpful for hardening
   macros, where you don't know how long the wires external to the macro are
   going to be. Requires {math}`GPL\_CELL\_PADDING \ge 2`.
-- [`Odb.HeuristicDiodeInsertion`](../reference/step_config_vars.md#Odb.HeuristicDiodeInsertion):
+- [`Odb.HeuristicDiodeInsertion`](#step-odb-heuristicdiodeinsertion):
   Inserts diodes based on the virtual wire length, s.t. nets longer than
   a specific threshold get a diode inserted by default. Disabled by default, but
   can be enabled by setting flow config variable `RUN_HEURISTIC_DIODE_INSERTION` to `true`.
   Requires {math}`GPL\_CELL\_PADDING \ge 2`.
-- [`OpenROAD.RepairAntennas`](../reference/step_config_vars.md#OpenROAD.RepairAntennas):
+- [`OpenROAD.RepairAntennas`](#step-openroad-repairantennas):
   Uses a more advanced antenna repair algorithm built into OpenROAD. Enabled by
   default, can be disabled by setting flow config variable `RUN_ANTENNA_REPAIR`
   to `false`.
@@ -279,7 +279,7 @@ other steps you may choose to enable:
 By default, detailed routing, which is the most computationally expensive step
 in the flow, will use all available threads on your computer by default.
 You can decrease that by overriding the step variable
-[`DRT_THREADS`](../reference/step_config_vars.md#OpenROAD.DetailedRouting.DRT_THREADS).
+[`DRT_THREADS`](#var-openroad-detailedrouting-drt_threads).
 
 Be advised that higher is always better for runtime.
 
@@ -290,8 +290,8 @@ final view, and it is the one submitted to foundries for manufacturing.
 
 The default flow tapes out GDSII from LEF/DEF using two tools:
 
-- [Magic](http://opencircuitdesign.com/magic/): Using [`Magic.StreamOut`](../reference/step_config_vars.md#Magic.StreamOut)
-- [KLayout](http://klayout.de): Using [`KLayout.StreamOut`](../reference/step_config_vars.md#KLayout.StreamOut)
+- [Magic](http://opencircuitdesign.com/magic/): Using [`Magic.StreamOut`](#step-magic-streamout)
+- [KLayout](http://klayout.de): Using [`KLayout.StreamOut`](#step-klayout-streamout)
 
 The idea is, if there's any difference between the two GDSII views, one tool
 is misconfigured or the LEF/DEF contains some ambiguity: at any rate, the design
@@ -300,11 +300,11 @@ the two, please [file an issue](https://github.com/efabless/openlane2/issues/new
 and we will investigate.
 
 The difference is a simple geometric XOR run using KLayout,
-using the [`KLayout.XOR` step](../reference/step_config_vars.md#KLayout.XOR).
+using the [`KLayout.XOR` step](#step-klayout-xor).
 
 If the PDK does not support one of the two tools, that tool will not run, and
 attempting the XOR may interrupt the flow: it is thus a good idea to set
-[`RUN_KLAYOUT_XOR`](../reference/step_config_vars.md#Layout.XOR.RUN_KLAYOUT_XOR)
+[`RUN_KLAYOUT_XOR`](#var-classic-run_klayout_xor)
 to `false`.
 
 ## Signoff
@@ -314,7 +314,7 @@ electrical checks on the final design.
 
 ### Design Rule Checking
 
-Design Rule Checking (DRC) is done using Magic, specifically the [`Magic.DRC` step](../reference/step_config_vars.md#Magic.DRC).
+Design Rule Checking (DRC) is done using Magic, specifically the [`Magic.DRC` step](#step-magic-drc).
 
 Designs with design rule violations are not accepted for manufacturing by any foundry.
 
@@ -327,7 +327,7 @@ LEF/DEF in all other cases:
   designs.
 
 You can specify your favored method using the config var
-[`MAGIC_DRC_USE_GDS`](../reference/step_config_vars.md#Magic.DRC.MAGIC_DRC_USE_GDS).
+[`MAGIC_DRC_USE_GDS`](#var-magic-drc-magic_drc_use_gds).
 
 If your LEF/DEF DRC fails, it is recommended to run the `GDS` check as well just
 to verify that it's not abstraction issue; you can do this as follows:
@@ -350,11 +350,11 @@ It verifies the following:
 - There are no unexpected opens in the final layout.
 - All signals are connected correctly.
 
-The SPICE extraction is done using [this step](../reference/step_config_vars.md#Magic.SpiceExtraction),
-and the LVS extraction is done using [this one](../reference/step_config_vars.md#Magic.LVS).
+The SPICE extraction is done using [this step](#step-magic-spiceextraction),
+and the LVS extraction is done using [this one](#step-netgen-lvs).
 
 ```{note}
-Like GDS, the variable [`MAGIC_EXT_USE_GDS`](../reference/step_config_vars.md#Magic.SpiceExtraction.MAGIC_EXT_USE_GDS),
+Like GDS, the variable [`MAGIC_EXT_USE_GDS`](#var-magic-spiceextraction-magic_ext_use_gds),
 and the same consideration applies. Use your best judgment.
 ```
 

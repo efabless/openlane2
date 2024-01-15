@@ -1,6 +1,6 @@
 # Pin Placer Configuration Files
 
-If you're using the step {ref}`Odb.CustomIOPlacement <odb-customioplacement>`
+If you're using the step {ref}`Odb.CustomIOPlacement <step-odb-customioplacement>`
 the variable `FP_PIN_ORDER_CFG` asks you to create a `.cfg` file that can be used
 to configure this placement step.
 

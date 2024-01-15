@@ -29,7 +29,8 @@ Steps should align themselves to one principle:
 
 - <u>The same step with the same input configuration and same input state must emit the same output.</u>
 
-<a name="step-strictures"></a> This is applied as far as the functionality goes:
+(ref-step-strictures)=
+This is applied as far as the functionality goes:
 
 - Steps **do NOT** modify files in-place. New files must be created in the step's
   dedicated directory. If the tool does not support out-of-place modification,

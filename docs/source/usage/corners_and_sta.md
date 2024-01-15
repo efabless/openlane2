@@ -80,7 +80,7 @@ The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for thes
 | "ss_100C_1v60" | {S, S}               | 1.6         | 100             | `sky130_fd_sc_hd__ss_100C_1v60.lib` |
 | "ff_n40C_1v95" | {F, F}               | 1.95        | -40             | `sky130_fd_sc_hd__ff_n40C_1v95.lib` |
 
-- Interconnect: Corner data stored in {ref}`TECH_LEFS <var-tech_lefs>` and {ref}`RCX_RULESETS <openroad-rcx-var-rcx_rulesets>`
+- Interconnect: Corner data stored in {ref}`TECH_LEFS <var-tech_lefs>` and {ref}`RCX_RULESETS <var-openroad-rcx-rcx_rulesets>`
 
 | Name  | Description                     | Corresponding Technology LEF | Corresponding Ruleset               |
 | ----- | ------------------------------- | ---------------------------- | ----------------------------------- |
