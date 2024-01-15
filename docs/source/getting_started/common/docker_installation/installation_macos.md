@@ -13,14 +13,15 @@ brew install --cask docker
 
 Under **Preferences** > **Resources** > **File Sharing**, make sure `/Users` is mounted as follows, as using OpenLane 2+ with Docker requires access to your home folder.
 
-:::{figure} ../../../../_static/installation/mac_docker_settings.png
+:::{figure} ../../../../\_static/installation/mac_docker_settings.png
 :::
 
 It may also be prudent to enable Full Disk Access permissions for Docker: Under **System Settings** > **Privacy** > **Full Disk Access**, tick Docker as shown:
 
-:::{figure} ../../../../_static/installation/mac_docker_privacy.png
+:::{figure} ../../../../\_static/installation/mac_docker_privacy.png
 :::
 
-```{include} _common.md.part
+```{include} _common.md
+:heading-offset: 1
 
 ```

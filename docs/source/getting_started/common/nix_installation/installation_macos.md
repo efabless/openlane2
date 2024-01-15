@@ -1,6 +1,7 @@
 # macOS 11+
 
 ## Installing Nix
+
 You can install Nix by following the instructions at https://nixos.org/download.html.
 
 You may be able to just run this in your terminal:
@@ -13,5 +14,7 @@ Enter your password if prompted. This should take around 5 minutes.
 
 Make sure to close all terminals after you're done with this step.
 
-```{include} _common.md.part
+```{include} _common.md
+:heading-offset: 1
+
 ```

@@ -5,6 +5,7 @@
 ```
 
 ## Installing Nix
+
 You can install Nix by following the instructions at https://nixos.org/download.html.
 
 ```sh
@@ -18,4 +19,5 @@ Make sure to close the Ubuntu terminal after you're done with this step and
 start it again.
 
 ```{include} _common.md.part
+:heading-offset: 1
 ```

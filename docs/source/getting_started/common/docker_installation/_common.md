@@ -1,4 +1,4 @@
-## Checking the Docker Installation
+# Checking the Docker Installation
 
 After that, you can run Docker Hello World without root. To test it use the following command:
 
@@ -35,7 +35,7 @@ https://docs.docker.com/get-started/
 ## Troubleshooting Docker permission issues (Linux only)
 
 If you get Docker permission error when running any Docker images, then likely,
-you forgot to follow the steps to make Docker available without root or you need to *restart your Operating System*.
+you forgot to follow the steps to make Docker available without root or you need to _restart your Operating System_.
 
 ```
 OpenLane> docker run hello-world
@@ -70,13 +70,13 @@ sourcing an activate script in its bin directory.
 
 ## Download and Install OpenLane
 
-* Download OpenLane using PIP:
+- Download OpenLane using PIP:
 
 ```sh
 python3 -m pip install openlane
 ```
 
-* Run a smoke test for OpenLane:
+- Run a smoke test for OpenLane:
 
 ```sh
 python3 -m openlane --dockerized --smoke-test

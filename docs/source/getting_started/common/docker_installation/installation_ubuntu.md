@@ -2,11 +2,11 @@
 
 Only Ubuntu 20.04 and above are supported.
 
-```{include} ../_ubuntu_packages.md.part
+```{include} ../_ubuntu_packages.md
 
 ```
 
-### Installing Docker
+<h3> Installing Docker </h3>
 
 Next, install Docker.
 Follow [the instructions provided in the Docker documentation here](https://docs.docker.com/engine/install/ubuntu/) as the steps provided below might be outdated.
@@ -64,10 +64,12 @@ For more examples and ideas, visit:
 https://docs.docker.com/get-started/
 ```
 
-```{include} docker_no_root.md.part
+```{include} docker_no_root.md
+:heading-offset: 1
 
 ```
 
-```{include} _common.md.part
+```{include} _common.md
+:heading-offset: 1
 
 ```

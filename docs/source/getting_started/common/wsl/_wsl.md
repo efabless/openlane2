@@ -2,7 +2,7 @@ A recent version of Windows 10 or Windows 11 is required, for more information c
 
 The following is the recommended installation method under Windows. Other virtualization-based methods, such as VMWare, are not supported, and some such as VirtualBox are known to impair the operation of OpenLane.
 
-## Setting up WSL
+# Setting up WSL
 
 1. Follow [official Microsoft documentation for WSL located here](https://docs.microsoft.com/en-us/windows/wsl/install) to install the WSL 2. Make sure your OS version supports WSL 2.
 2. Follow [official steps to Install Docker Desktop on Windows located here](https://docs.docker.com/desktop/install/windows-install/).
@@ -53,10 +53,10 @@ https://docs.docker.com/go/wsl2/
 
 8. Launch "Ubuntu" from your Start Menu.
 
-
 ![](./wsl.png)
 
 9. Follow the steps shown below.
 
-```{include} ../_ubuntu_packages.md.part
+```{include} ../_ubuntu_packages.md
+
 ```

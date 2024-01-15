@@ -1,4 +1,5 @@
-### Setting up the binary cache
+# Setting up the binary cache
+
 Cachix allows the reproducible Nix builds to be stored on a cloud server so you do not have to build OpenLane's dependencies from scratch on every computer, which will take a long time.
 
 First, you want to install Cachix by running the following in your terminal:
@@ -13,16 +14,17 @@ Then set up the OpenLane binary cache as follows:
 cachix use openlane
 ```
 
-``````{note}
+````{note}
 If `cachix use openlane` fails, re-run it as follows:
 
 ```sh
 sudo env PATH="$PATH" cachix use openlane
 ```
 
-``````
+````
 
-### Cloning OpenLane
+# Cloning OpenLane
+
 With git installed, just run the following:
 
 ```sh

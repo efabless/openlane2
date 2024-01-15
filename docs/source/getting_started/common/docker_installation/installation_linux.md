@@ -43,10 +43,12 @@ For more examples and ideas, visit:
 https://docs.docker.com/get-started/
 ```
 
-```{include} docker_no_root.md.part
+```{include} docker_no_root.md
+:heading-offset: 1
 
 ```
 
-```{include} _common.md.part
+```{include} _common.md
+:heading-offset: 1
 
 ```

@@ -5,6 +5,7 @@ We will primarily support Ubuntu 20.04+ for OpenLane.
 If you're looking to build a virtual machine, we recommend [Ubuntu 22.04](https://releases.ubuntu.com/jammy/).
 
 ## Installing Nix
+
 You can install Nix by following the instructions at https://nixos.org/download.html.
 
 For example, on Ubuntu, run the following your terminal.
@@ -24,5 +25,6 @@ Enter your password if prompted. This should take around 5 minutes.
 
 Make sure to close all terminals after you're done with this step.
 
-```{include} _common.md.part
+```{include} _common.md
+:heading-offset: 1
 ```
