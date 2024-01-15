@@ -332,7 +332,7 @@ class Flow(ABC):
         result = (
             textwrap.dedent(
                 f"""\
-                (flow-{Self.name})=
+                (flow-{Self.__name__})=
                 ### {Self.__name__}
 
                 ```{{eval-rst}}

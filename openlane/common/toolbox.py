@@ -40,8 +40,8 @@ from deprecated.sphinx import deprecated
 
 from .misc import Path, mkdirp
 from .metrics import aggregate_metrics
-from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string
+from ..state import DesignFormat
 from ..logging import debug, warn, err, verbose
 
 

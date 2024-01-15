@@ -17,9 +17,8 @@ import subprocess
 from typing import List, Optional, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
-from ..common import DesignFormat
 from ..config import Variable
-from ..state import State, Path
+from ..state import DesignFormat, State, Path
 
 
 @Step.factory.register()
@@ -102,7 +101,11 @@ class Lint(Step):
         )
 
         bb_with_guards = os.path.join(self.step_dir, "bb.v")
-        with open(bb_path, "r", encoding="utf8",) as bb_in, open(
+        with open(
+            bb_path,
+            "r",
+            encoding="utf8",
+        ) as bb_in, open(
             bb_with_guards,
             "w",
             encoding="utf8",

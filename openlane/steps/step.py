@@ -49,14 +49,12 @@ from ..config import (
     Variable,
     universal_flow_config_variables,
 )
-from ..state import State, InvalidState, StateElement
+from ..state import DesignFormat, DesignFormatObject, State, InvalidState, StateElement
 from ..common import (
     GenericDict,
     GenericImmutableDict,
     GenericDictEncoder,
     Toolbox,
-    DesignFormat,
-    DesignFormatObject,
     Path,
     mkdirp,
     slugify,
