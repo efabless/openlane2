@@ -147,9 +147,6 @@ myst_enable_extensions = [
 # GraphViz
 graphviz_output_format = "svg"
 
-# MathJax
-mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/latest.min.js"
-
 # sphinx_copybutton
 copybutton_exclude = ".linenos, .gp"
 
