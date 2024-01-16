@@ -113,7 +113,18 @@ Metric(
     higher_is_better=True,
 )
 Metric(
+    "timing__hold_r2r__ws",
+    aggregator=min_aggregator,
+    higher_is_better=True,
+)
+Metric(
     "timing__setup__ws",
+    aggregator=min_aggregator,
+    higher_is_better=True,
+)
+
+Metric(
+    "timing__setup_r2r__ws",
     aggregator=min_aggregator,
     higher_is_better=True,
 )
