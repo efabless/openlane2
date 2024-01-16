@@ -67,8 +67,8 @@ def create_config(file_name, pdk_root, pdk, scl):
         clock_period = input("Enter your desired clock period in nanoseconds(ns): ")
         verilog_files = input(
             "Enter your design's RTL source files (put a comma between each entry):\n"
-            + "\t# Tip use dir:: to reference your design directory\n"
-            + "\t# Tip you can use wildcards\n> "
+            + "\t# Tip: use dir:: to reference your design directory\n"
+            + "\t# Tip: you can use wildcards\n> "
         ).split(",")
         config_dict = {
             "DESIGN_NAME": design_name,
