@@ -169,24 +169,24 @@ Metric(
 )
 Metric(
     "clock__skew__worst_setup",
-    aggregator=max_aggregator,
-    higher_is_better=False,
+    aggregator=min_aggregator,
+    higher_is_better=True,
 )
 
 # Constraint Violation
 Metric(
     "design__max_slew_violation__count",
-    aggregator=sum_aggregator,
+    aggregator=max_aggregator,
     higher_is_better=False,
 )
 Metric(
     "design__max_fanout_violation__count",
-    aggregator=sum_aggregator,
+    aggregator=max_aggregator,
     higher_is_better=False,
 )
 Metric(
     "design__max_cap_violation__count",
-    aggregator=sum_aggregator,
+    aggregator=max_aggregator,
     higher_is_better=False,
 )
 
