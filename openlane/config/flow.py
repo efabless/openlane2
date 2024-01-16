@@ -260,6 +260,13 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
+        "MAX_CAPACITANCE_CONSTRAINT",
+        Optional[Decimal],
+        "The maximum capacitance constraint. If not provided, the constraint is not set in the SDC file which will fall back to the value set by the liberty file",
+        units="pF",
+        pdk=True,
+    ),
+    Variable(
         "CLOCK_UNCERTAINTY_CONSTRAINT",
         Decimal,
         "Specifies a value for the clock uncertainty/jitter for timing analysis.",

@@ -196,7 +196,7 @@ class OpenROADStep(TclStep):
     ]
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def prepare_env(self, env: dict, state: State) -> dict:
@@ -204,12 +204,7 @@ class OpenROADStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-
-        lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset([str(e) for e in lib_list]),
-            frozenset([str(self.config["PNR_EXCLUSION_CELL_LIST"])]),
-            as_cell_lists=True,
-        )
+        lib_pnr = [str(lib) for lib in lib_list]
 
         env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         env["PNR_LIBS"] = " ".join(lib_pnr)
@@ -557,18 +552,25 @@ class STAPostPNR(STAPrePNR):
         def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
             if slack is None:
                 return "[gray]?"
+            if slack == float(inf):
+                return "[gray]N/A"
             slack = round(float(slack), 4)
-            if slack <= 0:
-                return f"[red]{slack}"
+            formatted_slack = f"{slack:.4f}"
+            if slack < 0:
+                return f"[red]{formatted_slack}"
             else:
-                return f"[green]{slack}"
+                return f"[green]{formatted_slack}"
 
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
+        table.add_column("reg-to-reg")
+        table.add_column("Hold TNS")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Setup Worst Slack")
+        table.add_column("reg-to-reg")
+        table.add_column("Setup TNS")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -580,9 +582,13 @@ class STAPostPNR(STAPrePNR):
             row = [corner]
             for metric in [
                 "timing__hold__ws",
+                "timing__hold_r2r__ws",
+                "timing__hold__tns",
                 "timing__hold_vio__count",
                 "timing__hold_r2r_vio__count",
                 "timing__setup__ws",
+                "timing__setup_r2r__ws",
+                "timing__setup__tns",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",
@@ -1049,12 +1055,114 @@ class CheckAntennas(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "antenna_check.tcl")
 
+    def __summarize_antenna_report(self, report_file: str, output_file: str):
+        """
+        Extracts the list of violating nets from an ARC report file"
+        """
+
+        class AntennaViolation:
+            def __init__(self, net, pin, required_ratio, partial_ratio, layer):
+                self.net = net
+                self.pin = pin
+                self.required_ratio = float(required_ratio)
+                self.partial_ratio = float(partial_ratio)
+                self.layer = layer
+                self.partial_to_required = self.partial_ratio / self.required_ratio
+
+            def __lt__(self, other):
+                return self.partial_to_required < other.partial_to_required
+
+        net_pattern = re.compile(r"\s*Net:\s*(\S+)")
+        required_ratio_pattern = re.compile(r"\s*Required ratio:\s+([\d.]+)")
+        partial_ratio_pattern = re.compile(r"\s*Partial area ratio:\s+([\d.]+)")
+        layer_pattern = re.compile(r"\s*Layer:\s+(\S+)")
+        pin_pattern = re.compile(r"\s*Pin:\s+(\S+)")
+
+        required_ratio = None
+        layer = None
+        partial_ratio = None
+        required_ratio = None
+        pin = None
+        net = None
+        violations: List[AntennaViolation] = []
+
+        net_pattern = re.compile(r"\s*Net:\s*(\S+)")
+        required_ratio_pattern = re.compile(r"\s*Required ratio:\s+([\d.]+)")
+        partial_ratio_pattern = re.compile(r"\s*Partial area ratio:\s+([\d.]+)")
+        layer_pattern = re.compile(r"\s*Layer:\s+(\S+)")
+        pin_pattern = re.compile(r"\s*Pin:\s+(\S+)")
+
+        with open(report_file, "r") as f:
+            for line in f:
+                pin_new = pin_pattern.match(line)
+                required_ratio_new = required_ratio_pattern.match(line)
+                partial_ratio_new = partial_ratio_pattern.match(line)
+                layer_new = layer_pattern.match(line)
+                net_new = net_pattern.match(line)
+                required_ratio = (
+                    required_ratio_new.group(1)
+                    if required_ratio_new is not None
+                    else required_ratio
+                )
+                partial_ratio = (
+                    partial_ratio_new.group(1)
+                    if partial_ratio_new is not None
+                    else partial_ratio
+                )
+                layer = layer_new.group(1) if layer_new is not None else layer
+                pin = pin_new.group(1) if pin_new is not None else pin
+                net = net_new.group(1) if net_new is not None else net
+
+                if "VIOLATED" in line:
+                    violations.append(
+                        AntennaViolation(
+                            net=net,
+                            pin=pin,
+                            partial_ratio=partial_ratio,
+                            layer=layer,
+                            required_ratio=required_ratio,
+                        )
+                    )
+
+        violations.sort(reverse=True)
+
+        # Partial/Required:  2.36, Required:  3091.96, Partial:  7298.29,
+        # Net: net384, Pin: _22354_/A, Layer: met5
+        table = rich.table.Table()
+        decimal_places = 2
+        row = []
+        table.add_column("Partial/Required")
+        table.add_column("Required")
+        table.add_column("Partial")
+        table.add_column("Net")
+        table.add_column("Pin")
+        table.add_column("Layer")
+        for violation in violations:
+            row = [
+                f"{violation.partial_to_required:.{decimal_places}f}",
+                f"{violation.required_ratio:.{decimal_places}f}",
+                f"{violation.partial_ratio:.{decimal_places}f}",
+                f"{violation.net}",
+                f"{violation.pin}",
+                f"{violation.layer}",
+            ]
+            table.add_row(*row)
+
+        if not options.get_condensed_mode():
+            console.print(table)
+        with open(output_file, "w") as f:
+            rich.print(table, file=f)
+
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
 
         metrics_updates["route__antenna_violation__count"] = get_antenna_nets(
             open(os.path.join(self.step_dir, "antenna.rpt")),
             open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
+        )
+        self.__summarize_antenna_report(
+            os.path.join(self.step_dir, "antenna.rpt"),
+            os.path.join(self.step_dir, "antenna_summary.rpt"),
         )
 
         return views_updates, metrics_updates

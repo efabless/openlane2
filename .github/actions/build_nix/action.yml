@@ -30,7 +30,7 @@ runs:
       run: |
         echo "#################################################################"
         nix-env -f "<nixpkgs>" -iA bash
-        nix-build ${{ inputs.nix_build_args }}
+        nix-build ${{ inputs.nix_build_args }} shell.nix
     - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
       run: |
@@ -46,4 +46,4 @@ runs:
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix-build ${{ inputs.nix_build_args }} | cachix push openlane
+        nix-build ${{ inputs.nix_build_args }} shell.nix | cachix push openlane

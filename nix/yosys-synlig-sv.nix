@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
-  yosys ? import ./yosys.nix { inherit pkgs; },
-  surelog ? import ./surelog.nix { inherit pkgs; },
+  lib,
+  yosys,
+  clangStdenv,
+  fetchFromGitHub,
+  surelog,
+  capnproto,
+  antlr4,
+  pkg-config,
+  writeText,
 }:
-
-with pkgs; clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "yosys-synlig-sv";
   dylibs = ["synlig-sv"];
 
@@ -27,18 +32,9 @@ with pkgs; clangStdenv.mkDerivation rec {
     rev = "e41b39653b5bc45f464825affa5464473be7b92a";
     sha256 = "sha256-2KM7JZhfHfNPu9LtLsoN7e3q+U32p+ybL36y9ae/wdU=";
   };
-
-  yosys-mk = pkgs.writeText "yosys-mk" ''
-    t  := yosys
-    ts := ''$(call GetTargetStructName,''${t})
-
-    ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
-    ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
-  '';
-
   buildInputs = [
     yosys
-    yosys.py3
+    yosys.py3env
     surelog
     capnproto
     antlr4.runtime.cpp
@@ -47,6 +43,14 @@ with pkgs; clangStdenv.mkDerivation rec {
   nativeBuildInputs = [
     pkg-config
   ];
+
+  yosys-mk = writeText "yosys-mk" ''
+    t  := yosys
+    ts := ''$(call GetTargetStructName,''${t})
+
+    ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
+    ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
+  '';
 
   buildPhase = ''
     rm third_party/Build.surelog.mk
@@ -65,4 +69,11 @@ with pkgs; clangStdenv.mkDerivation rec {
   makeWrapperArgs = [
     "--prefix PATH : ${computed_PATH}"
   ];
+
+  meta = with lib; {
+    description = "SystemVerilog and UHDM front end plugin for Yosys";
+    homepage = "https://github.com/chipsalliance/synlig";
+    license = licenses.asl20;
+    platforms = platforms.linux ++ platforms.darwin;
+  };
 }

@@ -162,7 +162,7 @@ proc synth_strategy_format_err { } {
     upvar area_scripts area_scripts
     upvar delay_scripts delay_scripts
     log -stderr "\[ERROR] Misformatted SYNTH_STRATEGY (\"$::env(SYNTH_STRATEGY)\")."
-    log -stderr "\[ERROR] Correct format is \"DELAY|AREA 0-[expr [llength $delay_scripts]-1]|0-[expr [llength $area_scripts]-1]\"."
+    log -stderr "\[ERROR] Correct format is \"DELAY 0-[expr [llength $delay_scripts]-1]|AREA 0-[expr [llength $area_scripts]-1]\"."
     exit 1
 }
 
@@ -240,7 +240,8 @@ if { $::env(SYNTH_ELABORATE_ONLY) } {
     opt_clean -purge
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -json
+    tee -o "$report_dir/stat.json" stat -json {*}$lib_args
+    tee -o "$report_dir/stat.log" stat {*}$lib_args
 
     write_verilog -noattr -noexpr -nohex -nodec -defparam "$::env(SAVE_NETLIST)"
     write_json "$::env(SAVE_NETLIST).json"
@@ -338,7 +339,8 @@ if { $adder_type == "FA" } {
 opt
 opt_clean -purge
 
-tee -o "$report_dir/pre_techmap.json" stat -json
+tee -o "$report_dir/pre_techmap.json" stat -json {*}$lib_args
+tee -o "$report_dir/pre_techmap.log" stat {*}$lib_args
 
 # Map tri-state buffers
 if { $tbuf_map } {
@@ -362,7 +364,8 @@ if { [info exists ::env(SYNTH_LATCH_MAP)] } {
 }
 
 dfflibmap {*}$dfflib_args
-tee -o "$report_dir/post_dff.json" stat -json
+tee -o "$report_dir/post_dff.json" stat -json {*}$lib_args
+tee -o "$report_dir/post_dff.log" stat {*}$lib_args
 
 proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     upvar clock_period clock_period
@@ -395,7 +398,8 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
     }
 
     tee -o "$report_dir/chk.rpt" check
-    tee -o "$report_dir/stat.json" stat -json
+    tee -o "$report_dir/stat.json" stat -json {*}$lib_args
+    tee -o "$report_dir/stat.log" stat {*}$lib_args
 
     if { $::env(SYNTH_AUTONAME) } {
         # Generate public names for the various nets, resulting in very long names that include
