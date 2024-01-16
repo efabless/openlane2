@@ -141,7 +141,7 @@ class DisconnectedPins(MetricChecker):
     name = "Disconnected Pins Checker"
     deferred = False
 
-    metric_name = "design__disconnected_pins__count"
+    metric_name = "design__disconnected_pin__count"
     metric_description = "Disconnected pins count"
 
 
@@ -209,7 +209,7 @@ class LintWarnings(MetricChecker):
     long_name = "Lint Warnings Checker"
     deferred = False
 
-    metric_name = "design__lint_warnings__count"
+    metric_name = "design__lint_warning__count"
     metric_description = "Lint warnings"
 
 
@@ -220,7 +220,7 @@ class LintTimingConstructs(MetricChecker):
     long_name = "Lint Timing Errors Checker"
     deferred = False
 
-    metric_name = "design__lint_timing_constructs__count"
+    metric_name = "design__lint_timing_construct__count"
     metric_description = "Lint Timing Errors"
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:

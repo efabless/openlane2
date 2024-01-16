@@ -147,18 +147,18 @@ Metric(
     critical=True,
 )
 Metric(
-    "timing__unannotated_nets__count",
+    "timing__unannotated_net__count",
     aggregator=max_aggregator,
     higher_is_better=False,
 )
 Metric(
-    "timing__unannotated_nets_filtered__count",
+    "timing__unannotated_net__filtered_count",
     aggregator=max_aggregator,
     higher_is_better=False,
 )
 Metric(
     "timing__setup__tns",
-    aggregator=sum_aggregator,
+    aggregator=min_aggregator,
     higher_is_better=True,
     critical=True,
 )
@@ -232,7 +232,7 @@ Metric(
 
 # Potential Issues
 Metric(
-    "design__lint_warnings__count",
+    "design__lint_warning__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
 )
@@ -243,7 +243,7 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__lint_timing_constructs__count",
+    "design__lint_timing_construct__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
 )
@@ -264,7 +264,7 @@ Metric(
     critical=True,
 )
 Metric(
-    "design__disconnected_pins__count",
+    "design__disconnected_pin__count",
     aggregator=sum_aggregator,
     higher_is_better=False,
     critical=True,

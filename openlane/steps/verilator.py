@@ -168,9 +168,9 @@ class Lint(Step):
 
         metrics_updates.update({"design__lint_error__count": errors_count})
         metrics_updates.update(
-            {"design__lint_timing_constructs__count": timing_constructs}
+            {"design__lint_timing_construct__count": timing_constructs}
         )
-        metrics_updates.update({"design__lint_warnings__count": warnings_count})
+        metrics_updates.update({"design__lint_warning__count": warnings_count})
         metrics_updates.update({"design__inferred_latch__count": latch_count})
         return views_updates, metrics_updates
 
