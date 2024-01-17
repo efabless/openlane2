@@ -19,7 +19,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from ..common import Path
 from ..state import State, DesignFormat
 from ..steps import Netgen, Magic, KLayout, OpenROAD
-from ..logging import warn
+from ..logging import warn, options
 
 
 @Step.factory.register()
@@ -135,6 +135,7 @@ class ReportManufacturability(Step):
             report.append("Failed 𐄂")
             report.append(f"KLayout DRC errors: {klayout}")
             report.append(f"Magic DRC errors: {magic}")
+            report.append(f"Check {klayout_step} and {magic_step} report directories")
         else:
             report.append("Passed ✅")
 
@@ -173,10 +174,17 @@ class ReportManufacturability(Step):
         return "\n".join(report)
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        report_file = os.path.join(self.step_dir, "manufacturability.rpt")
         lvs_report = self.__get_lvs_report(state_in)
         drc_report = self.__get_drc_report(state_in)
         antenna_report = self.__get_antenna_report(state_in)
-        print(antenna_report)
-        print(lvs_report)
-        print(drc_report)
+        if not options.get_condensed_mode():
+            print(antenna_report)
+            print(lvs_report)
+            print(drc_report)
+
+        with open(report_file, "w") as f:
+            print(antenna_report, file=f)
+            print(lvs_report, file=f)
+            print(drc_report, file=f)
         return {}, {}
