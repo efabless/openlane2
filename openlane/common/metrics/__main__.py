@@ -109,7 +109,7 @@ def compare(
 
     final_filters = []
     for wildcard in filter_wildcards:
-        if filter == "DEFAULT":
+        if wildcard == "DEFAULT":
             final_filters += default_filter_set
         else:
             final_filters.append(wildcard)
