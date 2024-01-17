@@ -56,21 +56,24 @@ class MetricComparisonResult:
     delta_pct: Optional[Number]
     better: Optional[bool]
     critical: bool
+    significant_figures: Optional[int]
 
     def format_values(self) -> Tuple[str, str, str]:
         before_str = str(self.gold)
-        if is_number(self.gold):
-            before_str = str(round(self.gold, 6))
+        if isinstance(self.gold, float) or isinstance(self.gold, Decimal):
+            before_str = str(f"{self.gold:.{self.significant_figures}f}")
 
         after_str = str(self.new)
-        if is_number(self.new):
-            after_str = str(round(self.new, 6))
+        if isinstance(self.new, float) or isinstance(self.new, Decimal):
+            after_str = str(f"{self.new:.{self.significant_figures}f}")
 
         delta_str = "N/A"
         if self.delta is not None:
             delta_str = str(round(self.delta, 6))
+            if isinstance(self.delta, float) or isinstance(self.delta, Decimal):
+                delta_str = str(f"{self.delta:.{self.significant_figures}f}")
             if self.delta_pct is not None:
-                delta_pct_str = str(round(self.delta_pct, 2))
+                delta_pct_str = str(f"{self.delta_pct:.{self.significant_figures}f}")
                 if self.delta_pct > 0:
                     delta_pct_str = f"+{delta_pct_str}"
                 delta_str = f"{delta_str} ({delta_pct_str}%)"
@@ -125,7 +128,11 @@ class Metric(object):
         return "__".join([self.name] + [f"{k}:{v}" for k, v in modifiers.items()])
 
     def compare(
-        self, gold: Any, new: Any, modifiers: Optional[Mapping[str, str]] = None
+        self,
+        gold: Any,
+        new: Any,
+        significant_figures: int,
+        modifiers: Optional[Mapping[str, str]] = None,
     ) -> MetricComparisonResult:
         """
         :param gold: The "gold-standard" value for this metric to compare against
@@ -180,4 +187,5 @@ class Metric(object):
             delta_pct,
             is_better,
             is_critical,
+            significant_figures,
         )

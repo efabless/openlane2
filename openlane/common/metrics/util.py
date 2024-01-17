@@ -247,6 +247,7 @@ class MetricDiff(object):
         Self,
         gold: dict,
         new: dict,
+        significant_figures: int,
         filter: Filter = Filter(["*"]),
     ) -> "MetricDiff":
         """
@@ -270,7 +271,7 @@ class MetricDiff(object):
 
                 if metric_object := Metric.by_name.get(base_metric):
                     yield metric_object.compare(
-                        lhs_value, rhs_value, modifiers=modifiers
+                        lhs_value, rhs_value, significant_figures, modifiers=modifiers
                     )
 
         return MetricDiff(generator(gold, new))

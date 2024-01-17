@@ -84,6 +84,12 @@ def common_opts(f):
         help="The place to write the table to.",
         default=None,
     )(f)
+    f = cloup.option(
+        "--significant-figures",
+        type=int,
+        help="Number of significant figures.",
+        default=4,
+    )(f)
     return f
 
 
@@ -95,6 +101,7 @@ def compare(
     table_verbosity: TableVerbosity,
     filter_wildcards: Tuple[str, ...],
     table_out: Optional[str],
+    significant_figures: int,
 ):
     """
     Creates a small summary of the differences between two ``metrics.json`` files.
@@ -114,7 +121,9 @@ def compare(
         else:
             final_filters.append(wildcard)
 
-    diff = MetricDiff.from_metrics(a, b, filter=Filter(final_filters))
+    diff = MetricDiff.from_metrics(
+        a, b, significant_figures, filter=Filter(final_filters)
+    )
 
     md_str = diff.render_md(sort_by=("corner", ""), table_verbosity=table_verbosity)
 
@@ -135,6 +144,7 @@ def _compare_metric_folders(
     table_verbosity: TableVerbosity,
     path_a: str,
     path_b: str,
+    significant_figures: int,
 ) -> Tuple[str, str]:  # (summary, table)
     a: Set[Tuple[str, str, str]] = set()
     b: Set[Tuple[str, str, str]] = set()
@@ -201,7 +211,8 @@ def _compare_metric_folders(
         diff = MetricDiff.from_metrics(
             metrics_a,
             metrics_b,
-            filter,
+            significant_figures,
+            filter=filter,
         )
 
         stats = diff.stats()
@@ -240,6 +251,7 @@ def compare_multiple(
     table_verbosity: TableVerbosity,
     metric_folders: Tuple[str, str],
     table_out: Optional[str],
+    significant_figures: int,
 ):
     """
     Creates a small summary/report of the differences between two folders with
@@ -250,7 +262,7 @@ def compare_multiple(
     """
     path_a, path_b = metric_folders
     summary, tables = _compare_metric_folders(
-        filter_wildcards, table_verbosity, path_a, path_b
+        filter_wildcards, table_verbosity, path_a, path_b, significant_figures
     )
     print(summary)
     table_file = sys.stdout
@@ -298,6 +310,7 @@ def compare_main(
     token: str,
     metric_folder: str,
     table_out: Optional[str],
+    significant_figures: int,
 ):
     """
     Creates a small summary/report of the differences between a folder and
@@ -358,6 +371,7 @@ def compare_main(
                 table_verbosity,
                 d,
                 metric_folder,
+                significant_figures,
             )
             print(summary)
             table_file = sys.stdout
