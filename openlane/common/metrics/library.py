@@ -152,7 +152,7 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "timing__unannotated_net__filtered_count",
+    "timing__unannotated_net_filtered__count",
     aggregator=max_aggregator,
     higher_is_better=False,
 )

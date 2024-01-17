@@ -90,7 +90,7 @@ def main(reader, corner, checks_report):
         f"timing__unannotated_net__count__corner:{corner}", len(reported_nets)
     )
     utl.metric_integer(
-        f"timing__unannotated_net__filtered_count__corner:{corner}",
+        f"timing__unannotated_net_filtered__count__corner:{corner}",
         len(connected_nets),
     )
     print("done")
