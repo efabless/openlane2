@@ -162,7 +162,6 @@ class Metric(object):
                     is_better = delta >= 0
                 else:
                     is_better = delta <= 0
-                is_critical = self.critical and not is_better
         elif self.higher_is_better is not None:
             if not is_number(gold):
                 raise TypeError(

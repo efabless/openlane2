@@ -187,7 +187,7 @@ class MetricDiff(object):
                 critical.append(row)
             elif row.better is False:
                 worse.append(row)
-            elif (row.delta is not None and row.delta == 0) or row.gold == row.new:
+            elif (row.delta is not None and row.delta != 0) or row.gold != row.new:
                 changed.append(row)
             else:
                 remaining.append(row)
