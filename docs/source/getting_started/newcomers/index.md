@@ -121,7 +121,7 @@ This is the source {term}`RTL` of the design.
 #### Configuration
 
 Designs in OpenLane have configuration files. A configuration file contains
-{term}`Variable`(s). With them you control the OpenLane flow
+{term}`Variable`(s). With them, you control the OpenLane flow
 and set your design's source files. This is configuration file for `spm` design:
 
 :::{dropdown} config.json
@@ -249,7 +249,7 @@ Here is a small description of each file inside a `Step` directory.
 
 - `COMMANDS`: the CLI command of the underlying tool used by a `Step`
 - `config.json`: contains `Variables` used by the `Step`
-- `*.log`: one or more log file of the `Step`
+- `*.log`: one or more log files of the `Step`
 - `*.process_stats.json`: statistics about total elapsed time and resource consumption
 - `state_in.json`: contains a dictionary of design layout formats (such as `DEF`
   file) and design `Metrics` available as inputs to a `Step` .
@@ -307,7 +307,7 @@ Additionally, you can view the intermediate layout at each `Step`:
 #### Final Results
 
 Inside the run folder, there is a folder called `final`. This folder contains
-other folders that contains all the different layout views produced by the flow
+other folders that contain all the different layout views produced by the flow
 such as {term}`DEF` and {term}`LEF`.
 {term}`GDSII` and others. It looks like this:
 
@@ -332,7 +332,7 @@ final
 └── metrics.json
 ```
 
-Moreover, it contains `metrics.csv` and `metric.json` which represents the
+Moreover, it contains `metrics.csv` and `metric.json` which represent the
 final `metrics` in `JSON` and {term}`CSV` formats.
 
 ---
@@ -351,13 +351,13 @@ OpenLane runs a couple of `Step`(s) for the final signoff.
 
 #### DRC
 
-`DRC` stands for Design Rule Checking which are set by the FOUNDRY/Chip Manufacturer?
-rules that the layout has to satisfy in order to be manufacturable.
-Such as, checking for minimum allowed spacing between two `met1` shapes.
+`DRC` stands for Design Rule Checking which checks rules set by the FOUNDRY/Chip Manufacturer?
+that the layout has to satisfy in order to be manufacturable.
+Such as checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
 `KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputted to the tools running
-DRC, as shown in the diagram bellow:
+DRC, as shown in the diagram below:
 
 ```{figure} ./OL-DRC.png
 :align: center
@@ -397,7 +397,7 @@ The initial number in `53-klayout-drc` (`53`) may vary according to a design con
 
 `LVS` stands for Layout Versus Schematic. It compares the layout {term}`GDSII` or
 `DEF`/`LEF`, with the schematic which is usually in
-{term}`Verilog` ensuring that connectivity in both
+{term}`Verilog`, ensuring that connectivity in both
 views are matching. Sometimes, user configuration or even the tools have errors
 and such check is important to catch them.
 
@@ -411,9 +411,9 @@ Common `LVS` errors include but are not limited to:
 
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called
 {term}`Netgen`. First, the layout is converted to
-{term}`SPICE netlist`. Next
+{term}`SPICE netlist`. Next,
 the layout and the schematic are inputted to Netgen, as shown in the diagram
-bellow.
+below:
 
 ```{figure} ./OL-LVS.png
 :scale: 50 %
@@ -422,18 +422,18 @@ bellow.
 LVS (Layout-versus-Schematic) Flow
 ```
 
-`Netgen` will generate multiple files which can be browsed in case of `LVS` errors.
+`Netgen` will generate multiple files that can be browsed in case of `LVS` errors.
 As all `Step`(s), these will be inside the `Step`'s folder.
 
-You would want to look at `netgen-lvs.log`. This has a summary of the results of
-`LVS`. Ideally you would find the following at the end of this log file:
+You would want to look at `netgen-lvs.log` which has a summary of the results of
+`LVS`. Ideally, you would find the following at the end of this log file:
 
 ```text
 Final result:
 Circuits match uniquely.
 ```
 
-In case of errors, there is also `lvs.rpt` which more detailed. Inside it you will
+In case of errors, there is also `lvs.rpt` which is more detailed. Inside it, you will
 find tables comparing nodes between the layout and the schematic.
 On the left is the layout (`GDS`) and the schematic (`Verilog`) is on the other side.
 Here is a sample of these tables:
@@ -457,11 +457,11 @@ paths and then calculates the data earliest and latest actual and required arriv
 times at every timing path endpoint. If the data arrives after
 (in case of setup checking) or before (hold checking) it is required,
 then we have a timing violation (negative slack). STA makes sure that a circuit
-will correctly perform its function (yet it tells nothing about correctness of
+will correctly perform its function (yet it tells nothing about the correctness of
 that function)
 
 :::{seealso}
-Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/edit#heading=h.9y68197ebff7) for more in depth details.
+Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/edit#heading=h.9y68197ebff7) for more in-depth details.
 :::
 
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
@@ -518,7 +518,7 @@ the log files and reports generated for each `IPVT corner`.
 
 Here is a small description of each file:
 
-- `sta.log`: Full log file generated by `STA` which is divided to the following
+- `sta.log`: Full log file generated by `STA` which is divided into the following
   report files
 - `min.rpt`: Constrained paths for hold checks.
 - `max.rpt`: Constrained paths for setup checks.
@@ -538,8 +538,8 @@ Here is a small description of each file:
   3. Max fanout violations
   4. Unconstrained paths
   5. Unannotated and partially annotated nets
-  6. Checks the `SDC` for combinationals loops, register/latch with multiple clocks
-     or no clocks, ports missing input delay and generated clocks
+  6. Checks the `SDC` for combinational loops, register/latch with multiple clocks
+     or no clocks, ports missing input delay, and generated clocks
   7. Worst setup or hold violating path
 
 ---
@@ -548,7 +548,7 @@ Here is a small description of each file:
 
 Often a design by itself serves no purpose unless interfaced with and/or integrated
 into another design or a chip. We are going to harden `spm` design again but
-this time we will have it as a [Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/))
+this time we will have it as a [Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/)
 macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 :::{admonition} About Caravel
@@ -556,7 +556,7 @@ macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 The Efabless Caravel chip is a ready-to-use test harness for creating designs
 with the Google/Skywater 130nm Open PDK. The Caravel harness comprises of base
-functions supporting IO, power and configuration as well as drop-in modules for
+functions supporting IO, power, and configuration as well as drop-in modules for
 a management SoC core, and an approximately 3000um x 3600um open project area
 for the placement of user IP blocks.
 
@@ -624,7 +624,7 @@ Then we need to create a configuration file to pass to the flow.
 
 - Then Update the configuration as follows.
 
-  1. Update the variable `DESIGN_NAME` to match our top level module in the `RTL`:
+  1. Update the variable `DESIGN_NAME` to match our top-level module in the `RTL`:
 
      ```json
      {
@@ -655,7 +655,7 @@ Then we need to create a configuration file to pass to the flow.
          "dir::./defines.v",
          "dir::./SPM_example.v",
          "dir::./user_project_wrapper.v"
-       ]
+       ],
        "CLOCK_PERIOD": 25
      }
      ```
@@ -678,7 +678,7 @@ Then we need to create a configuration file to pass to the flow.
 
 #### Running the flow
 
-Lets try running the flow:
+Let's try running the flow:
 
 ```console
 [nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_wrapper/config.json
@@ -697,7 +697,7 @@ The reason that happens is that when we change the `RTL` of the design we
 changed the IO pin interface of the design to match the interface needed by
 `Caravel User Project Wrapper`.
 
-`Caravel User Project Wrapper` needs lot of IO pins. By default, the flow will attempt
+`Caravel User Project Wrapper` needs a lot of IO pins. By default, the flow will attempt to
 create a floorplan using a utilization of 50%. Relative to the cells in the design,
 there are too many IO pins to fit in such a floorplan.
 
@@ -741,29 +741,29 @@ SPM with 5% utilization
 ```
 
 :::{tip}
-You can control the visible layers in KLayout by right clicking in the layers
+You can control the visible layers in KLayout by right-clicking in the layers
 area and selecting hide all layers. Then double click on the layers that you want
-to view. In this figure, only `met2.pin`, `met3.pin` and `prBoundary.boundary`
+to view. In this figure, only `met2.pin`, `met3.pin`, and `prBoundary.boundary`
 are shown.
 :::
 
-As shown above, the are a lot of pins needed by the design and
-certainly a floorplan with 50% utilization wouldn't fit all the pins.
+As shown above, there are a lot of pins needed by the design and
+certainly, a floorplan with 50% utilization wouldn't fit all the pins.
 
 ---
 
 #### Caravel Integration
 
 `Caravel User Project Wrapper` is a macro inside `Caravel`. To be able to use
-any design as a `Caravel User Project Wrapper` it has to match the footprint
+any design as a `Caravel User Project Wrapper`, it has to match the footprint
 that `Caravel` is expecting so we can't rely on `FP_CORE_UTIL`.
 
 ##### IO Pins
 
-The top level design `Caravel` is expecting any `Caravel User Project Wrapper`
+The top-level design `Caravel` is expecting any `Caravel User Project Wrapper`
 to have the IO pins at specific locations and with specific dimensions. We
 can achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
-`DEF` file used as a template for the design's floorplan. IO pins shapes and
+`DEF` file that is used as a template for the design's floorplan. IOs pin shapes and
 locations are copied from the template `DEF` file over to our design. In addition,
 the same die area is used as the one in the template `DEF` file.
 
@@ -774,7 +774,7 @@ Then update the design's configuration by adding `FP_DEF_TEMPLATE` variable:
 ```json
 {
   "DESIGN_NAME": "SPM_example",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"]
+  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
   "CLOCK_PERIOD": 25,
   "CLOCK_PORT": "wb_clk_i",
   "FP_DEF_TEMPLATE": "dir::./template.def",
@@ -787,10 +787,10 @@ Then update the design's configuration by adding `FP_DEF_TEMPLATE` variable:
 
 A macro's Power Distribution Network (`PDN`) is responsible for the delivery of
 power to cells in the design. A macro's internal `PDN` is exposed through pins
-as an interface for integration with another designs. These pins are similar to
+as an interface for integration with other designs. These pins are similar to
 data IO pins but often much larger.
 
-Here is another an example of a macro that is fully integrated inside `Caravel`:
+Here is another example of a macro that is fully integrated inside `Caravel`:
 
 ```{figure} ./caravel-1.png
 :align: center
@@ -813,8 +813,8 @@ between the wrapper rings and the chip is done through the highlighted light blu
 `met3` wires.
 
 Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like the
-figure shown above. This is done by using a collection of variables which are responsible
-for controlling the shape, location and metal layers of the `PDN` pins offering
+figure shown above. This is done by using a collection of variables that are responsible
+for controlling the shape, location, and metal layers of the `PDN` pins offering
 the power interface of the macro.
 
 Append the following variables to your configuration:
