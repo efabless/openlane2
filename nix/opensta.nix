@@ -12,10 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
+  lib,
+  clangStdenv,
+  fetchFromGitHub,
+  swig,
+  pkg-config,
+  cmake,
+  gnumake,
+  flex,
+  bison,
+  tcl,
+  zlib,
 }:
-
-with pkgs; clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation rec {
   name = "opensta";
   rev = "5b374dd36ad345c9fcd5224e9fc20484393568ab";
 
@@ -27,7 +36,7 @@ with pkgs; clangStdenv.mkDerivation rec {
   };
 
   cmakeFlags = [
-    "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
   ];
 
@@ -61,4 +70,11 @@ with pkgs; clangStdenv.mkDerivation rec {
     flex
     bison
   ];
+
+  meta = with lib; {
+    description = "Gate-level static timing verifier";
+    homepage = "https://parallaxsw.com";
+    license = licenses.gpl3Plus;
+    platforms = platforms.darwin ++ platforms.linux;
+  };
 }

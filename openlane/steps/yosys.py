@@ -15,8 +15,9 @@ import os
 import re
 import io
 import json
-import subprocess
+import fnmatch
 import textwrap
+import subprocess
 from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
@@ -31,26 +32,52 @@ from ..common import Path, get_script_dir, Toolbox, TclUtils
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
+yosys_cell_rx = r"cell\s+\S+\s+\((\S+)\)"
+
+
+def _check_any_tristate(
+    cells: List[str],
+    tristate_patterns: List[str],
+):
+    for cell in cells:
+        for tristate_pattern in tristate_patterns:
+            if fnmatch.fnmatch(cell, tristate_pattern):
+                return True
+
+    return False
+
 
 def _parse_yosys_check(
     report: io.TextIOBase,
+    tristate_patterns: Optional[List[str]] = None,
     tristate_okay: bool = False,
 ) -> int:
     verbose("Parsing synthesis checks…")
     errors_encountered: int = 0
+    last_warning = None
     current_warning = None
+
+    tristate_patterns = tristate_patterns or []
 
     for line in report:
         if line.startswith("Warning:") or line.startswith("Found and reported"):
-            if current_warning is not None:
-                if tristate_okay and "tribuf" in current_warning:
-                    debug("Ignoring tristate-related error:")
-                    debug(current_warning)
-                else:
-                    debug("Encountered check error:")
-                    debug(current_warning)
-                    errors_encountered += 1
+            last_warning = current_warning
             current_warning = line
+            if last_warning is None:
+                continue
+
+            cells = re.findall(yosys_cell_rx, last_warning)
+
+            if tristate_okay and (
+                ("tribuf" in last_warning)
+                or _check_any_tristate(cells, tristate_patterns)
+            ):
+                debug("Ignoring tristate-related error:")
+                debug(last_warning)
+            else:
+                debug("Encountered check error:")
+                debug(last_warning)
+                errors_encountered += 1
         elif (
             starts_with_whitespace.match(line) is not None
             and current_warning is not None
@@ -245,7 +272,6 @@ class SynthesisCommon(YosysStep):
                 "AREA 1",
                 "AREA 2",
                 "AREA 3",
-                "AREA 4",
                 "DELAY 0",
                 "DELAY 1",
                 "DELAY 2",
@@ -386,6 +412,7 @@ class SynthesisCommon(YosysStep):
         if os.path.exists(check_error_count_file):
             metric_updates["synthesis__check_error__count"] = _parse_yosys_check(
                 open(check_error_count_file),
+                self.config["TRISTATE_CELLS"],
                 self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
             )
 
