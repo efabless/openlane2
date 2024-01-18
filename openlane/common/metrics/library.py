@@ -142,7 +142,7 @@ Metric(
 )
 Metric(
     "timing__hold__tns",
-    aggregator=sum_aggregator,
+    aggregator=min_aggregator,
     higher_is_better=True,
     critical=True,
 )

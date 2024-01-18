@@ -58,6 +58,9 @@ class MetricComparisonResult:
     critical: bool
     significant_figures: Optional[int]
 
+    def is_changed(self) -> bool:
+        return (self.delta is not None and self.delta != 0) or self.gold != self.new
+
     def format_values(self) -> Tuple[str, str, str]:
         before_str = str(self.gold)
         if isinstance(self.gold, float) or isinstance(self.gold, Decimal):

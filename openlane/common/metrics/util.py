@@ -187,12 +187,12 @@ class MetricDiff(object):
                 critical.append(row)
             elif row.better is False:
                 worse.append(row)
-            elif (row.delta is not None and row.delta != 0) or row.gold != row.new:
+            elif row.is_changed():
                 changed.append(row)
             else:
                 remaining.append(row)
 
-        listed_differences = []
+        listed_differences: List[MetricComparisonResult] = []
         if table_verbosity >= TableVerbosity.CRITICAL:
             listed_differences += critical
         if table_verbosity >= TableVerbosity.WORSE:
@@ -218,7 +218,7 @@ class MetricDiff(object):
                         emoji = " ⭕"
                     else:
                         emoji = " ❗"
-                if row.critical:
+                if row.critical and row.is_changed():
                     emoji = " ‼️"
                 table += f"| {row.metric_name:<70} | {before:<10} | {after:<10} | {f'{delta}{emoji}':<20} |\n"
 
