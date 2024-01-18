@@ -139,8 +139,7 @@ class MetricDiff(object):
 
         :param better: The number of datapoints that represent a positive change.
         :param worse: The number of datapoints that represent a negative change.
-        :param critical: The number of changes that are likely to result
-            in a dead chip.
+        :param critical: The number of changes for critical metrics.
         :param unchanged: Values that are unchanged.
         """
 
@@ -230,16 +229,15 @@ class MetricDiff(object):
         """
         stats = MetricDiff.MetricStatistics()
         for row in self.differences:
-            if row.delta == 0 or row.gold == row.new:
+            if not row.is_changed():
                 stats.unchanged += 1
-            elif row.critical:
-                stats.critical += 1
-                stats.worse += 1
             elif row.better is not None:
                 if row.better:
                     stats.better += 1
                 else:
                     stats.worse += 1
+            if row.critical:
+                stats.critical += 1
         return stats
 
     @classmethod

@@ -43,10 +43,6 @@ class MetricComparisonResult:
         chip, i.e., an increase in DRC values, or an inexplicable change in
         the number of I/O pins.
 
-        If the :class:`Metric` has ``higher_is_better`` set, a change is critical
-        only if it's worse.
-
-        Otherwise, any change is considered ``critical``\\.
     """
 
     metric_name: str
@@ -105,11 +101,8 @@ class Metric(object):
     :param higher_is_better: At a high level, whether a higher numeric value for
         this metric is considered "good" (such as: better utilization) or "bad"
         (such as: more antenna violations.)
-    :param critical: Whether a change in this value indicates a critical
-        failure (or radical change) to the design.
+    :param critical: A critical metric is always watched for any change.
 
-        If ``higher_is_better`` is not null, the change is considered critical
-        only if the comparison deems the change worse.
     """
 
     name: str
