@@ -1183,23 +1183,39 @@ class CheckAntennas(OpenROADStep):
         with open(output_file, "w") as f:
             rich.print(table, file=f)
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        views_updates, metrics_updates = super().run(state_in, **kwargs)
+    def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:
+        pattern = re.compile(r"Net:\s*(\w+)")
+        count = 0
 
-        metrics_updates["route__antenna_violations__count"] = get_antenna_nets(
-            open(os.path.join(self.step_dir, "antenna.rpt")),
-            open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
+        for line in report:
+            line = line.strip()
+            m = pattern.match(line)
+            if m is None:
+                continue
+            count += 1
+
+        return count
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        report_dir = os.path.join(self.step_dir, "reports")
+        report_path = os.path.join(report_dir, "antenna.rpt")
+        report_summary_path = os.path.join(report_dir, "antenna_summary.rpt")
+        kwargs, env = self.extract_env(kwargs)
+        env["_ANTENNA_REPORT"] = report_path
+
+        mkdirp(os.path.join(self.step_dir, "reports"))
+
+        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+        metrics_updates["route__antenna_violations__count"] = self.__get_antenna_nets(
+            open(report_path)
         )
-        self.__summarize_antenna_report(
-            os.path.join(self.step_dir, "antenna.rpt"),
-            os.path.join(self.step_dir, "antenna_summary.rpt"),
-        )
+        self.__summarize_antenna_report(report_path, report_summary_path)
 
         return views_updates, metrics_updates
 
 
 @Step.factory.register()
-class GlobalRouting(CheckAntennas):
+class GlobalRouting(OpenROADStep):
     """
     The initial phase of routing. Given a detailed-placed ODB file, this
     phase starts assigning coarse-grained routing "regions" for each net so they
@@ -1453,23 +1469,6 @@ class RCX(OpenROADStep):
         views_updates[DesignFormat.SPEF] = spef_dict
 
         return views_updates, metrics_updates
-
-
-# Antennas
-def get_antenna_nets(report: io.TextIOWrapper, output: io.TextIOWrapper) -> int:
-    pattern = re.compile(r"Net:\s*(\w+)")
-    count = 0
-
-    for line in report:
-        line = line.strip()
-        m = pattern.match(line)
-        if m is None:
-            continue
-        net = m[1]
-        output.write(f"{net}\n")
-        count += 1
-
-    return count
 
 
 @Step.factory.register()
