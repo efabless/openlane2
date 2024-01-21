@@ -15,7 +15,6 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
 # start checking antennas and generate a detailed report
-puts $::env(_ANTENNA_REPORT)
 puts "%OL_CREATE_REPORT $::env(_ANTENNA_REPORT)"
 check_antennas -verbose
 puts "%OL_END_REPORT"
