@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import textwrap
 from typing import Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step
