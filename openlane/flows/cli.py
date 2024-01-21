@@ -253,20 +253,20 @@ def cloup_flow_opts(
                 callback=initial_state_cb,
                 help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
             )(f)
+            f = o(
+                "--design-dir",
+                "design_dir",
+                type=Path(
+                    exists=True,
+                    file_okay=False,
+                    dir_okay=True,
+                ),
+                hidden=True,
+                default=None,
+            )(f)
             if _enable_debug_flags:
                 f = option_group(
                     "Debug flags",
-                    o(
-                        "--force-design-dir",
-                        "_force_design_dir",
-                        type=Path(
-                            exists=True,
-                            file_okay=False,
-                            dir_okay=True,
-                        ),
-                        hidden=True,
-                        default=None,
-                    ),
                     o(
                         "--force-run-dir",
                         "_force_run_dir",

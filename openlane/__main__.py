@@ -66,22 +66,24 @@ def run(
     with_initial_state: Optional[State],
     config_override_strings: List[str],
     _force_run_dir: Optional[str],
-    _force_design_dir: Optional[str],
+    design_dir: Optional[str],
 ) -> int:
     if len(config_files) == 0:
         err("No config file has been provided.")
         ctx.exit(1)
-    elif len(config_files) > 1:
-        err("OpenLane does not currently support multiple configuration files.")
-        ctx.exit(1)
-    config_file = config_files[0]
-    # Enforce Mutual Exclusion
+    flow_description: Optional[Union[str, List[str]]] = None
 
-    flow_description: Union[str, List[str]] = flow_name or "Classic"
+    for config_file in config_files:
+        if meta := Config.get_meta(config_file, flow_override=flow_name):
+            if flow_ids := meta.flow:
+                if flow_description is None:
+                    flow_description = flow_ids
 
-    if meta := Config.get_meta(config_file, flow_override=flow_name):
-        if flow_ids := meta.flow:
-            flow_description = flow_ids
+    if flow_name is not None:
+        flow_description = flow_name
+
+    if flow_description is None:
+        flow_description = "Classic"
 
     TargetFlow: Type[Flow]
 
@@ -103,7 +105,7 @@ def run(
             pdk=pdk,
             scl=scl,
             config_override_strings=config_override_strings,
-            _force_design_dir=_force_design_dir,
+            design_dir=design_dir,
         )
     except InvalidConfig as e:
         info(f"[green]Errors have occurred while loading the {e.config}.")
@@ -250,7 +252,7 @@ def run_example(
             with_initial_state=None,
             config_override_strings=[],
             _force_run_dir=None,
-            _force_design_dir=None,
+            design_dir=None,
         )
         if status == 0:
             info("Smoke test passed.")

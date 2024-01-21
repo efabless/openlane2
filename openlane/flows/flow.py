@@ -60,7 +60,7 @@ from ..logging import (
     deregister_additional_handler,
     options,
 )
-from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
+from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox, AnyPath
 
 
 class FlowError(RuntimeError):
@@ -279,7 +279,7 @@ class Flow(ABC):
 
     def __init__(
         self,
-        config: Union[Config, str, os.PathLike, Dict],
+        config: Union[Config, Dict, AnyPath, List[AnyPath]],
         *,
         name: Optional[str] = None,
         pdk: Optional[str] = None,
@@ -287,7 +287,6 @@ class Flow(ABC):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
-        _force_design_dir: Optional[str] = None,
     ):
         if self.__class__.Steps == NotImplemented:
             raise NotImplementedError(
@@ -313,7 +312,6 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
-                _force_design_dir=_force_design_dir,
             )
 
         self.config: Config = config

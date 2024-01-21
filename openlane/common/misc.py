@@ -203,6 +203,9 @@ class Path(UserString, os.PathLike):
             return Path(my_abspath)
 
 
+AnyPath = Union[str, os.PathLike]
+
+
 class zip_first(object):
     """
     Works like ``zip_longest`` if ｜a｜ > ｜b｜ and ``zip`` if ｜a｜ <= ｜b｜.
