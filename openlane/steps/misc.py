@@ -63,18 +63,7 @@ class ReportManufacturability(Step):
     def __get_lvs_report(self, state_in):
         lvs_step = Netgen.LVS.id
         report = []
-        report.append(
-            textwrap.dedent(
-                """
-                ██╗    ██╗   ██╗███████╗
-                ██║    ██║   ██║██╔════╝
-                ██║    ██║   ██║███████╗
-                ██║    ╚██╗ ██╔╝╚════██║
-                ███████╗╚████╔╝ ███████║
-                ╚══════╝ ╚═══╝  ╚══════╝
-                """
-            )
-        )
+        report.append("* LVS")
         try:
             total = state_in.metrics["design__lvs_errors__count"]
             unmatched_pins = state_in.metrics["design__lvs_unmatched_pins__count"]
@@ -91,6 +80,8 @@ class ReportManufacturability(Step):
             warn(f"{key} not reported. Perhaps step: {lvs_step} didn't run.")
             report.append("N/A")
 
+        report.append("")
+
         return "\n".join(report)
 
     def __get_drc_report(self, state_in):
@@ -100,18 +91,7 @@ class ReportManufacturability(Step):
         magic_failed = False
         report = []
 
-        report.append(
-            textwrap.dedent(
-                """
-                ██████╗ ██████╗  ██████╗
-                ██╔══██╗██╔══██╗██╔════╝
-                ██║  ██║██████╔╝██║     
-                ██║  ██║██╔══██╗██║     
-                ██████╔╝██║  ██║╚██████╗
-                ╚═════╝ ╚═╝  ╚═╝ ╚═════╝
-                """
-            )
-        )
+        report.append("* DRC")
 
         klayout = state_in.metrics.get("klayout__drc_error__count", "N/A")
         if klayout == "N/A":
@@ -139,23 +119,14 @@ class ReportManufacturability(Step):
         else:
             report.append("Passed ✅")
 
+        report.append("")
+
         return "\n".join(report)
 
     def __get_antenna_report(self, state_in):
         antenna_step = OpenROAD.CheckAntennas.id
         report = []
-        report.append(
-            textwrap.dedent(
-                """
-             █████╗ ███╗   ██╗████████╗███████╗███╗   ██╗███╗   ██╗ █████╗ 
-            ██╔══██╗████╗  ██║╚══██╔══╝██╔════╝████╗  ██║████╗  ██║██╔══██╗
-            ███████║██╔██╗ ██║   ██║   █████╗  ██╔██╗ ██║██╔██╗ ██║███████║
-            ██╔══██║██║╚██╗██║   ██║   ██╔══╝  ██║╚██╗██║██║╚██╗██║██╔══██║
-            ██║  ██║██║ ╚████║   ██║   ███████╗██║ ╚████║██║ ╚████║██║  ██║
-            ╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚═╝  ╚═╝
-            """
-            )
-        )
+        report.append("* Antenna")
 
         try:
             nets = state_in.metrics["antenna__violating__nets"]
@@ -171,6 +142,8 @@ class ReportManufacturability(Step):
             warn(f"{key} not reported. Perhaps step: {antenna_step} didn't run.")
             report.append("N/A")
 
+        report.append("")
+
         return "\n".join(report)
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -179,12 +152,8 @@ class ReportManufacturability(Step):
         drc_report = self.__get_drc_report(state_in)
         antenna_report = self.__get_antenna_report(state_in)
         if not options.get_condensed_mode():
-            print(antenna_report)
-            print(lvs_report)
-            print(drc_report)
+            print(f"{antenna_report}\n{lvs_report}\n{drc_report}")
 
         with open(report_file, "w") as f:
-            print(antenna_report, file=f)
-            print(lvs_report, file=f)
-            print(drc_report, file=f)
+            print(f"{antenna_report}\n{lvs_report}\n{drc_report}", file=f)
         return {}, {}
