@@ -73,7 +73,7 @@ def _mock_conf_fs():
             "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
         )
         patcher.fs.create_file(
-            "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef",
+            "/pdk/dummy2/libs.ref/techlef/dummy2_scl/dummy_tech_lef.tlef",
         )
         patcher.fs.create_file(
             "/pdk/dummy/libs.tech/openlane/dummy_scl/config.tcl",
