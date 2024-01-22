@@ -234,6 +234,19 @@ proc check_if_terminal {pin_object} {
     return 0
 }
 
+proc get_path_kind {start_pin end_pin} {
+    set from "reg"
+    set to "reg"
+
+    if { [check_if_terminal $start_pin] } {
+        set from "in"
+    }
+    if { [check_if_terminal $end_pin] } {
+        set to "out"
+    }
+    return "$from-$to"
+}
+
 puts "%OL_CREATE_REPORT violator_list.rpt"
 puts "\n==========================================================================="
 puts "Violator List"
@@ -244,68 +257,60 @@ set r2r_hold_vios 0
 set total_setup_vios 0
 set r2r_setup_vios 0
 
-set hold_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
-set worst_r2r_hold_slack 1e30
-foreach path $hold_timing_paths {
-    set from "reg"
-    set to "reg"
-
+set hold_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
+foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
-
-    if { [check_if_terminal $start_pin] } {
-        set from "in"
-    }
-    if { [check_if_terminal $end_pin] } {
-        set to "out"
-    }
-    set kind "$from-$to"
+    set kind "[get_path_kind $start_pin $end_pin]"
 
     incr total_hold_vios
+    if { "$kind" == "reg-reg" } {
+        incr r2r_hold_vios
+    }
+    puts "\[hold $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
+}
+
+set worst_r2r_hold_slack 1e30
+set hold_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max $worst_r2r_hold_slack]
+foreach path $hold_paths {
+    set start_pin [get_property $path startpoint]
+    set end_pin [get_property $path endpoint]
+    set kind "[get_path_kind $start_pin $end_pin]"
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
 
         if { $slack < $worst_r2r_hold_slack } {
             set worst_r2r_hold_slack $slack
         }
-
-        incr r2r_hold_vios
     }
-
-    puts "\[hold $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
 }
 
-set setup_timing_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
-set worst_r2r_setup_slack 1e30
-foreach path $setup_timing_paths {
-    set from "reg"
-    set to "reg"
-
+set setup_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
+foreach path $setup_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
-
-    if { [check_if_terminal $start_pin] } {
-        set from "in"
-    }
-    if { [check_if_terminal $end_pin] } {
-        set to "out"
-    }
-
-    set kind "$from-$to"
+    set kind "[get_path_kind $start_pin $end_pin]"
 
     incr total_setup_vios
     if { "$kind" == "reg-reg" } {
-        set slack [get_property $path slack]
-        puts $slack
+        incr r2r_setup_vios
+    }
+    puts "\[setup $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
+}
 
+set worst_r2r_setup_slack 1e30
+set setup_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max $worst_r2r_setup_slack]
+foreach path $setup_paths {
+    set start_pin [get_property $path startpoint]
+    set end_pin [get_property $path endpoint]
+    set kind "[get_path_kind $start_pin $end_pin]"
+
+    if { "$kind" == "reg-reg" } {
+        set slack [get_property $path slack]
         if { $slack < $worst_r2r_setup_slack } {
             set worst_r2r_setup_slack $slack
         }
-
-        incr r2r_setup_vios
     }
-
-    puts "\[setup $kind] [get_property $start_pin full_name] -> [get_property $end_pin full_name] : [get_property $path slack]"
 }
 
 write_metric_int "timing__hold_vio__count__corner:[$corner name]" $total_hold_vios
