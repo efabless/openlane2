@@ -93,7 +93,9 @@ def create_config(
         source_rtl = []
         try:
             while True:
-                file = input(f"Input the RTL source file #{len(source_rtl)} (Ctrl+D to stop): ")
+                file = input(
+                    f"Input the RTL source file #{len(source_rtl)} (Ctrl+D to stop): "
+                )
                 if not os.path.isfile(file):
                     print(f"Invalid file {file}.", file=sys.stderr)
                     exit(1)
@@ -101,28 +103,29 @@ def create_config(
         except EOFError:
             print("")
             if len(source_rtl) == 0:
-                    print(f"At least one source RTL file is required.", file=sys.stderr)
-                    exit(1)
+                print("At least one source RTL file is required.", file=sys.stderr)
+                exit(1)
     source_rtl_key = "VERILOG_FILES"
-    if not functools.reduce(lambda acc, x: acc and (x.endswith(".sv") or x.endswith(".v")), source_rtl):
-        print("Only Verilog/SystemVerilog files are supported by create-config.", file=sys.stderr,)
+    if not functools.reduce(
+        lambda acc, x: acc and (x.endswith(".sv") or x.endswith(".v")), source_rtl
+    ):
+        print(
+            "Only Verilog/SystemVerilog files are supported by create-config.",
+            file=sys.stderr,
+        )
         exit(-1)
-    source_rtl_rel = [f"dir::{os.path.relpath(x, design_dir)}" for x in source_rtl ]
+    source_rtl_rel = [f"dir::{os.path.relpath(x, design_dir)}" for x in source_rtl]
     config_dict = {
         "DESIGN_NAME": design_name,
         "CLOCK_PORT": clock_port,
         "CLOCK_PERIOD": clock_period,
         source_rtl_key: source_rtl_rel,
+        "meta": {
+            "version": 2,
+        },
     }
     config, _ = Config.load(
-        {
-            **config_dict,
-            **{
-                "meta": {
-                    "version": 2,
-                }
-            },
-        },
+        config_dict,
         universal_flow_config_variables + verilog_rtl_cfg_vars,
         design_dir=design_dir,
         pdk=pdk,
@@ -134,11 +137,11 @@ def create_config(
             json.dumps(config_dict, cls=config.get_encoder(), indent=4),
             file=f,
         )
-    
+
     design_dir_opt = ""
     if os.path.abspath(design_dir) != os.path.abspath(os.path.dirname(file_name)):
         design_dir_opt = f"--design-dir {design_dir} "
-    
+
     print(f"Wrote config to '{file_name}'.")
     print("To run this design, invoke:")
     print(f"\topenlane {design_dir_opt}{file_name}")
