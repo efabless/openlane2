@@ -345,12 +345,7 @@ jobs:
           git push -fu origin $BRANCH_NAME # Force for if we have to re-run the CI for some reason
   publish:
     runs-on: ubuntu-22.04
-    needs: [
-        build-linux-amd64,
-        build-mac-amd64,
-        # build-docker,
-        build-py,
-      ]
+    needs: [build-linux-amd64, build-mac-amd64, build-docker, build-py]
     name: Publish (If Applicable)
     steps:
       - name: Check out repo
