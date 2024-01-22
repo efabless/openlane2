@@ -14,10 +14,10 @@
 {
   system,
   openlane,
-  python3,
-  symlinkJoin,
+  tkinter,
 }:
-symlinkJoin {
-  name = "openlane-colab-env";
-  paths = openlane.includedTools;
-}
+with pkgs;
+  symlinkJoin {
+    name = "openlane-colab-env";
+    paths = openlane.includedTools ++ [python3.pkgs.tkinter];
+  }
