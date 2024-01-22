@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
+  lib,
+  abc-verifier,
+  fetchFromGitHub,
+  zlib,
 }:
-
-with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
-  name = "or-abc";
+abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
+  name = "openroad-abc";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "abc";
-    rev = "4700df8a06df57a1b4997969f861f695e50c747f";
-    sha256 = "sha256-nheFL0pw/xrShWCrNUe49a7n9pQogGbQ7G7b7wFbWSQ=";
+    rev = "95b3543e928640dfa25f9e882e72a090a8883a9c";
+    sha256 = "sha256-U1E9wvEK5G4zo5Pepvsb5q885qSYyixIViweLacO5+U=";
   };
 
   patches = [
@@ -34,7 +36,7 @@ with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     "-DUSE_SYSTEM_ZLIB:BOOL=ON"
   ];
 
-  buildInputs = [ zlib ];
+  buildInputs = [zlib];
 
   installPhase = ''
     mkdir -p $out/bin
@@ -46,9 +48,17 @@ with pkgs; abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     mkdir -p $out/include
     for header in $(find  ../src | grep "\\.h$" | sed "s@../src/@@"); do
     header_tgt=$out/include/$header
-    header_dir=$(dirname $header_tgt) 
+    header_dir=$(dirname $header_tgt)
     mkdir -p $header_dir
     cp ../src/$header $header_tgt
     done
   '';
+
+  meta = with lib; {
+    description = "A tool for squential logic synthesis and formal verification (OpenROAD's Fork)";
+    homepage = "https://people.eecs.berkeley.edu/~alanmi/abc";
+    license = licenses.mit;
+    mainProgram = "abc";
+    platforms = platforms.unix;
+  };
 })

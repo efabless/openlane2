@@ -92,7 +92,9 @@ timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
     "clock__skew__worst_hold": (-inf, max),
     "clock__skew__worst_setup": (-inf, max),
     "timing__hold__ws": (inf, min),
+    "timing__hold_r2r__ws": (inf, min),
     "timing__setup__ws": (inf, min),
+    "timing__setup_r2r__ws": (inf, min),
     "timing__hold__wns": (inf, min),
     "timing__setup__wns": (inf, min),
     "timing__hold__tns": (0, lambda x: sum(x)),
@@ -227,12 +229,7 @@ class OpenROADStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-
-        lib_pnr = self.toolbox.remove_cells_from_lib(
-            frozenset([str(e) for e in lib_list]),
-            frozenset([str(self.config["PNR_EXCLUSION_CELL_LIST"])]),
-            as_cell_lists=True,
-        )
+        lib_pnr = [str(lib) for lib in lib_list]
 
         env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         env["PNR_LIBS"] = " ".join(lib_pnr)
@@ -585,18 +582,25 @@ class STAPostPNR(STAPrePNR):
         def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
             if slack is None:
                 return "[gray]?"
+            if slack == float(inf):
+                return "[gray]N/A"
             slack = round(float(slack), 4)
-            if slack <= 0:
-                return f"[red]{slack}"
+            formatted_slack = f"{slack:.4f}"
+            if slack < 0:
+                return f"[red]{formatted_slack}"
             else:
-                return f"[green]{slack}"
+                return f"[green]{formatted_slack}"
 
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
+        table.add_column("reg-to-reg")
+        table.add_column("Hold TNS")
         table.add_column("Hold Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Setup Worst Slack")
+        table.add_column("reg-to-reg")
+        table.add_column("Setup TNS")
         table.add_column("Setup Violations")
         table.add_column("of which reg-to-reg")
         table.add_column("Max Cap Violations")
@@ -608,9 +612,13 @@ class STAPostPNR(STAPrePNR):
             row = [corner]
             for metric in [
                 "timing__hold__ws",
+                "timing__hold_r2r__ws",
+                "timing__hold__tns",
                 "timing__hold_vio__count",
                 "timing__hold_r2r_vio__count",
                 "timing__setup__ws",
+                "timing__setup_r2r__ws",
+                "timing__setup__tns",
                 "timing__setup_vio__count",
                 "timing__setup_r2r_vio__count",
                 "design__max_cap_violation__count",

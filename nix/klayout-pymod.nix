@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs ? import ./pkgs.nix {},
-  klayout ? import ./klayout.nix { inherit pkgs; },
+  lib,
+  clangStdenv,
+  klayout,
+  python3,
 }:
-
-with pkgs; python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
+python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
   name = "klayout-pymod";
   buildInputs = [klayout];
   unpackPhase = "true";
@@ -25,4 +26,10 @@ with pkgs; python3.pkgs.toPythonModule (clangStdenv.mkDerivation rec {
     ln -s ${klayout}/lib/pymod/klayout $out/${python3.sitePackages}/klayout
     ln -s ${klayout}/lib/pymod/pya $out/${python3.sitePackages}/pya
   '';
+  meta = with lib; {
+    description = "Python API access to KLayout";
+    license = with licenses; [gpl2Plus];
+    homepage = "https://www.klayout.de/";
+    platforms = platforms.all;
+  };
 })

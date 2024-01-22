@@ -14,10 +14,17 @@
 import os
 
 from decimal import Decimal
-from typing import List, Optional, Dict, Union, Tuple
+from typing import List, Optional, Dict, Sequence, Union, Tuple
 
 from .variable import Variable, Macro
 from ..common import Path, get_script_dir
+
+
+def _prefix_to_wildcard(prefixes_raw: Union[str, Sequence[str]]):
+    prefixes = prefixes_raw
+    if isinstance(prefixes, str):
+        prefixes = prefixes.split()
+    return [f"{prefix}*" for prefix in prefixes]
 
 
 pdk_variables = [
@@ -78,9 +85,10 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
-        "GPIO_PADS_PREFIX",
+        "GPIO_PAD_CELLS",
         Optional[List[str]],
         "A list of pad cell name prefixes.",
+        deprecated_names=[("GPIO_PADS_PREFIX", _prefix_to_wildcard)],
         pdk=True,
     ),
     Variable(
@@ -171,6 +179,13 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
+        "TRISTATE_CELLS",
+        Optional[List[str]],
+        "A list of cell names or wildcards of tri-state buffers.",
+        deprecated_names=[("TRISTATE_CELL_PREFIX", _prefix_to_wildcard)],
+        pdk=True,
+    ),
+    Variable(
         "FILL_CELL",
         List[str],
         "A list of cell names or wildcards of fill cells to be used in fill insertion.",
@@ -257,6 +272,13 @@ scl_variables = [
         "The max transition time (slew) from high to low or low to high on cell inputs in ns to be used as a constraint on Synthesis and CTS. If not provided, it is calculated at runtime as `10%` of the provided clock period, unless that exceeds the PDK's `DEFAULT_MAX_TRAN` value.",
         units="ns",
         deprecated_names=["SYNTH_MAX_TRAN"],
+        pdk=True,
+    ),
+    Variable(
+        "MAX_CAPACITANCE_CONSTRAINT",
+        Optional[Decimal],
+        "The maximum capacitance constraint. If not provided, the constraint is not set in the SDC file which will fall back to the value set by the liberty file",
+        units="pF",
         pdk=True,
     ),
     Variable(

@@ -15,3 +15,4 @@
 from .optimizing import Optimizing
 from .classic import Classic, VHDLClassic
 from .misc import OpenInKLayout, OpenInOpenROAD
+from .synth_explore import SynthesisExploration
