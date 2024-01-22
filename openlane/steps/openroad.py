@@ -42,7 +42,7 @@ import yaml
 import rich
 import rich.table
 
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
+from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -1200,7 +1200,7 @@ class CheckAntennas(OpenROADStep):
         report_dir = os.path.join(self.step_dir, "reports")
         report_path = os.path.join(report_dir, "antenna.rpt")
         report_summary_path = os.path.join(report_dir, "antenna_summary.rpt")
-        _, env = self.extract_env(kwargs)
+        kwargs, env = self.extract_env(kwargs)
         env["_ANTENNA_REPORT"] = report_path
 
         mkdirp(os.path.join(self.step_dir, "reports"))
@@ -1214,21 +1214,8 @@ class CheckAntennas(OpenROADStep):
         return views_updates, metrics_updates
 
 
-class GlobalRoutingOnly(OpenROADStep):
-    id = "OpenROAD.GlobalRoutingOnly"
-    name = "Global Routing Only"
-    long_name = "Global Routing Only without Antenna Check"
-
-    outputs = [DesignFormat.ODB, DesignFormat.DEF]
-
-    config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "grt.tcl")
-
-
 @Step.factory.register()
-class GlobalRouting(CompositeStep):
+class GlobalRouting(OpenROADStep):
     """
     The initial phase of routing. Given a detailed-placed ODB file, this
     phase starts assigning coarse-grained routing "regions" for each net so they
@@ -1247,7 +1234,12 @@ class GlobalRouting(CompositeStep):
     id = "OpenROAD.GlobalRouting"
     name = "Global Routing"
 
-    Steps = [GlobalRoutingOnly, CheckAntennas]
+    outputs = [DesignFormat.ODB, DesignFormat.DEF]
+
+    config_vars = OpenROADStep.config_vars + grt_variables + dpl_variables
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
 
 @Step.factory.register()

@@ -871,12 +871,8 @@ class Step(ABC):
 
         if not logging.options.get_condensed_mode():
             rule(f"{self.long_name}")
-        log_path = Path(self.get_log_path()).rel_if_child(
-            relative_prefix=f".{os.path.sep}"
-        )
-
         verbose(
-            f"Running '{self.id}'… (Log: [link=file://{os.path.abspath(log_path)}]{log_path}[/link])"
+            f"Running '{self.id}'… (Log: {Path(self.get_log_path()).rel_if_child(relative_prefix=f'.{os.path.sep}')})"
         )
 
         mkdirp(self.step_dir)
