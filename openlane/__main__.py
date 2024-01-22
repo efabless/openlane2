@@ -100,7 +100,7 @@ def run(
 
     try:
         flow = TargetFlow(
-            config_file,
+            config_files,
             pdk_root=pdk_root,
             pdk=pdk,
             scl=scl,

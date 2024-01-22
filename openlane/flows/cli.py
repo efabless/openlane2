@@ -275,7 +275,6 @@ def cloup_flow_opts(
                     file_okay=False,
                     dir_okay=True,
                 ),
-                hidden=True,
                 default=None,
             )(f)
             if _enable_debug_flags:

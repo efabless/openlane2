@@ -44,11 +44,7 @@ from rich.progress import (
 )
 from deprecated.sphinx import deprecated
 
-from ..config import (
-    Config,
-    Variable,
-    universal_flow_config_variables,
-)
+from ..config import Config, Variable, universal_flow_config_variables, AnyConfigs
 from ..state import State
 from ..steps import Step
 from ..logging import (
@@ -60,7 +56,7 @@ from ..logging import (
     deregister_additional_handler,
     options,
 )
-from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox, AnyPath
+from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
 
 
 class FlowError(RuntimeError):
@@ -279,7 +275,7 @@ class Flow(ABC):
 
     def __init__(
         self,
-        config: Union[Config, Dict, AnyPath, List[AnyPath]],
+        config: AnyConfigs,
         *,
         name: Optional[str] = None,
         pdk: Optional[str] = None,

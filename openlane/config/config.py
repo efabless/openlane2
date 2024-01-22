@@ -462,8 +462,8 @@ class Config(GenericImmutableDict[str, Any]):
                 meta = Self.get_meta(config_validated)
             except TypeError as e:
                 identifier = "configuration dict"
-                if is_string(config):
-                    identifier = os.path.relpath(str(config))
+                if is_string(config_validated):
+                    identifier = os.path.relpath(str(config_validated))
                 raise InvalidConfig(identifier, [], [f"'meta' object is invalid: {e}"])
 
             assert meta is not None
