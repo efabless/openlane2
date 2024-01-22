@@ -1,6 +1,6 @@
 # Newcomers
 
-## What is OpenLane ?
+## What is OpenLane?
 
 ```{figure} ./flow.png
 :scale: 30 %
@@ -11,9 +11,10 @@ OpenLane Flow
 
 OpenLane is a powerful and versatile infrastructure library that enables the
 construction of digital ASIC implementation flows based on open-source and
-commercial EDA tools. It includes a reference flow (Classic) that is built
-entirely using open-source EDA tools, and it allows designers to abstract the
-underlying tools and configure their behavior with a single configuration file.
+commercial EDA tools. It includes a reference flow (Classic) that is constructed
+entirely using open-source EDA tools- abstracting their behavior and allowing the user
+to configure them using a single file.
+
 OpenLane also supports the ability to freely extend or modify the flow using
 Python scripts and utilities.
 
@@ -34,13 +35,14 @@ Here are some of the key benefits of using OpenLane:
   encounter.
 
 ```{seealso}
-Checkout [OpenLane using Google Colab directly in your browser](https://developers.google.com/silicon/guides/digital-inverter-openlane)
-You do not even need to install anything on your machine!
+You may want to check out [OpenLane using Google Colab directly in your browser](https://developers.google.com/silicon/guides/digital-inverter-openlane).
+
+It's free, and there's no need to install anything on your machine!
 ```
 
 ```{note}
-This guide assumes that the reader has some basic knowledge of ASIC, Digital Design,
-JSON and RTL
+This guide assumes that the reader has some basic knowledge of Digital Design, ASIC,
+JSON and RTL.
 ```
 
 ---
@@ -48,16 +50,16 @@ JSON and RTL
 ## Installation
 
 1. Follow instructions [here](https://app.cachix.org/cache/openlane) to install
-   {term}`Nix` and setup {term}`cachix`.
+   {term}`Nix` and set up {term}`cachix`.
 
-2. Open up a terminal and clone OpenLane:
+2. Open a terminal and clone OpenLane as follows:
 
    ```console
    $ git clone https://github.com/efabless/openlane2/ ~/openlane2
    ```
 
-3. Enter `nix-shell` which is similar to a virtual environment. It allows all
-   the packages bundled with OpenLane
+3. Invoke `nix-shell`, which will make all the packages bundled with OpenLane available
+   to your shell.
 
    ```console
    $ nix-shell --pure ~/openlane2/shell.nix
@@ -74,7 +76,7 @@ JSON and RTL
    :class: tip
 
    From now on all the commands assume
-   that you are inside `nix-shell`.
+   that you are inside the `nix-shell`.
    :::
 
 4. Run the smoke test to ensure everything is fine.
@@ -84,7 +86,7 @@ JSON and RTL
    [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
    ```
 
-That's it. Everything is setup. Now, let's try OpenLane.
+That's it. Everything is ready. Now, let's try OpenLane.
 
 ---
 
@@ -93,11 +95,13 @@ That's it. Everything is setup. Now, let's try OpenLane.
 ### SPM example
 
 We are going to use a simple design: a serial-by-parallel signed
-32-bit multiplier `SPM`. This multiplier performs the familiar shift-add algorithm.
-The parallel input `a` is multiplied by each bit of the serial input `x` as it is
-shifted in. The output is generated serially on `y`. Typically, SPM is interfaced
-with 3 registers. One parallel register to provide the multiplier. Two shift
-registers to provide the multiplicand and to get the serial product (64-bit).
+32-bit multiplier `SPM`. This multiplier performs a simple shift-add algorithm, where
+the parallel input `a` is multiplied by each bit of the serial input `x` as it is
+shifted in. The product is generated and serially output on the wire `y`.
+
+Typically, an SPM is interfaced with 3 registers. One parallel register to
+provide the multiplier, and two shift registers to provide the multiplicand
+and to recieve the serial product (64-bit).
 
 ```{figure} ./spm-block-diagram.png
 :scale: 60 %
@@ -153,7 +157,7 @@ for all available {term}`Variable`(s)
 
 #### How to run?
 
-1. Let's create a folder to add our source files to:
+1. Let's create a directory to add our source files to:
 
    ```console
    [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm
@@ -171,7 +175,7 @@ for all available {term}`Variable`(s)
    ```
 
 :::{tip}
-Are you inside a `nix-shell` ? Your terminal prompt should look like this:
+Double-checking: are you inside a `nix-shell`? Your terminal prompt should look like this:
 
 ```console
 [nix-shell:~/openlane2]$
@@ -187,7 +191,7 @@ $ nix-shell --pure ~/openlane2/shell.nix
 
 ---
 
-### Results of SPM as core ?
+### Checking the results
 
 #### Viewing the Layout
 
@@ -212,20 +216,20 @@ If you wish to use {term}`OpenROAD` GUI use the following:
 
 ---
 
-#### Run folder
+#### Run directory
 
-A new **run folder** (named something like `runs/RUN_2023-12-27_16-59-15`)
-should have been created.
+You'll find that a **run directory** (named something like `runs/RUN_2023-12-27_16-59-15`)
+was created when you ran OpenLane.
 
-By default, OpenLane runs a {term}`Flow` composed of a
-sequence of {term}`Step`(s).
-Each `Step` has its separate folder.
+By default, OpenLane runs a {term}`Flow` composed of a sequence of {term}`Step`(s).
+Each `Step` has its separate directory within the run directory.
 
 For example, the `OpenROAD.TapEndCapInsertion` `Step` creates the following
-folder `14-openroad-tapendcapinsertion` which would be inside the run folder.
+directory `14-openroad-tapendcapinsertion`.
 
-A `Step` folder has log files, report files, {term}`Metrics`
+A `Step` directory has log files, report files, {term}`Metrics`
 and output artifacts created by the `Step`.
+
 For example, these are the contents of `14-openroad-tapendcapinsertion`:
 
 ```text
@@ -296,9 +300,9 @@ RUN_2023-12-27_16-59-15
 └── warning.log
 ```
 
-#### Viewing Intermediate Layout
+#### Viewing Intermediate Layouts
 
-Additionally, you can view the intermediate layout at each `Step`:
+Additionally, you can view the layout at intermediate `Step`s:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json --with-initial-state ~/my_designs/spm/runs/RUN_2023-12-27_16-59-15/14-openroad-tapendcapinsertion/state_out.json"
@@ -306,10 +310,9 @@ Additionally, you can view the intermediate layout at each `Step`:
 
 #### Final Results
 
-Inside the run folder, there is a folder called `final`. This folder contains
-other folders that contain all the different layout views produced by the flow
-such as {term}`DEF` and {term}`LEF`.
-{term}`GDSII` and others. It looks like this:
+Inside the run directory, there is a directory called `final`. This directory contains
+other directorys that contain all the different layout views produced by the flow
+such as {term}`DEF`, {term}`LEF`, {term}`GDSII` and others. It looks like this:
 
 ```text
 final
@@ -339,9 +342,9 @@ final `metrics` in `JSON` and {term}`CSV` formats.
 
 ### Signoff Steps
 
-An ASIC design’s signoff is the last phase of implementation. It requires physical
+An ASIC design’s signoff is the last phase of implementation. It involves physical
 and timing verifications before committing to the silicon manufacturing process,
-which is commonly known as design tape-out.
+which is commonly known as "design tape-out".
 
 OpenLane runs a couple of `Step`(s) for the final signoff.
 
@@ -356,8 +359,10 @@ that the layout has to satisfy in order to be manufacturable.
 Such as checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
-`KLayout.DRC`. The Layout and `PDK` [DRC deck] are inputted to the tools running
-DRC, as shown in the diagram below:
+`KLayout.DRC`. Both tools have blind spots that are covered by the other tools.
+
+Both the layout and what is known as a PDK's {term}`DRC deck`
+are processed by the tools running DRC, as shown in the diagram below:
 
 ```{figure} ./OL-DRC.png
 :align: center
@@ -369,7 +374,7 @@ DRC (Design Rule Checking) Flow
 If `DRC` errors are found OpenLane will generate an error reporting
 the total count of violations found by each `Step`.
 
-To view `DRC` errors graphically. Open the layout:
+To view `DRC` errors graphically, you may open the layout as follows:
 
 ```console
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm/config.json
@@ -381,12 +386,11 @@ Then in the menu bar select Tools -> Marker Browser. A new window should open.
 :align: center
 ```
 
-Then select File -> open and then select the report file you would like to open.
-Report files will be found under `52-magic-drc/reports/drc.klayout.xml` and
-`53-klayout-drc/report/drc.klayout.xml`
+Click File ► Open and then select the DRC report file, of which you'll find two: One under
+`52-magic-drc/reports/drc.klayout.xml` and the other under `53-klayout-drc/report/drc.klayout.xml`
 
 :::{tip}
-The initial number in `53-klayout-drc` (`53`) may vary according to a design configuration.
+The initial number in `53-klayout-drc` (`53`) may vary according to the flow's configuration.
 :::
 
 ```{figure} ./klayout-markerbrowser-menu-2.png
@@ -423,7 +427,7 @@ LVS (Layout-versus-Schematic) Flow
 ```
 
 `Netgen` will generate multiple files that can be browsed in case of `LVS` errors.
-As all `Step`(s), these will be inside the `Step`'s folder.
+As all `Step`(s), these will be inside the `Step`'s directory.
 
 You would want to look at `netgen-lvs.log` which has a summary of the results of
 `LVS`. Ideally, you would find the following at the end of this log file:
@@ -467,7 +471,7 @@ Check out our [STA and timing closure guide](https://docs.google.com/document/d/
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
 
-Inside the `Step` folder there is a file called `summary.rpt` which summarizes
+Inside the `Step` directory there is a file called `summary.rpt` which summarizes
 important metrics for each {term}`IPVT` {term}`timing corner`:
 
 ```text
@@ -488,7 +492,7 @@ important metrics for each {term}`IPVT` {term}`timing corner`:
 └─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴────────────┘
 ```
 
-There is also a folder per corner inside the `Step` directory which contains all
+There is also a directory per corner inside the `Step` directory which contains all
 the log files and reports generated for each `IPVT corner`.
 
 ```text
@@ -547,7 +551,7 @@ Here is a small description of each file:
 ### SPM as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 Often a design by itself serves no purpose unless interfaced with and/or integrated
-into another design or a chip. We are going to harden `spm` design again but
+into another design or a chip. We are going to harden the `spm` design again but
 this time we will have it as a [Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/)
 macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
@@ -567,7 +571,7 @@ Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more info
 
 We begin by updating the `RTL` needed for integration of the spm into `Caravel`.
 
-1. Create a new folder `~/my_designs/spm-user_project_wrapper/` and
+1. Create a new directory `~/my_designs/spm-user_project_wrapper/` and
 
    ```console
    [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm-user_project_wrapper
