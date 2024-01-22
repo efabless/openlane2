@@ -48,5 +48,6 @@ usage/index
 reference/index
 additional_material
 glossary
+faq
 contributors/index
 ```

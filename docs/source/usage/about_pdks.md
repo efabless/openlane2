@@ -118,6 +118,7 @@ PDKs range from 700MiB to 1.5GiB, and they add up *fast*.
 You can delete all non-active PDKs by invoking `volare prune` in your terminal.
 ```
 
+(porting-pdks)=
 ### Using non-Volare PDKs
 
 If you want to use PDKs without Volare (built manually), you will need to pass

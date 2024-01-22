@@ -47,7 +47,6 @@ extensions = [
     "sphinx_design",
     "sphinx_tippy",
     "sphinx_copybutton",
-    "sphinxcontrib.spelling",
     "generate_module_autodocs",  # CUSTOM
     "generate_configvar_docs",  # CUSTOM
     "migration_comparison",  # CUSTOM
