@@ -11,8 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import sys
 import json
+import functools
+from decimal import Decimal
 
 import click
 
@@ -27,11 +30,35 @@ def cli():
     pass
 
 
-@click.argument(
-    "file_name",
-    type=click.Path(exists=False, file_okay=True, dir_okay=False),
-)
 @click.command()
+@click.option(
+    "--file-name",
+    type=click.Path(exists=False, file_okay=True, dir_okay=False),
+    default="config.json",
+    prompt="Please input the file name for the configuration file",
+)
+@click.option(
+    "--design-dir",
+    type=click.Path(exists=True, dir_okay=True, file_okay=False),
+    default=".",
+    prompt="Enter the base directory for your design",
+)
+@click.option(
+    "--design-name",
+    "--top-module",
+    type=str,
+    prompt="Enter the design name (which should be equal to HDL name of your top module)",
+)
+@click.option(
+    "--clock-port",
+    type=str,
+    prompt="Enter the name of your design's clock port",
+)
+@click.option(
+    "--clock-period",
+    type=Decimal,
+    prompt="Enter your desired clock period in nanoseconds",
+)
 @cloup_flow_opts(
     config_options=False,
     run_options=False,
@@ -39,69 +66,82 @@ def cli():
     jobs=False,
     accept_config_files=False,
 )
-def create_config(file_name, pdk_root, pdk, scl):
+@click.argument(
+    "source_rtl",
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+    ),
+    nargs=-1,
+)
+def create_config(
+    pdk_root,
+    pdk,
+    scl,
+    file_name,
+    design_name,
+    design_dir,
+    clock_port,
+    clock_period,
+    source_rtl,
+):
     """
     Generate a JSON config interactively
     """
-    design_dir = "Replace with your design directory"
-    design_name = "Replace with your design name"
-    clock_port = "Replace with your design's clock port"
-    clock_period = "Replace string with a decimal value of your desired clock period"
-    verilog_files = ["dir::file.v", "dir::src/*.v"]
-
-    if not sys.__stdin__.isatty() or not sys.__stdout__.isatty():
-        config_dict = {
-            "DESIGN_NAME": design_name,
-            "CLOCK_PORT": clock_port,
-            "CLOCK_PERIOD": clock_period,
-            "VERILOG_FILES": verilog_files,
-        }
-        print(
-            json.dumps(config_dict, indent=4),
-            file=open(file_name, "w"),
-        )
-    else:
-        design_dir = input("Enter your design directory: ")
-        design_name = input("Enter the name of your top level name (design name): ")
-        clock_port = input("Enter the name of the design's clock port: ")
-        clock_period = input("Enter your desired clock period in nanoseconds(ns): ")
-        verilog_files = input(
-            "Enter your design's RTL source files (put a comma between each entry):\n"
-            + "\t# Tip: use dir:: to reference your design directory\n"
-            + "\t# Tip: you can use wildcards\n> "
-        ).split(",")
-        config_dict = {
-            "DESIGN_NAME": design_name,
-            "CLOCK_PORT": clock_port,
-            "CLOCK_PERIOD": clock_period,
-            "VERILOG_FILES": verilog_files,
-        }
-        config, _ = Config.load(
-            {
-                **config_dict,
-                **{
-                    "meta": {
-                        "version": 1,
-                    }
-                },
+    if len(source_rtl) == 0:
+        source_rtl = []
+        try:
+            while True:
+                file = input(f"Input the RTL source file #{len(source_rtl)} (Ctrl+D to stop): ")
+                if not os.path.isfile(file):
+                    print(f"Invalid file {file}.", file=sys.stderr)
+                    exit(1)
+                source_rtl.append(file)
+        except EOFError:
+            print("")
+            if len(source_rtl) == 0:
+                    print(f"At least one source RTL file is required.", file=sys.stderr)
+                    exit(1)
+    source_rtl_key = "VERILOG_FILES"
+    if not functools.reduce(lambda acc, x: acc and (x.endswith(".sv") or x.endswith(".v")), source_rtl):
+        print("Only Verilog/SystemVerilog files are supported by create-config.", file=sys.stderr,)
+        exit(-1)
+    source_rtl_rel = [f"dir::{os.path.relpath(x, design_dir)}" for x in source_rtl ]
+    config_dict = {
+        "DESIGN_NAME": design_name,
+        "CLOCK_PORT": clock_port,
+        "CLOCK_PERIOD": clock_period,
+        source_rtl_key: source_rtl_rel,
+    }
+    config, _ = Config.load(
+        {
+            **config_dict,
+            **{
+                "meta": {
+                    "version": 2,
+                }
             },
-            universal_flow_config_variables + verilog_rtl_cfg_vars,
-            design_dir=design_dir,
-            pdk=pdk,
-            pdk_root=pdk_root,
-            scl=scl,
-        )
-        config_parsed = {
-            key: value
-            for key, value in config.to_raw_dict(include_meta=False).items()
-            if key in config_dict.keys()
-        }
+        },
+        universal_flow_config_variables + verilog_rtl_cfg_vars,
+        design_dir=design_dir,
+        pdk=pdk,
+        pdk_root=pdk_root,
+        scl=scl,
+    )
+    with open(file_name, "w") as f:
         print(
-            json.dumps(config_parsed, cls=config.get_encoder(), indent=4),
-            file=open(file_name, "w"),
+            json.dumps(config_dict, cls=config.get_encoder(), indent=4),
+            file=f,
         )
-
-    print(f"Wrote to {file_name}")
+    
+    design_dir_opt = ""
+    if os.path.abspath(design_dir) != os.path.abspath(os.path.dirname(file_name)):
+        design_dir_opt = f"--design-dir {design_dir} "
+    
+    print(f"Wrote config to '{file_name}'.")
+    print("To run this design, invoke:")
+    print(f"\topenlane {design_dir_opt}{file_name}")
 
 
 cli.add_command(create_config)
