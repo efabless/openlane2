@@ -65,7 +65,7 @@ def _mock_conf_fs():
             if { ![info exists ::env(STD_CELL_LIBRARY)] } {
                 set ::env(STD_CELL_LIBRARY) "dummy2_scl"
             }
-            set ::env(TECH_LEF) "/pdk/dummy2/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+            set ::env(TECH_LEF) "/pdk/dummy2/libs.ref/techlef/dummy2_scl/dummy_tech_lef.tlef"
             set ::env(LIB_SYNTH) "sky130_fd_sc_hd__tt_025C_1v80.lib"
             """,
         )

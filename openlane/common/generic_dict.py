@@ -210,9 +210,22 @@ class GenericDict(Mapping[KT, VT]):
         """
         A convenience function to update multiple values in the GenericDict object
         at the same time.
-        :param
+        :param incoming: The values to update
         """
         for key, value in incoming.items():
+            self[key] = value
+
+    def update_reorder(self, incoming: "Mapping[KT, VT]"):
+        """
+        A convenience function to update multiple values in the GenericDict object
+        at the same time. Pre-existing keys are deleted first so the values in
+        incoming are emplaced at the end of the dictionary.
+
+        :param incoming: The values to update
+        """
+        for key, value in incoming.items():
+            if key in self:
+                del self[key]
             self[key] = value
 
 

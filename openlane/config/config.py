@@ -487,7 +487,7 @@ class Config(GenericImmutableDict[str, Any]):
 
             assert mapping is not None, "Invalid validated config"
             mutable = config_obj.copy_mut()
-            mutable.update(mapping)
+            mutable.update_reorder(mapping)
             config_obj = Self.__load_dict(
                 mutable,
                 design_dir,
