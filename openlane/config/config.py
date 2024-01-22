@@ -275,17 +275,19 @@ class Config(GenericImmutableDict[str, Any]):
         :param config_in: A configuration object or file.
         :returns: Either a Meta object, or if the file is invalid, None.
         """
+        default_meta_version = 2 if isinstance(config_in, Mapping) else 1
+
         if is_string(config_in):
             config_in = str(config_in)
             if config_in.endswith(".tcl"):
                 return Meta(version=1)
             elif config_in.endswith(".json"):
-                return Meta(version=2)
+                config_in = json.load(open(config_in, encoding="utf8"))
 
         assert not isinstance(config_in, str)
         assert not isinstance(config_in, os.PathLike)
 
-        meta = Meta()
+        meta = Meta(version=default_meta_version)
         if meta_raw := config_in.get("meta"):
             meta = Meta(**meta_raw)
 
@@ -414,7 +416,9 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
-        if is_string(config_in):
+        if isinstance(config_in, Mapping):
+            config_in = [config_in]
+        elif is_string(config_in):
             config_in = [str(config_in)]
 
         assert not isinstance(config_in, str)
