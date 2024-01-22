@@ -821,20 +821,29 @@ figure shown above. This is done by using a collection of variables that are res
 for controlling the shape, location, and metal layers of the `PDN` pins offering
 the power interface of the macro.
 
-Append the following variables to your configuration:
+Let's add these variables to our configuration file:
 
 ```json
-    "FP_PDN_CORE_RING": 1,
-    "FP_PDN_CORE_RING_VWIDTH": 3.1,
-    "FP_PDN_CORE_RING_HWIDTH": 3.1,
-    "FP_PDN_CORE_RING_VOFFSET": 12.45,
-    "FP_PDN_CORE_RING_HOFFSET": 12.45,
-    "FP_PDN_CORE_RING_VSPACING": 1.7,
-    "FP_PDN_CORE_RING_HSPACING": 1.7,
-    "FP_PDN_VWIDTH": 3.1,
-    "FP_PDN_HWIDTH": 3.1,
-    "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
-    "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
+{
+  "DESIGN_NAME": "SPM_example",
+  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
+  "CLOCK_PERIOD": 25,
+  "CLOCK_PORT": "wb_clk_i",
+  "FP_DEF_TEMPLATE": "dir::./template.def",
+  "FP_SIZING": "absolute",
+  "DIE_AREA": [0, 0, 2920, 3520],
+  "FP_PDN_CORE_RING": 1,
+  "FP_PDN_CORE_RING_VWIDTH": 3.1,
+  "FP_PDN_CORE_RING_HWIDTH": 3.1,
+  "FP_PDN_CORE_RING_VOFFSET": 12.45,
+  "FP_PDN_CORE_RING_HOFFSET": 12.45,
+  "FP_PDN_CORE_RING_VSPACING": 1.7,
+  "FP_PDN_CORE_RING_HSPACING": 1.7,
+  "FP_PDN_VWIDTH": 3.1,
+  "FP_PDN_HWIDTH": 3.1,
+  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
+  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)"
+}
 ```
 
 :::{seealso}
@@ -843,21 +852,31 @@ about each of the above variables
 :::
 
 `Caravel` is a chip with multiple power domains. We need to match these domains
-in our configuration by updating `VDD_NETS` and `GND_NETS` variables:
+in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
 
 ```json
-    "VDD_NETS": [
-        "vccd1",
-        "vccd2",
-        "vdda1",
-        "vdda2"
-    ],
-    "GND_NETS": [
-        "vssd1",
-        "vssd2",
-        "vssa1",
-        "vssa2"
-    ]
+{
+  "DESIGN_NAME": "SPM_example",
+  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
+  "CLOCK_PERIOD": 25,
+  "CLOCK_PORT": "wb_clk_i",
+  "FP_DEF_TEMPLATE": "dir::./template.def",
+  "FP_SIZING": "absolute",
+  "DIE_AREA": [0, 0, 2920, 3520],
+  "FP_PDN_CORE_RING": 1,
+  "FP_PDN_CORE_RING_VWIDTH": 3.1,
+  "FP_PDN_CORE_RING_HWIDTH": 3.1,
+  "FP_PDN_CORE_RING_VOFFSET": 12.45,
+  "FP_PDN_CORE_RING_HOFFSET": 12.45,
+  "FP_PDN_CORE_RING_VSPACING": 1.7,
+  "FP_PDN_CORE_RING_HSPACING": 1.7,
+  "FP_PDN_VWIDTH": 3.1,
+  "FP_PDN_HWIDTH": 3.1,
+  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
+  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
+  "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
+  "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"]
+}
 ```
 
 ##### Timing Constraints
