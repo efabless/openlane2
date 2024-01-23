@@ -20,5 +20,13 @@ configuration objects. Configuration objects are the primary input to a flow.
 """
 from .preprocessor import Keys
 from .variable import Instance, Macro, Variable
-from .config import Meta, Config, InvalidConfig, AnyConfig, AnyConfigs
+from .config import (
+    Meta,
+    Config,
+    InvalidConfig,
+    AnyConfig,
+    AnyConfigs,
+    PassedDirectoryError,
+    UnknownExtensionError,
+)
 from .flow import flow_common_variables as universal_flow_config_variables

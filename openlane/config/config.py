@@ -56,6 +56,44 @@ AnyConfig = Union[AnyPath, Mapping[str, Any]]
 AnyConfigs = Union[AnyConfig, Sequence[AnyConfig]]
 
 
+class UnknownExtensionError(ValueError):
+    """
+    When a passed configuration file has an unrecognized extension, i.e.,
+    not .json or .tcl.
+    """
+
+    def __init__(self, config: AnyPath) -> None:
+        self.config = str(config)
+        _, ext = os.path.splitext(config)
+        super().__init__(
+            f"Unsupported configuration file extension '{ext}' for '{config}'."
+        )
+
+
+class PassedDirectoryError(ValueError):
+    """
+    When a passed configuration file is in fact a directory.
+    """
+
+    def __init__(self, config: AnyPath) -> None:
+        self.config = str(config)
+        super().__init__(
+            "Passing design directories as arguments is unsupported in OpenLane 2 or higher: please pass the configuration file(s) directly."
+        )
+
+
+def _validate_config_file(config: AnyPath) -> Literal["json", "tcl"]:
+    config = str(config)
+    if config.endswith(".tcl"):
+        return "tcl"
+    elif config.endswith(".json"):
+        return "json"
+    elif os.path.isdir(config):
+        raise PassedDirectoryError(config)
+    else:
+        raise UnknownExtensionError(config)
+
+
 class InvalidConfig(ValueError):
     """
     An error raised when a configuration under resolution is invalid.
@@ -280,9 +318,10 @@ class Config(GenericImmutableDict[str, Any]):
 
         if is_string(config_in):
             config_in = str(config_in)
-            if config_in.endswith(".tcl"):
+            validated_type = _validate_config_file(config_in)
+            if validated_type == "tcl":
                 return Meta(version=1)
-            elif config_in.endswith(".json"):
+            elif validated_type == "json":
                 config_in = json.load(open(config_in, encoding="utf8"))
 
         assert not isinstance(config_in, str)
@@ -433,23 +472,13 @@ class Config(GenericImmutableDict[str, Any]):
         for config in config_in:
             if isinstance(config, Mapping):
                 configs_validated.append(config)
-                continue
             # Path
             else:
                 config = str(config)
-                if config.endswith(".json") or config.endswith(".tcl"):
-                    config_abspath = os.path.abspath(config)
-                    file_design_dir = os.path.dirname(config_abspath)
-                    configs_validated.append(config_abspath)
-                else:
-                    if os.path.isdir(config):
-                        raise ValueError(
-                            "Passing design folders as arguments is unsupported in OpenLane 2 or higher: please pass the JSON configuration file directly."
-                        )
-                    _, ext = os.path.splitext(config)
-                    raise ValueError(
-                        f"Unsupported configuration file extension '{ext}' for '{config}'."
-                    )
+                _validate_config_file(config)
+                config_abspath = os.path.abspath(config)
+                file_design_dir = os.path.dirname(config_abspath)
+                configs_validated.append(config_abspath)
 
         design_dir = design_dir or file_design_dir
         if design_dir is None:
