@@ -112,7 +112,7 @@ def create_config(
                 exit(1)
     source_rtl_key = "VERILOG_FILES"
     if not functools.reduce(
-        lambda acc, x: acc and (x.endswith(".sv") or x.endswith(".v")), source_rtl
+        lambda acc, x: acc and (x.endswith(".sv") or x.endswith(".v")), source_rtl, True
     ):
         print(
             "Only Verilog/SystemVerilog files are supported by create-config.",
