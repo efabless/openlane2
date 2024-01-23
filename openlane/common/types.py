@@ -90,6 +90,9 @@ class Path(UserString, os.PathLike):
             return Path(my_abspath)
 
 
+AnyPath = Union[str, os.PathLike]
+
+
 class ScopedFile(Path):
     """
     Creates a temporary file that remains valid while this variable is in scope,

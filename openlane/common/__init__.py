@@ -50,6 +50,7 @@ from .types import (
     is_string,
     Number,
     Path,
+    AnyPath,
     ScopedFile,
 )
 from .toolbox import Toolbox

@@ -30,7 +30,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Callable,
     Dict,
     Set,
 )
@@ -44,7 +43,55 @@ from .pdk_compat import migrate_old_config
 from .preprocessor import preprocess_dict, Keys as SpecialKeys
 from ..logging import info, warn
 from ..__version__ import __version__
-from ..common import GenericDict, GenericImmutableDict, TclUtils, Path
+from ..common import (
+    GenericDict,
+    GenericImmutableDict,
+    TclUtils,
+    Path,
+    AnyPath,
+    is_string,
+)
+
+AnyConfig = Union[AnyPath, Mapping[str, Any]]
+AnyConfigs = Union[AnyConfig, Sequence[AnyConfig]]
+
+
+class UnknownExtensionError(ValueError):
+    """
+    When a passed configuration file has an unrecognized extension, i.e.,
+    not .json or .tcl.
+    """
+
+    def __init__(self, config: AnyPath) -> None:
+        self.config = str(config)
+        _, ext = os.path.splitext(config)
+        super().__init__(
+            f"Unsupported configuration file extension '{ext}' for '{config}'."
+        )
+
+
+class PassedDirectoryError(ValueError):
+    """
+    When a passed configuration file is in fact a directory.
+    """
+
+    def __init__(self, config: AnyPath) -> None:
+        self.config = str(config)
+        super().__init__(
+            "Passing design directories as arguments is unsupported in OpenLane 2 or higher: please pass the configuration file(s) directly."
+        )
+
+
+def _validate_config_file(config: AnyPath) -> Literal["json", "tcl"]:
+    config = str(config)
+    if config.endswith(".tcl"):
+        return "tcl"
+    elif config.endswith(".json"):
+        return "json"
+    elif os.path.isdir(config):
+        raise PassedDirectoryError(config)
+    else:
+        raise UnknownExtensionError(config)
 
 
 class InvalidConfig(ValueError):
@@ -258,22 +305,30 @@ class Config(GenericImmutableDict[str, Any]):
     @classmethod
     def get_meta(
         Self,
-        json_config_in: Union[str, os.PathLike],
+        config_in: AnyConfig,
         flow_override: Optional[str] = None,
-    ) -> Optional[Meta]:
+    ) -> Meta:
         """
-        Returns the Meta object of a JSON configuration file
+        Returns the Meta object of a configuration dictionary or file.
 
-        :param config_in: A configuration file.
-        :returns: Either a Meta object, or if the file is not a JSON file, None.
+        :param config_in: A configuration object or file.
+        :returns: Either a Meta object, or if the file is invalid, None.
         """
-        try:
-            obj = json.load(open(json_config_in, encoding="utf8"))
-        except (json.JSONDecodeError, IsADirectoryError):
-            return None
+        default_meta_version = 2 if isinstance(config_in, Mapping) else 1
 
-        meta = Meta()
-        if meta_raw := obj.get("meta"):
+        if is_string(config_in):
+            config_in = str(config_in)
+            validated_type = _validate_config_file(config_in)
+            if validated_type == "tcl":
+                return Meta(version=1)
+            elif validated_type == "json":
+                config_in = json.load(open(config_in, encoding="utf8"))
+
+        assert not isinstance(config_in, str)
+        assert not isinstance(config_in, os.PathLike)
+
+        meta = Meta(version=default_meta_version)
+        if meta_raw := config_in.get("meta"):
             meta = Meta(**meta_raw)
 
         if flow_override is not None:
@@ -354,7 +409,7 @@ class Config(GenericImmutableDict[str, Any]):
     @classmethod
     def load(
         Self,
-        config_in: Union[str, os.PathLike, Mapping[str, Any]],
+        config_in: AnyConfigs,
         flow_config_vars: Sequence[Variable],
         *,
         config_override_strings: Optional[Sequence[str]] = None,
@@ -363,7 +418,6 @@ class Config(GenericImmutableDict[str, Any]):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
-        _force_design_dir: Optional[str] = None,
     ) -> Tuple["Config", str]:
         """
         Creates a new Config object based on a Tcl file, a JSON file, or a
@@ -382,8 +436,12 @@ class Config(GenericImmutableDict[str, Any]):
             NAME=VALUE strings. These are primarily for running OpenLane from
             the command-line and strictly speaking should not be used in the API.
 
-        :param design_dir: The design directory for said configuration.
-            Supported and required *if and only if* config_in is a dictionary.
+        :param design_dir: The design directory for said configuration(s).
+
+            If not explicitly provided, the design directory will be the
+            directory holding the last file in the list.
+
+            If no files are provided, this argument is required.
 
         :param pdk: A process design kit to use. Required unless specified via the
             "PDK" key in a configuration object.
@@ -398,56 +456,81 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
-        loader: Callable = Self.__loads
-        raw: Union[str, Mapping] = ""
-        default_meta_version = 1
-        if not isinstance(config_in, Mapping):
-            config_in = os.path.abspath(config_in)
+        if isinstance(config_in, Mapping):
+            config_in = [config_in]
+        elif is_string(config_in):
+            config_in = [str(config_in)]
 
-            if design_dir is not None:
-                raise TypeError(
-                    "The argument design_dir is not supported when config_in is not a dictionary."
-                )
+        assert not isinstance(config_in, str)
+        assert not isinstance(config_in, os.PathLike)
 
-            design_dir = _force_design_dir or str(os.path.dirname(config_in))
+        if len(config_in) == 0:
+            raise ValueError("The value for config_in must not be empty.")
 
-            config_in = str(config_in)
-            if config_in.endswith(".json"):
-                raw = open(config_in, encoding="utf8").read()
-            elif config_in.endswith(".tcl"):
-                raw = open(config_in, encoding="utf8").read()
-                loader = Self.__loads_tcl
+        file_design_dir = None
+        configs_validated: List[AnyConfig] = []
+        for config in config_in:
+            if isinstance(config, Mapping):
+                configs_validated.append(config)
+            # Path
             else:
-                if os.path.isdir(config_in):
-                    raise ValueError(
-                        "Passing design folders as arguments is unsupported in OpenLane 2 or higher: please pass the JSON configuration file directly."
+                config = str(config)
+                _validate_config_file(config)
+                config_abspath = os.path.abspath(config)
+                file_design_dir = os.path.dirname(config_abspath)
+                configs_validated.append(config_abspath)
+
+        design_dir = design_dir or file_design_dir
+        if design_dir is None:
+            raise ValueError(
+                "The design_dir argument is required when configuration dictionaries are used."
+            )
+
+        config_obj = Config()
+        for config_validated in configs_validated:
+            try:
+                meta = Self.get_meta(config_validated)
+            except TypeError as e:
+                identifier = "configuration dict"
+                if is_string(config_validated):
+                    identifier = os.path.relpath(str(config_validated))
+                raise InvalidConfig(identifier, [], [f"'meta' object is invalid: {e}"])
+
+            assert meta is not None
+
+            mapping = None
+            if isinstance(config_validated, Mapping):
+                mapping = config_validated
+            elif isinstance(config_validated, str):
+                if config_validated.endswith(".tcl"):
+                    mapping = Self.__mapping_from_tcl(
+                        config_validated,
+                        design_dir,
+                        pdk_root=pdk_root,
+                        pdk=pdk,
+                        scl=scl,
                     )
-                _, ext = os.path.splitext(config_in)
-                raise ValueError(
-                    f"Unsupported configuration file extension '{ext}' for '{config_in}'."
-                )
-        else:
-            default_meta_version = 2
-            if design_dir is None:
-                raise TypeError(
-                    "The argument design_dir is required when using attempting to load a Config with a dictionary."
-                )
-            raw = config_in
-            loader = Self.__load_dict
+                else:
+                    mapping = json.load(
+                        open(config_validated, encoding="utf8"), parse_float=Decimal
+                    )
 
-        loaded = loader(
-            raw,
-            design_dir,
-            flow_config_vars=flow_config_vars,
-            pdk_root=pdk_root,
-            pdk=pdk,
-            scl=scl,
-            config_override_strings=(config_override_strings or []),
-            default_meta_version=default_meta_version,
-            _load_pdk_configs=_load_pdk_configs,
-        )
+            assert mapping is not None, "Invalid validated config"
+            mutable = config_obj.copy_mut()
+            mutable.update_reorder(mapping)
+            config_obj = Self.__load_dict(
+                mutable,
+                design_dir,
+                flow_config_vars=flow_config_vars,
+                pdk_root=pdk_root,
+                pdk=pdk,
+                scl=scl,
+                config_override_strings=(config_override_strings or []),
+                meta=meta,
+                _load_pdk_configs=_load_pdk_configs,
+            )
 
-        return (loaded, design_dir)
+        return (config_obj, design_dir)
 
     ## For Jupyter
     def _repr_markdown_(self) -> str:  # pragma: no cover
@@ -477,46 +560,24 @@ class Config(GenericImmutableDict[str, Any]):
 
     ## Private Methods
     @classmethod
-    def __loads(
-        Self,
-        json_str: str,
-        *args,
-        **kwargs,
-    ):
-        raw = json.loads(json_str, parse_float=Decimal)
-        return Self.__load_dict(
-            raw,
-            *args,
-            **kwargs,
-        )
-
-    @classmethod
     def __load_dict(
         Self,
         mapping_in: Mapping[str, Any],
         design_dir: str,
         flow_config_vars: Sequence[Variable],
         *,
+        meta: Meta,
         config_override_strings: Sequence[str],  # Unused, kept for API consistency
         pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
-        default_meta_version: int = 1,
         _load_pdk_configs: bool = True,
     ) -> "Config":
         raw = dict(mapping_in)
 
-        meta: Optional[Meta] = None
-        if raw.get("meta") is not None:
-            meta_raw = raw["meta"]
+        if "meta" in raw:
             del raw["meta"]
-            try:
-                meta = Meta(**meta_raw)
-            except TypeError as e:
-                raise InvalidConfig(
-                    "design configuration file", [], [f"'meta' object is invalid: {e}"]
-                )
 
         flow_option_vars = []
         flow_pdk_vars = []
@@ -525,9 +586,6 @@ class Config(GenericImmutableDict[str, Any]):
                 flow_pdk_vars.append(variable)
             else:
                 flow_option_vars.append(variable)
-
-        if meta is None:
-            meta = Meta(version=default_meta_version)
 
         override_keys = set()
         for string in config_override_strings:
@@ -619,31 +677,20 @@ class Config(GenericImmutableDict[str, Any]):
         return Config(processed, meta=meta)
 
     @classmethod
-    def __loads_tcl(
+    def __mapping_from_tcl(
         Self,
-        config: str,
+        config: AnyPath,
         design_dir: str,
-        flow_config_vars: Sequence[Variable],
         *,
-        config_override_strings: Sequence[str],
         pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
-        full_pdk_warnings: bool = False,
-        default_meta_version: int = 1,  # Unused, kept for API consistency
-        _load_pdk_configs: bool = True,  # Unused, kept for API consistency
-    ) -> "Config":
+    ) -> Mapping[str, Any]:
+        config_str = open(config, encoding="utf8").read()
+
         warn(
             "Support for .tcl configuration files is deprecated. Please migrate to a .json file at your earliest convenience."
         )
-
-        flow_option_vars = []
-        flow_pdk_vars = []
-        for variable in flow_config_vars:
-            if variable.pdk:
-                flow_pdk_vars.append(variable)
-            else:
-                flow_option_vars.append(variable)
 
         pdk_root = Self.__resolve_pdk_root(pdk_root)
 
@@ -655,7 +702,7 @@ class Config(GenericImmutableDict[str, Any]):
         )
         tcl_vars_in[SpecialKeys.scl] = ""
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
-        tcl_config = GenericDict(TclUtils._eval_env(tcl_vars_in, config))
+        tcl_config = GenericDict(TclUtils._eval_env(tcl_vars_in, config_str))
 
         process_info = preprocess_dict(
             tcl_config,
@@ -670,44 +717,20 @@ class Config(GenericImmutableDict[str, Any]):
                 "The pdk argument is required as the configuration object lacks a 'PDK' key."
             )
 
-        mutable, _, scl = Self.__get_pdk_config(
+        _, _, scl = Self.__get_pdk_config(
             pdk=pdk,
             scl=scl,
             pdk_root=pdk_root,
-            full_pdk_warnings=full_pdk_warnings,
-            flow_pdk_vars=flow_pdk_vars,
+            full_pdk_warnings=False,
         )
 
         tcl_vars_in[SpecialKeys.pdk] = pdk
         tcl_vars_in[SpecialKeys.scl] = scl
         tcl_vars_in[SpecialKeys.design_dir] = design_dir
 
-        mutable.update(GenericDict(TclUtils._eval_env(tcl_vars_in, config)))
-        for string in config_override_strings:
-            key, value = string.split("=", 1)
-            mutable[key] = value
+        tcl_mapping = GenericDict(TclUtils._eval_env(tcl_vars_in, config_str))
 
-        processed, design_warnings, design_errors = Config.__process_variable_list(
-            mutable,
-            list(flow_config_vars),
-            [],
-            removed_variables,
-            on_unknown_key="warn",
-        )
-
-        if len(design_errors) != 0:
-            raise InvalidConfig(
-                "design configuration file", design_warnings, design_errors
-            )
-
-        if len(design_warnings) > 0:
-            info(
-                "Loading the design configuration file has generated the following warnings:"
-            )
-        for warning in design_warnings:
-            warn(warning)
-
-        return Config(processed)
+        return tcl_mapping
 
     @classmethod
     def __resolve_pdk_root(
