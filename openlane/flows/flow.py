@@ -44,11 +44,7 @@ from rich.progress import (
 )
 from deprecated.sphinx import deprecated
 
-from ..config import (
-    Config,
-    Variable,
-    universal_flow_config_variables,
-)
+from ..config import Config, Variable, universal_flow_config_variables, AnyConfigs
 from ..state import State
 from ..steps import Step
 from ..logging import (
@@ -287,7 +283,7 @@ class Flow(ABC):
 
     def __init__(
         self,
-        config: Union[Config, str, os.PathLike, Dict],
+        config: AnyConfigs,
         *,
         name: Optional[str] = None,
         pdk: Optional[str] = None,
@@ -295,7 +291,6 @@ class Flow(ABC):
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         config_override_strings: Optional[Sequence[str]] = None,
-        _force_design_dir: Optional[str] = None,
     ):
         if self.__class__.Steps == NotImplemented:
             raise NotImplementedError(
@@ -321,7 +316,6 @@ class Flow(ABC):
                 pdk_root=pdk_root,
                 scl=scl,
                 design_dir=design_dir,
-                _force_design_dir=_force_design_dir,
             )
 
         self.config: Config = config
