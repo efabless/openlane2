@@ -926,6 +926,13 @@ class GlobalPlacement(OpenROADStep):
                 default=True,
             ),
             Variable(
+                "PL_WIRELENGTH_COEF",
+                Decimal,
+                "Global placement initial wirelength coefficient."
+                + "Decreasing the variable will modify the initial placement of the standard cells to reduce the wirelengths",
+                default=0.25,
+            ),
+            Variable(
                 "FP_CORE_UTIL",
                 Decimal,
                 "The core utilization percentage.",

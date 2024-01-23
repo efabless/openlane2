@@ -47,6 +47,16 @@ proc set_global_connections {} {
                 exit -1
             }
 
+            foreach cell [[ord::get_db_block] getInsts] {
+                if { [regexp "\^$instance_name" [$cell getName]] } {
+                    set matched 1
+                }
+            }
+            if { $matched != 1 } {
+                puts "No regex match found for $instance_name defined in PDN_MACRO_CONNECTIONS"
+                exit 1
+            }
+
             add_global_connection \
                 -net $power_net \
                 -inst_pattern $instance_name \
