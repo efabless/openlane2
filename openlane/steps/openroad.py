@@ -27,9 +27,6 @@ from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
 from typing import (
-    Any,
-    Callable,
-    Iterable,
     List,
     Dict,
     Literal,
@@ -80,28 +77,6 @@ met4 Y 0.46 0.92
 met5 X 1.70 3.40
 met5 Y 1.70 3.40
 """
-
-timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
-    "timing__hold_vio__count": (0, lambda x: sum(x)),
-    "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
-    "design__max_slew_violation__count": (0, lambda x: sum(x)),
-    "design__max_fanout_violation__count": (0, lambda x: sum(x)),
-    "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (-inf, max),
-    "clock__skew__worst_setup": (-inf, max),
-    "timing__hold__ws": (inf, min),
-    "timing__hold_r2r__ws": (inf, min),
-    "timing__setup__ws": (inf, min),
-    "timing__setup_r2r__ws": (inf, min),
-    "timing__hold__wns": (inf, min),
-    "timing__setup__wns": (inf, min),
-    "timing__hold__tns": (0, lambda x: sum(x)),
-    "timing__setup__tns": (0, lambda x: sum(x)),
-    "timing__unannotated_nets__count": (0, max),
-    "timing__unannotated_nets_filtered__count": (0, max),
-}
 
 
 def old_to_new_tracks(old_tracks: str) -> str:
@@ -280,10 +255,7 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = -inf
             metrics_updates.update(or_metrics_out)
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates,
-            timing_metric_aggregation,
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         return views_updates, metric_updates_with_aggregates
 
@@ -566,9 +538,7 @@ class STAPostPNR(STAPrePNR):
         for corner, updates_future in futures.items():
             metrics_updates.update(updates_future.result())
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates, timing_metric_aggregation
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
             if count is None:
@@ -1073,7 +1043,7 @@ class CheckAntennas(OpenROADStep):
     Runs OpenROAD to check if one or more long nets may constitute an
     `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
 
-    The metric ``route__antenna_violations__count`` will be updated with the number of violating nets.
+    The metric ``route__antenna_violation__count`` will be updated with the number of violating nets.
     """
 
     id = "OpenROAD.CheckAntennas"
@@ -1186,7 +1156,7 @@ class CheckAntennas(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        metrics_updates["route__antenna_violations__count"] = get_antenna_nets(
+        metrics_updates["route__antenna_violation__count"] = get_antenna_nets(
             open(os.path.join(self.step_dir, "antenna.rpt")),
             open(os.path.join(self.step_dir, "antenna_net_list.txt"), "w"),
         )
@@ -1208,10 +1178,10 @@ class GlobalRouting(CheckAntennas):
     Estimated capacitance and resistance values are much more accurate for
     global routing.
 
-    Updates the ``route__antenna_violations__count`` metric.
+    Updates the ``route__antenna_violation__count`` metric.
 
     At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
-    mitigations may also be applied, updating the `route__antenna_violations__count` count.
+    mitigations may also be applied, updating the `route__antenna_violation__count` count.
     See the variables for more info.
     """
 

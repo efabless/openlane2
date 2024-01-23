@@ -32,6 +32,7 @@ from typing import (
 )
 
 from .misc import idem
+from .types import is_string
 
 
 class GenericDictEncoder(json.JSONEncoder):
@@ -269,10 +270,6 @@ class GenericImmutableDict(GenericDict[KT, VT]):
         return GenericDict(self)
 
 
-def is_string(obj: Any) -> bool:
-    return isinstance(obj, str) or isinstance(obj, UserString)
-
-
 # Screw this, if you can figure out how to type hint mapping in dictionary out
 # and non-mapping in sequence out in Python, be my guest
 def copy_recursive(input, translator: Callable = idem):
@@ -286,8 +283,8 @@ def copy_recursive(input, translator: Callable = idem):
         By default, :func:`idem` is called.
     :returns: The copy.
 
-        All sequences will become built-in ``list``s and all mappings will
-        become built-in ``dict``s.
+        All sequences will become built-in ``list``\\s and all mappings will
+        become built-in ``dict``\\s.
     """
 
     def recursive(input, visit_stack: list, *, sequence_cls=list, mapping_cls=dict):

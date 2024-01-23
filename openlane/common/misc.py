@@ -13,21 +13,25 @@
 # limitations under the License.
 import os
 import re
-import sys
+import glob
 import typing
+import fnmatch
 import pathlib
 import unicodedata
-from collections import UserString
+from math import inf
 from typing import (
     Any,
-    ClassVar,
+    Generator,
     Iterable,
     TypeVar,
     Optional,
+    SupportsFloat,
     Union,
-    Tuple,
 )
+import httpx
 
+from .types import Path
+from ..__version__ import __version__
 
 T = TypeVar("T")
 
@@ -148,64 +152,6 @@ def mkdirp(path: typing.Union[str, os.PathLike]):
     return pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-class Path(UserString, os.PathLike):
-    """
-    A Path type for OpenLane configuration variables.
-
-    Basically just a string.
-    """
-
-    # This path will pass the validate() call, but will
-    # fail to open. It should be used for deprecated variable
-    # translation only.
-    _dummy_path: ClassVar[str] = "__openlane_dummy_path"
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__qualname__}('{self}')"
-
-    def exists(self) -> bool:
-        """
-        A convenience method calling :meth:`os.path.exists`
-        """
-        return os.path.exists(self)
-
-    def validate(self):
-        """
-        Raises an error if the path does not exist.
-        """
-        if not self.exists() and not self == Path._dummy_path:
-            raise ValueError(f"'{self}' does not exist")
-
-    def startswith(
-        self,
-        prefix: Union[str, Tuple[str, ...], UserString, os.PathLike],
-        start: Optional[int] = 0,
-        end: Optional[int] = sys.maxsize,
-    ) -> bool:
-        if isinstance(prefix, UserString) or isinstance(prefix, os.PathLike):
-            prefix = str(prefix)
-        return super().startswith(prefix, start, end)
-
-    def rel_if_child(
-        self,
-        start: Union[str, os.PathLike] = os.getcwd(),
-        *,
-        relative_prefix: str = "",
-    ) -> "Path":
-        my_abspath = os.path.abspath(self)
-        start_abspath = os.path.abspath(start)
-        if my_abspath.startswith(start_abspath):
-            return Path(relative_prefix + os.path.relpath(self, start_abspath))
-        else:
-            return Path(my_abspath)
-
-
-AnyPath = Union[str, os.PathLike]
-
-
 class zip_first(object):
     """
     Works like ``zip_longest`` if ｜a｜ > ｜b｜ and ``zip`` if ｜a｜ <= ｜b｜.
@@ -252,7 +198,13 @@ def format_size(byte_count: int) -> str:
     return f"{so_far}{units[tracker]}"
 
 
-def format_elapsed_time(elapsed_seconds: float) -> str:
+def format_elapsed_time(elapsed_seconds: SupportsFloat) -> str:
+    """
+    :param elapsed_seconds: Total time elapsed in seconds
+    :returns: A string in the format ``{hours}:{minutes}:{seconds}:{milliseconds}``
+    """
+    elapsed_seconds = float(elapsed_seconds)
+
     hours = int(elapsed_seconds // 3600)
     leftover = elapsed_seconds % 3600
 
@@ -263,3 +215,95 @@ def format_elapsed_time(elapsed_seconds: float) -> str:
     milliseconds = int((leftover % 1) * 1000)
 
     return f"{hours:02}:{minutes:02}:{seconds:02}.{milliseconds:03}"
+
+
+class Filter(object):
+    """
+    Encapsulates commonly used wildcard-based filtering functions into an object.
+
+    :param filters: A list of a wildcards supporting the
+        `fnmatch spec <https://docs.python.org/3.10/library/fnmatch.html>`_.
+
+        The wildcards will be split into an "allow" and "deny" list based on whether
+        the filter is prefixed with a ``!``.
+    """
+
+    def __init__(self, filters: Iterable[str]):
+        self.allow = []
+        self.deny = []
+        for filter in filters:
+            if filter.startswith("!"):
+                self.deny.append(filter[1:])
+            else:
+                self.allow.append(filter)
+
+    def get_matching_wildcards(self, input: str) -> Generator[str, Any, None]:
+        """
+        :param input: An input to match wildcards against.
+        :returns: An iterable object for *all* wildcards in the allow list accepting
+            ``input``, and *all* wildcards in the deny list rejecting ``input``.
+        """
+        for wildcard in self.allow:
+            if fnmatch.fnmatch(input, wildcard):
+                yield wildcard
+        for wildcard in self.deny:
+            if not fnmatch.fnmatch(input, wildcard):
+                yield wildcard
+
+    def filter(
+        self,
+        inputs: Iterable[str],
+    ) -> Generator[str, Any, None]:
+        """
+        :param inputs: A series of inputs to filter according to the wildcards.
+        :returns: An iterable object of any values in ``inputs`` that:
+            * Have matched at least one wildcard in the allow list
+            * Have matched exactly 0 inputs in the deny list
+        """
+        for input in inputs:
+            allowed = False
+            for wildcard in self.allow:
+                if fnmatch.fnmatch(input, wildcard):
+                    allowed = True
+                    break
+            for wildcard in self.deny:
+                if fnmatch.fnmatch(input, wildcard):
+                    allowed = False
+                    break
+            if allowed:
+                yield input
+
+
+def get_latest_file(in_path: Union[str, os.PathLike], filename: str) -> Optional[Path]:
+    """
+    :param in_path: A directory to search in
+    :param filename: The final filename
+    :returns: The latest file matching the parameters, by modification time
+    """
+    glob_results = glob.glob(os.path.join(in_path, "**", filename), recursive=True)
+    latest_time = -inf
+    latest_json = None
+    for result in glob_results:
+        time = os.path.getmtime(result)
+        if time > latest_time:
+            latest_time = time
+            latest_json = Path(result)
+
+    return latest_json
+
+
+def get_httpx_session(token: Optional[str] = None) -> httpx.Client:
+    """
+    Creates an ``httpx`` session client that follows redirects and has the
+    User-Agent header set to ``openlane2/{__version__}``.
+
+    :param token: If this parameter is non-None and not empty, another header,
+        Authorization: Bearer {token}, is included.
+    :returns: The created client
+    """
+    session = httpx.Client(follow_redirects=True)
+    headers_raw = {"User-Agent": f"openlane2/{__version__}"}
+    if token is not None and token.strip() != "":
+        headers_raw["Authorization"] = f"Bearer {token}"
+    session.headers = httpx.Headers(headers_raw)
+    return session

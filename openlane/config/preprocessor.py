@@ -288,6 +288,10 @@ def process_string(
         files = sorted(glob.glob(final_abspath))
         files_escaped = [file.replace("$", r"\$") for file in files]
         files_escaped.sort()
+
+        if len(files_escaped) == 0:
+            files_escaped = [concatenated]
+
         return files_escaped
     else:
         return mutable

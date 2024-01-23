@@ -178,7 +178,7 @@ class TclStep(Step):
             return super().run(state_in, env=env, **kwargs)
 
         This will allow you to add further custom environment variables to a call
-        while still respecting an `env` argument further up the call-stack.
+        while still respecting an ``env`` argument further up the call-stack.
 
         :param state_in: See superclass.
         :param **kwargs: Passed on to subprocess execution: useful if you want to

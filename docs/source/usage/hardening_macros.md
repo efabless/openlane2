@@ -251,7 +251,7 @@ Routing in general goes through these phases:
 
 The subsections include some notes:
 
-#### Antenna Mitigation
+### Antenna Mitigation
 To help mitigate the antenna effect, after Global Placement there are also three
 other steps you may choose to enable:
 

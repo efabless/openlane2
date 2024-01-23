@@ -2,12 +2,12 @@ click>=8,<9
 cloup>=1.0.1,<2
 pyyaml>=5,<7
 rich>=12,<13
-requests>=2.27,<3
 volare>=0.16.0
 lxml>=4.9.0
 deprecated>=1.2.10,<2
 immutabledict>=2,<3
 libparse>=0.3.1,<1
 psutil>=5.9.0
+httpx>=0.22.0, <0.28
 ioplace_parser~=0.1.0
 klayout==0.28.15
