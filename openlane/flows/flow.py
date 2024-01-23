@@ -60,7 +60,15 @@ from ..logging import (
     deregister_additional_handler,
     options,
 )
-from ..common import get_tpe, mkdirp, protected, final, slugify, Toolbox
+from ..common import (
+    get_tpe,
+    mkdirp,
+    protected,
+    final,
+    slugify,
+    Toolbox,
+    get_latest_file,
+)
 
 
 class FlowError(RuntimeError):
@@ -251,7 +259,7 @@ class Flow(ABC):
     :cvar config_vars:
         A list of **flow-specific** configuration variables. These configuration
         variables are used entirely within the logic of the flow itself and
-        are not exposed to ``Step``s.
+        are not exposed to ``Step``\\s.
 
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
@@ -483,7 +491,9 @@ class Flow(ABC):
                 raise FlowException("last_run used without any existing runs")
 
         # Stored until next start()
-        self.run_dir = _force_run_dir or os.path.join(self.design_dir, "runs", tag)
+        self.run_dir = os.path.abspath(
+            _force_run_dir or os.path.join(self.design_dir, "runs", tag)
+        )
         initial_state = with_initial_state or State()
 
         starting_ordinal = 1
@@ -495,7 +505,7 @@ class Flow(ABC):
 
             # Extract maximum step ordinal
             for entry in entries:
-                components = entry.split("-")
+                components = entry.split("-", maxsplit=1)
                 if len(components) < 2:
                     continue
                 try:
@@ -506,18 +516,7 @@ class Flow(ABC):
 
             # Extract Maximum State
             if with_initial_state is None:
-                latest_time = 0
-                latest_json: Optional[str] = None
-                state_out_jsons = sorted(
-                    glob.glob(os.path.join(self.run_dir, "*", "state_out.json"))
-                )
-                for state_out_json in state_out_jsons:
-                    time = os.path.getmtime(state_out_json)
-                    if time > latest_time:
-                        latest_time = time
-                        latest_json = state_out_json
-
-                if latest_json is not None:
+                if latest_json := get_latest_file(self.run_dir, "state_out.json"):
                     verbose(f"Using state at '{latest_json}'.")
 
                     initial_state = State.loads(

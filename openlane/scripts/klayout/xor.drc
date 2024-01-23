@@ -117,6 +117,4 @@ end
 info "---"
 info "Total XOR differences: #{total_xor_differences}"
 
-puts "%OL_CREATE_REPORT difference_count.rpt"
-puts total_xor_differences
-puts "%OL_END_REPORT"
+puts "%OL_METRIC_I design__xor_difference__count #{total_xor_differences}"

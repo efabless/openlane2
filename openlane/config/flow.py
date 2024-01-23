@@ -32,7 +32,7 @@ pdk_variables = [
     Variable(
         "STD_CELL_LIBRARY",
         str,
-        "Specifies the default standard cell library to be used under the specified PDK.",
+        "Specifies the default standard cell library to be used under the specified PDK. Must be a valid C identifier, i.e., matches the regular expression `[_a-zA-Z][_a-zA-Z0-9]+`.",
         pdk=True,
     ),
     Variable(
@@ -441,12 +441,12 @@ option_variables = [
     Variable(
         "DESIGN_NAME",
         str,
-        "The name of the top level module of the design. This is the only variable that MUST be set in every single OpenLane configuration file or dictionary.",
+        "The name of the top level module of the design. Must be a valid C identifier, i.e., matches the regular expression `[_a-zA-Z][_a-zA-Z0-9]+`.",
     ),
     Variable(
         "PDK",
         str,
-        "Specifies the process design kit (PDK).",
+        "Specifies the process design kit (PDK). Must be a valid C identifier, i.e., matches the regular expression `[_a-zA-Z][_a-zA-Z0-9]+`.",
         default="sky130A",
     ),
     Variable(
