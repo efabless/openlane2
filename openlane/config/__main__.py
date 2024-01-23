@@ -36,28 +36,33 @@ def cli():
     type=click.Path(exists=False, file_okay=True, dir_okay=False),
     default="config.json",
     prompt="Please input the file name for the configuration file",
+    help="The file name of the configuration file.",
 )
 @click.option(
     "--design-dir",
     type=click.Path(exists=True, dir_okay=True, file_okay=False),
     default=".",
     prompt="Enter the base directory for your design",
+    help="The top-level design directory. Typically, the configuration file goes in the design directory as well.",
 )
 @click.option(
     "--design-name",
     "--top-module",
     type=str,
-    prompt="Enter the design name (which should be equal to HDL name of your top module)",
+    prompt="Enter the design name (which should be equal to the HDL name of your top module)",
+    help="The name of the design, i.e. the name of the top-level module of the design.",
 )
 @click.option(
     "--clock-port",
     type=str,
     prompt="Enter the name of your design's clock port",
+    help="The identifier for the clock port.",
 )
 @click.option(
     "--clock-period",
     type=Decimal,
     prompt="Enter your desired clock period in nanoseconds",
+    help="The clock period, in nanoseconds.",
 )
 @cloup_flow_opts(
     config_options=False,
@@ -87,7 +92,7 @@ def create_config(
     source_rtl,
 ):
     """
-    Generate a JSON config interactively
+    Generates an OpenLane JSON configuration file for a design interactively.
     """
     if len(source_rtl) == 0:
         source_rtl = []

@@ -530,20 +530,6 @@ class Config(GenericImmutableDict[str, Any]):
 
     ## Private Methods
     @classmethod
-    def __loads(
-        Self,
-        json_str: str,
-        *args,
-        **kwargs,
-    ):
-        raw = json.loads(json_str, parse_float=Decimal)
-        return Self.__load_dict(
-            raw,
-            *args,
-            **kwargs,
-        )
-
-    @classmethod
     def __load_dict(
         Self,
         mapping_in: Mapping[str, Any],

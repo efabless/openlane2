@@ -276,6 +276,7 @@ def cloup_flow_opts(
                     dir_okay=True,
                 ),
                 default=None,
+                help="The top-level directory for your design that configuration objects may resolve paths relative to.",
             )(f)
             if _enable_debug_flags:
                 f = option_group(
