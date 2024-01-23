@@ -38,6 +38,8 @@ def cli(xml_file, json_file):
     with open(json_file, "w", encoding="utf8") as f:
         json.dump(json_database, f)
 
+    print(f"%OL_METRIC_I klayout__drc_error__count {total}")
+
 
 if __name__ == "__main__":
     cli()

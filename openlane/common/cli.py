@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import IntEnum
+from cloup import (
+    HelpFormatter,
+    HelpTheme,
+    Style,
+)
 from typing import Optional, Type, Union
 
 from click import (
     Choice,
     Context,
     Parameter,
-)
-from cloup import (
-    HelpFormatter,
-    HelpTheme,
-    Style,
 )
 
 formatter_settings = HelpFormatter.settings(

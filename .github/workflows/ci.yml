@@ -266,7 +266,7 @@ jobs:
           then
             nix-shell --run "\
               python3 -m openlane\
-              --run-tag CI\
+              --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{matrix.design.scl}}\
               ${{ matrix.design.config }}\
@@ -282,6 +282,67 @@ jobs:
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_folder }}
+      - name: Fetch Metrics
+        if: ${{ always() }}
+        run: |
+          nix-shell --run "\
+            python3 -m openlane.state latest\
+              ${{ matrix.design.run_folder }}\
+              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json\
+          "
+      - name: Upload Metrics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics
+          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+  upload_metrics:
+    name: Upload Metrics
+    runs-on: ubuntu-22.04
+    needs: [test]
+    if: ${{ always() }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup
+        run: |
+          sudo apt-get install -y python3-tk
+          python3 -m pip install -e .
+          echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Download Metrics
+        uses: actions/download-artifact@v3
+        with:
+          name: metrics
+          path: current
+      - name: "[PRs] Compare to main and comment result"
+        uses: actions/github-script@v6
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            require("./.github/scripts/post_metrics.js")(
+              github,
+              context,
+              "${{ vars.BOT_USERNAME }}",
+              "${{ secrets.GH_TOKEN }}",
+            ).then(()=>{console.log("Done.");});
+      - name: "[Push] Upload Metrics"
+        if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}
+        run: |
+          CURRENT_SHA=$(git rev-parse HEAD)
+          REPO=efabless/openlane-metrics
+          BRANCH_NAME="commit-$CURRENT_SHA"
+          echo "Uploading to 'github.com/$REPO@$BRANCH_NAME'…"
+          cd current
+          git init -b $BRANCH_NAME
+          git add .
+          git config user.name "${{ vars.BOT_NAME }}"
+          git config user.email "${{ vars.BOT_EMAIL }}"
+          git commit -m "Upload"
+          git remote add origin "https://${{ vars.BOT_USERNAME }}:${{ secrets.GH_TOKEN }}@github.com/$REPO.git"
+          git push -fu origin $BRANCH_NAME # Force for if we have to re-run the CI for some reason
   publish:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, build-mac-amd64, build-docker, build-py]

@@ -20,13 +20,13 @@ types-docutils
 types-decorator
 types-commonmark
 types-colorama
-types-requests
 types-Pygments
 types-Deprecated
 types-psutil
 
 # test
 pytest
+pytest-xdist
 coverage
 pyfakefs>=5.2.3,<6
 pillow>=10.0.1,<11

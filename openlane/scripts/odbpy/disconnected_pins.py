@@ -99,7 +99,7 @@ def main(
 
     print(f"Found {disconnected_pins_count} disconnected pin(s).")
 
-    utl.metric_integer("design__disconnected_pins__count", disconnected_pins_count)
+    utl.metric_integer("design__disconnected_pin__count", disconnected_pins_count)
 
 
 if __name__ == "__main__":

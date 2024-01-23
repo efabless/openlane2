@@ -27,9 +27,6 @@ from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
 from typing import (
-    Any,
-    Callable,
-    Iterable,
     List,
     Dict,
     Literal,
@@ -80,28 +77,6 @@ met4 Y 0.46 0.92
 met5 X 1.70 3.40
 met5 Y 1.70 3.40
 """
-
-timing_metric_aggregation: Dict[str, Tuple[Any, Callable[[Iterable], Any]]] = {
-    "timing__hold_vio__count": (0, lambda x: sum(x)),
-    "timing__hold_r2r_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_vio__count": (0, lambda x: sum(x)),
-    "timing__setup_r2r_vio__count": (0, lambda x: sum(x)),
-    "design__max_slew_violation__count": (0, lambda x: sum(x)),
-    "design__max_fanout_violation__count": (0, lambda x: sum(x)),
-    "design__max_cap_violation__count": (0, lambda x: sum(x)),
-    "clock__skew__worst_hold": (-inf, max),
-    "clock__skew__worst_setup": (-inf, max),
-    "timing__hold__ws": (inf, min),
-    "timing__hold_r2r__ws": (inf, min),
-    "timing__setup__ws": (inf, min),
-    "timing__setup_r2r__ws": (inf, min),
-    "timing__hold__wns": (inf, min),
-    "timing__setup__wns": (inf, min),
-    "timing__hold__tns": (0, lambda x: sum(x)),
-    "timing__setup__tns": (0, lambda x: sum(x)),
-    "timing__unannotated_nets__count": (0, max),
-    "timing__unannotated_nets_filtered__count": (0, max),
-}
 
 
 def old_to_new_tracks(old_tracks: str) -> str:
@@ -203,7 +178,7 @@ class OpenROADStep(TclStep):
         Variable(
             "PDN_MACRO_CONNECTIONS",
             Optional[List[str]],
-            "Specifies explicit power connections of internal macros to the top level power grid, in the format: macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
+            "Specifies explicit power connections of internal macros to the top level power grid, in the format: regex matching macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name_rx> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
             deprecated_names=[("FP_PDN_MACRO_HOOKS", pdn_macro_migrator)],
         ),
         Variable(
@@ -280,10 +255,7 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = -inf
             metrics_updates.update(or_metrics_out)
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates,
-            timing_metric_aggregation,
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         return views_updates, metric_updates_with_aggregates
 
@@ -566,9 +538,7 @@ class STAPostPNR(STAPrePNR):
         for corner, updates_future in futures.items():
             metrics_updates.update(updates_future.result())
 
-        metric_updates_with_aggregates = aggregate_metrics(
-            metrics_updates, timing_metric_aggregation
-        )
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
 
         def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
             if count is None:
@@ -594,15 +564,15 @@ class STAPostPNR(STAPrePNR):
         table = rich.table.Table()
         table.add_column("Corner/Group")
         table.add_column("Hold Worst Slack")
-        table.add_column("reg-to-reg")
+        table.add_column("Reg to Reg Paths")
         table.add_column("Hold TNS")
         table.add_column("Hold Violations")
-        table.add_column("of which reg-to-reg")
+        table.add_column("of which Reg to Reg")
         table.add_column("Setup Worst Slack")
-        table.add_column("reg-to-reg")
+        table.add_column("Reg to Reg Paths")
         table.add_column("Setup TNS")
         table.add_column("Setup Violations")
-        table.add_column("of which reg-to-reg")
+        table.add_column("of which Reg to Reg")
         table.add_column("Max Cap Violations")
         table.add_column("Max Slew Violations")
         for corner in ["Overall"] + self.config["STA_CORNERS"]:
@@ -956,6 +926,14 @@ class GlobalPlacement(OpenROADStep):
                 default=True,
             ),
             Variable(
+                "PL_WIRE_LENGTH_COEF",
+                Decimal,
+                "Global placement initial wirelength coefficient."
+                + " Decreasing the variable will modify the initial placement of the standard cells to reduce the wirelengths",
+                default=0.25,
+                deprecated_names=["PL_WIRELENGTH_COEF"],
+            ),
+            Variable(
                 "FP_CORE_UTIL",
                 Decimal,
                 "The core utilization percentage.",
@@ -1073,7 +1051,7 @@ class CheckAntennas(OpenROADStep):
     Runs OpenROAD to check if one or more long nets may constitute an
     `antenna risk <https://en.wikipedia.org/wiki/Antenna_effect>`_.
 
-    The metric ``route__antenna_violations__count`` will be updated with the number of violating nets.
+    The metric ``route__antenna_violation__count`` will be updated with the number of violating nets.
     """
 
     id = "OpenROAD.CheckAntennas"
@@ -1206,7 +1184,7 @@ class CheckAntennas(OpenROADStep):
         mkdirp(os.path.join(self.step_dir, "reports"))
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
-        metrics_updates["route__antenna_violations__count"] = self.__get_antenna_nets(
+        metrics_updates["route__antenna_violation__count"] = self.__get_antenna_nets(
             open(report_path)
         )
         self.__summarize_antenna_report(report_path, report_summary_path)
@@ -1224,10 +1202,10 @@ class GlobalRouting(OpenROADStep):
     Estimated capacitance and resistance values are much more accurate for
     global routing.
 
-    Updates the ``route__antenna_violations__count`` metric.
+    Updates the ``route__antenna_violation__count`` metric.
 
     At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
-    mitigations may also be applied, updating the `route__antenna_violations__count` count.
+    mitigations may also be applied, updating the `route__antenna_violation__count` count.
     See the variables for more info.
     """
 
