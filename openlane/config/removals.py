@@ -36,4 +36,5 @@ removed_variables: Dict[str, str] = {
     "MAGIC_GDS_ALLOW_ABSTRACT": "Bad practice. If an abstract view is needed, a GDS file can be generated from the abstract LEF file.",
     "PLACE_SITE_HEIGHT": "Now automatically extracted from PLACE_SITE.",
     "PLACE_SITE_WIDTH": "Now automatically extracted from PLACE_SITE.",
+    "FP_SIZING": "The flow can determine floorplan mode through other variables",
 }

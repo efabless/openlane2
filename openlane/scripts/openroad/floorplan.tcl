@@ -56,7 +56,7 @@ if { [info exists ::env(EXTRA_SITES)] } {
 set arg_list [list]
 lappend arg_list -sites "$used_sites"
 
-if {$::env(FP_SIZING) == "absolute"} {
+if {$::env(_FP_MODE) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
         puts stderr "Invalid die area string '$::env(DIE_AREA)'."
         exit -1

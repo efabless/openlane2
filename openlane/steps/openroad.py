@@ -653,12 +653,6 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_SIZING",
-            Literal["relative", "absolute"],
-            "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
-            default="relative",
-        ),
-        Variable(
             "FP_ASPECT_RATIO",
             Decimal,
             "The core's aspect ratio (height / width).",
@@ -673,38 +667,43 @@ class Floorplan(OpenROADStep):
         ),
         Variable(
             "FP_OBSTRUCTIONS",
-            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            Optional[List[Tuple[int, int, int, int]]],
             "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
             units="µm",
         ),
         Variable(
             "CORE_AREA",
             Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
-            'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
+            "Specifies a core area (i.e. die area minus margins) to be used in floorplanning."
+            + " It must be paired with `DIE_AREA`.",
             units="µm",
         ),
         Variable(
             "BOTTOM_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site heights, from the bottom boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site heights, from the bottom boundary."
+            + " If `DIEA_AREA` and `CORE_AREA` are set, this variable has no effect.",
             default=4,
         ),
         Variable(
             "TOP_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site heights, from the top boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site heights, from the top boundary."
+            + " If `DIE_AREA` and `CORE_AREA` are set, this variable has no effect.",
             default=4,
         ),
         Variable(
             "LEFT_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site widths, from the left boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site widths, from the left boundary."
+            + " If `DIE_AREA` are `CORE_AREA` are set, this variable has no effect.",
             default=12,
         ),
         Variable(
             "RIGHT_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site widths, from the right boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site widths, from the right boundary."
+            + " If `DIE_AREA` are `CORE_AREA` are set, this variable has no effect.",
             default=12,
         ),
         Variable(
@@ -718,6 +717,14 @@ class Floorplan(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
+    def __get_floorplan_mode(self) -> str:
+        mode = ""
+        if self.config["DIE_AREA"]:
+            mode = "absolute"
+        else:
+            mode = "relative"
+        return mode
+
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         path = self.config["FP_TRACKS_INFO"]
         tracks_info_str = open(path).read()
@@ -728,6 +735,7 @@ class Floorplan(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
+        env["_FP_MODE"] = self.__get_floorplan_mode()
         return super().run(state_in, env=env, **kwargs)
 
 
