@@ -178,7 +178,7 @@ class OpenROADStep(TclStep):
         Variable(
             "PDN_MACRO_CONNECTIONS",
             Optional[List[str]],
-            "Specifies explicit power connections of internal macros to the top level power grid, in the format: macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
+            "Specifies explicit power connections of internal macros to the top level power grid, in the format: regex matching macro instance names, power domain vdd and ground net names, and macro vdd and ground pin names `<instance_name_rx> <vdd_net> <gnd_net> <vdd_pin> <gnd_pin>`.",
             deprecated_names=[("FP_PDN_MACRO_HOOKS", pdn_macro_migrator)],
         ),
         Variable(
@@ -924,6 +924,14 @@ class GlobalPlacement(OpenROADStep):
                 bool,
                 "Specifies whether the placer should use routability driven placement.",
                 default=True,
+            ),
+            Variable(
+                "PL_WIRE_LENGTH_COEF",
+                Decimal,
+                "Global placement initial wirelength coefficient."
+                + " Decreasing the variable will modify the initial placement of the standard cells to reduce the wirelengths",
+                default=0.25,
+                deprecated_names=["PL_WIRELENGTH_COEF"],
             ),
             Variable(
                 "FP_CORE_UTIL",

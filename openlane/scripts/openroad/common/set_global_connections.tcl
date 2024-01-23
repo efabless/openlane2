@@ -36,6 +36,7 @@ proc set_global_connections {} {
     if { $::env(PDN_CONNECT_MACROS_TO_GRID) == 1 &&
         [info exists ::env(PDN_MACRO_CONNECTIONS)]} {
         foreach pdn_hook $::env(PDN_MACRO_CONNECTIONS) {
+            set pdn_hook [regexp -all -inline {\S+} $pdn_hook]
             set instance_name [lindex $pdn_hook 0]
             set power_net [lindex $pdn_hook 1]
             set ground_net [lindex $pdn_hook 2]
@@ -45,6 +46,18 @@ proc set_global_connections {} {
             if { $power_pin == "" || $ground_pin == "" } {
                 puts "PDN_MACRO_CONNECTIONS missing power and ground pin names"
                 exit -1
+            }
+
+            set matched 0
+            foreach cell [[ord::get_db_block] getInsts] {
+                if { [regexp "\^$instance_name" [$cell getName]] } {
+                    set matched 1
+                    puts "$instance_name matched with [$cell getName]"
+                }
+            }
+            if { $matched != 1 } {
+                puts "No regex match found for $instance_name defined in PDN_MACRO_CONNECTIONS"
+                exit 1
             }
 
             add_global_connection \
