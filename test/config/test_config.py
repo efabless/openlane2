@@ -167,6 +167,67 @@ def test_tcl_config():
 
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
+def test_mixed_configs():
+    from openlane.config import Meta, Config
+
+    with open("/cwd/config.json", "w") as f:
+        f.write(
+            """
+            {
+                "meta": {
+                    "version": 2,
+                    "flow": "Whatever"
+                },
+                "DEFAULT_CORNER": "ref::$DESIGN_NAME"
+            }
+            """
+        )
+
+    with open("/cwd/config2.tcl", "w") as f:
+        f.write(
+            """
+            set ::env(EXAMPLE_PDK_VAR) "30"
+            """
+        )
+
+    cfg, _ = Config.load(
+        [
+            {"DESIGN_NAME": "whatever", "VERILOG_FILES": "dir::src/*.v"},
+            "/cwd/config2.tcl",
+            "/cwd/config.json",
+        ],
+        config.flow_common_variables,
+        pdk="dummy",
+        scl="dummy_scl",
+        pdk_root="/pdk",
+    )
+
+    assert cfg == Config(
+        {
+            "DESIGN_DIR": "/cwd",
+            "DESIGN_NAME": "whatever",
+            "PDK_ROOT": "/pdk",
+            "PDK": "dummy",
+            "STD_CELL_LIBRARY": "dummy_scl",
+            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "EXAMPLE_PDK_VAR": Decimal("30"),
+            "GRT_REPAIR_ANTENNAS": True,
+            "RUN_HEURISTIC_DIODE_INSERTION": False,
+            "DIODE_ON_PORTS": "none",
+            "MACROS": None,
+            "TECH_LEFS": {
+                "nom_*": Path(
+                    "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+                )
+            },
+            "DEFAULT_CORNER": "whatever",
+        },
+        meta=Meta(version=2, flow="Whatever"),
+    ), "Generated configuration does not match expected value"
+
+
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables()
 def test_copy_filtered():
     from openlane.config import Config, Variable
 
