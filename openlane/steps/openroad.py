@@ -799,7 +799,10 @@ class IOPlacement(OpenROADStep):
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
-        if Floorplan.get_mode(self.config) != Floorplan.Mode.RELATIVE:
+        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
+            info(
+                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}"
+            )
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -1030,7 +1033,10 @@ class GlobalPlacementSkipIO(GlobalPlacement):
             )
         env["__PL_SKIP_IO"] = "1"
 
-        if Floorplan.get_mode(self.config) != Floorplan.Mode.RELATIVE:
+        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
+            info(
+                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration"
+            )
             return {}, {}
 
         return OpenROADStep.run(self, state_in, env=env, **kwargs)
