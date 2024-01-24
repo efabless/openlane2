@@ -65,7 +65,7 @@ def main(scls, use_json, test_sets):
                 ol_dir, "test", "designs", design_name, config_filename
             )
             run_folder = os.path.join(
-                ol_dir, "test", "designs", design_name, "runs", "CI"
+                ol_dir, "test", "designs", design_name, "runs", f"{pdk}-{scl}"
             )
             designs.append(
                 {

@@ -15,7 +15,6 @@ import os
 import re
 import uuid
 import shutil
-import fnmatch
 import tempfile
 import subprocess
 from enum import IntEnum
@@ -38,10 +37,12 @@ import libparse
 from deprecated.sphinx import deprecated
 
 
-from .misc import Path, mkdirp
+from .misc import mkdirp
+from .types import Path
 from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
 from ..state import DesignFormat
+from ..common import Filter
 from ..logging import debug, warn, err, verbose
 
 
@@ -94,9 +95,8 @@ class Toolbox(object):
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
         result: List[Path] = []
 
-        for key, value in views_by_corner.items():
-            if not fnmatch.fnmatch(timing_corner, key):
-                continue
+        for key in Filter(views_by_corner).get_matching_wildcards(timing_corner):
+            value = views_by_corner[key]
             if is_string(value):
                 result += [value]  # type: ignore
             else:
@@ -183,21 +183,19 @@ class Toolbox(object):
         :param timing_corner:
             A fully qualified IPVT corner to get SCL libs for.
 
-            If not specified, the value for `DEFAULT_CORNER` from the SCL will
+            If not specified, the value for ``DEFAULT_CORNER`` from the SCL will
             be used.
         :param prioritize_nl:
             Do not return lib files for macros that have gate-Level Netlists and
             SPEF views.
 
-            If set to ``false``, only lib files are returned.
+            If set to ``false``\\, only lib files are returned.
         :returns: A tuple of:
 
             * The name of the timing corner
-            * A heterogeneous list of files
-
-                * Lib files are returned as-is
-                * Netlists are returned as-is
-                * SPEF files are returned in the format "{instance_name}@{spef_path}"
+            * A heterogenous list of files composed of: Lib files are returned as-is,
+              Netlists are returned as-is, and SPEF files are returned in the
+              format ``{instance_name}@{spef_path}``\\.
 
             It is left up to the step or tool to process this list as they see
             fit.
@@ -223,6 +221,9 @@ class Toolbox(object):
                 )
             if prioritize_nl:
                 netlists = macro.nl
+                if isinstance(netlists, Path):
+                    netlists = [netlists]
+
                 spefs = self.filter_views(
                     config,
                     macro.spef,

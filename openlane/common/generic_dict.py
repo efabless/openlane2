@@ -32,6 +32,7 @@ from typing import (
 )
 
 from .misc import idem
+from .types import is_string
 
 
 class GenericDictEncoder(json.JSONEncoder):
@@ -210,9 +211,22 @@ class GenericDict(Mapping[KT, VT]):
         """
         A convenience function to update multiple values in the GenericDict object
         at the same time.
-        :param
+        :param incoming: The values to update
         """
         for key, value in incoming.items():
+            self[key] = value
+
+    def update_reorder(self, incoming: "Mapping[KT, VT]"):
+        """
+        A convenience function to update multiple values in the GenericDict object
+        at the same time. Pre-existing keys are deleted first so the values in
+        incoming are emplaced at the end of the dictionary.
+
+        :param incoming: The values to update
+        """
+        for key, value in incoming.items():
+            if key in self:
+                del self[key]
             self[key] = value
 
 
@@ -254,10 +268,6 @@ class GenericImmutableDict(GenericDict[KT, VT]):
 
     def copy_mut(self) -> GenericDict[KT, VT]:
         return GenericDict(self)
-
-
-def is_string(obj: Any) -> bool:
-    return isinstance(obj, str) or isinstance(obj, UserString)
 
 
 # Screw this, if you can figure out how to type hint mapping in dictionary out

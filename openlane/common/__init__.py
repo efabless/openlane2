@@ -22,12 +22,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .tcl import TclUtils
 from .metrics import parse_metric_modifiers, aggregate_metrics
+from . import metrics
 from .generic_dict import (
     GenericDictEncoder,
     GenericDict,
     GenericImmutableDict,
     copy_recursive,
-    is_string,
 )
 from .misc import (
     idem,
@@ -38,13 +38,23 @@ from .misc import (
     protected,
     final,
     mkdirp,
-    Path,
     zip_first,
     format_size,
     format_elapsed_time,
+    Filter,
+    get_latest_file,
+)
+from .types import (
+    is_number,
+    is_string,
+    Number,
+    Path,
+    AnyPath,
+    ScopedFile,
 )
 from .toolbox import Toolbox
 from .drc import DRC, Violation
+from . import cli
 
 ## TPE
 

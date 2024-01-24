@@ -11,51 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import os
 import shlex
 import sys
 import site
 import shutil
 import subprocess
+from os.path import abspath
 from base64 import b64encode
 from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
+from ..config import Variable
 from ..logging import info, warn
-from ..config import Variable, Config
 from ..state import DesignFormat, State
-from ..common import Path, get_script_dir, Toolbox, mkdirp
-
-
-def get_lef_args(config: Config, toolbox: Toolbox) -> List[str]:
-    tech_lefs = toolbox.filter_views(config, config["TECH_LEFS"])
-    if len(tech_lefs) != 1:
-        raise StepException(
-            "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
-        )
-
-    lef_args = [
-        "--input-lef",
-        str(tech_lefs[0]),
-    ]
-
-    for lef in config["CELL_LEFS"]:
-        lef_args.append("--input-lef")
-        lef_args.append(str(lef))
-
-    macro_lefs = toolbox.get_macro_views(config, DesignFormat.LEF)
-    for lef in macro_lefs:
-        lef_args.append("--input-lef")
-        lef_args.append(str(lef))
-
-    if extra_lefs := config["EXTRA_LEFS"]:
-        for lef in extra_lefs:
-            lef_args.append("--input-lef")
-            lef_args.append(str(lef))
-
-    return lef_args
+from ..common import Path, get_script_dir
 
 
 class KLayoutStep(Step):
@@ -98,6 +69,68 @@ class KLayoutStep(Step):
         env["PYTHONPATH"] = ":".join(python_path_elements)
         return super().run_subprocess(cmd, log_to, silent, report_dir, env, **kwargs)
 
+    def get_cli_args(
+        self,
+        *,
+        layer_info: bool = True,
+        include_lefs: bool = False,
+        include_gds: bool = False,
+    ) -> List[str]:
+        result = []
+        if layer_info:
+            lyp = abspath(self.config["KLAYOUT_PROPERTIES"])
+            lyt = abspath(self.config["KLAYOUT_TECH"])
+            lym = abspath(self.config["KLAYOUT_DEF_LAYER_MAP"])
+            if None in [lyp, lyt, lym]:
+                raise StepError(
+                    "Cannot open design in KLayout as the PDK does not appear to support KLayout."
+                )
+            result += ["--lyp", lyp, "--lyt", lyt, "--lym", lym]
+
+        if include_lefs:
+            tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
+            if len(tech_lefs) != 1:
+                raise StepException(
+                    "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
+                )
+
+            lef_args = [
+                "--input-lef",
+                abspath(tech_lefs[0]),
+            ]
+
+            for lef in self.config["CELL_LEFS"]:
+                lef_args.append("--input-lef")
+                lef_args.append(abspath(lef))
+
+            macro_lefs = self.toolbox.get_macro_views(self.config, DesignFormat.LEF)
+            for lef in macro_lefs:
+                lef_args.append("--input-lef")
+                lef_args.append(abspath(lef))
+
+            if extra_lefs := self.config["EXTRA_LEFS"]:
+                for lef in extra_lefs:
+                    lef_args.append("--input-lef")
+                    lef_args.append(abspath(lef))
+
+            result += lef_args
+
+        if include_gds:
+            gds_args = []
+            for gds in self.config["CELL_GDS"]:
+                gds_args.append("--with-gds-file")
+                gds_args.append(gds)
+            for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
+                gds_args.append("--with-gds-file")
+                gds_args.append(gds)
+            if extra_gds := self.config["EXTRA_GDS_FILES"]:
+                for gds in extra_gds:
+                    gds_args.append("--with-gds-file")
+                    gds_args.append(gds)
+            result += gds_args
+
+        return result
+
 
 @Step.factory.register()
 class Render(KLayoutStep):
@@ -119,38 +152,17 @@ class Render(KLayoutStep):
         if gds := state_in[DesignFormat.GDS]:
             input_view = gds
 
-        lyp = self.config["KLAYOUT_PROPERTIES"]
-        lyt = self.config["KLAYOUT_TECH"]
-        lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
-
-        tech_lefs = self.toolbox.filter_views(self.config, self.config["TECH_LEFS"])
-        if len(tech_lefs) != 1:
-            raise StepError(
-                "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
-            )
-
-        lef_arguments = ["-l", str(tech_lefs[0])]
-        for file in self.config["CELL_LEFS"]:
-            lef_arguments += ["-l", str(file)]
-        if extra := self.config["EXTRA_LEFS"]:
-            for file in extra:
-                lef_arguments += ["-l", str(file)]
+        assert isinstance(input_view, Path)
 
         self.run_subprocess(
             [
                 sys.executable,
                 os.path.join(get_script_dir(), "klayout", "render.py"),
-                input_view,
+                abspath(input_view),
                 "--output",
-                os.path.join(self.step_dir, "out.png"),
-                "--lyp",
-                lyp,
-                "--lyt",
-                lyt,
-                "--lym",
-                lym,
+                abspath(os.path.join(self.step_dir, "out.png")),
             ]
-            + lef_arguments,
+            + self.get_cli_args(include_lefs=True),
             silent=True,
         )
 
@@ -177,40 +189,12 @@ class StreamOut(KLayoutStep):
     outputs = [DesignFormat.GDS, DesignFormat.KLAYOUT_GDS]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        lyp = self.config["KLAYOUT_PROPERTIES"]
-        lyt = self.config["KLAYOUT_TECH"]
-        lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
-        if None in [lyp, lyt, lym]:
-            if self.config["PRIMARY_GDSII_STREAMOUT_TOOL"] == "klayout":
-                raise StepError(
-                    "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset, yet, KLayout is set as the primary sign-off tool."
-                )
-            warn(
-                "One of KLAYOUT_PROPERTIES, KLAYOUT_TECH or KLAYOUT_DEF_LAYER_MAP is unset. Returning state unaltered…"
-            )
-            return {}, {}
-
         views_updates: ViewsUpdate = {}
 
         klayout_gds_out = os.path.join(
             self.step_dir,
             f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value.extension}",
         )
-
-        layout_args = []
-        layout_args += get_lef_args(self.config, self.toolbox)
-
-        for gds in self.config["CELL_GDS"]:
-            layout_args.append("--with-gds-file")
-            layout_args.append(gds)
-        for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
-            layout_args.append("--with-gds-file")
-            layout_args.append(gds)
-        if extra_gds := self.config["EXTRA_GDS_FILES"]:
-            for gds in extra_gds:
-                layout_args.append("--with-gds-file")
-                layout_args.append(gds)
-
         kwargs, env = self.extract_env(kwargs)
 
         self.run_subprocess(
@@ -223,17 +207,11 @@ class StreamOut(KLayoutStep):
                 ),
                 state_in[DesignFormat.DEF.value.id],
                 "--output",
-                klayout_gds_out,
-                "--lyt",
-                lyt,
-                "--lyp",
-                lyp,
-                "--lym",
-                lym,
+                abspath(klayout_gds_out),
                 "--top",
                 self.config["DESIGN_NAME"],
             ]
-            + layout_args,
+            + self.get_cli_args(include_lefs=True, include_gds=True),
             env=env,
         )
 
@@ -309,6 +287,9 @@ class XOR(KLayoutStep):
             warn("No KLayout stream-out has been performed. Skipping XOR process…")
             return {}, {}
 
+        assert isinstance(layout_a, Path)
+        assert isinstance(layout_b, Path)
+
         kwargs, env = self.extract_env(kwargs)
 
         tile_size_options = []
@@ -318,7 +299,7 @@ class XOR(KLayoutStep):
         thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
         info(f"Running XOR with {thread_count} threads…")
 
-        self.run_subprocess(
+        metric_updates = self.run_subprocess(
             [
                 "ruby",
                 os.path.join(
@@ -327,25 +308,21 @@ class XOR(KLayoutStep):
                     "xor.drc",
                 ),
                 "--output",
-                os.path.join(self.step_dir, "xor.xml"),
+                abspath(os.path.join(self.step_dir, "xor.xml")),
                 "--top",
                 self.config["DESIGN_NAME"],
                 "--threads",
                 thread_count,
                 "--ignore",
                 ignored,
-                layout_a,
-                layout_b,
+                abspath(layout_a),
+                abspath(layout_b),
             ]
             + tile_size_options,
             env=env,
         )
 
-        difference_count = int(
-            open(os.path.join(self.step_dir, "difference_count.rpt")).read().strip()
-        )
-
-        return {}, {"design__xor_difference__count": difference_count}
+        return {}, metric_updates
 
 
 @Step.factory.register()
@@ -369,7 +346,7 @@ class DRC(KLayoutStep):
         Variable(
             "KLAYOUT_DRC_OPTIONS",
             Optional[Dict[str, Union[bool, int]]],
-            "Options available to KLayout DRC runset. They vary from one PDK to another.",
+            "Options passed directly to the KLayout DRC runset. They vary from one PDK to another.",
             pdk=True,
         ),
         Variable(
@@ -381,14 +358,10 @@ class DRC(KLayoutStep):
     ]
 
     def run_sky130(self, state_in: State, **kwargs) -> MetricsUpdate:
-        reports_folder = os.path.join(self.step_dir, "reports")
-        mkdirp(reports_folder)
-
-        metrics_updates: MetricsUpdate = {}
-        drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
         kwargs, env = self.extract_env(kwargs)
-        xml_report = os.path.realpath(os.path.join(reports_folder, "violations.xml"))
-        json_report = os.path.realpath(os.path.join(reports_folder, "violations.json"))
+        drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
+        xml_report = os.path.join(self.step_dir, "violations.xml")
+        json_report = os.path.join(self.step_dir, "violations.json")
         feol = str(self.config["KLAYOUT_DRC_OPTIONS"]["feol"]).lower()
         beol = str(self.config["KLAYOUT_DRC_OPTIONS"]["beol"]).lower()
         floating_metal = str(
@@ -399,6 +372,9 @@ class DRC(KLayoutStep):
         threads = self.config["KLAYOUT_DRC_THREADS"] or (str(os.cpu_count()) or "1")
         info(f"Running KLayout DRC with {threads} threads…")
 
+        input_view = state_in[DesignFormat.GDS]
+        assert isinstance(input_view, Path)
+
         self.run_subprocess(
             [
                 "klayout",
@@ -407,11 +383,11 @@ class DRC(KLayoutStep):
                 "-r",
                 drc_script_path,
                 "-rd",
-                f"input={str(state_in[DesignFormat.GDS])}",
+                f"input={abspath(input_view)}",
                 "-rd",
-                f"topcell={str(self.config['DESIGN_NAME'])}",
+                f"topcell={self.config['DESIGN_NAME']}",
                 "-rd",
-                f"report={xml_report}",
+                f"report={abspath(xml_report)}",
                 "-rd",
                 f"feol={feol}",
                 "-rd",
@@ -427,7 +403,8 @@ class DRC(KLayoutStep):
             ],
             env=env,
         )
-        self.run_subprocess(
+
+        return self.run_subprocess(
             [
                 "python3",
                 os.path.join(
@@ -435,16 +412,12 @@ class DRC(KLayoutStep):
                     "klayout",
                     "xml_drc_report_to_json.py",
                 ),
-                f"--xml-file={xml_report}",
-                f"--json-file={json_report}",
+                f"--xml-file={abspath(xml_report)}",
+                f"--json-file={abspath(json_report)}",
             ],
             env=env,
             log_to=os.path.join(self.step_dir, "xml_drc_report_to_json.log"),
         )
-
-        with open(json_report, "r") as f:
-            metrics_updates["klayout__drc_error__count"] = json.load(f)["total"]
-        return metrics_updates
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metrics_updates: MetricsUpdate = {}
@@ -487,17 +460,7 @@ class OpenGUI(KLayoutStep):
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        lyp = self.config["KLAYOUT_PROPERTIES"]
-        lyt = self.config["KLAYOUT_TECH"]
-        lym = self.config["KLAYOUT_DEF_LAYER_MAP"]
-        if None in [lyp, lyt, lym]:
-            raise StepError(
-                "Cannot open design in KLayout as the PDK does not appear to support KLayout."
-            )
-
-        lefs = get_lef_args(self.config, self.toolbox)
         kwargs, env = self.extract_env(kwargs)
-
         mode_args = []
         if self.config["KLAYOUT_EDITOR_MODE"]:
             mode_args.append("--editor")
@@ -506,18 +469,13 @@ class OpenGUI(KLayoutStep):
         if self.config["KLAYOUT_PRIORITIZE_GDS"]:
             if gds := state_in[DesignFormat.GDS]:
                 layout = gds
+        assert isinstance(layout, Path)
 
         env["KLAYOUT_ARGV"] = shlex.join(
             [
-                "--lyt",
-                str(lyt),
-                "--lyp",
-                str(lyp),
-                "--lym",
-                str(lym),
-                str(layout),
+                abspath(layout),
             ]
-            + lefs
+            + self.get_cli_args(include_lefs=True)
         )
 
         cmd = (

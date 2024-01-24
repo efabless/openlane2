@@ -63,8 +63,11 @@ set cell_pad_side [expr $::env(GPL_CELL_PADDING) / 2]
 
 lappend arg_list -pad_right $cell_pad_side
 lappend arg_list -pad_left $cell_pad_side
+lappend arg_list -init_wirelength_coef $::env(PL_WIRE_LENGTH_COEF)
 
+puts "{*}$arg_list"
 global_placement {*}$arg_list
+
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement

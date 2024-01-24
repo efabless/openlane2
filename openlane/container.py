@@ -15,11 +15,11 @@
 ## This file is internal to OpenLane 2 and is not part of the API.
 import os
 import re
+import httpx
 import shlex
 import pathlib
 import getpass
 import tempfile
-import requests
 import subprocess
 from typing import List, Sequence, Optional, Union, Tuple
 
@@ -107,14 +107,15 @@ def remote_manifest_exists(image: str) -> bool:
         return False
 
     try:
-        request = requests.get(url, headers={"Accept": "application/json"})
-        request.raise_for_status()
-    except requests.exceptions.ConnectionError:
+        httpx.Client(follow_redirects=True).get(
+            url, headers={"Accept": "application/json"}
+        )
+    except httpx.NetworkError:
         err("Couldn't connect to the internet to pull container images.")
         return False
-    except requests.exceptions.HTTPError:
+    except httpx.HTTPStatusError as e:
         err(
-            f"The image {image} was not found. This may be because the CI for this image is running- in which case, please try again later."
+            f"The image {image} was not found. This may be because the CI for this image is running- in which case, please try again later. (error: {e})"
         )
         return False
     return True

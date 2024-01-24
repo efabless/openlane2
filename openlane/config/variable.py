@@ -15,7 +15,15 @@ import shlex
 import inspect
 from enum import Enum
 from decimal import Decimal, InvalidOperation
-from dataclasses import _MISSING_TYPE, MISSING, dataclass, field, fields, is_dataclass
+from dataclasses import (
+    _MISSING_TYPE,
+    MISSING,
+    asdict,
+    dataclass,
+    field,
+    fields,
+    is_dataclass,
+)
 from typing import (
     ClassVar,
     Dict,
@@ -32,11 +40,34 @@ from typing import (
     get_origin,
     get_args,
 )
-from ..state import DesignFormat
-from ..common import GenericDict, Path, is_string, zip_first
+from ..state import DesignFormat, State
+from ..common import GenericDict, Path, is_string, zip_first, Number
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
+
+
+class Orientation(str, Enum):
+    N = "N"
+    FN = "FN"
+    W = "W"
+    FW = "FW"
+    S = "S"
+    FS = "FS"
+    E = "E"
+    FE = "FE"
+    # OpenAccess
+    R0 = "N"
+    MY = "FN"
+    R90 = "W"
+    MXR90 = "FW"
+    R180 = "S"
+    MX = "FS"
+    R270 = "E"
+    MYR90 = "FE"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 @dataclass
@@ -49,7 +80,7 @@ class Instance:
     """
 
     location: Tuple[Decimal, Decimal]
-    orientation: Literal["N", "S", "FN", "FS", "E", "W", "FW", "FE"]
+    orientation: Orientation
 
 
 @dataclass
@@ -126,6 +157,48 @@ class Macro:
             raise ValueError(
                 "Macro definition invalid- at least one LEF file must be specified."
             )
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}(%s)" % ", ".join(
+            [f"{k}={repr(v)}" for k, v in asdict(self).items()]
+        )
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    @classmethod
+    def from_state(Self, state: State) -> "Macro":
+        kwargs = {}
+        for macro_field in fields(Self):
+            views = state.get(macro_field.name)
+            if views is None:
+                if macro_field.default_factory is not MISSING:
+                    kwargs[macro_field.name] = macro_field.default_factory()
+                elif macro_field.default is not MISSING:
+                    kwargs[macro_field.name] = macro_field.default
+                else:  # gds or lef
+                    raise ValueError(
+                        f"Macro cannot be made out of input state: View {macro_field.name} is missing"
+                    )
+                continue
+            var_name = f"{Self.__name__}.{macro_field.name}"
+            _, final = Variable(var_name, macro_field.type, "").compile(
+                GenericDict({var_name: views}),
+                warning_list_ref=[],
+                permissive_typing=True,
+            )
+            kwargs[macro_field.name] = final
+
+        return Self(**kwargs)  # type: ignore
+
+    def instantiate(
+        self,
+        instance_name: str,
+        location: Tuple[Number, Number],
+        orientation: Orientation = Orientation.N,
+    ):
+        location = (Decimal(location[0]), Decimal(location[1]))
+        self.instances[instance_name] = Instance(location, Orientation[orientation])
 
 
 def is_optional(t: Type[Any]) -> bool:
@@ -340,7 +413,7 @@ class Variable:
             raw = value
             if isinstance(raw, list) or isinstance(raw, tuple):
                 pass
-            elif isinstance(raw, str):
+            elif is_string(raw):
                 if not permissive_typing:
                     raise ValueError(
                         f"Refusing to automatically convert string at '{key_path}' to list"
@@ -502,12 +575,7 @@ class Variable:
             if isinstance(value, list) and len(value) == 1:
                 value = value[0]
             result = Path(value)
-            try:
-                result.validate()
-            except ValueError as e:
-                raise ValueError(
-                    f"Path provided for variable '{key_path}' is invalid: '{e}'"
-                )
+            result.validate(f"Path provided for variable '{key_path}' is invalid")
             return result
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):

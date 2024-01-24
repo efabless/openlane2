@@ -38,3 +38,8 @@ prof/
 sandbox/
 /designs
 
+# Testing CI
+package.json
+node_modules
+yarn.lock
+tables_*.md

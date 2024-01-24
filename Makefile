@@ -41,13 +41,13 @@ lint: venv/manifest.txt
 
 .PHONY: test
 test: venv/manifest.txt
-	./venv/bin/coverage run -m pytest
+	./venv/bin/coverage run -m pytest -n auto
 	./venv/bin/coverage report
 	./venv/bin/coverage html
 
 .PHONY: test-all
 test-all: venv/manifest.txt
-	./venv/bin/coverage run -m pytest --step-rx "."
+	./venv/bin/coverage run -m pytest --step-rx "." -n auto
 	./venv/bin/coverage report
 	./venv/bin/coverage html
 
