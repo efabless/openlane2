@@ -20,6 +20,7 @@ import shlex
 import tempfile
 import functools
 import subprocess
+from enum import StrEnum
 from math import inf
 from glob import glob
 from decimal import Decimal
@@ -50,7 +51,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable
+from ..config import Variable, Config
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -719,19 +720,25 @@ class Floorplan(OpenROADStep):
         ),
     ]
 
+    class Mode(StrEnum):
+        template = "template"
+        absolute = "absolute"
+        relative = "relative"
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
-    def __get_floorplan_mode(self) -> str:
+    @classmethod
+    def get_mode(Self, config: Config) -> Mode:
         mode = ""
-        if self.config["FP_DEF_TEMPLATE"] and self.config["DIE_AREA"]:
+        if config.get("FP_DEF_TEMPLATE") and config.get("DIE_AREA"):
             warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
-        if self.config["FP_DEF_TEMPLATE"]:
-            mode = "template"
-        elif self.config["DIE_AREA"]:
-            mode = "absolute"
+        if config.get("FP_DEF_TEMPLATE"):
+            mode = Self.Mode.template
+        elif config.get("DIE_AREA"):
+            mode = Self.Mode.absolute
         else:
-            mode = "relative"
+            mode = Self.Mode.relative
         return mode
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -744,7 +751,7 @@ class Floorplan(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
-        env["_FP_MODE"] = self.__get_floorplan_mode()
+        env["_FP_MODE"] = self.get_mode(self.config)
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -791,6 +798,8 @@ class IOPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
+            return {}, {}
+        if Floorplan.get_mode(self.config) != Floorplan.Mode.relative:
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -1020,6 +1029,10 @@ class GlobalPlacementSkipIO(GlobalPlacement):
                 f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
             )
         env["__PL_SKIP_IO"] = "1"
+
+        if Floorplan.get_mode(self.config) != Floorplan.Mode.relative:
+            return {}, {}
+
         return OpenROADStep.run(self, state_in, env=env, **kwargs)
 
 
