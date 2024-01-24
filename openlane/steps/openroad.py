@@ -194,6 +194,11 @@ class OpenROADStep(TclStep):
             Optional[Path],
             "Specifies the SDC file used during all implementation (PnR) steps",
         ),
+        Variable(
+            "FP_DEF_TEMPLATE",
+            Optional[Path],
+            "Points to the DEF file to be used as a template.",
+        ),
     ]
 
     @abstractmethod
@@ -654,11 +659,6 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_DEF_TEMPLATE",
-            Optional[Path],
-            "Points to the DEF file to be used as a template.",
-        ),
-        Variable(
             "FP_ASPECT_RATIO",
             Decimal,
             "The core's aspect ratio (height / width).",
@@ -734,11 +734,12 @@ class Floorplan(OpenROADStep):
         if config.get("FP_DEF_TEMPLATE") and config.get("DIE_AREA"):
             warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
         if config.get("FP_DEF_TEMPLATE"):
-            mode = Self.Mode.RELATIVE
+            mode = Self.Mode.TEMPLATE
         elif config.get("DIE_AREA"):
             mode = Self.Mode.ABSOULTE
         else:
             mode = Self.Mode.RELATIVE
+        debug(f"Floorplan mode: {mode}")
         return mode
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -801,7 +802,7 @@ class IOPlacement(OpenROADStep):
             return {}, {}
         if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
             info(
-                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}"
+                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']} Skipping {self.id}"
             )
             return {}, {}
 
