@@ -82,7 +82,7 @@ class Instance:
 
     location: Optional[Tuple[Decimal, Decimal]]
     orientation: Optional[Orientation]
-    placed: Optional[bool]
+    placed: bool = False
 
 
 @dataclass
