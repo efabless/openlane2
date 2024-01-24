@@ -724,10 +724,12 @@ class Floorplan(OpenROADStep):
 
     def __get_floorplan_mode(self) -> str:
         mode = ""
-        if self.config["DIE_AREA"]:
-            mode = "absolute"
-        elif self.config["FP_DEF_TEMPLATE"]:
+        if self.config["FP_DEF_TEMPLATE"] and self.config["DIE_AREA"]:
+            warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
+        if self.config["FP_DEF_TEMPLATE"]:
             mode = "template"
+        elif self.config["DIE_AREA"]:
+            mode = "absolute"
         else:
             mode = "relative"
         return mode
