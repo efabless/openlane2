@@ -653,6 +653,11 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_DEF_TEMPLATE",
+            Optional[Path],
+            "Points to the DEF file to be used as a template.",
+        ),
+        Variable(
             "FP_ASPECT_RATIO",
             Decimal,
             "The core's aspect ratio (height / width).",
@@ -721,6 +726,8 @@ class Floorplan(OpenROADStep):
         mode = ""
         if self.config["DIE_AREA"]:
             mode = "absolute"
+        elif self.config["FP_DEF_TEMPLATE"]:
+            mode = "template"
         else:
             mode = "relative"
         return mode
@@ -957,9 +964,12 @@ class GlobalPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         if self.config["PL_TARGET_DENSITY_PCT"] is None:
-            expr = (
-                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
-            )
+            util = self.config["FP_CORE_UTIL"]
+            metrics_util = state_in.metrics.get("design__instance__utilization")
+            if metrics_util:
+                util = metrics_util * 100
+
+            expr = util + (5 * self.config["GPL_CELL_PADDING"]) + 10
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
             warn(

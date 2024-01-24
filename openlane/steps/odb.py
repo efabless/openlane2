@@ -91,7 +91,7 @@ class OdbpyStep(Step):
                 "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
             )
 
-        lefs = ["--input-lef", tech_lefs[0]]
+        lefs: List[str] = ["--input-lef", str(tech_lefs[0])]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)
@@ -114,7 +114,7 @@ class OdbpyStep(Step):
         )
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def get_subcommand(self) -> List[str]:
@@ -160,6 +160,9 @@ class ApplyDEFTemplate(OdbpyStep):
         ]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        warn(
+            f"{self.id} is now deprecated. Template def is now applied in OpenROAD.Floorplan."
+        )
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
             return {}, {}
