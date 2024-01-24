@@ -249,7 +249,7 @@ class ManualMacroPlacement(OdbpyStep):
                                     )
                                 if not data.orientation:
                                     raise StepException(
-                                        f"Unspecified key: orientation> for non-placed macro instance: {name}"
+                                        f"Unspecified key: orientation for non-placed macro instance: {name}"
                                     )
                                 f.write(
                                     f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
