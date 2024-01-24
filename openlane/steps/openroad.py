@@ -20,7 +20,7 @@ import shlex
 import tempfile
 import functools
 import subprocess
-from enum import StrEnum
+from enum import Enum
 from math import inf
 from glob import glob
 from decimal import Decimal
@@ -720,10 +720,10 @@ class Floorplan(OpenROADStep):
         ),
     ]
 
-    class Mode(StrEnum):
-        template = "template"
-        absolute = "absolute"
-        relative = "relative"
+    class Mode(str, Enum):
+        TEMPLATE = "template"
+        ABSOULTE = "absolute"
+        RELATIVE = "relative"
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
@@ -734,11 +734,11 @@ class Floorplan(OpenROADStep):
         if config.get("FP_DEF_TEMPLATE") and config.get("DIE_AREA"):
             warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
         if config.get("FP_DEF_TEMPLATE"):
-            mode = Self.Mode.template
+            mode = Self.Mode.RELATIVE
         elif config.get("DIE_AREA"):
-            mode = Self.Mode.absolute
+            mode = Self.Mode.ABSOULTE
         else:
-            mode = Self.Mode.relative
+            mode = Self.Mode.RELATIVE
         return mode
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -799,7 +799,7 @@ class IOPlacement(OpenROADStep):
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
-        if Floorplan.get_mode(self.config) != Floorplan.Mode.relative:
+        if Floorplan.get_mode(self.config) != Floorplan.Mode.RELATIVE:
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -1030,7 +1030,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
             )
         env["__PL_SKIP_IO"] = "1"
 
-        if Floorplan.get_mode(self.config) != Floorplan.Mode.relative:
+        if Floorplan.get_mode(self.config) != Floorplan.Mode.RELATIVE:
             return {}, {}
 
         return OpenROADStep.run(self, state_in, env=env, **kwargs)
