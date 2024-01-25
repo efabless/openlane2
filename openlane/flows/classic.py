@@ -340,6 +340,7 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostCTS,
         OpenROAD.STAMidPNR,
         OpenROAD.GlobalRouting,
+        OpenROAD.CheckAntennas,
         OpenROAD.RepairDesignPostGRT,
         Odb.DiodesOnPorts,
         Odb.HeuristicDiodeInsertion,
