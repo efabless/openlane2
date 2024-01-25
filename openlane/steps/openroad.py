@@ -39,7 +39,7 @@ import yaml
 import rich
 import rich.table
 
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException
+from .step import CompositeStep, ViewsUpdate, MetricsUpdate, Step, StepException
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -1201,12 +1201,6 @@ class GlobalRouting(OpenROADStep):
 
     Estimated capacitance and resistance values are much more accurate for
     global routing.
-
-    Updates the ``route__antenna_violation__count`` metric.
-
-    At this stage, `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
-    mitigations may also be applied, updating the `route__antenna_violation__count` count.
-    See the variables for more info.
     """
 
     id = "OpenROAD.GlobalRouting"
@@ -1220,19 +1214,28 @@ class GlobalRouting(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "grt.tcl")
 
 
+class _DiodeInsertion(GlobalRouting):
+    id = "DiodeInsertion"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "antenna_repair.tcl")
+
+
 @Step.factory.register()
-class RepairAntennas(GlobalRouting):
+class RepairAntennas(CompositeStep):
     """
     Applies `antenna effect <https://en.wikipedia.org/wiki/Antenna_effect>`_
     mitigations using global-routing information, then re-runs detailed placement
     and global routing to legalize any inserted diodes.
+
+    An antenna check is once again performed, updating the
+    ``route__antenna_violation__count`` metric.
     """
 
     id = "OpenROAD.RepairAntennas"
     name = "Antenna Repair"
 
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "antenna_repair.tcl")
+    Steps = [_DiodeInsertion, CheckAntennas]
 
 
 @Step.factory.register()
