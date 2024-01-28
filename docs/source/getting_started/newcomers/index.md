@@ -21,16 +21,16 @@ Python scripts and utilities.
 
 Here are some of the key benefits of using OpenLane:
 
-* Flexibility and extensibility: OpenLane is designed to be flexible and
+- Flexibility and extensibility: OpenLane is designed to be flexible and
   extensible, allowing designers to customize the flow to meet their specific
   needs. This can be done by writing Python scripts and utilities, or by
   modifying the existing configuration file.
 
-* Open source: OpenLane is an open-source project, which means that it is freely
+- Open source: OpenLane is an open-source project, which means that it is freely
   available to use and modify. This makes it a good choice for designers who are
   looking for a cost-effective and transparent solution.
 
-* Community support: OpenLane capitalizes on OpenLane’s existing community of
+- Community support: OpenLane capitalizes on OpenLane’s existing community of
   users and contributors. This means that there is a wealth of resources
   available to help designers get started and troubleshoot any problems they
   encounter.
@@ -46,7 +46,7 @@ This guide assumes that the reader has some basic knowledge of Digital Design,
 {term}`ASIC`, the JSON format and {term}`RTL`.
 ```
 
-______________________________________________________________________
+---
 
 ## Installation
 
@@ -88,7 +88,7 @@ ______________________________________________________________________
 
 That's it. Everything is ready. Now, let's try OpenLane.
 
-______________________________________________________________________
+---
 
 ## Running the default flow
 
@@ -150,7 +150,7 @@ For any design, at a minimum you need to specify the following variables:
 * {var}`::DESIGN_NAME`
 * {var}`Yosys.Synthesis::VERILOG_FILES`
 * {var}`::CLOCK_PERIOD`
-* {var}`::CLOCK_PORT` 
+* {var}`::CLOCK_PORT`
 ```
 
 ```{seealso}
@@ -194,7 +194,7 @@ $ nix-shell --pure ~/openlane2/shell.nix
 
 ````
 
-______________________________________________________________________
+---
 
 ### Checking the results
 
@@ -219,7 +219,7 @@ If you wish to use {term}`OpenROAD` GUI use the following:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinopenroad ~/my_designs/spm/config.json
 ```
 
-______________________________________________________________________
+---
 
 #### Run directory
 
@@ -255,6 +255,7 @@ For example, these are the contents of `14-openroad-tapendcapinsertion`:
 ```
 
 Here is a small description of each file inside a `Step` directory.
+
 ```{dropdown} OpenROAD.TapEndCapInsertion Step directory contents
 
 * `COMMANDS`: the CLI command of the underlying tool used by a `Step`
@@ -347,7 +348,7 @@ final
 Moreover, it contains `metrics.csv` and `metric.json` which represent the final
 `metrics` in `JSON` and {term}`CSV` formats.
 
-______________________________________________________________________
+---
 
 ### Signoff Steps
 
@@ -360,12 +361,13 @@ OpenLane runs a couple of `Step`(s) for the final signoff.
 1. [DRC](#drc)
 1. [LVS](#lvs)
 1. [STA](#sta)
+1. [Antenna Check](#antenna-check)
 
 #### DRC
 
-`DRC` stands for Design Rule Checking which checks rules set by the FOUNDRY/Chip
-Manufacturer? that the layout has to satisfy in order to be manufacturable. Such
-as checking for minimum allowed spacing between two `met1` shapes.
+`DRC` stands for Design Rule Checking which checks, against rules set by chip foundries
+, that the layout has to satisfy in order to be manufacturable,
+such as checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
 `KLayout.DRC`. Both tools have blind spots that are covered by the other tools.
@@ -417,11 +419,11 @@ even the tools have errors and such check is important to catch them.
 
 Common `LVS` errors include but are not limited to:
 
-* Shorts: Two or more wires that should not be connected have been and must be
+- Shorts: Two or more wires that should not be connected have been and must be
   separated. The most problematic is power and ground shorts.
-* Opens: Wires or components that should be connected are left dangling or only
+- Opens: Wires or components that should be connected are left dangling or only
   partially connected. These must be connected properly.
-* Missing Components: An expected component has been left out of the layout.
+- Missing Components: An expected component has been left out of the layout.
 
 `Netgen.LVS` is the `Step` ran for `LVS` using a tool called {term}`Netgen`.
 First, the layout is converted to {term}`SPICE netlist`. Next, the layout and
@@ -471,6 +473,13 @@ required arrival times at every timing path endpoint. If the data arrives after
 have a timing violation (negative slack). STA makes sure that a circuit will
 correctly perform its function (but tells nothing about the correctness of
 that function.)
+
+```{figure} ./STA.png
+:align: center
+:scale: 50 %
+
+STA (Static Timing Analysis) Flow
+```
 
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
@@ -526,32 +535,32 @@ all the log files and reports generated for each `IPVT corner`.
 
 Here is a small description of each file:
 
-* `sta.log`: Full log file generated by `STA` which is divided into the
+- `sta.log`: Full log file generated by `STA` which is divided into the
   following report files
 
-* `min.rpt`: Constrained paths for hold checks.
+- `min.rpt`: Constrained paths for hold checks.
 
-* `max.rpt`: Constrained paths for setup checks.
+- `max.rpt`: Constrained paths for setup checks.
 
-* `skew.min.rpt`: Maximum clock skew for hold checks.
+- `skew.min.rpt`: Maximum clock skew for hold checks.
 
-* `skew.max.rpt`: Maximum clock skew for setup checks.
+- `skew.max.rpt`: Maximum clock skew for setup checks.
 
-* `tns.min.rpt`: Total negative hold slack.
+- `tns.min.rpt`: Total negative hold slack.
 
-* `tns.max.rpt`: Total negative setup slack.
+- `tns.max.rpt`: Total negative setup slack.
 
-* `wns.min.rpt`: Worst negative hold slack.
+- `wns.min.rpt`: Worst negative hold slack.
 
-* `wns.max.rpt`: Worst negative setup slack.
+- `wns.max.rpt`: Worst negative setup slack.
 
-* `ws.min.rpt`: Worst hold slack.
+- `ws.min.rpt`: Worst hold slack.
 
-* `ws.max.rpt`: Worst setup slack.
+- `ws.max.rpt`: Worst setup slack.
 
-* `violator_list.rpt` Setup and hold violator endpoints.
+- `violator_list.rpt` Setup and hold violator endpoints.
 
-* `checks.rpt`: It contains a summary of the following checks:
+- `checks.rpt`: It contains a summary of the following checks:
 
   1. Max capacitance violations
   1. Max slew violations
@@ -567,14 +576,43 @@ Check out our [STA and timing closure guide](https://docs.google.com/document/d/
 for a deeper dive into what you can do to achieve timing closure when violations
 actually occur.
 ```
-______________________________________________________________________
+
+#### Antenna Check
+
+Long metal wire segments that are connected to a transistor gate may damage the
+transistor thin gate oxide during the fabrication process due its collection of
+charges from the processing environment. This is called the antenna effect. Chip
+foundries normally supply antenna rules, which are rules that must be obeyed to
+avoid this problem. Antenna violations cause yield problems meaning that higher
+number of violations and more aggressive violations increase the chances of
+having a defective gates inside the chip which can lead to a defective chip as
+a whole.
+
+The default flow runs {step}`OpenROAD.CheckAntennas` to check for antenna rules
+violations. It runs multiple times but we are mostly interested in the final
+one which is checked for signoff.
+
+Inside the run directory of `OpenROAD.CheckAntennas` there is `reports` directory
+which contains two files on has the full antenna check report from `OpenROAD`
+and a summary table of antenna violations:
+
+```text
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Partial/Required ┃ Required ┃ Partial ┃ Net    ┃ Pin         ┃ Layer ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━┩
+│ 1.43             │ 400.00   │ 573.48  │ net162 │ output162/A │ met3  │
+│ 1.28             │ 400.00   │ 513.90  │ net56  │ _1758_/A1   │ met3  │
+└──────────────────┴──────────┴─────────┴────────┴─────────────┴───────┘
+```
+
+---
 
 ### SPM as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 Often a design by itself serves no purpose unless interfaced with and/or
 integrated into another design or a chip. We are going to harden the `spm`
 design again but this time we will have it as a
-[Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/)
+[Caravel User Project](https://caravel-user-project.readthedocs.io/en/latest/)
 macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 ```{admonition} About Caravel
@@ -629,7 +667,7 @@ We begin by updating the `RTL` needed for integration of the spm into `Caravel`.
 
    ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/defines.v
    ```
-   
+
    ````
 
 ```{seealso}
@@ -676,9 +714,9 @@ Error: ioplacer.tcl, 56 PPL-0024
 
 The reason that happens is that when we change the `RTL` of the design we
 changed the IO pin interface of the design to match the interface needed by
-`Caravel User Project Wrapper`.
+`Caravel User Project`.
 
-`Caravel User Project Wrapper` needs a lot of IO pins. By default, the flow will
+`Caravel User Project` needs a lot of IO pins. By default, the flow will
 attempt to create a floorplan using a utilization of 50%. Relative to the cells
 in the design, there are too many IO pins to fit in such a floorplan.
 
@@ -731,17 +769,17 @@ you want to view. In this figure, only `met2.pin`, `met3.pin`, and
 As shown above, there are a lot of pins needed by the design and certainly, a
 floorplan with 50% utilization wouldn't fit all the pins.
 
-______________________________________________________________________
+---
 
 #### Caravel Integration
 
-`Caravel User Project Wrapper` is a macro inside `Caravel`. To be able to use
-any design as a `Caravel User Project Wrapper`, it has to match the footprint
+`Caravel User Project` is a macro inside `Caravel`. To be able to use
+any design as a `Caravel User Project`, it has to match the footprint
 that `Caravel` is expecting so we can't rely on `FP_CORE_UTIL`.
 
 ##### IO Pins
 
-The top-level design `Caravel` is expecting any `Caravel User Project Wrapper`
+The top-level design `Caravel` is expecting any `Caravel User Project`
 to have the IO pins at specific locations and with specific dimensions. We can
 achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
 `DEF` file that is used as a template for the design's floorplan. IOs pin shapes
@@ -782,7 +820,7 @@ Example of a macro integrated inside Caravel
 ```
 
 This figure displays `Caravel` chip. The highlighted rectangle is where
-`Caravel User Project Wrapper` is. Let's zoom in at the top right corner of this
+`Caravel User Project` is. Let's zoom in at the top right corner of this
 area.
 
 ```{figure} ./caravel-pdn-2.png
@@ -795,7 +833,7 @@ As highlighted there are power rings surrounding our wrapper. connectivity
 between the wrapper rings and the chip is done through the highlighted light
 blue `met3` wires.
 
-Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like
+Our `PDN` of `Caravel User Project` has to be configured to look like
 the figure shown above. This is done by using a collection of variables that are
 responsible for controlling the shape, location, and metal layers of the `PDN`
 pins offering the power interface of the macro.
@@ -860,27 +898,27 @@ in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
 
 ##### Timing Constraints
 
-Finally, to achieve a timing-clean `User Project Wrapper` design integrated into
+Finally, to achieve a timing-clean `Caravel User Project` design integrated into
 `Caravel`, it is crucial to satisfy specific timing constraints at the boundary
-I/Os. The provided `User Project Wrapper`
-[SDC](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
+I/Os. The provided `Caravel User Project`
+[SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
 guides the tools to ensure proper timing performance of the design interfacing
-with `Caravel`. The `SDC` mainly defines:
+with `Caravel`. The `SDC` file mainly defines:
 
 ```{admonition} STA and timing closure guide
 :class: important
 
 It is highly recommended that you read the
 [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/)
-to properly understand the section below.
+to fully understand the section below.
 ```
 
 1. Clock Network:
 
    Specifying clock characteristics and effects such as:
 
-   * Primary clock port and period
-   * Clock uncertainty, transition, and latency.
+   - Primary clock port and period
+   - Clock uncertainty, transition, and latency.
 
 1. Design rules:
 
@@ -901,12 +939,12 @@ to properly understand the section below.
    intended to operate in this manner, a timing exception should be defined such
    as:
 
-   * False paths: specifies paths that are not required to be analyzed.
-   * Multicycle paths: specifies the required number of clock cycles to
+   - False paths: specifies paths that are not required to be analyzed.
+   - Multicycle paths: specifies the required number of clock cycles to
      propagate the data for certain paths rather than the default one clock
      cycle.
 
-   In the `User Project Wrapper` `SDC`, it specifies that some ports require 2
+   In `Caravel User Project` `SDC` file, it specifies that some ports require 2
    clock cycles which relaxes the setup constraints on these ports and hence
    avoids over-optimizations.
 
@@ -915,10 +953,10 @@ to properly understand the section below.
    To model {term}`On-chip variation` effects, a derate factor is applied to
    specify the margin on all delays. A typical value for `sky130` is `5%`.
 
-```{admonition} Static Timing Analysis on Caravel *and* the User Project Wrapper
+```{admonition} Static Timing Analysis on Caravel *and* Caravel User Project
 :class: tip
 
-A final STA check with the "User Project Wrapper" integrated into "Caravel" is
+A final STA check with the `Caravel User Project` integrated into `Caravel` is
 required to achieve timing closure. While having a successful flow run without
 any timing violations indicates that almost certainly the design is
 timing-clean, this final combined simulation ensures that.
@@ -954,7 +992,7 @@ the flow. Our final configuration looks like this:
   "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
   "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
   "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"],
-  "PNR_SDC_FILE": "dir::./base.sdc",
-  "SIGNOFF_SDC_FILE": "dir::./base.sdc"
+  "PNR_SDC_FILE": "dir::./base_sdc_file.sdc",
+  "SIGNOFF_SDC_FILE": "dir::./base_sdc_file.sdc"
 }
 ```

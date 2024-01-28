@@ -40,9 +40,9 @@ branch = "main"
 # ones.
 custom_extensions = [
     "flow_step_var_directives",
-    "generate_module_autodocs", 
-    "generate_configvar_docs",  
-    "migration_comparison", 
+    "generate_module_autodocs",
+    "generate_configvar_docs",
+    "migration_comparison",
 ]
 third_party_extensions = [
     "myst_parser",
@@ -163,20 +163,3 @@ tippy_enable_wikitips = False
 
 spelling_show_suggestions = True
 spelling_suggestion_limit = 1
-
-
-def autodoc_skip_member(app, what, name, obj, skip, options):
-    name_excludes = ["submit", "final"]
-    module_excludes = ["concurrent.futures.thread"]
-    skip = False
-    if name in name_excludes:
-        skip = True
-    if hasattr(obj, "__module__"):
-        if str(obj.__module__) in module_excludes:
-            skip = True
-
-    return skip
-
-
-def setup(app):
-    app.connect("autodoc-skip-member", autodoc_skip_member)
