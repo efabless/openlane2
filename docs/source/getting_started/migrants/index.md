@@ -6,12 +6,12 @@ Version 2 of OpenLane is a complete re-imagining of OpenLane not just as a
 simple, somewhat customizable flow, but rather as an infrastructure that can
 support innumerable flows.
 
-Being a complete rewrite, there is a small learning curve to adopting OpenLane
-2\. This document aims to help those making the jump.
+Being rebuilt from the ground up, there is a small learning curve to adopting
+OpenLane 2\. This document aims to help those making the jump.
 
 ## Why migrate?
 
-At a minimum, the default flow for OpenLane 2, named `Classic`, is essentially a
+At a minimum, the default flow for OpenLane 2, named {flow}`Classic`, is essentially a
 more robust re-implementation of the OpenLane 1 flow that is still entirely
 backwards compatible, with some conveniences:
 
@@ -310,7 +310,7 @@ python3 ./gui.py --viewer klayout --format gds <path to run folder>
 ---
 openlane [--run-tag <run tag>|--last-run] --flow OpenInKLayout <run folder>/resolved.json
 ---
-Opening in KLayout is implemented as a one-step flow named, well, `OpenInKLayout`.
+Opening in KLayout is implemented as a one-step flow named, well, {flow}`OpenInKLayout`.
 
 OpenLane 2 allows you to run multiple flows in the same run directory, and thus
 opening the run in KLayout is just another step. When you do so, the last state
@@ -323,7 +323,7 @@ python3 ./gui.py --viewer klayout --stage routing --format def <path to run fold
 ---
 openlane --with-initial-state <run folder>/*-openroad-detailedrouting/state_out.json --flow OpenInKLayout <run folder>/resolved.json
 ---
-For steps of the flow where there is no GDS view yet, `OpenInKLayout` will
+For steps of the flow where there is no GDS view yet, {flow}`OpenInKLayout` will
 preview the DEF view instead. You can tell OpenLane 2 which state to use
 explicitly, where here we've opted for the output state of the detailed routing
 step.
@@ -335,5 +335,5 @@ python3 ./gui.py --viewer openroad --stage routing --format def <path to run fol
 openlane --with-initial-state <run folder>/*-openroad-detailedrouting/state_out.json --flow OpenInOpenROAD <run folder>/resolved.json
 ---
 Similar to KLayout, opening designs in OpenROAD is implemented as a one-step flow
-named `OpenInOpenROAD`. Like with KLayout, you can give it a run folder.
+named {flow}`OpenInOpenROAD`. Like with KLayout, you can give it a run folder.
 ```

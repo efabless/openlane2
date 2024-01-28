@@ -41,7 +41,7 @@ from typing import (
     get_args,
 )
 from ..state import DesignFormat, State
-from ..common import GenericDict, Path, is_string, zip_first, Number
+from ..common import GenericDict, Path, is_string, zip_first, Number, slugify
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -672,6 +672,12 @@ class Variable:
         )
 
         return (exists, processed)
+
+    def _get_docs_identifier(self, parent: Optional[str] = None) -> str:
+        identifier = f"var-{self.name.lower()}"
+        if parent is not None:
+            identifier = f"var-{slugify(parent)}-{self.name.lower()}"
+        return identifier
 
     def __hash__(self) -> int:
         return hash((self.name, self.type, self.default))

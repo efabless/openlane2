@@ -39,6 +39,7 @@ branch = "main"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "flow_step_var_directives",  # CUSTOM
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",

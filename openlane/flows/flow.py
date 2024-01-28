@@ -334,7 +334,7 @@ class Flow(ABC):
         result = (
             textwrap.dedent(
                 f"""\
-                (flow-{Self.__name__})=
+                (flow-{slugify(Self.__name__, lower=True)})=
                 ### {Self.__name__}
 
                 ```{{eval-rst}}
@@ -363,7 +363,7 @@ class Flow(ABC):
         if len(flow_config_vars):
             result += textwrap.dedent(
                 f"""
-                ({Self.__name__.lower()}-config-vars)=
+                ({slugify(Self.__name__, lower=True)}-config-vars)=
 
                 #### Flow-specific Configuration Variables
 
@@ -374,7 +374,7 @@ class Flow(ABC):
             for var in flow_config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f"| `{var.name}`{{#var-{Self.__name__.lower()}-{var.name.lower()}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.__name__)}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
             result += "\n"
 
         if len(Self.Steps):

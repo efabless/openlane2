@@ -104,7 +104,7 @@ def get_opdks_rev() -> str:
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-def slugify(value: str) -> str:
+def slugify(value: str, lower: bool = False) -> str:
     """
     :param value: Input string
     :returns: The input string converted to lower case, with all characters
@@ -113,6 +113,8 @@ def slugify(value: str) -> str:
 
         Leading and trailing whitespace is stripped.
     """
+    if lower:
+        value = value.lower()
     value = (
         unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     )

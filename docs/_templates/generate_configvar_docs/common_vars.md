@@ -15,5 +15,5 @@ optional and behave accordingly.
 | Variable Name | Type | Description | Default | Units |
 | - | - | - | - | - |
 %for var in option_variables:
-| `${var.name}`{#var-${var.name.lower()}} | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
+| [`${var.name}`]{#${var._get_docs_identifier()}} | ${var.type_repr_md()} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
 %endfor

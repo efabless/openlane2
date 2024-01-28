@@ -10,6 +10,7 @@ hardening macros and writing custom flows and scripts.
 
 hardening_macros
 chip_integration
+pdn
 about_pdks
 corners_and_sta
 writing_custom_flows

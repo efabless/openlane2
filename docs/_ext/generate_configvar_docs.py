@@ -27,6 +27,7 @@ import openlane
 import openlane.flows
 import openlane.steps
 import openlane.config
+from openlane.common import slugify
 
 
 def setup(app: Sphinx):
@@ -67,6 +68,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
         with open(os.path.join(doc_root_dir, "reference", "flows.md"), "w") as f:
             f.write(
                 template.render(
+                    slugify=slugify,
                     flows=[
                         flow_factory.get(key)
                         for key in flow_factory.list()
@@ -82,6 +84,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
         ) as f:
             f.write(
                 template.render(
+                    slugify=slugify,
                     pdk_variables=module.pdk_variables,
                     scl_variables=module.scl_variables,
                 )
@@ -94,6 +97,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
         ) as f:
             f.write(
                 template.render(
+                    slugify=slugify,
                     option_variables=module.option_variables,
                 )
             )
@@ -131,6 +135,7 @@ def generate_module_docs(app: Sphinx, conf: Config):
         ) as f:
             f.write(
                 template.render(
+                    slugify=slugify,
                     factory=step_factory,
                     categories_sorted=categories_sorted,
                 )

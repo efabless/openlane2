@@ -847,7 +847,7 @@ Let's add these variables to our configuration file:
 ```
 
 :::{seealso}
-Visit [`OpenROAD.GeneratePDN`](#step-openroad-generatepdn) for more information
+Visit {step}`OpenROAD.GeneratePDN` for more information
 about each of the above variables
 :::
 

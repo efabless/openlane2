@@ -72,7 +72,7 @@ In its current state, the default OpenLane flow allows SCLs to configure the fol
 
 The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for these corners:
 
-- PVT: Corner data stored in {ref}`LIB <var-lib>`
+- PVT: Corner data stored in {var}`::LIB`
 
 | Name           | Process {NMOS, PMOS} | Voltage (V) | Temperature (C) | Corresponding File                  |
 | -------------- | -------------------- | ----------- | --------------- | ----------------------------------- |
@@ -80,7 +80,7 @@ The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for thes
 | "ss_100C_1v60" | {S, S}               | 1.6         | 100             | `sky130_fd_sc_hd__ss_100C_1v60.lib` |
 | "ff_n40C_1v95" | {F, F}               | 1.95        | -40             | `sky130_fd_sc_hd__ff_n40C_1v95.lib` |
 
-- Interconnect: Corner data stored in {ref}`TECH_LEFS <var-tech_lefs>` and {ref}`RCX_RULESETS <var-openroad-rcx-rcx_rulesets>`
+- Interconnect: Corner data stored in {var}`::TECH_LEFS` and {var}`OpenROAD.RCX::RCX_RULESETS`
 
 | Name  | Description                     | Corresponding Technology LEF | Corresponding Ruleset               |
 | ----- | ------------------------------- | ---------------------------- | ----------------------------------- |
