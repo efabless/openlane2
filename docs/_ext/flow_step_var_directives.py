@@ -77,7 +77,7 @@ def openlane_var_reference_role(
     text_clean = nodes.unescape(text)
     split = text_clean.split("::", maxsplit=1)
     if len(split) != 2:
-        msg = inliner.reporter.error(
+        msg = inliner.reporter.warning(
             f"Invalid variable reference '{text_clean}'. If you want to reference a universal flow variable, try '::{text_clean}'.",
             line=lineno,
         )
@@ -93,7 +93,7 @@ def openlane_var_reference_role(
     elif Parent is not None:
         config_var_list = Parent.config_vars
     else:
-        msg = inliner.reporter.error(
+        msg = inliner.reporter.warning(
             f"Referenced flow/step '{parent}' not found.",
             line=lineno,
         )
@@ -107,7 +107,7 @@ def openlane_var_reference_role(
             break
 
     if found is None:
-        msg = inliner.reporter.error(
+        msg = inliner.reporter.warning(
             f"Referenced var '{text_clean}' not found.",
             line=lineno,
         )

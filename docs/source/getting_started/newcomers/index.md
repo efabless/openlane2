@@ -465,7 +465,7 @@ will correctly perform its function (yet it tells nothing about the correctness 
 that function)
 
 :::{seealso}
-Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/edit#heading=h.9y68197ebff7) for more in-depth details.
+Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/) for more in-depth details.
 :::
 
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
@@ -777,7 +777,7 @@ Then update the design's configuration by adding `FP_DEF_TEMPLATE` variable:
 
 ```json
 {
-  "DESIGN_NAME": "SPM_example",
+  "DESIGN_NAME": "user_project_wrapper",
   "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
   "CLOCK_PERIOD": 25,
   "CLOCK_PORT": "wb_clk_i",
@@ -825,7 +825,7 @@ Let's add these variables to our configuration file:
 
 ```json
 {
-  "DESIGN_NAME": "SPM_example",
+  "DESIGN_NAME": "user_project_wrapper",
   "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
   "CLOCK_PERIOD": 25,
   "CLOCK_PORT": "wb_clk_i",
@@ -856,7 +856,7 @@ in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
 
 ```json
 {
-  "DESIGN_NAME": "SPM_example",
+  "DESIGN_NAME": "user_project_wrapper",
   "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
   "CLOCK_PERIOD": 25,
   "CLOCK_PORT": "wb_clk_i",
@@ -881,4 +881,95 @@ in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
 
 ##### Timing Constraints
 
-TODO: Insert a paragraph here describing user project wrapper SDC
+Finally, to achieve a timing-clean `User Project Wrapper` design integrated into `Caravel`,
+it is crucial to satisfy specific timing constraints at the boundary I/Os.
+The provided `User Project Wrapper` [SDC](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
+guides the tools to ensure proper timing performance of the design interfacing with `Caravel`.
+The `SDC` mainly defines:
+
+:::{admonition} STA and timing closure guide
+:class: important
+It is recommended to read
+[STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/)
+to properly understand the section bellow.
+:::
+
+1. Clock Network:
+
+   Specifying clock characteristics and effects such as:
+
+   - Primary clock port and period
+   - Clock uncertainty, transition, and latency.
+
+2. Design rules:
+
+   Specifying the maximum limit for transition time and for fanout.
+   The tools apply the minimum of the limits set by the technology libraries
+   and the `SDC`.
+
+3. I/O timing constraints:
+
+   Specifying the expected delay range for signals to arrive at inputs
+   and to be valid at the outputs. As well as, the inputs transition
+   time ranges and expected loads on the outputs.
+
+4. Timing exceptions:
+
+   By default, the tools assume that data launched at a path startpoint is captured at
+   all path endpoints within one clock cycle. Whenever a path is not intended to operate
+   in this manner, a timing exception should be defined such as:
+
+   - False paths: specifies paths that are not required to be analyzed.
+   - Multicycle paths: specifies the required number of clock cycles to propagate the data
+     for certain paths rather than the default one clock cycle.
+
+   In the `User Project Wrapper` `SDC`, it specifies that some ports require 2 clock cycles
+   which relaxes the setup constraints on these ports and hence avoids over-optimizations.
+
+5. On-chip Variations:
+
+   To model {term}`On-chip variation` effects, a derate factor is applied to specify
+   the margin on all delays. A typical value for `sky130` is `5%`.
+
+:::{admonition} Caravel+User Project Wrapper signoff STA
+:class: tip
+
+A final STA check with the `User Project Wrapper` integrated into `Caravel` is required to
+achieve timing closure. While having a successful flow run without any timing violations
+indicates that almost certainly the design is timing-clean, this final step ensures that.
+
+:::
+
+Download [this SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc),
+and place it in our design directory `~/my_design/spm-user_project_wrapper/`.
+Then set the variables {var}`OpenROAD.STAPostPNR::SIGNOFF_SDC_FILE` and {var}`OpenROAD.STAPostPNR::PNR_SDC_FILE`
+to point to the downloaded file to be able to apply these constarints during
+implementation and signoff while running the flow. Our final configuration looks
+like this:
+
+```json
+{
+  "DESIGN_NAME": "user_project_wrapper",
+  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
+  "CLOCK_PERIOD": 25,
+  "CLOCK_PORT": "wb_clk_i",
+  "FP_DEF_TEMPLATE": "dir::./template.def",
+  "FP_SIZING": "absolute",
+  "DIE_AREA": [0, 0, 2920, 3520],
+  "FP_PDN_CORE_RING": 1,
+  "FP_PDN_CORE_RING_VWIDTH": 3.1,
+  "FP_PDN_CORE_RING_HWIDTH": 3.1,
+  "FP_PDN_CORE_RING_VOFFSET": 12.45,
+  "FP_PDN_CORE_RING_HOFFSET": 12.45,
+  "FP_PDN_CORE_RING_VSPACING": 1.7,
+  "FP_PDN_CORE_RING_HSPACING": 1.7,
+  "FP_PDN_VWIDTH": 3.1,
+  "FP_PDN_HWIDTH": 3.1,
+  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
+  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
+  "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
+  "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"],
+  "PNR_SDC_FILE": "dir::./base.sdc",
+  "SIGNOFF_SDC_FILE": "dir::./base.sdc"
+}
+```
