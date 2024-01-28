@@ -38,6 +38,8 @@ default_filter_set = [
     "ir__*",
     "power__*",
     "timing__*_vio__*",
+    "timing*wns*",
+    "timing*tns*",
     "*error*",
     "!*__iter:*",
 ]
