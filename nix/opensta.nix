@@ -26,13 +26,13 @@
 }:
 clangStdenv.mkDerivation rec {
   name = "opensta";
-  rev = "5b374dd36ad345c9fcd5224e9fc20484393568ab";
+  rev = "42b994d429aef6d553baae6aac8c23477b6e0654";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenSTA";
     inherit rev;
-    sha256 = "sha256-80pwZbk6EhjK8P5ghRtqxDnPPFmeQIUpG3ly1cTdx/4=";
+    sha256 = "sha256-N0oU8INj+kaGOLHRIVOEIV2Dh8fB0GUBbLIBMYlXJYE=";
   };
 
   cmakeFlags = [
