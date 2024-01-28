@@ -28,7 +28,7 @@
 Metrics Module
 -----------------------
 
-Classes and functions for dealing with Metrics based on the `Metrics4ML <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_ standard.
+Classes and functions for dealing with Metrics based on the `METRICS2.1 <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>`_ standard.
 """
 from . import library
 from .metric import MetricAggregator, MetricComparisonResult, Metric

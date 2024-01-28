@@ -2,10 +2,12 @@
 
 ```{contents}
 :local:
+:class: this-will-duplicate-information-and-it-is-still-useful-here
 ```
 
 ## General
 
+(faq-openlane-vs-openroad)=
 ### How is OpenLane different from OpenROAD?
 
 OpenROAD is one of many utilities used by OpenLane, which integrates it and many other
@@ -17,11 +19,13 @@ and Precision Innovations). OpenLane, on the other hand, is primarily developed 
 
 The two projects are affiliated but are otherwise distinct and are managed by different teams.
 
+(faq-proprietary-pdks)=
 ### Can I use OpenLane with my (company's) proprietary PDK?
 
 In general, yes, but you would have to create OpenLane configuration files for said PDK.
 See {ref}`porting-pdks` for more info.
 
+(faq-silicon-proven)=
 ### Is OpenLane silicon-proven?
 
 OpenLane 1.0 has been used for countless verified tapeouts, including more or less every
@@ -29,6 +33,7 @@ open-source design on the Google MPW shuttles.
 
 OpenLane 2.0 is relatively less battle-tested but was used for TinyTapeout 3.5.
 
+(faq-comparison)=
 ### Why should I use OpenLane over other open-source RTL-to-GDS-II flows?
 
 | Point of Comparison | [OpenROAD Flow Scripts](https://github.com/The-OpenROAD-Project/OpenROAD-Flow-Scripts) | [SiliconCompiler](https://github.com/siliconcompiler/siliconcompiler) | OpenLane <2.0 | OpenLane ≥2 |
@@ -46,12 +51,14 @@ OpenLane 2.0 is relatively less battle-tested but was used for TinyTapeout 3.5.
 
 ## Setup
 
+(faq-wsl)=
 ### Why does running OpenLane on Windows require the Windows Subsystem for Linux (WSL)?
 
 In short, a lot of the open-source EDA tools OpenLane relies on presume a Linux-based
 environment, so they would be non-trivial to port to Windows as we'd have to make sure
 every tool both compiles *and* behaves as expected on Windows. 
 
+(faq-nix)=
 ### Why do you use Nix?
 
 {term}`Nix` allows us to create a near-perfectly reproducible environment on macOS and all
@@ -63,8 +70,3 @@ Similar to Docker, this mostly eliminates variables related to the user's enviro
 although unlike Docker, it maintains integration with the user's filesystem, doesn't
 add a virtualization penalty on macOS, and does not require the entire image to be
 redownloaded every time an update occurs.
-
-
-## The `Classic` Flow
-
-TODO

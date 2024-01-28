@@ -10,26 +10,27 @@ OpenLane Flow
 ```
 
 OpenLane is a powerful and versatile infrastructure library that enables the
-construction of digital ASIC implementation flows based on open-source and
-commercial EDA tools. It includes a reference flow (Classic) that is constructed
-entirely using open-source EDA tools- abstracting their behavior and allowing the user
-to configure them using a single file.
+construction of digital {term}`application-specific integrated circuit <ASIC>`
+implementation flows based on open-source and commercial EDA tools. It includes
+a {flow}`reference flow named "Classic" <Classic>` that is constructed entirely
+using open-source EDA tools- abstracting their behavior and allowing the user to
+configure them using a single file.
 
 OpenLane also supports the ability to freely extend or modify the flow using
 Python scripts and utilities.
 
 Here are some of the key benefits of using OpenLane:
 
-- Flexibility and extensibility: OpenLane is designed to be flexible and
+* Flexibility and extensibility: OpenLane is designed to be flexible and
   extensible, allowing designers to customize the flow to meet their specific
   needs. This can be done by writing Python scripts and utilities, or by
   modifying the existing configuration file.
 
-- Open source: OpenLane is an open-source project, which means that it is freely
+* Open source: OpenLane is an open-source project, which means that it is freely
   available to use and modify. This makes it a good choice for designers who are
   looking for a cost-effective and transparent solution.
 
-- Community support: OpenLane capitalizes on OpenLane’s existing community of
+* Community support: OpenLane capitalizes on OpenLane’s existing community of
   users and contributors. This means that there is a wealth of resources
   available to help designers get started and troubleshoot any problems they
   encounter.
@@ -41,67 +42,69 @@ It's free, and there's no need to install anything on your machine!
 ```
 
 ```{note}
-This guide assumes that the reader has some basic knowledge of Digital Design, ASIC,
-JSON and RTL.
+This guide assumes that the reader has some basic knowledge of Digital Design,
+{term}`ASIC`, the JSON format and {term}`RTL`.
 ```
 
----
+______________________________________________________________________
 
 ## Installation
 
 1. Follow instructions [here](https://app.cachix.org/cache/openlane) to install
    {term}`Nix` and set up {term}`cachix`.
 
-2. Open a terminal and clone OpenLane as follows:
+1. Open a terminal and clone OpenLane as follows:
 
    ```console
    $ git clone https://github.com/efabless/openlane2/ ~/openlane2
    ```
 
-3. Invoke `nix-shell`, which will make all the packages bundled with OpenLane available
-   to your shell.
+1. Invoke `nix-shell`, which will make all the packages bundled with OpenLane
+   available to your shell.
 
    ```console
    $ nix-shell --pure ~/openlane2/shell.nix
    ```
 
-   Some packages will be downloaded (about 3GBs) and the terminal prompt should change
-   to:
+   Some packages will be downloaded (about 3GBs) and the terminal prompt should
+   change to:
 
    ```console
    [nix-shell:~/openlane2]$
    ```
 
-   :::{admonition} Important
+   ```{admonition} Important
    :class: tip
 
-   From now on all the commands assume
-   that you are inside the `nix-shell`.
-   :::
+   From now on; all commands assume that you are inside the `nix-shell`.
+   ```
 
-4. Run the smoke test to ensure everything is fine.
-   This also downloads {term}`sky130` {term}`PDK`.
+1. Run the smoke test to ensure everything is fine. This also downloads
+   {term}`sky130` {term}`PDK`.
 
    ```console
-   [nix-shell:~/openlane2]$ openlane --log-level ERROR --condesed --show-progress-bar --smoke-test
+   [nix-shell:~/openlane2]$ openlane --log-level ERROR --condensed --show-progress-bar --smoke-test
    ```
 
 That's it. Everything is ready. Now, let's try OpenLane.
 
----
+______________________________________________________________________
 
 ## Running the default flow
 
 ### SPM example
 
-We are going to use a simple design: a serial-by-parallel signed
-32-bit multiplier `SPM`. This multiplier performs a simple shift-add algorithm, where
-the parallel input `a` is multiplied by each bit of the serial input `x` as it is
-shifted in. The product is generated and serially output on the wire `y`.
+We are going to use a simple design: a serial-by-parallel signed 32-bit
+multiplier `SPM` as shown in the first figure of
+[this paper](https://doi.org/10.1109/ACSSC.1993.342534).
+
+This multiplier performs a simple shift-add algorithm, where the parallel input
+`a` is multiplied by each bit of the serial input `x` as it is shifted in. The
+product is generated and serially output on the wire `y`.
 
 Typically, an SPM is interfaced with 3 registers. One parallel register to
-provide the multiplier, and two shift registers to provide the multiplicand
-and to recieve the serial product (64-bit).
+provide the multiplier, and two shift registers to provide the multiplicand and
+to recieve the serial product (64-bit).
 
 ```{figure} ./spm-block-diagram.png
 :scale: 60 %
@@ -114,21 +117,20 @@ SPM (Serial-by-Parallel Multiplier)
 
 This is the source {term}`RTL` of the design.
 
-:::{dropdown} spm.v
+````{dropdown} spm.v
 
 ```{literalinclude} ../../../../openlane/examples/spm/src/spm.v
 :language: verilog
 ```
-
-:::
+````
 
 #### Configuration
 
 Designs in OpenLane have configuration files. A configuration file contains
-{term}`Variable`(s). With them, you control the OpenLane flow
-and set your design's source files. This is configuration file for `spm` design:
+values set by the user for various {term}`Variable`(s). With them, you control
+the OpenLane flow. This is the configuration file for the `spm` design:
 
-:::{dropdown} config.json
+````{dropdown} config.json
 
 ```json
 {
@@ -139,16 +141,17 @@ and set your design's source files. This is configuration file for `spm` design:
 }
 ```
 
-:::
+````
 
 (required-variables)=
 
-:::{warning}
-You need to at least specify `DESIGN_NAME`, `VERILOG_FILES`, `CLOCK_PERIOD`
-and `CLOCK_PORT` for any design.
-:::
-
-:::
+```{warning}
+For any design, at a minimum you need to specify the following variables:
+* {var}`::DESIGN_NAME`
+* {var}`Yosys.Synthesis::VERILOG_FILES`
+* {var}`::CLOCK_PERIOD`
+* {var}`::CLOCK_PORT` 
+```
 
 ```{seealso}
 Check out {doc}`../../reference/step_config_vars` and {doc}`../../reference/flows`
@@ -163,19 +166,21 @@ for all available {term}`Variable`(s)
    [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm
    ```
 
-2. Create the file `~/my_designs/spm/config.json` and add [configuration](#configuration)
-   content to it.
+1. Create the file `~/my_designs/spm/config.json` and add
+   [configuration](#configuration) content to it.
 
-3. Create the file `~/my_designs/spm/spm.v` and add [RTL](#rtl) content to it.
+1. Create the file `~/my_designs/spm/spm.v` and add [RTL](#rtl) content to it.
 
-4. Run the following command:
+1. Run the following command:
 
    ```console
    [nix-shell:~/openlane2]$ openlane ~/my_designs/spm/config.json
    ```
 
-:::{tip}
-Double-checking: are you inside a `nix-shell`? Your terminal prompt should look like this:
+````{tip}
+
+Double-checking: are you inside a `nix-shell`? Your terminal prompt
+should look like this:
 
 ```console
 [nix-shell:~/openlane2]$
@@ -187,9 +192,9 @@ If not, enter the following command in your terminal
 $ nix-shell --pure ~/openlane2/shell.nix
 ```
 
-:::
+````
 
----
+______________________________________________________________________
 
 ### Checking the results
 
@@ -214,21 +219,22 @@ If you wish to use {term}`OpenROAD` GUI use the following:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinopenroad ~/my_designs/spm/config.json
 ```
 
----
+______________________________________________________________________
 
 #### Run directory
 
-You'll find that a **run directory** (named something like `runs/RUN_2023-12-27_16-59-15`)
-was created when you ran OpenLane.
+You'll find that a **run directory** (named something like
+`runs/RUN_2023-12-27_16-59-15`) was created when you ran OpenLane.
 
-By default, OpenLane runs a {term}`Flow` composed of a sequence of {term}`Step`(s).
-Each `Step` has its separate directory within the run directory.
+By default, OpenLane runs a {term}`Flow` composed of a sequence of
+{term}`Step`(s). Each `Step` has its separate directory within the run
+directory.
 
 For example, the `OpenROAD.TapEndCapInsertion` `Step` creates the following
 directory `14-openroad-tapendcapinsertion`.
 
-A `Step` directory has log files, report files, {term}`Metrics`
-and output artifacts created by the `Step`.
+A `Step` directory has log files, report files, {term}`Metrics` and output
+artifacts created by the `Step`.
 
 For example, these are the contents of `14-openroad-tapendcapinsertion`:
 
@@ -249,28 +255,30 @@ For example, these are the contents of `14-openroad-tapendcapinsertion`:
 ```
 
 Here is a small description of each file inside a `Step` directory.
-:::{dropdown} OpenROAD.TapEndCapInsertion Step directory contents
+```{dropdown} OpenROAD.TapEndCapInsertion Step directory contents
 
-- `COMMANDS`: the CLI command of the underlying tool used by a `Step`
-- `config.json`: contains `Variables` used by the `Step`
-- `*.log`: one or more log files of the `Step`
-- `*.process_stats.json`: statistics about total elapsed time and resource consumption
-- `state_in.json`: contains a dictionary of design layout formats (such as `DEF`
+* `COMMANDS`: the CLI command of the underlying tool used by a `Step`
+* `config.json`: contains `Variables` used by the `Step`
+* `*.log`: one or more log files of the `Step`
+* `*.process_stats.json`: statistics about total elapsed time and resource
+  consumption
+* `state_in.json`: contains a dictionary of design layout formats (such as `DEF`
   file) and design `Metrics` available as inputs to a `Step` .
-- `state_out.json`: An updated `state_in.json`. For example, If a step generates
-  a new `DEF` file it would be updated otherwise, it is a copy of `state_in.json`.
-- `or_metrics_out.json`: It contains new or updated `Metrics` generated by the
+* `state_out.json`: An updated `state_in.json`. For example, If a step generates
+  a new `DEF` file it would be updated otherwise, it is a copy of
+  `state_in.json`.
+* `or_metrics_out.json`: It contains new or updated `Metrics` generated by the
   step.
-- `spm.nl.v`: A `Verilog` gate-level netlist generated by the step **without**
+* `spm.nl.v`: A `Verilog` gate-level netlist generated by the step **without**
   power connections
-- `spm.pnl.v`: A `Verilog` gate-level netlist generated by the step **with** power
-  connections
-- `spm.odb`: Design database format of `OpenROAD` generated by the step.
-- `spm.def`: The design in `DEF` format generated by the step.
-- `spm.sdc`: `SDC` stands for Synopsis Design Constraints. It describes timing
+* `spm.pnl.v`: A `Verilog` gate-level netlist generated by the step **with**
+  power connections
+* `spm.odb`: Design database format of `OpenROAD` generated by the step.
+* `spm.def`: The design in `DEF` format generated by the step.
+* `spm.sdc`: `SDC` stands for Synopsis Design Constraints. It describes timing
   constraints used during [STA](#sta)
 
-:::
+```
 
 The run directory structure looks like this:
 
@@ -310,9 +318,10 @@ Additionally, you can view the layout at intermediate `Step`s:
 
 #### Final Results
 
-Inside the run directory, there is a directory called `final`. This directory contains
-other directorys that contain all the different layout views produced by the flow
-such as {term}`DEF`, {term}`LEF`, {term}`GDSII` and others. It looks like this:
+Inside the run directory, there is a directory called `final`. This directory
+contains other directorys that contain all the different layout views produced
+by the flow such as {term}`DEF`, {term}`LEF`, {term}`GDSII` and others. It looks
+like this:
 
 ```text
 final
@@ -335,34 +344,34 @@ final
 └── metrics.json
 ```
 
-Moreover, it contains `metrics.csv` and `metric.json` which represent the
-final `metrics` in `JSON` and {term}`CSV` formats.
+Moreover, it contains `metrics.csv` and `metric.json` which represent the final
+`metrics` in `JSON` and {term}`CSV` formats.
 
----
+______________________________________________________________________
 
 ### Signoff Steps
 
-An ASIC design’s signoff is the last phase of implementation. It involves physical
-and timing verifications before committing to the silicon manufacturing process,
-which is commonly known as "design tape-out".
+An ASIC design’s signoff is the last phase of implementation. It involves
+physical and timing verifications before committing to the silicon manufacturing
+process, which is commonly known as "design tape-out".
 
 OpenLane runs a couple of `Step`(s) for the final signoff.
 
 1. [DRC](#drc)
-2. [LVS](#lvs)
-3. [STA](#sta)
+1. [LVS](#lvs)
+1. [STA](#sta)
 
 #### DRC
 
-`DRC` stands for Design Rule Checking which checks rules set by the FOUNDRY/Chip Manufacturer?
-that the layout has to satisfy in order to be manufacturable.
-Such as checking for minimum allowed spacing between two `met1` shapes.
+`DRC` stands for Design Rule Checking which checks rules set by the FOUNDRY/Chip
+Manufacturer? that the layout has to satisfy in order to be manufacturable. Such
+as checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two `DRC` steps using `Magic` and `KLayout`: `Magic.DRC` and
 `KLayout.DRC`. Both tools have blind spots that are covered by the other tools.
 
-Both the layout and what is known as a PDK's {term}`DRC deck`
-are processed by the tools running DRC, as shown in the diagram below:
+Both the layout and what is known as a PDK's {term}`DRC deck` are processed by
+the tools running DRC, as shown in the diagram below:
 
 ```{figure} ./OL-DRC.png
 :align: center
@@ -371,8 +380,8 @@ are processed by the tools running DRC, as shown in the diagram below:
 DRC (Design Rule Checking) Flow
 ```
 
-If `DRC` errors are found OpenLane will generate an error reporting
-the total count of violations found by each `Step`.
+If `DRC` errors are found OpenLane will generate an error reporting the total
+count of violations found by each `Step`.
 
 To view `DRC` errors graphically, you may open the layout as follows:
 
@@ -386,12 +395,14 @@ Then in the menu bar select Tools -> Marker Browser. A new window should open.
 :align: center
 ```
 
-Click File ► Open and then select the DRC report file, of which you'll find two: One under
-`52-magic-drc/reports/drc.klayout.xml` and the other under `53-klayout-drc/report/drc.klayout.xml`
+Click File ► Open and then select the DRC report file, of which you'll find two:
+One under `52-magic-drc/reports/drc.klayout.xml` and the other under
+`53-klayout-drc/report/drc.klayout.xml`
 
-:::{tip}
-The initial number in `53-klayout-drc` (`53`) may vary according to the flow's configuration.
-:::
+```{tip}
+The initial number in `53-klayout-drc` (`53`) may vary according to the
+flow's configuration.
+```
 
 ```{figure} ./klayout-markerbrowser-menu-2.png
 :align: center
@@ -399,25 +410,22 @@ The initial number in `53-klayout-drc` (`53`) may vary according to the flow's c
 
 #### LVS
 
-`LVS` stands for Layout Versus Schematic. It compares the layout {term}`GDSII` or
-`DEF`/`LEF`, with the schematic which is usually in
-{term}`Verilog`, ensuring that connectivity in both
-views are matching. Sometimes, user configuration or even the tools have errors
-and such check is important to catch them.
+`LVS` stands for Layout Versus Schematic. It compares the layout {term}`GDSII`
+or `DEF`/`LEF`, with the schematic which is usually in {term}`Verilog`, ensuring
+that connectivity in both views are matching. Sometimes, user configuration or
+even the tools have errors and such check is important to catch them.
 
 Common `LVS` errors include but are not limited to:
 
-- Shorts: Two or more wires that should not be connected have been and must be
+* Shorts: Two or more wires that should not be connected have been and must be
   separated. The most problematic is power and ground shorts.
-- Opens: Wires or components that should be connected are left dangling or only
+* Opens: Wires or components that should be connected are left dangling or only
   partially connected. These must be connected properly.
-- Missing Components: An expected component has been left out of the layout.
+* Missing Components: An expected component has been left out of the layout.
 
-`Netgen.LVS` is the `Step` ran for `LVS` using a tool called
-{term}`Netgen`. First, the layout is converted to
-{term}`SPICE netlist`. Next,
-the layout and the schematic are inputted to Netgen, as shown in the diagram
-below:
+`Netgen.LVS` is the `Step` ran for `LVS` using a tool called {term}`Netgen`.
+First, the layout is converted to {term}`SPICE netlist`. Next, the layout and
+the schematic are inputted to Netgen, as shown in the diagram below:
 
 ```{figure} ./OL-LVS.png
 :scale: 50 %
@@ -426,8 +434,8 @@ below:
 LVS (Layout-versus-Schematic) Flow
 ```
 
-`Netgen` will generate multiple files that can be browsed in case of `LVS` errors.
-As all `Step`(s), these will be inside the `Step`'s directory.
+`Netgen` will generate multiple files that can be browsed in case of `LVS`
+errors. As all `Step`(s), these will be inside the `Step`'s directory.
 
 You would want to look at `netgen-lvs.log` which has a summary of the results of
 `LVS`. Ideally, you would find the following at the end of this log file:
@@ -437,10 +445,10 @@ Final result:
 Circuits match uniquely.
 ```
 
-In case of errors, there is also `lvs.rpt` which is more detailed. Inside it, you will
-find tables comparing nodes between the layout and the schematic.
-On the left is the layout (`GDS`) and the schematic (`Verilog`) is on the other side.
-Here is a sample of these tables:
+In case of errors, there is also `lvs.rpt` which is more detailed. Inside it,
+you will find tables comparing nodes between the layout and the schematic. On
+the left is the layout (`GDS`) and the schematic (`Verilog`) is on the other
+side. Here is a sample of these tables:
 
 ```text
 Subcircuit summary:
@@ -456,23 +464,19 @@ sky130_ef_sc_hd__decap_12 (132->1)         |sky130_ef_sc_hd__decap_12 (132->1)
 
 #### STA
 
-`STA` stands for Static Timing Analysis. The STA tool identifies the design timing
-paths and then calculates the data earliest and latest actual and required arrival
-times at every timing path endpoint. If the data arrives after
-(in case of setup checking) or before (hold checking) it is required,
-then we have a timing violation (negative slack). STA makes sure that a circuit
-will correctly perform its function (yet it tells nothing about the correctness of
-that function)
-
-:::{seealso}
-Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/) for more in-depth details.
-:::
+`STA` stands for Static Timing Analysis. The STA tool identifies the design
+timing paths and then calculates the data earliest and latest actual and
+required arrival times at every timing path endpoint. If the data arrives after
+(in case of setup checking) or before (hold checking) it is required, then we
+have a timing violation (negative slack). STA makes sure that a circuit will
+correctly perform its function (but tells nothing about the correctness of
+that function.)
 
 The default flow runs multiple `STA` `Step`(s) `OpenROAD.STAPostPNR` is the
 final `STA` `Step` and the most important one to check.
 
-Inside the `Step` directory there is a file called `summary.rpt` which summarizes
-important metrics for each {term}`IPVT` {term}`timing corner`:
+Inside the `Step` directory there is a file called `summary.rpt` which
+summarizes important metrics for each {term}`IPVT` {term}`timing corner`:
 
 ```text
 ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
@@ -492,8 +496,8 @@ important metrics for each {term}`IPVT` {term}`timing corner`:
 └─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴─────────────┴────────────┘
 ```
 
-There is also a directory per corner inside the `Step` directory which contains all
-the log files and reports generated for each `IPVT corner`.
+There is also a directory per corner inside the `Step` directory which contains
+all the log files and reports generated for each `IPVT corner`.
 
 ```text
 45-openroad-stapostpnr/
@@ -522,40 +526,58 @@ the log files and reports generated for each `IPVT corner`.
 
 Here is a small description of each file:
 
-- `sta.log`: Full log file generated by `STA` which is divided into the following
-  report files
-- `min.rpt`: Constrained paths for hold checks.
-- `max.rpt`: Constrained paths for setup checks.
-- `skew.min.rpt`: Maximum clock skew for hold checks.
-- `skew.max.rpt`: Maximum clock skew for setup checks.
-- `tns.min.rpt`: Total negative hold slack.
-- `tns.max.rpt`: Total negative setup slack.
-- `wns.min.rpt`: Worst negative hold slack.
-- `wns.max.rpt`: Worst negative setup slack.
-- `ws.min.rpt`: Worst hold slack.
-- `ws.max.rpt`: Worst setup slack.
-- `violator_list.rpt` Setup and hold violator endpoints.
-- `checks.rpt`: It contains a summary of the following checks:
+* `sta.log`: Full log file generated by `STA` which is divided into the
+  following report files
+
+* `min.rpt`: Constrained paths for hold checks.
+
+* `max.rpt`: Constrained paths for setup checks.
+
+* `skew.min.rpt`: Maximum clock skew for hold checks.
+
+* `skew.max.rpt`: Maximum clock skew for setup checks.
+
+* `tns.min.rpt`: Total negative hold slack.
+
+* `tns.max.rpt`: Total negative setup slack.
+
+* `wns.min.rpt`: Worst negative hold slack.
+
+* `wns.max.rpt`: Worst negative setup slack.
+
+* `ws.min.rpt`: Worst hold slack.
+
+* `ws.max.rpt`: Worst setup slack.
+
+* `violator_list.rpt` Setup and hold violator endpoints.
+
+* `checks.rpt`: It contains a summary of the following checks:
 
   1. Max capacitance violations
-  2. Max slew violations
-  3. Max fanout violations
-  4. Unconstrained paths
-  5. Unannotated and partially annotated nets
-  6. Checks the `SDC` for combinational loops, register/latch with multiple clocks
-     or no clocks, ports missing input delay, and generated clocks
-  7. Worst setup or hold violating path
+  1. Max slew violations
+  1. Max fanout violations
+  1. Unconstrained paths
+  1. Unannotated and partially annotated nets
+  1. Checks the `SDC` for combinational loops, register/latch with multiple
+     clocks or no clocks, ports missing input delay, and generated clocks
+  1. Worst setup or hold violating path
 
----
+```{seealso}
+Check out our [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/)
+for a deeper dive into what you can do to achieve timing closure when violations
+actually occur.
+```
+______________________________________________________________________
 
 ### SPM as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
-Often a design by itself serves no purpose unless interfaced with and/or integrated
-into another design or a chip. We are going to harden the `spm` design again but
-this time we will have it as a [Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/)
+Often a design by itself serves no purpose unless interfaced with and/or
+integrated into another design or a chip. We are going to harden the `spm`
+design again but this time we will have it as a
+[Caravel User Project Wrapper](https://caravel-user-project.readthedocs.io/en/latest/)
 macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
-:::{admonition} About Caravel
+```{admonition} About Caravel
 :class: seealso
 
 The Efabless Caravel chip is a ready-to-use test harness for creating designs
@@ -564,8 +586,9 @@ functions supporting IO, power, and configuration as well as drop-in modules for
 a management SoC core, and an approximately 3000um x 3600um open project area
 for the placement of user IP blocks.
 
-Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more information.
-:::
+Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more
+information.
+```
 
 #### RTL updates
 
@@ -577,108 +600,62 @@ We begin by updating the `RTL` needed for integration of the spm into `Caravel`.
    [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm-user_project_wrapper
    ```
 
-2. Add the following new `RTL` to `~/my_designs/spm-user_project_wrapper/SPM_example.v`:
+1. Add the following new `RTL` to
+   `~/my_designs/spm-user_project_wrapper/SPM_example.v`:
 
-   :::{dropdown} SPM_example.v
+   ````{dropdown} SPM_example.v
 
    ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/SPM_example.v
 
    ```
 
-   :::
+   ````
 
-3. Also add `~/my_designs/spm-user_project_wrapper/user_project_wrapper.v`:
+1. Also add `~/my_designs/spm-user_project_wrapper/user_project_wrapper.v`:
 
-   :::{dropdown} user_project_wrapper
+   ````{dropdown} user_project_wrapper
 
    ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/user_project_wrapper.v
 
    ```
 
-   :::
+   ````
 
-4. Finally, we need an additional file
-   `~/my_designs/spm-user_project_wrapper/defines.v` which is required
-   by `Caravel User Project`.
+1. Finally, we need an additional file
+   `~/my_designs/spm-user_project_wrapper/defines.v` which is required by
+   `Caravel User Project`.
 
-   :::{dropdown} defines.v
+   ````{dropdown} defines.v
 
    ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/defines.v
-
    ```
+   
+   ````
 
-   :::
-
-:::{seealso}
-Checkout [Caravel User Project#Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
-for information about the `RTL` changes.
-:::
+```{seealso}
+Check out
+[Caravel User Project#Verilog Integration](https://caravel-user-project.readthedocs.io/en/latest/#verilog-integration)
+for information about the changes to the RTL
+```
 
 (configuration-user-project-wrapper)=
 
 #### Configuration
 
-Then we need to create a configuration file to pass to the flow.
+Then we need to create a configuration file to pass to the flow. OpenLane has
+an interactive tool to do just that:
 
-- First, create a template configuration `JSON` file:
-
-  ```console
-  TODO: insert command here
-  ```
-
-- Then Update the configuration as follows.
-
-  1. Update the variable `DESIGN_NAME` to match our top-level module in the `RTL`:
-
-     ```json
-     {
-       "DESIGN_NAME": "user_project_wrapper"
-     }
-     ```
-
-  2. Point to the new `RTL` files using the variable `VERILOG_FILES`
-
-     ```json
-     {
-       "DESIGN_NAME": "user_project_wrapper",
-       "VERILOG_FILES": [
-         "dir::./defines.v",
-         "dir::./SPM_example.v",
-         "dir::./user_project_wrapper.v"
-       ]
-     }
-     ```
-
-  3. Match the clock frequency set by `Caravel` chip by modifying the
-     variable `CLOCK_PERIOD`:
-
-     ```json
-     {
-       "DESIGN_NAME": "user_project_wrapper",
-       "VERILOG_FILES": [
-         "dir::./defines.v",
-         "dir::./SPM_example.v",
-         "dir::./user_project_wrapper.v"
-       ],
-       "CLOCK_PERIOD": 25
-     }
-     ```
-
-  4. The design has a new IO interface now so we need to update `CLOCK_PORT` in
-     order to generate a proper clock tree.
-
-     ```json
-     {
-       "DESIGN_NAME": "user_project_wrapper",
-       "VERILOG_FILES": [
-         "dir::./defines.v",
-         "dir::./SPM_example.v",
-         "dir::./user_project_wrapper.v"
-       ],
-       "CLOCK_PERIOD": 25,
-       "CLOCK_PORT": "wb_clk_i"
-     }
-     ```
+```console
+[nix-shell:~/my_designs/spm-user_project_wrapper]$ openlane.config create-config
+Please input the file name for the configuration file [config.json]: config.json
+Enter the base directory for your design [.]: .
+Enter the design name (which should be equal to the HDL name of your top module): user_project_wrapper
+Enter the name of your design's clock port: wb_clk_i
+Enter your desired clock period in nanoseconds: 25
+Input the RTL source file #0 (Ctrl+D to stop): defines.v
+Input the RTL source file #1 (Ctrl+D to stop): SPM_example.v
+Input the RTL source file #2 (Ctrl+D to stop): user_project_wrapper.v
+```
 
 #### Running the flow
 
@@ -701,13 +678,13 @@ The reason that happens is that when we change the `RTL` of the design we
 changed the IO pin interface of the design to match the interface needed by
 `Caravel User Project Wrapper`.
 
-`Caravel User Project Wrapper` needs a lot of IO pins. By default, the flow will attempt to
-create a floorplan using a utilization of 50%. Relative to the cells in the design,
-there are too many IO pins to fit in such a floorplan.
+`Caravel User Project Wrapper` needs a lot of IO pins. By default, the flow will
+attempt to create a floorplan using a utilization of 50%. Relative to the cells
+in the design, there are too many IO pins to fit in such a floorplan.
 
 This can be solved by setting a lower utilization value. You will find out that
-about 5% utilization is needed for the floorplan to succeed. This is
-controlled by `FP_CORE_UTIL` {term}`Variable`.
+about 5% utilization is needed for the floorplan to succeed. This is controlled
+by `FP_CORE_UTIL` {term}`Variable`.
 
 Update the configuration as follows:
 
@@ -744,17 +721,17 @@ Let's view the layout:
 SPM with 5% utilization
 ```
 
-:::{tip}
-You can control the visible layers in KLayout by right-clicking in the layers
-area and selecting hide all layers. Then double click on the layers that you want
-to view. In this figure, only `met2.pin`, `met3.pin`, and `prBoundary.boundary`
-are shown.
-:::
+```{tip}
+You can control the visible layers in KLayout by right-clicking in the
+layers area and selecting hide all layers. Then double click on the layers that
+you want to view. In this figure, only `met2.pin`, `met3.pin`, and
+`prBoundary.boundary` are shown.
+```
 
-As shown above, there are a lot of pins needed by the design and
-certainly, a floorplan with 50% utilization wouldn't fit all the pins.
+As shown above, there are a lot of pins needed by the design and certainly, a
+floorplan with 50% utilization wouldn't fit all the pins.
 
----
+______________________________________________________________________
 
 #### Caravel Integration
 
@@ -765,15 +742,17 @@ that `Caravel` is expecting so we can't rely on `FP_CORE_UTIL`.
 ##### IO Pins
 
 The top-level design `Caravel` is expecting any `Caravel User Project Wrapper`
-to have the IO pins at specific locations and with specific dimensions. We
-can achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
-`DEF` file that is used as a template for the design's floorplan. IOs pin shapes and
-locations are copied from the template `DEF` file over to our design. In addition,
-the same die area is used as the one in the template `DEF` file.
+to have the IO pins at specific locations and with specific dimensions. We can
+achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
+`DEF` file that is used as a template for the design's floorplan. IOs pin shapes
+and locations are copied from the template `DEF` file over to our design. In
+addition, the same die area is used as the one in the template `DEF` file.
 
-Save this file [template.def](../../../../openlane/examples/spm-user_project_wrapper/template.def),
-in your design's directory which should be `~/my_designs/spm-user_project_wrapper/`.
-Then update the design's configuration by adding `FP_DEF_TEMPLATE` variable:
+Save this file
+[template.def](../../../../openlane/examples/spm-user_project_wrapper/template.def),
+in your design's directory which should be
+`~/my_designs/spm-user_project_wrapper/`. Then update the design's configuration
+by adding `FP_DEF_TEMPLATE` variable:
 
 ```json
 {
@@ -803,8 +782,8 @@ Example of a macro integrated inside Caravel
 ```
 
 This figure displays `Caravel` chip. The highlighted rectangle is where
-`Caravel User Project Wrapper` is. Let's zoom in at the top right corner of
-this area.
+`Caravel User Project Wrapper` is. Let's zoom in at the top right corner of this
+area.
 
 ```{figure} ./caravel-pdn-2.png
 :align: center
@@ -813,13 +792,13 @@ Top right corner of macro integrated inside Caravel
 ```
 
 As highlighted there are power rings surrounding our wrapper. connectivity
-between the wrapper rings and the chip is done through the highlighted light blue
-`met3` wires.
+between the wrapper rings and the chip is done through the highlighted light
+blue `met3` wires.
 
-Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like the
-figure shown above. This is done by using a collection of variables that are responsible
-for controlling the shape, location, and metal layers of the `PDN` pins offering
-the power interface of the macro.
+Our `PDN` of `Caravel User Project Wrapper` has to be configured to look like
+the figure shown above. This is done by using a collection of variables that are
+responsible for controlling the shape, location, and metal layers of the `PDN`
+pins offering the power interface of the macro.
 
 Let's add these variables to our configuration file:
 
@@ -846,10 +825,10 @@ Let's add these variables to our configuration file:
 }
 ```
 
-:::{seealso}
-Visit {step}`OpenROAD.GeneratePDN` for more information
-about each of the above variables
-:::
+```{seealso}
+Visit {step}`OpenROAD.GeneratePDN` for more information about each
+of the above variables.
+```
 
 `Caravel` is a chip with multiple power domains. We need to match these domains
 in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
@@ -881,71 +860,77 @@ in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
 
 ##### Timing Constraints
 
-Finally, to achieve a timing-clean `User Project Wrapper` design integrated into `Caravel`,
-it is crucial to satisfy specific timing constraints at the boundary I/Os.
-The provided `User Project Wrapper` [SDC](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
-guides the tools to ensure proper timing performance of the design interfacing with `Caravel`.
-The `SDC` mainly defines:
+Finally, to achieve a timing-clean `User Project Wrapper` design integrated into
+`Caravel`, it is crucial to satisfy specific timing constraints at the boundary
+I/Os. The provided `User Project Wrapper`
+[SDC](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
+guides the tools to ensure proper timing performance of the design interfacing
+with `Caravel`. The `SDC` mainly defines:
 
-:::{admonition} STA and timing closure guide
+```{admonition} STA and timing closure guide
 :class: important
-It is recommended to read
+
+It is highly recommended that you read the
 [STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/)
-to properly understand the section bellow.
-:::
+to properly understand the section below.
+```
 
 1. Clock Network:
 
    Specifying clock characteristics and effects such as:
 
-   - Primary clock port and period
-   - Clock uncertainty, transition, and latency.
+   * Primary clock port and period
+   * Clock uncertainty, transition, and latency.
 
-2. Design rules:
+1. Design rules:
 
-   Specifying the maximum limit for transition time and for fanout.
-   The tools apply the minimum of the limits set by the technology libraries
-   and the `SDC`.
+   Specifying the maximum limit for transition time and for fanout. The tools
+   apply the minimum of the limits set by the technology libraries and the
+   `SDC`.
 
-3. I/O timing constraints:
+1. I/O timing constraints:
 
-   Specifying the expected delay range for signals to arrive at inputs
-   and to be valid at the outputs. As well as, the inputs transition
-   time ranges and expected loads on the outputs.
+   Specifying the expected delay range for signals to arrive at inputs and to be
+   valid at the outputs. As well as, the inputs transition time ranges and
+   expected loads on the outputs.
 
-4. Timing exceptions:
+1. Timing exceptions:
 
-   By default, the tools assume that data launched at a path startpoint is captured at
-   all path endpoints within one clock cycle. Whenever a path is not intended to operate
-   in this manner, a timing exception should be defined such as:
+   By default, the tools assume that data launched at a path startpoint is
+   captured at all path endpoints within one clock cycle. Whenever a path is not
+   intended to operate in this manner, a timing exception should be defined such
+   as:
 
-   - False paths: specifies paths that are not required to be analyzed.
-   - Multicycle paths: specifies the required number of clock cycles to propagate the data
-     for certain paths rather than the default one clock cycle.
+   * False paths: specifies paths that are not required to be analyzed.
+   * Multicycle paths: specifies the required number of clock cycles to
+     propagate the data for certain paths rather than the default one clock
+     cycle.
 
-   In the `User Project Wrapper` `SDC`, it specifies that some ports require 2 clock cycles
-   which relaxes the setup constraints on these ports and hence avoids over-optimizations.
+   In the `User Project Wrapper` `SDC`, it specifies that some ports require 2
+   clock cycles which relaxes the setup constraints on these ports and hence
+   avoids over-optimizations.
 
-5. On-chip Variations:
+1. On-chip Variations:
 
-   To model {term}`On-chip variation` effects, a derate factor is applied to specify
-   the margin on all delays. A typical value for `sky130` is `5%`.
+   To model {term}`On-chip variation` effects, a derate factor is applied to
+   specify the margin on all delays. A typical value for `sky130` is `5%`.
 
-:::{admonition} Caravel+User Project Wrapper signoff STA
+```{admonition} Static Timing Analysis on Caravel *and* the User Project Wrapper
 :class: tip
 
-A final STA check with the `User Project Wrapper` integrated into `Caravel` is required to
-achieve timing closure. While having a successful flow run without any timing violations
-indicates that almost certainly the design is timing-clean, this final step ensures that.
+A final STA check with the "User Project Wrapper" integrated into "Caravel" is
+required to achieve timing closure. While having a successful flow run without
+any timing violations indicates that almost certainly the design is
+timing-clean, this final combined simulation ensures that.
+```
 
-:::
-
-Download [this SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc),
+Download
+[this SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc),
 and place it in our design directory `~/my_design/spm-user_project_wrapper/`.
-Then set the variables {var}`OpenROAD.STAPostPNR::SIGNOFF_SDC_FILE` and {var}`OpenROAD.STAPostPNR::PNR_SDC_FILE`
-to point to the downloaded file to be able to apply these constarints during
-implementation and signoff while running the flow. Our final configuration looks
-like this:
+Then set the variables {var}`OpenROAD.STAPostPNR::SIGNOFF_SDC_FILE` and
+{var}`OpenROAD.STAPostPNR::PNR_SDC_FILE` to point to the downloaded file to be
+able to apply these constarints during implementation and signoff while running
+the flow. Our final configuration looks like this:
 
 ```json
 {

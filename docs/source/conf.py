@@ -38,8 +38,13 @@ branch = "main"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
-    "flow_step_var_directives",  # CUSTOM
+custom_extensions = [
+    "flow_step_var_directives",
+    "generate_module_autodocs", 
+    "generate_configvar_docs",  
+    "migration_comparison", 
+]
+third_party_extensions = [
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",
@@ -48,10 +53,8 @@ extensions = [
     "sphinx_design",
     "sphinx_tippy",
     "sphinx_copybutton",
-    "generate_module_autodocs",  # CUSTOM
-    "generate_configvar_docs",  # CUSTOM
-    "migration_comparison",  # CUSTOM
 ]
+extensions = third_party_extensions + custom_extensions
 try:
     import sphinxcontrib.spelling  # noqa: F401
 
@@ -143,6 +146,11 @@ myst_enable_extensions = [
     "attrs_block",
     "attrs_inline",
 ]
+myst_url_schemes = {
+    "http": None,
+    "https": None,
+    "doi": "https://doi.org/{{path}}",
+}
 
 # GraphViz
 graphviz_output_format = "svg"

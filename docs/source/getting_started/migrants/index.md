@@ -27,7 +27,7 @@ backwards compatible, with some conveniences:
   to state variables missing.
 
 ```{figure} ./configurable_flow.png
-Writing custom flows and steps using OpenLane 2.
+Writing custom flows and steps using OpenLane 2
 ```
 
 Additionally, if you're a more savvy user, a _whole new world_ of possibilities
@@ -43,7 +43,7 @@ object-oriented programming principles, and this naturally allows you to:
   proceed with the best result.
   - You can even do this in a Python Notebook!
 - Access a standardized and more formal form of design metrics based on
-  [the Metrics4ML standard](https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML).
+  {term}`METRICS2.1`.
 
 For example, using a custom OpenLane 2-based flow, the team over at
 [TinyTapeout](https://tinytapeout.com) were able to integrate dozens of tiny
