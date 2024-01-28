@@ -26,6 +26,7 @@ from ..steps import (
     Netgen,
     Checker,
     Verilator,
+    Misc,
 )
 
 _common_config_vars = [
@@ -339,6 +340,7 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostCTS,
         OpenROAD.STAMidPNR,
         OpenROAD.GlobalRouting,
+        OpenROAD.CheckAntennas,
         OpenROAD.RepairDesignPostGRT,
         Odb.DiodesOnPorts,
         Odb.HeuristicDiodeInsertion,
@@ -372,6 +374,7 @@ class Classic(SequentialFlow):
         Yosys.EQY,
         Checker.SetupViolations,
         Checker.HoldViolations,
+        Misc.ReportManufacturability,
     ]
 
     config_vars = _common_config_vars + [
