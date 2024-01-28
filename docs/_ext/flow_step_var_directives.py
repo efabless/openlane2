@@ -43,7 +43,7 @@ def openlane_object_reference_role(
         factory = Step.factory
     Target = factory.get(target)
     if Target is None:
-        msg = inliner.reporter.error(
+        msg = inliner.reporter.warning(
             f"Referenced {role} '{target}' not found.",
             line=lineno,
         )
