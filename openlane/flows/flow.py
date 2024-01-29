@@ -221,26 +221,29 @@ class Flow(ABC):
     """
     An abstract base class for a flow.
 
-    Flows encapsulates a subroutine that runs multiple steps: either synchronously,
-    asynchronously, serially or in any manner.
-
+    Flows encapsulate a the running of multiple :class:`Step`\s in any order.
+    The sequence (or lackthereof) of running the steps is left to the Flow
+    itself.
+    
     The Flow ABC offers a number of convenience functions, including handling the
     progress bar at the bottom of the terminal, which shows what stage the flow
     is currently in and the remaining stages.
 
-    :param config: Either a resolved :class:`Config` object, or an input to
-        :meth:`Config.load`.
+    :param config: Either a resolved :class:`openlane.config.Config` object, or an
+        input to :meth:`openlane.config.Config.load`.
 
     :param name: An optional string name for the Flow itself, and not a run of it.
 
-        If not set, the class variable ``name`` will be used instead, if THAT
-        is not set,
+        If not provided, there are two fallbacks:
+        
+        * The value of the ``name`` property (``NotImplemented`` by default)
+        * The name of the concrete ``Flow`` class
 
-    :param config_override_strings: See :meth:`Config.load`
-    :param pdk: See :meth:`Config.load`
-    :param pdk_root: See :meth:`Config.load`
-    :param scl: See :meth:`Config.load`
-    :param design_dir: See :meth:`Config.load`
+    :param config_override_strings: See :meth:`openlane.config.Config.load`
+    :param pdk: See :meth:`openlane.config.Config.load`
+    :param pdk_root: See :meth:`openlane.config.Config.load`
+    :param scl: See :meth:`openlane.config.Config.load`
+    :param design_dir: See :meth:`openlane.config.Config.load`
 
     :cvar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
@@ -300,7 +303,7 @@ class Flow(ABC):
             step.assert_concrete("used in a Flow")
 
         self.name = (
-            self.__class__.__qualname__ if self.name == NotImplemented else self.name
+            self.__class__.__name__ if self.name == NotImplemented else self.name
         )
         if name is not None:
             self.name = name

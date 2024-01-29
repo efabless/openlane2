@@ -253,7 +253,12 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
 @dataclass
 class Variable:
     """
-    An object representing a configuration variable for a PDK, a Flow or a Step.
+    An object encapsulating metadata on an OpenLane configuration variable, which
+    is used to name, document and validate values supplied to
+    :class:`openlane.steps.Step`\s or :class:`openlane.flows.Flow`\s.
+    
+    Values supplied for configuration variables are the primary interface by
+    which users configure OpenLane flows.
 
     :param name: A string name for the Variable. Because of backwards compatibility
         with OpenLane 1, the convention is ``UPPER_SNAKE_CASE``.

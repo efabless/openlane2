@@ -66,16 +66,6 @@ Netlist
     and are only interested in verifying the logical correctness of the circuit,
     or they can be {term}`SPICE netlist`(s), which model more physical conditions.
 
-Variable
-
-    An OpenLane configuration variable. Users may set these values to
-    affect the behavior of Steps or Flows.
-
-    For more information see these sections of the documentation:
-
-    * {doc}`./reference/flows` and
-    * {doc}`./reference/step_config_vars`
-
 GDSII
 
     Short for Graphic Design System II.
@@ -120,21 +110,6 @@ PnR
 [Yosys](https://github.com/YosysHQ/yosys)
 
     A framework for RTL synthesis tools with extensive Verilog-2005 support.
-
-Flow
-
-    Flows encapsulates a subroutine that runs multiple steps: either
-    synchronously, asynchronously, serially or in any manner.
-
-    For more information see the API reference here: {py:class}`openlane.flows.Flow`.
-
-Step
-
-    Steps encapsulate a subroutine that acts upon certain classes of formats in
-    an input state and returns a new output state with updated design format
-    paths and/or metrics.
-
-    For more information see the API reference here: {py:class}`openlane.steps.Step`.
 
 SDC
 
@@ -194,6 +169,16 @@ CSV
     Short for "Comma-separated Values".
 
     A text file that represents tabular data.
+    
+JSON
+
+    Short for JavaScript Object Notation.
+    
+    A data interchange format derived from JavaScript supporting numeric, boolean
+    and string values as well as lists and hashmaps composed of the above.
+    
+    OpenLane uses JSON as the primary form for loading and storing configuration
+    data.
 
 Verilog
 
@@ -240,7 +225,7 @@ ASIC
     (higher upfront cost but lower-cost scaling) or {term}`FPGA` (lower-cost
     upfront cost but *very* costly scaling.)
 
-    OpenLane is a flow for implementing ASICs for manufacturing.
+    OpenLane flows primarily target ASIC technologies for manufacturing.
 
 FPGA
 
@@ -249,6 +234,9 @@ FPGA
     An integrated circuit that can be reprogrammed to perform various digital
     functions much, much faster than a general-purpose computer, but at a price,
     area and performance penalty compared to a dedicated ASIC.
+    
+    Popular for prototyping ASICs or for niche applications where the upfront
+    cost of an ASIC.
 
 EDA
 
@@ -267,7 +255,7 @@ process node
 
     A semiconductor manufacturing process executed by a certain chip foundry,
     typically identified by the foundry name and a number, i.e., the Skywater
-    130nm process ({term}`sky130`).
+    130 nm process ({term}`sky130`).
 
     Historically, the process node number used to refer to a physical characteristic
     of the circuit such as the minimum feature length, but since the mid-1990s,
@@ -302,9 +290,9 @@ DRC deck
 
 On-chip variation
 
-    Variations in physical and electrical
-    characteristics of chips. They can occur due to factors such as
-    manufacturing processes, material properties, or environmental conditions.
+    Variations in physical and electrical characteristics of chips. They can
+    occur due to factors such as manufacturing processes, material properties,
+    or environmental conditions.
 
     Sometimes abbreviated as OCV.
 

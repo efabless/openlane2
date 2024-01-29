@@ -32,7 +32,7 @@ host-docs: venv
 .PHONY: watch-docs
 watch-docs: venv
 	nodemon\
-		-w docs\
+		-w .\
 		-e md,py,css\
 		-i "docs/build/**/*"\
 		-i "docs/source/reference/*_vars.md"\
