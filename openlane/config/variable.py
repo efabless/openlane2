@@ -255,8 +255,8 @@ class Variable:
     """
     An object encapsulating metadata on an OpenLane configuration variable, which
     is used to name, document and validate values supplied to
-    :class:`openlane.steps.Step`\s or :class:`openlane.flows.Flow`\s.
-    
+    :class:`openlane.steps.Step`\\s or :class:`openlane.flows.Flow`\\s.
+
     Values supplied for configuration variables are the primary interface by
     which users configure OpenLane flows.
 

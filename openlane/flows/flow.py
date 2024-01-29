@@ -221,10 +221,10 @@ class Flow(ABC):
     """
     An abstract base class for a flow.
 
-    Flows encapsulate a the running of multiple :class:`Step`\s in any order.
+    Flows encapsulate a the running of multiple :class:`Step`\\s in any order.
     The sequence (or lackthereof) of running the steps is left to the Flow
     itself.
-    
+
     The Flow ABC offers a number of convenience functions, including handling the
     progress bar at the bottom of the terminal, which shows what stage the flow
     is currently in and the remaining stages.
@@ -235,7 +235,7 @@ class Flow(ABC):
     :param name: An optional string name for the Flow itself, and not a run of it.
 
         If not provided, there are two fallbacks:
-        
+
         * The value of the ``name`` property (``NotImplemented`` by default)
         * The name of the concrete ``Flow`` class
 
