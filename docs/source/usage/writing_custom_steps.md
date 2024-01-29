@@ -188,4 +188,4 @@ config_vars = OpenROADStep.config_vars + [
 ]
 ```
 
-Be sure to read the subclass's `run` docstring as they may contain critical information.
+Be sure to read the subclasses' `run` docstrings as they may contain critical information.

@@ -586,13 +586,19 @@ number of violations and more aggressive violations increase the chances of
 having a defective gates inside the chip which can lead to a defective chip as
 a whole.
 
-The default flow runs {step}`OpenROAD.CheckAntennas` to check for antenna rules
-violations. It runs multiple times but we are mostly interested in the final
-one which is checked for signoff.
+The default flow runs a step called {step}`OpenROAD.CheckAntennas` to check for
+antenna rules violations.
 
-Inside the run directory of `OpenROAD.CheckAntennas` there is `reports` directory
-which contains two files on has the full antenna check report from `OpenROAD`
-and a summary table of antenna violations:
+```{note}
+The checker runs thrice during the flow:
+1. Once immediately after global routing
+2. Once as part of the {step}`OpenROAD.RepairAntennas` composite step
+3. TODO
+```
+
+Inside the step directory of `OpenROAD.CheckAntennas` there is a `reports`
+directory which contains two files on has the full antenna check report from
+`OpenROAD` and a summary table of antenna violations:
 
 ```text
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓

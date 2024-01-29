@@ -8,6 +8,16 @@
     width: 200px;
 }
 
+.link-button.disabled {
+    background-color: #444;
+    color: #ccc;
+}
+
+.link-button.disabled:hover {
+    cursor: not-allowed;
+}
+
+
 .link-button:hover {
     background-color: #555;
     color: white;

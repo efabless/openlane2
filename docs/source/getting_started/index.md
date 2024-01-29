@@ -7,8 +7,8 @@ Before we get started, please pick one of these two options…
 <div style="text-align: center;">
 
 
-<p><a href="./newcomers/index.html"  class="link-button">
-I am new to OpenLane
+<p><a class="link-button disabled">
+I am new to OpenLane<br />(Coming Soon)
 </a></p>
 
 <p><a href="./migrants/index.html" class="link-button">
@@ -26,7 +26,6 @@ Just show me installation instructions.
 :glob:
 :maxdepth: 2
 
-newcomers/index
 migrants/index
 installation_overview
 common/nix_installation/index

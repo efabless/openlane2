@@ -64,9 +64,9 @@ class ReportManufacturability(Step):
         report = []
         report.append("* LVS")
         try:
-            total = state_in.metrics["design__lvs_errors__count"]
-            unmatched_pins = state_in.metrics["design__lvs_unmatched_pins__count"]
-            unmatched_nets = state_in.metrics["design__lvs_unmatched_nets__count"]
+            total = state_in.metrics["design__lvs_error__count"]
+            unmatched_pins = state_in.metrics["design__lvs_unmatched_pin__count"]
+            unmatched_nets = state_in.metrics["design__lvs_unmatched_net__count"]
             if total == 0:
                 report.append("Passed ✅")
             else:

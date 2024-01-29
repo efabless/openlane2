@@ -12,27 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  pkgs,
+  extra-packages ? [],
+  extra-python-packages ? [],
   openlane-plugins ? [],
-}:
-with pkgs; let
+}: ({
+  lib,
+  openlane,
+  git,
+  zsh,
+  delta,
+  neovim,
+  gtkwave,
+  coreutils,
+  graphviz,
+  python3,
+  jupyter,
+  mkShell,
+}: let
   openlane-env = (
     python3.withPackages (pp:
       with pp;
         [
           openlane
-          pyfakefs
-          pytest
-          pytest-xdist
-          pillow
-          mdformat
         ]
+        ++ extra-python-packages
         ++ openlane-plugins)
   );
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
-in {
-  default = mkShell {
+in
+  mkShell {
     name = "openlane-shell";
 
     propagatedBuildInputs =
@@ -43,16 +52,15 @@ in {
         git
         zsh
         delta
-        jdupes
         neovim
         gtkwave
         coreutils
-
-        # Docs + Testing
-        jupyter
         graphviz
-        alejandra
+
+        # Notebook
+        jupyter
       ]
+      ++ extra-packages
       ++ openlane.includedTools
       ++ pluginIncludedTools;
 
@@ -60,5 +68,4 @@ in {
     shellHook = ''
       export PS1="\n\[\033[1;32m\][nix-shell:\w]\$\[\033[0m\] ";
     '';
-  };
-}
+  })
