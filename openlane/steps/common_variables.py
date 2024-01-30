@@ -48,13 +48,13 @@ io_layer_variables = [
     Variable(
         "FP_IO_VTHICKNESS_MULT",
         Decimal,
-        "A multiplier for vertical pin thickness. Base thickness is the pins layer minwidth.",
+        "A multiplier for vertical pin thickness. Base thickness is the pins layer min width.",
         default=2,
     ),
     Variable(
         "FP_IO_HTHICKNESS_MULT",
         Decimal,
-        "A multiplier for horizontal pin thickness. Base thickness is the pins layer minwidth.",
+        "A multiplier for horizontal pin thickness. Base thickness is the pins layer min width.",
         default=2,
     ),
 ]
@@ -355,6 +355,6 @@ rsz_variables = dpl_variables + [
     Variable(
         "RSZ_CORNERS",
         Optional[List[str]],
-        "A list of fully-qualifiedd IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+        "A list of fully-qualified IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
     ),
 ]

@@ -20,8 +20,5 @@ This module manages the State of a Design before and after the execution of an
 OpenLane step. The State is essentially a list of views in various formats in
 addition to the cumulative set of metrics created by previous Steps.
 """
+from .design_format import DesignFormat, DesignFormatObject
 from .state import State, InvalidState, StateElement
-from ..common import DesignFormat, DesignFormatObject
-
-# For backwards compatibility
-from ..common import Path

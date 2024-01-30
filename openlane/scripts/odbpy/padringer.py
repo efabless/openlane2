@@ -101,7 +101,7 @@ def generate_cfg(north, east, south, west, corner_pads, width, height):
     "-v",
     "--verilog-netlist",
     default=None,
-    help="A verilog netlist containing pads and other user macros",
+    help="A Verilog netlist containing pads and other user macros",
 )
 @click.option(
     "-d",
@@ -170,7 +170,7 @@ def padringer(
     design,
 ):
     """
-    Reads in a structural verilog containing pads and a LEF file that
+    Reads in a structural Verilog containing pads and a LEF file that
     contains at least those pads and produces a DEF file with the padframe.
     TODO:
     core placement

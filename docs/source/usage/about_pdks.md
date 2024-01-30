@@ -13,12 +13,13 @@ ordered by priority (from highest to lowest):
 
 * Within the `config.json` file: Recommended only for designs that are compatible
   with exactly one PDK.
-* The `--pdk` commandline flag
+* The `--pdk` command-line flag
 * The `PDK` environment variable
 * The default PDK, i.e., the [Skywater/Google 130nm PDK](https://github.com/google/skywater-pdk).
 
 Note that the PDK provided must be a fully qualified PDK variant, i.e.
-* `sky130`  ❌
+
+* `sky130` ❌
 * `sky130A` ⭕
 
 ## Standard Cell Libraries
@@ -35,10 +36,10 @@ standard cell library, so you don't have to worry about picking one- but if you
 want to anyway, ordered by priority (from highest to lowest):
 
 * Within the `config.json` file
-* The `--scl` commandline flag
+* The `--scl` command-line flag
 * The `STD_CELL_LIBRARY` environment variable
 * The default SCL as dictated by the OpenLane PDK configuration files.
-    * For sky130, that's `sky130_fd_sc_hd`.
+  * For sky130, that's `sky130_fd_sc_hd`.
 
 ## Building, location and downloading
 
@@ -47,7 +48,7 @@ we rely on Open PDKs to build the PDK, which will not only place it an OpenLane-
 layout but also generate views of the PDK that are usable by the aforementioned
 tools.
 
-Because of the extended build times, the two PDKs supported by Efabless, i.e., 
+Because of the extended build times, the two PDKs supported by Efabless, i.e.,
 the [Skywater/Google 130nm PDK](https://github.com/google/skywater-pdk) and
 the [GlobalFoundries/Google GF180MCU PDK](https://github.com/google/gf180mcu-pdk),
 are built and cached using [Volare](https://github.com/efabless/volare), a version
@@ -57,10 +58,10 @@ There are multiple variants of each PDK (reflecting different metal stack
 configurations):
 
 * `sky130`
-    * `sky130A`: The default. 5 metal layers and a local interconnect.
-    * `sky130B`: Similar to `sky130A`, but also includes a Resistive RAM (ReRAM)
-      layer between `metal1` and `metal2`. See [here](https://sky130-fd-pr-reram.readthedocs.io/en/latest/background.html) for more information. This affects timing as, for example,
-      `via1` between `metal1` and `metal2` is twice as high.
+  * `sky130A`: The default. 5 metal layers and a local interconnect.
+  * `sky130B`: Similar to `sky130A`, but also includes a Resistive RAM (ReRAM)
+    layer between `metal1` and `metal2`. See [here](https://sky130-fd-pr-reram.readthedocs.io/en/latest/background.html) for more information. This affects timing as, for example,
+    `via1` between `metal1` and `metal2` is twice as high.
 
 Both variants are supported by OpenLane.
 
@@ -79,12 +80,12 @@ within the same design.)
 ```
 
 * `gf180mcu`
-    * `gf180mcuA`: 3 metal layers.
-    * `gf180mcuB`: 4 metal layers.
-    * `gf180mcuC`: 5 metal layers.
-    * `gf180mcuD`: 5 metal layers, with a slightly thicker top metal layer.
-      The thinner top metal layer has issues with delamination on the pads
-      according to GlobalFoundries.
+  * `gf180mcuA`: 3 metal layers.
+  * `gf180mcuB`: 4 metal layers.
+  * `gf180mcuC`: 5 metal layers.
+  * `gf180mcuD`: 5 metal layers, with a slightly thicker top metal layer.
+    The thinner top metal layer has issues with delamination on the pads
+    according to GlobalFoundries.
 
 [GFMPW0](https://platform.efabless.com/shuttles/GFMPW-0) was run on `C`,
 but any and all future shuttles by Efabless will require `gf180mcuD` as per
@@ -99,7 +100,8 @@ will attempt to download a build done with that revision using Volare to the **P
 The PDK root is a directory containing all of your open-source PDKs. OpenLane
 is configured to use the PDK root at the following options (from highest to
 lowest priority)"
-* The `--pdk-root` commandline flag
+
+* The `--pdk-root` command-line flag
 * The `PDK_ROOT` environment variable
 * A folder named `.volare` in your home directory.
 
@@ -115,6 +117,8 @@ PDKs range from 700MiB to 1.5GiB, and they add up *fast*.
 
 You can delete all non-active PDKs by invoking `volare prune` in your terminal.
 ```
+
+(porting-pdks)=
 
 ### Using non-Volare PDKs
 

@@ -1,19 +1,21 @@
 # Writing Custom Steps
+
 Just like you may write custom flows, you may also write custom steps to run
 within those flows.
 
-***Again***, please review OpenLane's high-level architecture [at this link](../reference/architecture.md).
+**_Again_**, please review OpenLane's high-level architecture [at this link](../reference/architecture.md).
 This defines many of the terms used and enumerates strictures mentioned in this document.
 
 ## Generic Steps
+
 Like flows, each Step subclass must:
 
 * Implement the {meth}`openlane.steps.Step.run` method.
-    * This step is responsible for the core logic of the step, which is arbitrary.
-    * This method must return two values:
-      * A `ViewsUpdate`, a dictionary from {class}`DesignFormat` objects to
-        Paths for all views altered.
-      * A `MetricsUpdate`, a dictionary with valid JSON values.
+  * This step is responsible for the core logic of the step, which is arbitrary.
+  * This method must return two values:
+    * A `ViewsUpdate`, a dictionary from {class}`DesignFormat` objects to
+      Paths for all views altered.
+    * A `MetricsUpdate`, a dictionary with valid JSON values.
 
 ```{important}
 Do NOT call the `run` method of any `Step` from outside of `Step` and its
@@ -27,19 +29,20 @@ But also, each Step is required to:
 
 * Declare any required {class}`openlane.state.State` inputs in the `inputs`
   attribute.
-    * This will enforce checking the input states for these views.
+  * This will enforce checking the input states for these views.
 * Declare any potential state modifications in the `outputs` attribute.
-    * This list is checked for completeness and validity- i.e. the {class}`Step`
+  * This list is checked for completeness and validity- i.e. the {class}`Step`
     superclass WILL throw a `StepException` if a Step modifies any State variable
     it does not declare.
 * Declare any used configuration variables in the `config_vars` attribute.
 
 ```{important}
-Don't forget the [`Step` strictures](../reference/architecture.md#step-strictures).
+Don't forget the [`Step` strictures](#ref-step-strictures).
 Some of them are programmatically enforced, but are still not.
 ```
 
 ### Writing Config Variables
+
 Config variables are declared using the {class}`openlane.config.Variable` object.
 
 There are some conventions to writing these variables.
@@ -50,16 +53,16 @@ There are some conventions to writing these variables.
   of strings, try `typing.List[str]` instead of `list[str]` or just `list`.
   * `list[str]` is incompatible with Python 3.8.
   * `list` does not give OpenLane adequate information to validate the child
-  variables.
+    variables.
 * Variables that capture a physical quantity, such as time, distance or similar,
   must declare units using their `"units"` field.
-  * In case of micro-, the only SI prefix denoted with a non-latin letter, use this
-    exact unicode codepoint: `µ`
+  * In case of micro-, the only SI prefix denoted with a non-Latin letter, use this
+    exact Unicode codepoint: `µ`
 * Variables may be declared as `pdk`, which determines the compatibility of a PDK
   with your step. If you use a PDK that does not declare one of your declared PDK
   variables, the configuration will not compile and the step will raise a
   {class}`openlane.steps.StepException`.
-  * PDK variables should generally avoid having default values other than ``None``.
+  * PDK variables should generally avoid having default values other than `None`.
     An exception is when a quantity may be defined by some PDKs, but needs a fallback
     value for others.
 * No complex defaults. Defaults must be scalar and quick to evaluate- if your
@@ -70,8 +73,8 @@ There are some conventions to writing these variables.
   * Avoid pointing to entire folders. If your step may require multiple files within
     a folder, try using the type `List[Path]`.
 
-
 ### Implementing `run`
+
 The run header should look like this:
 
 ```python
@@ -82,8 +85,8 @@ The `*args` and `**kwargs` allow subclasses to pass arguments to subprocesses-
 more on that later.
 
 You can access configuration variables- which are validated by this point- using
- `self.config[KEY]`. If you need to save files, you can get the step directory
- using `self.step_dir`. For example:
+`self.config[KEY]`. If you need to save files, you can get the step directory
+using `self.step_dir`. For example:
 
 ```python
 design_name = self.config["DESIGN_NAME"]
@@ -94,7 +97,7 @@ output_path = os.path.join(self.step_dir, f"{design_name}.def")
 A step has access to:
 
 * Its declared `config_vars`
-* [All Common Flow Variables](../reference/flows.md#universal-flow-configuration-variables)
+* [All Common Flow Variables](../reference/common_flow_vars.md#universal-flow-configuration-variables)
 
 Attempting to access any other variable is undefined behavior.
 ```
@@ -109,7 +112,7 @@ Otherwise, you're basically free to write any logic you desire, with one excepti
 
 * If you're running a terminal subprocess you'd like to have OpenLane manage the
   logs for, please use {meth}`openlane.steps.Step.run_subprocess`,
-  passing *args and **kwargs. It will manage
+  passing \*args and \*\*kwargs. It will manage
   I/O for the process, and allow the creation of report files straight from the
   logs- more on that later.
 
@@ -117,12 +120,14 @@ In the end, add any views updated to the first dictionary in the returned tuple,
 and any metrics updated to the second dictionary in the returned tuple.
 
 ## Creating Reports
+
 You can create report files manually in Python, but if you're running a subprocess,
 you can also write `%OL_CREATE_REPORT <name>.rpt` to stdout and everything until
 `%OL_END_REPORT` (or another `%OL_CREATE_REPORT`) will be forwarded to a file called
 `<name>.rpt` in the step dir automatically.
 
 ## Creating Metrics
+
 Likewise, if you're running a subprocess, you can have {meth}`openlane.steps.Step.run_subprocess`
 capture them for you automatically by using `%OL_METRIC`. See the documentation
 of {meth}`openlane.steps.Step.run_subprocess` for more info.
@@ -135,11 +140,13 @@ invocations and add any values to the returned `MetricUpdate` dictionary as appr
 ```
 
 ## Tool-Specific Steps
+
 The `Step` object makes heavy use of object-oriented programming to encourage
 as much code reuse as possible. To that extent, there exists some more specialized
 `Step` abstract base classes that deal with specific utilities:
 
-### {class}`openlane.steps.TclStep` 
+### {class}`openlane.steps.TclStep`
+
 `TclStep` implements a `run` that works for most Tcl-based utilities.
 This run calls a subprocess with the value of {meth}`openlane.steps.TclStep.get_command`,
 and it emplaces all configuration variables as environment variables using this scheme:
@@ -150,6 +157,7 @@ and it emplaces all configuration variables as environment variables using this 
 * Integers and Decimals are turned into Base-10 strings.
 
 The state is also exposed to the TclStep as is:
+
 * Input files are pointed to in variables with the format `CURRENT_<view name>`.
 * Output paths are pointed to in the variables with the format `SAVE_<view name>`.
 
@@ -160,6 +168,7 @@ Keep in mind that TclStep-based tools still have to define their `config_vars`,
 `inputs` and `outputs`.
 
 #### Subclasses
+
 `TclStep` has various subclasses for a number of Tcl-based utilities:
 
 * {class}`openlane.steps.OpenROADStep`
@@ -179,4 +188,4 @@ config_vars = OpenROADStep.config_vars + [
 ]
 ```
 
-Be sure to read the subclass's `run` docstring as they may contain critical information.
+Be sure to read the subclasses' `run` docstrings as they may contain critical information.

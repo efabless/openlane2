@@ -57,7 +57,7 @@ class TclStep(Step):
         * If the value is a dict, the keys and values are escaped recursively using:
             joined using :meth:`TclUtils.join`.
         * If the value is an Enum, its name is returned.
-        * If the value is boolean, "1" is returned for True and "0" for False.
+        * If the value is Boolean, "1" is returned for True and "0" for False.
         * If the value is numeric, it is converted to a string.
         * Otherwise, the value is passed to ``str()``.
         """
@@ -162,7 +162,7 @@ class TclStep(Step):
     @protected
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         """
-        This overriden :meth:`run` function prepares configuration variables and
+        This overridden :meth:`run` function prepares configuration variables and
         inputs for use with Tcl: specifically, it converts them all to
         environment variables so they may be used by the Tcl scripts being called.
         See :meth:`prepare_env` for more info.
@@ -181,7 +181,7 @@ class TclStep(Step):
         while still respecting an ``env`` argument further up the call-stack.
 
         :param state_in: See superclass.
-        :param **kwargs: Passed on to subprocess execution: useful if you want to
+        :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :returns: see superclass
         """

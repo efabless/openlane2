@@ -83,8 +83,7 @@ class MetricComparisonResult:
 @dataclass
 class Metric(object):
     """
-    An object storing data about a metric as defined in
-    <https://github.com/ieee-ceda-datc/datc-rdf-Metrics4ML>.
+    An object storing data about a metric as defined in METRICS2.1.
 
     :param name: The string name of the metric.
     :param aggregator: A tuple of:

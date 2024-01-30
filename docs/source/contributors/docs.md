@@ -15,24 +15,25 @@ To simply fix typos, you do not need to install anything. Pull requests can be c
 
 For more complex documentation, it is recommended to follow these steps:
 
-01. Read this guide
-02. Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.md`
-03. ... or open an existing one in the same folder.
-04. Follow these guidelines:
-    : - Begin with the general structure of the documentation. This step ensures continuity with the rest of the documentation and allows the writer to better organize their thoughts.
-      - Use reStructuredText and existing plugins to write the documentation.
-      - Create as much visual documentation as possible. More is better.
-      - Pictures, figures, tables significantly improve the quality of documentation and make the documentation available for beginners.
-      - Add links to references, guide and pointers to other available documentation or books.
-05. Use [Building documentation locally](#building-documentation-locally) to preview and visualize the documentation.
-06. Copy the text from preview into an editor that highlights the mistakes and fix them.
-07. Rebuild documentation and repeat.
-08. Once satisfied, commit the changes to your repository using git.
-09. Create a pull request to the main repository, so the maintainers can review your changes.
-10. Maintainers may request some tweaks (or do the tweaks themselves.) Execute them and then push the changes again.
-11. Once changes are approved they will be merged and then you can delete your branch or repository.
+1. Read this guide
+1. Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.md`
+1. ... or open an existing one in the same folder.
+1. Follow these guidelines:
+   : - Begin with the general structure of the documentation. This step ensures continuity with the rest of the documentation and allows the writer to better organize their thoughts.
+   * Use reStructuredText and existing plugins to write the documentation.
+   * Create as much visual documentation as possible. More is better.
+   * Pictures, figures, tables significantly improve the quality of documentation and make the documentation available for beginners.
+   * Add links to references, guide and pointers to other available documentation or books.
+1. Use [Building documentation locally](#building-documentation-locally) to preview and visualize the documentation.
+1. Copy the text from preview into an editor that highlights the mistakes and fix them.
+1. Rebuild documentation and repeat.
+1. Once satisfied, commit the changes to your repository using git.
+1. Create a pull request to the main repository, so the maintainers can review your changes.
+1. Maintainers may request some tweaks (or do the tweaks themselves.) Execute them and then push the changes again.
+1. Once changes are approved they will be merged and then you can delete your branch or repository.
 
 ## Building documentation locally
+
 A Python virtual environment will need to be created in `<OPENLANE_ROOT>/venv` as follows:
 
 ```sh
@@ -63,7 +64,7 @@ Documentation [regarding reStructuredText can be found here:](https://sublime-an
 
 ## Documentation organization
 
-All of the documentation is concetrated in `docs/`.
+All of the documentation is concentrated in `docs/`.
 Static files for a certain document are stored in `docs/_static` in its respective directory: for example, screenshots for this guide are located in `docs/_static/docs_contrbution`,
 while the screenshots for the installation guide are located in `docs/_static/installation`.
 
@@ -75,11 +76,11 @@ If you want to create new category than take a look at the source code of existi
 
 ## Writing Style and Consistency
 
-- New documentation should be written in \[MyST Markdown\](<https://myst-parser.readthedocs.io/en/latest/>), a flavor of Markdown with some RST extensions.
-- Use `of` instead of `'`, for example: `Docker's Installation` → `after the installation of Docker`.
-- Avoid contractions: Substitute `don't` and `can't` for `do not` and `cannot`
-- The first command of the page should have `cd` in it to specify where you are running and all following commands assume the continuation of the session and don't need the cd command.
-- Avoid using same header type both for the title of the document and its content. It looks awful in the table of content.
+* New documentation should be written in \[MyST Markdown\](<https://myst-parser.readthedocs.io/en/latest/>), a flavor of Markdown with some RST extensions.
+* Use `of` instead of `'`, for example: `Docker's Installation` → `after the installation of Docker`.
+* Avoid contractions: Substitute `don't` and `can't` for `do not` and `cannot`
+* The first command of the page should have `cd` in it to specify where you are running and all following commands assume the continuation of the session and don't need the cd command.
+* Avoid using same header type both for the title of the document and its content. It looks awful in the table of content.
   * To that end, only use `#` once at the beginning of the document.
 
 ### Term Consistency
@@ -96,7 +97,7 @@ Klayout → KLayout
 Pip -> pip
 ```
 
-- For technical terms, use the following terms preferred by OpenROAD documentation for consistency:
+* For technical terms, use the following terms preferred by OpenROAD documentation for consistency:
 
 ```
 co-ordinates → coordinates
@@ -107,7 +108,7 @@ micrometre → micron (or, micrometer)
 ```
 
 :::{note}
-Also, when documenting micrometer-based variables, use the actual unicode character "µ", not "u", to avoid potential confusion. It's Alt+230 on Windows, Alt+M on macOS and on Linux, press the Compose Key then type `mu`.
+Also, when documenting micrometer-based variables, use the actual Unicode character "µ", not "u", to avoid potential confusion. It's Alt+230 on Windows, Alt+M on macOS and on Linux, press the Compose Key then type `mu`.
 :::
 
 ### Taking screenshots
@@ -125,6 +126,7 @@ Please note that taking screenshots for terminal output is not recommended. You 
 :::
 
 ## Troubleshooting
+
 ### `pip` module related errors
 
 If you're running `sphinx-build` manually and did not source `../venv/bin/activate` before running `sphinx-build` then you may run into an error similar to the one below.

@@ -7,9 +7,8 @@ root of the OpenLane repo.
 ## Setting up the OpenLane Nix Cache
 
 If you somehow haven't done so already, follow the instructions in
-[**Nix Installation**](../getting_started/nix_installation/index.md#setting-up-the-binary-cache)
+[**Nix Installation**](../getting_started/common/nix_installation/installation_linux.md#setting-up-the-binary-cache)
 to enable the OpenLane-specific binary cache.
-
 
 ## Finding the Current Version Info
 
@@ -22,8 +21,8 @@ that decide the version being used (all strings):
 * `owner`: The name of the GitHub tool repository owner.
 * `repo`: The name of the GitHub tool repository.
 * `rev`: By convention, the Git commit of the tool in question.
-    * Technically, versions, tags and branches are also accepted, but none are
-      deemed consistent enough to use with OpenLane.
+  * Technically, versions, tags and branches are also accepted, but none are
+    deemed consistent enough to use with OpenLane.
 * `sha256` (or `hash`): A sha256sum of the contents of the repository in use
   when said commit is downloaded without any `.git` files.
 
@@ -33,10 +32,9 @@ Let's take `openroad.nix` as an example:
 ---
 language: nix
 start-after: name = "openroad";
-end-before: cmakeFlags = [
+end-before: cmakeFlagsAll = [
 ---
 ```
-
 
 ## Changing Version Info
 
@@ -58,7 +56,6 @@ question is to just click on a commit…
 
 Change the value of `rev` to match the hash you just copied, and then set the
 value of `sha256` to an empty string (`""`).
-
 
 ```{warning}
 Do not leave the `sha256` field unchanged. Nix attempts to find downloaded files
@@ -95,7 +92,7 @@ new version of the utility.
 If it errors out, this may be because of one of the following:
 
 * The build methodology for the tool has changed
-  * You will need to update more elements in the Nix derivation, which will 
+  * You will need to update more elements in the Nix derivation, which will
     require understanding Nix. See [**Further Reading**](#further-reading) below
     for more information on how to learn to do that.
 * An internet connectivity issue
@@ -112,4 +109,3 @@ See [Nix](./code.md#nix) under **Contributing Code** for more information about
 our conventions for Nix derivations.
 
 To gain a deeper understanding of the Nix programming language, try [Nix Pills](https://nixos.org/guides/nix-pills/index.html).
-
