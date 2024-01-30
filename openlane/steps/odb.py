@@ -466,6 +466,13 @@ class PortDiodePlacement(OdbpyStep):
             "Always insert diodes on ports with the specified polarities.",
             default="none",
         ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
+            pdk=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -560,6 +567,13 @@ class FuzzyDiodePlacement(OdbpyStep):
             Decimal,
             "A manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
             pdk=True,
         ),
     ]
