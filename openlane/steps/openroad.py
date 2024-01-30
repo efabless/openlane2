@@ -802,7 +802,7 @@ class IOPlacement(OpenROADStep):
             return {}, {}
         if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
             info(
-                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
+                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
             )
             return {}, {}
 
@@ -1043,7 +1043,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
 
         if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
             info(
-                f"Flooplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
+                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
             )
             return {}, {}
 
