@@ -36,4 +36,10 @@ removed_variables: Dict[str, str] = {
     "MAGIC_GDS_ALLOW_ABSTRACT": "Bad practice. If an abstract view is needed, a GDS file can be generated from the abstract LEF file.",
     "PLACE_SITE_HEIGHT": "Now automatically extracted from PLACE_SITE.",
     "PLACE_SITE_WIDTH": "Now automatically extracted from PLACE_SITE.",
+    "LEC_ENABLE": "Buggy/doesn't scale properly.",
+    "LVS_INSERT_POWER_PINS": "No longer necessary.",
+    "RUN_CVC": "Upstream no longer supports CVC for use within OpenLane.",
+    "FP_PADFRAME_CFG": "To be implemented.",
+    "FP_CONTEXT_DEF": "To be implemented.",
+    "FP_CONTEXT_LEF": "To be implemented.",
 }

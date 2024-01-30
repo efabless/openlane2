@@ -16,8 +16,8 @@ read_current_odb
 
 tapcell\
     -distance $::env(FP_TAPCELL_DIST)\
-    -tapcell_master "$::env(FP_WELLTAP_CELL)"\
-    -endcap_master "$::env(FP_ENDCAP_CELL)"\
+    -tapcell_master "$::env(WELLTAP_CELL)"\
+    -endcap_master "$::env(ENDCAP_CELL)"\
     -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
 

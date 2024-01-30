@@ -344,65 +344,25 @@ scl_variables = [
         "Defines a buffer port to be used by yosys during synthesis: in the format `{cell}/{input_port}/{output_port}`",
         pdk=True,
     ),
-    # Clock Tree Synthesis
     Variable(
-        "CTS_ROOT_BUFFER",
-        str,
-        "Defines the cell inserted at the root of the clock tree. Used in CTS.",
-        pdk=True,
-    ),
-    Variable(
-        "CTS_CLK_BUFFERS",
-        List[str],
-        "Defines the list of clock buffers to be used in CTS.",
-        deprecated_names=["CTS_CLK_BUFFER_LIST"],
-        pdk=True,
-    ),
-    Variable(
-        "CTS_MAX_CAP",
-        Decimal,
-        "Defines the maximum capacitance, used in CTS.",
-        units="pF",
-        pdk=True,
-    ),
-    # Floorplanning
-    Variable(
-        "FP_WELLTAP_CELL",
+        "WELLTAP_CELL",
         str,
         "Defines the cell used for tap insertion.",
         pdk=True,
+        deprecated_names=["FP_WELLTAP_CELL"],
     ),
     Variable(
-        "FP_ENDCAP_CELL",
+        "ENDCAP_CELL",
         str,
         "Defines so-called 'end-cap' cells- decap cells placed at either sides of a design.",
         pdk=True,
-    ),
-    Variable(
-        "IGNORE_DISCONNECTED_MODULES",
-        Optional[List[str]],
-        "Modules (or cells) to ignore when checking for disconnected pins.",
-        pdk=True,
+        deprecated_names=["FP_ENDCAP_CELL"],
     ),
     # Placement
     Variable(
         "PLACE_SITE",
         str,
         "Defines the primary placement site in placement as specified in the technology LEF files, to generate the placement grid.",
-        pdk=True,
-    ),
-    Variable(
-        "GPL_CELL_PADDING",
-        Decimal,
-        "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
-        units="sites",
-        pdk=True,
-    ),
-    Variable(
-        "DPL_CELL_PADDING",
-        Decimal,
-        "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
-        units="sites",
         pdk=True,
     ),
     Variable(
@@ -416,13 +376,6 @@ scl_variables = [
         "DIODE_CELL",
         Optional[str],
         "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
-        pdk=True,
-    ),
-    # Routing
-    Variable(
-        "GRT_LAYER_ADJUSTMENTS",
-        List[Decimal],
-        "Layer-specific reductions in the routing capacity of the edges between the cells in the global routing graph, delimited by commas. Values range from 0 through 1.",
         pdk=True,
     ),
 ]
@@ -513,51 +466,6 @@ option_variables = [
         "EXTRA_GDS_FILES",
         Optional[List[Path]],
         "Specifies GDS files of pre-hardened macros used in the current design, used during tape-out.",
-    ),
-    # Unimplemented - To be moved to steps
-    Variable(
-        "FP_CONTEXT_DEF",
-        Optional[Path],
-        "Points to the parent DEF file that includes this macro/design and uses this DEF file to determine the best locations for the pins. It must be used with `FP_CONTEXT_LEF`, otherwise it's considered non-existing. If not set, then the IO pins will be placed based on one of the other methods depending on the rest of the configurations.",
-    ),
-    Variable(
-        "FP_CONTEXT_LEF",
-        Optional[Path],
-        "Points to the parent LEF file that includes this macro/design and uses this LEF file to determine the best locations for the pins. It must be used with `FP_CONTEXT_DEF`, otherwise it's considered non-existing. If not set, then the IO pins will be placed based on one of the other methods depending on the rest of the configurations.",
-    ),
-    Variable(
-        "FP_PADFRAME_CFG",
-        Optional[str],
-        "A configuration file passed to `padringer`, a padframe generator.",
-    ),
-    Variable(
-        "GRT_OBS",
-        Optional[List[str]],
-        'Specifies custom obstruction to be added prior to global routing. List of layer and coordinates: `layer llx lly urx ury`, where `ll` and `ur` stand for "lower left" and "upper right" respectively. (Example: `li1 0 100 1000 300, met5 0 0 1000 500`).',
-    ),
-    Variable(
-        "LVS_INSERT_POWER_PINS",
-        bool,
-        "Enables power pin insertion before running LVS.",
-        default=True,
-    ),
-    Variable(
-        "RUN_CVC",
-        bool,
-        "Runs the Circuit Validity Checker on the output spice, which is a voltage-aware ERC checker for CDL netlists. Will not run unless supported by the current PDK.",
-        default=True,
-    ),
-    Variable(
-        "LEC_ENABLE",
-        bool,
-        "Enables logic verification using yosys, for comparing each netlist at each stage of the flow with the previous netlist and verifying that they are logically equivalent. Warning: this will increase the runtime significantly.",
-        default=False,
-    ),
-    Variable(
-        "CHECK_ASSIGN_STATEMENTS",
-        bool,
-        "Checks for assign statement in the generated gate level netlist and aborts if any were found.",
-        default=False,
     ),
     Variable(
         "FALLBACK_SDC_FILE",

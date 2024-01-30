@@ -278,6 +278,15 @@ class ReportDisconnectedPins(OdbpyStep):
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "IGNORE_DISCONNECTED_MODULES",
+            Optional[List[str]],
+            "Modules (or cells) to ignore when checking for disconnected pins.",
+            pdk=True,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
 
@@ -302,6 +311,7 @@ class AddRoutingObstructions(OdbpyStep):
             + " Format of each obstruction item is: layer llx lly urx ury.",
             units="µm",
             default=None,
+            deprecated_names=["GRT_OBS"],
         ),
     ]
 
@@ -455,6 +465,13 @@ class PortDiodePlacement(OdbpyStep):
             "Always insert diodes on ports with the specified polarities.",
             default="none",
         ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
+            pdk=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -549,6 +566,13 @@ class FuzzyDiodePlacement(OdbpyStep):
             Decimal,
             "A Manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
             pdk=True,
         ),
     ]
