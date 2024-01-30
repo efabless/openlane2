@@ -279,7 +279,6 @@ class ReportDisconnectedPins(OdbpyStep):
     name = "Report Disconnected Pins"
 
     config_vars = OdbpyStep.config_vars + [
-        # Why is this a PDK variable again
         Variable(
             "IGNORE_DISCONNECTED_MODULES",
             Optional[List[str]],
