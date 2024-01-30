@@ -75,4 +75,4 @@ end-users.
 Similar to Docker, this mostly eliminates variables related to the user's environment,
 although unlike Docker, it maintains integration with the user's filesystem, doesn't
 add a virtualization penalty on macOS, and does not require the entire image to be
-redownloaded every time an update occurs.
+re-downloaded every time an update occurs.

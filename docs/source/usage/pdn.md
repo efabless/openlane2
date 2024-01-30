@@ -77,7 +77,7 @@ This section assumes you're integrating for Caravel and using the default
 Flow. Power pin names may vary.
 ```
 
-* The Verilog headers for the submacros have the power with a preprocessor
+* The Verilog headers for the sub-macros have the power with a preprocessor
   guard. For example:
 
   ```verilog
@@ -106,7 +106,7 @@ So for example, a macro routed for top-level integration must not have any
 signals or power routed on met5. A macro routed *within* that must not have any
 signals or power routed on met4. And so on.
 
-The power straps on the top-most metal layer of a submacro are then connected to
+The power straps on the top-most metal layer of a sub-macro are then connected to
 the layer above using vias. (There is no continuity between power straps within
 each metal layer across the macro boundary.)
 

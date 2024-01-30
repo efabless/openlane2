@@ -193,7 +193,7 @@ class Toolbox(object):
         :returns: A tuple of:
 
             * The name of the timing corner
-            * A heterogenous list of files composed of: Lib files are returned as-is,
+            * A heterogeneous list of files composed of: Lib files are returned as-is,
               Netlists are returned as-is, and SPEF files are returned in the
               format ``{instance_name}@{spef_path}``\\.
 

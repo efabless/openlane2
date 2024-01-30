@@ -222,7 +222,7 @@ class Flow(ABC):
     An abstract base class for a flow.
 
     Flows encapsulate a the running of multiple :class:`Step`\\s in any order.
-    The sequence (or lackthereof) of running the steps is left to the Flow
+    The sequence (or lack thereof) of running the steps is left to the Flow
     itself.
 
     The Flow ABC offers a number of convenience functions, including handling the

@@ -169,12 +169,12 @@ CSV
     Short for "Comma-separated Values".
 
     A text file that represents tabular data.
-    
+
 JSON
 
     Short for JavaScript Object Notation.
     
-    A data interchange format derived from JavaScript supporting numeric, boolean
+    A data interchange format derived from JavaScript supporting numeric, Boolean
     and string values as well as lists and hashmaps composed of the above.
     
     OpenLane uses JSON as the primary form for loading and storing configuration
