@@ -15,22 +15,22 @@ To simply fix typos, you do not need to install anything. Pull requests can be c
 
 For more complex documentation, it is recommended to follow these steps:
 
-1.  Read this guide
-2.  Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.md`
-3.  ... or open an existing one in the same folder.
-4.  Follow these guidelines:
-    : - Begin with the general structure of the documentation. This step ensures continuity with the rest of the documentation and allows the writer to better organize their thoughts.
-    - Use reStructuredText and existing plugins to write the documentation.
-    - Create as much visual documentation as possible. More is better.
-    - Pictures, figures, tables significantly improve the quality of documentation and make the documentation available for beginners.
-    - Add links to references, guide and pointers to other available documentation or books.
-5.  Use [Building documentation locally](#building-documentation-locally) to preview and visualize the documentation.
-6.  Copy the text from preview into an editor that highlights the mistakes and fix them.
-7.  Rebuild documentation and repeat.
-8.  Once satisfied, commit the changes to your repository using git.
-9.  Create a pull request to the main repository, so the maintainers can review your changes.
-10. Maintainers may request some tweaks (or do the tweaks themselves.) Execute them and then push the changes again.
-11. Once changes are approved they will be merged and then you can delete your branch or repository.
+1. Read this guide
+1. Either create a new page in `docs/source/`. Then you need to add your page to the Table of Contents in `index.md`
+1. ... or open an existing one in the same folder.
+1. Follow these guidelines:
+   : - Begin with the general structure of the documentation. This step ensures continuity with the rest of the documentation and allows the writer to better organize their thoughts.
+   * Use reStructuredText and existing plugins to write the documentation.
+   * Create as much visual documentation as possible. More is better.
+   * Pictures, figures, tables significantly improve the quality of documentation and make the documentation available for beginners.
+   * Add links to references, guide and pointers to other available documentation or books.
+1. Use [Building documentation locally](#building-documentation-locally) to preview and visualize the documentation.
+1. Copy the text from preview into an editor that highlights the mistakes and fix them.
+1. Rebuild documentation and repeat.
+1. Once satisfied, commit the changes to your repository using git.
+1. Create a pull request to the main repository, so the maintainers can review your changes.
+1. Maintainers may request some tweaks (or do the tweaks themselves.) Execute them and then push the changes again.
+1. Once changes are approved they will be merged and then you can delete your branch or repository.
 
 ## Building documentation locally
 
@@ -76,12 +76,12 @@ If you want to create new category than take a look at the source code of existi
 
 ## Writing Style and Consistency
 
-- New documentation should be written in \[MyST Markdown\](<https://myst-parser.readthedocs.io/en/latest/>), a flavor of Markdown with some RST extensions.
-- Use `of` instead of `'`, for example: `Docker's Installation` → `after the installation of Docker`.
-- Avoid contractions: Substitute `don't` and `can't` for `do not` and `cannot`
-- The first command of the page should have `cd` in it to specify where you are running and all following commands assume the continuation of the session and don't need the cd command.
-- Avoid using same header type both for the title of the document and its content. It looks awful in the table of content.
-  - To that end, only use `#` once at the beginning of the document.
+* New documentation should be written in \[MyST Markdown\](<https://myst-parser.readthedocs.io/en/latest/>), a flavor of Markdown with some RST extensions.
+* Use `of` instead of `'`, for example: `Docker's Installation` → `after the installation of Docker`.
+* Avoid contractions: Substitute `don't` and `can't` for `do not` and `cannot`
+* The first command of the page should have `cd` in it to specify where you are running and all following commands assume the continuation of the session and don't need the cd command.
+* Avoid using same header type both for the title of the document and its content. It looks awful in the table of content.
+  * To that end, only use `#` once at the beginning of the document.
 
 ### Term Consistency
 
@@ -97,7 +97,7 @@ Klayout → KLayout
 Pip -> pip
 ```
 
-- For technical terms, use the following terms preferred by OpenROAD documentation for consistency:
+* For technical terms, use the following terms preferred by OpenROAD documentation for consistency:
 
 ```
 co-ordinates → coordinates

@@ -24,6 +24,7 @@ the open-source [GlobalFoundries PDK](https://github.com/google/gf180mcu-pdk).
 See [Using PDKs](./usage/about_pdks.md) for more info.
 
 Here are some of the key benefits of using OpenLane 2:
+
 * **Flexibility and extensibility**: OpenLane 2 is designed to be flexible and
   extensible, allowing designers to customize the flow to meet their specific
   needs. This can be done by writing Python scripts and utilities,

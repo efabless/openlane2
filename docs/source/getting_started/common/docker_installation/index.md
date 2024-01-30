@@ -1,6 +1,6 @@
 # Docker-based Installation
 
-For ease of installation, OpenLane offers the ability to transparently [Docker](https://en.wikipedia.org/wiki/Docker_(software)) containers.
+For ease of installation, OpenLane offers the ability to transparently [Docker](<https://en.wikipedia.org/wiki/Docker_(software)>) containers.
 
 These containers include OpenLane's applications, binaries as well as all other required dependencies.
 

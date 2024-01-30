@@ -69,17 +69,17 @@ by any found bit number(s).
 
 For example, for a regular expression `l.*` matching pins:
 
-- `lemon[1]`
-- `lime[0]`
-- `lemon[0]`
-- `lime[1]`
+* `lemon[1]`
+* `lime[0]`
+* `lemon[0]`
+* `lime[1]`
 
 The order returned would be:
 
-- `lemon[0]`
-- `lemon[1]`
-- `lime[0]`
-- `lime[1]`
+* `lemon[0]`
+* `lemon[1]`
+* `lime[0]`
+* `lime[1]`
 
 #### `@bit_major`
 
@@ -89,17 +89,17 @@ alphabetically by any found bus name(s).
 
 For example, for a regular expression `l.*` matching pins:
 
-- `lemon[1]`
-- `lime[0]`
-- `lemon[0]`
-- `lime[1]`
+* `lemon[1]`
+* `lime[0]`
+* `lemon[0]`
+* `lime[1]`
 
 The order returned would be:
 
-- `lemon[0]`
-- `lime[0]`
-- `lemon[1]`
-- `lime[1]`.
+* `lemon[0]`
+* `lime[0]`
+* `lemon[1]`
+* `lime[1]`.
 
 ## Virtual Pins
 

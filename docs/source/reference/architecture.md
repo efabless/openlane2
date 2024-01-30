@@ -27,20 +27,20 @@ returns an **output** state as shown here:
 
 Steps should align themselves to one principle:
 
-- <u>The same step with the same input configuration and same input state must emit the same output.</u>
+* <u>The same step with the same input configuration and same input state must emit the same output.</u>
 
 (ref-step-strictures)=
 This is applied as far as the functionality goes:
 
-- Steps **do NOT** modify files in-place. New files must be created in the step's
+* Steps **do NOT** modify files in-place. New files must be created in the step's
   dedicated directory. If the tool does not support out-of-place modification,
   copy the files then modify the copies.
-- Steps **do NOT** modify the config_in. This is programmatically enforced.
-- Steps **do NOT** rely on external filesystem paths. If a path is not in the
+* Steps **do NOT** modify the config_in. This is programmatically enforced.
+* Steps **do NOT** rely on external filesystem paths. If a path is not in the
   configuration or in the input state, it effectively does not exist to the Step.
-  - This applies the other way around as well: Steps **do NOT** create files
+  * This applies the other way around as well: Steps **do NOT** create files
     outside of their step directory.
-- Steps **do** fix [PRNG](https://en.wikipedia.org/wiki/Pseudorandom_number_generator)
+* Steps **do** fix [PRNG](https://en.wikipedia.org/wiki/Pseudorandom_number_generator)
   seeds for replicability. They can be exposed as a configuration variable.
 
 More of these strictures may be programatically enforced by the infrastructure in the future.
@@ -55,8 +55,8 @@ time, in dictionary form.
 Keys must be of the type {class}`openlane.steps.DesignFormat` and values must be
 either:
 
-- Of the type {class}`openlane.config.Path`.
-- N-nested dictionaries with key values such that the leaves are of the type
+* Of the type {class}`openlane.config.Path`.
+* N-nested dictionaries with key values such that the leaves are of the type
   {class}`openlane.config.Path` as well.
 
 States also have another property: metrics. This attribute captures design
@@ -105,9 +105,9 @@ this configuration object as an input.
 The configuration builder takes a `Flow` and a raw configuration object as an
 input, which can be any of:
 
-- A Python dictionary
-- A path to an existent JSON configuration file
-- A path to an existent Tcl configuration file (deprecated)
+* A Python dictionary
+* A path to an existent JSON configuration file
+* A path to an existent Tcl configuration file (deprecated)
 
 and then validates this configuration, resolving paths, fixing types and
 other such tasks along the way, returning the {class}`openlane.config.Config`

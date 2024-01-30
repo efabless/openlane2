@@ -24,19 +24,19 @@ On the other hand, the replicably modifiable objects are those that handle
 non-trivial computation, e.g. Steps or Flows. Classes in this hierarchy may have
 a maximum of **one** public modifier adhering to these properties:
 
-- This modifier may alter one or more properties of a class
-  - The modifier shall not depend on the initial values of any altered
+* This modifier may alter one or more properties of a class
+  * The modifier shall not depend on the initial values of any altered
     property and may overwrite them if called again
-  - If called again, it is expected to return the same result (within reason-
+  * If called again, it is expected to return the same result (within reason-
     not every aspect can be controlled, for example external filesystem
     modification and/or timestamps.)
-- This modifier may depend on any number of private or internal modifiers
-- This modifier's implementation shall be split into two:
-  - A **public** part that is marked `@final`, i.e., it is not overridable.
+* This modifier may depend on any number of private or internal modifiers
+* This modifier's implementation shall be split into two:
+  * A **public** part that is marked `@final`, i.e., it is not overridable.
     This will handle validation of inputs and outputs and thus must not be
     left to the whims of subclassers. It is responsible for calling the the
     internal part.
-  - An **internal** part that is freely subclassable, however, it cannot be
+  * An **internal** part that is freely subclassable, however, it cannot be
     called from outside the public part.
 
 For {py:class}`openlane.flows.Flow`, for example, the public and internal parts

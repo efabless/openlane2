@@ -70,13 +70,13 @@ sourcing an activate script in its bin directory.
 
 # Download and Install OpenLane
 
-- Download OpenLane using PIP:
+* Download OpenLane using PIP:
 
 ```sh
 python3 -m pip install openlane
 ```
 
-- Run a smoke test for OpenLane:
+* Run a smoke test for OpenLane:
 
 ```sh
 python3 -m openlane --dockerized --smoke-test

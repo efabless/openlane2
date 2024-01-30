@@ -7,7 +7,7 @@ simple, somewhat customizable flow, but rather as an infrastructure that can
 support innumerable flows.
 
 Being rebuilt from the ground up, there is a small learning curve to adopting
-OpenLane 2\. This document aims to help those making the jump.
+OpenLane 2. This document aims to help those making the jump.
 
 ## Why migrate?
 
@@ -15,13 +15,13 @@ At a minimum, the default flow for OpenLane 2, named {flow}`Classic`, is essenti
 more robust re-implementation of the OpenLane 1 flow that is still entirely
 backwards compatible, with some conveniences:
 
-- Full configuration validation: if you have a typo, it will be caught, and if
+* Full configuration validation: if you have a typo, it will be caught, and if
   you accidentally provide a string to a number, it will be caught.
-- More graceful failures: if the design fails mid-flow, because of a more strict
+* More graceful failures: if the design fails mid-flow, because of a more strict
   separation of concerns, you still have access to metrics and reports from all
   previous steps.
-  - In OpenLane 1, they are all extracted at the end.
-- The ability to use command-line flow control options such as `--from`, `--to`,
+  * In OpenLane 1, they are all extracted at the end.
+* The ability to use command-line flow control options such as `--from`, `--to`,
   `--skip` and `--only`, with the ability to resume from a snapshot of your
   design at a certain part of the flow, without worrying about surprises related
   to state variables missing.
@@ -35,14 +35,14 @@ await with OpenLane 2. Built around "flows" composed of "steps," OpenLane 2 can
 implement hardware flows for ASIC implementation by relying on basic Python
 object-oriented programming principles, and this naturally allows you to:
 
-- Write your own step, in Python. For example, create a custom placement step
+* Write your own step, in Python. For example, create a custom placement step
   for your design using OpenROAD Tcl or Python scripts, or even completely
   custom code.
-- Write complex flows with decision-making capabilities, including the ability
+* Write complex flows with decision-making capabilities, including the ability
   to repeat some steps or even try multiple strategies simultaneously and
   proceed with the best result.
-  - You can even do this in a Python Notebook!
-- Access a standardized and more formal form of design metrics based on
+  * You can even do this in a Python Notebook!
+* Access a standardized and more formal form of design metrics based on
   {term}`METRICS2.1`.
 
 For example, using a custom OpenLane 2-based flow, the team over at

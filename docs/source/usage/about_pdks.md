@@ -11,16 +11,16 @@ configuration file is made for them.
 There are multiple ways to specify a PDK from the command-line interface,
 ordered by priority (from highest to lowest):
 
-- Within the `config.json` file: Recommended only for designs that are compatible
+* Within the `config.json` file: Recommended only for designs that are compatible
   with exactly one PDK.
-- The `--pdk` command-line flag
-- The `PDK` environment variable
-- The default PDK, i.e., the [Skywater/Google 130nm PDK](https://github.com/google/skywater-pdk).
+* The `--pdk` command-line flag
+* The `PDK` environment variable
+* The default PDK, i.e., the [Skywater/Google 130nm PDK](https://github.com/google/skywater-pdk).
 
 Note that the PDK provided must be a fully qualified PDK variant, i.e.
 
-- `sky130` ❌
-- `sky130A` ⭕
+* `sky130` ❌
+* `sky130A` ⭕
 
 ## Standard Cell Libraries
 
@@ -35,11 +35,11 @@ of which are third-party. Each OpenLane PDK configuration specifies a default
 standard cell library, so you don't have to worry about picking one- but if you
 want to anyway, ordered by priority (from highest to lowest):
 
-- Within the `config.json` file
-- The `--scl` command-line flag
-- The `STD_CELL_LIBRARY` environment variable
-- The default SCL as dictated by the OpenLane PDK configuration files.
-  - For sky130, that's `sky130_fd_sc_hd`.
+* Within the `config.json` file
+* The `--scl` command-line flag
+* The `STD_CELL_LIBRARY` environment variable
+* The default SCL as dictated by the OpenLane PDK configuration files.
+  * For sky130, that's `sky130_fd_sc_hd`.
 
 ## Building, location and downloading
 
@@ -57,9 +57,9 @@ manager by the OpenLane team built on top of Open PDKs.
 There are multiple variants of each PDK (reflecting different metal stack
 configurations):
 
-- `sky130`
-  - `sky130A`: The default. 5 metal layers and a local interconnect.
-  - `sky130B`: Similar to `sky130A`, but also includes a Resistive RAM (ReRAM)
+* `sky130`
+  * `sky130A`: The default. 5 metal layers and a local interconnect.
+  * `sky130B`: Similar to `sky130A`, but also includes a Resistive RAM (ReRAM)
     layer between `metal1` and `metal2`. See [here](https://sky130-fd-pr-reram.readthedocs.io/en/latest/background.html) for more information. This affects timing as, for example,
     `via1` between `metal1` and `metal2` is twice as high.
 
@@ -79,11 +79,11 @@ All this to say: you can use either variant on any Efabless `sky130` shuttle (bu
 within the same design.)
 ```
 
-- `gf180mcu`
-  - `gf180mcuA`: 3 metal layers.
-  - `gf180mcuB`: 4 metal layers.
-  - `gf180mcuC`: 5 metal layers.
-  - `gf180mcuD`: 5 metal layers, with a slightly thicker top metal layer.
+* `gf180mcu`
+  * `gf180mcuA`: 3 metal layers.
+  * `gf180mcuB`: 4 metal layers.
+  * `gf180mcuC`: 5 metal layers.
+  * `gf180mcuD`: 5 metal layers, with a slightly thicker top metal layer.
     The thinner top metal layer has issues with delamination on the pads
     according to GlobalFoundries.
 
@@ -101,9 +101,9 @@ The PDK root is a directory containing all of your open-source PDKs. OpenLane
 is configured to use the PDK root at the following options (from highest to
 lowest priority)"
 
-- The `--pdk-root` command-line flag
-- The `PDK_ROOT` environment variable
-- A folder named `.volare` in your home directory.
+* The `--pdk-root` command-line flag
+* The `PDK_ROOT` environment variable
+* A folder named `.volare` in your home directory.
 
 The PDK root stores downloaded versions of the PDK as well as the Volare metadata
 information.
@@ -119,6 +119,7 @@ You can delete all non-active PDKs by invoking `volare prune` in your terminal.
 ```
 
 (porting-pdks)=
+
 ### Using non-Volare PDKs
 
 If you want to use PDKs without Volare (built manually), you will need to pass
@@ -131,11 +132,11 @@ you can add custom PDKs to the PDK root.
 
 The PDKs must provide the following:
 
-- An OpenLane PDK configuration file at the path `{pdk_root}/{pdk}/libs.tech/openlane/config.tcl`.
+* An OpenLane PDK configuration file at the path `{pdk_root}/{pdk}/libs.tech/openlane/config.tcl`.
 
 This Tcl-based (sorry) config file must include values for all non-optional variables in the {ref}`univ_flow_cvars_pdk`.
 
-- An standard cell library configuration file at the path `{pdk_root}/{pdk}/libs.tech/{scl}/openlane/config.tcl`.
+* An standard cell library configuration file at the path `{pdk_root}/{pdk}/libs.tech/{scl}/openlane/config.tcl`.
 
 This Tcl-based config file must include values for all non-optional variables in the {ref}`univ_flow_cvars_scl`.
 

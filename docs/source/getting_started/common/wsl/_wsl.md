@@ -5,9 +5,9 @@ The following is the recommended installation method under Windows. Other virtua
 # Setting up WSL
 
 1. Follow [official Microsoft documentation for WSL located here](https://docs.microsoft.com/en-us/windows/wsl/install) to install the WSL 2. Make sure your OS version supports WSL 2.
-2. Follow [official steps to Install Docker Desktop on Windows located here](https://docs.docker.com/desktop/install/windows-install/).
-3. Make sure that `WSL 2 Docker engine` is enabled and `Settings` -> `Resource` -> `WSL Integration` is enabled
-4. Make sure that option `Start Docker Desktop when you login` is enabled in `Docker Desktop` -> `Settings`
+1. Follow [official steps to Install Docker Desktop on Windows located here](https://docs.docker.com/desktop/install/windows-install/).
+1. Make sure that `WSL 2 Docker engine` is enabled and `Settings` -> `Resource` -> `WSL Integration` is enabled
+1. Make sure that option `Start Docker Desktop when you login` is enabled in `Docker Desktop` -> `Settings`
 
 ![](./wsl_docker_settings.png)
 
@@ -16,7 +16,7 @@ The following is the recommended installation method under Windows. Other virtua
 ![](./powershell.png)
 
 6. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
-7. Check the version of WSL using following command: `wsl --list --verbose`
+1. Check the version of WSL using following command: `wsl --list --verbose`
 
 It should produce the following output:
 

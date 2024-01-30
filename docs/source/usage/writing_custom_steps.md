@@ -10,12 +10,12 @@ This defines many of the terms used and enumerates strictures mentioned in this 
 
 Like flows, each Step subclass must:
 
-- Implement the {meth}`openlane.steps.Step.run` method.
-  - This step is responsible for the core logic of the step, which is arbitrary.
-  - This method must return two values:
-    - A `ViewsUpdate`, a dictionary from {class}`DesignFormat` objects to
+* Implement the {meth}`openlane.steps.Step.run` method.
+  * This step is responsible for the core logic of the step, which is arbitrary.
+  * This method must return two values:
+    * A `ViewsUpdate`, a dictionary from {class}`DesignFormat` objects to
       Paths for all views altered.
-    - A `MetricsUpdate`, a dictionary with valid JSON values.
+    * A `MetricsUpdate`, a dictionary with valid JSON values.
 
 ```{important}
 Do NOT call the `run` method of any `Step` from outside of `Step` and its
@@ -27,14 +27,14 @@ You should not be overriding `start` either, which is marked **final**.
 
 But also, each Step is required to:
 
-- Declare any required {class}`openlane.state.State` inputs in the `inputs`
+* Declare any required {class}`openlane.state.State` inputs in the `inputs`
   attribute.
-  - This will enforce checking the input states for these views.
-- Declare any potential state modifications in the `outputs` attribute.
-  - This list is checked for completeness and validity- i.e. the {class}`Step`
+  * This will enforce checking the input states for these views.
+* Declare any potential state modifications in the `outputs` attribute.
+  * This list is checked for completeness and validity- i.e. the {class}`Step`
     superclass WILL throw a `StepException` if a Step modifies any State variable
     it does not declare.
-- Declare any used configuration variables in the `config_vars` attribute.
+* Declare any used configuration variables in the `config_vars` attribute.
 
 ```{important}
 Don't forget the [`Step` strictures](#ref-step-strictures).
@@ -47,30 +47,30 @@ Config variables are declared using the {class}`openlane.config.Variable` object
 
 There are some conventions to writing these variables.
 
-- Variable names are declared in `UPPER_SNAKE_CASE`, and must be valid identifiers
+* Variable names are declared in `UPPER_SNAKE_CASE`, and must be valid identifiers
   in the Python programming language.
-- Composite types should be declared using the `typing` module, i.e., for a list
+* Composite types should be declared using the `typing` module, i.e., for a list
   of strings, try `typing.List[str]` instead of `list[str]` or just `list`.
-  - `list[str]` is incompatible with Python 3.8.
-  - `list` does not give OpenLane adequate information to validate the child
+  * `list[str]` is incompatible with Python 3.8.
+  * `list` does not give OpenLane adequate information to validate the child
     variables.
-- Variables that capture a physical quantity, such as time, distance or similar,
+* Variables that capture a physical quantity, such as time, distance or similar,
   must declare units using their `"units"` field.
-  - In case of micro-, the only SI prefix denoted with a non-Latin letter, use this
+  * In case of micro-, the only SI prefix denoted with a non-Latin letter, use this
     exact Unicode codepoint: `µ`
-- Variables may be declared as `pdk`, which determines the compatibility of a PDK
+* Variables may be declared as `pdk`, which determines the compatibility of a PDK
   with your step. If you use a PDK that does not declare one of your declared PDK
   variables, the configuration will not compile and the step will raise a
   {class}`openlane.steps.StepException`.
-  - PDK variables should generally avoid having default values other than `None`.
+  * PDK variables should generally avoid having default values other than `None`.
     An exception is when a quantity may be defined by some PDKs, but needs a fallback
     value for others.
-- No complex defaults. Defaults must be scalar and quick to evaluate- if your
+* No complex defaults. Defaults must be scalar and quick to evaluate- if your
   default value depends on the default value of another variable, for example,
-- All filesystem paths must be declared as {class}`openlane.common.Path`, objects
+* All filesystem paths must be declared as {class}`openlane.common.Path`, objects
   which adds some very necessary validation and enables easier processing of the
   variables down the line.
-  - Avoid pointing to entire folders. If your step may require multiple files within
+  * Avoid pointing to entire folders. If your step may require multiple files within
     a folder, try using the type `List[Path]`.
 
 ### Implementing `run`
@@ -110,7 +110,7 @@ will handle this check for you.
 
 Otherwise, you're basically free to write any logic you desire, with one exception:
 
-- If you're running a terminal subprocess you'd like to have OpenLane manage the
+* If you're running a terminal subprocess you'd like to have OpenLane manage the
   logs for, please use {meth}`openlane.steps.Step.run_subprocess`,
   passing \*args and \*\*kwargs. It will manage
   I/O for the process, and allow the creation of report files straight from the
@@ -151,15 +151,15 @@ as much code reuse as possible. To that extent, there exists some more specializ
 This run calls a subprocess with the value of {meth}`openlane.steps.TclStep.get_command`,
 and it emplaces all configuration variables as environment variables using this scheme:
 
-- List variables are joined with a space character.
-- Enumerations are replaced with the enumeration name.
-- Booleans are replaced with `"1"` if true or `"0"` if false.
-- Integers and Decimals are turned into Base-10 strings.
+* List variables are joined with a space character.
+* Enumerations are replaced with the enumeration name.
+* Booleans are replaced with `"1"` if true or `"0"` if false.
+* Integers and Decimals are turned into Base-10 strings.
 
 The state is also exposed to the TclStep as is:
 
-- Input files are pointed to in variables with the format `CURRENT_<view name>`.
-- Output paths are pointed to in the variables with the format `SAVE_<view name>`.
+* Input files are pointed to in variables with the format `CURRENT_<view name>`.
+* Output paths are pointed to in the variables with the format `SAVE_<view name>`.
 
 If a TclStep-based step fails, a reproducible is created, which can be submitted
 to the respective repository of the tool.
@@ -171,9 +171,9 @@ Keep in mind that TclStep-based tools still have to define their `config_vars`,
 
 `TclStep` has various subclasses for a number of Tcl-based utilities:
 
-- {class}`openlane.steps.OpenROADStep`
-- {class}`openlane.steps.YosysStep`
-- {class}`openlane.steps.MagicStep`
+* {class}`openlane.steps.OpenROADStep`
+* {class}`openlane.steps.YosysStep`
+* {class}`openlane.steps.MagicStep`
 
 These subclasses acts as an abstract base class for steps that use their
 respective utility. They have one abstract method, `get_script_path`.

@@ -143,11 +143,11 @@ If the files you choose lie **inside** the design directory, a different prefix,
 `refg::`, supports non-recursive globs, i.e., you can use an asterisk as a
 wildcard to pick multiple files in a specific folder.
 
-- Outside the design directory, this is disabled for security reasons and the
+* Outside the design directory, this is disabled for security reasons and the
   final path will continue to include the asterisk.
-- `refg::` will always return an array, even if only one element was found, for
+* `refg::` will always return an array, even if only one element was found, for
   consistency.
-  - If no elements were found, the glob string is returned verbatim as a single
+  * If no elements were found, the glob string is returned verbatim as a single
     element in array.
 
 As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
@@ -161,8 +161,8 @@ in the `src` folder inside the design directory.
 
 There are some shorthands for the exposed default variables:
 
-- `dir::` is equivalent to `refg::$DESIGN_DIR/`
-- `pdk_dir::` is equivalent to `refg::$PDK_ROOT/$PDK`
+* `dir::` is equivalent to `refg::$DESIGN_DIR/`
+* `pdk_dir::` is equivalent to `refg::$PDK_ROOT/$PDK`
 
 #### Expression Engine
 

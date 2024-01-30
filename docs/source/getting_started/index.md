@@ -6,7 +6,6 @@ Before we get started, please pick one of these two options…
 
 <div style="text-align: center;">
 
-
 <p><a class="link-button disabled">
 I am new to OpenLane<br />(Coming Soon)
 </a></p>

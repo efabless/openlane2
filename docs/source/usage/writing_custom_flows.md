@@ -90,8 +90,8 @@ flow.start()
 
 The {py:meth}`openlane.flows.Flow.start` method will return a tuple comprised of:
 
-- The final output state ({math}`State_{n}`).
-- A list of all step objects created during the running of this flow object.
+* The final output state ({math}`State_{n}`).
+* A list of all step objects created during the running of this flow object.
 
 ```{important}
 Do NOT call the `run` method of any `Flow` from outside of `Flow` and its
@@ -105,12 +105,12 @@ You should not be overriding `start` either.
 
 Each `Flow` subclass must:
 
-- Declare the steps used in the `Steps` attribute.
-  - The steps are examined so their configuration variables can be validated ahead of time.
-- Implement the {meth}`openlane.flows.Flow.run` method.
-  - This step is responsible for the core logic of the flow, i.e., instantiating
+* Declare the steps used in the `Steps` attribute.
+  * The steps are examined so their configuration variables can be validated ahead of time.
+* Implement the {meth}`openlane.flows.Flow.run` method.
+  * This step is responsible for the core logic of the flow, i.e., instantiating
     steps and calling them.
-  - This method must return the final state and a list of step objects created.
+  * This method must return the final state and a list of step objects created.
 
 You may notice you are allowed to do pretty much anything inside the `run` method.
 While that may indeed enable you to perform arbitrary logic in a Flow, it is
@@ -159,9 +159,9 @@ Classic - Stage 17 - CTS ━━━━━━━━━━━━━━━━━╺�
 
 The Flow object has methods to manage this progress bar:
 
-- {py:meth}`openlane.flows.Flow.set_max_stage_count`
-- {py:meth}`openlane.flows.Flow.start_stage`
-- {py:meth}`openlane.flows.Flow.end_stage`.
+* {py:meth}`openlane.flows.Flow.set_max_stage_count`
+* {py:meth}`openlane.flows.Flow.start_stage`
+* {py:meth}`openlane.flows.Flow.end_stage`.
 
 They are to be called from inside the `run` method. In Sequential Flows,
 {math}`|Steps| = |Stages| = n`, but in custom flows, stages can incorporate any
@@ -185,11 +185,11 @@ run the required steps, in parallel if need be.
 
 Here is a demo flow built on exactly this principle. It works across two stages:
 
-- The Synthesis Exploration - tries multiple synthesis strategies in _parallel_.
+* The Synthesis Exploration - tries multiple synthesis strategies in _parallel_.
   The best-performing strategy in terms of minimizing the area makes it to the
   next stage.
-- Floorplanning and Placement - tries FP and placement with a high utilization.
-  - If the high utilization fails, a lower is fallen back to as a suggestion.
+* Floorplanning and Placement - tries FP and placement with a high utilization.
+  * If the high utilization fails, a lower is fallen back to as a suggestion.
 
 ```{literalinclude} ../../../openlane/flows/optimizing.py
 ---
@@ -202,20 +202,20 @@ start-after: "@Flow.factory.register()"
 
 Steps may throw one of these hierarchy of errors, namely:
 
-- {exc}`openlane.steps.StepError`: For when there is an error in running one of the
+* {exc}`openlane.steps.StepError`: For when there is an error in running one of the
   tools or the input data.
-  - {exc}`openlane.steps.DeferredStepError`: A `StepError` that suggests that the
+  * {exc}`openlane.steps.DeferredStepError`: A `StepError` that suggests that the
     Flow continue anyway and only report this error when the flow finishes. This
     is useful for errors that are not "show-stoppers," i.e. a timing violation
     for example.
-  - {exc}`openlane.steps.StepException`: A `StepError` when there is a
+  * {exc}`openlane.steps.StepException`: A `StepError` when there is a
     higher-level step failure, such as the step object itself generating an
     invalid state or a state input to a `Step` has missing inputs.
 
 As a rule of thumb, it is sufficient to forward these errors as one of these two:
 
-- {exc}`openlane.flows.FlowError`
-  - {exc}`openlane.flows.FlowException`
+* {exc}`openlane.flows.FlowError`
+  * {exc}`openlane.flows.FlowException`
 
 Which share a similar hierarchy. Here is how `SequentialFlow`, for example, handles
 its `StepError`s:

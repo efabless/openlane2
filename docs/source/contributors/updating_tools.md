@@ -18,12 +18,12 @@ First, find the `.nix` file for your tool. For OpenROAD, for example, it is
 There are four primary values in the nix object (called a "derivation")
 that decide the version being used (all strings):
 
-- `owner`: The name of the GitHub tool repository owner.
-- `repo`: The name of the GitHub tool repository.
-- `rev`: By convention, the Git commit of the tool in question.
-  - Technically, versions, tags and branches are also accepted, but none are
+* `owner`: The name of the GitHub tool repository owner.
+* `repo`: The name of the GitHub tool repository.
+* `rev`: By convention, the Git commit of the tool in question.
+  * Technically, versions, tags and branches are also accepted, but none are
     deemed consistent enough to use with OpenLane.
-- `sha256` (or `hash`): A sha256sum of the contents of the repository in use
+* `sha256` (or `hash`): A sha256sum of the contents of the repository in use
   when said commit is downloaded without any `.git` files.
 
 Let's take `openroad.nix` as an example:
@@ -91,16 +91,16 @@ new version of the utility.
 
 If it errors out, this may be because of one of the following:
 
-- The build methodology for the tool has changed
-  - You will need to update more elements in the Nix derivation, which will
+* The build methodology for the tool has changed
+  * You will need to update more elements in the Nix derivation, which will
     require understanding Nix. See [**Further Reading**](#further-reading) below
     for more information on how to learn to do that.
-- An internet connectivity issue
-  - Nix will automatically download derivations it needs from various servers,
+* An internet connectivity issue
+  * Nix will automatically download derivations it needs from various servers,
     including but not limited to the Nix Store, Cachix, and GitHub. If there
     is a temporarily failure accessing any of them, the build will fail.
-- Memory corruption or other hardware failure
-  - Restarting the build should work, build you can also try `nix-shell --cores 1`
+* Memory corruption or other hardware failure
+  * Restarting the build should work, build you can also try `nix-shell --cores 1`
     to limit the stress on your hardware.
 
 ## Further Reading
