@@ -256,7 +256,7 @@ proc write_views {args} {
     }
 
     if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
-        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(FP_WELLTAP_CELL)] [join $::env(FP_ENDCAP_CELL)]"
+        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
         puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \

@@ -278,6 +278,16 @@ class ReportDisconnectedPins(OdbpyStep):
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 
+    config_vars = OdbpyStep.config_vars + [
+        # Why is this a PDK variable again
+        Variable(
+            "IGNORE_DISCONNECTED_MODULES",
+            Optional[List[str]],
+            "Modules (or cells) to ignore when checking for disconnected pins.",
+            pdk=True,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
 
@@ -302,6 +312,7 @@ class AddRoutingObstructions(OdbpyStep):
             + " Format of each obstruction item is: layer llx lly urx ury.",
             units="µm",
             default=None,
+            deprecated_names=["GRT_OBS"],
         ),
     ]
 
