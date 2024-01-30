@@ -279,7 +279,7 @@ def rule(title: str = "", /, **kwargs):  # pragma: no cover
 
 def success(msg: object, /, **kwargs):
     """
-    Logs an item to the OpenLane logger with a success unicode character and
+    Logs an item to the OpenLane logger with a success Unicode character and
     green/bold rich formatting syntax with the log level INFO.
 
     :param msg: The message to log
@@ -291,7 +291,7 @@ def success(msg: object, /, **kwargs):
 
 def warn(msg: object, /, **kwargs):
     """
-    Logs an item to the OpenLane logger with a warning unicode character and
+    Logs an item to the OpenLane logger with a warning Unicode character and
     gold/bold rich formatting syntax with the log level WARNING.
 
     :param msg: The message to log
@@ -303,7 +303,7 @@ def warn(msg: object, /, **kwargs):
 
 def err(msg: object, /, **kwargs):
     """
-    Logs an item to the OpenLane logger terminal with an error unicode character and
+    Logs an item to the OpenLane logger terminal with an error Unicode character and
     red/bold rich formatting syntax with the log level ERROR.
     """
     if kwargs.get("stacklevel") is None:

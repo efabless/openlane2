@@ -5,9 +5,9 @@ come with a configuration file. These configuration files can be written in one
 of two grammars: JSON or Tcl.
 
 Tcl offers more flexibility at the detriment of security, while JSON is more
-straightforward at the cost of flexbility. While Tcl allows you to do all manner
-of computation on your variables, JSON has a limited expression engine that will
-be detailed later in this document. Nevertheless, for security (and
+straightforward at the cost of flexibility. While Tcl allows you to do all
+manner of computation on your variables, JSON has a limited expression engine
+that will be detailed later in this document. Nevertheless, for security (and
 future-proofing), we recommend you use either the JSON format or write Python
 scripts using the API.
 
@@ -30,7 +30,7 @@ The JSON files are simple key-value pairs.
 
 <a name="scalars"></a>
 
-The values can be scalars (strings, numbers, booleans, and `null`s), lists or
+The values can be scalars (strings, numbers, Booleans, and `null`s), lists or
 dictionaries, subject to validation.
 
 All files must be ECMA404-compliant, i.e., pure JSON with no extensions such as
@@ -40,18 +40,18 @@ An minimal demonstrative configuration file would look as follows:
 
 ```json
 {
-    "DESIGN_NAME": "spm",
-    "VERILOG_FILES": "dir::src/*.v",
-    "CLOCK_PORT": "clk",
-    "CLOCK_PERIOD": 100,
-    "pdk::sky130A": {
-        "MAX_FANOUT_CONSTRAINT": 6,
-        "FP_CORE_UTIL": 40,
-        "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 10.0)",
-        "scl::sky130_fd_sc_hd": {
-            "CLOCK_PERIOD": 15
-        }
+  "DESIGN_NAME": "spm",
+  "VERILOG_FILES": "dir::src/*.v",
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 100,
+  "pdk::sky130A": {
+    "MAX_FANOUT_CONSTRAINT": 6,
+    "FP_CORE_UTIL": 40,
+    "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 10.0)",
+    "scl::sky130_fd_sc_hd": {
+      "CLOCK_PERIOD": 15
     }
+  }
 }
 ```
 
@@ -77,7 +77,7 @@ The match is evaluated using
 wildcard support: meaning that `pdk::sky130*` would match both `sky130A` and
 `sky130B`.
 
-Note that ***the order of declarations matter here***: as seen in the following
+Note that **_the order of declarations matter here_**: as seen in the following
 example, despite a more specific value for a PDK existing, the unconditionally
 declared value later in the code would end up overwriting it:
 
@@ -107,7 +107,7 @@ i.e., the second example with the sky130A PDK simply becomes:
 
 ```json
 {
-    "A": 40
+  "A": 40
 }
 ```
 
@@ -149,13 +149,13 @@ wildcard to pick multiple files in a specific folder.
   consistency.
   * If no elements were found, the glob string is returned verbatim as a single
     element in array.
-  
+
 As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
 in the `src` folder inside the design directory.
 
 ```json
 {
-    "VERILOG_FILES": "refg::$DESIGN_DIR/src/*.v"
+  "VERILOG_FILES": "refg::$DESIGN_DIR/src/*.v"
 }
 ```
 
@@ -200,8 +200,8 @@ You can also simply reference another number using this prefix:
 
 ```json
 {
-    "A": 10,
-    "B": "expr::$A"
+  "A": 10,
+  "B": "expr::$A"
 }
 ```
 

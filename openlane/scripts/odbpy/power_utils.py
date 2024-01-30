@@ -43,7 +43,7 @@ def cli():
     "-n",
     "--powered-netlist",
     required=True,
-    help="A structural verilog netlist, readable by openroad, that includes extra power connections that are to be applied after connecting to the default power-port and ground-port specified.",
+    help="A structural Verilog netlist, readable by openroad, that includes extra power connections that are to be applied after connecting to the default power-port and ground-port specified.",
 )
 @click.option("-q", "--ignore-missing-pins", default=False, is_flag=True)
 @click.option("-o", "--output", required=True, help="Output DEF file")

@@ -104,7 +104,7 @@ def get_opdks_rev() -> str:
 # ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-def slugify(value: str) -> str:
+def slugify(value: str, lower: bool = False) -> str:
     """
     :param value: Input string
     :returns: The input string converted to lower case, with all characters
@@ -113,6 +113,8 @@ def slugify(value: str) -> str:
 
         Leading and trailing whitespace is stripped.
     """
+    if lower:
+        value = value.lower()
     value = (
         unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     )
@@ -137,6 +139,31 @@ def protected(method):
 
 
 final = typing.final
+final.__doc__ = """A decorator to indicate final methods and final classes.
+
+    Use this decorator to indicate to type checkers that the decorated
+    method cannot be overridden, and decorated class cannot be subclassed.
+    For example:
+
+
+    .. code-block:: python
+
+       class Base:
+           @final
+           def done(self) -> None:
+               ...
+       class Sub(Base):
+           def done(self) -> None:  # Error reported by type checker
+                 ...
+
+       @final
+       class Leaf:
+           ...
+       class Other(Leaf):  # Error reported by type checker
+           ...
+
+    There is no runtime checking of these properties.
+"""
 
 
 def mkdirp(path: typing.Union[str, os.PathLike]):

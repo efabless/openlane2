@@ -327,7 +327,7 @@ class DiodeInserter:
     "threshold_microns",
     type=Decimal,
     default=None,
-    help="Minimum manhattan distance of a net to be considered an antenna risk requiring a diode. By default, the value used is 200 * the minimum site width.",
+    help="Minimum Manhattan distance of a net to be considered an antenna risk requiring a diode. By default, the value used is 200 * the minimum site width.",
 )
 @click_odb
 def place(

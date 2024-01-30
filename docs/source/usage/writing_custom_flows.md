@@ -1,45 +1,49 @@
 # Writing Custom Flows
+
 As configurable as the default ("Classic") flow may be, there are some designs
 that would simply be too complex to implement using the existing flow.
 
 For example, hardening a macro + padframe for a top level design is too complex
 using the Classic flow, and may require you to write your own custom-based flow.
 
-***First of all***, please review OpenLane's high-level architecture [at this link](../reference/architecture.md).
+**_First of all_**, please review OpenLane's high-level architecture [at this link](../reference/architecture.md).
 
 This defines many of the terms used and enumerates strictures mentioned in this document.
 
 ## Custom Sequential Flows
+
 ### In Configuration Files
+
 If your custom sequential flow entirely relies on built-in steps, you can actually specify
 a flow entirely in the `config.json` file, with no API access needed:
 
 ```json
 {
-    "meta": {
-        "version": 2,
-        "flow": [
-            "Yosys.Synthesis",
-            "OpenROAD.CheckSDCFiles",
-            "OpenROAD.Floorplan",
-            "OpenROAD.TapEndcapInsertion",
-            "OpenROAD.GeneratePDN",
-            "OpenROAD.IOPlacement",
-            "OpenROAD.GlobalPlacement",
-            "OpenROAD.DetailedPlacement",
-            "OpenROAD.GlobalRouting",
-            "OpenROAD.DetailedRouting",
-            "OpenROAD.FillInsertion",
-            "Magic.StreamOut",
-            "Magic.DRC",
-            "Magic.SpiceExtraction",
-            "Netgen.LVS"
-        ]
-    }
+  "meta": {
+    "version": 2,
+    "flow": [
+      "Yosys.Synthesis",
+      "OpenROAD.CheckSDCFiles",
+      "OpenROAD.Floorplan",
+      "OpenROAD.TapEndcapInsertion",
+      "OpenROAD.GeneratePDN",
+      "OpenROAD.IOPlacement",
+      "OpenROAD.GlobalPlacement",
+      "OpenROAD.DetailedPlacement",
+      "OpenROAD.GlobalRouting",
+      "OpenROAD.DetailedRouting",
+      "OpenROAD.FillInsertion",
+      "Magic.StreamOut",
+      "Magic.DRC",
+      "Magic.SpiceExtraction",
+      "Netgen.LVS"
+    ]
+  }
 }
 ```
 
 ### Using the API
+
 You'll need to import the `Flow` class as well as any steps you intend to use.
 
 An equivalent flow to the one above would look like this:
@@ -85,6 +89,7 @@ flow.start()
 ```
 
 The {py:meth}`openlane.flows.Flow.start` method will return a tuple comprised of:
+
 * The final output state ({math}`State_{n}`).
 * A list of all step objects created during the running of this flow object.
 
@@ -97,17 +102,18 @@ You should not be overriding `start` either.
 ```
 
 ## Fully Customized Flows
+
 Each `Flow` subclass must:
 
 * Declare the steps used in the `Steps` attribute.
-    * The steps are examined so their configuration variables can be validated ahead of time.
+  * The steps are examined so their configuration variables can be validated ahead of time.
 * Implement the {meth}`openlane.flows.Flow.run` method.
-    * This step is responsible for the core logic of the flow, i.e., instantiating
+  * This step is responsible for the core logic of the flow, i.e., instantiating
     steps and calling them.
-    * This method must return the final state and a list of step objects created.
+  * This method must return the final state and a list of step objects created.
 
 You may notice you are allowed to do pretty much anything inside the `run` method.
-While that may indeed enable you to perform arbitrary logic in a Flow, it is 
+While that may indeed enable you to perform arbitrary logic in a Flow, it is
 recommended that you write Steps, keeping the logic in the Flow to a minimum.
 
 You may instantiate and use steps inside flows as follows:
@@ -143,6 +149,7 @@ more elegantly, i.e., by trying something else when a particular Step (or set of
 There are a lot of possibilities.
 
 ### Reporting Progress
+
 Correctly-written steps will by default output a log to the terminal, but, running
 in a flow, there will always be a progress bar at the bottom of the terminal:
 
@@ -162,6 +169,7 @@ number of steps. This is useful for example when running series of steps in para
 as shown in the next section, where incrementing by step is not exactly viable.
 
 ### Multi-Threading
+
 ```{important}
 The `Flow` object is NOT thread-safe. If you're going to run one or more steps
 in parallel, please follow this guide on how to do so.
@@ -177,11 +185,11 @@ run the required steps, in parallel if need be.
 
 Here is a demo flow built on exactly this principle. It works across two stages:
 
-* The Synthesis Exploration - tries multiple synthesis strategies in *parallel*.
-    The best-performing strategy in terms of minimizing the area makes it to the
-    next stage.
+* The Synthesis Exploration - tries multiple synthesis strategies in _parallel_.
+  The best-performing strategy in terms of minimizing the area makes it to the
+  next stage.
 * Floorplanning and Placement - tries FP and placement with a high utilization.
-    * If the high utilization fails, a lower is fallen back to as a suggestion.
+  * If the high utilization fails, a lower is fallen back to as a suggestion.
 
 ```{literalinclude} ../../../openlane/flows/optimizing.py
 ---
@@ -191,31 +199,32 @@ start-after: "@Flow.factory.register()"
 ```
 
 ## Error Throwing and Handling
+
 Steps may throw one of these hierarchy of errors, namely:
 
 * {exc}`openlane.steps.StepError`: For when there is an error in running one of the
   tools or the input data.
-    * {exc}`openlane.steps.DeferredStepError`: A `StepError` that suggests that the
+  * {exc}`openlane.steps.DeferredStepError`: A `StepError` that suggests that the
     Flow continue anyway and only report this error when the flow finishes. This
     is useful for errors that are not "show-stoppers," i.e. a timing violation
     for example.
-    * {exc}`openlane.steps.StepException`: A `StepError` when there is a
+  * {exc}`openlane.steps.StepException`: A `StepError` when there is a
     higher-level step failure, such as the step object itself generating an
     invalid state or a state input to a `Step` has missing inputs.
 
 As a rule of thumb, it is sufficient to forward these errors as one of these two:
 
 * {exc}`openlane.flows.FlowError`
-    * {exc}`openlane.flows.FlowException`
+  * {exc}`openlane.flows.FlowException`
 
-Which share a similar hieararchy. Here is how `SequentialFlow`, for example, handles
+Which share a similar hierarchy. Here is how `SequentialFlow`, for example, handles
 its `StepError`s:
 
 ```{literalinclude} ../../../openlane/flows/sequential.py
 ---
 language: python
 start-after: "step_list.append(step)"
-end-before: "raise FlowError(str(e))"
+end-before: "self.progress_bar.end_stage(increment_ordinal=increment_ordinal)"
 ---
 ```
 

@@ -970,6 +970,13 @@ class GlobalPlacement(OpenROADStep):
                 default=50,
                 units="%",
             ),
+            Variable(
+                "GPL_CELL_PADDING",
+                Decimal,
+                "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
+                units="sites",
+                pdk=True,
+            ),
         ]
     )
 
@@ -1357,7 +1364,7 @@ class LayoutSTA(OpenROADStep):
 @Step.factory.register()
 class FillInsertion(OpenROADStep):
     """
-    Fills gaps in the floorplan with filler and decapacitance cells.
+    Fills gaps in the floorplan with filler and decap cells.
 
     This is run after detailed placement. After this point, the design is basically
     completely hardened.
@@ -1693,7 +1700,7 @@ class CTS(ResizerStep):
     Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
     for an ODB file with detailed-placed cells, using reasonably accurate resistance
     and capacitance estimations. Detailed Placement is then re-performed to
-    accomodate the new cells.
+    accommodate the new cells.
     """
 
     id = "OpenROAD.CTS"
@@ -1740,6 +1747,26 @@ class CTS(ResizerStep):
                 "CTS_CORNERS",
                 Optional[List[str]],
                 "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+            ),
+            Variable(
+                "CTS_ROOT_BUFFER",
+                str,
+                "Defines the cell inserted at the root of the clock tree. Used in CTS.",
+                pdk=True,
+            ),
+            Variable(
+                "CTS_CLK_BUFFERS",
+                List[str],
+                "Defines the list of clock buffers to be used in CTS.",
+                deprecated_names=["CTS_CLK_BUFFER_LIST"],
+                pdk=True,
+            ),
+            Variable(
+                "CTS_MAX_CAP",
+                Decimal,
+                "Defines the maximum capacitance, used in CTS.",
+                units="pF",
+                pdk=True,
             ),
         ]
     )
