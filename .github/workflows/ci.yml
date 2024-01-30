@@ -521,6 +521,17 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
+      - name: Clean other PDKs
+        run: |
+          for f in "$(find ~/.volare -maxdepth 1 -mindepth 1 -not -name '${{ matrix.design.pdk }}' )"; do 
+            echo $f
+            rm -rf $(realpath $f)
+          done
+
+          for f in "$(find ~/.volare/${{ matrix.design.pdk }} -maxdepth 1 -mindepth 1 -not -name '${{ matrix.design.scl }}' )"; do 
+            echo $f
+            rm -rf $(realpath $f)
+          done
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"
