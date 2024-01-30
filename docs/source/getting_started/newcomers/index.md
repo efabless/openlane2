@@ -610,12 +610,23 @@ actually occur.
 
 Long metal wire segments that are connected to a transistor gate may damage the
 transistor thin gate oxide during the fabrication process due its collection of
-charges from the processing environment. This is called the antenna effect. Chip
-foundries normally supply antenna rules, which are rules that must be obeyed to
-avoid this problem. Antenna violations cause yield problems meaning that higher
-number of violations and more aggressive violations increase the chances of
-having a defective gates inside the chip which can lead to a defective chip as
-a whole.
+charges from the processing environment. This is called the antenna effect
+(Also, called Plasma Induced Gate Oxide Damage). Chip foundries normally supply
+antenna rules, which are rules that must be obeyed to avoid this problem. The
+rules limit the ratio of collection area and drainage (thin oxide) area. Antenna
+effect can be avoided by instructing the router to use short wire segments and
+to create bridges to disconnect long from transistor gates during fabrication.
+This approach is not used by OpenLane as OpenROAD routers don't support this
+methodology. Instead, OpenLane uses another approach that involves the insertion
+of an antenna diode (provided as a standard cell) next to the cell input pin
+that suffers from the antenna effect. Antenna diode cell has a reversed biased
+diode which can drain out the charge without affecting the transistor circuitry.
+
+
+```{figure} ./antenna.png
+
+Antenna effect
+```
 
 The default flow runs a step called {step}`OpenROAD.CheckAntennas` to check for
 antenna rules violations.
