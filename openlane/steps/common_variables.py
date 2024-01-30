@@ -257,6 +257,12 @@ routing_layer_variables = [
         "Sets the number of GCells added to the blockages boundaries from macros. A GCell is typically defined in terms of Mx routing tracks. The default GCell size is 15 M3 pitches.",
         default=0,
     ),
+    Variable(
+        "GRT_LAYER_ADJUSTMENTS",
+        List[Decimal],
+        "Layer-specific reductions in the routing capacity of the edges between the cells in the global routing graph, delimited by commas. Values range from 0 through 1.",
+        pdk=True,
+    ),
 ]
 
 
@@ -280,6 +286,13 @@ dpl_variables = [
         "Specifies how far an instance can be moved along the Y-axis when finding a site where it can be placed during detailed placement.",
         default=100,
         units="µm",
+    ),
+    Variable(
+        "DPL_CELL_PADDING",
+        Decimal,
+        "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
+        units="sites",
+        pdk=True,
     ),
 ]
 
