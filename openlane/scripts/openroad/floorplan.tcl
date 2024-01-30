@@ -91,10 +91,10 @@ if {$::env(_FP_MODE) == "absolute"} {
 
 if { [info exists ::env(FP_OBSTRUCTIONS)] } {
     foreach obstruction $::env(FP_OBSTRUCTIONS) {
-        set llx int([expr [lindex $obstruction 0] * $::dbu])
-        set lly int([expr [lindex $obstruction 1] * $::dbu])
-        set urx int([expr [lindex $obstruction 2] * $::dbu])
-        set ury int([expr [lindex $obstruction 3] * $::dbu])
+        set llx [expr int([expr [lindex $obstruction 0] * $::dbu])]
+        set lly [expr int([expr [lindex $obstruction 1] * $::dbu])]
+        set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
+        set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
         odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
         puts "\[INFO] Created obstruction at $::env(FP_OBSTRUCTIONS) (µm)"
     }
