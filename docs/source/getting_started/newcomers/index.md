@@ -623,9 +623,14 @@ that suffers from the antenna effect. Antenna diode cell has a reversed biased
 diode which can drain out the charge without affecting the transistor circuitry.
 
 
-```{figure} ./antenna.png
+```{figure} ./antenna-effect.png
 
 Antenna effect
+```
+
+```{figure} ./antenna-diode.png
+
+Antenna diode insertion
 ```
 
 The default flow runs a step called {step}`OpenROAD.CheckAntennas` to check for
