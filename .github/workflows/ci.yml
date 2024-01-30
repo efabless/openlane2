@@ -272,6 +272,15 @@ jobs:
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
+          df -h
+          echo -----------
+          sudo du -hs /* | sort -h
+          echo -----------
+          du -hs ~/* | sort -h
+          echo -----------
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo -----------
+          du -hs * | sort -h
           nix-shell --run "\
             python3 -m openlane.state latest\
               ${{ matrix.design.run_folder }}\
