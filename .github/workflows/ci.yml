@@ -273,14 +273,19 @@ jobs:
         if: ${{ always() }}
         run: |
           df -h
-          echo -----------
+          echo ===============
           sudo du -hs /* | sort -h
-          echo -----------
+          echo ===============
           du -hs ~/* | sort -h
-          echo -----------
+          echo ===============
           du -hs ${{ matrix.design_run_folder }} | sort -h
-          echo -----------
+          echo ===============
           du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
           nix-shell --run "\
             python3 -m openlane.state latest\
               ${{ matrix.design.run_folder }}\
