@@ -460,6 +460,8 @@ jobs:
         run: |
           df -h
           echo ===============
+          sudo du -hs ~/.volare/* | sort -h
+          echo ===============
           sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
