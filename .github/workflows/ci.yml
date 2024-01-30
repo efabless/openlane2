@@ -77,18 +77,86 @@ jobs:
     runs-on: ubuntu-22.04
     name: Build (Nix on Linux/amd64)
     steps:
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Derivation to Cache
         uses: ./.github/actions/derivation_to_cache
         with:
@@ -198,7 +266,6 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
-      - uses: docker/setup-qemu-action@v1
       - name: Check Space
         if: ${{ always() }}
         run: |
@@ -216,6 +283,7 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
+      - uses: docker/setup-qemu-action@v1
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
