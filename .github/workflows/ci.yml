@@ -162,19 +162,104 @@ jobs:
     needs: [build-linux-amd64, build-linux-aarch64]
     name: Build Docker Image (${{ matrix.arch }})
     steps:
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Check out repo
         uses: actions/checkout@v3
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - uses: docker/setup-qemu-action@v1
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           file: shell.nix
           key: derivation-${{ matrix.arch }}-${{ github.run_id }}
           other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Build Docker Image
         run: |
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
@@ -215,31 +300,133 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Derivation from Cache
         uses: ./.github/actions/derivation_from_cache
         with:
           file: shell.nix
           key: derivation-amd64-${{ github.run_id }}
           other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Cache PDKs
         id: cache-pdks
         uses: actions/cache@v3
         with:
           path: ~/.volare
           key: cache-pdks-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Enable PDKs
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
           volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Download IPM designs
         id: download-ipm-design
         if: matrix.design.ipm_version != 'None'
@@ -247,6 +434,23 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           python3 -m pip install git+https://github.com/efabless/IPM
           ipm install --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm --version ${{ matrix.design.ipm_version }} ${{ matrix.design.name }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"
@@ -269,6 +473,23 @@ jobs:
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_folder }}
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
