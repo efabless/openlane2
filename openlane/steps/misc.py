@@ -114,7 +114,9 @@ class ReportManufacturability(Step):
             report.append("Failed 𐄂")
             report.append(f"KLayout DRC errors: {klayout}")
             report.append(f"Magic DRC errors: {magic}")
-            report.append(f"Check the report directories of {klayout_step} and {magic_step}.")
+            report.append(
+                f"Check the report directories of {klayout_step} and {magic_step}."
+            )
         else:
             report.append("Passed ✅")
 
