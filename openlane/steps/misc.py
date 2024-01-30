@@ -64,9 +64,9 @@ class ReportManufacturability(Step):
         report = []
         report.append("* LVS")
         try:
-            total = state_in.metrics["design__lvs_errors__count"]
-            unmatched_pins = state_in.metrics["design__lvs_unmatched_pins__count"]
-            unmatched_nets = state_in.metrics["design__lvs_unmatched_nets__count"]
+            total = state_in.metrics["design__lvs_error__count"]
+            unmatched_pins = state_in.metrics["design__lvs_unmatched_pin__count"]
+            unmatched_nets = state_in.metrics["design__lvs_unmatched_net__count"]
             if total == 0:
                 report.append("Passed ✅")
             else:
@@ -74,9 +74,9 @@ class ReportManufacturability(Step):
                 report.append(f"Total Errors: {total}")
                 report.append(f"Unmatched Pins: {unmatched_pins}")
                 report.append(f"Unmatched Nets: {unmatched_nets}")
-                report.append(f"Check {lvs_step} report directory")
+                report.append(f"Check the report directory of {lvs_step}.")
         except KeyError as key:
-            warn(f"{key} not reported. Perhaps step: {lvs_step} didn't run.")
+            warn(f"{key} not reported. {lvs_step} may have been skipped.")
             report.append("N/A")
 
         report.append("")
@@ -95,7 +95,7 @@ class ReportManufacturability(Step):
         klayout = state_in.metrics.get("klayout__drc_error__count", "N/A")
         if klayout == "N/A":
             warn(
-                f"klayout__drc_error__count not reported. Perhaps step: {klayout_step} didn't run."
+                f"klayout__drc_error__count not reported. {klayout_step} may have been skipped."
             )
         elif klayout > 0:
             klayout_failed = True
@@ -103,7 +103,7 @@ class ReportManufacturability(Step):
         magic = state_in.metrics.get("magic__drc_error__count", "N/A")
         if magic == "N/A":
             warn(
-                f"magic__drc_error__count not reported. Perhaps step: {magic_step} didn't run."
+                f"magic__drc_error__count not reported. {magic_step} may have been skipped."
             )
         elif magic > 0:
             magic_failed = True
@@ -114,7 +114,7 @@ class ReportManufacturability(Step):
             report.append("Failed 𐄂")
             report.append(f"KLayout DRC errors: {klayout}")
             report.append(f"Magic DRC errors: {magic}")
-            report.append(f"Check {klayout_step} and {magic_step} report directories")
+            report.append(f"Check the report directories of {klayout_step} and {magic_step}.")
         else:
             report.append("Passed ✅")
 
@@ -136,9 +136,9 @@ class ReportManufacturability(Step):
                 report.append("Failed 𐄂")
                 report.append(f"Pin violations: {pins}")
                 report.append(f"Net violations: {nets}")
-                report.append(f"Check {antenna_step} report directory")
+                report.append(f"Check the report directory of {antenna_step}.")
         except KeyError as key:
-            warn(f"{key} not reported. Perhaps step: {antenna_step} didn't run.")
+            warn(f"{key} not reported. {antenna_step} may have been skipped.")
             report.append("N/A")
 
         report.append("")
