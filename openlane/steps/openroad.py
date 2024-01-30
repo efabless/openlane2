@@ -673,7 +673,7 @@ class Floorplan(OpenROADStep):
         ),
         Variable(
             "FP_OBSTRUCTIONS",
-            Optional[List[Tuple[int, int, int, int]]],
+            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
             "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
             units="µm",
         ),
