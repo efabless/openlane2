@@ -1,4 +1,4 @@
-- scl: sky130A/sky130_fd_sc_hd
+- scl: sky130/sky130_fd_sc_hd
   name: fastest_test_set
   designs:
     - inverter
@@ -37,7 +37,7 @@
 #      ipm: v1.0.1
 #    - name: EF_GPIO
 #      ipm: v1.0.0
-- scl: sky130A/sky130_fd_sc_hd
+- scl: sky130/sky130_fd_sc_hd
   name: extended_test_set
   designs:
     #    - BM64
@@ -50,7 +50,7 @@
     #    - aes
     #    - name: caravel_user_project_example_full
     #      script: harden.py
-- scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
+- scl: gf180mcu/gf180mcu_fd_sc_mcu7t5v0
   name: fastest_test_set
   designs:
     - spm
@@ -64,7 +64,7 @@
     #      config_file: config_good.json
     #    - name: latch
     #      config_file: config_bad.json
-- scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
+- scl: gf180mcu/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set
   designs:
     - picorv32a
