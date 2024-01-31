@@ -988,7 +988,7 @@ class GlobalPlacement(OpenROADStep):
         if self.config["PL_TARGET_DENSITY_PCT"] is None:
             util = self.config["FP_CORE_UTIL"]
             metrics_util = state_in.metrics.get("design__instance__utilization")
-            if metrics_util:
+            if metrics_util is not None:
                 util = metrics_util * 100
 
             expr = util + (5 * self.config["GPL_CELL_PADDING"]) + 10
