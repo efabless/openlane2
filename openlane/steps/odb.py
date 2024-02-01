@@ -245,9 +245,22 @@ class ManualMacroPlacement(OdbpyStep):
                                 f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
                             )
                         for name, data in macro.instances.items():
-                            f.write(
-                                f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
-                            )
+                            if data.placed:
+                                info(
+                                    f"Not placing already placed marco instance: {name}."
+                                )
+                            else:
+                                if not data.location:
+                                    raise StepException(
+                                        f"Unspecified key: location for non-placed macro instance: {name}."
+                                    )
+                                if not data.orientation:
+                                    raise StepException(
+                                        f"Unspecified key: orientation for non-placed macro instance: {name}"
+                                    )
+                                f.write(
+                                    f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                                )
 
         if not cfg_file.exists():
             info(f"No instances found, skipping '{self.id}'…")
