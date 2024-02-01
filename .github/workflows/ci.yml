@@ -475,11 +475,17 @@ jobs:
           du -hs /home/runner/work/* | sort -h
           echo ===============
       - name: Enable PDKs
-        if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
-          volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+
+          if [[ ${{ matrix.design.pdk }} == "sky130"* ]]; then
+            volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+            volare prune --pdk sky130
+          fi
+          if [[ ${{ matrix.design.pdk }} == "gf180mcu"* ]]; then
+            volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+            volare prune --pdk gf180mcu
+          fi
       - name: Check Space
         if: ${{ always() }}
         run: |
@@ -521,17 +527,6 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
-      - name: Clean other PDKs
-        run: |
-          for f in $(find ~/.volare -maxdepth 1 -mindepth 1 -not -name "volare" -not -name '${{ matrix.design.pdk }}' ); do 
-            echo $f
-            rm -rf $(realpath $f)
-          done
-
-          #for f in $(find ~/.volare/${{ matrix.design.pdk }} -maxdepth 1 -mindepth 1 -not -name '${{ matrix.design.scl }}' ); do 
-          #  echo $f
-          #  rm -rf $(realpath $f)
-          #done
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"
