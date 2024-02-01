@@ -45,7 +45,11 @@ other design steps that are not mentioned here such as scan chain insertion and
 test patterns generations that are essential to testing the fabricated chip
 against fabrication defects.
 
-What is OpenLane?
+```{figure} ./asic-flow-diagram.png
+:align: center
+
+ASIC Flow
+```
 
 ## What is OpenLane?
 
@@ -636,14 +640,14 @@ that suffers from the antenna effect. Antenna diode cell has a reversed biased
 diode which can drain out the charge without affecting the transistor circuitry.
 
 
-```{figure} ./antenna-1.png
+```{figure} ./antenna-1-diagram.png
 
 Antenna effect
 
 ```
 
 
-```{figure} ./antenna-2.png
+```{figure} ./antenna-2-diagram.png
 
 Antenna diode insertion
 ```
