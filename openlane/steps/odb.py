@@ -22,6 +22,8 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
+from deprecated.sphinx import deprecated
+
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
@@ -91,7 +93,7 @@ class OdbpyStep(Step):
                 "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
             )
 
-        lefs = ["--input-lef", tech_lefs[0]]
+        lefs = ["--input-lef", str(tech_lefs[0])]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)
@@ -114,7 +116,7 @@ class OdbpyStep(Step):
         )
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def get_subcommand(self) -> List[str]:
@@ -159,6 +161,11 @@ class ApplyDEFTemplate(OdbpyStep):
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
+    @deprecated(
+        version="2.0.0b17",
+        reason="Template def is now applied in OpenROAD.Floorplan.",
+        action="once",
+    )
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")

@@ -56,7 +56,7 @@ if { [info exists ::env(EXTRA_SITES)] } {
 set arg_list [list]
 lappend arg_list -sites "$used_sites"
 
-if {$::env(FP_SIZING) == "absolute"} {
+if {$::env(_FP_MODE) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
         puts stderr "Invalid die area string '$::env(DIE_AREA)'."
         exit -1
@@ -83,7 +83,7 @@ if {$::env(FP_SIZING) == "absolute"} {
 
     lappend arg_list -die_area $::env(DIE_AREA)
     lappend arg_list -core_area $::env(CORE_AREA)
-} else {
+} elseif { $::env(_FP_MODE) == "relative" } {
     lappend arg_list -utilization $::env(FP_CORE_UTIL)
     lappend arg_list -aspect_ratio $::env(FP_ASPECT_RATIO)
     lappend arg_list -core_space "$bottom_margin $top_margin $left_margin $right_margin"
@@ -91,15 +91,19 @@ if {$::env(FP_SIZING) == "absolute"} {
 
 if { [info exists ::env(FP_OBSTRUCTIONS)] } {
     foreach obstruction $::env(FP_OBSTRUCTIONS) {
-        set llx [expr [lindex $obstruction 0] * $::dbu]
-        set lly [expr [lindex $obstruction 1] * $::dbu]
-        set urx [expr [lindex $obstruction 2] * $::dbu]
-        set ury [expr [lindex $obstruction 3] * $::dbu]
+        set llx [expr int([expr [lindex $obstruction 0] * $::dbu])]
+        set lly [expr int([expr [lindex $obstruction 1] * $::dbu])]
+        set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
+        set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
         odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
         puts "\[INFO] Created obstruction at $::env(FP_OBSTRUCTIONS) (µm)"
     }
 }
-initialize_floorplan {*}$arg_list
+if { $::env(_FP_MODE) == "template" } {
+    read_def -floorplan_initialize $::env(FP_DEF_TEMPLATE)
+} else {
+    initialize_floorplan {*}$arg_list
+}
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
