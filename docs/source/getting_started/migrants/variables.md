@@ -8,6 +8,15 @@ In this document, OpenLane 1 refers to OpenLane versions before the release of
 2.0.0, and OpenLane 2 refers to 2.0.0 or higher.
 ```
 
+## Migrating `FP_SIZING`
+
+OpenLane 1 had an option called `FP_SIZING` which based on its value (either
+`relative` or `absolute`) would infer the die bounding box or use the value
+for the variable `DIE_AREA`.
+
+OpenLane 2 simply checks whether {var}`::DIE_AREA` has a value- if it does,
+absolute mode is activated, otherwise, a relative die bounding box is used.
+
 ## Migrating `FP_PDN_VOFFSET`/`FP_PDN_HOFFSET`/`FP_PDN_VPITCH`/`FP_PDN_HPITCH` for smaller designs
 
 When working with smaller designs, OpenLane 1 used to scale down the PDN
