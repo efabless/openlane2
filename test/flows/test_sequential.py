@@ -344,7 +344,7 @@ def test_gating_validation(MetricIncrementer):
         class _Test1(Dummy):
             gating_config_vars = {"Test.MetricIncrementer": ["DOESNT_MATCH_ANYTHING"]}
 
-    with pytest.raises(TypeError, match="is not a boolean"):
+    with pytest.raises(TypeError, match="is not a Boolean"):
 
         class _Test2(Dummy):
             gating_config_vars = {"Test.MetricIncrementer": ["BAD_GATING_VARIABLE"]}

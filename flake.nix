@@ -68,6 +68,7 @@
         openroad = callPackage ./nix/openroad.nix {};
         openlane = callPythonPackage ./default.nix {};
         surelog = callPackage ./nix/surelog.nix {};
+        sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
         verilator = callPackage ./nix/verilator.nix {};
         volare = callPackage ./nix/volare.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};
@@ -82,8 +83,49 @@
       // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {};}));
 
     devShells = self.forAllSystems (
-      pkgs:
-        self.createOpenLaneShell {pkgs = pkgs // self.packages.${pkgs.system};}
+      pkgs: let
+        callPackage = pkgs.lib.callPackageWith (pkgs // self.packages.${pkgs.system});
+        callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
+      in rec {
+        default = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pillow
+            mdformat
+          ];
+        }) {};
+        docs = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+            nodejs.pkgs.nodemon
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pillow
+            mdformat
+            furo
+            docutils
+            sphinx
+            sphinx-autobuild
+            sphinx-autodoc-typehints
+            sphinx-design
+            myst-parser
+            docstring-parser
+            sphinx-copybutton
+            self.packages.${pkgs.system}.sphinx-tippy
+            sphinxcontrib-spelling
+          ];
+        }) {};
+      }
     );
   };
 }

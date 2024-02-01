@@ -17,16 +17,18 @@ import subprocess
 from typing import List, Optional, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
-from ..common import DesignFormat
 from ..config import Variable
-from ..state import State, Path
+from ..state import DesignFormat, State
+from ..common import Path
 
 
 @Step.factory.register()
 class Lint(Step):
-    """Lint design verilog source files"""
+    """Lint design Verilog source files"""
 
     id = "Verilator.Lint"
+    name = "Verilator Lint"
+    long_name = "Verilator Lint"
     inputs = []  # The input RTL is part of the configuration
     outputs = []
 
@@ -39,7 +41,7 @@ class Lint(Step):
         Variable(
             "LINTER_INCLUDE_PDK_MODELS",
             bool,
-            "Include verilog models of the PDK",
+            "Include Verilog models of the PDK",
             default=False,
         ),
         Variable(

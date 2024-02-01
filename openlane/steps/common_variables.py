@@ -48,13 +48,13 @@ io_layer_variables = [
     Variable(
         "FP_IO_VTHICKNESS_MULT",
         Decimal,
-        "A multiplier for vertical pin thickness. Base thickness is the pins layer minwidth.",
+        "A multiplier for vertical pin thickness. Base thickness is the pins layer min width.",
         default=2,
     ),
     Variable(
         "FP_IO_HTHICKNESS_MULT",
         Decimal,
-        "A multiplier for horizontal pin thickness. Base thickness is the pins layer minwidth.",
+        "A multiplier for horizontal pin thickness. Base thickness is the pins layer min width.",
         default=2,
     ),
 ]
@@ -257,6 +257,12 @@ routing_layer_variables = [
         "Sets the number of GCells added to the blockages boundaries from macros. A GCell is typically defined in terms of Mx routing tracks. The default GCell size is 15 M3 pitches.",
         default=0,
     ),
+    Variable(
+        "GRT_LAYER_ADJUSTMENTS",
+        List[Decimal],
+        "Layer-specific reductions in the routing capacity of the edges between the cells in the global routing graph, delimited by commas. Values range from 0 through 1.",
+        pdk=True,
+    ),
 ]
 
 
@@ -280,6 +286,13 @@ dpl_variables = [
         "Specifies how far an instance can be moved along the Y-axis when finding a site where it can be placed during detailed placement.",
         default=100,
         units="µm",
+    ),
+    Variable(
+        "DPL_CELL_PADDING",
+        Decimal,
+        "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
+        units="sites",
+        pdk=True,
     ),
 ]
 
@@ -342,6 +355,6 @@ rsz_variables = dpl_variables + [
     Variable(
         "RSZ_CORNERS",
         Optional[List[str]],
-        "A list of fully-qualifiedd IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+        "A list of fully-qualified IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
     ),
 ]

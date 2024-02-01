@@ -20,6 +20,7 @@ import shlex
 import tempfile
 import functools
 import subprocess
+from enum import Enum
 from math import inf
 from glob import glob
 from decimal import Decimal
@@ -50,7 +51,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable
+from ..config import Variable, Config
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -192,6 +193,11 @@ class OpenROADStep(TclStep):
             "PNR_SDC_FILE",
             Optional[Path],
             "Specifies the SDC file used during all implementation (PnR) steps",
+        ),
+        Variable(
+            "FP_DEF_TEMPLATE",
+            Optional[Path],
+            "Points to the DEF file to be used as a template.",
         ),
     ]
 
@@ -653,12 +659,6 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
-            "FP_SIZING",
-            Literal["relative", "absolute"],
-            "Whether to use relative sizing by making use of `FP_CORE_UTIL` or absolute one using `DIE_AREA`.",
-            default="relative",
-        ),
-        Variable(
             "FP_ASPECT_RATIO",
             Decimal,
             "The core's aspect ratio (height / width).",
@@ -680,31 +680,36 @@ class Floorplan(OpenROADStep):
         Variable(
             "CORE_AREA",
             Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
-            'Specific core area (i.e. die area minus margins) to be used in floorplanning when `FP_SIZING` is set to `absolute`. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
+            "Specifies a core area (i.e. die area minus margins) to be used in floorplanning."
+            + " It must be paired with `DIE_AREA`.",
             units="µm",
         ),
         Variable(
             "BOTTOM_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site heights, from the bottom boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site heights, from the bottom boundary."
+            + " If `DIEA_AREA` and `CORE_AREA` are set, this variable has no effect.",
             default=4,
         ),
         Variable(
             "TOP_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site heights, from the top boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site heights, from the top boundary."
+            + " If `DIE_AREA` and `CORE_AREA` are set, this variable has no effect.",
             default=4,
         ),
         Variable(
             "LEFT_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site widths, from the left boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site widths, from the left boundary."
+            + " If `DIE_AREA` are `CORE_AREA` are set, this variable has no effect.",
             default=12,
         ),
         Variable(
             "RIGHT_MARGIN_MULT",
             Decimal,
-            "The core margin, in multiples of site widths, from the right boundary. If `FP_SIZING` is absolute and `CORE_AREA` is set, this variable has no effect.",
+            "The core margin, in multiples of site widths, from the right boundary."
+            + " If `DIE_AREA` are `CORE_AREA` are set, this variable has no effect.",
             default=12,
         ),
         Variable(
@@ -715,8 +720,27 @@ class Floorplan(OpenROADStep):
         ),
     ]
 
+    class Mode(str, Enum):
+        TEMPLATE = "template"
+        ABSOULTE = "absolute"
+        RELATIVE = "relative"
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
+
+    @classmethod
+    def get_mode(Self, config: Config) -> Mode:
+        mode = ""
+        if config.get("FP_DEF_TEMPLATE") and config.get("DIE_AREA"):
+            warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
+        if config.get("FP_DEF_TEMPLATE"):
+            mode = Self.Mode.TEMPLATE
+        elif config.get("DIE_AREA"):
+            mode = Self.Mode.ABSOULTE
+        else:
+            mode = Self.Mode.RELATIVE
+        debug(f"Floorplan mode: {mode}")
+        return mode
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         path = self.config["FP_TRACKS_INFO"]
@@ -728,6 +752,7 @@ class Floorplan(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
+        env["_FP_MODE"] = self.get_mode(self.config)
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -774,6 +799,11 @@ class IOPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
+            return {}, {}
+        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
+            info(
+                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
+            )
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -940,6 +970,13 @@ class GlobalPlacement(OpenROADStep):
                 default=50,
                 units="%",
             ),
+            Variable(
+                "GPL_CELL_PADDING",
+                Decimal,
+                "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
+                units="sites",
+                pdk=True,
+            ),
         ]
     )
 
@@ -949,9 +986,12 @@ class GlobalPlacement(OpenROADStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
         if self.config["PL_TARGET_DENSITY_PCT"] is None:
-            expr = (
-                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
-            )
+            util = self.config["FP_CORE_UTIL"]
+            metrics_util = state_in.metrics.get("design__instance__utilization")
+            if metrics_util is not None:
+                util = metrics_util * 100
+
+            expr = util + (5 * self.config["GPL_CELL_PADDING"]) + 10
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
             warn(
@@ -1000,6 +1040,13 @@ class GlobalPlacementSkipIO(GlobalPlacement):
                 f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
             )
         env["__PL_SKIP_IO"] = "1"
+
+        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
+            info(
+                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
+            )
+            return {}, {}
+
         return OpenROADStep.run(self, state_in, env=env, **kwargs)
 
 
@@ -1317,7 +1364,7 @@ class LayoutSTA(OpenROADStep):
 @Step.factory.register()
 class FillInsertion(OpenROADStep):
     """
-    Fills gaps in the floorplan with filler and decapacitance cells.
+    Fills gaps in the floorplan with filler and decap cells.
 
     This is run after detailed placement. After this point, the design is basically
     completely hardened.
@@ -1653,7 +1700,7 @@ class CTS(ResizerStep):
     Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
     for an ODB file with detailed-placed cells, using reasonably accurate resistance
     and capacitance estimations. Detailed Placement is then re-performed to
-    accomodate the new cells.
+    accommodate the new cells.
     """
 
     id = "OpenROAD.CTS"
@@ -1700,6 +1747,26 @@ class CTS(ResizerStep):
                 "CTS_CORNERS",
                 Optional[List[str]],
                 "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+            ),
+            Variable(
+                "CTS_ROOT_BUFFER",
+                str,
+                "Defines the cell inserted at the root of the clock tree. Used in CTS.",
+                pdk=True,
+            ),
+            Variable(
+                "CTS_CLK_BUFFERS",
+                List[str],
+                "Defines the list of clock buffers to be used in CTS.",
+                deprecated_names=["CTS_CLK_BUFFER_LIST"],
+                pdk=True,
+            ),
+            Variable(
+                "CTS_MAX_CAP",
+                Decimal,
+                "Defines the maximum capacitance, used in CTS.",
+                units="pF",
+                pdk=True,
             ),
         ]
     )

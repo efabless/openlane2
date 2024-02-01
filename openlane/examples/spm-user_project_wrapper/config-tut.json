@@ -1,0 +1,12 @@
+{
+    "DESIGN_NAME": "user_project_wrapper",
+    "VERILOG_FILES": [
+        "dir::./defines.v",
+        "dir::./SPM_example.v",
+        "dir::./user_project_wrapper.v"
+    ],
+    "CLOCK_PERIOD": 25,
+    "CLOCK_PORT": "wb_clk_i",
+    "FP_CORE_UTIL": 5
+}
+

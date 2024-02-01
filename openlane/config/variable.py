@@ -41,7 +41,7 @@ from typing import (
     get_args,
 )
 from ..state import DesignFormat, State
-from ..common import GenericDict, Path, is_string, zip_first, Number
+from ..common import GenericDict, Path, is_string, zip_first, Number, slugify
 
 # Scalar = Union[Type[str], Type[Decimal], Type[Path], Type[bool]]
 # VType = Union[Scalar, List[Scalar]]
@@ -258,9 +258,14 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
 @dataclass
 class Variable:
     """
-    An object representing a configuration variable for a PDK, a Flow or a Step.
+    An object encapsulating metadata on an OpenLane configuration variable, which
+    is used to name, document and validate values supplied to
+    :class:`openlane.steps.Step`\\s or :class:`openlane.flows.Flow`\\s.
 
-    :param name: A string name for the Variable. Because of backwards compatility
+    Values supplied for configuration variables are the primary interface by
+    which users configure OpenLane flows.
+
+    :param name: A string name for the Variable. Because of backwards compatibility
         with OpenLane 1, the convention is ``UPPER_SNAKE_CASE``.
 
     :param type: A Python type object representing the variable.
@@ -585,7 +590,7 @@ class Variable:
         elif validating_type == bool:
             if not permissive_typing and not isinstance(value, bool):
                 raise ValueError(
-                    f"Refusing to automatically convert '{value}' at '{key_path}' to a boolean"
+                    f"Refusing to automatically convert '{value}' at '{key_path}' to a Boolean"
                 )
             if value in ["1", "true", "True", 1, True]:
                 return True
@@ -677,6 +682,12 @@ class Variable:
         )
 
         return (exists, processed)
+
+    def _get_docs_identifier(self, parent: Optional[str] = None) -> str:
+        identifier = f"var-{self.name.lower()}"
+        if parent is not None:
+            identifier = f"var-{slugify(parent)}-{self.name.lower()}"
+        return identifier
 
     def __hash__(self) -> int:
         return hash((self.name, self.type, self.default))

@@ -454,7 +454,7 @@ class OpenGUI(KLayoutStep):
         Variable(
             "KLAYOUT_PRIORITIZE_GDS",
             bool,
-            "Whether to prioritize GDS (if found) when running htis step.",
+            "Whether to prioritize GDS (if found) when running this step.",
             default=True,
         ),
     ]
