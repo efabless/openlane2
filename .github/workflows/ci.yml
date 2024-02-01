@@ -480,11 +480,11 @@ jobs:
 
           if [[ ${{ matrix.design.pdk }} == "sky130"* ]]; then
             volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            volare prune --pdk sky130
+            volare prune --pdk sky130 --yes
           fi
           if [[ ${{ matrix.design.pdk }} == "gf180mcu"* ]]; then
             volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            volare prune --pdk gf180mcu
+            volare prune --pdk gf180mcu --yes
           fi
       - name: Check Space
         if: ${{ always() }}
