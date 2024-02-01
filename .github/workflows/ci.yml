@@ -523,7 +523,7 @@ jobs:
           echo ===============
       - name: Clean other PDKs
         run: |
-          for f in $(find ~/.volare -maxdepth 1 -mindepth 1 -not -name "volare" -not -name '${{ matrix.design.pdk }}*' ); do 
+          for f in $(find ~/.volare -maxdepth 1 -mindepth 1 -not -name "volare" -not -name '${{ matrix.design.pdk }}' ); do 
             echo $f
             rm -rf $(realpath $f)
           done
