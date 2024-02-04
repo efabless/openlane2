@@ -478,13 +478,13 @@ jobs:
         run: |
           pip3 install -r ./requirements.txt
           volare ls
+          volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           if [[ ${{ matrix.design.pdk }} == "sky130"* ]]; then
-            volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            volare prune --pdk gf180mcu --yes
+            volare rm --pdk gf180mcu --yes ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           fi
           if [[ ${{ matrix.design.pdk }} == "gf180mcu"* ]]; then
-            volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            volare prune --pdk sky130 --yes
+            volare rm --pdk sky130 --yes ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           fi
       - name: Check Space
         if: ${{ always() }}
