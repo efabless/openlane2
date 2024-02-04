@@ -48,14 +48,14 @@ You'll need the following:
 * Python **3.8** or higher with PIP, Venv and Tkinter
 
 ### Nix (Recommended)
-Works for macOS and Linux (x86-64). Recommended, as it is more integrated with your filesystem and overall has less upload and download deltas.
+Works for macOS and Linux (x86-64 and aarch64). Recommended, as it is more integrated with your filesystem and overall has less upload and download deltas.
 
-See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs.
+See [Nix-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/nix_installation/index.html) in the docs for more info.
 
 ### Docker
-Works for Windows, macOS and Linux (x86-64, aarch64 with emulation).
+Works for Windows, macOS and Linux (x86-64 and aarch64).
 
-See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs.
+See [Docker-based installation](https://openlane2.readthedocs.io/en/latest/getting_started/docker_installation/index.html) in the docs for more info.
 
 Do note you'll need to add `--dockerized` right after `openlane` in most CLI invocations.
 

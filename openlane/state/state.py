@@ -20,13 +20,16 @@ import shutil
 from decimal import Decimal
 from typing import List, Mapping, Tuple, Union, Optional, Dict, Any
 
+from .design_format import (
+    DesignFormat,
+    DesignFormatObject,
+)
+
 from ..common import (
     Path,
     GenericImmutableDict,
     mkdirp,
     copy_recursive,
-    DesignFormat,
-    DesignFormatObject,
 )
 
 

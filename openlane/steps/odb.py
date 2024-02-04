@@ -22,6 +22,8 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
+from deprecated.sphinx import deprecated
+
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
@@ -91,7 +93,7 @@ class OdbpyStep(Step):
                 "Misconfigured SCL: 'TECH_LEFS' must return exactly one Tech LEF for its default timing corner."
             )
 
-        lefs = ["--input-lef", tech_lefs[0]]
+        lefs = ["--input-lef", str(tech_lefs[0])]
         for lef in self.config["CELL_LEFS"]:
             lefs.append("--input-lef")
             lefs.append(lef)
@@ -114,7 +116,7 @@ class OdbpyStep(Step):
         )
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def get_subcommand(self) -> List[str]:
@@ -159,6 +161,11 @@ class ApplyDEFTemplate(OdbpyStep):
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
+    @deprecated(
+        version="2.0.0b17",
+        reason="Template def is now applied in OpenROAD.Floorplan.",
+        action="once",
+    )
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
@@ -278,6 +285,15 @@ class ReportDisconnectedPins(OdbpyStep):
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "IGNORE_DISCONNECTED_MODULES",
+            Optional[List[str]],
+            "Modules (or cells) to ignore when checking for disconnected pins.",
+            pdk=True,
+        ),
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "odbpy", "disconnected_pins.py")
 
@@ -302,6 +318,7 @@ class AddRoutingObstructions(OdbpyStep):
             + " Format of each obstruction item is: layer llx lly urx ury.",
             units="µm",
             default=None,
+            deprecated_names=["GRT_OBS"],
         ),
     ]
 
@@ -455,6 +472,13 @@ class PortDiodePlacement(OdbpyStep):
             "Always insert diodes on ports with the specified polarities.",
             default="none",
         ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
+            pdk=True,
+        ),
     ]
 
     def get_script_path(self):
@@ -547,8 +571,15 @@ class FuzzyDiodePlacement(OdbpyStep):
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
             Decimal,
-            "A manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
+            "A Manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "GPL_CELL_PADDING",
+            Decimal,
+            "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
+            units="sites",
             pdk=True,
         ),
     ]

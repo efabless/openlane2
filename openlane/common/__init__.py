@@ -18,12 +18,10 @@ Common Utilities Module
 A number of common utility functions and classes used throughout the codebase.
 """
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 from .tcl import TclUtils
 from .metrics import parse_metric_modifiers, aggregate_metrics
 from . import metrics
-from .design_format import DesignFormat, DesignFormatObject
 from .generic_dict import (
     GenericDictEncoder,
     GenericDict,
@@ -56,26 +54,4 @@ from .types import (
 from .toolbox import Toolbox
 from .drc import DRC, Violation
 from . import cli
-
-## TPE
-
-TPE = ThreadPoolExecutor(max_workers=os.cpu_count())
-
-
-def set_tpe(tpe: ThreadPoolExecutor):
-    """
-    Allows replacing OpenLane's global ``ThreadPoolExecutor`` with a customized
-    one.
-
-    :param tpe: The replacemend ThreadPoolExecutor
-    """
-    global TPE
-    TPE = tpe
-
-
-def get_tpe() -> ThreadPoolExecutor:
-    """
-    :returns: OpenLane's global ``ThreadPoolExecutor``
-    """
-    global TPE
-    return TPE
+from .tpe import get_tpe, set_tpe

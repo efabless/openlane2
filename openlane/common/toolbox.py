@@ -40,8 +40,8 @@ from deprecated.sphinx import deprecated
 from .misc import mkdirp
 from .types import Path
 from .metrics import aggregate_metrics
-from .design_format import DesignFormat
 from .generic_dict import GenericImmutableDict, is_string
+from ..state import DesignFormat
 from ..common import Filter
 from ..logging import debug, warn, err, verbose
 
@@ -86,7 +86,7 @@ class Toolbox(object):
         an explicitly-provided override.
 
         :param config: The configuration. Used solely to extract the default corner.
-        :param views_by_corner: The mapping from (wild cards) of vorner names to
+        :param views_by_corner: The mapping from (wild cards) of corner names to
             views.
         :param corner: An explicit override for the default corner. Must be a
             fully qualified IPVT corner.
@@ -191,8 +191,9 @@ class Toolbox(object):
 
             If set to ``false``\\, only lib files are returned.
         :returns: A tuple of:
+
             * The name of the timing corner
-            * A heterogenous list of files composed of: Lib files are returned as-is,
+            * A heterogeneous list of files composed of: Lib files are returned as-is,
               Netlists are returned as-is, and SPEF files are returned in the
               format ``{instance_name}@{spef_path}``\\.
 

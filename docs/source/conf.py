@@ -38,17 +38,23 @@ branch = "main"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [
+custom_extensions = [
+    "flow_step_var_directives",
+    "generate_module_autodocs",
+    "generate_configvar_docs",
+    "migration_comparison",
+]
+third_party_extensions = [
     "myst_parser",
     "sphinx.ext.todo",
     "sphinx.ext.autodoc",
-    "sphinx.ext.autosectionlabel",
     "sphinx.ext.graphviz",
     "sphinx.ext.mathjax",
     "sphinx_design",
-    "generate_module_autodocs",  # CUSTOM
-    "generate_configvar_docs",  # CUSTOM
+    "sphinx_tippy",
+    "sphinx_copybutton",
 ]
+extensions = third_party_extensions + custom_extensions
 try:
     import sphinxcontrib.spelling  # noqa: F401
 
@@ -97,11 +103,7 @@ exclude_patterns = [
 # a list of builtin themes.
 #
 html_title = "OpenLane Documentation"
-
 html_theme = "furo"
-
-html_static_path = ["../_static"]
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -123,6 +125,11 @@ html_theme_options = {
     ],
 }
 
+html_static_path = ["../_static"]
+html_css_files = [
+    "css/custom.css",
+]
+
 numfig = True
 
 
@@ -133,13 +140,26 @@ autodoc_member_order = "bysource"
 autosectionlabel_prefix_document = True
 
 # MyST
-myst_heading_anchors = 3
+myst_heading_anchors = 4
 myst_enable_extensions = [
     "colon_fence",
+    "attrs_block",
+    "attrs_inline",
 ]
+myst_url_schemes = {
+    "http": None,
+    "https": None,
+    "doi": "https://doi.org/{{path}}",
+}
 
 # GraphViz
 graphviz_output_format = "svg"
 
-# MathJax
-mathjax_path = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/latest.min.js"
+# sphinx_copybutton
+copybutton_exclude = ".linenos, .gp"
+
+# sphinx_tippy
+tippy_enable_wikitips = False
+
+spelling_show_suggestions = True
+spelling_suggestion_limit = 1

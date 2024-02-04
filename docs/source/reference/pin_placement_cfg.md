@@ -1,6 +1,6 @@
 # Pin Placer Configuration Files
 
-If you're using the step [Odb.CustomIOPlacement](./step_config_vars.md#Odb.CustomIOPlacement),
+If you're using the step {step}`Odb.CustomIOPlacement`
 the variable `FP_PIN_ORDER_CFG` asks you to create a `.cfg` file that can be used
 to configure this placement step.
 
@@ -36,7 +36,7 @@ A line with just `x[0]` is still a regular expression which will match the strin
 
 ## Annotations
 
-Some statements can be preceeded with `@`s and are referred to as annotations.
+Some statements can be preceded with `@`s and are referred to as annotations.
 
 Annotations placed before declaring any sections are known as **global annotations**
 and affect default behaviors of all sections.
@@ -68,12 +68,14 @@ in a bus-major fashion: i.e. alphabetically by any found bus name(s) and then as
 by any found bit number(s).
 
 For example, for a regular expression `l.*` matching pins:
+
 * `lemon[1]`
 * `lime[0]`
 * `lemon[0]`
 * `lime[1]`
 
 The order returned would be:
+
 * `lemon[0]`
 * `lemon[1]`
 * `lime[0]`
@@ -86,12 +88,14 @@ in a bit-major fashion: i.e., ascendingly by any found bit number(s) then
 alphabetically by any found bus name(s).
 
 For example, for a regular expression `l.*` matching pins:
+
 * `lemon[1]`
 * `lime[0]`
 * `lemon[0]`
 * `lime[1]`
 
 The order returned would be:
+
 * `lemon[0]`
 * `lime[0]`
 * `lemon[1]`
@@ -102,7 +106,6 @@ The order returned would be:
 You can add one or more "virtual pins" (i.e. pins that occupy a slot but do not
 actually exist) using the `$` instruction, where `$1` adds one virtual pin,
 `$2` adds two, and so on.
-
 
 ## Example
 

@@ -221,26 +221,29 @@ class Flow(ABC):
     """
     An abstract base class for a flow.
 
-    Flows encapsulates a subroutine that runs multiple steps: either synchronously,
-    asynchronously, serially or in any manner.
+    Flows encapsulate a the running of multiple :class:`Step`\\s in any order.
+    The sequence (or lack thereof) of running the steps is left to the Flow
+    itself.
 
     The Flow ABC offers a number of convenience functions, including handling the
     progress bar at the bottom of the terminal, which shows what stage the flow
     is currently in and the remaining stages.
 
-    :param config: Either a resolved :class:`Config` object, or an input to
-        :meth:`Config.load`.
+    :param config: Either a resolved :class:`openlane.config.Config` object, or an
+        input to :meth:`openlane.config.Config.load`.
 
     :param name: An optional string name for the Flow itself, and not a run of it.
 
-        If not set, the class variable ``name`` will be used instead, if THAT
-        is not set,
+        If not provided, there are two fallbacks:
 
-    :param config_override_strings: See :meth:`Config.load`
-    :param pdk: See :meth:`Config.load`
-    :param pdk_root: See :meth:`Config.load`
-    :param scl: See :meth:`Config.load`
-    :param design_dir: See :meth:`Config.load`
+        * The value of the ``name`` property (``NotImplemented`` by default)
+        * The name of the concrete ``Flow`` class
+
+    :param config_override_strings: See :meth:`openlane.config.Config.load`
+    :param pdk: See :meth:`openlane.config.Config.load`
+    :param pdk_root: See :meth:`openlane.config.Config.load`
+    :param scl: See :meth:`openlane.config.Config.load`
+    :param design_dir: See :meth:`openlane.config.Config.load`
 
     :cvar Steps:
         A list of :class:`Step` **types** used by the Flow (not Step objects.)
@@ -255,7 +258,7 @@ class Flow(ABC):
     :cvar config_vars:
         A list of **flow-specific** configuration variables. These configuration
         variables are used entirely within the logic of the flow itself and
-        are not exposed to ``Step``\\s.
+        are not exposed to ``Step``\\(s).
 
     :ivar step_objects:
         A list of :class:`Step` **objects** from the last run of the flow,
@@ -300,7 +303,7 @@ class Flow(ABC):
             step.assert_concrete("used in a Flow")
 
         self.name = (
-            self.__class__.__qualname__ if self.name == NotImplemented else self.name
+            self.__class__.__name__ if self.name == NotImplemented else self.name
         )
         if name is not None:
             self.name = name
@@ -334,6 +337,7 @@ class Flow(ABC):
         result = (
             textwrap.dedent(
                 f"""\
+                (flow-{slugify(Self.__name__, lower=True)})=
                 ### {Self.__name__}
 
                 ```{{eval-rst}}
@@ -361,7 +365,9 @@ class Flow(ABC):
 
         if len(flow_config_vars):
             result += textwrap.dedent(
-                """
+                f"""
+                ({slugify(Self.__name__, lower=True)}-config-vars)=
+
                 #### Flow-specific Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units |
@@ -371,13 +377,19 @@ class Flow(ABC):
             for var in flow_config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f'| <a name="{Self.__name__.lower()}.{var.name.lower()}"></a>`{var.name}`{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n'
+                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.__name__)}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
             result += "\n"
 
         if len(Self.Steps):
             result += "#### Included Steps\n"
             for step in Self.Steps:
-                result += f"* [`{step.id}`](./step_config_vars.md#{step.id.lower()})\n"
+                if hasattr(step, "long_name"):
+                    name = step.long_name
+                elif hasattr(step, "name"):
+                    name = step.name
+                else:
+                    name = step.id
+                result += f"* [`{step.id}`](./step_config_vars.md#{slugify(name)})\n"
 
         return result
 
