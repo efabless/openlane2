@@ -513,7 +513,7 @@ jobs:
         id: cache-pdks
         uses: actions/cache@v3
         with:
-          path: ~/.volare-${{ matrix.design.pdk_family }}
+          path: ${{ GITHUB_WORKSPACE }}/.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
@@ -538,8 +538,9 @@ jobs:
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
-          volare ls
-          volare enable --pdk ${{ matrix.design.pdk }} --pdk-root ${{ matrix.design.pdk_family }} ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          volare enable --pdk ${{ matrix.design.pdk }} \
+            --pdk-root ${{ GITHUB_WORKSPACE }}/.volare-${{ matrix.design.pdk_family }} \
+            ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
         run: |
@@ -567,6 +568,8 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         run: |
+          echo ~/
+          echo ${{ GITHUB_WORKSPACE }}
           df -h
           echo ===============
           sudo du -hs /* | sort -h
@@ -590,7 +593,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ~/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ${{ GITHUB_WORKSPACE }}/.volare-${{ matrix.design.pdk_family }}\
               ${{ matrix.design.config }}\
             "
           else
