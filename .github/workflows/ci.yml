@@ -243,7 +243,7 @@ jobs:
         run: |
           make venv
 
-          ./venv/bin/coverage run -m pytest -n auto --pdk-root ${{ github.workspace }}/.volare-sky130
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root="${{ github.workspace }}/.volare-sky130"
           ./venv/bin/coverage report
           ./venv/bin/coverage html
   build-docker:
@@ -627,20 +627,6 @@ jobs:
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
-          df -h
-          echo ===============
-          sudo du -hs /* | sort -h
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
           nix-shell --run "\
             python3 -m openlane.state latest\
               ${{ matrix.design.run_folder }}\
