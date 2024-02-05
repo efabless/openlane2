@@ -593,6 +593,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
+              --force-run-dir ${{ github.workspace }}\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
               ${{ matrix.design.config }}\
             "
