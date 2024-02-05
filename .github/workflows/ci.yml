@@ -588,6 +588,7 @@ jobs:
         run: |
           if test ${{matrix.design.script}} = "None"
           then
+            mkdir -p ${{ github.workspace }}/run
             nix-shell --run "\
               python3 -m openlane\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
@@ -603,6 +604,9 @@ jobs:
             "
           fi
           ls -al ${{ github.workspace }}/run
+          echo $(realpath ${{ github.workspace }}/run)
+          du -hs ${{ github.workspace }}/run | sort -h
+          du -hs $(realpath ${{ github.workspace }}/run) | sort -h
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
