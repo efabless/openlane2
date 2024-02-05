@@ -242,7 +242,7 @@ jobs:
       - name: Run Unit Tests
         run: |
           make venv
-          ./venv/bin/coverage run -m pytest -n auto --pdk-root ~/.volare-sky130
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root=$HOME/.volare-sky130
           ./venv/bin/coverage report
           ./venv/bin/coverage html
   build-docker:
