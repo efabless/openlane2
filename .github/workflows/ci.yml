@@ -43,21 +43,21 @@ jobs:
       - name: Cache sky130 PDK
         uses: actions/cache@v3
         with:
-          path: ~/.volare-sky130
+          path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable sky130 PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Cache gf180mcu PDK
         uses: actions/cache@v3
         with:
-          path: ~/.volare-gf180mcu
+          path: ${{ github.workspace }}/.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable PDKs
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ~/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -231,18 +231,19 @@ jobs:
         id: cache-sky130-pdk
         uses: actions/cache@v3
         with:
-          path: ~/.volare-sky130
+          path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Enable sky130 PDK
         if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
         run: |
           make venv
-          ./venv/bin/coverage run -m pytest -n auto --pdk-root=$HOME/.volare-sky130
+
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root ${{ github.workspace }}/.volare-sky130
           ./venv/bin/coverage report
           ./venv/bin/coverage html
   build-docker:
@@ -368,12 +369,12 @@ jobs:
       - name: Cache sky130 PDK
         uses: actions/cache@v3
         with:
-          path: ~/.volare-sky130
+          path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable sky130 PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Smoke-Test Docker Image
         run: |
           mkdir -p $HOME/.volare
@@ -386,7 +387,7 @@ jobs:
           ./venv/bin/python3 -m openlane\
             --docker-no-tty\
             --dockerized\
-            --pdk-root ~/.volare-sky130\
+            --pdk-root ${{ github.workspace }}/.volare-sky130\
             --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
@@ -537,7 +538,7 @@ jobs:
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
-          volare enable --pdk ${{ matrix.design.pdk }} \
+          volare enable --pdk ${{ matrix.design.pdk_family }} \
             --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
