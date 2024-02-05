@@ -15,7 +15,7 @@ yosys -import
 source $::env(SCRIPTS_DIR)/yosys/common.tcl
 set vtop $::env(DESIGN_NAME)
 
-read_deps "on"
+source $::env(_deps_script)
 
 read_verilog_files $vtop
 hierarchy -check -top $vtop

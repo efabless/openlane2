@@ -88,6 +88,77 @@ def _parse_yosys_check(
     return errors_encountered
 
 
+def _generate_read_deps(
+    config: Config,
+    toolbox: Toolbox,
+    power_defines: bool = False,
+    include_scls: bool = True,
+) -> str:
+    commands = "set ::_synlig_defines [list]\n"
+
+    if synth_defines := config["VERILOG_DEFINES"]:
+        for define in synth_defines:
+            commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
+            commands += (
+                f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{define}')}\n"
+            )
+
+    if power_defines:
+        power_define = config["VERILOG_POWER_DEFINE"]
+        commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
+        commands += (
+            f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
+        )
+
+    scl_lib_list = toolbox.filter_views(config, config["LIB"])
+    for lib in scl_lib_list:
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+
+    lib_synth = toolbox.remove_cells_from_lib(
+        frozenset([str(lib) for lib in scl_lib_list]),
+        excluded_cells=frozenset(
+            [
+                str(config["SYNTH_EXCLUSION_CELL_LIST"]),
+                str(config["PNR_EXCLUSION_CELL_LIST"]),
+            ]
+        ),
+        as_cell_lists=True,
+    )
+    commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}"
+
+    for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+
+    verilog_include_args = []
+    if dirs := config["VERILOG_INCLUDE_DIRS"]:
+        for dir in dirs:
+            verilog_include_args.append(f"-I{dir}")
+
+    macro_headers = toolbox.get_macro_views(
+        config,
+        DesignFormat.NETLIST,
+        unless_exist=DesignFormat.LIB,
+    )
+    macro_headers += toolbox.get_macro_views(
+        config,
+        DesignFormat.VERILOG_HEADER,
+        unless_exist=[DesignFormat.LIB, DesignFormat.NETLIST],
+    )
+    for header in macro_headers:
+        commands += (
+            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {header}\n"
+        )
+
+    if models := config["EXTRA_VERILOG_MODELS"]:
+        for model in models:
+            model_str = TclUtils.escape(str(model))
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
+
+    return commands
+
+
 verilog_rtl_cfg_vars = [
     Variable(
         "VERILOG_FILES",
@@ -102,9 +173,10 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_POWER_DEFINE",
-        Optional[str],
-        "Specifies the name of the define used to guard power and ground connections",
+        str,
+        "Specifies the name of the define used to guard power and ground connections in the input RTL.",
         deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+        default="USE_POWER_PINS",
     ),
     Variable(
         "VERILOG_INCLUDE_DIRS",
@@ -198,37 +270,12 @@ class YosysStep(TclStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
-        lib_list = [
-            str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
-        ]
-        lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
-            excluded_cells=frozenset(
-                [
-                    str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
-                    str(self.config["PNR_EXCLUSION_CELL_LIST"]),
-                ]
-            ),
-            as_cell_lists=True,
-        )
+        _deps_script = os.path.join(self.step_dir, "_deps.tcl")
 
-        env["SYNTH_LIBS"] = " ".join(lib_synth)
-        env["FULL_LIBS"] = " ".join(lib_list)
+        with open(_deps_script, "w") as f:
+            f.write(_generate_read_deps(self.config, self.toolbox, power_defines=True))
 
-        macro_libs = self.toolbox.get_macro_views(
-            self.config,
-            DesignFormat.LIB,
-        )
-        if len(macro_libs) != 0:
-            env["MACRO_LIBS"] = " ".join([str(lib) for lib in macro_libs])
-
-        macro_nls = self.toolbox.get_macro_views(
-            self.config,
-            DesignFormat.NETLIST,
-            unless_exist=DesignFormat.LIB,
-        )
-        if len(macro_nls) != 0:
-            env["MACRO_NLS"] = " ".join([str(nl) for nl in macro_nls])
+        env["_deps_script"] = _deps_script
 
         return super().run(state_in, env=env, **kwargs)
 
@@ -461,56 +508,6 @@ class VHDLSynthesis(SynthesisCommon):
             "The paths of the design's VHDL files.",
         ),
     ]
-
-
-def _generate_read_deps(
-    config: Config,
-    toolbox: Toolbox,
-    power_defines: bool = False,
-    include_scls: bool = True,
-) -> str:
-    commands = ""
-
-    if synth_defines := config["VERILOG_DEFINES"]:
-        for define in synth_defines:
-            flag = TclUtils.escape(f"-D{define}")
-            commands += f"verilog_defines {flag}\n"
-
-    if power_defines:
-        if define := config["VERILOG_POWER_DEFINE"]:
-            flag = TclUtils.escape(f"-D{define}")
-            commands += f"verilog_defines {flag}"
-
-    for lib in toolbox.filter_views(config, config["LIB"]):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-
-    for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-
-    verilog_include_args = []
-    if dirs := config["VERILOG_INCLUDE_DIRS"]:
-        for dir in dirs:
-            verilog_include_args.append(f"-I{dir}")
-
-    leftover_macro_nls = toolbox.get_macro_views(
-        config,
-        DesignFormat.NETLIST,
-        unless_exist=DesignFormat.LIB,
-    )
-    for nl in leftover_macro_nls:
-        nl_str = TclUtils.escape(str(nl))
-        commands += (
-            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {nl_str}\n"
-        )
-
-    if models := config["EXTRA_VERILOG_MODELS"]:
-        for model in models:
-            model_str = TclUtils.escape(str(model))
-            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
-
-    return commands
 
 
 @Step.factory.register()

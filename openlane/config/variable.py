@@ -75,14 +75,13 @@ class Instance:
     """
     Location information for an instance of a Macro.
 
-    :param location: The physical co-ordinates of the Macro's origin.
-    :param orientation: Whether the Macro is facing North or South.
-    :param placed: Whether the Macro is already placed or not. Useful with macros inside macros.
+    :param location: The physical co-ordinates of the Macro's origin. Leave
+        empty for automatic placement.
+    :param orientation: The orientation of the macro's placement. 'N'/'R0' by default.
     """
 
     location: Optional[Tuple[Decimal, Decimal]]
-    orientation: Optional[Orientation]
-    placed: bool = False
+    orientation: Orientation = Orientation.N
 
 
 @dataclass
@@ -134,6 +133,7 @@ class Macro:
     lef: List[Path]
     instances: Dict[str, Instance] = field(default_factory=lambda: {})
 
+    vh: List[Path] = field(default_factory=lambda: [])
     nl: List[Path] = field(default_factory=lambda: [])
     spef: Dict[str, List[Path]] = field(default_factory=lambda: {})
     lib: Dict[str, List[Path]] = field(default_factory=lambda: {})
@@ -198,12 +198,9 @@ class Macro:
         instance_name: str,
         location: Tuple[Number, Number],
         orientation: Orientation = Orientation.N,
-        placed: bool = False,
     ):
         location = (Decimal(location[0]), Decimal(location[1]))
-        self.instances[instance_name] = Instance(
-            location, Orientation[orientation], placed
-        )
+        self.instances[instance_name] = Instance(location, Orientation[orientation])
 
 
 def is_optional(t: Type[Any]) -> bool:

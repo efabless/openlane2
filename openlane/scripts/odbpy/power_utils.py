@@ -12,11 +12,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import odb
 
-import os
-import sys
-import subprocess
+# Some code adapted from OpenROAD
+#
+# BSD 3-Clause License
+#
+# Copyright (c) 2022, The Regents of the University of California
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+import odb
+import utl
+
+import re
+import json
+from typing import List
+from collections import namedtuple
 
 from reader import OdbReader, click_odb, click
 
@@ -24,244 +59,6 @@ from reader import OdbReader, click_odb, click
 @click.group()
 def cli():
     pass
-
-
-@click.command("write_powered_def")
-@click.option(
-    "-v",
-    "--power-port",
-    required=True,
-    help="Name of the power port of the design. The power pin of the subcells will be connected to it by default",
-)
-@click.option(
-    "-g",
-    "--ground-port",
-    required=True,
-    help="Name of the ground port of the design. The ground pin of the subcells will be connected to it by default",
-)
-@click.option(
-    "-n",
-    "--powered-netlist",
-    required=True,
-    help="A structural Verilog netlist, readable by openroad, that includes extra power connections that are to be applied after connecting to the default power-port and ground-port specified.",
-)
-@click.option("-q", "--ignore-missing-pins", default=False, is_flag=True)
-@click.option("-o", "--output", required=True, help="Output DEF file")
-@click.option("-l", "--input-lef", required=True, help="Merged LEF file")
-@click.argument("input_def")
-# And the award for worst-written function goes to:
-def write_powered_def(
-    output,
-    input_lef,
-    input_def,
-    power_port,
-    ground_port,
-    powered_netlist,
-    ignore_missing_pins,
-):
-    """
-    Connects every cell with a power pin to the power/ground port of the design.
-    """
-    reader = OdbReader(input_lef, input_def)
-
-    def get_power_ground_ports(ports):
-        vdd_ports = []
-        gnd_ports = []
-        for port in ports:
-            if port.getSigType() == "POWER" or port.getName() == power_port:
-                vdd_ports.append(port)
-            elif port.getSigType() == "GROUND" or port.getName() == ground_port:
-                gnd_ports.append(port)
-        return (vdd_ports, gnd_ports)
-
-    def find_power_ground_port(port_name, ports):
-        for port in ports:
-            if port.getName() == port_name:
-                return port
-        return None
-
-    print(f"Top-level design name: {reader.name}")
-
-    VDD_PORTS, GND_PORTS = get_power_ground_ports(reader.block.getBTerms())
-    if len(VDD_PORTS) == 0 or len(GND_PORTS) == 0:
-        print(
-            "No power ports found at the top-level. Make sure that they exist and have the USE POWER|GROUND property or they match the arguments specified with --power-port and --ground-port.",
-            file=sys.stderr,
-        )
-        exit(1)
-
-    vdd_net = None
-    gnd_net = None
-    for port in VDD_PORTS + GND_PORTS:
-        if port.getNet().getName() == power_port:
-            vdd_net = port.getNet()
-        elif port.getNet().getName() == ground_port:
-            gnd_net = port.getNet()
-
-    nets_not_found = False
-    if vdd_net is None:
-        print(f"Power port {power_port} not found in design.", file=sys.stderr)
-        nets_not_found = True
-    if gnd_net is None:
-        print(f"Ground port {ground_port} not found in design.", file=sys.stderr)
-        nets_not_found = True
-    if nets_not_found:
-        exit(1)
-
-    print(f"Found default power net '{vdd_net.getName()}'")
-    print(f"Found default ground net '{gnd_net.getName()}'")
-
-    print(f"Found {len(VDD_PORTS)} power ports.")
-    print(f"Found {len(GND_PORTS)} ground ports.")
-
-    modified_cells = 0
-    cells = reader.block.getInsts()
-    for cell in cells:
-        iterms = cell.getITerms()
-        cell_name = cell.getName()
-        if len(iterms) == 0:
-            continue
-
-        VDD_ITERMS = []
-        GND_ITERMS = []
-        VDD_ITERM_BY_NAME = None
-        GND_ITERM_BY_NAME = None
-        for iterm in iterms:
-            if iterm.getSigType() == "POWER":
-                VDD_ITERMS.append(iterm)
-            elif iterm.getSigType() == "GROUND":
-                GND_ITERMS.append(iterm)
-            elif iterm.getMTerm().getName() == power_port:
-                VDD_ITERM_BY_NAME = iterm
-            elif iterm.getMTerm().getName() == ground_port:  # note **PORT**
-                GND_ITERM_BY_NAME = iterm
-
-        if len(VDD_ITERMS) == 0:
-            print(
-                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as power."
-            )
-            print(
-                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}."
-            )
-            if VDD_ITERM_BY_NAME is not None:  # note **PORT**
-                print(f"Found '{power_port}', using it as a power pin...")
-                VDD_ITERMS.append(VDD_ITERM_BY_NAME)
-
-        if len(GND_ITERMS) == 0:
-            print(
-                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as ground."
-            )
-            print(
-                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}."
-            )
-            if GND_ITERM_BY_NAME is not None:  # note **PORT**
-                print(f"Found '{ground_port}', using it as a ground pin...")
-                GND_ITERMS.append(GND_ITERM_BY_NAME)
-
-        if len(VDD_ITERMS) == 0 or len(GND_ITERMS) == 0:
-            err_msg = (
-                f"Either power or ground (or both) pins not found for {cell_name}."
-            )
-            if ignore_missing_pins:
-                print(f"[WARNING] {err_msg} Ignoring...")
-            else:
-                print(
-                    err_msg,
-                    file=sys.stderr,
-                )
-                exit(1)
-
-        if len(VDD_ITERMS) > 2:
-            print(f"[WARNING] {cell_name} has {len(VDD_ITERMS)} power pins.")
-
-        if len(GND_ITERMS) > 2:
-            print(f"[WARNING] {cell_name} has {len(GND_ITERMS)} power pins.")
-
-        for VDD_ITERM in VDD_ITERMS:
-            if VDD_ITERM.isConnected():
-                pin_name = VDD_ITERM.getMTerm().getName()
-                cell_name = cell_name
-                print(
-                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring..."
-                )
-            else:
-                VDD_ITERM.connect(vdd_net)
-
-        for GND_ITERM in GND_ITERMS:
-            if GND_ITERM.isConnected():
-                pin_name = GND_ITERM.getMTerm().getName()
-                cell_name = cell_name
-                print(
-                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring..."
-                )
-            else:
-                GND_ITERM.connect(gnd_net)
-
-        modified_cells += 1
-
-    print(f"Modified power connections of {modified_cells}/{len(cells)} cells.")
-
-    # apply extra special connections taken from another netlist:
-    ### ^ Literally what in God's name does this mean?
-    if powered_netlist is not None and os.path.exists(powered_netlist):
-        tmp_def_file = f"{os.path.splitext(powered_netlist)[0]}.intermediate.def"
-
-        openroad_script = f"""
-        read_lef {input_lef}
-        read_verilog {powered_netlist}
-        link_design {reader.name}
-        write_def {tmp_def_file}
-        exit
-        """
-
-        subprocess.run(["openroad"], check=True, input=openroad_script.encode("utf8"))
-
-        power = OdbReader(input_lef, tmp_def_file)
-
-        assert power.name == reader.name
-
-        # using get_power_ground_ports doesn't work since the pins weren't
-        # created using pdngen
-        pg_port_names = [port.getName() for port in VDD_PORTS + GND_PORTS]
-        pg_ports = [
-            port for port in power.block.getBTerms() if port.getName() in pg_port_names
-        ]
-
-        for port in pg_ports:
-            net = port.getNet()
-            iterms = net.getITerms()
-            for iterm in iterms:
-                inst_name = iterm.getInst().getName()
-                pin_name = iterm.getMTerm().getName()
-                port_name = port.getName()
-
-                original_inst = reader.block.findInst(inst_name)
-                if original_inst is None:
-                    print(
-                        f"Instance {inst_name} was not found in the original netlist.",
-                        file=sys.stderr,
-                    )
-                    exit(1)
-
-                original_iterm = original_inst.findITerm(pin_name)
-                if original_iterm is None:
-                    print(
-                        f"Pin {inst_name}/{pin_name} not found in the original netlist."
-                    )
-                    exit(1)
-
-                original_port = find_power_ground_port(port_name, VDD_PORTS + GND_PORTS)
-                if original_port is None:
-                    print(f"Port {original_port} not found in the original netlist.")
-                    exit(1)
-
-                original_iterm.connect(original_port.getNet())
-                print(f"Connected {port_name} to {inst_name}/{pin_name}.")
-
-    odb.write_def(reader.block, output)
-
-
-cli.add_command(write_powered_def)
 
 
 @click.command("power_route")
@@ -1146,6 +943,290 @@ def power_route(
 
 
 cli.add_command(power_route)
+
+
+@click.command()
+@click.option(
+    "--input-json",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    required=True,
+)
+@click_odb
+def set_power_connections(input_json, reader: OdbReader):
+    Instance = namedtuple(
+        "Instance",
+        ["name", "module", "power_connections", "ground_connections"],
+    )
+
+    def is_power(db: odb.dbDatabase, module_name: str, pin_name: str) -> bool:
+        master = db.findMaster(module_name)
+        if master is None:
+            return False
+
+        pin = next(pin for pin in master.getMTerms() if pin.getName() == pin_name)
+        return pin.getSigType() == "POWER"
+
+    def is_ground(db: odb.dbDatabase, module_name: str, pin_name: str) -> bool:
+        master = db.findMaster(module_name)
+        if master is None:
+            return False
+
+        pin = next(
+            pin
+            for pin in db.findMaster(module_name).getMTerms()
+            if pin.getName() == pin_name
+        )
+        return pin.getSigType() == "GROUND"
+
+    def is_bus(pin_connections: List) -> bool:
+        return len(pin_connections) > 1
+
+    def extract_net_name(
+        design_dict: dict, design_name: str, connection_bit: List
+    ) -> str:
+        assert len(connection_bit) == 1
+        nets = design_dict["modules"][design_name]["netnames"]
+        net = next(
+            wire_name
+            for wire_name in nets.keys()
+            if nets[wire_name]["bits"] == connection_bit
+        )
+        return net
+
+    def extract_power_pins(
+        db: odb.dbDatabase, design_dict: dict, design_name: str, cell_name: str
+    ) -> dict:
+        cells = design_dict["modules"][design_name]["cells"]
+        module = cells[cell_name]["type"]
+        non_bus_pins = {
+            pin_name: cells[cell_name]["connections"][pin_name]
+            for pin_name in cells[cell_name]["connections"].keys()
+            if not is_bus(cells[cell_name]["connections"][pin_name])
+        }
+        power_pins = {
+            pin_name: non_bus_pins[pin_name]
+            for pin_name in non_bus_pins.keys()
+            if is_power(db, module, pin_name)
+        }
+        for pin_name in power_pins.keys():
+            connection_bit = power_pins[pin_name]
+            net = extract_net_name(design_dict, design_name, connection_bit)
+            power_pins[pin_name] = net
+
+        return power_pins
+
+    def extract_ground_pins(
+        db: odb.dbDatabase, design_dict: dict, design_name: str, cell_name: str
+    ) -> dict:
+        cells = design_dict["modules"][design_name]["cells"]
+        module = cells[cell_name]["type"]
+        non_bus_pins = {
+            pin_name: cells[cell_name]["connections"][pin_name]
+            for pin_name in cells[cell_name]["connections"].keys()
+            if not is_bus(cells[cell_name]["connections"][pin_name])
+        }
+        ground_pins = {
+            pin_name: non_bus_pins[pin_name]
+            for pin_name in non_bus_pins.keys()
+            if is_ground(db, module, pin_name)
+        }
+        for pin_name in ground_pins.keys():
+            connection_bit = ground_pins[pin_name]
+            net = extract_net_name(design_dict, design_name, connection_bit)
+            ground_pins[pin_name] = net
+
+        return ground_pins
+
+    def extract_instances(
+        db: odb.dbDatabase,
+        design_dict: dict,
+        design_name: str,
+    ) -> List[Instance]:
+        instances = []
+        cells = design_dict["modules"][design_name]["cells"]
+        for cell_name in cells.keys():
+            module = cells[cell_name]["type"]
+            power_pins = extract_power_pins(db, design_dict, design_name, cell_name)
+            ground_pins = extract_ground_pins(db, design_dict, design_name, cell_name)
+            instances.append(
+                Instance(
+                    name=cell_name,
+                    ground_connections=ground_pins,
+                    power_connections=power_pins,
+                    module=module,
+                )
+            )
+
+        return instances
+
+    def add_global_connection(
+        design,
+        *,
+        net_name=None,
+        inst_pattern=None,
+        pin_pattern=None,
+        power=False,
+        ground=False,
+        region=None,
+    ):
+        if net_name is None:
+            utl.error(
+                utl.PDN,
+                1501,
+                "The net option for the "
+                + "add_global_connection command is required.",
+            )
+
+        if inst_pattern is None:
+            inst_pattern = ".*"
+
+        if pin_pattern is None:
+            utl.error(
+                utl.PDN,
+                1502,
+                "The pin_pattern option for the "
+                + "add_global_connection command is required.",
+            )
+
+        net = design.getBlock().findNet(net_name)
+        if net is None:
+            net = odb.dbNet_create(design.getBlock(), net_name)
+
+        if power and ground:
+            utl.error(utl.PDN, 1551, "Only power or ground can be specified")
+        elif power:
+            net.setSpecial()
+            net.setSigType("POWER")
+        elif ground:
+            net.setSpecial()
+            net.setSigType("GROUND")
+
+        if region is not None:
+            region = design.getBlock().findRegion(region)
+            if region is None:
+                utl.error(utl.PDN, 1504, f"Region {region} not defined")
+
+        design.getBlock().addGlobalConnect(region, inst_pattern, pin_pattern, net, True)
+
+    design_str = open(input_json).read()
+    design_dict = json.loads(design_str)
+
+    db = reader.db
+    chip = db.getChip()
+    design_name = chip.getBlock().getName()
+
+    macro_instances = extract_instances(db, design_dict, design_name)
+    for instance in macro_instances:
+        for pin in instance.power_connections.keys():
+            net_name = instance.power_connections[pin]
+            print(f"Connecting power net {net_name} to {instance.name}/{pin}…")
+            add_global_connection(
+                design=chip,
+                inst_pattern=re.escape(instance.name),
+                net_name=net_name,
+                pin_pattern=pin,
+                power=True,
+            )
+        for pin in instance.ground_connections.keys():
+            net_name = instance.ground_connections[pin]
+            print(f"Connecting ground net {net_name} to {instance.name}/{pin}…")
+            add_global_connection(
+                design=chip,
+                inst_pattern=re.escape(instance.name),
+                net_name=net_name,
+                pin_pattern=pin,
+                ground=True,
+            )
+
+
+cli.add_command(set_power_connections)
+
+
+@click.command()
+@click.option(
+    "--output-vh",
+    "output_vh",
+    type=click.Path(exists=False, dir_okay=False, writable=True),
+    required=True,
+)
+@click.option(
+    "--input-json",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+    ),
+    required=True,
+)
+@click.option(
+    "--power-define",
+    type=str,
+    required=True,
+)
+@click_odb
+def write_verilog_header(
+    output_vh: str,
+    input_json: str,
+    power_define: str,
+    reader: OdbReader,
+):
+    input_dict = json.load(open(input_json))
+    design_name = reader.block.getName()
+    pg_bterms = {}
+    for bterm in reader.block.getBTerms():
+        name, sigtype = bterm.getName(), bterm.getSigType()
+        if sigtype in ["POWER", "GROUND"]:
+            pg_bterms[name] = sigtype
+
+    design_dict = input_dict["modules"][design_name]
+    ports = design_dict["ports"]
+    with open(output_vh, "w") as f:
+        # For power/ground pins, we rely primarily on the information from the
+        # layout as the user may not have defined them in Verilog at all
+        pg_decls = []
+        for name in pg_bterms:
+            direction = "inout"
+            if verilog_info := ports.get(name):
+                direction = verilog_info["direction"]
+            pg_decls.append(f"{direction} {name}")
+
+        # For signals, we rely on the information from the Verilog-generated
+        # header as the layout separates buses into individual pins
+        signal_decls = []
+        for name, info in ports.items():
+            if name in pg_bterms:
+                continue
+            bus_postfix = ""
+            width = len(info["bits"])
+            if width > 1:
+                bus_postfix = f"[{width-1}:{0}]"
+            signal_decls.append(f"{info['direction']} {name}{bus_postfix}")
+
+        # Write module
+        print("// Auto-generated by OpenLane", file=f)
+        print(f"module {design_name}(", file=f)
+        print(f"`ifdef {power_define}", file=f)
+        last_pos = f.tell()
+        for decl in pg_decls:
+            print(f"  {decl}", file=f, end="")
+            last_pos = f.tell()
+            print(",", file=f)
+        print("`endif", file=f)
+        for decl in signal_decls:
+            print(f"  {decl}", file=f, end="")
+            last_pos = f.tell()
+            print(",", file=f)
+        f.seek(last_pos)  # Overwrite ,\n
+        print("\n);\nendmodule", file=f)
+
+
+cli.add_command(write_verilog_header)
 
 if __name__ == "__main__":
     cli()

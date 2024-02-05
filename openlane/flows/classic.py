@@ -330,6 +330,7 @@ class Classic(SequentialFlow):
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,
         Odb.RemovePDNObstructions,
+        Odb.WriteVerilogHeader,
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
