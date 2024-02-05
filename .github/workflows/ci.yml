@@ -426,7 +426,8 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
-          root-reserve-mb: 15360
+          root-reserve-mb: 18432
+          swap-size-mb: 8192
       - name: Check Space
         if: ${{ always() }}
         run: |
