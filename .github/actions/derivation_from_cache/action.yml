@@ -31,3 +31,4 @@ runs:
           --verbose\
           --option substituters 'file:///tmp/${{ inputs.key }} ${{ inputs.other-substituters }} https://cache.nixos.org'\
           --option require-sigs false
+        sudo rm -rf /tmp/${{ inputs.key }}
