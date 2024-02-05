@@ -423,9 +423,10 @@ jobs:
         with:
           remove-dotnet: 'true'
           remove-android: 'true'
-          remove-haskel: 'true'
+          remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
+          root-reserve-mb: 15360
       - name: Check Space
         if: ${{ always() }}
         run: |
