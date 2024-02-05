@@ -418,6 +418,29 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+      - name: Check Space
+        if: ${{ always() }}
+        run: |
+          df -h
+          echo ===============
+          sudo du -hs /* | sort -h
+          echo ===============
+          du -hs ~/* | sort -h
+          echo ===============
+          du -hs ${{ matrix.design_run_folder }} | sort -h
+          echo ===============
+          du -hs * | sort -h
+          echo ===============
+          du -hs /home/runner/runners/* | sort -h
+          echo ===============
+          du -hs /home/runner/work/* | sort -h
+          echo ===============
       - uses: actions/checkout@v3
         with:
           submodules: recursive
