@@ -593,7 +593,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --force-run-dir ${{ github.workspace }}\
+              --force-run-dir ${{ github.workspace }}/run\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
               ${{ matrix.design.config }}\
             "
@@ -602,6 +602,7 @@ jobs:
               ${{matrix.design.script}}\
             "
           fi
+          ls -al ${{ github.workspace }}/run
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
