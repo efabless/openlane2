@@ -40,16 +40,24 @@ jobs:
         id: set-rev
         run: |
           echo "opdks_rev=$(cat ./openlane/open_pdks_rev)" >> $GITHUB_OUTPUT
-      - name: Cache PDKs
+      - name: Cache sky130 PDK
         uses: actions/cache@v3
         with:
-          path: ~/.volare
-          key: cache-pdks-${{ steps.set-rev.outputs.opdks_rev }}
+          path: ~/.volare-sky130
+          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Enable sky130 PDK
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Cache gf180mcu PDK
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare-gf180mcu
+          key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable PDKs
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 ${{ steps.set-rev.outputs.opdks_rev }}
-          volare enable --pdk gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ~/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -219,9 +227,21 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache sky130 PDK
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare-sky130
+          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Enable sky130 PDK
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Run Unit Tests
         run: |
-          make test
+          make venv
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root ~/.volare-sky130
+          ./venv/bin/coverage report
+          ./venv/bin/coverage html
   build-docker:
     runs-on: ubuntu-22.04
     strategy:
@@ -342,6 +362,15 @@ jobs:
           python-version: "3.8"
       - name: Install Dependencies
         run: make venv
+      - name: Cache sky130 PDK
+        uses: actions/cache@v3
+        with:
+          path: ~/.volare-sky130
+          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+      - name: Enable sky130 PDK
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Smoke-Test Docker Image
         run: |
           mkdir -p $HOME/.volare
@@ -354,6 +383,7 @@ jobs:
           ./venv/bin/python3 -m openlane\
             --docker-no-tty\
             --dockerized\
+            --pdk-root ~/.volare-sky130\
             --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
@@ -453,8 +483,8 @@ jobs:
         id: cache-pdks
         uses: actions/cache@v3
         with:
-          path: ~/.volare
-          key: cache-pdks-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          path: ~/.volare-${{ matrix.design.pdk_family }}
+          key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
         run: |
@@ -475,25 +505,11 @@ jobs:
           du -hs /home/runner/work/* | sort -h
           echo ===============
       - name: Enable PDKs
+        if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
           pip3 install -r ./requirements.txt
           volare ls
-          volare enable --pdk sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          volare enable --pdk gf180mcu ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          if [[ ${{ matrix.design.pdk }} == "sky130"* ]]; then
-          #volare rm --pdk gf180mcu --yes ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            for f in $(find ~/.volare -maxdepth 1 -mindepth 1 -not -name "volare" -not -name 'sky130*' ); do 
-              echo $f
-              rm -rf $(realpath $f)
-            done
-          fi
-          if [[ ${{ matrix.design.pdk }} == "gf180mcu"* ]]; then
-          #volare rm --pdk sky130 --yes ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-            for f in $(find ~/.volare -maxdepth 1 -mindepth 1 -not -name "volare" -not -name 'gf180mcu*' ); do 
-              echo $f
-              rm -rf $(realpath $f)
-            done
-          fi
+          volare enable --pdk ${{ matrix.design.pdk }} --pdk-root ${{ matrix.design.pdk_family }} ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
         run: |
@@ -543,7 +559,8 @@ jobs:
               python3 -m openlane\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
-              --scl ${{matrix.design.scl}}\
+              --scl ${{ matrix.design.scl }}\
+              --pdk-root ~/.volare-${{ matrix.design.pdk_family }}\
               ${{ matrix.design.config }}\
             "
           else
