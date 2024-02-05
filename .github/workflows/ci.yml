@@ -568,7 +568,7 @@ jobs:
         if: ${{ always() }}
         run: |
           echo ~/
-          echo ${{ GITHUB_WORKSPACE }}
+          echo ${{ env.GITHUB_WORKSPACE }}
           df -h
           echo ===============
           sudo du -hs /* | sort -h
@@ -592,7 +592,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ${{ GITHUB_WORKSPACE }}/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ${{ env.GITHUB_WORKSPACE }}/.volare-${{ matrix.design.pdk_family }}\
               ${{ matrix.design.config }}\
             "
           else
