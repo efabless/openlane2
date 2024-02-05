@@ -214,7 +214,7 @@ jobs:
           shell: "zsh {0}"
   build-py:
     runs-on: ubuntu-22.04
-    needs: lint
+    needs: [lint, prepare-test-matrices]
     strategy:
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
@@ -228,12 +228,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache sky130 PDK
+        id: cache-sky130-pdk
         uses: actions/cache@v3
         with:
           path: ~/.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
       - name: Enable sky130 PDK
+        if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
+          pip3 install -r ./requirements.txt
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 --pdk-root ~/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Run Unit Tests
