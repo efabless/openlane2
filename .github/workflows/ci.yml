@@ -589,7 +589,7 @@ jobs:
           if test ${{matrix.design.script}} = "None"
           then
             mkdir -p ${{ github.workspace }}/run
-            sudo du -hs /nix | sort -h
+            sudo du -hs /nix/* | sort -h
             nix-shell --run "\
               python3 -m openlane\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
@@ -604,7 +604,7 @@ jobs:
               ${{matrix.design.script}}\
             "
           fi
-          sudo du -hs /nix | sort -h
+          sudo du -hs /nix/* | sort -h
           echo $(realpath ${{ github.workspace }}/run)
           du -hs ${{ github.workspace }}/run | sort -h
           du -hs $(realpath ${{ github.workspace }}/run) | sort -h
