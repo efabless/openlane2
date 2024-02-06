@@ -54,10 +54,10 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
-      - name: Enable PDKs
+      - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM

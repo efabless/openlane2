@@ -21,12 +21,12 @@ runs:
   using: "composite"
   steps:
     - uses: DeterminateSystems/nix-installer-action@main
+    - uses: DeterminateSystems/magic-nix-cache-action@main
     - name: Setup Cachix
       uses: cachix/cachix-action@v13
       with:
         name: ${{ inputs.cachix_cache }}
         authToken: "${{ inputs.cachix_token }}"
-    - uses: DeterminateSystems/magic-nix-cache-action@main
     - name: Build
       shell: ${{ inputs.shell }}
       run: |
