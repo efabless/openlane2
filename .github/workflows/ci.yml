@@ -337,7 +337,6 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --force-run-dir ${{ github.workspace }}/run\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
               --condensed\
               ${{ matrix.design.config }}\
@@ -349,8 +348,7 @@ jobs:
           fi
           sudo du -hs /nix/store/* | sort -h | tail  -n 10
           sudo du -hs /nix/store/* | sort -h | tail  -n 10 > after.txt
-          diff before.txt after.txt
-          echo $(realpath ${{ github.workspace }}/run)
+          diff before.txt after.txt || true
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
