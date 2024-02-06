@@ -31,6 +31,7 @@ runs:
         echo "#################################################################"
         nix-env -f "<nixpkgs>" -iA bash
         nix-build ${{ inputs.nix_build_args }} shell.nix
+        sudo du -hs /nix/store/* | sort -h | tail -n 20
     - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
       run: |
