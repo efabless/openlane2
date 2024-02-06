@@ -29,6 +29,7 @@ runs:
     - uses: DeterminateSystems/magic-nix-cache-action@main
     - uses: DeterminateSystems/flake-checker-action@main
     - name: Build
+      shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
         nix-env -f "<nixpkgs>" -iA bash
