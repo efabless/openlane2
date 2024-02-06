@@ -93,7 +93,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -113,7 +112,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -132,7 +130,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -154,7 +151,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -248,7 +244,7 @@ jobs:
     strategy:
       matrix:
         arch: ["amd64", "aarch64"]
-    needs: [build-linux-amd64, build-linux-aarch64]
+    needs: [build-linux-amd64]
     name: Build Docker Image (${{ matrix.arch }})
     steps:
       - name: Check Space
@@ -259,7 +255,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -277,7 +272,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -293,7 +287,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -315,7 +308,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -337,7 +329,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -403,7 +394,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -428,7 +418,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -447,7 +436,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -469,7 +457,6 @@ jobs:
       #    echo ===============
       #    du -hs ~/* | sort -h
       #    echo ===============
-      #    du -hs ${{ matrix.design_run_folder }} | sort -h
       #    echo ===============
       #    du -hs * | sort -h
       #    echo ===============
@@ -497,7 +484,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -521,7 +507,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -544,7 +529,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -569,7 +553,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
@@ -603,8 +586,6 @@ jobs:
           sudo du -hs /nix/store/* | sort -h | tail -n 20 > after.txt
           diff before.txt after.txt
           echo $(realpath ${{ github.workspace }}/run)
-          du -hs ${{ github.workspace }}/run | sort -h
-          du -hs $(realpath ${{ github.workspace }}/run) | sort -h
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
@@ -619,7 +600,6 @@ jobs:
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
           echo ===============
           du -hs * | sort -h
           echo ===============
