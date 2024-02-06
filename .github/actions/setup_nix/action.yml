@@ -13,7 +13,13 @@ runs:
   using: "composite"
   steps:
     - uses: DeterminateSystems/nix-installer-action@main
+    - name: Check Space
+      if: ${{ always() }}
+      uses: ./.github/actions/check_space
     - uses: DeterminateSystems/magic-nix-cache-action@main
+    - name: Check Space
+      if: ${{ always() }}
+      uses: ./.github/actions/check_space
     - name: Setup Cachix
       uses: cachix/cachix-action@v13
       with:
