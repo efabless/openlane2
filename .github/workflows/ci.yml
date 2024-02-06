@@ -88,6 +88,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Stage files
+        run: |
+          git status
+          git add -N .
+          git status
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
