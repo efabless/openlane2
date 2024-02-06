@@ -307,21 +307,7 @@ jobs:
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          sudo du -hs ~/.volare/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Enable PDKs
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
@@ -341,21 +327,7 @@ jobs:
           ipm install --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm --version ${{ matrix.design.ipm_version }} ${{ matrix.design.name }}
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          echo ~/
-          echo ${{ github.workspace }}
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"

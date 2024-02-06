@@ -6,7 +6,9 @@ runs:
     - name: Check Space
       shell: bash
       run: |
-        sudo du -hs /nix/store/* | sort -h | tail -n 10
+        if test -d /nix/store; then
+          sudo du -hs /nix/store/* | sort -h | tail -n 10
+        fi
         echo ===============
         df -h
         echo ===============
