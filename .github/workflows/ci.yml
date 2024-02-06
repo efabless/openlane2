@@ -260,12 +260,6 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
@@ -275,6 +269,9 @@ jobs:
           remove-codeql: "true"
           remove-docker-images: "true"
           root-reserve-mb: 20480
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
