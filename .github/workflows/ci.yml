@@ -315,6 +315,7 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         run: |
+          sudo du -hs /nix/store/* | sort -h | tail -n 20
           df -h
           echo ===============
           sudo du -hs /* | sort -h
@@ -338,6 +339,7 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         run: |
+          sudo du -hs /nix/store/* | sort -h | tail -n 20
           df -h
           echo ===============
           sudo du -hs /* | sort -h
