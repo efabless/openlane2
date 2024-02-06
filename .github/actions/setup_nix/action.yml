@@ -12,10 +12,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Nix
-      uses: cachix/install-nix-action@v24
-      with:
-        nix_path: nixpkgs=channel:nixos-23.11
+    #    - name: Setup Nix
+    #      uses: cachix/install-nix-action@v24
+    #      with:
+    #        nix_path: nixpkgs=channel:nixos-23.11
     - name: Setup Cachix
       uses: cachix/cachix-action@v13
       with:

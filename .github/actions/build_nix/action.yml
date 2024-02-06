@@ -20,12 +20,12 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Nix
-      uses: ./.github/actions/setup_nix
-      with:
-        cachix_cache: ${{ inputs.cachix_cache }}
-        cachix_token: "${{ inputs.cachix_token }}"
     - uses: DeterminateSystems/nix-installer-action@main
+    - name: Setup Cachix
+      uses: cachix/cachix-action@v13
+      with:
+        name: ${{ inputs.cachix_cache }}
+        authToken: "${{ inputs.cachix_token }}"
     - uses: DeterminateSystems/magic-nix-cache-action@main
     - uses: DeterminateSystems/flake-checker-action@main
     - name: Build

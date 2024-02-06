@@ -90,7 +90,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -111,7 +110,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -131,7 +129,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -148,12 +145,12 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
       - name: Check Space
         if: ${{ always() }}
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -170,48 +167,48 @@ jobs:
       #        with:
       #          key: derivation-amd64-${{ github.run_id }}
       #          file: shell.nix
-  build-linux-aarch64:
-    needs: lint
-    runs-on: ubuntu-22.04
-    name: Build (Nix on Linux/aarch64)
-    steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-qemu-action@v1
-      - name: Initialize Step Unit Test Submodule
-        run: |
-          git submodule update --init test/steps/all
-      - name: Set up GITHUB_TOKEN
-        run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Build with Nix
-        uses: ./.github/actions/build_nix
-        with:
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
-      - name: Derivation to Cache
-        uses: ./.github/actions/derivation_to_cache
-        with:
-          key: derivation-aarch64-${{ github.run_id }}
-          file: shell.nix
-  build-mac-amd64:
-    needs: lint
-    runs-on: macos-12
-    name: Build (Nix on macOS/amd64)
-    steps:
-      - uses: actions/checkout@v3
-      - name: Initialize Step Unit Test Submodule
-        run: |
-          git submodule update --init test/steps/all
-      - name: Set up GITHUB_TOKEN
-        run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Build with Nix
-        uses: ./.github/actions/build_nix
-        with:
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          shell: "zsh {0}"
+  #  build-linux-aarch64:
+  #    needs: lint
+  #    runs-on: ubuntu-22.04
+  #    name: Build (Nix on Linux/aarch64)
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #      - uses: docker/setup-qemu-action@v1
+  #      - name: Initialize Step Unit Test Submodule
+  #        run: |
+  #          git submodule update --init test/steps/all
+  #      - name: Set up GITHUB_TOKEN
+  #        run: |
+  #          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+  #      - name: Build with Nix
+  #        uses: ./.github/actions/build_nix
+  #        with:
+  #          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+  #          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+  #          nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
+  #      - name: Derivation to Cache
+  #        uses: ./.github/actions/derivation_to_cache
+  #        with:
+  #          key: derivation-aarch64-${{ github.run_id }}
+  #          file: shell.nix
+  #  build-mac-amd64:
+  #    needs: lint
+  #    runs-on: macos-12
+  #    name: Build (Nix on macOS/amd64)
+  #    steps:
+  #      - uses: actions/checkout@v3
+  #      - name: Initialize Step Unit Test Submodule
+  #        run: |
+  #          git submodule update --init test/steps/all
+  #      - name: Set up GITHUB_TOKEN
+  #        run: |
+  #          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+  #      - name: Build with Nix
+  #        uses: ./.github/actions/build_nix
+  #        with:
+  #          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+  #          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+  #          shell: "zsh {0}"
   build-py:
     runs-on: ubuntu-22.04
     needs: [lint, prepare-test-matrices]
@@ -259,7 +256,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -278,7 +274,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -295,7 +290,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -318,7 +312,6 @@ jobs:
           sudo du -hs /nix/store/* | sort -h | tail -n 20
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -341,7 +334,6 @@ jobs:
           sudo du -hs /nix/store/* | sort -h | tail -n 20
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -408,7 +400,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -434,7 +425,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -454,7 +444,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -466,30 +455,34 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
-      - name: Setup Nix
-        uses: ./.github/actions/setup_nix
-        with:
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-      - name: Check Space
-        if: ${{ always() }}
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail -n 20
-          sudo tree /nix/store/*-openlane2 || true
-          df -h
-          echo ===============
-          sudo du -hs /* | sort -h
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          du -hs ${{ matrix.design_run_folder }} | sort -h
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+      #- name: Setup Nix
+      #  uses: ./.github/actions/setup_nix
+      #  with:
+      #    cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+      #- name: Check Space
+      #  if: ${{ always() }}
+      #  run: |
+      #    sudo du -hs /nix/store/* | sort -h | tail -n 20
+      #    sudo tree /nix/store/*-openlane2 || true
+      #    df -h
+      #    echo ===============
+      #    echo ===============
+      #    du -hs ~/* | sort -h
+      #    echo ===============
+      #    du -hs ${{ matrix.design_run_folder }} | sort -h
+      #    echo ===============
+      #    du -hs * | sort -h
+      #    echo ===============
+      #    du -hs /home/runner/runners/* | sort -h
+      #    echo ===============
+      #    du -hs /home/runner/work/* | sort -h
+      #    echo ===============
       - uses: DeterminateSystems/nix-installer-action@main
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v13
+        with:
+          name: ${{ inputs.cachix_cache }}
+          authToken: "${{ inputs.cachix_token }}"
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: DeterminateSystems/flake-checker-action@main
       - name: Derivation from Cache
@@ -501,7 +494,6 @@ jobs:
           sudo tree /nix/store/*-openlane2 || true
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -526,7 +518,6 @@ jobs:
           echo ===============
           sudo du -hs ~/.volare/* | sort -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -550,7 +541,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -576,7 +566,6 @@ jobs:
           echo ${{ github.workspace }}
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -627,7 +616,6 @@ jobs:
         run: |
           df -h
           echo ===============
-          sudo du -hs /* | sort -h
           echo ===============
           du -hs ~/* | sort -h
           echo ===============
@@ -702,7 +690,7 @@ jobs:
           git push -fu origin $BRANCH_NAME # Force for if we have to re-run the CI for some reason
   publish:
     runs-on: ubuntu-22.04
-    needs: [build-linux-amd64, build-mac-amd64, build-docker, build-py]
+    needs: [build-linux-amd64, build-docker, build-py]
     name: Publish (If Applicable)
     steps:
       - name: Check out repo
