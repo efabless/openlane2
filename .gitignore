@@ -43,3 +43,6 @@ package.json
 node_modules
 yarn.lock
 tables_*.md
+
+.volare-sky130
+.volare-gf180mcu
