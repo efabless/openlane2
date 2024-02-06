@@ -470,7 +470,6 @@ jobs:
         with:
           name: ${{ vars.CACHIX_CACHE || 'openlane' }}
           authToken: "${{ secrets.CACHIX_TOKEN }}"
-      - uses: DeterminateSystems/flake-checker-action@main
       - name: Derivation from Cache
         run: nix-shell --run "ls"
       - name: Check Space
