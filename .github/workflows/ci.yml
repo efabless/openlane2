@@ -589,8 +589,8 @@ jobs:
           if test ${{matrix.design.script}} = "None"
           then
             mkdir -p ${{ github.workspace }}/run
-            sudo du -hs /nix/store/* | sort -h
-            sudo du -hs /nix/store/* | sort -h > before.txt
+            sudo du -hs /nix/store/* | sort -h | tail -n 20
+            sudo du -hs /nix/store/* | sort -h | tail -n 20 > before.txt
             nix-shell --run "\
               python3 -m openlane\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
@@ -598,6 +598,7 @@ jobs:
               --scl ${{ matrix.design.scl }}\
               --force-run-dir ${{ github.workspace }}/run\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --condensed\
               ${{ matrix.design.config }}\
             "
           else
@@ -605,8 +606,8 @@ jobs:
               ${{matrix.design.script}}\
             "
           fi
-          sudo du -hs /nix/store/* | sort -h
-          sudo du -hs /nix/store/* | sort -h > after.txt
+          sudo du -hs /nix/store/* | sort -h | tail -n 20
+          sudo du -hs /nix/store/* | sort -h | tail -n 20 > after.txt
           diff before.txt after.txt
           echo $(realpath ${{ github.workspace }}/run)
           du -hs ${{ github.workspace }}/run | sort -h
