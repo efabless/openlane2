@@ -302,7 +302,7 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         run: |
-          sudo du -hs /nix/store/* | sort -h | tail -n 20
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
           df -h
           echo ===============
           echo ===============
@@ -322,7 +322,7 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         run: |
-          sudo du -hs /nix/store/* | sort -h | tail -n 20
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
           df -h
           echo ===============
           echo ===============
@@ -449,7 +449,7 @@ jobs:
       #- name: Check Space
       #  if: ${{ always() }}
       #  run: |
-      #    sudo du -hs /nix/store/* | sort -h | tail -n 20
+      #    sudo du -hs /nix/store/* | sort -h | tail  -n 10
       #    sudo tree /nix/store/*-openlane2 || true
       #    df -h
       #    echo ===============
@@ -470,12 +470,21 @@ jobs:
         with:
           name: ${{ vars.CACHIX_CACHE || 'openlane' }}
           authToken: "${{ secrets.CACHIX_TOKEN }}"
+      - name: Check Nix
+        run: |
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
+          sudo tree /nix/store/*-openlane2 || true
       - name: Derivation from Cache
-        run: nix-shell --run "ls"
+        run: |
+          nix-shell --run "ls"
+      - name: Check Nix
+        run: |
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
+          sudo tree /nix/store/*-openlane2 || true
       - name: Check Space
         if: ${{ always() }}
         run: |
-          sudo du -hs /nix/store/* | sort -h | tail -n 20
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
           sudo tree /nix/store/*-openlane2 || true
           df -h
           echo ===============
@@ -563,8 +572,8 @@ jobs:
           if test ${{matrix.design.script}} = "None"
           then
             mkdir -p ${{ github.workspace }}/run
-            sudo du -hs /nix/store/* | sort -h | tail -n 20
-            sudo du -hs /nix/store/* | sort -h | tail -n 20 > before.txt
+            sudo du -hs /nix/store/* | sort -h | tail  -n 10
+            sudo du -hs /nix/store/* | sort -h | tail  -n 10 > before.txt
             nix-shell --run "\
               python3 -m openlane\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
@@ -580,8 +589,8 @@ jobs:
               ${{matrix.design.script}}\
             "
           fi
-          sudo du -hs /nix/store/* | sort -h | tail -n 20
-          sudo du -hs /nix/store/* | sort -h | tail -n 20 > after.txt
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10
+          sudo du -hs /nix/store/* | sort -h | tail  -n 10 > after.txt
           diff before.txt after.txt
           echo $(realpath ${{ github.workspace }}/run)
       - name: Upload Run Folder

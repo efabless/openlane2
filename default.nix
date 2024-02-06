@@ -73,7 +73,7 @@ buildPythonPackage rec {
     echo $src
     for file in $src; do
       BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
-      echo $file
+      echo $file $PWD/$BASENAME
       cp -r $file $PWD/$BASENAME
     done
     ls -lah
