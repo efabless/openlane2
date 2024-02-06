@@ -464,12 +464,12 @@ jobs:
       #    du -hs /home/runner/work/* | sort -h
       #    echo ===============
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Setup Cachix
         uses: cachix/cachix-action@v13
         with:
-          name: ${{ inputs.cachix_cache }}
-          authToken: "${{ inputs.cachix_token }}"
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+          name: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          authToken: "${{ secrets.CACHIX_TOKEN }}"
       - uses: DeterminateSystems/flake-checker-action@main
       - name: Derivation from Cache
         run: nix-shell --run "ls"
