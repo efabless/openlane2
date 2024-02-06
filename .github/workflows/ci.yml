@@ -330,10 +330,10 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
-      - name: Derivation from Cache
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: DeterminateSystems/flake-checker-action@main
+      - name: Derivation from Cache
         run: nix-shell --run "ls"
       - name: Check Space
         if: ${{ always() }}

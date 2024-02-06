@@ -25,10 +25,10 @@ runs:
       with:
         cachix_cache: ${{ inputs.cachix_cache }}
         cachix_token: "${{ inputs.cachix_token }}"
-    - name: Build
     - uses: DeterminateSystems/nix-installer-action@main
     - uses: DeterminateSystems/magic-nix-cache-action@main
     - uses: DeterminateSystems/flake-checker-action@main
+    - name: Build
       run: |
         echo "#################################################################"
         nix-env -f "<nixpkgs>" -iA bash
