@@ -64,7 +64,7 @@ buildPythonPackage rec {
   src = [
     ./Readme.md
     ./setup.py
-    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n" ./openlane)
+    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n.volare-sky130\n.volare-gf180mcu" ./openlane)
     ./type_stubs
     ./requirements.txt
   ];
@@ -73,6 +73,7 @@ buildPythonPackage rec {
     echo $src
     for file in $src; do
       BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
+      echo $file
       cp -r $file $PWD/$BASENAME
     done
     ls -lah

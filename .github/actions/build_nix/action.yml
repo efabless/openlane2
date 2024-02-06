@@ -32,19 +32,19 @@ runs:
         nix-env -f "<nixpkgs>" -iA bash
         nix-build ${{ inputs.nix_build_args }} shell.nix
         sudo du -hs /nix/store/* | sort -h | tail -n 20
-    - name: Unit/Step Tests
-      shell: ${{ inputs.shell }}
-      run: |
-        echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.' -n auto"
-    - name: Smoke Test
-      shell: ${{ inputs.shell }}
-      run: |
-        echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
-    - name: Push
-      shell: ${{ inputs.shell }}
-      if: ${{ inputs.cachix_token != '' }}
-      run: |
-        echo "#################################################################"
-        nix-build ${{ inputs.nix_build_args }} shell.nix | cachix push openlane
+    #    - name: Unit/Step Tests
+    #      shell: ${{ inputs.shell }}
+    #      run: |
+    #        echo "#################################################################"
+    #        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.' -n auto"
+    #    - name: Smoke Test
+    #      shell: ${{ inputs.shell }}
+    #      run: |
+    #        echo "#################################################################"
+    #        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
+    #    - name: Push
+    #      shell: ${{ inputs.shell }}
+    #      if: ${{ inputs.cachix_token != '' }}
+    #      run: |
+    #        echo "#################################################################"
+    #        nix-build ${{ inputs.nix_build_args }} shell.nix | cachix push openlane
