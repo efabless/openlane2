@@ -1,0 +1,20 @@
+name: Check Space
+description: Reusable step that prints disk usage information
+runs:
+  using: "composite"
+  steps:
+    - name: Check Space
+      shell: bash
+      run: |
+        sudo du -hs /nix/store/* | sort -h | tail -n 10
+        echo ===============
+        df -h
+        echo ===============
+        du -hs ~/* | sort -h
+        echo ===============
+        du -hs * | sort -h
+        echo ===============
+        du -hs /home/runner/runners/* | sort -h
+        echo ===============
+        du -hs /home/runner/work/* | sort -h
+        echo ===============

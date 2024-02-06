@@ -87,56 +87,17 @@ jobs:
     steps:
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Check Space
-        if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -145,24 +106,7 @@ jobs:
           nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
-      #      - name: Derivation to Cache
-      #        uses: ./.github/actions/derivation_to_cache
-      #        with:
-      #          key: derivation-amd64-${{ github.run_id }}
-      #          file: shell.nix
+        uses: ./.github/actions/check_space
   #  build-linux-aarch64:
   #    needs: lint
   #    runs-on: ubuntu-22.04
@@ -249,51 +193,15 @@ jobs:
     steps:
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Check out repo
         uses: actions/checkout@v3
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - uses: docker/setup-qemu-action@v1
       - name: Setup Nix
         uses: ./.github/actions/setup_nix
@@ -301,40 +209,7 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: Derivation from Cache
-        run: nix-shell --run "ls"
-      - name: Check Space
-        if: ${{ always() }}
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Build Docker Image
         run: |
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
@@ -387,89 +262,32 @@ jobs:
     steps:
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
           root-reserve-mb: 20480
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
-      #- name: Setup Nix
-      #  uses: ./.github/actions/setup_nix
-      #  with:
-      #    cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-      #- name: Check Space
-      #  if: ${{ always() }}
-      #  run: |
-      #    sudo du -hs /nix/store/* | sort -h | tail  -n 10
-      #    sudo tree /nix/store/*-openlane2 || true
-      #    df -h
-      #    echo ===============
-      #    echo ===============
-      #    du -hs ~/* | sort -h
-      #    echo ===============
-      #    echo ===============
-      #    du -hs * | sort -h
-      #    echo ===============
-      #    du -hs /home/runner/runners/* | sort -h
-      #    echo ===============
-      #    du -hs /home/runner/work/* | sort -h
-      #    echo ===============
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: Setup Cachix
-        uses: cachix/cachix-action@v13
+        uses: ./.github/actions/check_space
+      - name: Setup Nix
+        uses: ./.github/actions/setup_nix
         with:
-          name: ${{ vars.CACHIX_CACHE || 'openlane' }}
-          authToken: "${{ secrets.CACHIX_TOKEN }}"
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+      - name: Check Space
+        if: ${{ always() }}
+        uses: ./.github/actions/check_space
       - name: Check Nix
         run: |
           sudo du -hs /nix/store/* | sort -h | tail  -n 10
@@ -530,19 +348,7 @@ jobs:
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Download IPM designs
         id: download-ipm-design
         if: matrix.design.ipm_version != 'None'
@@ -601,19 +407,7 @@ jobs:
           path: ${{ matrix.design.run_folder }}
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
