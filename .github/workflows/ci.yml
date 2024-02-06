@@ -103,7 +103,7 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          nix_build_args: --option system aarch64-linux --extra-platforms aarch64-linux
+          nix_build_args: --option system x86_64-linux --extra-platforms x86_64-linux
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
