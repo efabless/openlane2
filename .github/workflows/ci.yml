@@ -475,6 +475,7 @@ jobs:
         if: ${{ always() }}
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 20
+          sudo tree /nix/store/*-openlane2
           df -h
           echo ===============
           sudo du -hs /* | sort -h
