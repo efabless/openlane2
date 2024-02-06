@@ -85,10 +85,10 @@ jobs:
     runs-on: ubuntu-22.04
     name: Build (Nix on Linux/amd64)
     steps:
+      - uses: actions/checkout@v3
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
-      - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
@@ -260,6 +260,9 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
@@ -272,12 +275,6 @@ jobs:
           remove-codeql: "true"
           remove-docker-images: "true"
           root-reserve-mb: 20480
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
@@ -301,21 +298,7 @@ jobs:
           sudo tree /nix/store/*-openlane2 || true
       - name: Check Space
         if: ${{ always() }}
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
-          sudo tree /nix/store/*-openlane2 || true
-          df -h
-          echo ===============
-          echo ===============
-          du -hs ~/* | sort -h
-          echo ===============
-          echo ===============
-          du -hs * | sort -h
-          echo ===============
-          du -hs /home/runner/runners/* | sort -h
-          echo ===============
-          du -hs /home/runner/work/* | sort -h
-          echo ===============
+        uses: ./.github/actions/check_space
       - name: Cache PDKs
         id: cache-pdks
         uses: actions/cache@v3
