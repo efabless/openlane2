@@ -165,11 +165,11 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
-      - name: Derivation to Cache
-        uses: ./.github/actions/derivation_to_cache
-        with:
-          key: derivation-amd64-${{ github.run_id }}
-          file: shell.nix
+      #      - name: Derivation to Cache
+      #        uses: ./.github/actions/derivation_to_cache
+      #        with:
+      #          key: derivation-amd64-${{ github.run_id }}
+      #          file: shell.nix
   build-linux-aarch64:
     needs: lint
     runs-on: ubuntu-22.04
@@ -331,11 +331,10 @@ jobs:
           du -hs /home/runner/work/* | sort -h
           echo ===============
       - name: Derivation from Cache
-        uses: ./.github/actions/derivation_from_cache
-        with:
-          file: shell.nix
-          key: derivation-${{ matrix.arch }}-${{ github.run_id }}
-          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+        run: nix-shell --run "ls"
       - name: Check Space
         if: ${{ always() }}
         run: |
