@@ -474,7 +474,7 @@ jobs:
         if: ${{ always() }}
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 20
-          sudo tree /nix/store/*-openlane2
+          sudo tree /nix/store/*-openlane2 || true
           df -h
           echo ===============
           sudo du -hs /* | sort -h
@@ -489,17 +489,16 @@ jobs:
           echo ===============
           du -hs /home/runner/work/* | sort -h
           echo ===============
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
       - name: Derivation from Cache
-        uses: ./.github/actions/derivation_from_cache
-        with:
-          file: shell.nix
-          key: derivation-amd64-${{ github.run_id }}
-          other-substituters: "https://${{ vars.CACHIX_CACHE || 'openlane' }}.cachix.org"
+        run: nix-shell --run "ls"
       - name: Check Space
         if: ${{ always() }}
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 20
-          sudo tree /nix/store/*-openlane2
+          sudo tree /nix/store/*-openlane2 || true
           df -h
           echo ===============
           sudo du -hs /* | sort -h
