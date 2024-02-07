@@ -293,18 +293,8 @@ jobs:
         uses: ./.github/actions/check_space
       - name: Check Nix
         run: |
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
+          sudo du -hs /nix/store/* | sort -h | tail -n 10
           sudo tree /nix/store/*-openlane2 || true
-      - name: Derivation from Cache
-        run: |
-          nix-shell --run "ls"
-      - name: Check Nix
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
-          sudo tree /nix/store/*-openlane2 || true
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Cache PDKs
         id: cache-pdks
         uses: actions/cache@v3
