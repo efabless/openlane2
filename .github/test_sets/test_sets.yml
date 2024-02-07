@@ -2,41 +2,41 @@
   name: fastest_test_set
   designs:
     - inverter
-   - wbqspiflash
-   - APU
-   - s44
-   - zipdiv
-   - blink
-   - name: xtea
-     config_file: config.tcl
-   - usb
-   - usb_cdc_core
-   - name: latch
-     config_file: config_good.json
-   - name: latch
-     config_file: config_bad.json
-   - spm
-   - gcd
-   - caravel_upw
-   - io_placer
-   - test_sram_macro
-   - manual_macro_placement_test
-   - aes_user_project_wrapper
-   - user_proj_timer
-   - name: EF_PSRAM_CTRL_V2
-     ipm: v1.0.3
-   - name: EF_UART
-     ipm: v1.0.0
-   - name: MS_SPI_XIP_CACHE
-     ipm: v1.0.0
-   - name: MS_DMAC_AHBL
-     ipm: v1.0.2
-   - name: MS_CLK_RST
-     ipm: v1.0.1
-   - name: EF_TCC32
-     ipm: v1.0.1
-   - name: EF_GPIO
-     ipm: v1.0.0
+    - wbqspiflash
+    - APU
+    - s44
+    - zipdiv
+    - blink
+    - name: xtea
+      config_file: config.tcl
+    - usb
+    - usb_cdc_core
+    - name: latch
+      config_file: config_good.json
+    - name: latch
+      config_file: config_bad.json
+    - spm
+    - gcd
+    - caravel_upw
+    - io_placer
+    - test_sram_macro
+    - manual_macro_placement_test
+    - aes_user_project_wrapper
+    - user_proj_timer
+    - name: EF_PSRAM_CTRL_V2
+      ipm: v1.0.3
+    - name: EF_UART
+      ipm: v1.0.0
+    - name: MS_SPI_XIP_CACHE
+      ipm: v1.0.0
+    - name: MS_DMAC_AHBL
+      ipm: v1.0.2
+    - name: MS_CLK_RST
+      ipm: v1.0.1
+    - name: EF_TCC32
+      ipm: v1.0.1
+    - name: EF_GPIO
+      ipm: v1.0.0
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
