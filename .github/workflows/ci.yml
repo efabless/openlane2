@@ -220,7 +220,7 @@ jobs:
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
             nix_system=aarch64-linux
           fi
-          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#outputs.$nix_system.openlane-docker)
+          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#packages.$nix_system.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -356,11 +356,9 @@ jobs:
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
-          nix-shell --run "\
-            python3 -m openlane.state latest\
+          nix develop --accept-flake-config --command openlane.state latest\
               ${{ matrix.design.run_folder }}\
-              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json\
-          "
+              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
       - name: Upload Metrics
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
