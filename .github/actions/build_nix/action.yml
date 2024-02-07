@@ -34,7 +34,7 @@ runs:
       name: Build
       shell: ${{ inputs.shell }}
       run: |
-        substituters='https://${{ inputs.cachix_cache }}.cachix.org/ https://cache.nixos.org'
+        substituters='https://${{ inputs.cachix_cache }}.cachix.org https://cache.nixos.org'
         if [ '${{ inputs.local_cache_key }}' = '' ]; then
           substituters="file:///tmp/${{ inputs.local_cache_key }} $substituters"
         fi
@@ -43,7 +43,7 @@ runs:
           --print-out-paths\
           --no-link\
           --accept-flake-config\
-          --option substituters $substituters\
+          --option substituters "$substituters"\
           .#devShells.${{ inputs.nix_system }}.default)
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20

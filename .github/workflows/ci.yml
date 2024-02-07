@@ -294,6 +294,7 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
+          key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           nix_system: ${{ env.NIX_SYSTEM }}
       - name: Check Space
