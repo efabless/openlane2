@@ -112,10 +112,10 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
+          nix_system: x86_64-linux
+          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          key: derivation-${{ github.run_id }}
-          nix_system: x86_64-linux
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
@@ -223,9 +223,9 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          key: derivation-${{ github.run_id }}
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           nix_system: ${{ env.NIX_SYSTEM }}
+          local_cache_key: derivation-${{ github.run_id }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
@@ -294,9 +294,9 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          key: derivation-${{ github.run_id }}
+          nix_system: x86_64-linux
+          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-          nix_system: ${{ env.NIX_SYSTEM }}
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space

@@ -15,7 +15,7 @@ inputs:
     default: "bash"
   nix_system:
     description: "The nix platform string to build for"
-    required: false
+    required: true
     default: "x86_64-linux"
   local_cache_key:
     description: Key to use for the cache
@@ -44,7 +44,7 @@ runs:
           --no-link\
           --accept-flake-config\
           --option substituters "$substituters"\
-          .#devShells.${{ inputs.nix_system }}.default)
+          .#devShells.${{ inputs.nix_system }}.default )
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20
     #    - name: Unit/Step Tests
