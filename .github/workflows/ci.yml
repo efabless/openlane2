@@ -88,27 +88,13 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Stage files
-        run: |
-          git status
-          git add -N .
-          git status
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -116,9 +102,7 @@ jobs:
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
   #  build-linux-aarch64:
   #    needs: lint
   #    runs-on: ubuntu-22.04
@@ -143,24 +127,25 @@ jobs:
   #        with:
   #          key: derivation-aarch64-${{ github.run_id }}
   #          file: shell.nix
-  #  build-mac-amd64:
-  #    needs: lint
-  #    runs-on: macos-12
-  #    name: Build (Nix on macOS/amd64)
-  #    steps:
-  #      - uses: actions/checkout@v3
-  #      - name: Initialize Step Unit Test Submodule
-  #        run: |
-  #          git submodule update --init test/steps/all
-  #      - name: Set up GITHUB_TOKEN
-  #        run: |
-  #          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-  #      - name: Build with Nix
-  #        uses: ./.github/actions/build_nix
-  #        with:
-  #          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-  #          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-  #          shell: "zsh {0}"
+  build-mac-amd64:
+    needs: lint
+    runs-on: macos-12
+    name: Build (Nix on macOS/amd64)
+    steps:
+      - uses: actions/checkout@v3
+      - name: Initialize Step Unit Test Submodule
+        run: |
+          git submodule update --init test/steps/all
+      - name: Set up GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
+        with:
+          nix_system: x86_64-darwin
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          shell: "zsh {0}"
   build-py:
     runs-on: ubuntu-22.04
     needs: [lint, prepare-test-matrices]
@@ -205,12 +190,8 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
+
       - uses: docker/setup-qemu-action@v1
       - name: Set Nix System
         run: |
@@ -226,9 +207,7 @@ jobs:
           nix_system: ${{ env.NIX_SYSTEM }}
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
@@ -284,22 +263,16 @@ jobs:
         run: |
           git status || true
           tree .git || true
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - uses: DeterminateSystems/nix-installer-action@main
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: x86_64-linux
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Check Nix
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 10
@@ -310,9 +283,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Enable PDKs
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
@@ -320,9 +291,7 @@ jobs:
           volare enable --pdk ${{ matrix.design.pdk_family }} \
             --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Download IPM designs
         id: download-ipm-design
         if: matrix.design.ipm_version != 'None'
@@ -330,9 +299,7 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           python3 -m pip install git+https://github.com/efabless/IPM
           ipm install --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm --version ${{ matrix.design.ipm_version }} ${{ matrix.design.name }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"
@@ -359,9 +326,7 @@ jobs:
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_folder }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
+
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
