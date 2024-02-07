@@ -194,13 +194,10 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        arch: ["amd64", "aarch64"]
+        arch: ["amd64"] # , "aarch64"]
     needs: [build-linux-amd64]
     name: Build Docker Image (${{ matrix.arch }})
     steps:
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
       - name: Check out repo
         uses: actions/checkout@v3
       - name: Check Space
@@ -219,10 +216,11 @@ jobs:
         uses: ./.github/actions/check_space
       - name: Build Docker Image
         run: |
+          nix_system=x86_64-linux
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
-            arch_flags="--option system aarch64-linux --extra-platforms aarch64-linux"
+            nix_system=aarch64-linux
           fi
-          IMAGE_PATH=$(nix build .#openlane-docker --print-out-paths --no-link $arch_flags)
+          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-links .#outputs.$nix_system.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -343,7 +341,7 @@ jobs:
             mkdir -p ${{ github.workspace }}/run
             sudo du -hs /nix/store/* | sort -h | tail -n 10
             sudo du -hs /nix/store/* | sort -h | tail -n 10 > before.txt
-            nix run .#openlane --\
+            nix run --accept-flake-config .#openlane --\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
@@ -351,7 +349,7 @@ jobs:
               --condensed\
               ${{ matrix.design.config }}
           else
-            nix develop --command bash -c "${{matrix.design.script}}"
+            nix develop --accept-flake-config --command bash -c "${{matrix.design.script}}"
           fi
           sudo du -hs /nix/store/* | sort -h | tail  -n 10
           sudo du -hs /nix/store/* | sort -h | tail  -n 10 > after.txt

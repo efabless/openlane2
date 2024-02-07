@@ -29,7 +29,7 @@ runs:
       shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
-        nix build --accept-flake-config .#devShells.${{ inputs.nix_system }}.default
+        nix build --no-links --accept-flake-config .#devShells.${{ inputs.nix_system }}.default
         sudo du -hs /nix/store/* | sort -h | tail -n 20
     #    - name: Unit/Step Tests
     #      shell: ${{ inputs.shell }}
@@ -52,4 +52,4 @@ runs:
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix build --accept-flake-config --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix push ${{ inputs.cachix_cache }}
+        nix build --no-links --accept-flake-config --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix push ${{ inputs.cachix_cache }}
