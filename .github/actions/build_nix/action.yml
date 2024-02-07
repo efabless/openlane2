@@ -13,10 +13,10 @@ inputs:
     description: "Shell to use"
     required: true
     default: "bash"
-  nix_build_args:
-    description: "Extra arguments to pass on to nix-build"
+  nix_system:
+    description: "The nix platform string to build for"
     required: false
-    default: ""
+    default: "x86_64-linux"
 runs:
   using: "composite"
   steps:
@@ -29,8 +29,7 @@ runs:
       shell: ${{ inputs.shell }}
       run: |
         echo "#################################################################"
-        nix-env -f "<nixpkgs>" -iA bash
-        nix-build ${{ inputs.nix_build_args }} shell.nix
+        nix build .#devShells.${{ inputs.nix_system }}.default
         sudo du -hs /nix/store/* | sort -h | tail -n 20
     #    - name: Unit/Step Tests
     #      shell: ${{ inputs.shell }}
@@ -42,14 +41,15 @@ runs:
     #      run: |
     #        echo "#################################################################"
     #        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
-    # - name: Setup Cachix
-    #   uses: cachix/cachix-action@v13
-    #   with:
-    #     name: ${{ inputs.cachix_cache }}
-    #     authToken: "${{ inputs.cachix_token }}"
-    #    - name: Push
-    #      shell: ${{ inputs.shell }}
-    #      if: ${{ inputs.cachix_token != '' }}
-    #      run: |
-    #        echo "#################################################################"
-    #        nix-build ${{ inputs.nix_build_args }} shell.nix | cachix push openlane
+    - name: Setup Cachix
+      uses: cachix/cachix-action@v13
+      if: ${{ inputs.cachix_token != '' }}
+      with:
+        name: ${{ inputs.cachix_cache }}
+        authToken: "${{ inputs.cachix_token }}"
+    - name: Push to Cachix
+      shell: ${{ inputs.shell }}
+      if: ${{ inputs.cachix_token != '' }}
+      run: |
+        echo "#################################################################"
+        nix build --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix

@@ -110,7 +110,7 @@ jobs:
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          nix_build_args: --option system x86_64-linux --extra-platforms x86_64-linux
+          nix_system: x86_64-linux
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
@@ -341,21 +341,17 @@ jobs:
           if test ${{matrix.design.script}} = "None"
           then
             mkdir -p ${{ github.workspace }}/run
-            sudo du -hs /nix/store/* | sort -h | tail  -n 10
-            sudo du -hs /nix/store/* | sort -h | tail  -n 10 > before.txt
-            nix-shell --run "\
-              python3 -m openlane\
+            sudo du -hs /nix/store/* | sort -h | tail -n 10
+            sudo du -hs /nix/store/* | sort -h | tail -n 10 > before.txt
+            nix run .#openlane --\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
               --condensed\
-              ${{ matrix.design.config }}\
-            "
+              ${{ matrix.design.config }}
           else
-            nix-shell --run "\
-              ${{matrix.design.script}}\
-            "
+            nix develop --command bash -c "${{matrix.design.script}}"
           fi
           sudo du -hs /nix/store/* | sort -h | tail  -n 10
           sudo du -hs /nix/store/* | sort -h | tail  -n 10 > after.txt
