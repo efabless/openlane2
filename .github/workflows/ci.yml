@@ -220,7 +220,7 @@ jobs:
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
             nix_system=aarch64-linux
           fi
-          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-links .#outputs.$nix_system.openlane-docker)
+          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#outputs.$nix_system.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
