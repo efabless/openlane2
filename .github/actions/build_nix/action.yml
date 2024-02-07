@@ -52,4 +52,4 @@ runs:
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix build --accept-flake-config --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix
+        nix build --accept-flake-config --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix push ${{ inputs.cachix_cache }}
