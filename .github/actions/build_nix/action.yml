@@ -1,5 +1,5 @@
 name: Build/Cache Nix
-description: Builds `default.nix` for a platform, caching the results (if applicable)
+description: Builds default devShell for a platform, caching the results (if applicable)
 inputs:
   cachix_cache:
     description: "The name of the Cachix cache to download to and/or upload from"
@@ -17,19 +17,35 @@ inputs:
     description: "The nix platform string to build for"
     required: false
     default: "x86_64-linux"
+  local_cache_key:
+    description: Key to use for the cache
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
-    - name: Setup Nix
-      uses: ./.github/actions/setup_nix
+    - id: cache
+      name: Cache Derivation
+      uses: actions/cache@v3
       with:
-        cachix_cache: ${{ inputs.cachix_cache }}
-        cachix_token: "${{ inputs.cachix_token }}"
-    - name: Build
+        key: ${{ inputs.local_cache_key }}-${{ inputs.nix_system }}
+        path: /tmp/${{ inputs.local_cache_key }}
+    - id: Build
+      name: Build
       shell: ${{ inputs.shell }}
       run: |
+        substituters='https://${{ inputs.cachix_cache }}.cachix.org/ https://cache.nixos.org'
+        if [ '${{ inputs.local_cache_key }}' = '' ]; then
+          substituters="file:///tmp/${{ inputs.local_cache_key }} $substituters"
+        fi
         echo "#################################################################"
-        nix build --no-link --accept-flake-config .#devShells.${{ inputs.nix_system }}.default
+        outPath=$(nix build\
+          --print-out-paths\
+          --no-link\
+          --accept-flake-config\
+          --option substituters $substituters\
+          .#devShells.${{ inputs.nix_system }}.default)
+        echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20
     #    - name: Unit/Step Tests
     #      shell: ${{ inputs.shell }}
@@ -41,15 +57,18 @@ runs:
     #      run: |
     #        echo "#################################################################"
     #        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
-    - name: Setup Cachix
-      uses: cachix/cachix-action@v13
-      if: ${{ inputs.cachix_token != '' }}
-      with:
-        name: ${{ inputs.cachix_cache }}
-        authToken: "${{ inputs.cachix_token }}"
-    - name: Push to Cachix
+    - name: Push to local cache
+      shell: ${{ inputs.shell }}
+      if: ${{ inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true' }}
+      run: |
+        nix copy\
+          --to 'file:///tmp/${{ inputs.local_cache_key }}?compression=zstd&parallel-compression=true'\
+          ${{ steps.build.outputs.out-path }}
+    - name: Install + Push to Cachix
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix build --no-link --accept-flake-config --print-out-paths .#devShells.${{ inputs.nix_system }}.default | cachix push ${{ inputs.cachix_cache }}
+        nix-env -iA cachix -f https://cachix.org/api/v1/install
+        cachix authtoken ${{ inputs.cachix_token }}
+        cachix push ${{ inputs.cachix_cache }} ${{ steps.build.outputs.out-path }}

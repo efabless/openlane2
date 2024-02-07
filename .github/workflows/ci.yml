@@ -105,11 +105,16 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check Space
+        if: ${{ always() }}
+        uses: ./.github/actions/check_space
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          key: derivation-${{ github.run_id }}
           nix_system: x86_64-linux
       - name: Check Space
         if: ${{ always() }}
@@ -207,20 +212,26 @@ jobs:
         if: ${{ always() }}
         uses: ./.github/actions/check_space
       - uses: docker/setup-qemu-action@v1
-      - name: Setup Nix
-        uses: ./.github/actions/setup_nix
-        with:
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-      - name: Check Space
-        if: ${{ always() }}
-        uses: ./.github/actions/check_space
-      - name: Build Docker Image
+      - name: Set Nix System
         run: |
           nix_system=x86_64-linux
           if [ "${{ matrix.arch }}" == "aarch64" ]; then
             nix_system=aarch64-linux
           fi
-          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#packages.$nix_system.openlane-docker)
+          echo "NIX_SYSTEM=$nix_system" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
+        with:
+          key: derivation-${{ github.run_id }}
+          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          nix_system: ${{ env.NIX_SYSTEM }}
+      - name: Check Space
+        if: ${{ always() }}
+        uses: ./.github/actions/check_space
+      - name: Build Docker Image
+        run: |
+          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -229,15 +240,7 @@ jobs:
           python-version: "3.8"
       - name: Install Dependencies
         run: make venv
-      - name: Cache sky130 PDK
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/.volare-sky130
-          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
-      - name: Enable sky130 PDK
-        run: |
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+      # Do not cache the PDK. We want to test the typical Docker flow here.
       - name: Smoke-Test Docker Image
         run: |
           mkdir -p $HOME/.volare
@@ -284,10 +287,15 @@ jobs:
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
-      - name: Setup Nix
-        uses: ./.github/actions/setup_nix
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check Space
+        if: ${{ always() }}
+        uses: ./.github/actions/check_space
+      - name: Build with Nix
+        uses: ./.github/actions/build_nix
         with:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
+          nix_system: ${{ env.NIX_SYSTEM }}
       - name: Check Space
         if: ${{ always() }}
         uses: ./.github/actions/check_space
