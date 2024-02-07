@@ -42,6 +42,11 @@ runs:
     #      run: |
     #        echo "#################################################################"
     #        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
+    # - name: Setup Cachix
+    #   uses: cachix/cachix-action@v13
+    #   with:
+    #     name: ${{ inputs.cachix_cache }}
+    #     authToken: "${{ inputs.cachix_token }}"
     #    - name: Push
     #      shell: ${{ inputs.shell }}
     #      if: ${{ inputs.cachix_token != '' }}

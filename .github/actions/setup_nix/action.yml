@@ -20,8 +20,3 @@ runs:
     - name: Check Space
       if: ${{ always() }}
       uses: ./.github/actions/check_space
-    - name: Setup Cachix
-      uses: cachix/cachix-action@v13
-      with:
-        name: ${{ inputs.cachix_cache }}
-        authToken: "${{ inputs.cachix_token }}"
