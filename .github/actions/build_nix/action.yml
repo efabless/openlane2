@@ -21,6 +21,10 @@ inputs:
     description: Key to use for the cache
     required: false
     default: ""
+  run_tests:
+    description: Whether to run unit tests and the smoke test
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -49,17 +53,19 @@ runs:
         sudo du -hs /nix/store/* | sort -h | tail -n 20
     - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
       run: |
         echo "#################################################################"
         nix develop .#devShells.${{ inputs.nix_system }}.default --accept-flake-config --command pytest --step-rx '.' -n auto
     - name: Smoke Test
       shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
       run: |
         echo "#################################################################"
         nix run .#packages.${{ inputs.nix_system }}.openlane -- --smoke-test
     - name: Push to local cache
       shell: ${{ inputs.shell }}
-      if: ${{ inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true' }}
+      if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
       run: |
         nix copy\
           --to 'file:///tmp/${{ inputs.local_cache_key }}?compression=zstd&parallel-compression=true'\

@@ -133,6 +133,7 @@ jobs:
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
+          run_tests: "true"
   #  build-linux-aarch64:
   #    needs: lint
   #    runs-on: ubuntu-22.04
@@ -177,6 +178,7 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
+          run_tests: "true"
   build-docker:
     runs-on: ubuntu-22.04
     strategy:
