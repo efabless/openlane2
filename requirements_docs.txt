@@ -1,5 +1,5 @@
 # docs
-furo==2023.8.19
+sphinx-book-theme>=1.1.0,<2
 docutils>=0.17,<1
 sphinx>=7.2.2
 sphinx-autobuild>=2021.3.14
