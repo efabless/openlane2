@@ -147,6 +147,7 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
