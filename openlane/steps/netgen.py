@@ -242,15 +242,23 @@ foreach cell $cells1 {
                     )
                     macros_commands.append(f"readnet verilog {str(nl)} $circuit2")
 
+        macros_commands += [
+            f"readnet verilog {state_in[DesignFormat.POWERED_NETLIST]} $circuit2"
+        ]
         netgen_commands = (
-            textwrap.dedent(
-                f"""
+            (
+                textwrap.dedent(
+                    f"""
                     set circuit1 [readnet spice {state_in[DesignFormat.SPICE]}]
-                    set circuit2 [readnet verilog {state_in[DesignFormat.POWERED_NETLIST]}]"""
+                    set circuit2 [readnet verilog /dev/null]"""
+                )
             )
-        ).split("\n")
-        netgen_commands += spice_files_commands
+            .lstrip()
+            .rstrip()
+            .split("\n")
+        )
         netgen_commands += macros_commands
+        netgen_commands += spice_files_commands
         netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup} {stats_file} -blackbox -json'.split(
             "\n"
         )
