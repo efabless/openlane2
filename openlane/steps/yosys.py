@@ -277,9 +277,11 @@ class YosysStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
-    def run(
-        self, state_in: State, power_defines: bool = False, **kwargs
-    ) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        power_defines = False
+        if "power_defines" in kwargs:
+            power_defines = kwargs["power_defines"]
+
         kwargs, env = self.extract_env(kwargs)
 
         _deps_script = os.path.join(self.step_dir, "_deps.tcl")
