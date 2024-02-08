@@ -68,7 +68,7 @@ def main(scls, use_json, test_sets):
             config_file = os.path.join(
                 ol_dir, "test", "designs", design_name, config_filename
             )
-            run_folder = os.path.join(
+            run_dir = os.path.join(
                 ol_dir, "test", "designs", design_name, "runs", f"{pdk}-{scl}"
             )
             pdk_family = None
@@ -87,7 +87,7 @@ def main(scls, use_json, test_sets):
                 {
                     "name": design_name,
                     "config": config_file,
-                    "run_folder": run_folder,
+                    "run_dir": run_dir,
                     "pdk": pdk,
                     "scl": scl,
                     "script": script,

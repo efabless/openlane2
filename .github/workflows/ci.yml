@@ -314,24 +314,25 @@ jobs:
               ${{ matrix.design.config }}
           else
             nix develop --accept-flake-config --command\
-              ${{matrix.design.script}}\
-              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
+              ${{ matrix.design.script }}\
+              --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
+              --pdk ${{ matrix.design.pdk }}\
+              --scl ${{ matrix.design.scl }}\
+              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --condensed
           fi
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10
-          sudo du -hs /nix/store/* | sort -h | tail  -n 10 > after.txt
-          diff before.txt after.txt || true
       - name: Upload Run Folder
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
-          path: ${{ matrix.design.run_folder }}
+          path: ${{ matrix.design.run_dir }}
 
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
           nix develop --accept-flake-config --command openlane.state latest\
-              ${{ matrix.design.run_folder }}\
+              ${{ matrix.design.run_dir }}\
               --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
       - name: Upload Metrics
         if: ${{ always() }}
