@@ -280,7 +280,7 @@ class YosysStep(TclStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         power_defines = False
         if "power_defines" in kwargs:
-            power_defines = kwargs["power_defines"]
+            power_defines = kwargs.pop("power_defines")
 
         kwargs, env = self.extract_env(kwargs)
 

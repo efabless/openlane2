@@ -317,6 +317,7 @@ class Classic(SequentialFlow):
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
         OpenROAD.CheckSDCFiles,
+        OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
         Odb.SetPowerConnections,
