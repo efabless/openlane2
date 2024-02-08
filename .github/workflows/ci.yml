@@ -206,7 +206,13 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          IMAGE_PATH=$(nix build --accept-flake-config --print-out-paths --no-link .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
+          IMAGE_PATH=$(nix build\
+            --print-out-paths\
+            --no-link\
+            --accept-flake-config\
+            --option system ${{ inputs.nix_system }}\
+            --extra-platforms ${{ inputs.nix_system }}\
+            .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
