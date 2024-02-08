@@ -119,8 +119,6 @@ jobs:
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
