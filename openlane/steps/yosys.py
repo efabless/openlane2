@@ -125,26 +125,36 @@ def _generate_read_deps(
         ),
         as_cell_lists=True,
     )
-    commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}"
-
-    for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+    commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}\n"
 
     verilog_include_args = []
     if dirs := config["VERILOG_INCLUDE_DIRS"]:
         for dir in dirs:
             verilog_include_args.append(f"-I{dir}")
 
+    netlist_format = (
+        DesignFormat.POWERED_NETLIST if power_defines else DesignFormat.NETLIST
+    )
+    for lib in toolbox.get_macro_views(
+        config,
+        DesignFormat.LIB,
+        unless_exist=[
+            DesignFormat.VERILOG_HEADER,
+            netlist_format,
+        ],
+    ):
+        lib_str = TclUtils.escape(str(lib))
+        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+
     macro_headers = toolbox.get_macro_views(
         config,
-        DesignFormat.NETLIST,
-        unless_exist=DesignFormat.LIB,
+        netlist_format,
+        unless_exist=[DesignFormat.VERILOG_HEADER],
     )
     macro_headers += toolbox.get_macro_views(
         config,
         DesignFormat.VERILOG_HEADER,
-        unless_exist=[DesignFormat.LIB, DesignFormat.NETLIST],
+        unless_exist=[],
     )
     for header in macro_headers:
         commands += (
@@ -267,13 +277,19 @@ class YosysStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(
+        self, state_in: State, power_defines: bool = False, **kwargs
+    ) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         _deps_script = os.path.join(self.step_dir, "_deps.tcl")
 
         with open(_deps_script, "w") as f:
-            f.write(_generate_read_deps(self.config, self.toolbox, power_defines=True))
+            f.write(
+                _generate_read_deps(
+                    self.config, self.toolbox, power_defines=power_defines
+                )
+            )
 
         env["_deps_script"] = _deps_script
 
@@ -293,6 +309,9 @@ class JsonHeader(YosysStep):
         return os.path.join(get_script_dir(), "yosys", "json_header.tcl")
 
     config_vars = YosysStep.config_vars + verilog_rtl_cfg_vars
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        return super().run(state_in, power_defines=True, **kwargs)
 
 
 class SynthesisCommon(YosysStep):

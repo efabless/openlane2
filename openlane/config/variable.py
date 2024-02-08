@@ -135,6 +135,7 @@ class Macro:
 
     vh: List[Path] = field(default_factory=lambda: [])
     nl: List[Path] = field(default_factory=lambda: [])
+    pnl: List[Path] = field(default_factory=lambda: [])
     spef: Dict[str, List[Path]] = field(default_factory=lambda: {})
     lib: Dict[str, List[Path]] = field(default_factory=lambda: {})
     spice: List[Path] = field(default_factory=lambda: [])
