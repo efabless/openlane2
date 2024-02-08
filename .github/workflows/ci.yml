@@ -313,8 +313,8 @@ jobs:
               --condensed\
               ${{ matrix.design.config }}
           else
-            nix develop --accept-flake-config --command
-              bash -c ${{matrix.design.script}}\
+            nix develop --accept-flake-config --command\
+              ${{matrix.design.script}}\
               --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
           fi
           sudo du -hs /nix/store/* | sort -h | tail  -n 10
