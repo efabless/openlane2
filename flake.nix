@@ -112,7 +112,7 @@
             pytest-xdist
             pillow
             mdformat
-            furo
+            sphinx-book-theme
             docutils
             sphinx
             sphinx-autobuild
