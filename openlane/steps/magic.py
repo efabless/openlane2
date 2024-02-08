@@ -99,7 +99,7 @@ class MagicStep(TclStep):
     ]
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def get_command(self) -> List[str]:
