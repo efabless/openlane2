@@ -229,12 +229,12 @@ def _compare_metric_folders(
 
     if total_critical == 0:
         critical_change_report = (
-            "* No critical regressions were detected in analyzed designs.\n"
+            "* No changes to critical metrics were detected in analyzed designs.\n"
             + critical_change_report
         )
     else:
         critical_change_report = (
-            "* **Critical regressions were detected in the following designs:**\n"
+            "* **Changes to critical metrics were detected in the following designs:**\n"
             + critical_change_report
         )
 
