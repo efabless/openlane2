@@ -92,11 +92,10 @@ def _generate_read_deps(
     config: Config,
     toolbox: Toolbox,
     power_defines: bool = False,
-    include_scls: bool = True,
 ) -> str:
     commands = "set ::_synlig_defines [list]\n"
 
-    if synth_defines := config["VERILOG_DEFINES"]:
+    if synth_defines := config.get("VERILOG_DEFINES"):
         for define in synth_defines:
             commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
             commands += (
@@ -104,11 +103,11 @@ def _generate_read_deps(
             )
 
     if power_defines:
-        power_define = config["VERILOG_POWER_DEFINE"]
-        commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
-        commands += (
-            f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
-        )
+        if power_define := config.get("VERILOG_POWER_DEFINE"):
+            commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
+            commands += (
+                f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
+            )
 
     scl_lib_list = toolbox.filter_views(config, config["LIB"])
     for lib in scl_lib_list:
@@ -128,38 +127,39 @@ def _generate_read_deps(
     commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}\n"
 
     verilog_include_args = []
-    if dirs := config["VERILOG_INCLUDE_DIRS"]:
+    if dirs := config.get("VERILOG_INCLUDE_DIRS"):
         for dir in dirs:
             verilog_include_args.append(f"-I{dir}")
-
-    netlist_format = (
-        DesignFormat.POWERED_NETLIST if power_defines else DesignFormat.NETLIST
-    )
-    for lib in toolbox.get_macro_views(
-        config,
-        DesignFormat.LIB,
-        unless_exist=[
-            DesignFormat.VERILOG_HEADER,
-            netlist_format,
-        ],
-    ):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-
-    macro_headers = toolbox.get_macro_views(
-        config,
-        netlist_format,
-        unless_exist=[DesignFormat.VERILOG_HEADER],
-    )
-    macro_headers += toolbox.get_macro_views(
-        config,
+            
+    # Priorities from higher to lower
+    format_list = [
         DesignFormat.VERILOG_HEADER,
-        unless_exist=[],
-    )
-    for header in macro_headers:
-        commands += (
-            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {header}\n"
-        )
+        DesignFormat.POWERED_NETLIST,
+        DesignFormat.NETLIST,
+        DesignFormat.LIB
+    ] if power_defines else [
+        DesignFormat.VERILOG_HEADER,
+        DesignFormat.NETLIST,
+        DesignFormat.POWERED_NETLIST,
+        DesignFormat.LIB
+    ]
+    formats_so_far = []
+    for format in format_list:
+        views = toolbox.get_macro_views(config, format, unless_exist=formats_so_far)
+        print(format, views, formats_so_far)
+        for view in views:
+            view = str(view)
+            view_escaped = TclUtils.escape(view)
+            if format == DesignFormat.LIB:
+                commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {view_escaped}\n"
+            else:
+                commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {view_escaped}\n"
+        formats_so_far.append(format)
+                
+    if libs := config.get("EXTRA_LIBS"):
+        for lib in libs:
+            lib_str = TclUtils.escape(str(lib))
+            commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
 
     if models := config["EXTRA_VERILOG_MODELS"]:
         for model in models:
