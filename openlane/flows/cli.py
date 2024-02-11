@@ -395,7 +395,6 @@ def cloup_flow_opts(
                 o(
                     "--pdk-root",
                     type=Path(
-                        exists=True,
                         file_okay=False,
                         dir_okay=True,
                     ),
