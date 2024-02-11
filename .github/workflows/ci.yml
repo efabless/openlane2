@@ -210,8 +210,8 @@ jobs:
             --print-out-paths\
             --no-link\
             --accept-flake-config\
-            --option system ${{ inputs.nix_system }}\
-            --extra-platforms ${{ inputs.nix_system }}\
+            --option system ${{ env.NIX_SYSTEM }}\
+            --extra-platforms ${{ env.NIX_SYSTEM }}\
             .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load

@@ -29,7 +29,7 @@ logs/
 failures_report.json
 abc.history
 slpp_all/
-runs/
+*/runs
 
 # Testing
 .coverage
@@ -37,12 +37,3 @@ htmlcov/
 prof/
 sandbox/
 /designs
-
-# Testing CI
-package.json
-node_modules
-yarn.lock
-tables_*.md
-
-.volare-sky130
-.volare-gf180mcu

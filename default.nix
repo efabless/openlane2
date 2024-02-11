@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  system,
   lib,
   clangStdenv,
   fetchFromGitHub,
@@ -52,7 +51,7 @@
   psutil,
   pytestCheckHook,
   pyfakefs,
-  httpx,
+  system,
 }:
 buildPythonPackage rec {
   name = "openlane";
@@ -64,7 +63,7 @@ buildPythonPackage rec {
   src = [
     ./Readme.md
     ./setup.py
-    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n.volare-sky130\n.volare-gf180mcu" ./openlane)
+    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n" ./openlane)
     ./type_stubs
     ./requirements.txt
   ];
@@ -73,7 +72,6 @@ buildPythonPackage rec {
     echo $src
     for file in $src; do
       BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
-      echo $file $PWD/$BASENAME
       cp -r $file $PWD/$BASENAME
     done
     ls -lah
@@ -117,7 +115,6 @@ buildPythonPackage rec {
       libparse
       ioplace-parser
       psutil
-      httpx
       klayout-pymod
     ]
     ++ includedTools;
