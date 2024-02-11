@@ -25,8 +25,8 @@ clangStdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "netgen";
-    rev = "87d8759a6980d297edcb9be6f8661867e4726f9a";
-    sha256 = "sha256-wTreP/hVlXuo+SOC+jdROeC53o3tOF2M9eQIgX15zRo=";
+    rev = "62feed812e7a35ce0255b8df52f82dbcdffe44ba";
+    sha256 = "sha256-EnSCyoVPk1GWE15+x8cZeZqNkMQTO6rVgAJ58Ix47xc=";
   };
 
   configureFlags = [
