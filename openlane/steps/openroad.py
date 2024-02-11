@@ -31,6 +31,7 @@ from typing import (
     List,
     Dict,
     Literal,
+    Set,
     Tuple,
     Optional,
     Union,
@@ -62,6 +63,7 @@ from ..common import (
     get_tpe,
     mkdirp,
     aggregate_metrics,
+    process_list_file,
 )
 
 EXAMPLE_INPUT = """
@@ -210,23 +212,19 @@ class OpenROADStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-        lib_pnr = [str(lib) for lib in lib_list]
 
-        env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        env["PNR_LIBS"] = " ".join(lib_pnr)
-        env["MACRO_LIBS"] = " ".join(
+        env["_sdc_in"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        env["_pnr_libs"] = TclUtils.join([str(lib) for lib in lib_list])
+        env["_macro_libs"] = TclUtils.join(
             [
                 str(lib)
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
-        env["PNR_EXCLUDED_CELLS"] = TclUtils.join(
-            [
-                cell.strip()
-                for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
-                if cell.strip() != ""
-            ]
-        )
+
+        excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUSION_CELL_LIST"]))
+        env["_pnr_excluded_cells"] = TclUtils.join(excluded_cells)
 
         python_path_elements = site.getsitepackages()
         if current_pythonpath := env.get("PYTHONPATH"):
@@ -242,7 +240,7 @@ class OpenROADStep(TclStep):
 
         1. Before the `super()` call: It creates a version of the lib file
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
-        in the environment variable `PNR_LIBS`.
+        in the environment variable `_pnr_libs`.
 
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
@@ -461,7 +459,7 @@ class STAPostPNR(STAPrePNR):
         env = self.prepare_env(env, state_in)
 
         env["OPENSTA"] = "1"
-        env["SDC_IN"] = (
+        env["_sdc_in"] = (
             self.config["SIGNOFF_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         )
 
