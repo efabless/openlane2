@@ -17,9 +17,9 @@ if { $::env(MAGIC_LEF_WRITE_USE_GDS) } {
 } else {
     source $::env(SCRIPTS_DIR)/magic/common/read.tcl
     read_tech_lef
-    read_pdk_lef
-    read_macro_lef
-    read_extra_lef
+    read_pdk_gds
+    read_macro_gds
+    read_extra_gds
     read_def
 }
 
