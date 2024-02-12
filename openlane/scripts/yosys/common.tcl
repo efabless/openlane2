@@ -35,8 +35,8 @@ proc read_deps {{power_defines "off"}} {
         read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
     }
 
-    if { [info exists ::env(MACRO_LIBS) ] } {
-        foreach lib $::env(MACRO_LIBS) {
+    if { [info exists ::env(_macro_libs) ] } {
+        foreach lib $::env(_macro_libs) {
             log "Reading macro library '$lib' as a black-box…"
             read_liberty -lib -ignore_miss_dir -setattr blackbox $lib
         }

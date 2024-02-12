@@ -236,17 +236,17 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
-        "SYNTH_EXCLUSION_CELL_LIST",
+        "SYNTH_EXCLUDED_CELL_FILE",
         Path,
-        "Path to a text file containing a list of cells to be excluded from the lib file in synthesis alone. If not defined, the original lib file will be used as-is.",
-        deprecated_names=["NO_SYNTH_CELL_LIST"],
+        "Path to a text file containing a list of (wildcards matching) cells to be excluded from the lib file in synthesis alone.",
+        deprecated_names=["NO_SYNTH_CELL_LIST", "SYNTH_EXCLUSION_CELL_LIST"],
         pdk=True,
     ),
     Variable(
-        "PNR_EXCLUSION_CELL_LIST",
+        "PNR_EXCLUDED_CELL_FILE",
         Path,
-        "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells to be excluded from synthesis AND PnR. If not defined, all cells will be used.",
-        deprecated_names=["DRC_EXCLUDE_CELL_LIST"],
+        "Path to a text file containing a list of undesirable or bad (DRC-failed or complex pinout) cells or wildcards matching cells to be excluded from synthesis AND PnR.",
+        deprecated_names=["DRC_EXCLUDE_CELL_LIST", "PNR_EXCLUSION_CELL_LIST"],
         pdk=True,
     ),
     # Constraints
@@ -434,6 +434,13 @@ option_variables = [
         Optional[Tuple[Decimal, Decimal, Decimal, Decimal]],
         'Specific die area to be used in floorplanning. Specified as a 4-corner rectangle "x0 y0 x1 y1".',
         units="µm",
+    ),
+    # Exclusion Options
+    Variable(
+        "EXTRA_EXCLUDED_CELLS",
+        Optional[List[str]],
+        "Wildcards matching additional cells to exclude from both synthesis and PnR.",
+        deprecated_names=["RSZ_DONT_USE_CELLS", "DONT_USE_CELLS"],
     ),
     # Macros
     Variable(

@@ -660,14 +660,15 @@ def test_get_timing_files_warnings(
 
 @pytest.mark.usefixtures("_lib_mock_fs")
 def test_remove_cell_list_from_lib(lib_trim_result):
-    from openlane.common import Toolbox
+    from openlane.common import Toolbox, process_list_file
 
     toolbox = Toolbox(".")
 
+    excluded_cells = process_list_file("/cwd/bad_cell_list.txt")
+
     result = toolbox.remove_cells_from_lib(
         frozenset(["/cwd/example_lib.lib", "/cwd/example_lib2.lib"]),
-        excluded_cells=frozenset(["/cwd/bad_cell_list.txt"]),
-        as_cell_lists=True,
+        excluded_cells=frozenset(excluded_cells),
     )
     for file in result:
         contents = open(file, encoding="utf8").read()
