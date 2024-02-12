@@ -205,9 +205,6 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
 
 proc set_dont_use_cells {} {
     set_dont_use $::env(_pnr_excluded_cells)
-    if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
-        set_dont_use $::env(RSZ_DONT_USE_CELLS)
-    }
 }
 
 proc read_current_odb {args} {
