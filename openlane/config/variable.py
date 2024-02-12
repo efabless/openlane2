@@ -77,10 +77,12 @@ class Instance:
 
     :param location: The physical co-ordinates of the Macro's origin.
     :param orientation: Whether the Macro is facing North or South.
+    :param placed: Whether the Macro is already placed or not. Useful with macros inside macros.
     """
 
-    location: Tuple[Decimal, Decimal]
-    orientation: Orientation
+    location: Optional[Tuple[Decimal, Decimal]]
+    orientation: Optional[Orientation]
+    placed: bool = False
 
 
 @dataclass
@@ -196,9 +198,12 @@ class Macro:
         instance_name: str,
         location: Tuple[Number, Number],
         orientation: Orientation = Orientation.N,
+        placed: bool = False,
     ):
         location = (Decimal(location[0]), Decimal(location[1]))
-        self.instances[instance_name] = Instance(location, Orientation[orientation])
+        self.instances[instance_name] = Instance(
+            location, Orientation[orientation], placed
+        )
 
 
 def is_optional(t: Type[Any]) -> bool:

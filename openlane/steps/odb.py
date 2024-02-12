@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+import sys
 import json
 import site
 import shutil
@@ -59,7 +60,7 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        python_path_elements = site.getsitepackages()
+        python_path_elements = site.getsitepackages() + sys.path
         if current_pythonpath := env.get("PYTHONPATH"):
             python_path_elements.append(current_pythonpath)
         python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
@@ -245,9 +246,22 @@ class ManualMacroPlacement(OdbpyStep):
                                 f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
                             )
                         for name, data in macro.instances.items():
-                            f.write(
-                                f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
-                            )
+                            if data.placed:
+                                info(
+                                    f"Not placing already placed marco instance: {name}."
+                                )
+                            else:
+                                if not data.location:
+                                    raise StepException(
+                                        f"Unspecified key: location for non-placed macro instance: {name}."
+                                    )
+                                if not data.orientation:
+                                    raise StepException(
+                                        f"Unspecified key: orientation for non-placed macro instance: {name}"
+                                    )
+                                f.write(
+                                    f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                                )
 
         if not cfg_file.exists():
             info(f"No instances found, skipping '{self.id}'…")
