@@ -62,7 +62,7 @@ class KLayoutStep(Step):
     ) -> Dict[str, Any]:
         env = env or os.environ.copy()
         # Hack for Python subprocesses to get access to installed libraries
-        python_path_elements = site.getsitepackages()
+        python_path_elements = site.getsitepackages() + sys.path
         if current_pythonpath := env.get("PYTHONPATH"):
             python_path_elements.append(current_pythonpath)
 

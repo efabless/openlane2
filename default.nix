@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  system,
   lib,
   clangStdenv,
   fetchFromGitHub,
@@ -52,7 +51,7 @@
   psutil,
   pytestCheckHook,
   pyfakefs,
-  httpx,
+  system,
 }:
 buildPythonPackage rec {
   name = "openlane";
@@ -116,7 +115,6 @@ buildPythonPackage rec {
       libparse
       ioplace-parser
       psutil
-      httpx
       klayout-pymod
     ]
     ++ includedTools;
