@@ -1042,7 +1042,6 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
-        print(cmd_str, kwargs)
         process = psutil.Popen(
             cmd_str,
             encoding="utf8",
