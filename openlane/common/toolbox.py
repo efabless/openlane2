@@ -304,7 +304,6 @@ class Toolbox(object):
         self,
         input_lib_files: FrozenSet[str],
         excluded_cells: FrozenSet[str],
-        as_cell_lists: bool = False,
     ) -> List[str]:
         """
         Creates a new lib file with some cells removed.
@@ -313,27 +312,11 @@ class Toolbox(object):
         of inputs.
 
         :param input_lib_files: A `frozenset` of input lib files.
-        :param excluded_cells: A `frozenset` of either cells to be removed or
-            lists of cells to be removed if `as_cell_lists` is set to `True`.
-        :param as_cell_lists: If set to true, `excluded_cells` is treated as a
-            list of files that are themselves lists of cells. Otherwise, it is
-            treated as a list of cells.
+        :param excluded_cells: A `frozenset` of wildcards of cells to remove
+            from the files.
         :returns: A path to the lib file with the removed cells.
         """
         mkdirp(self.tmp_dir)
-
-        if as_cell_lists:  # Paths to files
-            excluded_cells_str = ""
-            for file in excluded_cells:
-                excluded_cells_str += open(file, encoding="utf8").read()
-                excluded_cells_str += "\n"
-            excluded_cells = frozenset(
-                [
-                    cell.strip()
-                    for cell in excluded_cells_str.strip().split("\n")
-                    if cell.strip() != ""
-                ]
-            )
 
         class State(IntEnum):
             initial = 0
@@ -342,6 +325,8 @@ class Toolbox(object):
 
         cell_start_rx = re.compile(r"(\s*)cell\s*\(\"?(.*?)\"?\)\s*\{")
         out_paths = []
+
+        excluded_cells_filter = Filter(excluded_cells)
 
         for file in input_lib_files:
             input_lib_stream = open(file)
@@ -358,7 +343,7 @@ class Toolbox(object):
                     if cell_m is not None:
                         whitespace = cell_m[1]
                         cell_name = cell_m[2]
-                        if cell_name in excluded_cells:
+                        if excluded_cells_filter.match(cell_name):
                             state = State.excluded_cell
                             write(f"{whitespace}/* removed {cell_name} */\n")
                         else:

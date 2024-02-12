@@ -20,7 +20,7 @@ import textwrap
 import subprocess
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Set, Tuple
 
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
@@ -28,7 +28,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from ..config import Variable, Config
 from ..state import State, DesignFormat
 from ..logging import debug, verbose, info, warn
-from ..common import Path, get_script_dir, Toolbox, TclUtils
+from ..common import Path, get_script_dir, Toolbox, TclUtils, process_list_file
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
@@ -112,15 +112,13 @@ def _generate_read_deps(
         lib_str = TclUtils.escape(str(lib))
         commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
 
+    excluded_cells: Set[str] = set(config["EXTRA_EXCLUDED_CELLS"] or [])
+    excluded_cells.update(process_list_file(config["SYNTH_EXCLUDED_CELL_FILE"]))
+    excluded_cells.update(process_list_file(config["PNR_EXCLUDED_CELL_FILE"]))
+
     lib_synth = toolbox.remove_cells_from_lib(
         frozenset([str(lib) for lib in scl_lib_list]),
-        excluded_cells=frozenset(
-            [
-                str(config["SYNTH_EXCLUSION_CELL_LIST"]),
-                str(config["PNR_EXCLUSION_CELL_LIST"]),
-            ]
-        ),
-        as_cell_lists=True,
+        excluded_cells=frozenset(excluded_cells),
     )
     commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}\n"
 
