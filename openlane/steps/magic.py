@@ -183,7 +183,7 @@ class WriteLEF(MagicStep):
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
             "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using abstract LEF views.",
-            default=False,
+            default=True,
         ),
         Variable(
             "MAGIC_WRITE_FULL_LEF",
