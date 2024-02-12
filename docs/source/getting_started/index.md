@@ -15,7 +15,7 @@ I have previously used OpenLane 1
 </a></p>
 
 <p><a href="./caravel/index.html" class="link-button">
-I want to use OpenLane2 for a caravel chip
+I want to use OpenLane 2 for a caravel chip
 </a></p>
 
 <p><a href="./installation_overview.html">

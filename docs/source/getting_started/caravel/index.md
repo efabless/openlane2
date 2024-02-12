@@ -1,10 +1,18 @@
-### SPM as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
+# AES as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/) using sky130
 
-Often a design by itself serves no purpose unless interfaced with and/or
-integrated into another design or a chip. We are going to harden the `spm`
-design again but this time we will have it as a
+```{admonition} Note 
+:class: seealso
+If you do not have prior experience with openlane2, please make sure to go through the [newcomers](../newcomers/index.md) tutroial first.
+```
+
+AES stands for Advanced Encryption Standard which is a symmetric encryption algorithm widely used across the globe to secure data. 
+It operates on blocks of data using keys of 128, 192, or 256 bits to encrypt and decrypt information, 
+providing a high level of security and efficiency for electronic data protection.
+In this tutorial, we are going to harden an `AES` core
+and have it as a
 [Caravel User Project](https://caravel-user-project.readthedocs.io/en/latest/)
-macro for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
+macro to serve as an accelerator for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/). 
+
 
 ```{admonition} About Caravel
 :class: seealso
@@ -18,45 +26,43 @@ for the placement of user IP blocks.
 Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more
 information.
 ```
+## Creating your own project repository
 
-#### RTL updates
+1. Start by creating a new repository from the caravel user project OpenLane 2 [template](https://github.com/efabless/caravel_user_project_ol2/generate). Let's call it `caravel_aes_accelerator`
 
-We begin by updating the RTL needed for integration of the spm into Caravel.
-
-1. Create a new directory `~/my_designs/spm-user_project_wrapper/` and
+2. Open a terminal and clone your repository as follows:
 
    ```console
-   [nix-shell:~/openlane2]$ mkdir -p ~/my_designs/spm-user_project_wrapper
+   $ git clone git@github.com:/YOUR-GH/caravel_aes_accelerator.git ~/caravel_aes_accelerator
    ```
 
-1. Add the following new RTL to
-   `~/my_designs/spm-user_project_wrapper/SPM_example.v`:
+---
 
-   ````{dropdown} SPM_example.v
+## RTL integration
 
-   ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/SPM_example.v
+We begin by using the open-source RTLs for AES under `secworks` and adding wishbone wrapper for caravel. Since the RTL from secworks provides a generic memory interface, we only need to add the `ack`, `write_enable`, and `read_enable` logic to the wishbone wrapper.
+
+1. Clone the `aes` repository under `secworks` 
+
+   ```console
+   $ git clone git@github.com:secworks/aes.git ~/secworks_aes
+   ```
+
+2. Create the verilog file `~/caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v` and add the wishbone wrapper to the RTL:
+
+   ````{dropdown} aes_wb_wrapper.v
+
+   ```{literalinclude} ./aes_wb_wrapper.v
 
    ```
 
    ````
+3. Inistantiate the `aes_wb_wrapper` in the `user_project_wrapper` verilog file under `~/caravel_aes_accelerator/verilog/rtl/`
 
-1. Also add `~/my_designs/spm-user_project_wrapper/user_project_wrapper.v`:
+   ````{dropdown} user_project_wrapper.v
 
-   ````{dropdown} user_project_wrapper
+   ```{literalinclude} ./user_project_wrapper.v
 
-   ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/user_project_wrapper.v
-
-   ```
-
-   ````
-
-1. Finally, we need an additional file
-   `~/my_designs/spm-user_project_wrapper/defines.v` which is required by
-   Caravel User Project.
-
-   ````{dropdown} defines.v
-
-   ```{literalinclude} ../../../../openlane/examples/spm-user_project_wrapper/defines.v
    ```
 
    ````
@@ -68,321 +74,1044 @@ for information about the changes that were done to the RTL.
 ```
 
 (configuration-user-project-wrapper)=
-#### Configuration
-
-Then we need to create a configuration file to pass to the flow. OpenLane has
-an interactive tool to do just that:
-
-```console
-[nix-shell:~/my_designs/spm-user_project_wrapper]$ openlane.config create-config
-Please input the file name for the configuration file [config.json]: config.json
-Enter the base directory for your design [.]: .
-Enter the design name (which should be equal to the HDL name of your top module): user_project_wrapper
-Enter the name of your design's clock port: wb_clk_i
-Enter your desired clock period in nanoseconds: 25
-Input the RTL source file #0 (Ctrl+D to stop): defines.v
-Input the RTL source file #1 (Ctrl+D to stop): SPM_example.v
-Input the RTL source file #2 (Ctrl+D to stop): user_project_wrapper.v
-```
-
-#### Running the flow
-
-Let's try running the flow:
-
-```console
-[nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_wrapper/config.json
-```
-
-#### Addressing issues
-
-The flow will fail with the following message:
-
-```text
-[ERROR PPL-0024] Number of IO pins (637) exceeds maximum number of available positions (220).
-Error: ioplacer.tcl, 56 PPL-0024
-```
-
-The reason that happens is that when we change the RTL of the design we
-changed the IO pin interface of the design to match the interface needed by
-Caravel User Project.
-
-Caravel User Project needs a lot of IO pins. By default, the flow will
-attempt to create a floorplan using a utilization of 50%. Relative to the cells
-in the design, there are too many IO pins to fit in such a floorplan.
-
-This can be solved by setting a lower utilization value. You will find out that
-about 5% utilization is needed for the floorplan to succeed. This is controlled
-by `FP_CORE_UTIL` {py:class}`Variable <openlane.config.Variable>`.
-
-Update the configuration as follows:
-
-```json
-{
-  "DESIGN_NAME": "user_project_wrapper",
-  "CLOCK_PERIOD": 25,
-  "CLOCK_PORT": "wb_clk_i",
-  "VERILOG_FILES": [
-    "dir::./defines.v",
-    "dir::./SPM_example.v",
-    "dir::./user_project_wrapper.v"
-  ],
-  "FP_CORE_UTIL": 5
-}
-```
-
-Then run the flow again:
-
-```console
-[nix-shell:~/openlane2]$ openlane ~/my_designs/spm-user_project_wrapper/config.json
-```
-
-#### Examining the results
-
-Let's view the layout:
-
-```console
-[nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm-user_project_wrapper/config.json
-```
-
-```{figure} ./spm-caravel-user-project-util.png
-
-SPM with 5% utilization
-```
-
-```{tip}
-You can control the visible layers in KLayout by right-clicking in the
-layers area and selecting hide all layers. Then double click on the layers that
-you want to view. In this figure, only `met2.pin`, `met3.pin`, and
-`prBoundary.boundary` are shown.
-```
-
-As shown above, there are a lot of pins needed by the design and certainly, a
-floorplan with 50% utilization wouldn't fit all the pins.
 
 ---
 
-#### Caravel Integration
+## Hardening strategies
 
-Caravel User Project is a macro inside Caravel. To be able to use
-any design as a Caravel User Project, it has to match the footprint
-that Caravel is expecting so we can't rely on `FP_CORE_UTIL`.
-
-##### IO Pins
-
-The top-level design Caravel is expecting any Caravel User Project
-to have the IO pins at specific locations and with specific dimensions. We can
-achieve that by using the variable `FP_DEF_TEMPLATE`. `FP_DEF_TEMPLATE` is a
-`DEF` file that is used as a template for the design's floorplan. IOs pin shapes
-and locations are copied from the template DEF file over to our design. In
-addition, the same die area is used as the one in the template DEF file.
-
-Save this file
-[template.def](../../../../openlane/examples/spm-user_project_wrapper/template.def),
-in your design's directory which should be
-`~/my_designs/spm-user_project_wrapper/`. Then update the design's configuration
-by adding `FP_DEF_TEMPLATE` variable:
-
-```json
-{
-  "DESIGN_NAME": "user_project_wrapper",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
-  "CLOCK_PERIOD": 25,
-  "CLOCK_PORT": "wb_clk_i",
-  "FP_DEF_TEMPLATE": "dir::./template.def",
-  "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 2920, 3520]
-}
-```
-
-##### Power Distribution Network (PDN)
-
-A macro's Power Distribution Network (`PDN`) is responsible for the delivery of
-power to cells in the design. A macro's internal PDN is exposed through pins
-as an interface for integration with other designs. These pins are similar to
-data IO pins but often much larger.
-
-Here is another example of a macro that is fully integrated inside Caravel:
-
-```{figure} ./caravel-1.png
-:align: center
-
-Example of a macro integrated inside Caravel
-```
-
-This figure displays Caravel chip. The highlighted rectangle is where
-Caravel User Project is. Let's zoom in at the top right corner of this
-area.
-
-```{figure} ./caravel-pdn-2.png
-:align: center
-
-Top right corner of macro integrated inside Caravel
-```
-
-As highlighted there are power rings surrounding our wrapper. connectivity
-between the wrapper rings and the chip is done through the highlighted light
-blue `met3` wires.
-
-Our `PDN` of Caravel User Project has to be configured to look like
-the figure shown above. This is done by using a collection of variables that are
-responsible for controlling the shape, location, and metal layers of the `PDN`
-pins offering the power interface of the macro.
-
-Let's add these variables to our configuration file:
-
-```json
-{
-  "DESIGN_NAME": "user_project_wrapper",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
-  "CLOCK_PERIOD": 25,
-  "CLOCK_PORT": "wb_clk_i",
-  "FP_DEF_TEMPLATE": "dir::./template.def",
-  "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 2920, 3520],
-  "FP_PDN_CORE_RING": 1,
-  "FP_PDN_CORE_RING_VWIDTH": 3.1,
-  "FP_PDN_CORE_RING_HWIDTH": 3.1,
-  "FP_PDN_CORE_RING_VOFFSET": 12.45,
-  "FP_PDN_CORE_RING_HOFFSET": 12.45,
-  "FP_PDN_CORE_RING_VSPACING": 1.7,
-  "FP_PDN_CORE_RING_HSPACING": 1.7,
-  "FP_PDN_VWIDTH": 3.1,
-  "FP_PDN_HWIDTH": 3.1,
-  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
-  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)"
-}
-```
+There are 3 options for implementing a caravel user project using OpenLane. These include:
+1. `Macro-First Hardening`: Harden the user macro(s) initially and incorporate them into the user project wrapper without top-level standard cells. Ideal for smaller designs, this approach significantly reduces Placement and Routing (PnR) and signoff time.
+2. `Full-Wrapper Flattening`: Merge the user macro(s) with the user_project_wrapper, covering the entire wrapper area. While this method demands more time and iterations for PnR and signoff, it ultimately enhances performance, making it suitable for designs requiring the full wrapper area.
+3. `Top-Level Integration`: Place the user macro(s) within the wrapper alongside standard cells at the top level. This method is typically chosen to introduce buffering at the top-level, fitting scenarios where such an approach is necessary.
 
 ```{seealso}
-Visit {step}`OpenROAD.GeneratePDN` for more information about each
-of the above variables.
+Check out
+[Caravel Integration & Power Routing document](https://docs.google.com/document/d/1pf-wbpgjeNEM-1TcvX2OJTkHjqH_C9p-LURCASS0Zo8)
+for more information about these options.
 ```
 
-Caravel is a chip with multiple power domains. We need to match these domains
-in our configuration by adding `VDD_NETS` and `GND_NETS` variables:
+
+---
+
+## 1. Macro-First Hardening strategy
+
+We will start by the first hardening option. So, we are going to harden the `aes` core with the wishbone wrapper as a macro first. Then harden the user project wrapper that will be integrated in caravel.
+
+---
+### AES Wishbone Wrapper Hardening
+#### Configuration
+
+1. Create a design directory to add our source files to:
+
+   ```console
+   $ mkdir -p ~/caravel_aes_accelerator/openlane/aes_wb_wrapper
+   ```
+2. Create the file `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json` and add the following simple configuration to it
 
 ```json
 {
-  "DESIGN_NAME": "user_project_wrapper",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
-  "CLOCK_PERIOD": 25,
+  "DESIGN_NAME": "aes_wb_wrapper",
   "CLOCK_PORT": "wb_clk_i",
-  "FP_DEF_TEMPLATE": "dir::./template.def",
-  "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 2920, 3520],
-  "FP_PDN_CORE_RING": 1,
-  "FP_PDN_CORE_RING_VWIDTH": 3.1,
-  "FP_PDN_CORE_RING_HWIDTH": 3.1,
-  "FP_PDN_CORE_RING_VOFFSET": 12.45,
-  "FP_PDN_CORE_RING_HOFFSET": 12.45,
-  "FP_PDN_CORE_RING_VSPACING": 1.7,
-  "FP_PDN_CORE_RING_HSPACING": 1.7,
-  "FP_PDN_VWIDTH": 3.1,
-  "FP_PDN_HWIDTH": 3.1,
-  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
-  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
-  "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
-  "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"]
+  "CLOCK_PERIOD": 25,
+  "VERILOG_FILES": [
+    "dir::/../../../secworks_aes/src/rtl/aes.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_core.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_decipher_block.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_encipher_block.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_inv_sbox.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_key_mem.v",
+    "dir::/../../../secworks_aes/src/rtl/aes_sbox.v",
+    "dir::/../../../caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v"
+  ],
+  "FP_CORE_UTIL": 40
 }
 ```
+This is a basic configuration file which has only, design name, clock port, clock period of 25 ns, verilog files, and a core utilization of 40%. Typical values for the core utilization range from 25% to 60%.
 
-##### Timing Constraints
 
-```{admonition} STA and timing closure guide
-:class: important
+---
 
-It is highly recommended that you read the
-[STA and timing closure guide](https://docs.google.com/document/d/13J1AY1zhzxur8vaFs3rRW9ZWX113rSDs63LezOOoXZ8/)
-to fully understand this section.
+#### Running the flow
+
+Let's try running the flow from OpenLane:
+
+```console
+[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
 ```
 
-Finally, to achieve a timing-clean Caravel User Project design integrated into
-Caravel, it is crucial to satisfy specific timing constraints at the boundary
-I/Os. The provided Caravel User Project
-[SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc)
-guides the tools to ensure proper timing performance of the design interfacing
-with Caravel. The SDC file mainly defines:
+````{tip}
+Double-checking: are you inside a `nix-shell`? Your terminal prompt
+should look like this:
 
-1. Clock Network:
-
-   Specifying clock characteristics and effects such as:
-
-   - Primary clock port and period
-   - Clock uncertainty, transition, and latency.
-
-1. Design rules:
-
-   Specifying the maximum limit for transition time and for fanout. The tools
-   apply the minimum of the limits set by the technology libraries and the
-   SDC.
-
-1. I/O timing constraints:
-
-   Specifying the expected delay range for signals to arrive at inputs and to be
-   valid at the outputs. As well as, the inputs transition time ranges and
-   expected loads on the outputs.
-
-1. Timing exceptions:
-
-   By default, the tools assume that data launched at a path startpoint is
-   captured at all path endpoints within one clock cycle. Whenever a path is not
-   intended to operate in this manner, a timing exception should be defined such
-   as:
-
-   - False paths: specifies paths that are not required to be analyzed.
-   - Multicycle paths: specifies the required number of clock cycles to
-     propagate the data for certain paths rather than the default one clock
-     cycle.
-
-   In Caravel User Project SDC file, it specifies that some ports require 2
-   clock cycles which relaxes the setup constraints on these ports and hence
-   avoids over-optimizations.
-
-1. On-chip Variations:
-
-   To model {term}`On-chip variation` effects, a derate factor is applied to
-   specify the margin on all delays. A typical value for `sky130` is `5%`.
-
-```{admonition} Static Timing Analysis on Caravel *and* Caravel User Project
-:class: tip
-
-A final STA check with the Caravel User Project integrated into Caravel is
-required to achieve timing closure. While having a successful flow run without
-any timing violations indicates that almost certainly the design is
-timing-clean, this final combined simulation ensures that.
+```console
+[nix-shell:~/openlane2]$
 ```
 
-Download
-[this SDC file](../../../../openlane/examples/spm-user_project_wrapper/base_sdc_file.sdc),
-and place it in our design directory `~/my_design/spm-user_project_wrapper/`.
-Then set the variables {var}`OpenROAD.STAPostPNR::SIGNOFF_SDC_FILE` and
-{var}`OpenROAD.STAPostPNR::PNR_SDC_FILE` to point to the downloaded file to be
-able to apply these constraints during implementation and signoff while running
-the flow. Our final configuration looks like this:
+If not, enter the following command in your terminal:
 
+```console
+$ nix-shell --pure ~/openlane2/shell.nix
+```
+````
+The flow will finish successfully in ~20 minutes and we will see:
+```console
+Flow complete.
+```
+
+
+---
+
+#### Viewing the layout
+
+To open the final {term}`GDSII` layout run this command:
+
+```console
+[nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
+```
+
+This opens {term}`KLayout` and you should be able to see the following:
+
+```{figure} ./aes-1-gds.png
+:align: center
+
+Final layout of aes_wb_wrapper
+```
+
+```{tip}
+You can control the visible layers in KLayout by double-clicking on the
+layers you want to hide/unhide. In this figure, the layers`areaid.lowTapDensity` and `areaud.standardc` were hidden to view the layout more clearly.
+ 
+```
+
+
+---
+
+#### Checking the reports
+
+You’ll find that a run directory (named something like `runs/RUN_2024-02-05_16-46-01`) was created when you ran OpenLane. Under this folder, the logs, reports, and physical views will be located. It is always a good idea to review all logs and reports for all the steps in your run. However, in this guide, we will only review the main signoff reports in:
+- [openroad-checkantennas](openroad-checkantennas)
+- [openroad-stapostpnr](openroad-stapostpnr)
+- [magic-drc](magic-drc)
+- [klayout-drc](klayout-drc)
+- [netgen-lvs](netgen-lvs)
+
+
+---
+
+##### openroad-checkantennas
+
+There are 2 `openroad-checkantennas` steps. One after `openroad-globalrouting` and the other after `openroad-detailedrouting`. The one we're interested in the one after `openroad-detailedrouting` as this is the final antenna check.
+```{tip}
+For more information about antenna violations, check [this](../newcomers/index.md#antenna-check)
+```
+Inside the step directory of `openroad-checkantennas` there is a reports directory which contains two files on has the full antenna check report from OpenROAD and a summary table of antenna violations:
+```
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                  ┃ Pin         ┃ Layer ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━┩
+│ 8.43             │ 400.00   │ 3373.21 │ net337                               │ _19592_/A1  │ met3  │
+│ 4.06             │ 400.00   │ 1624.33 │ _06003_                              │ _20370_/A_N │ met1  │
+│ 3.84             │ 400.00   │ 1534.48 │ net40                                │ _19524_/A0  │ met3  │
+│ 3.68             │ 400.00   │ 1471.09 │ _09365_                              │ wire82/A    │ met3  │
+│ 3.51             │ 400.00   │ 1402.54 │ aes.core.dec_block.block_w0_reg[12\] │ _35456_/A0  │ met3  │
+│ 3.33             │ 400.00   │ 1330.55 │ _13932_                              │ _34198_/A   │ met3  │
+│ 3.33             │ 400.00   │ 1330.55 │ _13932_                              │ _34199_/A1  │ met3  │
+⋮
+```
+As seen in the report, there are around 110 antenna violations some of which have high ratios up to `8`. It is recommended to fix all antenna violations with ratios higher than `3` and the higher the ratio (Partial/Required) the more severely it might affect the chip. In order to fix those antenna violations, one or more of the following solutions can be applied:
+
+1. Increase the number of iterations for antenna repair using {var}`openroad.repairantennas::GRT_ANTENNA_ITERS`. The default value is `3`. We can increase it to `10` by adding this to our `config.json` file.
+```json
+  "GRT_ANTENNA_ITERS": 10,
+```
+2. Increase the margin for antenna repair using {var}`openroad.repairantennas::GRT_ANTENNA_MARGIN`. The default value is `10`. We can increase it to `15`.
+```json
+  "GRT_ANTENNA_MARGIN": 15,
+```
+3. Enable heuristic diode insertion using {var}`Classic::RUN_HEURISTIC_DIODE_INSERTION`: 
+```json
+  "RUN_HEURISTIC_DIODE_INSERTION": true,
+```
+4. Constrain the max wire length (value is in microns) using {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_WIRE_LENGTH`.
+```json
+  "DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
+```
+5. Optimize the global placement for minimum wirelength using {var}`OpenROAD.GlobalPlacement::PL_WIRE_LENGTH_COEF`.
+```json
+  "PL_WIRE_LENGTH_COEF": 0.05,
+```
+
+
+---
+
+##### openroad-stapostpnr
+
+Under `openroad-stapostpnr` there is a `summary.rpt`:
+
+```text
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃              ┃ Hold Worst   ┃ Reg to Reg   ┃          ┃ Hold         ┃ of which Reg ┃ Setup Worst  ┃ Reg to Reg   ┃           ┃ Setup       ┃ of which Reg ┃ Max Cap     ┃ Max Slew     ┃
+┃ Corner/Group ┃ Slack        ┃ Paths        ┃ Hold TNS ┃ Violations   ┃ to Reg       ┃ Slack        ┃ Paths        ┃ Setup TNS ┃ Violations  ┃ to Reg       ┃ Violations  ┃ Violations   ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ Overall      │ 0.1045       │ 0.1045       │ 0.0000   │ 0            │ 0            │ 6.2448       │ 6.2448       │ 0.0000    │ 0           │ 0            │ 257         │ 1554         │
+│ nom_tt_025C… │ 0.3111       │ 0.3111       │ 0.0000   │ 0            │ 0            │ 12.5817      │ 15.9480      │ 0.0000    │ 0           │ 0            │ 179         │ 126          │
+│ nom_ss_100C… │ 0.8728       │ 0.8728       │ 0.0000   │ 0            │ 0            │ 6.6277       │ 6.6277       │ 0.0000    │ 0           │ 0            │ 191         │ 1227         │
+│ nom_ff_n40C… │ 0.1058       │ 0.1058       │ 0.0000   │ 0            │ 0            │ 13.4537      │ 19.3029      │ 0.0000    │ 0           │ 0            │ 181         │ 26           │
+│ min_tt_025C… │ 0.3098       │ 0.3098       │ 0.0000   │ 0            │ 0            │ 12.6013      │ 16.1989      │ 0.0000    │ 0           │ 0            │ 119         │ 76           │
+│ min_ss_100C… │ 0.8712       │ 0.8712       │ 0.0000   │ 0            │ 0            │ 7.0939       │ 7.0939       │ 0.0000    │ 0           │ 0            │ 122         │ 849          │
+│ min_ff_n40C… │ 0.1045       │ 0.1045       │ 0.0000   │ 0            │ 0            │ 13.4665      │ 19.4702      │ 0.0000    │ 0           │ 0            │ 119         │ 0            │
+│ max_tt_025C… │ 0.3131       │ 0.3131       │ 0.0000   │ 0            │ 0            │ 12.5529      │ 15.7241      │ 0.0000    │ 0           │ 0            │ 239         │ 183          │
+│ max_ss_100C… │ 0.8762       │ 0.8762       │ 0.0000   │ 0            │ 0            │ 6.2448       │ 6.2448       │ 0.0000    │ 0           │ 0            │ 257         │ 1554         │
+│ max_ff_n40C… │ 0.1073       │ 0.1073       │ 0.0000   │ 0            │ 0            │ 13.4347      │ 19.1522      │ 0.0000    │ 0           │ 0            │ 239         │ 36           │
+└──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴──────────────┴──────────────┴───────────┴─────────────┴──────────────┴─────────────┴──────────────┘
+```
+As seen in the report, there are no hold nor setup violations. There are only Max Cap and Max Slew violations. 
+To see the violations: 
+1. Open the report `checks` under `openroad-stapostpnr/max_ss_100C_1v60` since this corner has the highest number of Max Cap and Max Slew violations. 
+2. Search for `max slew` and you will find the violations listed as follows:
+```text
+Pin                                        Limit        Slew       Slack
+------------------------------------------------------------------------
+_31022_/B1                              0.750000    2.000525   -1.250525 (VIOLATED)
+_34084_/A2                              0.750000    1.999526   -1.249526 (VIOLATED)
+_31021_/Y                               0.750000    1.998896   -1.248896 (VIOLATED)
+_29818_/B                               0.750000    1.815682   -1.065682 (VIOLATED)
+_32128_/A2                              0.750000    1.815665   -1.065665 (VIOLATED)
+_30041_/A                               0.750000    1.815654   -1.065654 (VIOLATED)
+_29817_/Y                               0.750000    1.814748   -1.064748 (VIOLATED)
+wire109/A                               0.750000    1.773218   -1.023218 (VIOLATED)
+_21294_/Y                               0.750000    1.773215   -1.023215 (VIOLATED)
+wire91/A                                0.750000    1.683392   -0.933392 (VIOLATED)
+⋮
+```
+In order to fix the maximum slew/cap violations. One or more of the following solutions can be applied:
+1. Relax the {var}`::MAX_TRANSITION_CONSTRAINT` to 1.5ns as this is the constraint in the sky130 lib files
+```json
+	"MAX_TRANSITION_CONSTRAINT": 1.5,
+```
+2. Increase the slew/cap repair margins using {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_SLEW_PCT` and {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_CAP_PCT`. The default value is 20%. We can increase it to 30%:
+```json
+	"DESIGN_REPAIR_MAX_SLEW_PCT": 30,
+	"DESIGN_REPAIR_MAX_CAP_PCT": 30,
+```
+3. Change the default timing corner using {var}`::DEFAULT_CORNER` for the corner with the most violations which will be `max_ss_100C_1v60` in our case:
+```json
+	"DEFAULT_CORNER": "max_ss_100C_1v60",
+```
+4. Enable post global routing design optmizations using {var}`Classic::RUN_POST_GRT_DESIGN_REPAIR`:
+```json
+	"RUN_POST_GRT_DESIGN_REPAIR": true,
+```
+5. Most importantly, it is recommended to use a specific constraint file to your design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
+```json
+	"PNR_SDC_FILE": "dir::cons.sdc",
+	"SIGNOFF_SDC_FILE": "dir::cons.sdc",
+```
+
+
+---
+
+##### magic-drc
+
+Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
+```text
+aes_wb_wrapper
+----------------------------------------
+[INFO] COUNT: 0
+[INFO] Should be divided by 3 or 4
+
+
+```
+
+
+---
+
+##### klayout-drc
+
+Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
+```text
+{
+  ⋮
+  "total": 0
+}
+
+```
+
+---
+
+##### netgen-lvs
+
+Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+```text
+Cell pin lists are equivalent.
+Device classes aes_wb_wrapper and aes_wb_wrapper are equivalent.
+
+Final result: Circuits match uniquely.
+
+```
+
+---
+
+#### Re-running the flow with a modified configuration
+
+To fix the previous issues in the implementation, the following was added to the config file:
+```json
+	"GRT_ANTENNA_ITERS": 10,
+	"RUN_HEURISTIC_DIODE_INSERTION": true,
+	"HEURISTIC_ANTENNA_THRESHOLD": 200,
+	"DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
+	"DEFAULT_CORNER": "max_ss_100C_1v60",
+	"RUN_POST_GRT_DESIGN_REPAIR": true,
+	"PNR_SDC_FILE": "dir::pnr.sdc",
+	"SIGNOFF_SDC_FILE": "dir::signoff.sdc"
+```
+and the following 2 constraints files `pnr.sdc` and `signoff.sdc` were created at `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/`:
+````{dropdown} pnr.sdc
+```
+#------------------------------------------#
+# Design Constraints
+#------------------------------------------#
+
+# Clock network
+set clk_input wb_clk_i
+create_clock [get_ports $clk_input] -name clk -period 25
+puts "\[INFO\]: Creating clock {clk} for port $clk_input with period: 25"
+
+# Clock non-idealities
+set_propagated_clock [get_clocks {clk}]
+set_clock_uncertainty 0.12 [get_clocks {clk}]
+puts "\[INFO\]: Setting clock uncertainity to: 0.12"
+
+# Maximum transition time for the design nets
+set_max_transition 0.75 [current_design]
+puts "\[INFO\]: Setting maximum transition to: 0.75"
+
+# Maximum fanout
+set_max_fanout 16 [current_design]
+puts "\[INFO\]: Setting maximum fanout to: 16"
+
+# Timing paths delays derate
+set_timing_derate -early [expr {1-0.07}]
+set_timing_derate -late [expr {1+0.07}]
+
+# Multicycle paths
+set_multicycle_path -setup 2 -through [get_ports {wbs_ack_o}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_ack_o}]
+set_multicycle_path -setup 2 -through [get_ports {wbs_cyc_i}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_cyc_i}]
+set_multicycle_path -setup 2 -through [get_ports {wbs_stb_i}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_stb_i}]
+
+#------------------------------------------#
+# Retrieved Constraints then modified
+#------------------------------------------#
+
+# Clock source latency
+set usr_clk_max_latency 4.57
+set usr_clk_min_latency 4.11
+set clk_max_latency 5.70
+set clk_min_latency 4.40
+set_clock_latency -source -max $clk_max_latency [get_clocks {clk}]
+set_clock_latency -source -min $clk_min_latency [get_clocks {clk}]
+puts "\[INFO\]: Setting clock latency range: $clk_min_latency : $clk_max_latency"
+
+# Clock input Transition
+set_input_transition 0.61 [get_ports $clk_input]
+
+# Input delays
+set_input_delay -max 3.27 -clock [get_clocks {clk}] [get_ports {wbs_sel_i[*]}]
+set_input_delay -max 3.84 -clock [get_clocks {clk}] [get_ports {wbs_we_i}]
+set_input_delay -max 3.99 -clock [get_clocks {clk}] [get_ports {wbs_adr_i[*]}]
+set_input_delay -max 4.23 -clock [get_clocks {clk}] [get_ports {wbs_stb_i}]
+set_input_delay -max 4.71 -clock [get_clocks {clk}] [get_ports {wbs_dat_i[*]}]
+set_input_delay -max 4.84 -clock [get_clocks {clk}] [get_ports {wbs_cyc_i}]
+set_input_delay -min 0.69 -clock [get_clocks {clk}] [get_ports {wbs_adr_i[*]}]
+set_input_delay -min 0.94 -clock [get_clocks {clk}] [get_ports {wbs_dat_i[*]}]
+set_input_delay -min 1.09 -clock [get_clocks {clk}] [get_ports {wbs_sel_i[*]}]
+set_input_delay -min 1.55 -clock [get_clocks {clk}] [get_ports {wbs_we_i}]
+set_input_delay -min 1.20 -clock [get_clocks {clk}] [get_ports {wbs_cyc_i}]
+set_input_delay -min 1.46 -clock [get_clocks {clk}] [get_ports {wbs_stb_i}]
+
+# Reset input delay
+set_input_delay [expr 25 * 0.5] -clock [get_clocks {clk}] [get_ports {wb_rst_i}]
+
+# Input Transition
+set_input_transition -max 0.14  [get_ports {wbs_we_i}]
+set_input_transition -max 0.15  [get_ports {wbs_stb_i}]
+set_input_transition -max 0.17  [get_ports {wbs_cyc_i}]
+set_input_transition -max 0.18  [get_ports {wbs_sel_i[*]}]
+set_input_transition -max 0.84  [get_ports {wbs_dat_i[*]}]
+set_input_transition -max 0.86  [get_ports {la_data_in[*]}]
+set_input_transition -max 0.92  [get_ports {wbs_adr_i[*]}]
+set_input_transition -min 0.07  [get_ports {wbs_adr_i[*]}]
+set_input_transition -min 0.07  [get_ports {wbs_dat_i[*]}]
+set_input_transition -min 0.09  [get_ports {wbs_cyc_i}]
+set_input_transition -min 0.09  [get_ports {wbs_sel_i[*]}]
+set_input_transition -min 0.09  [get_ports {wbs_we_i}]
+set_input_transition -min 0.15  [get_ports {wbs_stb_i}]
+
+# Output delays
+set_output_delay -max 3.72 -clock [get_clocks {clk}] [get_ports {wbs_dat_o[*]}]
+set_output_delay -max 8.51 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
+set_output_delay -min 1.03 -clock [get_clocks {clk}] [get_ports {wbs_dat_o[*]}]
+set_output_delay -min 1.27 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
+
+# Output loads
+set_load 0.19 [all_outputs]
+```
+````
+````{dropdown} signoff.sdc
+```
+#------------------------------------------#
+# Design Constraints
+#------------------------------------------#
+
+# Clock network
+set clk_input wb_clk_i
+create_clock [get_ports $clk_input] -name clk -period 25
+puts "\[INFO\]: Creating clock {clk} for port $clk_input with period: 25"
+
+# Clock non-idealities
+set_propagated_clock [get_clocks {clk}]
+set_clock_uncertainty 0.1 [get_clocks {clk}]
+puts "\[INFO\]: Setting clock uncertainity to: 0.1"
+
+# Maximum transition time for the design nets
+set_max_transition 1.5 [current_design]
+puts "\[INFO\]: Setting maximum transition to: 1.5"
+
+# Maximum fanout
+set_max_fanout 16 [current_design]
+puts "\[INFO\]: Setting maximum fanout to: 16"
+
+# Timing paths delays derate
+set_timing_derate -early [expr {1-0.05}]
+set_timing_derate -late [expr {1+0.05}]
+puts "\[INFO\]: Setting timing derate to: [expr {0.05 * 100}] %"
+
+# Multicycle paths
+set_multicycle_path -setup 2 -through [get_ports {wbs_ack_o}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_ack_o}]
+set_multicycle_path -setup 2 -through [get_ports {wbs_cyc_i}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_cyc_i}]
+set_multicycle_path -setup 2 -through [get_ports {wbs_stb_i}]
+set_multicycle_path -hold 1  -through [get_ports {wbs_stb_i}]
+
+#------------------------------------------#
+# Retrieved Constraints
+#------------------------------------------#
+
+# Clock source latency
+set usr_clk_max_latency 4.57
+set usr_clk_min_latency 4.11
+set clk_max_latency 5.57
+set clk_min_latency 4.65
+set_clock_latency -source -max $clk_max_latency [get_clocks {clk}]
+set_clock_latency -source -min $clk_min_latency [get_clocks {clk}]
+puts "\[INFO\]: Setting clock latency range: $clk_min_latency : $clk_max_latency"
+
+# Clock input Transition
+set_input_transition 0.61 [get_ports $clk_input]
+
+# Input delays
+set_input_delay -max 3.17 -clock [get_clocks {clk}] [get_ports {wbs_sel_i[*]}]
+set_input_delay -max 3.74 -clock [get_clocks {clk}] [get_ports {wbs_we_i}]
+set_input_delay -max 3.89 -clock [get_clocks {clk}] [get_ports {wbs_adr_i[*]}]
+set_input_delay -max 4.13 -clock [get_clocks {clk}] [get_ports {wbs_stb_i}]
+set_input_delay -max 4.61 -clock [get_clocks {clk}] [get_ports {wbs_dat_i[*]}]
+set_input_delay -max 4.74 -clock [get_clocks {clk}] [get_ports {wbs_cyc_i}]
+set_input_delay -min 0.79 -clock [get_clocks {clk}] [get_ports {wbs_adr_i[*]}]
+set_input_delay -min 1.04 -clock [get_clocks {clk}] [get_ports {wbs_dat_i[*]}]
+set_input_delay -min 1.19 -clock [get_clocks {clk}] [get_ports {wbs_sel_i[*]}]
+set_input_delay -min 1.65 -clock [get_clocks {clk}] [get_ports {wbs_we_i}]
+set_input_delay -min 1.69 -clock [get_clocks {clk}] [get_ports {wbs_cyc_i}]
+set_input_delay -min 1.86 -clock [get_clocks {clk}] [get_ports {wbs_stb_i}]
+
+# Reset input delay
+set_input_delay [expr 25 * 0.5] -clock [get_clocks {clk}] [get_ports {wb_rst_i}]
+
+# Input Transition
+set_input_transition -max 0.14  [get_ports {wbs_we_i}]
+set_input_transition -max 0.15  [get_ports {wbs_stb_i}]
+set_input_transition -max 0.17  [get_ports {wbs_cyc_i}]
+set_input_transition -max 0.18  [get_ports {wbs_sel_i[*]}]
+set_input_transition -max 0.84  [get_ports {wbs_dat_i[*]}]
+set_input_transition -max 0.86  [get_ports {la_data_in[*]}]
+set_input_transition -max 0.92  [get_ports {wbs_adr_i[*]}]
+set_input_transition -min 0.07  [get_ports {wbs_adr_i[*]}]
+set_input_transition -min 0.07  [get_ports {wbs_dat_i[*]}]
+set_input_transition -min 0.09  [get_ports {wbs_cyc_i}]
+set_input_transition -min 0.09  [get_ports {wbs_sel_i[*]}]
+set_input_transition -min 0.09  [get_ports {wbs_we_i}]
+set_input_transition -min 0.15  [get_ports {wbs_stb_i}]
+
+# Output delays
+set_output_delay -max 3.62 -clock [get_clocks {clk}] [get_ports {wbs_dat_o[*]}]
+set_output_delay -max 8.41 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
+set_output_delay -min 1.13 -clock [get_clocks {clk}] [get_ports {wbs_dat_o[*]}]
+set_output_delay -min 1.37 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
+
+# Output loads
+set_load 0.19 [all_outputs]
+```
+````
+The `Design Constraints` part has to do with the design itself. The `Retrieved Constraints` part retrieved from the caravel chip boundary constraints with the `user_project_wrapper`. These constraints can be found [here](https://github.com/efabless/caravel_user_project_ol2/blob/a9dd629af92482842ddcaba8d95c298b41c1895b/openlane/user_project_wrapper/base_user_project_wrapper.sdc#L64). The PnR constraints file has more aggressive constraints than the signoff one, this is done to accommodate the gap between the optimization tool estimation of parasitics and the final extractions on the layout.
+
+So, the final `config.json` is as follows:
+````{dropdown} config.json
 ```json
 {
-  "DESIGN_NAME": "user_project_wrapper",
-  "VERILOG_FILES": ["dir::./defines.v", "dir::./SPM_example.v"],
-  "CLOCK_PERIOD": 25,
-  "CLOCK_PORT": "wb_clk_i",
-  "FP_DEF_TEMPLATE": "dir::./template.def",
-  "FP_SIZING": "absolute",
-  "DIE_AREA": [0, 0, 2920, 3520],
-  "FP_PDN_CORE_RING": 1,
-  "FP_PDN_CORE_RING_VWIDTH": 3.1,
-  "FP_PDN_CORE_RING_HWIDTH": 3.1,
-  "FP_PDN_CORE_RING_VOFFSET": 12.45,
-  "FP_PDN_CORE_RING_HOFFSET": 12.45,
-  "FP_PDN_CORE_RING_VSPACING": 1.7,
-  "FP_PDN_CORE_RING_HSPACING": 1.7,
-  "FP_PDN_VWIDTH": 3.1,
-  "FP_PDN_HWIDTH": 3.1,
-  "FP_PDN_VSPACING": "expr::(5 * $FP_PDN_CORE_RING_VWIDTH)",
-  "FP_PDN_HSPACING": "expr::(5 * $FP_PDN_CORE_RING_HWIDTH)",
-  "VDD_NETS": ["vccd1", "vccd2", "vdda1", "vdda2"],
-  "GND_NETS": ["vssd1", "vssd2", "vssa1", "vssa2"],
-  "PNR_SDC_FILE": "dir::./base_sdc_file.sdc",
-  "SIGNOFF_SDC_FILE": "dir::./base_sdc_file.sdc"
+	"DESIGN_NAME": "aes_wb_wrapper",
+	"CLOCK_PORT": "wb_clk_i",
+	"CLOCK_PERIOD": 25,
+	"VERILOG_FILES": [
+		"dir::/../../../secworks_aes/src/rtl/aes.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_core.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_decipher_block.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_encipher_block.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_inv_sbox.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_key_mem.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_sbox.v",
+		"dir::/../../../caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v"
+	],
+	"FP_CORE_UTIL": 40,
+	"GRT_ANTENNA_ITERS": 10,
+	"RUN_HEURISTIC_DIODE_INSERTION": true,
+	"HEURISTIC_ANTENNA_THRESHOLD": 200,
+	"DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
+	"DEFAULT_CORNER": "max_ss_100C_1v60",
+	"RUN_POST_GRT_DESIGN_REPAIR": true,
+	"PNR_SDC_FILE": "dir::pnr.sdc",
+	"SIGNOFF_SDC_FILE": "dir::signoff.sdc"
 }
 ```
+````
+
+Now let's try re-running the flow:
+
+```console
+[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
+```
+
+---
+
+#### Re-checking the reports
+Now, the antenna report under `openroad-checkantennas-1/reports/antenna_summary.rpt` has much less violations:
+```text
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Partial/Required ┃ Required ┃ Partial ┃ Net     ┃ Pin         ┃ Layer ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━┩
+│ 1.59             │ 400.00   │ 635.80  │ _13534_ │ _26084_/A2  │ met3  │
+│ 1.25             │ 400.00   │ 498.39  │ _13621_ │ _26186_/A0  │ met2  │
+│ 1.19             │ 400.00   │ 476.80  │ net967  │ fanout959/A │ met3  │
+│ 1.07             │ 400.00   │ 427.64  │ _06832_ │ _17210_/B   │ met3  │
+│ 1.06             │ 400.00   │ 425.22  │ _14756_ │ hold201/A   │ met1  │
+│ 1.06             │ 400.00   │ 423.33  │ _09317_ │ _21260_/A0  │ met1  │
+│ 1.03             │ 400.00   │ 413.59  │ _09590_ │ _22295_/A   │ met3  │
+│ 1.01             │ 400.00   │ 405.33  │ _14292_ │ _26944_/A0  │ met1  │
+└──────────────────┴──────────┴─────────┴─────────┴─────────────┴───────┘
+```
+
+Also, the STA report `openroad-stapostpnr/summary.rpt` has no issues:
+
+```text
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃                ┃ Hold Worst     ┃ Reg to Reg     ┃          ┃ Hold           ┃ of which Reg   ┃ Setup Worst    ┃ Reg to Reg     ┃           ┃ Setup          ┃ of which Reg   ┃ Max Cap       ┃ Max Slew       ┃
+┃ Corner/Group   ┃ Slack          ┃ Paths          ┃ Hold TNS ┃ Violations     ┃ to Reg         ┃ Slack          ┃ Paths          ┃ Setup TNS ┃ Violations     ┃ to Reg         ┃ Violations    ┃ Violations     ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Overall        │ 0.1389         │ 0.1389         │ 0.0000   │ 0              │ 0              │ 4.1153         │ 6.3241         │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ nom_tt_025C_1… │ 0.2911         │ 0.2911         │ 0.0000   │ 0              │ 0              │ 10.6724        │ 15.9669        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ nom_ss_100C_1… │ 0.7006         │ 0.7006         │ 0.0000   │ 0              │ 0              │ 4.4065         │ 6.8990         │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ nom_ff_n40C_1… │ 0.1436         │ 0.1436         │ 0.0000   │ 0              │ 0              │ 12.0751        │ 19.3830        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ min_tt_025C_1… │ 0.2895         │ 0.2895         │ 0.0000   │ 0              │ 0              │ 10.8284        │ 16.2548        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ min_ss_100C_1… │ 0.6975         │ 0.6975         │ 0.0000   │ 0              │ 0              │ 4.6868         │ 7.4090         │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ min_ff_n40C_1… │ 0.1484         │ 0.1484         │ 0.0000   │ 0              │ 0              │ 12.0837        │ 19.5729        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ max_tt_025C_1… │ 0.2930         │ 0.2930         │ 0.0000   │ 0              │ 0              │ 10.5092        │ 15.6484        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ max_ss_100C_1… │ 0.7038         │ 0.7038         │ 0.0000   │ 0              │ 0              │ 4.1153         │ 6.3241         │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+│ max_ff_n40C_1… │ 0.1389         │ 0.1389         │ 0.0000   │ 0              │ 0              │ 12.0601        │ 19.1596        │ 0.0000    │ 0              │ 0              │ 0             │ 0              │
+└────────────────┴────────────────┴────────────────┴──────────┴────────────────┴────────────────┴────────────────┴────────────────┴───────────┴────────────────┴────────────────┴───────────────┴────────────────┘
+```
+---
+#### Saving the views
+To save the views, run the following script with the following arguments in order:
+1. The directory of the project
+2. The macro name
+3. The successful run tag
+
+```console
+[nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator aes_wb_wrapper RUN_TAG
+```
+This will copy the physcial views of the macro in the specified run to your project folder.
+
+---
+### User Project Wrapper Hardening
+#### Configuration
+The User Project Wrapper is a macro inside the Caravel chip which will include our design. To be able to use
+any design as a Caravel User Project, it has to match the footprint
+that Caravel is expecting. Also, the top-level design Caravel is expecting any Caravel User Project
+to have the IO pins at specific locations and with specific dimensions. So, we need a fixed floorplan, fixed IOs pin shapes
+and locations, and fixed power rings. To achieve that, 2 configuration file are used:
+1. Fixed configuration file for sky130 shuttles which should not be changed. This configuration file is already in the repo under `openlane/user_project_wrapper/` and has the floorplan, IO pins, and power rings configuration. 
+````{dropdown} fixed_sky130.json
+```json
+{
+	"DESIGN_NAME": "user_project_wrapper",
+	"FP_SIZING": "absolute",
+	"DIE_AREA": [0, 0, 2920, 3520],
+	"FP_DEF_TEMPLATE": "dir::fixed_dont_change/user_project_wrapper.def",
+	"VDD_NETS": [
+		"vccd1",
+		"vccd2",
+		"vdda1",
+		"vdda2"
+	],
+	"GND_NETS": [
+		"vssd1",
+		"vssd2",
+		"vssa1",
+		"vssa2"
+	],
+	"FP_PDN_CORE_RING": 1,
+	"FP_PDN_CORE_RING_VWIDTH": 3.1,
+	"FP_PDN_CORE_RING_HWIDTH": 3.1,
+	"FP_PDN_CORE_RING_VOFFSET": 12.45,
+	"FP_PDN_CORE_RING_HOFFSET": 12.45,
+	"FP_PDN_CORE_RING_VSPACING": 1.7,
+	"FP_PDN_CORE_RING_HSPACING": 1.7,
+	"CLOCK_PORT": "wb_clk_i",
+	"SYNTH_USE_PG_PINS_DEFINES": "USE_POWER_PINS",
+	"SIGNOFF_SDC_FILE": "dir::signoff.sdc",
+	"MAGIC_DEF_LABELS": 0,
+	"CLOCK_PERIOD": 25,
+	"MAGIC_ZEROIZE_ORIGIN": 0,
+	"RUN_CVC": 0
+}
+```
+````
+2. User configuration file which which will have any additional configuration by the user. We can specify the implementation strategy through this file. The user configuration file can be found at `openlane/user_project_wrapper/user_config.json`
+
+We need the following edits for the `user_config.json`:
+1. Replace the user_proj_example in the `MACROS` variable with our macro. First, we change the physical views to `aes_wb_wrapper`. Second, we can modify the macro location to `[1500, 1500]` to be in the middle of the chip. The new macro variable will be:
+```json
+	"MACROS": {
+		"aes_wb_wrapper": {
+			"gds": [
+				"dir::../../gds/aes_wb_wrapper.gds"
+			],
+			"lef": [
+				"dir::../../lef/aes_wb_wrapper.lef"
+			],
+			"instances": {
+				"mprj": {
+					"location": [1500, 1500],
+					"orientation": "N"
+				}
+			},
+			"nl": [
+				"dir::../../verilog/gl/aes_wb_wrapper.v"
+			],
+			"spef": {
+				"min_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.min.spef"
+				],
+				"nom_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.nom.spef"
+				],
+				"max_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.max.spef"
+				]
+			},
+			"libs": {
+				"*": "dir::../../lib/aes_wb_wrapper.lib"
+			}
+		}
+	},
+```
+```{admonition} Note 
+:class: seealso
+If we have multiple macros, we can add more entries to the variable `MACROS`.
+```
+
+---
+#### Running the flow
+```console
+[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/user_config.json ~/caravel_aes_accelerator/openlane/user_project_wrapper/fixed_sky130.json
+```
+
+````{tip}
+Double-checking: are you inside a `nix-shell`? Your terminal prompt
+should look like this:
+
+```console
+[nix-shell:~/openlane2]$
+```
+
+If not, enter the following command in your terminal:
+
+```console
+$ nix-shell --pure ~/openlane2/shell.nix
+```
+````
+The flow will finish successfully in ~7 minutes and we will see:
+```console
+Flow complete.
+```
+
+---
+
+#### Viewing the layout
+
+To open the final {term}`GDSII` layout run this command:
+
+```console
+[nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/caravel_aes_accelerator/openlane/user_project_wrapper/user_config.json ~/caravel_aes_accelerator/openlane/user_project_wrapper/fixed_sky130.json
+```
+
+This opens {term}`KLayout` and you should be able to see the following:
+
+```{figure} ./mprj-gds-1.png
+:align: center
+
+Final layout of the user_project_wrapper
+```
+
+```{tip}
+You can control the visible layers in KLayout by double-clicking on the
+layers you want to hide/unhide. In this figure, the layers`areaid.lowTapDensity`, `areaid.diode` and `areaud.standardc` were hidden to view the layout more clearly.
+ 
+```
+As seen in the layout, we have our aes macro placed around the middle and if we only show the layers: `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`. We will see long and unnecessary routes because of 2 things:
+1. The AES macro is placed very far from its connections. It should be placed at the bottom left corner.
+2. The pins of the AES macro should be on the south only.
+```{figure} ./mprj-gds-2.png
+:align: center
+
+Long routes in the user_project_wrapper
+```
+
+---
+
+#### Checking the reports
+##### openroad-checkantennas
+
+There are no antenna violations
+```txt
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━━━┓
+┃ Partial/Required ┃ Required ┃ Partial ┃ Net ┃ Pin ┃ Layer ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━╇━━━━━╇━━━━━━━┩
+└──────────────────┴──────────┴─────────┴─────┴─────┴───────┘
+```
+
+---
+
+##### openroad-stapostpnr
+Looking at `openroad-stapostpnr/summary.rpt` and the `Max Slew` section in `openroad-stapostpnr/max_ss_100C_1v60/checks.rpt`, there are max transition violations. If we look at the nets with violations, we will find that those are the long nets we saw in the GDS.
+```txt
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃                ┃ Hold Worst     ┃ Reg to Reg     ┃          ┃ Hold           ┃ of which Reg   ┃ Setup Worst    ┃ Reg to Reg     ┃           ┃ Setup          ┃ of which Reg   ┃ Max Cap       ┃ Max Slew       ┃
+┃ Corner/Group   ┃ Slack          ┃ Paths          ┃ Hold TNS ┃ Violations     ┃ to Reg         ┃ Slack          ┃ Paths          ┃ Setup TNS ┃ Violations     ┃ to Reg         ┃ Violations    ┃ Violations     ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Overall        │ 0.0108         │ 0.0108         │ 0.0000   │ 0              │ 0              │ 1.6312         │ 7.1309         │ 0.0000    │ 0              │ 0              │ 0             │ 70             │
+│ nom_tt_025C_1… │ 0.1371         │ 0.1596         │ 0.0000   │ 0              │ 0              │ 8.2216         │ 16.2820        │ 0.0000    │ 0              │ 0              │ 0             │ 45             │
+│ nom_ss_100C_1… │ 0.0830         │ 0.5879         │ 0.0000   │ 0              │ 0              │ 2.2298         │ 7.6748         │ 0.0000    │ 0              │ 0              │ 0             │ 56             │
+│ nom_ff_n40C_1… │ 0.0120         │ 0.0120         │ 0.0000   │ 0              │ 0              │ 10.2962        │ 19.5219        │ 0.0000    │ 0              │ 0              │ 0             │ 39             │
+│ min_tt_025C_1… │ 0.1579         │ 0.1579         │ 0.0000   │ 0              │ 0              │ 8.8353         │ 16.5546        │ 0.0000    │ 0              │ 0              │ 0             │ 30             │
+│ min_ss_100C_1… │ 0.1465         │ 0.5847         │ 0.0000   │ 0              │ 0              │ 2.9034         │ 8.1574         │ 0.0000    │ 0              │ 0              │ 0             │ 38             │
+│ min_ff_n40C_1… │ 0.0108         │ 0.0108         │ 0.0000   │ 0              │ 0              │ 10.8591        │ 19.7016        │ 0.0000    │ 0              │ 0              │ 0             │ 28             │
+│ max_tt_025C_1… │ 0.1038         │ 0.1618         │ 0.0000   │ 0              │ 0              │ 7.6237         │ 15.9806        │ 0.0000    │ 0              │ 0              │ 0             │ 65             │
+│ max_ss_100C_1… │ 0.0268         │ 0.5914         │ 0.0000   │ 0              │ 0              │ 1.6312         │ 7.1309         │ 0.0000    │ 0              │ 0              │ 0             │ 70             │
+│ max_ff_n40C_1… │ 0.0135         │ 0.0135         │ 0.0000   │ 0              │ 0              │ 9.7517         │ 19.3107        │ 0.0000    │ 0              │ 0              │ 0             │ 58             │
+└────────────────┴────────────────┴────────────────┴──────────┴────────────────┴────────────────┴────────────────┴────────────────┴───────────┴────────────────┴────────────────┴───────────────┴────────────────┘
+```
+
+```txt 
+Max Slew
+
+Pin                                        Limit        Slew       Slack
+------------------------------------------------------------------------
+wbs_dat_o[2]                            1.500000    5.265976   -3.765976 (VIOLATED)
+wbs_dat_o[26]                           1.500000    5.214964   -3.714964 (VIOLATED)
+wbs_dat_o[25]                           1.500000    4.767642   -3.267642 (VIOLATED)
+wbs_dat_o[8]                            1.500000    4.650988   -3.150988 (VIOLATED)
+wbs_dat_o[23]                           1.500000    4.362167   -2.862167 (VIOLATED)
+wbs_dat_o[29]                           1.500000    3.906245   -2.406245 (VIOLATED)
+wbs_dat_o[28]                           1.500000    3.703813   -2.203813 (VIOLATED)
+wbs_dat_o[27]                           1.500000    3.586008   -2.086008 (VIOLATED)
+wbs_dat_o[31]                           1.500000    3.301759   -1.801759 (VIOLATED)
+wbs_dat_o[17]                           1.500000    2.757454   -1.257454 (VIOLATED)
+```
+
+---
+
+##### magic-drc
+
+Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
+```text
+aes_wb_wrapper
+----------------------------------------
+[INFO] COUNT: 0
+[INFO] Should be divided by 3 or 4
+
+
+```
+
+
+---
+
+##### klayout-drc
+
+Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
+```text
+{
+  ⋮
+  "total": 0
+}
+
+```
+
+---
+
+##### netgen-lvs
+
+Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+```text
+Cell pin lists are equivalent.
+Device classes user_project_wrapper and user_project_wrapper are equivalent.
+
+Final result: Circuits match uniquely.
+
+```
+
+---
+
+
+#### Re-running the flow with a modified configuration
+
+To fix the long routes issue that cause maximum transition violations, 3 things should be done:
+1. Create the pin order configuration file for `aes_wb_wrapper` in `openlane/aes_wb_wrapper/pin_order.cfg`:
+````{dropdown} pin_order.cfg
+```txt
+#S
+wb_.*
+wbs_.*
+```
+````
+2. Add the `Odb.CustomIOPlacement::FP_PIN_ORDER_CFG` variable to `openlane/aes_wb_wrapper/config.json`
+````{dropdown} config.json
+```json
+{
+	"DESIGN_NAME": "aes_wb_wrapper",
+	"CLOCK_PORT": "wb_clk_i",
+	"CLOCK_PERIOD": 25,
+	"VERILOG_FILES": [
+		"dir::/../../../secworks_aes/src/rtl/aes.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_core.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_decipher_block.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_encipher_block.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_inv_sbox.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_key_mem.v",
+		"dir::/../../../secworks_aes/src/rtl/aes_sbox.v",
+		"dir::/../../../caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v"
+	],
+	"FP_CORE_UTIL": 40,
+	"GRT_ANTENNA_ITERS": 10,
+	"RUN_HEURISTIC_DIODE_INSERTION": true,
+	"HEURISTIC_ANTENNA_THRESHOLD": 200,
+	"DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
+	"DEFAULT_CORNER": "max_ss_100C_1v60",
+	"RUN_POST_GRT_DESIGN_REPAIR": true,
+	"PNR_SDC_FILE": "dir::pnr.sdc",
+	"SIGNOFF_SDC_FILE": "dir::signoff.sdc",
+	"FP_PIN_ORDER_CFG": "dir::pin_order.cfg"
+}
+```
+````
+3. Update the location of the macro in the `openlane/user_project_wrapper/user_config.json` to `[10, 20]`
+````{dropdown} user_config.json
+```json
+{
+	"DESIGN_NAME": "user_project_wrapper",
+
+	"//": "Design files",
+	"VERILOG_FILES": [
+		"dir::../../verilog/rtl/defines.v",
+		"dir::../../verilog/rtl/user_project_wrapper.v"
+	],
+	"PNR_SDC_FILE": "dir::signoff.sdc",
+	
+	"//": "Hardening strategy variables (this is for 1-Macro-First Hardening). Visit https://docs.google.com/document/d/1pf-wbpgjeNEM-1TcvX2OJTkHjqH_C9p-LURCASS0Zo8 for more info",
+	"SYNTH_ELABORATE_ONLY": true,
+	"RUN_POST_GPL_DESIGN_REPAIR": false,
+	"RUN_POST_CTS_RESIZER_TIMING": false,
+	"DESIGN_REPAIR_BUFFER_INPUT_PORTS": false,
+	"FP_PDN_ENABLE_RAILS": false,
+	"RUN_ANTENNA_REPAIR": false,
+	"RUN_FILL_INSERTION": false,
+	"RUN_TAP_ENDCAP_INSERTION": false,
+	"RUN_CTS": false,
+	"RUN_IRDROP_REPORT": false,
+
+	"//": "Macros configurations",
+	"MACROS": {
+		"aes_wb_wrapper": {
+			"gds": [
+				"dir::../../gds/aes_wb_wrapper.gds"
+			],
+			"lef": [
+				"dir::../../lef/aes_wb_wrapper.lef"
+			],
+			"instances": {
+				"mprj": {
+					"location": [10, 20],
+					"orientation": "N"
+				}
+			},
+			"nl": [
+				"dir::../../verilog/gl/aes_wb_wrapper.v"
+			],
+			"spef": {
+				"min_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.min.spef"
+				],
+				"nom_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.nom.spef"
+				],
+				"max_*": [
+					"dir::../../spef/multicorner/aes_wb_wrapper.max.spef"
+				]
+			},
+			"lib": {
+				"*": "dir::../../lib/aes_wb_wrapper.lib"
+			}
+		}
+	},
+	"PDN_MACRO_CONNECTIONS": ["mprj vccd1 vssd1 VPWR VGND"],
+
+	"//": "PDN configurations",
+	"FP_PDN_VOFFSET": 5,
+	"FP_PDN_HOFFSET": 5,
+	"FP_PDN_VWIDTH": 3.1,
+	"FP_PDN_HWIDTH": 3.1,
+	"FP_PDN_VSPACING": 15.5,
+	"FP_PDN_HSPACING": 15.5,
+	"FP_PDN_VPITCH": 180,
+	"FP_PDN_HPITCH": 180,
+	"QUIT_ON_PDN_VIOLATIONS": false,
+
+	"//": "Magic variables",
+	"MAGIC_DRC_USE_GDS": true,
+
+	"DRT_THREADS": 1,
+	"MAX_TRANSITION_CONSTRAINT": 1.5
+}
+```
+````
+
+Now let's re-run the flow for the `aes_wb_wrapper`:
+
+```console
+[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
+```
+Then, after checking the `aes_wb_wrapper` reports, save the physical views using:
+```console
+[nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator aes_wb_wrapper RUN_TAG
+```
+Then rerun the `user_project_wrapper`
+```console
+[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/user_config.json ~/caravel_aes_accelerator/openlane/user_project_wrapper/fixed_sky130.json
+```
+
+---
+
+#### Re-checking the layout
+
+To open the final {term}`GDSII` layout run this command:
+
+```console
+[nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/caravel_aes_accelerator/openlane/user_project_wrapper/user_config.json ~/caravel_aes_accelerator/openlane/user_project_wrapper/fixed_sky130.json
+```
+
+Now our macro is placed at the bottom left corner close to the wishbone pins.
+
+```{figure} ./mprj-gds-3.png
+:align: center
+
+Final layout of the user_project_wrapper
+```
+And if we zoom to the AES macro and view only `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`, there are no long routes anymore.
+```{figure} ./mprj-gds-4.png
+:align: center
+
+Shorter routes in the user_project_wrapper
+```
+
+#### Re-checking the reports
+The STA report `openroad-stapostpnr/summary.rpt` now has no issues:
+
+```text
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃                ┃ Hold Worst     ┃ Reg to Reg     ┃          ┃ Hold           ┃ of which Reg   ┃ Setup Worst   ┃ Reg to Reg     ┃           ┃ Setup         ┃ of which Reg   ┃ Max Cap       ┃ Max Slew       ┃
+┃ Corner/Group   ┃ Slack          ┃ Paths          ┃ Hold TNS ┃ Violations     ┃ to Reg         ┃ Slack         ┃ Paths          ┃ Setup TNS ┃ Violations    ┃ to Reg         ┃ Violations    ┃ Violations     ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ Overall        │ 0.0502         │ 0.0502         │ 0.0000   │ 0              │ 0              │ 6.0984        │ 6.6834         │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ nom_tt_025C_1… │ 0.2279         │ 0.2279         │ 0.0000   │ 0              │ 0              │ 11.0441       │ 16.0780        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ nom_ss_100C_1… │ 0.3832         │ 0.7152         │ 0.0000   │ 0              │ 0              │ 6.2205        │ 7.0983         │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ nom_ff_n40C_1… │ 0.0519         │ 0.0519         │ 0.0000   │ 0              │ 0              │ 11.0893       │ 19.4628        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ min_tt_025C_1… │ 0.2256         │ 0.2256         │ 0.0000   │ 0              │ 0              │ 11.0382       │ 16.3619        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ min_ss_100C_1… │ 0.4091         │ 0.7107         │ 0.0000   │ 0              │ 0              │ 6.3816        │ 7.5777         │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ min_ff_n40C_1… │ 0.0502         │ 0.0502         │ 0.0000   │ 0              │ 0              │ 11.0806       │ 19.6363        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ max_tt_025C_1… │ 0.2304         │ 0.2304         │ 0.0000   │ 0              │ 0              │ 11.0653       │ 15.8331        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ max_ss_100C_1… │ 0.3418         │ 0.7198         │ 0.0000   │ 0              │ 0              │ 6.0984        │ 6.6834         │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+│ max_ff_n40C_1… │ 0.0537         │ 0.0537         │ 0.0000   │ 0              │ 0              │ 11.1018       │ 19.2829        │ 0.0000    │ 0             │ 0              │ 0             │ 0              │
+└────────────────┴────────────────┴────────────────┴──────────┴────────────────┴────────────────┴───────────────┴────────────────┴───────────┴───────────────┴────────────────┴───────────────┴────────────────┘
+
+```
+---
+#### Saving the views
+To save the views, run the following script with the following arguments in order:
+1. The directory of the project
+2. The macro name
+3. The successful run tag
+
+```console
+[nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator user_project_wrapper RUN_TAG
+```
+This will copy the physcial views of the macro in the specified run to your project folder. 
+
+Congrats! now you have an AES accelerator as a caravel user project. 
+
+---
+
+## 2. Full-Wrapper Flattening strategy
+
+In this strategy we will harden the `user_project_wrapper` with the aes as one large flattened macro.
+
+### Configuration
+
+### Running the flow
+
+### Viewing the layout
+
+### Cheching the reports
+
+### Re-running the flow with a modified configuration
+
+### Re-checking the reports
+
+### Saving the views
+
+## 3. Top-Level Integration strategy
+
+### Configuration
+
+### Running the flow
+
+### Viewing the layout
+
+### Cheching the reports
+
+### Re-running the flow with a modified configuration
+
+### Re-checking the reports
+
+### Saving the views
