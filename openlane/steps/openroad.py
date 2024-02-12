@@ -224,7 +224,7 @@ class OpenROADStep(TclStep):
         )
 
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
-        excluded_cells.update(process_list_file(self.config["PNR_EXCLUSION_CELL_LIST"]))
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
         env["_pnr_excluded_cells"] = TclUtils.join(excluded_cells)
 
         python_path_elements = site.getsitepackages() + sys.path

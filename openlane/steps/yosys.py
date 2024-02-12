@@ -204,9 +204,9 @@ class YosysStep(TclStep):
 
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
         excluded_cells.update(
-            process_list_file(self.config["SYNTH_EXCLUSION_CELL_LIST"])
+            process_list_file(self.config["SYNTH_EXCLUDED_CELL_FILE"])
         )
-        excluded_cells.update(process_list_file(self.config["PNR_EXCLUSION_CELL_LIST"]))
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
 
         lib_synth = self.toolbox.remove_cells_from_lib(
             frozenset(lib_list),
