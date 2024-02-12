@@ -20,6 +20,7 @@ if { $::env(MAGIC_LEF_WRITE_USE_GDS) } {
     read_pdk_gds
     read_macro_gds
     read_extra_gds
+    load (REFRESHLAYOUT?)
     read_def
 }
 
