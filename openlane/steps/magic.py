@@ -182,13 +182,13 @@ class WriteLEF(MagicStep):
         Variable(
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
-            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using the DEF/LEF with concrete views.",
-            default=False,
+            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using abstract LEF views.",
+            default=True,
         ),
         Variable(
             "MAGIC_WRITE_FULL_LEF",
             bool,
-            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view  of the macro LEF view via magic.",
+            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view of the macro LEF view via magic.",
             default=False,
         ),
     ]
