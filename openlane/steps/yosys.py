@@ -20,7 +20,7 @@ import textwrap
 import subprocess
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Set, Tuple
 
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
@@ -28,7 +28,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from ..config import Variable, Config
 from ..state import State, DesignFormat
 from ..logging import debug, verbose, info, warn
-from ..common import Path, get_script_dir, Toolbox, TclUtils
+from ..common import Path, get_script_dir, Toolbox, TclUtils, process_list_file
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
@@ -201,26 +201,27 @@ class YosysStep(TclStep):
         lib_list = [
             str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
         ]
+
+        excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
+        excluded_cells.update(
+            process_list_file(self.config["SYNTH_EXCLUDED_CELL_FILE"])
+        )
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
+
         lib_synth = self.toolbox.remove_cells_from_lib(
             frozenset(lib_list),
-            excluded_cells=frozenset(
-                [
-                    str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
-                    str(self.config["PNR_EXCLUSION_CELL_LIST"]),
-                ]
-            ),
-            as_cell_lists=True,
+            excluded_cells=frozenset(excluded_cells),
         )
 
-        env["SYNTH_LIBS"] = " ".join(lib_synth)
-        env["FULL_LIBS"] = " ".join(lib_list)
+        env["SYNTH_LIBS"] = TclUtils.join(lib_synth)
+        env["FULL_LIBS"] = TclUtils.join(lib_list)
 
         macro_libs = self.toolbox.get_macro_views(
             self.config,
             DesignFormat.LIB,
         )
         if len(macro_libs) != 0:
-            env["MACRO_LIBS"] = " ".join([str(lib) for lib in macro_libs])
+            env["_macro_libs"] = TclUtils.join([str(lib) for lib in macro_libs])
 
         macro_nls = self.toolbox.get_macro_views(
             self.config,
@@ -228,7 +229,7 @@ class YosysStep(TclStep):
             unless_exist=DesignFormat.LIB,
         )
         if len(macro_nls) != 0:
-            env["MACRO_NLS"] = " ".join([str(nl) for nl in macro_nls])
+            env["MACRO_NLS"] = TclUtils.join([str(nl) for nl in macro_nls])
 
         return super().run(state_in, env=env, **kwargs)
 
