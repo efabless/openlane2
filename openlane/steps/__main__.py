@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import json
 import shlex
 import shutil
 import datetime
@@ -35,16 +34,6 @@ from ..common.cli import formatter_settings
 from ..common import mkdirp, Toolbox, get_openlane_root
 
 
-def extract_step_id(ctx: Context, json_in_path: str) -> Optional[str]:
-    try:
-        cfg = json.load(open(json_in_path, encoding="utf8"))
-        meta = cfg.get("meta") or {}
-        return meta.get("step")
-    except json.JSONDecodeError:
-        err("Invalid JSON provided for configuration object.")
-        ctx.exit(-1)
-
-
 def load_step_from_inputs(
     ctx: Context,
     id: Optional[str],
@@ -52,19 +41,15 @@ def load_step_from_inputs(
     state_in: str,
     pdk_root: Optional[str] = None,
 ) -> Step:
-    if id is None:
-        id = extract_step_id(ctx, config)
-        if id is None:
+    Target = Step
+    if id is not None:
+        if Found := Step.factory.get(id):
+            Target = Found
+        else:
             err(
-                "Step ID not provided either in the Configuration object's .meta.step value or over the command-line."
+                f"No step registered with id '{id}'. Ensure all relevant plugins are installed."
             )
             ctx.exit(-1)
-    Target = Step.factory.get(id)
-    if Target is None:
-        err(
-            f"No step registered with id '{id}'. Ensure all relevant plugins are installed."
-        )
-        ctx.exit(-1)
 
     return Target.load(
         config=config,

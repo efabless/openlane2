@@ -18,7 +18,7 @@ import sys
 import json
 import shutil
 from decimal import Decimal
-from typing import List, Mapping, Tuple, Union, Optional, Dict, Any
+from typing import Callable, List, Mapping, Tuple, Union, Optional, Dict, Any
 
 from .design_format import (
     DesignFormat,
@@ -130,38 +130,48 @@ class State(GenericImmutableDict[str, StateElement]):
         new = State(self, metrics=metrics)
         return new
 
-    def __save_snapshot_recursive(
+    def _walk(
         self,
-        path: Union[str, os.PathLike],
         views: Union[Dict, "State"],
+        save_directory: Union[str, os.PathLike],
+        visit: Callable[[str, StateElement, str, str, int], StateElement],
         key_path: str = "",
+        depth: int = 0,
+        top_key: Optional[str] = None,
     ):
-        mkdirp(path)
         for key, value in views.items():
-            current_key_path = f"{key_path}.{key}"
-            if value is None:
-                continue
-            current_folder = key.strip("*")
+            current_top_key = top_key
+            if current_top_key is None:
+                current_top_key = key
+            current_folder = key.strip("_*")
             if df := DesignFormat.by_id(key):
                 # For type-checker: all guaranteed to be DesignFormatObjects
                 assert isinstance(df.value, DesignFormatObject)
                 current_folder = df.value.folder
 
+            target_dir = os.path.join(save_directory, current_folder)
+
+            current_key_path = f"{key_path}.{key}"
+            visit(current_key_path, value, current_top_key, target_dir, depth)
             if isinstance(value, dict):
-                subdirectory = os.path.join(path, current_folder)
-                self.__save_snapshot_recursive(
-                    subdirectory,
+                self._walk(
                     value,
-                    key_path=current_key_path,
+                    target_dir,
+                    visit,
+                    current_key_path,
+                    depth + 1,
+                    current_top_key,
                 )
-            else:
-                target_dir = os.path.join(
-                    path,
-                    current_folder,
-                )
-                mkdirp(target_dir)
-                target_path = os.path.join(target_dir, os.path.basename(value))
-                shutil.copyfile(value, target_path, follow_symlinks=True)
+            if isinstance(value, list):
+                for i, element in enumerate(value):
+                    element_key_path = f"{current_key_path}[{i}]"
+                    visit(
+                        element_key_path,
+                        element,
+                        current_top_key,
+                        target_dir,
+                        depth + 1,
+                    )
 
     def save_snapshot(self, path: Union[str, os.PathLike]):
         """
@@ -170,8 +180,17 @@ class State(GenericImmutableDict[str, StateElement]):
 
         :param path: The folder that would contain other folders.
         """
+
+        def visitor(key, value, top_key, save_directory, depth):
+            if not isinstance(value, Path):
+                return
+            mkdirp(save_directory)
+            target_path = os.path.join(save_directory, os.path.basename(value))
+            shutil.copyfile(value, target_path, follow_symlinks=True)
+
         self.validate()
-        self.__save_snapshot_recursive(path, self)
+        mkdirp(path)
+        self._walk(self, path, visitor)
         metrics_csv_path = os.path.join(path, "metrics.csv")
         with open(metrics_csv_path, "w", encoding="utf8") as f:
             f.write("Metric,Value\n")
@@ -182,38 +201,28 @@ class State(GenericImmutableDict[str, StateElement]):
         with open(metrics_json_path, "w", encoding="utf8") as f:
             f.write(self.metrics.dumps())
 
-    def __validate_recursive(
-        self,
-        views: Dict,
-        key_path: str = "",
-        depth: int = 0,
-    ):
-        for key, value in views.items():
-            current_key_path = f"{key_path}.{key}"
-            if depth == 0 and DesignFormat.by_id(key) is None:
-                raise InvalidState(
-                    f"Key {current_key_path} does not match a known design format."
-                )
-            if value is not None:
-                if isinstance(value, Path):
-                    if not value.exists():
-                        raise InvalidState(
-                            f"Path for format {current_key_path} does not exist: '{value}'."
-                        )
-                elif isinstance(value, dict):
-                    self.__validate_recursive(
-                        value, key_path=current_key_path, depth=depth + 1
-                    )
-                else:
-                    raise InvalidState(
-                        f"Value for format '{current_key_path}' is not a Path nor a dictionary of strings to Paths: '{value}'."
-                    )
-
     def validate(self):
         """
         Ensures that all paths exist in a State.
         """
-        self.__validate_recursive(self.to_raw_dict(metrics=False))
+
+        def visitor(key, value, top_key, _, depth):
+            if depth == 0 and DesignFormat.by_id(top_key) is None:
+                raise InvalidState(
+                    f"Key '{top_key}' does not match a known design format."
+                )
+            if value is None:
+                return
+            if not (
+                isinstance(value, Path)
+                or isinstance(value, dict)
+                or isinstance(value, list)
+            ):
+                raise InvalidState(
+                    f"Value at '{key}' is not a Path nor a dictionary/list of Paths: '{value}'."
+                )
+
+        self._walk(self.to_raw_dict(metrics=False), "", visit=visitor)
 
     @classmethod
     def __loads_recursive(

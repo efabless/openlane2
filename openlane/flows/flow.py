@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-
 import os
 import glob
+import shutil
+import fnmatch
 import logging
 import datetime
 import textwrap
@@ -43,9 +44,11 @@ from rich.progress import (
     TaskID,
 )
 from deprecated.sphinx import deprecated
+from openlane.common.types import Path
 
+from openlane.state.design_format import DesignFormatObject
 from ..config import Config, Variable, universal_flow_config_variables, AnyConfigs
-from ..state import State
+from ..state import State, DesignFormat
 from ..steps import Step
 from ..logging import (
     LevelFilter,
@@ -275,6 +278,12 @@ class Flow(ABC):
         The :class:`Toolbox` of the last run of the flow, if it exists.
 
         If :meth:`start` is called again, the reference is destroyed.
+
+    :ivar config_resolved_path:
+        The path to the serialization of the resolved configuration for the
+        last run of the flow.
+
+        If :meth:`start` is called again, the reference is destroyed.
     """
 
     name: str = NotImplemented
@@ -283,6 +292,7 @@ class Flow(ABC):
     step_objects: Optional[List[Step]] = None
     run_dir: Optional[str] = None
     toolbox: Optional[Toolbox] = None
+    config_resolved_path: Optional[str] = None
 
     def __init__(
         self,
@@ -502,6 +512,7 @@ class Flow(ABC):
         )
         initial_state = with_initial_state or State()
 
+        self.step_objects = []
         starting_ordinal = 1
         try:
             entries = os.listdir(self.run_dir)
@@ -509,11 +520,16 @@ class Flow(ABC):
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
             info(f"Using existing run at '{tag}' with the '{self.name}' flow.")
 
-            # Extract maximum step ordinal
-            for entry in entries:
+            # Extract maximum step ordinal + load finished steps
+            entries_sorted = sorted(
+                filter(lambda x: "-" in x, entries),
+                key=lambda x: int(x.split("-", maxsplit=1)[0]),
+            )
+            for entry in entries_sorted:
                 components = entry.split("-", maxsplit=1)
-                if len(components) < 2:
-                    continue
+                self.step_objects.append(
+                    Step.load_finished(os.path.join(self.run_dir, entry))
+                )
                 try:
                     extracted_ordinal = int(components[0])
                 except ValueError:
@@ -556,8 +572,8 @@ class Flow(ABC):
         register_additional_handler(handler)
 
         try:
-            config_res_path = os.path.join(self.run_dir, "resolved.json")
-            with open(config_res_path, "w") as f:
+            self.config_resolved_path = os.path.join(self.run_dir, "resolved.json")
+            with open(self.config_resolved_path, "w") as f:
                 f.write(self.config.dumps())
 
             self.progress_bar = FlowProgressBar(
@@ -572,7 +588,7 @@ class Flow(ABC):
             self.progress_bar.end()
 
             # Stored until next start()
-            self.step_objects = step_objects
+            self.step_objects += step_objects
 
             return final_state
         finally:
@@ -667,6 +683,108 @@ class Flow(ABC):
         kwargs["step_dir"] = self.dir_for_step(step)
 
         return get_tpe().submit(step.start, *args, **kwargs)
+
+    def _save_snapshot_ef(self, path: Union[str, os.PathLike]):
+        if (
+            self.step_objects is None
+            or self.toolbox is None
+            or self.config_resolved_path is None
+        ):
+            raise RuntimeError(
+                "Flow was not run before attempting to save views in the Efabless format."
+            )
+
+        if len(self.step_objects) == 0:
+            # No steps, no data
+            return
+
+        last_step = self.step_objects[-1]
+        last_state = last_step.state_out
+
+        if last_state is None:
+            raise FlowException(
+                f"Misconfigured flow: Step {last_step.id} was appended to step objects without having been run first."
+            )
+
+        # 1. Copy Files
+        last_state.validate()
+
+        mkdirp(path)
+
+        def visitor(key, value, top_key, _, __):
+            df = DesignFormat.by_id(top_key)
+            assert df is not None
+            dfo = df.value
+            assert isinstance(dfo, DesignFormatObject)
+            if dfo._ef_format_dir is None:
+                return
+            target_dir = os.path.join(path, dfo._ef_format_dir)
+            if not isinstance(value, Path):
+                if isinstance(value, dict):
+                    if not dfo._ef_format_multicorner_add_default:
+                        return
+                    assert (
+                        self.toolbox is not None
+                    ), "toolbox check was not executed properly"
+                    default_corner_view = self.toolbox.filter_views(self.config, value)
+                    default_corner_target_dir = os.path.dirname(target_dir)
+                    mkdirp(default_corner_target_dir)
+                    if len(default_corner_view) == 1:
+                        target_basename = f"{self.config['DESIGN_NAME']}.{dfo._ef_format_replace_ext or dfo.extension}"
+                        target_path = os.path.join(
+                            default_corner_target_dir, target_basename
+                        )
+                        shutil.copyfile(
+                            default_corner_view[0], target_path, follow_symlinks=True
+                        )
+                    else:
+                        for file in default_corner_view:
+                            shutil.copyfile(file, target_dir, follow_symlinks=True)
+                return
+
+            target_basename = os.path.basename(str(value))
+            if replacement_ext := dfo._ef_format_replace_ext:
+                target_basename = (
+                    target_basename[: -len(dfo.extension)] + replacement_ext
+                )
+            target_path = os.path.join(target_dir, target_basename)
+            mkdirp(target_dir)
+            shutil.copyfile(value, target_path, follow_symlinks=True)
+
+        last_state._walk(last_state.to_raw_dict(metrics=False), path, visit=visitor)
+
+        # 2. Copy Reports & Signoff Information
+        def copy_dir_contents(from_dir, to_dir, filter="*"):
+            for file in os.listdir(from_dir):
+                file_path = os.path.join(from_dir, file)
+                if os.path.isdir(file_path):
+                    continue
+                if fnmatch.fnmatch(file, filter):
+                    shutil.copyfile(
+                        file_path, os.path.join(to_dir, file), follow_symlinks=True
+                    )
+
+        signoff_folder = os.path.join(path, "signoff", self.config["DESIGN_NAME"])
+        mkdirp(signoff_folder)
+        shutil.copyfile(
+            self.config_resolved_path,
+            os.path.join(signoff_folder, "resolved.json"),
+            follow_symlinks=True,
+        )
+        for step in self.step_objects:
+            reports_dir = os.path.join(step.step_dir, "reports")
+            step_imp_id = step.get_implementation_id()
+            if step_imp_id.endswith("DRC") or step_imp_id.endswith("LVS"):
+                mkdirp(signoff_folder)
+                if os.path.exists(reports_dir):
+                    copy_dir_contents(reports_dir, signoff_folder)
+            if step_imp_id.endswith("LVS"):
+                mkdirp(signoff_folder)
+                copy_dir_contents(step.step_dir, signoff_folder, "*.log")
+            if step_imp_id.endswith("STAPostPNR"):
+                timing_report_folder = os.path.join(signoff_folder, "timing-reports")
+                mkdirp(timing_report_folder)
+                copy_dir_contents(step.step_dir, timing_report_folder, "*summary.rpt")
 
     @deprecated(
         version="2.0.0a46",
