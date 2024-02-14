@@ -104,6 +104,10 @@ clangStdenv.mkDerivation rec {
     re2
   ];
 
+  patches = [
+    ./patches/openroad/antenna.patch
+  ];
+
   nativeBuildInputs = [
     swig4
     pkg-config

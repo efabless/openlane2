@@ -319,6 +319,7 @@ class Classic(SequentialFlow):
         OpenROAD.CheckSDCFiles,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
+        Odb.CheckAntennaRule,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         OpenROAD.CutRows,

@@ -74,7 +74,7 @@ class OdbReader(object):
         self.libs = self.db.getLibs()
         self.cells = {}
         for lib in self.libs:
-            self.cells.update({m.getName(): m for m in lib.getMasters()})
+            self.cells.update({m: m for m in lib.getMasters()})
         if self.chip is not None:
             self.block = self.db.getChip().getBlock()
             self.name = self.block.getName()
