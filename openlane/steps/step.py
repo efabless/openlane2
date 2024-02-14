@@ -1056,33 +1056,38 @@ class Step(ABC):
         lines = ""
         if process_stdout := process.stdout:
             current_rpt = None
-            while line := process_stdout.readline():
-                lines += line
-                log_file.write(line)
-                if self.step_dir is not None and line.startswith(REPORT_START_LOCUS):
-                    if current_rpt is not None:
-                        current_rpt.close()
-                    report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                    report_path = os.path.join(report_dir, report_name)
-                    current_rpt = open(report_path, "w")
-                elif line.startswith(REPORT_END_LOCUS):
-                    if current_rpt is not None:
-                        current_rpt.close()
-                    current_rpt = None
-                elif line.startswith(METRIC_LOCUS):
-                    command, name, value = line.split(" ", maxsplit=3)
-                    metric_type: Union[Type[str], Type[int], Type[float]] = str
-                    if command.endswith("_I"):
-                        metric_type = int
-                    elif command.endswith("_F"):
-                        metric_type = float
-                    generated_metrics[name] = metric_type(value)
-                elif current_rpt is not None:
-                    # No echo- the timing reports especially can be very large
-                    # and terminal emulators will slow the flow down.
-                    current_rpt.write(line)
-                elif not silent and "table template" not in line:  # sky130 ff hack
-                    logging.subprocess(line.strip())
+            try:
+                while line := process_stdout.readline():
+                    lines += line
+                    log_file.write(line)
+                    if self.step_dir is not None and line.startswith(
+                        REPORT_START_LOCUS
+                    ):
+                        if current_rpt is not None:
+                            current_rpt.close()
+                        report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
+                        report_path = os.path.join(report_dir, report_name)
+                        current_rpt = open(report_path, "w")
+                    elif line.startswith(REPORT_END_LOCUS):
+                        if current_rpt is not None:
+                            current_rpt.close()
+                        current_rpt = None
+                    elif line.startswith(METRIC_LOCUS):
+                        command, name, value = line.split(" ", maxsplit=3)
+                        metric_type: Union[Type[str], Type[int], Type[float]] = str
+                        if command.endswith("_I"):
+                            metric_type = int
+                        elif command.endswith("_F"):
+                            metric_type = float
+                        generated_metrics[name] = metric_type(value)
+                    elif current_rpt is not None:
+                        # No echo- the timing reports especially can be very large
+                        # and terminal emulators will slow the flow down.
+                        current_rpt.write(line)
+                    elif not silent and "table template" not in line:  # sky130 ff hack
+                        logging.subprocess(line.strip())
+            except UnicodeDecodeError as e:
+                raise StepException(f"Subprocess emitted non-UTF-8 output: {e}")
         process_stats_thread.join()
 
         json_stats = f"{os.path.splitext(log_path)[0]}.process_stats.json"
