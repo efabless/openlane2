@@ -361,6 +361,11 @@ class SynthesisCommon(YosysStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
+        Variable(
+            "SYNTH_SDC_FILE",
+            Optional[Path],
+            "Specifies the SDC file read during all Synthesis steps",
+        ),
     ]
 
     def get_script_path(self):
@@ -387,6 +392,10 @@ class SynthesisCommon(YosysStep):
                     warn(f"{scl} not supported by Lighter.")
 
             env["_lighter_dff_map"] = lighter_dff_map
+
+        env["_sdc_in"] = (
+            self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        )
 
         views_updates, metric_updates = super().run(state_in, **kwargs)
 
