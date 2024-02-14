@@ -80,7 +80,12 @@ def main(
     block = db.getChip().getBlock()
     instances = block.getInsts()
     table = Table(
-        "Instance", "Power", "Disconnected", "Signal", "Disconnected", title=""
+        "Instance",
+        "Power Pins",
+        "Disconnected",
+        "Signal Pins",
+        "Disconnected",
+        title="",
     )
     disconnected_pins_count = 0
 
@@ -107,10 +112,10 @@ def main(
         ]
         table.add_row(
             instance.getName(),
-            ",".join(power_pins),
-            ",".join(disconnected_power_pins),
-            ",".join(signal_pins),
-            ",".join(disconnected_signal_pins),
+            "\n".join(power_pins),
+            "\n".join(disconnected_power_pins),
+            "\n".join(signal_pins),
+            "\n".join(disconnected_signal_pins),
         )
         disconnected_pins_count += len(disconnected_signal_pins) + len(
             disconnected_power_pins
