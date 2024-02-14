@@ -388,6 +388,14 @@ class STAPrePNR(STAStep):
 
 @Step.factory.register()
 class CheckMacroInstances(STAPrePNR):
+    """
+    Checks if all macro instances declared in the configuration are, in fact,
+    in the design, emitting an error otherwise.
+
+    Nested macros (macros within macros) are supported provided netlist views
+    are available for the macro.
+    """
+
     id = "OpenROAD.CheckMacroInstances"
     outputs = []
 

@@ -81,7 +81,7 @@ class Instance:
     """
 
     location: Optional[Tuple[Decimal, Decimal]]
-    orientation: Orientation = Orientation.N
+    orientation: Optional[Orientation]
 
 
 @dataclass

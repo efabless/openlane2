@@ -35,7 +35,6 @@ proc read_verilog_files {top_module} {
         }
         read_systemverilog -link -top $::env(DESIGN_NAME) {*}$synlig_params
     } elseif { $::env(USE_SYNLIG) } {
-        log $::_synlig_defines
         read_systemverilog -top $::env(DESIGN_NAME) {*}$::_synlig_defines {*}$synlig_params -sverilog {*}$verilog_include_args {*}$::env(VERILOG_FILES)
     } else {
         foreach file $::env(VERILOG_FILES) {

@@ -28,7 +28,7 @@ from deprecated.sphinx import deprecated
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info
+from ..logging import warn, info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -297,8 +297,16 @@ class ManualMacroPlacement(OdbpyStep):
                             )
                         for name, data in macro.instances.items():
                             if data.location is not None:
+                                if data.orientation is None:
+                                    raise StepException(
+                                        f"Instance {name} of macro {module} has a location configured, but no orientation."
+                                    )
                                 f.write(
                                     f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                                )
+                            else:
+                                verbose(
+                                    f"Instance {name} of macro {module} has no location configured, ignoring…"
                                 )
 
         if not cfg_file.exists():
