@@ -461,6 +461,7 @@ class Flow(ABC):
         tag: Optional[str] = None,
         last_run: bool = False,
         _force_run_dir: Optional[str] = None,
+        _no_load_previous_steps: bool = False,
         **kwargs,
     ) -> State:
         """
@@ -527,9 +528,14 @@ class Flow(ABC):
             )
             for entry in entries_sorted:
                 components = entry.split("-", maxsplit=1)
-                self.step_objects.append(
-                    Step.load_finished(os.path.join(self.run_dir, entry))
-                )
+                if not _no_load_previous_steps:
+                    self.step_objects.append(
+                        Step.load_finished(
+                            os.path.join(self.run_dir, entry),
+                            self.config["PDK_ROOT"],
+                            self.Steps,
+                        )
+                    )
                 try:
                     extracted_ordinal = int(components[0])
                 except ValueError:

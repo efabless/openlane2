@@ -114,6 +114,12 @@ class StepSignalled(StepException):
     pass
 
 
+class StepNotFound(NameError):
+    def __init__(self, *args: object, id: Optional[str] = None) -> None:
+        super().__init__(*args)
+        self.id = id
+
+
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 METRIC_LOCUS = "%OL_METRIC"
@@ -639,12 +645,13 @@ class Step(ABC):
         if Self.id == NotImplemented:  # If abstract
             id, Target = Step.factory.from_step_config(config)
             if id is None:
-                raise ValueError(
+                raise StepNotFound(
                     "Attempted to initialize abstract Step, and no step ID was found in the configuration."
                 )
             if Target is None:
-                raise ValueError(
-                    "Attempted to initialize abstract Step, and Step designated in configuration file not found."
+                raise StepNotFound(
+                    "Attempted to initialize abstract Step, and Step designated in configuration file not found.",
+                    id=id,
                 )
             return Target.load(config, state_in, pdk_root)
 
@@ -660,7 +667,12 @@ class Step(ABC):
         )
 
     @classmethod
-    def load_finished(Self, step_dir: str, pdk_root: Optional[str] = None) -> "Step":
+    def load_finished(
+        Self,
+        step_dir: str,
+        pdk_root: Optional[str] = None,
+        search_steps: Optional[List[Type[Step]]] = None,
+    ) -> "Step":
         config_path = os.path.join(step_dir, "config.json")
         state_in_path = os.path.join(step_dir, "state_in.json")
         state_out_path = os.path.join(step_dir, "state_out.json")
@@ -673,7 +685,21 @@ class Step(ABC):
             raise ValueError(
                 "Invalid finished step: state_in.json, state_out.json or config.json is missing"
             )
-        step_object = Self.load(config_path, state_in_path, pdk_root)
+        try:
+            step_object = Self.load(config_path, state_in_path, pdk_root)
+        except StepNotFound as e:
+            if e.id is not None:
+                search_steps = search_steps or []
+                Matched: Optional[Type[Step]] = None
+                for step in search_steps:
+                    if step.get_implementation_id() == e.id:
+                        Matched = step
+                        break
+                if Matched is None:
+                    raise e from None
+                step_object = Matched.load(config_path, state_in_path, pdk_root)
+            else:
+                raise e from None
         step_object.step_dir = step_dir
         step_object.state_out = State.loads(open(state_out_path).read())
         return step_object
