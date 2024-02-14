@@ -61,10 +61,4 @@ index 6b10d2b3c..a7c5f8bb6 100644
  void dbTechAntennaPinModel::getGateArea(
      std::vector<std::pair<double, dbTechLayer*>>& data)
  {
-diff --git a/third-party/abc b/third-party/abc
-index d3916ac03..95b3543e9 160000
---- a/third-party/abc
-+++ b/third-party/abc
-@@ -1 +1 @@
--Subproject commit d3916ac0337d599b30aeaf94e82b13338530ced3
-+Subproject commit 95b3543e928640dfa25f9e882e72a090a8883a9c
+
