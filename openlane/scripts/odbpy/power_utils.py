@@ -323,11 +323,11 @@ def write_verilog_header(
             upto = info.get("upto", 0) == 1
             offset = info.get("offset", 0)
             width = len(info["bits"])
-            if upto:
-                msb, lsb = lsb, msb
             if width > 1:
                 msb = offset + width - 1
                 lsb = offset
+                if upto:
+                    msb, lsb = lsb, msb
                 bus_postfix = f"[{msb}:{lsb}]"
             signal_decls.append(f"{info['direction']}{bus_postfix} {name}")
 
