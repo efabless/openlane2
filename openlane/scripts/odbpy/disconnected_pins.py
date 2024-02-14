@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+from typing import List, Literal
 
 import odb
 
@@ -30,15 +30,40 @@ def is_connected(iterm: odb.dbITerm) -> bool:
     return iterm.getNet() is not None
 
 
-def is_special(iterm: odb.dbITerm) -> bool:
+def is_pg(iterm: odb.dbITerm) -> bool:
     return iterm.getSigType() == "POWER" or iterm.getSigType() == "GROUND"
 
 
+def get_polarity(iterm: odb.dbITerm) -> Literal["INPUT", "OUTPUT", "INOUT"]:
+    return iterm.getIoType()
+
+
 def has_disconnect(instance: odb.dbInst) -> bool:
+    inputs = 0
+    inputs_connected = 0
+    outputs = 0
+    outputs_connected = 0
+    inouts = 0
+    inouts_connected = 0
+    for iterm in instance.getITerms():
+        polarity = get_polarity(iterm)
+        if polarity == "INPUT":
+            inputs += 1
+            if is_connected(iterm):
+                inputs_connected += 1
+        elif polarity == "INOUT":
+            inouts += 1
+            if is_connected(iterm):
+                inouts_connected += 1
+        else:
+            outputs += 1
+            if is_connected(iterm):
+                outputs_connected += 1
+
     return (
-        True
-        if [iterm for iterm in instance.getITerms() if not is_connected(iterm)]
-        else False
+        inputs != inputs_connected
+        or (outputs != 0 and outputs_connected == 0)
+        or inouts != inouts_connected
     )
 
 
@@ -59,30 +84,26 @@ def main(
     )
     disconnected_pins_count = 0
 
-    instances_with_disconnect = [
-        instance
-        for instance in instances
-        if has_disconnect(instance)
-        and (instance.getMaster().getName() not in ignore_module)
-    ]
-
-    for instance in instances_with_disconnect:
+    for instance in instances:
+        if not has_disconnect(instance):
+            continue
+        master = instance.getMaster()
+        if master.getName() in ignore_module:
+            continue
         iterms = instance.getITerms()
         signal_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if not is_special(iterm)
+            iterm.getMTerm().getName() for iterm in iterms if not is_pg(iterm)
         ]
-        power_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if is_special(iterm)
-        ]
+        power_pins = [iterm.getMTerm().getName() for iterm in iterms if is_pg(iterm)]
         disconnected_power_pins = [
             iterm.getMTerm().getName()
             for iterm in iterms
-            if is_special(iterm) and not is_connected(iterm)
+            if is_pg(iterm) and not is_connected(iterm)
         ]
         disconnected_signal_pins = [
             iterm.getMTerm().getName()
             for iterm in iterms
-            if not is_special(iterm) and not is_connected(iterm)
+            if not is_pg(iterm) and not is_connected(iterm)
         ]
         table.add_row(
             instance.getName(),

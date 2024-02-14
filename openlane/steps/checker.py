@@ -142,7 +142,7 @@ class DisconnectedPins(MetricChecker):
     deferred = False
 
     metric_name = "design__disconnected_pin__count"
-    metric_description = "Disconnected pins count"
+    metric_description = "disconnected pins"
 
 
 @Step.factory.register()
