@@ -343,7 +343,7 @@ o = partial(option, show_default=True)
         help="A directory to copy the final views to, where each format is saved under a directory named after the corner ID (much like the 'final' directory after running a flow.)",
     ),
     o(
-        "--save-views-ef",
+        "--ef-save-views-to",
         "ef_view_save_path",
         type=Path(file_okay=False, dir_okay=True),
         default=None,
