@@ -51,19 +51,17 @@ def check_antenna_properties(reader, cell_name, report_file):
                 output_pins.append(pin_name)
         if inout_pins:
             print(
-                f"[WARNING] For cell '{cell_name}', the following inout pins have no anetnna model information, they might be disconnected:\n"
+                f"[WARNING] Cell '{cell_name}' has ({len(inout_pins)}) inout pin(s) without anetnna gate information not antenna diffusion information. They might be disconnected."
             )
             print("\n".join([f"* {pin}" for pin in inout_pins]))
         if input_pins:
             print(
-                f"[WARNING] For cell '{cell_name}', the following input pins have no antenna gate information, they might not be connected to a gate:"
+                f"[WARNING] Cell '{cell_name}' has ({len(input_pins)}) input pin(s) without antenna gate information. They might not be connected to a gate."
             )
-            print("\n".join([f"* {pin}" for pin in input_pins]))
         if output_pins:
             print(
-                f"[WARNING] For cell '{cell_name}', the following output pins have no antenna diffusion information, the might not be driven:\n"
+                f"[WARNING] Cell '{cell_name}' has ({len(output_pins)}) output pin(s) without antenna diffusion information. They might not be driven."
             )
-            print("\n".join([f"* {pin}" for pin in output_pins]))
 
         entry = {
             "cell": cell_name,
