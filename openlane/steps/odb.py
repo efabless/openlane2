@@ -28,7 +28,7 @@ from deprecated.sphinx import deprecated
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info
+from ..logging import warn, info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -186,7 +186,10 @@ class SetPowerConnections(OdbpyStep):
     inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
+        return os.path.join(get_script_dir(), "odbpy", "power_utils.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["set-power-connections"]
 
     def get_command(self) -> List[str]:
         state_in = self.state_in.result()
@@ -194,6 +197,53 @@ class SetPowerConnections(OdbpyStep):
             "--input-json",
             str(state_in[DesignFormat.JSON_HEADER]),
         ]
+
+
+@Step.factory.register()
+class WriteVerilogHeader(OdbpyStep):
+    """
+    Writes a Verilog header of the module using information from the generated
+    PDN, guarded by the value of ``VERILOG_POWER_DEFINE``, and the JSON header.
+    """
+
+    id = "Odb.WriteVerilogHeader"
+    name = "Write Verilog Header"
+    inputs = [DesignFormat.ODB, DesignFormat.JSON_HEADER]
+    outputs = [DesignFormat.VERILOG_HEADER]
+
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "VERILOG_POWER_DEFINE",
+            str,
+            "Specifies the name of the define used to guard power and ground connections in the output Verilog header.",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+            default="USE_POWER_PINS",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "power_utils.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["write-verilog-header"]
+
+    def get_command(self) -> List[str]:
+        state_in = self.state_in.result()
+        return super().get_command() + [
+            "--output-vh",
+            os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh"),
+            "--input-json",
+            str(state_in[DesignFormat.JSON_HEADER]),
+            "--power-define",
+            self.config["VERILOG_POWER_DEFINE"],
+        ]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        views_updates[DesignFormat.VERILOG_HEADER] = Path(
+            os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh")
+        )
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -246,21 +296,17 @@ class ManualMacroPlacement(OdbpyStep):
                                 f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
                             )
                         for name, data in macro.instances.items():
-                            if data.placed:
-                                info(
-                                    f"Not placing already placed marco instance: {name}."
-                                )
-                            else:
-                                if not data.location:
+                            if data.location is not None:
+                                if data.orientation is None:
                                     raise StepException(
-                                        f"Unspecified key: location for non-placed macro instance: {name}."
-                                    )
-                                if not data.orientation:
-                                    raise StepException(
-                                        f"Unspecified key: orientation for non-placed macro instance: {name}"
+                                        f"Instance {name} of macro {module} has a location configured, but no orientation."
                                     )
                                 f.write(
                                     f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                                )
+                            else:
+                                verbose(
+                                    f"Instance {name} of macro {module} has no location configured, ignoring…"
                                 )
 
         if not cfg_file.exists():
