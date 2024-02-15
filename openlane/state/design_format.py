@@ -151,6 +151,11 @@ class DesignFormat(Enum):
         "h.json",
         "Design JSON Header File",
     )
+    VERILOG_HEADER: DesignFormatObject = DesignFormatObject(
+        "vh",
+        "vh",
+        "Verilog Header",
+    )
 
     def __str__(self) -> str:
         return self.value.id

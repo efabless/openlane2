@@ -960,7 +960,7 @@ class Step(ABC):
             if value is None:
                 raise StepException(
                     f"{type(self).__name__}: missing required input '{input.name}'"
-                )
+                ) from None
 
         try:
             views_updates, metrics_updates = self.run(state_in_result, **kwargs)
@@ -968,11 +968,11 @@ class Step(ABC):
             if e.returncode is not None and e.returncode < 0:
                 raise StepSignalled(
                     f"{self.name}: Interrupted ({Signals(-e.returncode).name})"
-                )
+                ) from None
             else:
                 raise StepError(
                     f"{self.name}: subprocess {e.args} failed", underlying_error=e
-                )
+                ) from None
 
         metrics = GenericImmutableDict(
             state_in_result.metrics, overrides=metrics_updates
@@ -985,7 +985,9 @@ class Step(ABC):
         try:
             self.state_out.validate()
         except InvalidState as e:
-            raise StepException(f"Step {self.name} generated invalid state: {e}")
+            raise StepException(
+                f"Step {self.name} generated invalid state: {e}"
+            ) from None
         self.end_time = time.time()
 
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:

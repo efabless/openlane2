@@ -53,7 +53,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable, Config
+from ..config import Variable, Config, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -351,9 +351,16 @@ class STAPrePNR(STAStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
+        prioritize_nl: Optional[bool] = self.config.get("STA_MACRO_PRIORITIZE_NL")
+        if prioritize_nl is None:
+            if "prioritize_nl" in kwargs:
+                prioritize_nl = bool(kwargs.pop("prioritize_nl"))
+            else:
+                prioritize_nl = False
+
         timing_corner, timing_file_list = self.toolbox.get_timing_files(
             self.config,
-            prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
+            prioritize_nl=prioritize_nl,
         )
 
         env["OPENSTA"] = "1"
@@ -377,6 +384,44 @@ class STAPrePNR(STAStep):
         views_updates[DesignFormat.SDF] = sdf_dict
 
         return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class CheckMacroInstances(STAPrePNR):
+    """
+    Checks if all macro instances declared in the configuration are, in fact,
+    in the design, emitting an error otherwise.
+
+    Nested macros (macros within macros) are supported provided netlist views
+    are available for the macro.
+    """
+
+    id = "OpenROAD.CheckMacroInstances"
+    outputs = []
+
+    config_vars = OpenROADStep.config_vars
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(), "openroad", "sta", "check_macro_instances.tcl"
+        )
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        macros: Optional[Dict[str, Macro]] = self.config["MACROS"]
+        if macros is None:
+            info("No macros found, skipping instance check…")
+            return {}, {}
+
+        macro_instance_pairs = []
+        for macro_name, data in macros.items():
+            for instance_name in data.instances:
+                macro_instance_pairs.append(instance_name)
+                macro_instance_pairs.append(macro_name)
+
+        env["_check_macro_instances"] = TclUtils.join(macro_instance_pairs)
+
+        return super().run(state_in, prioritize_nl=True, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -1673,8 +1718,7 @@ class ResizerStep(OpenROADStep):
         corners_key: str = "RSZ_CORNERS"
 
         if "corners_key" in kwargs:
-            corners_key = kwargs["corners_key"]
-            del kwargs["corners_key"]
+            corners_key = kwargs.pop("corners_key")
 
         corners = self.config[corners_key] or self.config["STA_CORNERS"]
         lib_set_set = set()
