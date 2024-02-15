@@ -125,21 +125,23 @@ class OdbpyStep(Step):
 
 
 @Step.factory.register()
-class CheckAntennaRule(OdbpyStep):
-    id = "Odb.CheckAntennaRule"
+class CheckAntennaProperties(OdbpyStep):
+    id = "Odb.CheckAntennaProperties"
     name = "Check Antenna Rules for macro pins"
 
     def get_script_path(self):
         return os.path.join(
             get_script_dir(),
             "odbpy",
-            "check_antenna_rule.py",
+            "check_antenna_properties.py",
         )
 
+    def get_cells(self) -> List[str]:
+        return self.config["MACROS"].keys() or []
+
     def get_command(self) -> List[str]:
-        args = " ".join(
-            [f"--cell-name {name}" for name in self.config["MACROS"].keys()]
-        ).split()
+        args = " ".join([f"--cell-name {name}" for name in self.get_cells()]).split()
+        args += ["--report-file", os.path.join(self.step_dir, "report.yaml")]
         return super().get_command() + args
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:

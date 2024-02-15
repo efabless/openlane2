@@ -12,25 +12,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import yaml
+
 from reader import click_odb, click
 
 
 @click.option(
     "-c", "--cell-name", required=True, multiple=True, help="Names of cells to check"
 )
+@click.option("-r", "--report-file", help="YAML report file")
 @click.command()
 @click_odb
-def check_antenna_rules(reader, cell_name):
+def check_antenna_properties(reader, cell_name, report_file):
     cells = [cell for cell in reader.cells]
+    report = []
+
     for cell in list(filter(lambda cell: cell.getName() in cell_name, cells)):
-        name = cell.getName()
+        cell_name = cell.getName()
         inout_pins = []
         input_pins = []
         output_pins = []
         for mterm in cell.getMTerms():
             if mterm.getSigType() in ["GROUND", "POWER", "ANALOG"]:
                 continue
-            name = mterm.getName()
+            pin_name = mterm.getName()
             has_diff_area = mterm.hasDiffArea()
             has_gate_area = (
                 mterm.getDefaultAntennaModel()
@@ -39,27 +44,38 @@ def check_antenna_rules(reader, cell_name):
             )
             io_type = mterm.getIoType()
             if io_type == "INOUT" and (not has_diff_area and not has_gate_area):
-                inout_pins.append(name)
+                inout_pins.append(pin_name)
             elif io_type == "INPUT" and not has_gate_area:
-                input_pins.append(name)
+                input_pins.append(pin_name)
             elif io_type == "OUTPUT" and not has_diff_area:
-                output_pins.append(name)
+                output_pins.append(pin_name)
         if inout_pins:
             print(
-                f"[WARNING] For cell {name}, the following inout pins have no anetnna model information, they might be disconnected:\n",
-                "\n".join(inout_pins),
+                f"[WARNING] For cell '{cell_name}', the following inout pins have no anetnna model information, they might be disconnected:\n"
             )
+            print("\n".join([f"* {pin}" for pin in inout_pins]))
         if input_pins:
             print(
-                f"[WARNING] For cell {name}, the following input pins have no antenna gate information, they might not be connected to a gate:\n",
-                "\n".join(input_pins),
+                f"[WARNING] For cell '{cell_name}', the following input pins have no antenna gate information, they might not be connected to a gate:"
             )
+            print("\n".join([f"* {pin}" for pin in input_pins]))
         if output_pins:
             print(
-                f"[WARNING] For cell {name}, the following output pins have no antenna diffusion information, the might not be driven:\n",
-                "\n".join(output_pins),
+                f"[WARNING] For cell '{cell_name}', the following output pins have no antenna diffusion information, the might not be driven:\n"
             )
+            print("\n".join([f"* {pin}" for pin in output_pins]))
+
+        entry = {
+            "cell": cell_name,
+            "inout": inout_pins,
+            "output": output_pins,
+            "input": input_pins,
+        }
+        report.append(entry)
+
+    with open(report_file, "w") as f:
+        f.write(yaml.dump(report))
 
 
 if __name__ == "__main__":
-    check_antenna_rules()
+    check_antenna_properties()
