@@ -268,11 +268,11 @@ class SequentialFlow(Flow):
                         step_dir=self.dir_for_step(step),
                     )
                 except StepException as e:
-                    raise FlowException(str(e))
+                    raise FlowException(str(e)) from None
                 except DeferredStepError as e:
                     deferred_errors.append(str(e))
                 except StepError as e:
-                    raise FlowError(str(e))
+                    raise FlowError(str(e)) from None
 
             self.progress_bar.end_stage(increment_ordinal=increment_ordinal)
 
