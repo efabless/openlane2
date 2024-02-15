@@ -15,6 +15,7 @@ from typing import List, Type
 
 from .flow import Flow
 from .sequential import SequentialFlow
+from ..state import DesignFormat
 from ..config import Variable
 from ..steps import (
     Step,
@@ -317,6 +318,7 @@ class Classic(SequentialFlow):
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
         OpenROAD.CheckSDCFiles,
+        OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
         Odb.SetPowerConnections,
@@ -330,6 +332,7 @@ class Classic(SequentialFlow):
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,
         Odb.RemovePDNObstructions,
+        Odb.WriteVerilogHeader,
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
@@ -435,12 +438,12 @@ def _vhdlclassic_substitute_verilog_steps(
 ) -> List[Type[Step]]:
     result: List[Type[Step]] = [Yosys.VHDLSynthesis]
     for step in steps_in:
-        # Ignore Verilog-dependent header steps and such
+        # Ignore Verilog header-dependent steps and such
         if (
             step.id.startswith("Yosys.")
             or step.id.startswith("Checker.Lint")
             or step.id.startswith("Verilator.")
-            or step.id == "Odb.SetPowerConnections"
+            or DesignFormat.JSON_HEADER in step.inputs
         ):
             continue
         result.append(step)
