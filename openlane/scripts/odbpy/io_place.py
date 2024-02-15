@@ -267,7 +267,8 @@ def io_place(
             side_info.min_distance = min
         if side_info.min_distance < min:
             print(
-                f"[WARN]: Using min_distance {min} for {side} pins to avoid overlap.",
+                f"[WARNING] Using min_distance {min} for {side} pins to avoid overlap.",
+                file=sys.stderr,
             )
             side_info.min_distance = min
 
@@ -291,7 +292,8 @@ def io_place(
                     continue
                 if bterm in regex_by_bterm:
                     print(
-                        f"[ERROR]: Multiple regexes matched {pin_name}. Those are {regex_by_bterm[bterm]} and {pin}"
+                        f"[ERROR] Multiple regexes matched {pin_name}. Those are {regex_by_bterm[bterm]} and {pin}",
+                        file=sys.stderr,
                     )
                     sys.exit(os.EX_DATAERR)
                 regex_by_bterm[bterm] = pin
@@ -316,10 +318,14 @@ def io_place(
             mismatches_found = True
             if not unmatched_error:
                 print(
-                    f"[WARN]: {name} not found in {not_in} but found in {is_in}.",
+                    f"[WARNING] {name} not found in {not_in} but found in {is_in}.",
+                    file=sys.stderr,
                 )
             else:
-                print(f"[ERROR]: {name} not found in {not_in} but found in {is_in}.")
+                print(
+                    f"[ERROR] {name} not found in {not_in} but found in {is_in}.",
+                    file=sys.stderr,
+                )
 
     if mismatches_found and unmatched_error:
         print("Mismatches found.")
@@ -392,7 +398,8 @@ def io_place(
             pins = bterm.getBPins()
             if len(pins) > 0:
                 print(
-                    f"[WARN]: {pin_name} already has shapes. The shapes will be modified."
+                    f"[WARNING] {pin_name} already has shapes. The shapes will be modified.",
+                    file=sys.stderr,
                 )
                 assert len(pins) == 1
                 pin_bpin = pins[0]

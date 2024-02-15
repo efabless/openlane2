@@ -120,7 +120,7 @@ def move_diearea_command(reader, input_lefs, template_def):
 def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate):
     if (pin_coordinate % manufacturing_grid) != 0:
         print(
-            f"[ERROR]: Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid."
+            f"[ERROR] Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid."
         )  # IDK how to do this
         return True
 
@@ -154,6 +154,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
         if sigtype in ["POWER", "GROUND"]:
             print(
                 f"[WARNING] Bterm {source_name} is declared as a '{sigtype}' pin. It will be ignored.",
+                file=sys.stderr,
             )
             continue
         all_bterm_names.add(source_name)
@@ -241,11 +242,11 @@ def relocate_pins(db, input_lefs, template_def, permissive):
             mismatches_found = True
             if permissive:
                 print(
-                    f"[WARN]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    f"[WARNING] {name} not found in {not_in} layout, but found in {is_in} layout.",
                 )
             else:
                 print(
-                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    f"[ERROR] {name} not found in {not_in} layout, but found in {is_in} layout.",
                     file=sys.stderr,
                 )
 
@@ -323,7 +324,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
 
     if grid_errors:
         print(
-            "[ERROR]: Some pins were grid-misaligned. Please check the log.",
+            "[ERROR] Some pins were grid-misaligned. Please check the log.",
             file=sys.stderr,
         )
         exit(os.EX_DATAERR)

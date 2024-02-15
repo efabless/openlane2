@@ -14,31 +14,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import List, Literal
+import sys
+from typing import List, Literal, Union
 
 import odb
+import utl
 
 from reader import click, click_odb, OdbReader
 from reader import rich
 from reader import Table
 
-import utl
+
+def is_connected(term: Union[odb.dbITerm, odb.dbBTerm]) -> bool:
+    if isinstance(term, odb.dbITerm):
+        return term.getNet() is not None
+    # all bterms have a net, we need to check if it has another
+    net = term.getNet()
+    iterms = net.getITerms()
+    return len(iterms) != 0
 
 
-def is_connected(iterm: odb.dbITerm) -> bool:
-    return iterm.getNet() is not None
-
-
-def is_pg(iterm: odb.dbITerm) -> bool:
-    return iterm.getSigType() == "POWER" or iterm.getSigType() == "GROUND"
-
-
-def get_polarity(iterm: odb.dbITerm) -> Literal["INPUT", "OUTPUT", "INOUT"]:
-    return iterm.getIoType()
-
-
-def has_disconnect(instance: odb.dbInst) -> bool:
+def instance_has_disconnect(instance: odb.dbInst) -> bool:
     inputs = 0
     inputs_connected = 0
     outputs = 0
@@ -46,7 +42,7 @@ def has_disconnect(instance: odb.dbInst) -> bool:
     inouts = 0
     inouts_connected = 0
     for iterm in instance.getITerms():
-        polarity = get_polarity(iterm)
+        polarity: Literal["INPUT", "OUTPUT", "INOUT"] = iterm.getIoType()
         if polarity == "INPUT":
             inputs += 1
             if is_connected(iterm):
@@ -60,9 +56,49 @@ def has_disconnect(instance: odb.dbInst) -> bool:
             if is_connected(iterm):
                 outputs_connected += 1
 
+    # Warn if no outputs are used
+    if outputs != 0 and outputs_connected == 0:
+        print(
+            f"[WARNING] No outputs of instance '{instance.getName()}' are connected- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+            file=sys.stderr,
+        )
+
+    # All inputs/inouts need to be driven
+    # At least one output needs to be used if the macro has one or more outputs
     return (
         inputs != inputs_connected
         or (outputs != 0 and outputs_connected == 0)
+        or inouts != inouts_connected
+    )
+
+
+def block_has_disconnect(block: odb.dbBlock) -> bool:
+    inputs = 0
+    inputs_connected = 0
+    outputs = 0
+    outputs_connected = 0
+    inouts = 0
+    inouts_connected = 0
+    for bterm in block.getBTerms():
+        polarity: Literal["INPUT", "OUTPUT", "INOUT"] = bterm.getIoType()
+        if polarity == "INPUT":
+            inputs += 1
+            if is_connected(bterm):
+                inputs_connected += 1
+        elif polarity == "INOUT":
+            inouts += 1
+            if is_connected(bterm):
+                inouts_connected += 1
+        else:
+            outputs += 1
+            if is_connected(bterm):
+                outputs_connected += 1
+
+    # All outputs/inouts need to be driven
+    # At least one input has to be used if the block has one or more inputs
+    return (
+        (inputs != 0 and inputs_connected == 0)
+        or outputs != outputs_connected
         or inouts != inouts_connected
     )
 
@@ -80,7 +116,7 @@ def main(
     block = db.getChip().getBlock()
     instances = block.getInsts()
     table = Table(
-        "Instance",
+        "Macro/Instance",
         "Power Pins",
         "Disconnected",
         "Signal Pins",
@@ -89,26 +125,29 @@ def main(
     )
     disconnected_pins_count = 0
 
-    for instance in instances:
-        if not has_disconnect(instance):
-            continue
-        master = instance.getMaster()
-        if master.getName() in ignore_module:
-            continue
-        iterms = instance.getITerms()
-        signal_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if not is_pg(iterm)
-        ]
-        power_pins = [iterm.getMTerm().getName() for iterm in iterms if is_pg(iterm)]
+    for instance in [block] + instances:
+        if isinstance(instance, odb.dbBlock):
+            if not block_has_disconnect(instance):
+                continue
+            terms = instance.getBTerms()
+        else:
+            if not instance_has_disconnect(instance):
+                continue
+            master = instance.getMaster()
+            if master.getName() in ignore_module:
+                continue
+            terms = instance.getITerms()
+        signal_pins = [term.getName() for term in terms if not term.isSpecial()]
+        power_pins = [term.getName() for term in terms if term.isSpecial()]
         disconnected_power_pins = [
-            iterm.getMTerm().getName()
-            for iterm in iterms
-            if is_pg(iterm) and not is_connected(iterm)
+            term.getName()
+            for term in terms
+            if term.isSpecial() and not is_connected(term)
         ]
         disconnected_signal_pins = [
-            iterm.getMTerm().getName()
-            for iterm in iterms
-            if not is_pg(iterm) and not is_connected(iterm)
+            term.getName()
+            for term in terms
+            if not term.isSpecial() and not is_connected(term)
         ]
         table.add_row(
             instance.getName(),

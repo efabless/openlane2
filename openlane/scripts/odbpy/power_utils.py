@@ -138,24 +138,28 @@ def write_powered_def(
 
         if len(VDD_ITERMS) == 0:
             print(
-                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as power."
+                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as power.",
+                file=sys.stderr,
             )
             print(
-                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}."
+                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}.",
+                file=sys.stderr,
             )
             if VDD_ITERM_BY_NAME is not None:  # note **PORT**
-                print(f"Found '{power_port}', using it as a power pin...")
+                print(f"Found '{power_port}', using it as a power pin…")
                 VDD_ITERMS.append(VDD_ITERM_BY_NAME)
 
         if len(GND_ITERMS) == 0:
             print(
-                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as ground."
+                f"[WARNING] No pins in the LEF view of {cell_name} marked for use as ground.",
+                file=sys.stderr,
             )
             print(
-                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}."
+                f"[WARNING] Attempting to match power pin by name (using top-level port name) for {cell_name}.",
+                file=sys.stderr,
             )
             if GND_ITERM_BY_NAME is not None:  # note **PORT**
-                print(f"Found '{ground_port}', using it as a ground pin...")
+                print(f"Found '{ground_port}', using it as a ground pin…")
                 GND_ITERMS.append(GND_ITERM_BY_NAME)
 
         if len(VDD_ITERMS) == 0 or len(GND_ITERMS) == 0:
@@ -163,7 +167,10 @@ def write_powered_def(
                 f"Either power or ground (or both) pins not found for {cell_name}."
             )
             if ignore_missing_pins:
-                print(f"[WARNING] {err_msg} Ignoring...")
+                print(
+                    f"[WARNING] {err_msg} Ignoring…",
+                    file=sys.stderr,
+                )
             else:
                 print(
                     err_msg,
@@ -172,17 +179,24 @@ def write_powered_def(
                 exit(1)
 
         if len(VDD_ITERMS) > 2:
-            print(f"[WARNING] {cell_name} has {len(VDD_ITERMS)} power pins.")
+            print(
+                f"[WARNING] {cell_name} has {len(VDD_ITERMS)} power pins.",
+                file=sys.stderr,
+            )
 
         if len(GND_ITERMS) > 2:
-            print(f"[WARNING] {cell_name} has {len(GND_ITERMS)} power pins.")
+            print(
+                f"[WARNING] {cell_name} has {len(GND_ITERMS)} power pins.",
+                file=sys.stderr,
+            )
 
         for VDD_ITERM in VDD_ITERMS:
             if VDD_ITERM.isConnected():
                 pin_name = VDD_ITERM.getMTerm().getName()
                 cell_name = cell_name
                 print(
-                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring..."
+                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring…",
+                    file=sys.stderr,
                 )
             else:
                 VDD_ITERM.connect(vdd_net)
@@ -192,7 +206,8 @@ def write_powered_def(
                 pin_name = GND_ITERM.getMTerm().getName()
                 cell_name = cell_name
                 print(
-                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring..."
+                    f"[WARNING] {cell_name}/{pin_name} appears to already be connected. Ignoring…",
+                    file=sys.stderr,
                 )
             else:
                 GND_ITERM.connect(gnd_net)
