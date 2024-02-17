@@ -23,6 +23,7 @@ from typing import (
     Any,
     Generator,
     Iterable,
+    List,
     TypeVar,
     Optional,
     SupportsFloat,
@@ -30,7 +31,7 @@ from typing import (
 )
 import httpx
 
-from .types import Path
+from .types import AnyPath, Path
 from ..__version__ import __version__
 
 T = TypeVar("T")
@@ -267,8 +268,9 @@ class Filter(object):
     def get_matching_wildcards(self, input: str) -> Generator[str, Any, None]:
         """
         :param input: An input to match wildcards against.
-        :returns: An iterable object for *all* wildcards in the allow list accepting
-            ``input``, and *all* wildcards in the deny list rejecting ``input``.
+        :returns: An iterable object for *all* wildcards in the allow list
+            accepting ``input``, and *all* wildcards in the deny list rejecting
+            ``input``.
         """
         for wildcard in self.allow:
             if fnmatch.fnmatch(input, wildcard):
@@ -276,6 +278,24 @@ class Filter(object):
         for wildcard in self.deny:
             if not fnmatch.fnmatch(input, wildcard):
                 yield wildcard
+
+    def match(self, input: str) -> bool:
+        """
+        :param input: An input string to either accept or reject
+        :returns: A boolean indicating whether the input:
+            * Has matched at least one wildcard in the allow list
+            * Has matched exactly 0 inputs in the deny list
+        """
+        allowed = False
+        for wildcard in self.allow:
+            if fnmatch.fnmatch(input, wildcard):
+                allowed = True
+                break
+        for wildcard in self.deny:
+            if fnmatch.fnmatch(input, wildcard):
+                allowed = False
+                break
+        return allowed
 
     def filter(
         self,
@@ -288,16 +308,7 @@ class Filter(object):
             * Have matched exactly 0 inputs in the deny list
         """
         for input in inputs:
-            allowed = False
-            for wildcard in self.allow:
-                if fnmatch.fnmatch(input, wildcard):
-                    allowed = True
-                    break
-            for wildcard in self.deny:
-                if fnmatch.fnmatch(input, wildcard):
-                    allowed = False
-                    break
-            if allowed:
+            if self.match(input):
                 yield input
 
 
@@ -334,3 +345,28 @@ def get_httpx_session(token: Optional[str] = None) -> httpx.Client:
         headers_raw["Authorization"] = f"Bearer {token}"
     session.headers = httpx.Headers(headers_raw)
     return session
+
+
+def process_list_file(from_file: AnyPath) -> List[str]:
+    """
+    Convenience function to process text files in a ``.gitignore``-style format,
+    i.e., those where the lines may be:
+
+    * A list element
+    * A comment prefixed with ``#``
+    * Blank
+
+    :param from_file: The input text file.
+    :returns: A list of the strings listed in the file, ignoring lines
+        prefixed with a ``#`` and empty lines.
+    """
+    excluded_cells = []
+    list_str = open(str(from_file), encoding="utf8").read()
+    for line in list_str.splitlines():
+        line = line.strip()
+        if line == "":
+            continue
+        if line[0] == "#":
+            continue
+        excluded_cells.append(line)
+    return excluded_cells
