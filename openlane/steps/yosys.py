@@ -361,11 +361,11 @@ class SynthesisCommon(YosysStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
-        Variable(
-            "SYNTH_SDC_FILE",
-            Optional[Path],
-            "Specifies the SDC file read during all Synthesis steps",
-        ),
+        # Variable(
+        #     "SYNTH_SDC_FILE",
+        #     Optional[Path],
+        #     "Specifies the SDC file read during all Synthesis steps",
+        # ),
     ]
 
     def get_script_path(self):
@@ -393,11 +393,11 @@ class SynthesisCommon(YosysStep):
 
             env["_lighter_dff_map"] = lighter_dff_map
 
-        env["_sdc_in"] = (
-            self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        )
+        # env["_sdc_in"] = (
+        #     self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        # )
 
-        views_updates, metric_updates = super().run(state_in, **kwargs)
+        views_updates, metric_updates = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()

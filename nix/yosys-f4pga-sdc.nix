@@ -23,7 +23,7 @@
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-f4pga-sdc";
-  dylibs = ["sdc"];
+  dylibs = ["sdc" "design_introspection"];
 
   src = fetchFromGitHub {
     owner = "chipsalliance";
@@ -45,11 +45,13 @@ clangStdenv.mkDerivation rec {
 
   buildPhase = ''
     make SHELL=${bash}/bin/bash -C sdc-plugin -j$NIX_BUILD_CORES
+    make SHELL=${bash}/bin/bash -C design_introspection-plugin -j$NIX_BUILD_CORES
   '';
 
   installPhase = ''
     mkdir -p $out/share/yosys/plugins
     mv sdc-plugin/build/sdc.so $out/share/yosys/plugins/sdc.so
+    mv design_introspection-plugin/build/design_introspection.so $out/share/yosys/plugins/design_introspection.so
   '';
 
   computed_PATH = lib.makeBinPath buildInputs;
