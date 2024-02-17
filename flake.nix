@@ -104,6 +104,7 @@
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            imagemagick
             nodejs.pkgs.nodemon
           ];
           extra-python-packages = with pkgs.python3.pkgs; [

@@ -26,7 +26,7 @@ backwards compatible, with some conveniences:
   design at a certain part of the flow, without worrying about surprises related
   to state variables missing.
 
-```{figure} ./configurable_flow.png
+```{figure} ./configurable_flow.webp
 Writing custom flows and steps using OpenLane 2
 ```
 

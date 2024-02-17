@@ -16,7 +16,7 @@ as VirtualBox are known to impair the operation of OpenLane.
 
    * Make sure to tick `Use WSL 2 instead of Hyper-V (recommended)` during installation.
    
-   ![A screenshot of the Docker Desktop installer. A checkbox labelled "Use WSL 2 instead of Hyper-V (recommended)" is ticked.](./wsl2_hyperv.png)
+   ![A screenshot of the Docker Desktop installer. A checkbox labelled "Use WSL 2 instead of Hyper-V (recommended)" is ticked.](./wsl2_hyperv.webp)
    
    * If you've previously installed Docker Desktop for Windows, ensure
      
@@ -25,11 +25,11 @@ as VirtualBox are known to impair the operation of OpenLane.
    `Docker Desktop` -> `Settings` and `WSL 2 Docker engine` is enabled and
    `Settings` -> `Resource` -> `WSL Integration` is enabled.
 
-   ![A Screenshot of the Docker Settings. Two options, "Start Docker Desktop when you log in" and "Use the WSL 2 based engine" are both circled.](./wsl_docker_settings.png)
+   ![A Screenshot of the Docker Settings. Two options, "Start Docker Desktop when you log in" and "Use the WSL 2 based engine" are both circled.](./wsl_docker_settings.webp)
 
 1. Click the Windows icon, type in "Windows PowerShell" and open it.
 
-   ![The Windows 11 Start Menu with "powershell" typed into the search box, showing "Windows PowerShell" as the first match](./powershell.png)
+   ![The Windows 11 Start Menu with "powershell" typed into the search box, showing "Windows PowerShell" as the first match](./powershell.webp)
 
 1. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
 
@@ -71,7 +71,7 @@ as VirtualBox are known to impair the operation of OpenLane.
 
 1. Launch "Ubuntu" from your Start Menu.
 
-    ![The Windows 11 Start Menu showing a search for the "Ubuntu" app, next to which is a window of the Windows Terminal which opens after clicking it](./wsl.png)
+    ![The Windows 11 Start Menu showing a search for the "Ubuntu" app, next to which is a window of the Windows Terminal which opens after clicking it](./wsl.webp)
 
 1. Follow the steps shown below.
 

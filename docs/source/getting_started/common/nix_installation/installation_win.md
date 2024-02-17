@@ -24,7 +24,7 @@ Windows 10 is up-to-date.
 
 1. Click the Windows icon, type in "Windows PowerShell" and open it.
 
-    ![The Windows 11 Start Menu with "powershell" typed into the search box, showing "Windows PowerShell" as the first match](../wsl/powershell.png)
+    ![The Windows 11 Start Menu with "powershell" typed into the search box, showing "Windows PowerShell" as the first match](../wsl/powershell.webp)
 
 1. Install Ubuntu using the following command: `wsl --install -d Ubuntu`
 
@@ -40,7 +40,7 @@ Windows 10 is up-to-date.
 
 1. Launch "Ubuntu" from your Start Menu.
 
-    ![The Windows 11 Start Menu showing a search for the "Ubuntu" app, next to which is a window of the Windows Terminal which opens after clicking it](../wsl/wsl.png)
+    ![The Windows 11 Start Menu showing a search for the "Ubuntu" app, next to which is a window of the Windows Terminal which opens after clicking it](../wsl/wsl.webp)
 
 ## Installing Nix
 
