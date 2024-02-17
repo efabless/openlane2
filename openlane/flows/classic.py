@@ -313,7 +313,6 @@ class Classic(SequentialFlow):
         Checker.LintTimingConstructs,
         Checker.LintErrors,
         Checker.LintWarnings,
-        OpenROAD.CheckSDCFiles,
         Yosys.JsonHeader,
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
