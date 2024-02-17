@@ -60,12 +60,20 @@ proc read_current_sdc {} {
 proc read_current_netlist {args} {
     sta::parse_key_args "read_current_netlist" args \
         keys {}\
-        flags {-powered -all}
+        flags {-powered}
 
-    puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
-    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
-        puts stderr $errmsg
-        exit 1
+    if { [info exists flags(-powered)] } {
+        puts "Reading top-level powered netlist at '$::env(CURRENT_POWERED_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_POWERED_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
+    } else {
+        puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
     }
 
     puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
@@ -76,6 +84,10 @@ proc read_current_netlist {args} {
 }
 
 proc read_timing_info {args} {
+    sta::parse_key_args "read_timing_info" args \
+        keys {}\
+        flags {-powered}
+
     if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
         return
     }
@@ -128,7 +140,11 @@ proc read_timing_info {args} {
             }
         }
     }
-    read_current_netlist
+    if { [info exists flags(-powered)] } {
+        read_current_netlist -powered
+    } else {
+        read_current_netlist
+    }
     set ::macro_spefs $macro_spefs
 }
 

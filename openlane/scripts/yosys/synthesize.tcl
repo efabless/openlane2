@@ -38,6 +38,8 @@ file mkdir $report_dir
 # inputs expected as env vars
 set vtop $::env(DESIGN_NAME)
 
+source $::env(_deps_script)
+
 set lib_args [list]
 foreach lib $::env(SYNTH_LIBS) {
     lappend lib_args -liberty $lib
@@ -53,8 +55,6 @@ set dfflib_args [list]
 foreach lib $dfflib {
     lappend dfflib_args -liberty $lib
 }
-
-read_deps
 
 set max_FO $::env(MAX_FANOUT_CONSTRAINT)
 set max_TR 0
@@ -426,7 +426,7 @@ run_strategy\
 if { $::env(SYNTH_NO_FLAT) } {
     design -reset
 
-    read_deps
+    source $::env(_deps_script)
 
     file copy -force $::env(SAVE_NETLIST) $::env(STEP_DIR)/$::env(DESIGN_NAME).hierarchy.nl.v
     read_verilog -sv $::env(SAVE_NETLIST)

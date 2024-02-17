@@ -82,6 +82,7 @@ def test_macro_from_state():
         lef=[Path("__openlane_dummy_path")],
         instances={},
         nl=[Path("__openlane_dummy_path")],
+        pnl=[Path("__openlane_dummy_path")],
         spef={"corner_*": [Path("__openlane_dummy_path")]},
         lib={
             "corner_1": [Path("__openlane_dummy_path")],
