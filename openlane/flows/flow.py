@@ -46,10 +46,9 @@ from rich.progress import (
 from deprecated.sphinx import deprecated
 from openlane.common.types import Path
 
-from openlane.state.design_format import DesignFormatObject
 from ..config import Config, Variable, universal_flow_config_variables, AnyConfigs
-from ..state import State, DesignFormat
-from ..steps import Step
+from ..state import State, DesignFormat, DesignFormatObject
+from ..steps import Step, StepNotFound
 from ..logging import (
     LevelFilter,
     console,
@@ -523,23 +522,36 @@ class Flow(ABC):
 
             # Extract maximum step ordinal + load finished steps
             entries_sorted = sorted(
-                filter(lambda x: "-" in x, entries),
+                filter(
+                    lambda x: "-" in x and x.split("-", maxsplit=1)[0].isdigit(),
+                    entries,
+                ),
                 key=lambda x: int(x.split("-", maxsplit=1)[0]),
             )
             for entry in entries_sorted:
                 components = entry.split("-", maxsplit=1)
-                if not _no_load_previous_steps:
-                    self.step_objects.append(
-                        Step.load_finished(
-                            os.path.join(self.run_dir, entry),
-                            self.config["PDK_ROOT"],
-                            self.Steps,
-                        )
-                    )
+
                 try:
                     extracted_ordinal = int(components[0])
                 except ValueError:
                     continue
+
+                if not _no_load_previous_steps:
+                    try:
+                        self.step_objects.append(
+                            Step.load_finished(
+                                os.path.join(self.run_dir, entry),
+                                self.config["PDK_ROOT"],
+                                self.Steps,
+                            )
+                        )
+                    except StepNotFound as e:
+                        raise FlowException(
+                            f"Error while loading concluded step in {entry}: {e}"
+                        )
+                    except FileNotFoundError:
+                        pass
+
                 starting_ordinal = max(starting_ordinal, extracted_ordinal + 1)
 
             # Extract Maximum State

@@ -676,15 +676,10 @@ class Step(ABC):
         config_path = os.path.join(step_dir, "config.json")
         state_in_path = os.path.join(step_dir, "state_in.json")
         state_out_path = os.path.join(step_dir, "state_out.json")
+        for file in config_path, state_in_path, state_out_path:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(file)
 
-        if False in [
-            os.path.isfile(config_path),
-            os.path.isfile(state_in_path),
-            os.path.isfile(state_out_path),
-        ]:
-            raise ValueError(
-                "Invalid finished step: state_in.json, state_out.json or config.json is missing"
-            )
         try:
             step_object = Self.load(config_path, state_in_path, pdk_root)
         except StepNotFound as e:
