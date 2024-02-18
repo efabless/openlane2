@@ -2,15 +2,13 @@
 
 * **Minimum Requirements**
     * macOS 11 (Big Sur)
-    * 6th Gen Intel® Core CPU or later
+    * 4th Gen Intel® Core CPU or later
     * 8 GiB of RAM
-    * ~20 GiB available storage
     
 * **Recommended**
     * macOS 11 (Big Sur)
     * Apple Silicon CPU
     * 16 GiB of RAM
-    * ~20 GiB available storage
 
 ## Installing Nix
 

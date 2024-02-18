@@ -100,6 +100,11 @@
             mdformat
           ];
         }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
         docs = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes

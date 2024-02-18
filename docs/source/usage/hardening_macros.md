@@ -200,7 +200,7 @@ set as follows:
     * {var}`OpenROAD.GeneratePDN::FP_PDN_HORIZONTAL_HALO`
     * {var}`OpenROAD.GeneratePDN::FP_PDN_VERTICAL_HALO`
 
-There is also {var}`GlobalPlacement::GPL_CELL_PADDING`. This will treat cells as "wider" than
+There is also {var}`OpenROAD.GlobalPlacement::GPL_CELL_PADDING`. This will treat cells as "wider" than
 they are, which has an impact on routing and diode insertion. If you increase
 the padding, make sure to recalculate the `PL_TARGET_DENSITY_PCT` as such:
 {math}`util \approx FP\_CORE\_UTIL + 10 + 5 * GPL\_CELL\_PADDING`.

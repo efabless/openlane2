@@ -1,5 +1,15 @@
 # macOS 11+
 
+* **Minimum Requirements**
+    * macOS 11 (Big Sur)
+    * 6th Gen Intel® Core CPU or later
+    * 16 GiB of RAM
+    
+* **Recommended**
+    * macOS 11 (Big Sur)
+    * Apple Silicon CPU
+    * 32 GiB of RAM
+
 ## Installing Dependencies
 
 First install [Homebrew](https://brew.sh/) then run script below to install the required packages:

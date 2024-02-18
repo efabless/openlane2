@@ -4,13 +4,11 @@
     * Windows 10 version 2004 (Build 19041 and higher)
     * Quad-core CPU running at 2.0 GHz+
     * 8 GiB of RAM
-    * ~32 GiB available storage
     
 * **Recommended**
     * Windows 11
     * 6th Gen Intel® Core CPU or later OR AMD Ryzen™️ 1000-series or later
     * 16 GiB of RAM
-    * ~32 GiB available storage
 
 ## Setting up WSL
 
