@@ -232,6 +232,9 @@ foreach cell $cells1 {
             spice_files_commands.append(f"readnet spice {lib} $circuit2")
 
         macros_commands = []
+        macros_commands += [
+            f"readnet verilog {state_in[DesignFormat.POWERED_NETLIST]} $circuit2"
+        ]
         macros = self.config.get("MACROS")
         if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"] and macros:
             for macro_name in macros:
@@ -242,9 +245,6 @@ foreach cell $cells1 {
                     )
                     macros_commands.append(f"readnet verilog {str(nl)} $circuit2")
 
-        macros_commands += [
-            f"readnet verilog {state_in[DesignFormat.POWERED_NETLIST]} $circuit2"
-        ]
         netgen_commands = (
             (
                 textwrap.dedent(
@@ -257,8 +257,8 @@ foreach cell $cells1 {
             .rstrip()
             .split("\n")
         )
-        netgen_commands += macros_commands
         netgen_commands += spice_files_commands
+        netgen_commands += macros_commands
         netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup} {stats_file} -blackbox -json'.split(
             "\n"
         )
