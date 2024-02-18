@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Optional
@@ -24,9 +23,6 @@ class DesignFormatObject:
     name: str
     folder_override: Optional[str] = None
     multiple: bool = False
-    _ef_format_dir: Optional[str] = None
-    _ef_format_replace_ext: Optional[str] = None
-    _ef_format_multicorner_add_default: bool = False
 
     @property
     def folder(self) -> str:
@@ -47,8 +43,6 @@ class DesignFormat(Enum):
         "pnl",
         "pnl.v",
         "Powered Verilog Netlist",
-        _ef_format_dir=os.path.join("verilog", "gl"),
-        _ef_format_replace_ext="v",
     )
     POWERED_NETLIST_SDF_FRIENDLY: DesignFormatObject = DesignFormatObject(
         "pnl-sdf-friendly",
@@ -67,13 +61,11 @@ class DesignFormat(Enum):
         "def",
         "def",
         "Design Exchange Format",
-        _ef_format_dir="def",
     )
     LEF: DesignFormatObject = DesignFormatObject(
         "lef",
         "lef",
         "Library Exchange Format",
-        _ef_format_dir="lef",
     )
     OPENROAD_LEF: DesignFormatObject = DesignFormatObject(
         "openroad-lef",
@@ -97,24 +89,18 @@ class DesignFormat(Enum):
         "sdf",
         "Standard Delay Format",
         multiple=True,
-        _ef_format_dir=os.path.join("sdf", "multicorner"),
-        _ef_format_multicorner_add_default=True,
     )
     SPEF: DesignFormatObject = DesignFormatObject(
         "spef",
         "spef",
         "Standard Parasitics Extraction Format",
         multiple=True,  # nom, min, max, ...
-        _ef_format_dir=os.path.join("spef", "multicorner"),
-        _ef_format_multicorner_add_default=True,
     )
     LIB: DesignFormatObject = DesignFormatObject(
         "lib",
         "lib",
         "LIB Timing Library Format",
         multiple=True,
-        _ef_format_dir=os.path.join("lib", "multicorner"),
-        _ef_format_multicorner_add_default=True,
     )
     SPICE: DesignFormatObject = DesignFormatObject(
         "spice",
@@ -126,14 +112,12 @@ class DesignFormat(Enum):
         "mag",
         "mag",
         "Magic VLSI View",
-        _ef_format_dir="spice",
     )
 
     GDS: DesignFormatObject = DesignFormatObject(
         "gds",
         "gds",
         "GDSII Stream",
-        _ef_format_dir="gds",
     )
     MAG_GDS: DesignFormatObject = DesignFormatObject(
         "mag_gds",

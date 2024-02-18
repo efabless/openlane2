@@ -717,18 +717,29 @@ class Flow(ABC):
 
         mkdirp(path)
 
+        supported_formats = {
+            DesignFormat.POWERED_NETLIST: (os.path.join("verilog", "gl"), "v"),
+            DesignFormat.DEF: ("def", "def"),
+            DesignFormat.LEF: ("lef", "lef"),
+            DesignFormat.SDF: ("sdf", "sdf"),
+            DesignFormat.SPEF: ("spef", "spef"),
+            DesignFormat.LIB: ("lib", "lib"),
+        }
+
         def visitor(key, value, top_key, _, __):
             df = DesignFormat.by_id(top_key)
             assert df is not None
+            if df not in supported_formats:
+                return
+
             dfo = df.value
             assert isinstance(dfo, DesignFormatObject)
-            if dfo._ef_format_dir is None:
-                return
-            target_dir = os.path.join(path, dfo._ef_format_dir)
+
+            subdirectory, extension = supported_formats[df]
+
+            target_dir = os.path.join(path, subdirectory)
             if not isinstance(value, Path):
                 if isinstance(value, dict):
-                    if not dfo._ef_format_multicorner_add_default:
-                        return
                     assert (
                         self.toolbox is not None
                     ), "toolbox check was not executed properly"
@@ -736,7 +747,7 @@ class Flow(ABC):
                     default_corner_target_dir = os.path.dirname(target_dir)
                     mkdirp(default_corner_target_dir)
                     if len(default_corner_view) == 1:
-                        target_basename = f"{self.config['DESIGN_NAME']}.{dfo._ef_format_replace_ext or dfo.extension}"
+                        target_basename = f"{self.config['DESIGN_NAME']}.{extension}"
                         target_path = os.path.join(
                             default_corner_target_dir, target_basename
                         )
@@ -749,10 +760,7 @@ class Flow(ABC):
                 return
 
             target_basename = os.path.basename(str(value))
-            if replacement_ext := dfo._ef_format_replace_ext:
-                target_basename = (
-                    target_basename[: -len(dfo.extension)] + replacement_ext
-                )
+            target_basename = target_basename[: -len(dfo.extension)] + extension
             target_path = os.path.join(target_dir, target_basename)
             mkdirp(target_dir)
             shutil.copyfile(value, target_path, follow_symlinks=True)
