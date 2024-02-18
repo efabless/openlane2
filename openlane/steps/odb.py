@@ -342,6 +342,29 @@ class ReportWireLength(OdbpyStep):
 
 @Step.factory.register()
 class ReportDisconnectedPins(OdbpyStep):
+    """
+    Creates a table of disconnected pins in the design, updating metrics as
+    appropriate.
+
+    Disconnected pins may be marked "critical" if they are very likely to
+    result in a dead design. We determine if a pin is critical as follows:
+
+    * For the top-level macro: for these four kinds of pins: inputs, outputs,
+    power inouts, ground inouts, at least one of each kind must be connected
+    or else all pins of a certain kind are counted as critical disconnected
+    pins.
+    * For instances:
+        * Any unconnected input is a critical disconnected pin.
+        * If there isn't at least one output connected, all disconnected
+            outputs are critical disconnected pins.
+        * Any disconnected power inout pins are critical disconnected pins.
+
+    The metrics ``design__disconnected_pin__count`` and
+    ``design__critical_disconnected_pin__count`` is updated. It is recommended
+    to use the checker ``Checker.DisconnectedPins`` to check that there are
+    no critical disconnected pins.
+    """
+
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 
