@@ -28,6 +28,7 @@ from typing import (
     Iterable,
     Mapping,
     Optional,
+    Sequence,
     Tuple,
     List,
     Union,
@@ -85,7 +86,8 @@ class Toolbox(object):
         enumerates all views matching either the default timing corner or
         an explicitly-provided override.
 
-        :param config: The configuration. Used solely to extract the default corner.
+        :param config: The configuration. Used solely to extract the default
+            corner.
         :param views_by_corner: The mapping from (wild cards) of corner names to
             views.
         :param corner: An explicit override for the default corner. Must be a
@@ -109,7 +111,7 @@ class Toolbox(object):
         config: Mapping[str, Any],
         view: DesignFormat,
         timing_corner: Optional[str] = None,
-        unless_exist: Optional[DesignFormat] = None,
+        unless_exist: Union[None, DesignFormat, Sequence[DesignFormat]] = None,
     ) -> List[Path]:
         """
         For :class:`Config` objects (or similar Mappings) that have Macro
@@ -123,8 +125,9 @@ class Toolbox(object):
             by the configuration.
         :param corner: An explicit override for the default corner. Must be a
             fully qualified IPVT corner.
-        :param unless_exist: If a Macro also has a view for this DesignFormat,
-            do not return a result for the requested DesignFormat.
+        :param unless_exist: If a Macro also has a view for these
+            ``DesignFormat``\\s, do not return a result for the requested
+            ``DesignFormat``\\.
 
             Useful for if you want to return say, Netlists if reliable LIB files
             do not exist.
@@ -140,6 +143,10 @@ class Toolbox(object):
         if macros is None:
             return result
 
+        unless_exist = unless_exist or []
+        if isinstance(unless_exist, DesignFormat):
+            unless_exist = [unless_exist]
+
         for module, macro in macros.items():
             if not isinstance(macro, Macro):
                 raise TypeError(
@@ -150,16 +157,20 @@ class Toolbox(object):
             if views is None:
                 continue
 
-            if unless_exist is not None:
-                entry = macro.view_by_df(unless_exist)
+            alt_views: List[Path] = []
+            for alternate_format in unless_exist:
+                entry = macro.view_by_df(alternate_format)
                 if entry is not None:
-                    alt_views = entry
-                    if isinstance(alt_views, dict):
-                        alt_views = self.filter_views(config, alt_views, timing_corner)
-                    elif not isinstance(alt_views, list):
-                        alt_views = [alt_views]
-                    if len(alt_views) != 0:
-                        continue
+                    current = entry
+                    if isinstance(current, dict):
+                        current = self.filter_views(config, current, timing_corner)
+                    elif not isinstance(current, list):
+                        current = [current]
+                    alt_views += current
+
+            if len(alt_views) != 0:
+                continue
+
             if isinstance(views, dict):
                 views_filtered = self.filter_views(config, views, timing_corner)
                 result += views_filtered
@@ -293,7 +304,6 @@ class Toolbox(object):
         self,
         input_lib_files: FrozenSet[str],
         excluded_cells: FrozenSet[str],
-        as_cell_lists: bool = False,
     ) -> List[str]:
         """
         Creates a new lib file with some cells removed.
@@ -302,27 +312,11 @@ class Toolbox(object):
         of inputs.
 
         :param input_lib_files: A `frozenset` of input lib files.
-        :param excluded_cells: A `frozenset` of either cells to be removed or
-            lists of cells to be removed if `as_cell_lists` is set to `True`.
-        :param as_cell_lists: If set to true, `excluded_cells` is treated as a
-            list of files that are themselves lists of cells. Otherwise, it is
-            treated as a list of cells.
+        :param excluded_cells: A `frozenset` of wildcards of cells to remove
+            from the files.
         :returns: A path to the lib file with the removed cells.
         """
         mkdirp(self.tmp_dir)
-
-        if as_cell_lists:  # Paths to files
-            excluded_cells_str = ""
-            for file in excluded_cells:
-                excluded_cells_str += open(file, encoding="utf8").read()
-                excluded_cells_str += "\n"
-            excluded_cells = frozenset(
-                [
-                    cell.strip()
-                    for cell in excluded_cells_str.strip().split("\n")
-                    if cell.strip() != ""
-                ]
-            )
 
         class State(IntEnum):
             initial = 0
@@ -331,6 +325,8 @@ class Toolbox(object):
 
         cell_start_rx = re.compile(r"(\s*)cell\s*\(\"?(.*?)\"?\)\s*\{")
         out_paths = []
+
+        excluded_cells_filter = Filter(excluded_cells)
 
         for file in input_lib_files:
             input_lib_stream = open(file)
@@ -347,7 +343,7 @@ class Toolbox(object):
                     if cell_m is not None:
                         whitespace = cell_m[1]
                         cell_name = cell_m[2]
-                        if cell_name in excluded_cells:
+                        if excluded_cells_filter.match(cell_name):
                             state = State.excluded_cell
                             write(f"{whitespace}/* removed {cell_name} */\n")
                         else:
