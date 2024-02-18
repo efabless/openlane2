@@ -180,20 +180,6 @@ class LVS(NetgenStep):
         netgen_extra = textwrap.dedent(
             r"""
 #---------------------------------------------------------------
-# Equate sram layout cells with corresponding source
-foreach cell $cells1 {
-    if {[regexp {([A-Z][A-Z0-9]_)*sky130_sram_([^_]+)_([^_]+)_([^_]+)_([^_]+)_(.+)} $cell match prefix memory_size memory_type matrix io cellname]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0) && \
-            ([lsearch $cells1 $cellname] < 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-            #equate pins "-circuit1 $cell" "-circuit2 $cellname"
-        }
-    }
-}
-
 # Equate prefixed layout cells with corresponding source
 foreach cell $cells1 {
     set layout $cell
@@ -205,18 +191,6 @@ foreach cell $cells1 {
             puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
         }
         set layout $cellname
-    }
-}
-
-# Equate suffixed layout cells with corresponding source
-foreach cell $cells1 {
-    if {[regexp {(.*)(\$[0-9])} $cell match cellname suffix]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-        }
     }
 }
         """
