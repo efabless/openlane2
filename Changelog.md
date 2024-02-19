@@ -3,12 +3,11 @@
   mdformat --wrap 80 --end-of-line lf Changelog.md
 -->
 
-
-<!-- TODO: Continue from `Floorplanning Rework` -->
 # 2.0.0rc1
 
 ## CLI
 
+* Multiple configuration files now supported, incl. mixes of JSON and Tcl files
 * Added new flag, `--show-progress-bar/--hide-progress-bar`, also
   self-explanatory
 * Added new flag, `--run-example`, which instantiates and runs one of the
@@ -16,6 +15,9 @@
 * Added new flag, `--condensed`, which sets `logging.options.condensed_mode` and
   changes the default for the log level to `VERBOSE` and showing the progress
   bar to `False`
+* Added ability to pass multiple configuration files
+* Added new entry script, `openlane.config`, which allows configuration files to
+  be interactively generated
 * Fixed bug where 0 config files causes a crash
 
 ## Steps
@@ -25,27 +27,32 @@
     a cause for alarm
   * Suppressed warnings about dead processes when tracking subprocess resource
     usage
+  * Fixed crash when subprocesses emit non-UTF-8 output: Now a proper
+    `StepException` is raised
 * Created `KLayout.DRC`
   * Only compatible with sky130 (skipped for other PDKs)
-* Created `Checker.PowerGridViolations`:
+* Created `Checker.PowerGridViolations`
   * Raises deferred step error if `design__power_grid_violation__count` is
     nonzero
 * Created `Checker.SetupViolations `, `Checker.HoldViolations` to check
   setup/hold timing violations
   * Add config variable `TIMING_VIOLATIONS_CORNERS`, which is a list of
     wildcards to match corners those steps will flag an error on.
-* `KLayout.OpenGUI`:
+* `KLayout.OpenGUI`
   * Added a new boolean config var, `KLAYOUT_EDITOR_MODE` to that enables editor
     mode in KLayout
   * Added new variable `KLAYOUT_PRIORITIZE_GDS`, which as the name implies,
     prioritizes GDS over DEF if there's a GDS in the input state.
   * `cwd` for subprocess set to step directory for convenience
   * Fixed bug where viewer mode was not working
-* `Odb.ApplyDEFTemplate`:
-* Added `FP_TEMPLATE_MATCH_MODE`, with values `strict` (default) or
-  `permissive`: with `strict` raising an error if any pins are missing from
-  either the template or the design.
-* `Odb.CustomIOPlacement`:
+* `Odb.*`, `KLayout.*`
+  * Subprocesses now inherit `sys.path` in `PYTHONPATH` which allows `nix run`
+    to work properly
+* `Odb.ApplyDEFTemplate`
+* Added `FP_TEMPLATE_MATCH_MODE`, with values `strict` (default) or `permissive`
+  with `strict` raising an error if any pins are missing from either the
+  template or the design.
+* `Odb.CustomIOPlacement`
   * Completely re-implemented pin placement file parser in Antlr4 for more
     thorough syntax and semantic checking at
     https://github.com/efabless/ioplace_parser
@@ -53,11 +60,27 @@
     `@min_distance`, `@bit_major`, and `@bus_major`.
   * Rewrote `openlane/scripts/odbpy/io_place.py` to rely on the new parser +
     general cleanup
-* `OpenROAD.*`:
+* `Odb.ManualMacroPlacement`
+  * Instances missing placement information are no longer treated as errors and
+    are simply skipped so it can be passed on to other steps (or if is
+    information about a nested macro)
+* Created new step `Odb.WriteVerilogHeader`
+  * Writes a `.vh` file using info from the layout post-PDN generation and the
+    Verilog header
+* `OpenROAD.*`
+  * Updated to handle `EXTRA_EXCLUDED_CELLS`
   * No longer trimming liberty files, relying on `set_dont_use` instead
-* `OpenROAD.CheckAntennas`:
+* `OpenROAD.CheckAntennas`
   * Added new `antenna_summary.rpt` file with a summary table for antennas
     matching that of OpenLane 1
+* `OpenROAD.Floorplan`
+  * `FP_DEF_TEMPLATE` now handled by this step using OpenROAD's
+    `read_def -floorplan_initialize` feature
+  * `PL_TARGET_DENSITY_PCT` default calculation now prioritizes using metric
+    `design__instance__utilization` if available.
+  * Fixed a crash where obstructions were passed as floats instead of database
+    unit integers and caused a crash.
+  * Removed `FP_SIZING`: Can be inferred from the existence of `FP_DEF_TEMPLATE`
 * `OpenROAD.GeneratePDN`
   * Renamed `DESIGN_IS_CORE` to `FP_PDN_MULTILAYER`, which is more accurate to
     its functionality
@@ -70,9 +93,16 @@
     step. The relevant checks are always run now, however, they do not cause the
     flow to exit immediately, rather, they generate
     `design__power_grid_violation__count ` metrics.
+* `OpenROAD.GlobalPlacementSkipIO`
+  * Updated to do nothing when `FP_DEF_TEMPLATE` is defined
+* `OpenROAD.IOPlacement`
+  * Updated to do nothing when `FP_DEF_TEMPLATE` is defined.
 * `OpenROAD.IRDropReport`
   * Added `VSRC_LOC_FILES` for IR Drop, printing a warning if not given a value
   * Rewrote internal IR drop script
+* `OpenROAD.Resizer*`, `OpenROAD.RepairDesign`
+  * `RSZ_DONT_USE_CELLS` removed, added as a deprecated name for
+    `EXTRA_EXCLUDED_CELLS`
 * `OpenROAD.STAPostPNR`
   * Added hold/setup reg-to-reg worst violation to STA summary table.
   * Added hold/setup tns to STA summary table.
@@ -80,6 +110,18 @@
   * Changed summary table column header from `reg-to-reg` to `Reg to Reg Paths`
     for readability
   * Fixed slacks for `Reg to Reg Paths` only showing negative values.
+* `Yosys.*`
+  * Updated to handle `EXTRA_EXCLUDED_CELLS`
+  * Internally replaced various `" ".join`s to `TclUtils.join`
+  * Implementation detail: "internal" variables to be lowercase and prefixed
+    with an underscore as a pseudo-convention
+  * Turned `read_deps` into one sourced script that is generated by Python
+    instead of a Tcl function (as was the case for `.EQY`)
+  * For maximum compatibility, priority of views used of macros changed, now, in
+    that order it's
+    * Verilog Header
+    * Netlist/Powered Netlist
+    * Lib File
 * `Yosys.Synthesis`
   * Updated error for bad area/delay format to make a bit more sense
   * Updated internal `stat` calls to Yosys to pass the liberty arguments so the
@@ -92,16 +134,23 @@
 * All flows
   * Added a `flow.log`, logging at a `VERBOSE` log level
   * Properly implemented filtering for `error.log` and `warning.log`
+  * Constructors updated to support multiple configuration files
 * Universal Flow Configuration Variables
   * Created `TRISTATE_CELLS`, accepting `TRISTATE_CELL_PREFIX` from OpenLane 1
     with translation behavior
-  * Created new global PDK variable `MAX_CAPACITANCE_CONSTRAINT`
+  * Created new PDK variable `MAX_CAPACITANCE_CONSTRAINT`
     * Also added to `base.sdc`
+  * Created new variable `EXTRA_EXCLUDED_CELLS`, which allows the user to
+    exclude more cells throughout the entire flow
   * Renamed `PRIMARY_SIGNOFF_TOOL` to `PRIMARY_GDSII_STREAMOUT_TOOL` with
     translation behavior
   * Renamed `GPIO_PADS_PREFIX` to `GPIO_PAD_CELLS` with translation behavior
   * Renamed `FP_WELLTAP_CELL` to `WELLTAP_CELL` with translation behavior
   * Renamed `FP_ENDCAP_CELL` to `ENDCAP_CELL` with translation behavior
+  * Renamed `SYNTH_EXCLUSION_CELL_LIST` to `SYNTH_EXCLUDED_CELL_FILE` with
+    translation behavior
+  * Renamed `PNR_EXCLUSION_CELL_LIST` to `PNR_EXCLUDED_CELL_FILE` with
+    translation behavior
 * `SynthesisExploration`
   * Added new flow, `SynthesisExploration`, that tries all synthesis strategies
     in parallel, performs STA and reports key area and delay metrics
@@ -116,6 +165,7 @@
     * Both gated by `QUIT_ON_TIMING_VIOLATIONS`
     * Each gated by `QUIT_ON_SETUP_VIOLATIONS`, `QUIT_ON_HOLD_VIOLATIONS`
       respectively
+  * Removed `Odb.ApplyDEFTemplate`- now redundant to `OpenROAD.Floorplan`
 
 ## Tool Updates
 
@@ -165,14 +215,33 @@
   * Changed all instances of `WARN` to `WARNING` for consistency
   * Fixed bug where `VERBOSE` logging in internal plain output mode simply used
     `print`
+* `openlane.state`
+  * Added new `DesignFormat`: `VERILOG_HEADER`
 * `openlane.common`
-  * `Toolbox` objects no longer create a folder immediately upon construction
+  * `Toolbox`
+    * Objects no longer create a folder immediately upon construction
+    * `remove_cells_from_lib` now accepts wildcard patterns to match against
+      cells (to match the behavior of OpenROAD steps)
+    * `get_macro_views` can now take more than one `DesignFormat` for
+      `unless_exist`
   * New `click` type, `IntEnumChoice`, which turns integer enums into a set of
     choices accepting either the enum name or value
+  * New function `process_list_file` to process `.gitignore`-style files (list
+    element/comment/empty line)
+* `openlane.config`
+  * Updated to support an arbitrary number of a combination of Tcl files, JSON
+    files and python dictionaries (or any object conforming to `Mapping`) to
+    create configuration files, each with their own `Meta` values
+  * `design_dir` can now be set explicitly, but if unset will take `dirname` of
+    last config file passed (if applicable)
+  * Internally unified how Tcl-based configurations and others are parsed
+  * `Instance` fields `location`, `orientation` now optional
+  * `Macro` has two new views now, `vh` and `pnl`
+  * New `DesignFormat` added: * `openlane.config.DesignFormat`
 * `openlane.steps`
   * `load()`'s pdk_root flag can now be passed as `None` where it will default
     to `cwd`
-  * `create_reproducible()`:
+  * `create_reproducible()`
     * Added `flatten` to public API, which flattens the file structure with the
       exception of the PDK
     * Modified behavior of flatten to allow including the PDK (which isn't
@@ -188,8 +257,9 @@
 * Fixed Docker images not having `TMPDIR` set by default
 * Updated Nix overlays to detect Darwin properly, added another fix for `jshon`
 * Updated Nix derivation to ignore `__pycache__` files
+* Suppressed tracebacks in more situations (too shouty)
 * Removed `PYTHONPATH` from `default.nix` - OpenLane now passes its
-  `site-packages` to subprocesses (less jank but still jank)
+  `site-packages` to subprocesses (less jank) (but still a bit jank)
 
 ## API Breaks
 
@@ -209,7 +279,10 @@
     `CHECK_ASSIGN_STATEMENTS`
 * Moved `DesignFormat`, `DesignFormatObject` from `openlane.common` to
   `openlane.state`
-* Removed `LogLevelsDict`, LogLevels\[\] now works just fine
+* `openlane.common.Toolbox.remove_cells_from_lib` no longer accepts
+  `as_cell_lists` as an argument, requiring the use of `process_list_file`
+  instead
+* Removed `LogLevelsDict`, `LogLevels[]` now works just fine
 
 ## Documentation
 
@@ -228,8 +301,7 @@
 * Updated generated documentation for steps, flows and universal configuration
   variable
 * Updated Readme to reflect `aarch64` support
-* Updated docstrings across the board for spelling and terminology
-  mistakes
+* Updated docstrings across the board for spelling and terminology mistakes
 
 # 2.0.0b16
 
