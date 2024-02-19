@@ -323,6 +323,10 @@ proc write_sdfs {} {
 
 proc write_libs {} {
     if { [info exists ::env(LIB_SAVE_DIR)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
+        puts "Removing Clock latencies before writing libs…"
+        # This is to avoid OpenSTA writing a context-dependent timing model
+        set_clock_latency -source -max 0 [all_clocks]
+        set_clock_latency -source -min 0 [all_clocks]
         set corners [sta::corners]
         puts "Writing timing models for all corners…"
         foreach corner $corners {
