@@ -726,16 +726,18 @@ class Flow(ABC):
 
         # 1. Copy Files
         last_state.validate()
-
+        info(
+            f"Saving final views in the Efabless/Caravel User Project format to '{os.path.abspath(path)}'…"
+        )
         mkdirp(path)
 
         supported_formats = {
             DesignFormat.POWERED_NETLIST: (os.path.join("verilog", "gl"), "v"),
             DesignFormat.DEF: ("def", "def"),
             DesignFormat.LEF: ("lef", "lef"),
-            DesignFormat.SDF: ("sdf", "sdf"),
-            DesignFormat.SPEF: ("spef", "spef"),
-            DesignFormat.LIB: ("lib", "lib"),
+            DesignFormat.SDF: (os.path.join("sdf", "multicorner"), "sdf"),
+            DesignFormat.SPEF: (os.path.join("spef", "multicorner"), "spef"),
+            DesignFormat.LIB: (os.path.join("lib", "multicorner"), "lib"),
         }
 
         def visitor(key, value, top_key, _, __):
@@ -779,7 +781,7 @@ class Flow(ABC):
 
         last_state._walk(last_state.to_raw_dict(metrics=False), path, visit=visitor)
 
-        # 2. Copy Reports & Signoff Information
+        # 2. Copy Logs, Reports, & Signoff Information
         def copy_dir_contents(from_dir, to_dir, filter="*"):
             for file in os.listdir(from_dir):
                 file_path = os.path.join(from_dir, file)
@@ -790,27 +792,47 @@ class Flow(ABC):
                         file_path, os.path.join(to_dir, file), follow_symlinks=True
                     )
 
-        signoff_folder = os.path.join(path, "signoff", self.config["DESIGN_NAME"])
+        signoff_folder = os.path.join(
+            path, "signoff", self.config["DESIGN_NAME"], "openlane"
+        )
         mkdirp(signoff_folder)
+
+        # resolved.json
         shutil.copyfile(
             self.config_resolved_path,
             os.path.join(signoff_folder, "resolved.json"),
             follow_symlinks=True,
         )
+
+        # Logs
+        mkdirp(signoff_folder)
+        copy_dir_contents(self.run_dir, signoff_folder, "*.log")
+
+        # Step-specific
         for step in self.step_objects:
             reports_dir = os.path.join(step.step_dir, "reports")
             step_imp_id = step.get_implementation_id()
             if step_imp_id.endswith("DRC") or step_imp_id.endswith("LVS"):
-                mkdirp(signoff_folder)
                 if os.path.exists(reports_dir):
                     copy_dir_contents(reports_dir, signoff_folder)
             if step_imp_id.endswith("LVS"):
-                mkdirp(signoff_folder)
                 copy_dir_contents(step.step_dir, signoff_folder, "*.log")
+            if step_imp_id.endswith("CheckAntennas"):
+                if os.path.exists(reports_dir):
+                    copy_dir_contents(
+                        reports_dir, signoff_folder, "antenna_summary.rpt"
+                    )
             if step_imp_id.endswith("STAPostPNR"):
                 timing_report_folder = os.path.join(signoff_folder, "timing-reports")
                 mkdirp(timing_report_folder)
                 copy_dir_contents(step.step_dir, timing_report_folder, "*summary.rpt")
+                for dir in os.listdir(step.step_dir):
+                    dir_path = os.path.join(step.step_dir, dir)
+                    if not os.path.isdir(dir_path):
+                        continue
+                    target = os.path.join(timing_report_folder, dir)
+                    mkdirp(target)
+                    copy_dir_contents(dir_path, target, "*.rpt")
 
     @deprecated(
         version="2.0.0a46",

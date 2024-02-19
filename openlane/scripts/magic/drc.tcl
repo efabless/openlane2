@@ -13,20 +13,18 @@
 # limitations under the License.
 
 if { $::env(MAGIC_DRC_USE_GDS) } {
-    gds read $::env(CURRENT_GDS)
+	gds read $::env(CURRENT_GDS)
 } else {
 	source $::env(SCRIPTS_DIR)/magic/common/read.tcl
-    read_tech_lef
-    read_pdk_lef
-    read_macro_lef
-    read_def
+	read_tech_lef
+	read_pdk_lef
+	read_macro_lef
+	read_def
 }
 
 set report_dir $::env(STEP_DIR)/reports
-file mkdir $report_dir
-set drc_prefix $report_dir/drc
 
-set drc_rpt_path $drc_prefix.rpt
+set drc_rpt_path $report_dir/drc_violations.magic.rpt
 set fout [open $drc_rpt_path w]
 set oscale [cif scale out]
 set cell_name $::env(DESIGN_NAME)
