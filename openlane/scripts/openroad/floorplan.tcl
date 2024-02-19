@@ -45,16 +45,15 @@ set top_margin  [expr $::default_site_height * $::env(TOP_MARGIN_MULT)]
 set left_margin [expr $::default_site_width * $::env(LEFT_MARGIN_MULT)]
 set right_margin [expr $::default_site_width * $::env(RIGHT_MARGIN_MULT)]
 
-set used_sites [list]
-lappend used_sites $::env(PLACE_SITE)
+set arg_list [list]
+
+lappend arg_list -site $::env(PLACE_SITE)
+
 if { [info exists ::env(EXTRA_SITES)] } {
     foreach site $::env(EXTRA_SITES) {
-        lappend used_sites $site
+        lappend arg_list -additional_sites $site
     }
 }
-
-set arg_list [list]
-lappend arg_list -sites "$used_sites"
 
 if {$::env(_FP_MODE) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
