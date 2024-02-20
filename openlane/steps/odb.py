@@ -144,7 +144,11 @@ class CheckMacroAntennaProperties(OdbpyStep):
         )
 
     def get_cells(self) -> List[str]:
-        return list(self.config["MACROS"].keys()) or []
+        macros = self.config["MACROS"]
+        cells = []
+        if macros:
+            cells = list(macros.keys())
+        return cells
 
     def get_report_path(self) -> str:
         return os.path.join(self.step_dir, "report.yaml")
