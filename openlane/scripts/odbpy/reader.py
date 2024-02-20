@@ -44,6 +44,7 @@ write_fn: Dict[str, Callable] = {
     "def": lambda reader, file: file and odb.write_def(reader.block, file),
     "odb": lambda reader, file: file and odb.write_db(reader.db, file),
 }
+auto_handled_output_opts = [f"output_{key}" for key in write_fn]
 
 
 class OdbReader(object):
@@ -182,11 +183,13 @@ def click_odb(function):
 
         outputs = []
         for key, value in kwargs.items():
-            if key.startswith("output_"):
+            if key in auto_handled_output_opts:
                 id = key[7:]
                 outputs.append((id, value))
 
-        kwargs = {k: kwargs[k] for k in kwargs.keys() if not k.startswith("output_")}
+        kwargs = {
+            k: kwargs[k] for k in kwargs.keys() if not k in auto_handled_output_opts
+        }
 
         if "input_db" in parameter_keys:
             kwargs["input_db"] = input_db
@@ -198,7 +201,6 @@ def click_odb(function):
                 "Error: Invocation was not updated to use an odb file.", file=sys.stderr
             )
             exit(1)
-
         function(**kwargs)
 
         for format, path in outputs:

@@ -30,8 +30,8 @@ proc env_var_used {file var} {
 }
 
 proc read_current_sdc {} {
-    if { ![info exists ::env(SDC_IN)]} {
-        puts "\[INFO] SDC_IN not found. Not reading an SDC file."
+    if { ![info exists ::env(_sdc_in)]} {
+        puts "\[INFO] _sdc_in not found. Not reading an SDC file."
         return
     }
     set ::env(IO_PCT) [expr $::env(IO_DELAY_CONSTRAINT) / 100]
@@ -44,13 +44,13 @@ proc read_current_sdc {} {
         set ::env(SYNTH_MAX_TRAN) $::env(MAX_TRANSITION_CONSTRAINT)
     }
 
-    if { [env_var_used $::env(SDC_IN) SYNTH_DRIVING_CELL_PIN] == 1 } {
+    if { [env_var_used $::env(_sdc_in) SYNTH_DRIVING_CELL_PIN] == 1 } {
         set ::env(SYNTH_DRIVING_CELL_PIN) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1]
         set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
     }
 
-    puts "Reading design constraints file at '$::env(SDC_IN)'…"
-    if {[catch {read_sdc $::env(SDC_IN)} errmsg]} {
+    puts "Reading design constraints file at '$::env(_sdc_in)'…"
+    if {[catch {read_sdc $::env(_sdc_in)} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
@@ -60,12 +60,20 @@ proc read_current_sdc {} {
 proc read_current_netlist {args} {
     sta::parse_key_args "read_current_netlist" args \
         keys {}\
-        flags {-powered -all}
+        flags {-powered}
 
-    puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
-    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
-        puts stderr $errmsg
-        exit 1
+    if { [info exists flags(-powered)] } {
+        puts "Reading top-level powered netlist at '$::env(CURRENT_POWERED_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_POWERED_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
+    } else {
+        puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
     }
 
     puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
@@ -76,6 +84,10 @@ proc read_current_netlist {args} {
 }
 
 proc read_timing_info {args} {
+    sta::parse_key_args "read_timing_info" args \
+        keys {}\
+        flags {-powered}
+
     if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
         return
     }
@@ -128,7 +140,11 @@ proc read_timing_info {args} {
             }
         }
     }
-    read_current_netlist
+    if { [info exists flags(-powered)] } {
+        read_current_netlist -powered
+    } else {
+        read_current_netlist
+    }
     set ::macro_spefs $macro_spefs
 }
 
@@ -150,7 +166,7 @@ proc read_spefs {} {
 }
 
 proc read_pnr_libs {args} {
-    # PNR_LIBS contains all libs and extra libs but with known-bad cells
+    # _pnr_libs contains all libs and extra libs but with known-bad cells
     # excluded, so OpenROAD can use cells by functionality and come up
     # with a valid design.
 
@@ -161,12 +177,12 @@ proc read_pnr_libs {args} {
 
     define_corners $::env(DEFAULT_CORNER)
 
-    foreach lib $::env(PNR_LIBS) {
+    foreach lib $::env(_pnr_libs) {
         puts "Reading library file at '$lib'…"
         read_liberty $lib
     }
-    if { [info exists ::env(MACRO_LIBS) ] } {
-        foreach macro_lib $::env(MACRO_LIBS) {
+    if { [info exists ::env(_macro_libs) ] } {
+        foreach macro_lib $::env(_macro_libs) {
             puts "Reading macro library file at '$macro_lib'…"
             read_liberty $macro_lib
         }
@@ -204,10 +220,7 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
 }
 
 proc set_dont_use_cells {} {
-    set_dont_use $::env(PNR_EXCLUDED_CELLS)
-    if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
-        set_dont_use $::env(RSZ_DONT_USE_CELLS)
-    }
+    set_dont_use $::env(_pnr_excluded_cells)
 }
 
 proc read_current_odb {args} {

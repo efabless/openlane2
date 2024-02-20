@@ -32,6 +32,7 @@ from typing import (
     List,
     Dict,
     Literal,
+    Set,
     Tuple,
     Optional,
     Union,
@@ -52,7 +53,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable, Config
+from ..config import Variable, Config, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -63,6 +64,7 @@ from ..common import (
     get_tpe,
     mkdirp,
     aggregate_metrics,
+    process_list_file,
 )
 
 EXAMPLE_INPUT = """
@@ -211,23 +213,19 @@ class OpenROADStep(TclStep):
 
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-        lib_pnr = [str(lib) for lib in lib_list]
 
-        env["SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        env["PNR_LIBS"] = " ".join(lib_pnr)
-        env["MACRO_LIBS"] = " ".join(
+        env["_sdc_in"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        env["_pnr_libs"] = TclUtils.join([str(lib) for lib in lib_list])
+        env["_macro_libs"] = TclUtils.join(
             [
                 str(lib)
                 for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
             ]
         )
-        env["PNR_EXCLUDED_CELLS"] = TclUtils.join(
-            [
-                cell.strip()
-                for cell in open(self.config["PNR_EXCLUSION_CELL_LIST"]).read().split()
-                if cell.strip() != ""
-            ]
-        )
+
+        excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
+        env["_pnr_excluded_cells"] = TclUtils.join(excluded_cells)
 
         python_path_elements = site.getsitepackages() + sys.path
         if current_pythonpath := env.get("PYTHONPATH"):
@@ -243,7 +241,7 @@ class OpenROADStep(TclStep):
 
         1. Before the `super()` call: It creates a version of the lib file
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
-        in the environment variable `PNR_LIBS`.
+        in the environment variable `_pnr_libs`.
 
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
@@ -353,9 +351,16 @@ class STAPrePNR(STAStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
+        prioritize_nl: Optional[bool] = self.config.get("STA_MACRO_PRIORITIZE_NL")
+        if prioritize_nl is None:
+            if "prioritize_nl" in kwargs:
+                prioritize_nl = bool(kwargs.pop("prioritize_nl"))
+            else:
+                prioritize_nl = False
+
         timing_corner, timing_file_list = self.toolbox.get_timing_files(
             self.config,
-            prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
+            prioritize_nl=prioritize_nl,
         )
 
         env["OPENSTA"] = "1"
@@ -379,6 +384,44 @@ class STAPrePNR(STAStep):
         views_updates[DesignFormat.SDF] = sdf_dict
 
         return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class CheckMacroInstances(STAPrePNR):
+    """
+    Checks if all macro instances declared in the configuration are, in fact,
+    in the design, emitting an error otherwise.
+
+    Nested macros (macros within macros) are supported provided netlist views
+    are available for the macro.
+    """
+
+    id = "OpenROAD.CheckMacroInstances"
+    outputs = []
+
+    config_vars = OpenROADStep.config_vars
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(), "openroad", "sta", "check_macro_instances.tcl"
+        )
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        macros: Optional[Dict[str, Macro]] = self.config["MACROS"]
+        if macros is None:
+            info("No macros found, skipping instance check…")
+            return {}, {}
+
+        macro_instance_pairs = []
+        for macro_name, data in macros.items():
+            for instance_name in data.instances:
+                macro_instance_pairs.append(instance_name)
+                macro_instance_pairs.append(macro_name)
+
+        env["_check_macro_instances"] = TclUtils.join(macro_instance_pairs)
+
+        return super().run(state_in, prioritize_nl=True, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -462,7 +505,7 @@ class STAPostPNR(STAPrePNR):
         env = self.prepare_env(env, state_in)
 
         env["OPENSTA"] = "1"
-        env["SDC_IN"] = (
+        env["_sdc_in"] = (
             self.config["SIGNOFF_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         )
 
@@ -1675,8 +1718,7 @@ class ResizerStep(OpenROADStep):
         corners_key: str = "RSZ_CORNERS"
 
         if "corners_key" in kwargs:
-            corners_key = kwargs["corners_key"]
-            del kwargs["corners_key"]
+            corners_key = kwargs.pop("corners_key")
 
         corners = self.config[corners_key] or self.config["STA_CORNERS"]
         lib_set_set = set()

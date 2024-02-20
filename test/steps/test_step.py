@@ -303,8 +303,8 @@ def test_step_factory(mock_run):
 @mock_variables([step])
 def test_run_subprocess(mock_run):
     import subprocess
-    from openlane.steps import Step
     from openlane.config import Config
+    from openlane.steps import Step, StepException
     from openlane.state import DesignFormat, State
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -380,3 +380,29 @@ def test_run_subprocess(mock_run):
 
     with pytest.raises(subprocess.CalledProcessError):
         step.run_subprocess(["false"])
+
+    class BadStep(Step):
+        id = "Test.BadStep"
+
+        inputs = []
+        outputs = []
+
+        config_vars = []
+
+        def run(self, *args, **kwargs):
+            self.run_subprocess(
+                [
+                    "python3",
+                    "-c",
+                    "import sys; stdout_b = sys.stdout.buffer; stdout_b.write(bytes([0xfa]))",
+                ],
+            )
+
+    step = BadStep(
+        config=Config(config_dict),
+        state_in=State(),
+        _no_revalidate_conf=True,
+    )
+
+    with pytest.raises(StepException, match="non-UTF-8"):
+        step.start(step_dir=".")
