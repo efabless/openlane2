@@ -5,6 +5,24 @@ OpenLane 2 offers two primary methods of installation: using **Nix** and using
 
 ## Nix (Recommended)
 
+Nix is a build system for Linux and macOS allowing for _cachable_ and
+_reproducible_ builds, and is the primary build system for OpenLane.
+
+Compared to the Docker method, Nix offers:
+
+* **Native Execution on macOS:** OpenLane is built natively for both Intel and
+  Apple Silicon-based Macs, unlike Docker which uses a Virtual Machine, and
+  thus requires more resources.
+* **Filesystem integration:** No need to worry about which folders are being
+  mounted like in the Docker containers- Nix apps run natively in your userspace.
+* **Smaller deltas:** if one tool is updated, you do not need to re-download
+  everything, which is not the case with Docker.
+* **Dead-simple customization:** You can modify any tool versions and/or any
+  OpenLane code and all you need to do is re-invoke `nix-shell`. Nix's smart
+  cache-substitution feature will automatically figure out whether your build is
+  cached or not, and if not, will automatically attempt to build any tools that
+  have been changed.
+
 Because of the advantages afforded by Nix, we recommend trying to install using
 Nix first. Follow the installation guide here:
 {ref}`nix-based-installation`
