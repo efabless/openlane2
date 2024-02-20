@@ -132,7 +132,7 @@ class OdbpyStep(Step):
 @Step.factory.register()
 class CheckMacroAntennaProperties(OdbpyStep):
     id = "Odb.CheckMacroAntennaProperties"
-    name = "Check Antenna Rules for Macro Pins"
+    name = "Check Antenna Properties of Macros Pins in Their LEF Views"
     inputs = OdbpyStep.inputs
     outputs = []
 
@@ -164,7 +164,7 @@ class CheckMacroAntennaProperties(OdbpyStep):
 @Step.factory.register()
 class CheckDesignAntennaProperties(CheckMacroAntennaProperties):
     id = "Odb.CheckDesignAntennaProperties"
-    name = "Check Antenna Properties on Design LEF View"
+    name = "Check Antenna Properties of Pins in The Generated Design LEF view"
     inputs = CheckMacroAntennaProperties.inputs + [DesignFormat.LEF]
 
     def get_cells(self) -> List[str]:
