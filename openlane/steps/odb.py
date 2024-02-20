@@ -102,6 +102,11 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
+        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+            DesignFormat.LEF in self.inputs
+        ):
+            lefs.append("--design-lef")
+            lefs.append(str(design_lef))
         return (
             [
                 "openroad",
@@ -125,9 +130,11 @@ class OdbpyStep(Step):
 
 
 @Step.factory.register()
-class CheckAntennaProperties(OdbpyStep):
-    id = "Odb.CheckAntennaProperties"
-    name = "Check Antenna Rules for macro pins"
+class CheckMacroAntennaProperties(OdbpyStep):
+    id = "Odb.CheckMacroAntennaProperties"
+    name = "Check Antenna Rules for Macro Pins"
+    inputs = OdbpyStep.inputs
+    outputs = []
 
     def get_script_path(self):
         return os.path.join(
@@ -137,19 +144,31 @@ class CheckAntennaProperties(OdbpyStep):
         )
 
     def get_cells(self) -> List[str]:
-        return self.config["MACROS"].keys() or []
+        return list(self.config["MACROS"].keys()) or []
+
+    def get_report_path(self) -> str:
+        return os.path.join(self.step_dir, "report.yaml")
 
     def get_command(self) -> List[str]:
         args = " ".join([f"--cell-name {name}" for name in self.get_cells()]).split()
-        args += ["--report-file", os.path.join(self.step_dir, "report.yaml")]
+        args += ["--report-file", self.get_report_path()]
         return super().get_command() + args
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        macros = self.config["MACROS"]
-        if macros is None:
-            info("No Macros provided, skipping…")
+        if not self.get_cells():
+            info("No cells provided, skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class CheckDesignAntennaProperties(CheckMacroAntennaProperties):
+    id = "Odb.CheckDesignAntennaProperties"
+    name = "Check Antenna Properties on Design LEF View"
+    inputs = CheckMacroAntennaProperties.inputs + [DesignFormat.LEF]
+
+    def get_cells(self) -> List[str]:
+        return [self.config["DESIGN_NAME"]]
 
 
 @Step.factory.register()

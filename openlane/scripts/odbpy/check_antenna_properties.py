@@ -14,20 +14,15 @@
 # limitations under the License.
 import yaml
 
-from reader import click_odb, click
+from tempfile import NamedTemporaryFile
+from textwrap import dedent
+from reader import click_odb, click, odb
 
 
-@click.option(
-    "-c", "--cell-name", required=True, multiple=True, help="Names of cells to check"
-)
-@click.option("-r", "--report-file", help="YAML report file")
-@click.command()
-@click_odb
-def check_antenna_properties(reader, cell_name, report_file):
-    cells = [cell for cell in reader.cells]
+def check_cells(odb_cells):
     report = []
 
-    for cell in list(filter(lambda cell: cell.getName() in cell_name, cells)):
+    for cell in odb_cells:
         cell_name = cell.getName()
         inout_pins = []
         input_pins = []
@@ -43,7 +38,7 @@ def check_antenna_properties(reader, cell_name, report_file):
                 or False
             )
             io_type = mterm.getIoType()
-            if io_type == "INOUT" and (not has_diff_area and not has_gate_area):
+            if io_type == "INOUT" and not (has_diff_area or has_gate_area):
                 inout_pins.append(pin_name)
             elif io_type == "INPUT" and not has_gate_area:
                 input_pins.append(pin_name)
@@ -53,7 +48,6 @@ def check_antenna_properties(reader, cell_name, report_file):
             print(
                 f"[WARNING] Cell '{cell_name}' has ({len(inout_pins)}) inout pin(s) without anetnna gate information not antenna diffusion information. They might be disconnected."
             )
-            print("\n".join([f"* {pin}" for pin in inout_pins]))
         if input_pins:
             print(
                 f"[WARNING] Cell '{cell_name}' has ({len(input_pins)}) input pin(s) without antenna gate information. They might not be connected to a gate."
@@ -70,6 +64,49 @@ def check_antenna_properties(reader, cell_name, report_file):
             "input": input_pins,
         }
         report.append(entry)
+
+        return report
+
+
+def get_top_level_cell(input_lefs, design_lef, cell_name):
+    db = odb.dbDatabase.create()
+    for lef in input_lefs:
+        odb.read_lef(db, lef)
+    odb.read_lef(db, design_lef)
+
+    with NamedTemporaryFile("w") as f:
+        lines = dedent(
+            """VERSION 5.8 ;
+               DESIGN empty ;
+               END DESIGN
+            """
+        )
+        f.writelines(lines)
+        f.seek(0)
+        odb.read_def(db.getTech(), f.name)
+    libs = db.getLibs()
+    cells = {}
+    for lib in libs:
+        cells.update({m: m for m in lib.getMasters()})
+    top_level_cell = next(
+        filter(lambda cell: cell.getName() in cell_name, cells.keys())
+    )
+    return top_level_cell
+
+
+@click.option(
+    "-c", "--cell-name", required=True, multiple=True, help="Names of cells to check"
+)
+@click.option("--design-lef", help="Top level design LEF view")
+@click.option("-r", "--report-file", help="YAML report file")
+@click.command()
+@click_odb
+def check_antenna_properties(reader, cell_name, report_file, input_lefs, design_lef):
+    cells = []
+    if design_lef:
+        cells.append(get_top_level_cell(input_lefs, design_lef, cell_name))
+    cells += list(filter(lambda cell: cell.getName() in cell_name, reader.cells))
+    report = check_cells(cells)
 
     with open(report_file, "w") as f:
         f.write(yaml.dump(report))
