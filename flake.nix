@@ -100,10 +100,16 @@
             mdformat
           ];
         }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
         docs = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            imagemagick
             nodejs.pkgs.nodemon
           ];
           extra-python-packages = with pkgs.python3.pkgs; [

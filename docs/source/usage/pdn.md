@@ -110,7 +110,7 @@ The power straps on the top-most metal layer of a sub-macro are then connected t
 the layer above using vias. (There is no continuity between power straps within
 each metal layer across the macro boundary.)
 
-```{figure} pdn_hierarchical.png
+```{figure} pdn_hierarchical.webp
 
 A top view of an example PDN, showing the power rails. Note
 how within each macro, straps may have different properties such as
@@ -142,7 +142,7 @@ does interrupt the straps on the top level.
 This allows the use of the full layers stack for routing, however, it takes more
 area, making it less space-efficient.
 
-```{figure} pdn_ring.png
+```{figure} pdn_ring.webp
 A top view showing the integration of a macro that uses
 power rings.
 ```

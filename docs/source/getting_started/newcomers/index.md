@@ -49,7 +49,7 @@ What is OpenLane?
 
 ## What is OpenLane?
 
-```{figure} ./flow.png
+```{figure} ./flow.webp
 :scale: 30 %
 :align: right
 
@@ -132,7 +132,7 @@ Typically, an SPM is interfaced with 3 registers. One parallel register to
 provide the multiplier, and two shift registers to provide the multiplicand and
 to receive the serial product (64-bit).
 
-```{figure} ./spm-block-diagram.png
+```{figure} ./spm-block-diagram.webp
 :scale: 60 %
 :align: center
 
@@ -234,7 +234,7 @@ To open the final {term}`GDSII` layout run this command:
 
 This opens {term}`KLayout` and you should be able to see the following:
 
-```{figure} ./spm-gds.png
+```{figure} ./spm-gds.webp
 :align: center
 ```
 
@@ -397,7 +397,7 @@ OpenLane runs two DRC steps using `Magic` and `KLayout`: {step}`Magic.DRC` and
 Both the layout and what is known as a PDK's {term}`DRC deck` are processed by
 the tools running DRC, as shown in the diagram below:
 
-```{figure} ./OL-DRC.png
+```{figure} ./OL-DRC.webp
 :align: center
 :scale: 50 %
 
@@ -415,7 +415,7 @@ To view DRC errors graphically, you may open the layout as follows:
 
 Then in the menu bar select Tools ► Marker Browser. A new window should open.
 
-```{figure} ./klayout-markerbrowser-menu.png
+```{figure} ./klayout-markerbrowser-menu.webp
 :align: center
 ```
 
@@ -428,7 +428,7 @@ The initial number in `53-klayout-drc` (`53`) may vary according to the
 flow's configuration.
 ```
 
-```{figure} ./klayout-markerbrowser-menu-2.png
+```{figure} ./klayout-markerbrowser-menu-2.webp
 :align: center
 ```
 
@@ -451,7 +451,7 @@ Common LVS errors include but are not limited to:
 First, the layout is converted to {term}`SPICE netlist`. Next, the layout and
 the schematic are inputted to Netgen, as shown in the diagram below:
 
-```{figure} ./OL-LVS.png
+```{figure} ./OL-LVS.webp
 :scale: 50 %
 :align: center
 
@@ -496,7 +496,7 @@ have a timing violation (negative slack). STA makes sure that a circuit will
 correctly perform its function (but tells nothing about the correctness of
 that function.)
 
-```{figure} ./STA.png
+```{figure} ./STA.webp
 :align: center
 :scale: 50 %
 
@@ -623,7 +623,7 @@ that suffers from the antenna effect. Antenna diode cell has a reversed biased
 diode which can drain out the charge without affecting the transistor circuitry.
 
 
-```{figure} ./antenna.png
+```{figure} ./antenna.webp
 
 Antenna effect
 ```
@@ -801,7 +801,7 @@ Let's view the layout:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/my_designs/spm-user_project_wrapper/config.json
 ```
 
-```{figure} ./spm-caravel-user-project-util.png
+```{figure} ./spm-caravel-user-project-util.webp
 
 SPM with 5% utilization
 ```
@@ -860,7 +860,7 @@ data IO pins but often much larger.
 
 Here is another example of a macro that is fully integrated inside Caravel:
 
-```{figure} ./caravel-1.png
+```{figure} ./caravel-1.webp
 :align: center
 
 Example of a macro integrated inside Caravel
@@ -870,7 +870,7 @@ This figure displays Caravel chip. The highlighted rectangle is where
 Caravel User Project is. Let's zoom in at the top right corner of this
 area.
 
-```{figure} ./caravel-pdn-2.png
+```{figure} ./caravel-pdn-2.webp
 :align: center
 
 Top right corner of macro integrated inside Caravel
