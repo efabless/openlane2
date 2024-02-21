@@ -29,6 +29,7 @@ from cloup import (
 
 from .step import Step, StepError, StepException
 from ..logging import info, err, warn
+from ..flows import cloup_flow_opts
 from ..__version__ import __version__
 from ..common.cli import formatter_settings
 from ..common import mkdirp, Toolbox, get_openlane_root
@@ -114,8 +115,15 @@ o = partial(option, show_default=True)
     default=os.environ.pop("PDK_ROOT", None),
     help="Use this folder as the PDK root, if running a reproducible that doesn't include the PDK.",
 )
+@cloup_flow_opts(
+    config_options=False,
+    run_options=False,
+    sequential_flow_controls=False,
+    jobs=False,
+    accept_config_files=False,
+)
 @pass_context
-def run(ctx, output, state_in, config, id, pdk_root):
+def run(ctx, output, state_in, config, id, pdk_root, pdk, scl):
     """
     Runs a step using a step-specific configuration object and an input state.
 

@@ -750,7 +750,8 @@ class Step(ABC):
         mkdirp(target_dir)
 
         files_path = target_dir if flatten else os.path.join(target_dir, "files")
-        pdk_flat_dirname = "pdk/"
+        pdk_root_flat_dirname = "pdk"
+        pdk_flat_dirname = os.path.join(pdk_root_flat_dirname, self.config["PDK"], "")
         pdk_flat_path = os.path.join(target_dir, pdk_flat_dirname)
         if flatten and include_pdk:
             mkdirp(pdk_flat_path)
@@ -817,7 +818,7 @@ class Step(ABC):
         del dumpable_config["PDK_ROOT"]
         if flatten and include_pdk:
             # So it's always the first one:
-            dumpable_config = {"PDK_ROOT": pdk_flat_dirname, **dumpable_config}
+            dumpable_config = {"PDK_ROOT": pdk_root_flat_dirname, **dumpable_config}
         else:
             # If not flattened; there's no explicit PDK root needed, as all
             # the files are symlinked.
@@ -872,8 +873,7 @@ class Step(ABC):
         if hasattr(os, "chmod"):
             os.chmod(script_path, 0o755)
 
-        info("Reproducible created at:")
-        verbose(f"'{os.path.relpath(target_dir)}'")
+        info(f"Reproducible created at: '{os.path.relpath(target_dir)}'")
 
     @final
     def start(

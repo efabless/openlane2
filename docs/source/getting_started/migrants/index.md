@@ -26,7 +26,7 @@ backwards compatible, with some conveniences:
   design at a certain part of the flow, without worrying about surprises related
   to state variables missing.
 
-```{figure} ./configurable_flow.png
+```{figure} ./configurable_flow.webp
 Writing custom flows and steps using OpenLane 2
 ```
 
@@ -69,10 +69,7 @@ The Nix method involves installing the Nix build utility/package management
 software and cloning the OpenLane repository.
 
 You can install Nix and set up the OpenLane binary cache by following the
-instructions at [Cachix](https://openlane.cachix.org).
-
-For more detailed instructions, see
-{ref}`nix-based-installation`
+instructions at {ref}`nix-based-installation`
 
 Afterwards, you can run an example as follows:
 

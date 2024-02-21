@@ -1,5 +1,13 @@
 # Ubuntu 20.04+
 
+* **Minimum Requirements**
+    * Quad-core CPU running at 2.0 GHz+
+    * 8 GiB of RAM
+    
+* **Recommended Requirements**
+    * 6th Gen Intel® Core CPU or later OR AMD Ryzen™️ 1000-series or later
+    * 16 GiB of RAM
+
 Only Ubuntu 20.04 and above are supported.
 
 ```{include} ../_ubuntu_packages.md
