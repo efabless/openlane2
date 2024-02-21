@@ -169,17 +169,18 @@ class ApplyDEFTemplate(OdbpyStep):
             return {}, {}
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
-        design_area_string = self.state_in.result().metrics["design__die__bbox"]
-        template_area_string = metrics_updates["design__die__bbox"]
-        template_area = [Decimal(point) for point in template_area_string.split()]
-        design_area = [Decimal(point) for point in design_area_string.split()]
-        if template_area != design_area:
-            warn(
-                "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
-            )
-            warn(
-                f"Design area: {design_area_string}. Template def area: {template_area_string}"
-            )
+        design_area_string = self.state_in.result().metrics.get("design__die__bbox")
+        if design_area_string:
+            template_area_string = metrics_updates["design__die__bbox"]
+            template_area = [Decimal(point) for point in template_area_string.split()]
+            design_area = [Decimal(point) for point in design_area_string.split()]
+            if template_area != design_area:
+                warn(
+                    "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
+                )
+                warn(
+                    f"Design area: {design_area_string}. Template def area: {template_area_string}"
+                )
         return views_updates, {}
 
 
