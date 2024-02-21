@@ -13,13 +13,13 @@
 # limitations under the License.
 
 if { $::env(MAGIC_DRC_USE_GDS) } {
-	gds read $::env(CURRENT_GDS)
+    gds read $::env(CURRENT_GDS)
 } else {
-	source $::env(SCRIPTS_DIR)/magic/common/read.tcl
-	read_tech_lef
-	read_pdk_lef
-	read_macro_lef
-	read_def
+    source $::env(SCRIPTS_DIR)/magic/common/read.tcl
+    read_tech_lef
+    read_pdk_lef
+    read_macro_lef
+    read_def
 }
 
 set report_dir $::env(STEP_DIR)/reports
@@ -43,18 +43,18 @@ set count 0
 puts $fout "$cell_name"
 puts $fout "----------------------------------------"
 foreach {errtype coordlist} $drcresult {
-	puts $fout $errtype
-	puts $fout "----------------------------------------"
-	foreach coord $coordlist {
-		set bllx [expr {$oscale * [lindex $coord 0]}]
-		set blly [expr {$oscale * [lindex $coord 1]}]
-		set burx [expr {$oscale * [lindex $coord 2]}]
-		set bury [expr {$oscale * [lindex $coord 3]}]
-		set coords [format " %.3fum %.3fum %.3fum %.3fum" $bllx $blly $burx $bury]
-		puts $fout "$coords"
-		set count [expr {$count + 1} ]
-	}
-	puts $fout "----------------------------------------"
+    puts $fout $errtype
+    puts $fout "----------------------------------------"
+    foreach coord $coordlist {
+        set bllx [expr {$oscale * [lindex $coord 0]}]
+        set blly [expr {$oscale * [lindex $coord 1]}]
+        set burx [expr {$oscale * [lindex $coord 2]}]
+        set bury [expr {$oscale * [lindex $coord 3]}]
+        set coords [format " %.3fum %.3fum %.3fum %.3fum" $bllx $blly $burx $bury]
+        puts $fout "$coords"
+        set count [expr {$count + 1} ]
+    }
+    puts $fout "----------------------------------------"
 }
 
 puts $fout "\[INFO\] COUNT: $count"
