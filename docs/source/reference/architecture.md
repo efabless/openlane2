@@ -6,7 +6,7 @@ out of multiple atomic execution units called **Steps**, and then run with a
 
 OpenLane is architected as a Python module with the following hierarchy:
 
-![An architectural view of OpenLane since version 2.0](./architecture.png)
+![An architectural view of OpenLane since version 2.0](./architecture.webp)
 
 The module is accessible via Python scripts, Jupyter Notebooks and a (limited)
 command-line API.
@@ -23,7 +23,7 @@ from which all other steps inherit.
 Each step takes two inputs: a **Configuration Object** and a **State**, and
 returns an **output** state as shown here:
 
-![Architectural view of an OpenLane step](./step.png)
+![Architectural view of an OpenLane step](./step.webp)
 
 Steps should align themselves to one principle:
 
