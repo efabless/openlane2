@@ -146,7 +146,6 @@ def _generate_read_deps(
     formats_so_far: List[DesignFormat] = []
     for format in format_list:
         views = toolbox.get_macro_views(config, format, unless_exist=formats_so_far)
-        print(format, views, formats_so_far)
         for view in views:
             view_escaped = TclUtils.escape(str(view))
             if format == DesignFormat.LIB:

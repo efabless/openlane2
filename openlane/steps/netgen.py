@@ -156,7 +156,8 @@ class LVS(NetgenStep):
 
         design_name = self.config["DESIGN_NAME"]
         reports_dir = os.path.join(self.step_dir, "reports")
-        stats_file = os.path.join(reports_dir, "lvs.json")
+        stats_file = os.path.join(reports_dir, "lvs.netgen.rpt")
+        stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
 
         with open(self.get_script_path(), "w") as f:
@@ -176,7 +177,7 @@ class LVS(NetgenStep):
             )
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
-        stats_string = open(stats_file).read()
+        stats_string = open(stats_file_json).read()
         lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
         metrics_updates.update(lvs_metrics)
 

@@ -114,6 +114,12 @@ class StepSignalled(StepException):
     pass
 
 
+class StepNotFound(NameError):
+    def __init__(self, *args: object, id: Optional[str] = None) -> None:
+        super().__init__(*args)
+        self.id = id
+
+
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 METRIC_LOCUS = "%OL_METRIC"
@@ -600,7 +606,9 @@ class Step(ABC):
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
     @classmethod
-    def _load_config_from_file(Self, config_path: str, pdk_root: str = ".") -> Config:
+    def _load_config_from_file(
+        Self, config_path: Union[str, os.PathLike], pdk_root: str = "."
+    ) -> Config:
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read(), parse_float=Decimal),
             flow_config_vars=Self.get_all_config_variables(),
@@ -613,7 +621,7 @@ class Step(ABC):
     @classmethod
     def load(
         Self,
-        config: Union[str, Config],
+        config: Union[str, os.PathLike, Config],
         state_in: Union[str, State],
         pdk_root: Optional[str] = None,
     ) -> Step:
@@ -634,6 +642,19 @@ class Step(ABC):
             as-is.
         :returns: The created step object
         """
+        if Self.id == NotImplemented:  # If abstract
+            id, Target = Step.factory.from_step_config(config)
+            if id is None:
+                raise StepNotFound(
+                    "Attempted to initialize abstract Step, and no step ID was found in the configuration."
+                )
+            if Target is None:
+                raise StepNotFound(
+                    "Attempted to initialize abstract Step, and Step designated in configuration file not found.",
+                    id=id,
+                )
+            return Target.load(config, state_in, pdk_root)
+
         pdk_root = pdk_root or "."
         if not isinstance(config, Config):
             config = Self._load_config_from_file(config, pdk_root)
@@ -644,6 +665,39 @@ class Step(ABC):
             state_in=state_in,
             _no_revalidate_conf=True,
         )
+
+    @classmethod
+    def load_finished(
+        Self,
+        step_dir: str,
+        pdk_root: Optional[str] = None,
+        search_steps: Optional[List[Type[Step]]] = None,
+    ) -> "Step":
+        config_path = os.path.join(step_dir, "config.json")
+        state_in_path = os.path.join(step_dir, "state_in.json")
+        state_out_path = os.path.join(step_dir, "state_out.json")
+        for file in config_path, state_in_path, state_out_path:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(file)
+
+        try:
+            step_object = Self.load(config_path, state_in_path, pdk_root)
+        except StepNotFound as e:
+            if e.id is not None:
+                search_steps = search_steps or []
+                Matched: Optional[Type[Step]] = None
+                for step in search_steps:
+                    if step.get_implementation_id() == e.id:
+                        Matched = step
+                        break
+                if Matched is None:
+                    raise e from None
+                step_object = Matched.load(config_path, state_in_path, pdk_root)
+            else:
+                raise e from None
+        step_object.step_dir = step_dir
+        step_object.state_out = State.loads(open(state_out_path).read())
+        return step_object
 
     @classmethod
     def get_all_config_variables(Self) -> List[Variable]:
@@ -1156,6 +1210,21 @@ class Step(ABC):
         """
 
         __registry: ClassVar[Dict[str, Type[Step]]] = {}
+
+        @classmethod
+        def from_step_config(
+            Self, step_config_path: Union[Config, str, os.PathLike]
+        ) -> Tuple[Optional[str], Optional[Type[Step]]]:
+            if isinstance(step_config_path, Config):
+                step_id = Config.meta.step
+            else:
+                config_dict = json.load(open(step_config_path, encoding="utf8"))
+                meta = config_dict.get("meta") or {}
+                step_id = meta.get("step")
+            if step_id is None:
+                return (None, None)
+            step_id = str(step_id)
+            return (step_id, Self.get(step_id))
 
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:

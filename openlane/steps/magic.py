@@ -23,7 +23,7 @@ from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject, Path
+from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
 class MagicStep(TclStep):
@@ -343,10 +343,13 @@ class DRC(MagicStep):
         return os.path.join(get_script_dir(), "magic", "drc.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        reports_dir = os.path.join(self.step_dir, "reports")
+        mkdirp(reports_dir)
+
         views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        reports_dir = os.path.join(self.step_dir, "reports")
-        report_path = os.path.join(reports_dir, "drc.rpt")
+        report_path = os.path.join(reports_dir, "drc_violations.magic.rpt")
+        klayout_db_path = os.path.join(reports_dir, "drc_violations.magic.xml")
 
         # report_stats = os.stat(report_path)
         # drc_db_file = None
@@ -358,7 +361,6 @@ class DRC(MagicStep):
             # db_file=drc_db_file,
         )
 
-        klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")
         drc.to_klayout_xml(open(klayout_db_path, "wb"))
 
         metrics_updates["magic__drc_error__count"] = bbox_count
