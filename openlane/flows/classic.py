@@ -321,6 +321,7 @@ class Classic(SequentialFlow):
         OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
+        Odb.ApplyDEFTemplate,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         OpenROAD.CutRows,
