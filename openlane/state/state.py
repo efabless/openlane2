@@ -31,6 +31,7 @@ from ..common import (
     mkdirp,
     copy_recursive,
 )
+from ..logging import info
 
 
 class InvalidState(RuntimeError):
@@ -189,6 +190,7 @@ class State(GenericImmutableDict[str, StateElement]):
             shutil.copyfile(value, target_path, follow_symlinks=True)
 
         self.validate()
+        info(f"Saving views to '{os.path.abspath(path)}'…")
         mkdirp(path)
         self._walk(self, path, visitor)
         metrics_csv_path = os.path.join(path, "metrics.csv")

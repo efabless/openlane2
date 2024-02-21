@@ -727,7 +727,7 @@ class Flow(ABC):
         # 1. Copy Files
         last_state.validate()
         info(
-            f"Saving final views in the Efabless/Caravel User Project format to '{os.path.abspath(path)}'…"
+            f"Saving views in the Efabless/Caravel User Project format to '{os.path.abspath(path)}'…"
         )
         mkdirp(path)
 
