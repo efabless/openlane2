@@ -23,6 +23,7 @@ from .step import (
     StepError,
     DeferredStepError,
     StepException,
+    StepNotFound,
     Step,
     MetricsUpdate,
     ViewsUpdate,
