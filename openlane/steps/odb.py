@@ -350,7 +350,7 @@ class ReportDisconnectedPins(OdbpyStep):
     result in a dead design. We determine if a pin is critical as follows:
 
     * For the top-level macro: for these four kinds of pins: inputs, outputs,
-    power inouts, ground inouts, at least one of each kind must be connected
+    power inouts, and ground inouts, at least one of each kind must be connected
     or else all pins of a certain kind are counted as critical disconnected
     pins.
     * For instances:

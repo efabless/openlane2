@@ -150,7 +150,6 @@ class Module(object):
                 pg=terminal.getSigType(),
                 connected=is_connected(terminal),
             )
-        self.missing_pg_ports = None
         if not power_found:
             print(
                 f"[ERROR] Macro/instance {object.getName()} has no power pins- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
@@ -167,6 +166,14 @@ class Module(object):
         if self._port_stats.outputs != 0 and self._port_stats.outputs_connected == 0:
             print(
                 f"[ERROR] No outputs of macro/instance '{object.getName()}' are connected- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+                file=sys.stderr,
+            )
+        if (
+            self._port_stats.inputs_connected != self._port_stats.inputs
+            and not isinstance(object, odb.dbBlock)
+        ):
+            print(
+                f"[ERROR] Some inputs of instance '{object.getName()}' are not connected- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
                 file=sys.stderr,
             )
         self.disconnected_pin_count = self._port_stats.disconnected_pin_count
@@ -235,7 +242,7 @@ def main(
         "Signal Pins",
         "Disconnected",
         title="",
-        width=160,
+        min_width=160,
     )
     critical_table = Table(
         "Macro/Instance",

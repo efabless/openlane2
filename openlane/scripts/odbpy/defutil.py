@@ -120,7 +120,8 @@ def move_diearea_command(reader, input_lefs, template_def):
 def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate):
     if (pin_coordinate % manufacturing_grid) != 0:
         print(
-            f"[ERROR] Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid."
+            f"[ERROR] Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid.",
+            file=sys.stderr,
         )  # IDK how to do this
         return True
 
