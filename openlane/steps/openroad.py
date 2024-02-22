@@ -842,7 +842,7 @@ class IOPlacement(OpenROADStep):
             return {}, {}
         if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
-                f"I/O pins was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
+                f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
             )
             return {}, {}
 
