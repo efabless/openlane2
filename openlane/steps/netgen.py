@@ -156,8 +156,8 @@ class LVS(NetgenStep):
 
         design_name = self.config["DESIGN_NAME"]
         reports_dir = os.path.join(self.step_dir, "reports")
-        stats_file = os.path.join(reports_dir, "lvs.rpt")
-        stats_file_json = os.path.join(reports_dir, "lvs.json")
+        stats_file = os.path.join(reports_dir, "lvs.netgen.rpt")
+        stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
 
         with open(self.get_script_path(), "w") as f:

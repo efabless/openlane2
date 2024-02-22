@@ -172,7 +172,7 @@ To open the final {term}`GDSII` layout run this command:
 
 This opens {term}`KLayout` and you should be able to see the following:
 
-```{figure} ./aes-1-gds.png
+```{figure} ./aes-1-gds.webp
 :align: center
 
 Final layout of aes_wb_wrapper
@@ -758,7 +758,7 @@ To open the final {term}`GDSII` layout run this command:
 
 This opens {term}`KLayout` and you should be able to see the following:
 
-```{figure} ./mprj-gds-1.png
+```{figure} ./mprj-gds-1.webp
 :align: center
 
 Final layout of the user_project_wrapper
@@ -772,7 +772,7 @@ layers you want to hide/unhide. In this figure, the layers`areaid.lowTapDensity`
 As seen in the layout, we have our aes macro placed around the middle and if we only show the layers: `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`. We will see long and unnecessary routes because of 2 things:
 1. The AES macro is placed very far from its connections. It should be placed at the bottom left corner.
 2. The pins of the AES macro should be on the south only.
-```{figure} ./mprj-gds-2.png
+```{figure} ./mprj-gds-2.webp
 :align: center
 
 Long routes in the user_project_wrapper
@@ -1052,13 +1052,13 @@ To open the final {term}`GDSII` layout run this command:
 
 Now our macro is placed at the bottom left corner close to the wishbone pins.
 
-```{figure} ./mprj-gds-3.png
+```{figure} ./mprj-gds-3.webp
 :align: center
 
 Final layout of the user_project_wrapper
 ```
 And if we zoom to the AES macro and view only `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`, there are no long routes anymore.
-```{figure} ./mprj-gds-4.png
+```{figure} ./mprj-gds-4.webp
 :align: center
 
 Shorter routes in the user_project_wrapper
@@ -1248,7 +1248,7 @@ To open the final {term}`GDSII` layout run this command:
 
 Now, we can see that there are STD cells all over the `user_project_wrapper` without any macros. Also, we can see that the logic is clustered in the bottom left corner close to the Wishbone bus.
 
-```{figure} ./mprj-flattened-1.png
+```{figure} ./mprj-flattened-1.webp
 :align: center
 
 Final layout of the user_project_wrapper after flattening
@@ -1915,7 +1915,7 @@ To open the final {term}`GDSII` layout run this command:
 
 Now, we can see that there are STD cells all over the `user_project_wrapper` and there is our macro in the middle.
 
-```{figure} ./mprj-top-1.png
+```{figure} ./mprj-top-1.webp
 :align: center
 
 Final layout of the user_project_wrapper with Top-level integration

@@ -22,6 +22,7 @@ from typing import (
     Callable,
     Dict,
     Hashable,
+    ItemsView,
     Iterator,
     Mapping,
     Sequence,
@@ -176,7 +177,7 @@ class GenericDict(Mapping[KT, VT]):
         """
         return self.__data.values()
 
-    def items(self):
+    def items(self) -> ItemsView[KT, VT]:
         """
         :returns: A set-like object providing a view of the GenericDict object as (key, value) tuples.
         """

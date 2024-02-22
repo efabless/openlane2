@@ -26,7 +26,6 @@
   coreutils,
   graphviz,
   python3,
-  jupyter,
   mkShell,
 }: let
   openlane-env = (
@@ -56,9 +55,6 @@ in
         gtkwave
         coreutils
         graphviz
-
-        # Notebook
-        jupyter
       ]
       ++ extra-packages
       ++ openlane.includedTools

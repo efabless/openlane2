@@ -45,7 +45,7 @@ other design steps that are not mentioned here such as scan chain insertion and
 test patterns generations that are essential to testing the fabricated chip
 against fabrication defects.
 
-```{figure} ./asic-flow-diagram.png
+```{figure} ./asic-flow-diagram.webp
 :align: center
 
 ASIC Flow
@@ -53,7 +53,7 @@ ASIC Flow
 
 ## What is OpenLane?
 
-```{figure} ./flow.png
+```{figure} ./flow.webp
 :scale: 30 %
 :align: right
 
@@ -126,11 +126,11 @@ That's it. Everything is ready. Now, let's try OpenLane.
 
 We are going to use a simple design: a 32-bit parallel multiplier which performs a simple multiplication between MP and MC and outputs the product on a bus P. MP32 uses a serial-by-parallel multiplier, a serializer, a deserializer, and a control unit. The block diagram of the PM32 is shown in the next figure.
 
-```{figure} ./pm32.diagram.png
+```{figure} ./pm32.diagram.webp
 :scale: 60 %
 :align: center
 
-PM32 (32-bit parrallel mutliplier)
+PM32 (32-bit parallel mutliplier)
 ```
 
 The serial-by-parallel signed 32-bit multiplier `SPM` block inside the `PM32` performs a simple shift-add algorithm, where the parallel input
@@ -240,7 +240,7 @@ To open the final {term}`GDSII` layout run this command:
 
 This opens {term}`KLayout` and you should be able to see the following:
 
-```{figure} ./pm32-gds.png
+```{figure} ./pm32-gds.webp
 :align: center
 
 Final layout of pm32
@@ -405,7 +405,7 @@ OpenLane runs two DRC steps using `Magic` and `KLayout`: {step}`Magic.DRC` and
 Both the layout and what is known as a PDK's {term}`DRC deck` are processed by
 the tools running DRC, as shown in the diagram below:
 
-```{figure} ./OL-DRC.png
+```{figure} ./OL-DRC.webp
 :align: center
 :scale: 50 %
 
@@ -423,7 +423,7 @@ To view DRC errors graphically, you may open the layout as follows:
 
 Then in the menu bar select Tools ► Marker Browser. A new window should open.
 
-```{figure} ./klayout-markerbrowser.png
+```{figure} ./klayout-markerbrowser.webp
 :align: center
 
 Tools ► Marker Browser
@@ -438,7 +438,7 @@ The initial number in `53-klayout-drc` (`53`) may vary according to the
 flow's configuration.
 ```
 
-```{figure} ./klayout-markerbrowser-2.png
+```{figure} ./klayout-markerbrowser-2.webp
 :align: center
 
 Opening DRC xml file
@@ -463,7 +463,7 @@ Common LVS errors include but are not limited to:
 First, the layout is converted to {term}`SPICE netlist`. Next, the layout and
 the schematic are inputted to Netgen, as shown in the diagram below:
 
-```{figure} ./OL-LVS.png
+```{figure} ./OL-LVS.webp
 :scale: 50 %
 :align: center
 
@@ -508,7 +508,7 @@ have a timing violation (negative slack). STA makes sure that a circuit will
 correctly perform its function (but tells nothing about the correctness of
 that function.)
 
-```{figure} ./STA.png
+```{figure} ./STA.webp
 :align: center
 :scale: 50 %
 
@@ -640,14 +640,14 @@ that suffers from the antenna effect. Antenna diode cell has a reversed biased
 diode which can drain out the charge without affecting the transistor circuitry.
 
 
-```{figure} ./antenna-1-diagram.png
+```{figure} ./antenna-1-diagram.webp
 
 Antenna effect
 
 ```
 
 
-```{figure} ./antenna-2-diagram.png
+```{figure} ./antenna-2-diagram.webp
 
 Antenna diode insertion
 ```
@@ -727,7 +727,7 @@ p.*
 
 Since the configuration file `pin_order.cfg` has `#E` then `clk`, `rst`, `start`, then `done`, we will find those 4 pins on the east side of the macro. Similarly, we will find `mc` and `mp` buses on the south and `p` on the north of the macro.
 
-```{figure} ./custom-io-gds.png
+```{figure} ./custom-io-gds.webp
 :align: center
 
 Custom IO placed layout

@@ -46,11 +46,11 @@ Since we're updating OpenROAD, going to https://github.com/The-OpenROAD-Project/
 will give us a list of commits. The easiest way to get the commit hash in
 question is to just click on a commit…
 
-![Clicking on the commit value in a Git commit list](./commit_list.png)
+![Clicking on the commit value in a Git commit list](./commit_list.webp)
 
 …and then copy the hash from the URL:
 
-![Copying the hash from the URL](./commit.png)
+![Copying the hash from the URL](./commit.webp)
 
 2. Updating the version in the Nix derivation
 
