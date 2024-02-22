@@ -343,6 +343,11 @@ class STAPrePNR(STAStep):
             "Prioritize the use of Netlists + SPEF files over LIB files if available for Macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
             default=True,
         ),
+        Variable(
+            "STA_MAX_VIOLATOR_COUNT",
+            Optional[int],
+            "Maximum number of violators to list in violator_list.rpt",
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -1822,7 +1827,7 @@ class CTS(ResizerStep):
         if self.config.get("CLOCK_NET") is None:
             if clock_port := self.config["CLOCK_PORT"]:
                 if isinstance(clock_port, list):
-                    env["CLOCK_NET"] = " ".join(clock_port)
+                    env["CLOCK_NET"] = TclUtils.join(clock_port)
                 else:
                     env["CLOCK_NET"] = clock_port
             else:
