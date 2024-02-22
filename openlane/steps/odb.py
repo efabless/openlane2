@@ -106,15 +106,13 @@ class OdbpyStep(Step):
                 "openroad",
                 "-exit",
                 "-no_splash",
+                "-metrics",
+                str(metrics_path),
                 "-python",
                 self.get_script_path(),
             ]
             + self.get_subcommand()
             + lefs
-            + [
-                "--metrics",
-                str(metrics_path),
-            ]
         )
 
     @abstractmethod

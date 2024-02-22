@@ -86,8 +86,8 @@ def merge_components(reader, donor_def, input_lefs):
 cli.add_command(merge_components)
 
 
-def get_diea_area(def_file, input_lefs):
-    diea_area_dbu = (-1, -1, -1, -1)
+def get_die_area(def_file, input_lefs):
+    die_area_dbu = (-1, -1, -1, -1)
     db = odb.dbDatabase.create()
     for lef in input_lefs:
         odb.read_lef(db, lef)
@@ -95,14 +95,14 @@ def get_diea_area(def_file, input_lefs):
     die_area = db.getChip().getBlock().getDieArea()
     if die_area:
         dbu = db.getChip().getBlock().getDefUnits()
-        diea_area_dbu = (
+        die_area_dbu = (
             die_area.xMin() / dbu,
             die_area.yMin() / dbu,
             die_area.xMax() / dbu,
             die_area.yMax() / dbu,
         )
 
-    return diea_area_dbu
+    return die_area_dbu
 
 
 def move_diearea(target_db, input_lefs, template_def):
