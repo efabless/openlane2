@@ -15,7 +15,7 @@
 if { $::env(MAGIC_DRC_USE_GDS) } {
     gds read $::env(CURRENT_GDS)
 } else {
-	source $::env(SCRIPTS_DIR)/magic/common/read.tcl
+    source $::env(SCRIPTS_DIR)/magic/common/read.tcl
     read_tech_lef
     read_pdk_lef
     read_macro_lef
@@ -23,10 +23,8 @@ if { $::env(MAGIC_DRC_USE_GDS) } {
 }
 
 set report_dir $::env(STEP_DIR)/reports
-file mkdir $report_dir
-set drc_prefix $report_dir/drc
 
-set drc_rpt_path $drc_prefix.rpt
+set drc_rpt_path $report_dir/drc_violations.magic.rpt
 set fout [open $drc_rpt_path w]
 set oscale [cif scale out]
 set cell_name $::env(DESIGN_NAME)
@@ -45,18 +43,18 @@ set count 0
 puts $fout "$cell_name"
 puts $fout "----------------------------------------"
 foreach {errtype coordlist} $drcresult {
-	puts $fout $errtype
-	puts $fout "----------------------------------------"
-	foreach coord $coordlist {
-		set bllx [expr {$oscale * [lindex $coord 0]}]
-		set blly [expr {$oscale * [lindex $coord 1]}]
-		set burx [expr {$oscale * [lindex $coord 2]}]
-		set bury [expr {$oscale * [lindex $coord 3]}]
-		set coords [format " %.3fum %.3fum %.3fum %.3fum" $bllx $blly $burx $bury]
-		puts $fout "$coords"
-		set count [expr {$count + 1} ]
-	}
-	puts $fout "----------------------------------------"
+    puts $fout $errtype
+    puts $fout "----------------------------------------"
+    foreach coord $coordlist {
+        set bllx [expr {$oscale * [lindex $coord 0]}]
+        set blly [expr {$oscale * [lindex $coord 1]}]
+        set burx [expr {$oscale * [lindex $coord 2]}]
+        set bury [expr {$oscale * [lindex $coord 3]}]
+        set coords [format " %.3fum %.3fum %.3fum %.3fum" $bllx $blly $burx $bury]
+        puts $fout "$coords"
+        set count [expr {$count + 1} ]
+    }
+    puts $fout "----------------------------------------"
 }
 
 puts $fout "\[INFO\] COUNT: $count"

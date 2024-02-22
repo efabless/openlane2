@@ -22,7 +22,7 @@ from textwrap import dedent
 from functools import partial
 from typing import Sequence, Tuple, Type, Optional, List, Union
 
-from click import Parameter, pass_context
+from click import Parameter, pass_context, Path
 from cloup import (
     option,
     option_group,
@@ -67,6 +67,8 @@ def run(
     config_override_strings: List[str],
     _force_run_dir: Optional[str],
     design_dir: Optional[str],
+    view_save_path: Optional[str] = None,
+    ef_view_save_path: Optional[str] = None,
 ):
     try:
         if len(config_files) == 0:
@@ -132,7 +134,7 @@ def run(
         ctx.exit(1)
 
     try:
-        flow.start(
+        state_out = flow.start(
             tag=tag,
             last_run=last_run,
             frm=frm,
@@ -151,6 +153,11 @@ def run(
             err(f"The following error was encountered while running the flow: {e}")
         err("OpenLane will now quit.")
         ctx.exit(2)
+
+    if vsp := view_save_path:
+        state_out.save_snapshot(vsp)
+    if evsp := ef_view_save_path:
+        flow._save_snapshot_ef(evsp)
 
 
 def print_version(ctx: Context, param: Parameter, value: bool):
@@ -324,6 +331,23 @@ o = partial(option, show_default=True)
 @command(
     no_args_is_help=True,
     formatter_settings=formatter_settings,
+)
+@option_group(
+    "Copy final views",
+    o(
+        "--save-views-to",
+        "view_save_path",
+        type=Path(file_okay=False, dir_okay=True),
+        default=None,
+        help="A directory to copy the final views to, where each format is saved under a directory named after the corner ID (much like the 'final' directory after running a flow.)",
+    ),
+    o(
+        "--ef-save-views-to",
+        "ef_view_save_path",
+        type=Path(file_okay=False, dir_okay=True),
+        default=None,
+        help="A directory to copy the final views to in the Efabless format, compatible with Caravel User Project.",
+    ),
 )
 @option_group(
     "Containerization options",

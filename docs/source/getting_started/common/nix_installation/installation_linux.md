@@ -1,5 +1,13 @@
 # Ubuntu/Other Linux
 
+* **Minimum Requirements**
+    * Quad-core CPU running at 2.0 GHz+
+    * 8 GiB of RAM
+    
+* **Recommended Requirements**
+    * 6th Gen Intel® Core CPU or later OR AMD Ryzen™️ 1000-series or later
+    * 16 GiB of RAM
+
 We will primarily support Ubuntu 20.04+ for OpenLane.
 
 If you're looking to build a virtual machine, we recommend [Ubuntu 22.04](https://releases.ubuntu.com/jammy/).
@@ -10,7 +18,7 @@ You can install Nix by following the instructions at https://nixos.org/download.
 
 For example, on Ubuntu, run the following your terminal.
 
-```sh
+```console
 sudo apt-get install -y curl
 sh <(curl -L https://nixos.org/nix/install) --daemon --yes
 ```
