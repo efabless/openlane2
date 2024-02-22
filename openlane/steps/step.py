@@ -17,6 +17,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import psutil
 import shutil
 import textwrap
@@ -137,7 +138,11 @@ class ProcessStatsThread(Thread):
         self.process = process
         self.result = None
         self.interval = interval
-        self.time = {"cpu_time_user": 0.0, "cpu_time_system": 0.0}
+        self.time = {
+            "cpu_time_user": 0.0,
+            "cpu_time_system": 0.0,
+            "runtime": 0.0,
+        }
         if sys.platform == "linux":
             self.time["cpu_time_iowait"] = 0.0
 
@@ -158,6 +163,7 @@ class ProcessStatsThread(Thread):
         try:
             count = 1
             status = self.process.status()
+            now = datetime.datetime.now()
             while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
                 with self.process.oneshot():
                     cpu = self.process.cpu_percent()
@@ -165,6 +171,8 @@ class ProcessStatsThread(Thread):
                     cpu_time = self.process.cpu_times()
                     threads = self.process.num_threads()
 
+                    runtime = datetime.datetime.now() - now
+                    self.time["runtime"] = runtime.total_seconds()
                     self.time["cpu_time_user"] = cpu_time.user
                     self.time["cpu_time_system"] = cpu_time.system
                     if sys.platform == "linux":

@@ -329,6 +329,7 @@ class Classic(SequentialFlow):
         OpenROAD.GlobalPlacementSkipIO,
         OpenROAD.IOPlacement,
         Odb.CustomIOPlacement,
+        Odb.ApplyDEFTemplate,
         OpenROAD.GlobalPlacement,
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,

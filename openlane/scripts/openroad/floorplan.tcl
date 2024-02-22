@@ -55,7 +55,9 @@ if { [info exists ::env(EXTRA_SITES)] } {
     }
 }
 
-if {$::env(_FP_MODE) == "absolute"} {
+puts "\[INFO] Using $::env(FP_SIZING) sizing for the floorplan."
+
+if {$::env(FP_SIZING) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
         puts stderr "Invalid die area string '$::env(DIE_AREA)'."
         exit -1
@@ -82,7 +84,7 @@ if {$::env(_FP_MODE) == "absolute"} {
 
     lappend arg_list -die_area $::env(DIE_AREA)
     lappend arg_list -core_area $::env(CORE_AREA)
-} elseif { $::env(_FP_MODE) == "relative" } {
+} elseif { $::env(FP_SIZING) == "relative" } {
     lappend arg_list -utilization $::env(FP_CORE_UTIL)
     lappend arg_list -aspect_ratio $::env(FP_ASPECT_RATIO)
     lappend arg_list -core_space "$bottom_margin $top_margin $left_margin $right_margin"
@@ -98,11 +100,8 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
         puts "\[INFO] Created obstruction at $::env(FP_OBSTRUCTIONS) (µm)"
     }
 }
-if { $::env(_FP_MODE) == "template" } {
-    read_def -floorplan_initialize $::env(FP_DEF_TEMPLATE)
-} else {
-    initialize_floorplan {*}$arg_list
-}
+
+initialize_floorplan {*}$arg_list
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
