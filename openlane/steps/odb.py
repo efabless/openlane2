@@ -23,7 +23,6 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
-from deprecated.sphinx import deprecated
 
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
@@ -107,13 +106,15 @@ class OdbpyStep(Step):
                 "openroad",
                 "-exit",
                 "-no_splash",
-                "-metrics",
-                metrics_path,
                 "-python",
                 self.get_script_path(),
             ]
             + self.get_subcommand()
             + lefs
+            + [
+                "--metrics",
+                str(metrics_path),
+            ]
         )
 
     @abstractmethod
@@ -162,16 +163,25 @@ class ApplyDEFTemplate(OdbpyStep):
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
-    @deprecated(
-        version="2.0.0b17",
-        reason="Template def is now applied in OpenROAD.Floorplan.",
-        action="once",
-    )
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
             return {}, {}
-        return super().run(state_in, **kwargs)
+
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        design_area_string = self.state_in.result().metrics.get("design__die__bbox")
+        if design_area_string:
+            template_area_string = metrics_updates["design__die__bbox"]
+            template_area = [Decimal(point) for point in template_area_string.split()]
+            design_area = [Decimal(point) for point in design_area_string.split()]
+            if template_area != design_area:
+                warn(
+                    "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
+                )
+                warn(
+                    f"Design area: {design_area_string}. Template def area: {template_area_string}"
+                )
+        return views_updates, {}
 
 
 @Step.factory.register()
