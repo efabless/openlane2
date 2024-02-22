@@ -14,13 +14,18 @@ If you're looking to build a virtual machine, we recommend [Ubuntu 22.04](https:
 
 ## Installing Nix
 
-You can install Nix by following the instructions at https://nixos.org/download.html.
+You will need `curl` to install Nix.
 
-For example, on Ubuntu, run the following your terminal.
+To install curl on Ubuntu, simply type in the following in your terminal:
 
 ```console
-sudo apt-get install -y curl
-sh <(curl -L https://nixos.org/nix/install) --daemon --yes
+$ sudo apt-get install -y curl
+```
+
+After that, simply run this command:
+
+```console
+$ sh <(curl -L https://nixos.org/nix/install) --daemon --yes --nix-extra-conf-file <(echo "experimental-features = nix-command flakes\nextra-substituters = https://openlane.cachix.org\nextra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=\n")
 ```
 
 ```{tip}

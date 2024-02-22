@@ -1,12 +1,14 @@
-# Setting up the binary cache
+````{admonition} If you already have Nix set up…
+:class: note 
 
-```{tip}
-Make sure you've restarted your terminal. Seriously.
-```
+You will need to enable OpenLane's
+[Binary Cache](https://nixos.wiki/wiki/Binary_Cache) manually.
 
-Cachix allows the reproducible Nix builds to be stored on a cloud server so you
-do not have to build OpenLane's dependencies from scratch on every computer,
-which will take a long time.
+If you don't know what that means:
+
+We use a service called Cachix, which allows the reproducible Nix builds to be
+stored on a cloud server so you do not have to build OpenLane's dependencies
+from scratch on every computer, which will take a long time.
 
 First, you want to install Cachix by running the following in your terminal:
 
@@ -20,11 +22,28 @@ Then set up the OpenLane binary cache as follows:
 $ sudo env PATH="$PATH" cachix use openlane
 ```
 
-And restart Nix to add the update.
+…and restart the Nix daemon.
 
 ```console
 $ sudo pkill nix-daemon
 ```
+
+---
+
+If you *do* know what this means, the values are as follows:
+
+```conf
+extra-substituters = https://openlane.cachix.org
+extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+```
+
+Make sure to restart `nix-daemon` after updating `/etc/nix/nix.conf`.
+
+```console
+$ sudo pkill nix-daemon
+```
+
+````
 
 # Cloning OpenLane
 

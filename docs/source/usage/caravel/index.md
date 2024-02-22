@@ -1,18 +1,20 @@
-# AES as a macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/) using sky130
+# Tutorial: Implementing a Macro for [Caravel](https://caravel-harness.readthedocs.io/en/latest/)
 
 ```{admonition} Note
 :class: seealso
-If you do not have prior experience with openlane2, please make sure to go through the [newcomers](../newcomers/index.md) tutorial first.
+If you do not have prior experience with OpenLane, please make sure to go
+through the [Getting Started: Newcomers](../../getting_started/newcomers/index.md) tutorial first.
 ```
 
-AES stands for Advanced Encryption Standard which is a symmetric encryption algorithm widely used across the globe to secure data.
-It operates on blocks of data using keys of 128, 192, or 256 bits to encrypt and decrypt information,
-providing a high level of security and efficiency for electronic data protection.
-In this tutorial, we are going to harden an `AES` core
-and have it as a
+AES stands for Advanced Encryption Standard which is a symmetric encryption
+algorithm widely used across the globe to secure data. It operates on blocks of
+data using keys of 128, 192, or 256 bits to encrypt and decrypt information,
+providing a high level of security and efficiency for electronic data
+protection. In this tutorial, we are going to harden an `AES` core and have it
+as a
 [Caravel User Project](https://caravel-user-project.readthedocs.io/en/latest/)
-macro to serve as an accelerator for the chip [Caravel](https://caravel-harness.readthedocs.io/en/latest/).
-
+macro to serve as an accelerator for the chip
+[Caravel](https://caravel-harness.readthedocs.io/en/latest/).
 
 ```{admonition} About Caravel
 :class: seealso
@@ -23,32 +25,41 @@ functions supporting IO, power, and configuration as well as drop-in modules for
 a management SoC core, and an approximately 3000um x 3600um open project area
 for the placement of user IP blocks.
 
-Check [Caravel](https://caravel-harness.readthedocs.io/en/latest/) for more
-information.
+See [Caravel's documentation](https://caravel-harness.readthedocs.io/en/latest/)
+for more information.
 ```
+
 ## Creating your own project repository
 
-1. Start by creating a new repository from the Caravel user project OpenLane 2 [template](https://github.com/efabless/caravel_user_project_ol2/generate). Let's call it `caravel_aes_accelerator`
+1. Start by creating a new repository from the Caravel user project OpenLane 2
+   [template](https://github.com/efabless/caravel_user_project_ol2/generate).
+   Let's call it `caravel_aes_accelerator`.
 
-2. Open a terminal and clone your repository as follows:
+1. Open a terminal and clone your repository as follows:
 
    ```console
-   $ git clone git@github.com:/YOUR-GH/caravel_aes_accelerator.git ~/caravel_aes_accelerator
+   $ git clone git@github.com:<github_user_name>/caravel_aes_accelerator.git ~/caravel_aes_accelerator
    ```
 
----
+______________________________________________________________________
 
 ## RTL integration
 
-We begin by using the open-source RTLs for AES under `secworks` and adding wishbone wrapper for Caravel. Since the RTL from secworks provides a generic memory interface, we only need to add the `ack`, `write_enable`, and `read_enable` logic to the wishbone wrapper.
+We begin by using the open-source RTLs for AES by
+[Joachim Strömbergson](https://github.com/secworks) and adding a Wishbone bus
+wrapper for Caravel. Since the RTL from secworks provides a generic memory
+interface, we only need to add the `ack`, `write_enable`, and `read_enable`
+logic to the Wishbone wrapper.
 
-1. Clone the `aes` repository under `secworks`
+1. Clone the `secworks/aes` Git repository
 
    ```console
    $ git clone git@github.com:secworks/aes.git ~/secworks_aes
    ```
 
-2. Create the verilog file `~/caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v` and add the wishbone wrapper to the RTL:
+1. Create the Verilog file
+   `~/caravel_aes_accelerator/verilog/rtl/aes_wb_wrapper.v` and add the Wishbone
+   wrapper to the RTL:
 
    ````{dropdown} aes_wb_wrapper.v
 
@@ -57,7 +68,9 @@ We begin by using the open-source RTLs for AES under `secworks` and adding wishb
    ```
 
    ````
-3. Instantiate the `aes_wb_wrapper` in the `user_project_wrapper` verilog file under `~/caravel_aes_accelerator/verilog/rtl/`
+
+1. Instantiate the `aes_wb_wrapper` in the `user_project_wrapper` Verilog file
+   under `~/caravel_aes_accelerator/verilog/rtl`
 
    ````{dropdown} user_project_wrapper.v
 
@@ -75,30 +88,48 @@ for information about the changes that were done to the RTL.
 
 (configuration-user-project-wrapper)=
 
----
+______________________________________________________________________
 
 ## Hardening strategies
 
-There are 3 options for implementing a Caravel user project using OpenLane. These include:
-1. `Macro-First Hardening`: Harden the user macro(s) initially and incorporate them into the user project wrapper without top-level standard cells. Ideal for smaller designs, this approach significantly reduces Placement and Routing (PnR) and signoff time.
-2. `Full-Wrapper Flattening`: Merge the user macro(s) with the user_project_wrapper, covering the entire wrapper area. While this method demands more time and iterations for PnR and signoff, it ultimately enhances performance, making it suitable for designs requiring the full wrapper area.
-3. `Top-Level Integration`: Place the user macro(s) within the wrapper alongside standard cells at the top level. This method is typically chosen to introduce buffering at the top-level, fitting scenarios where such an approach is necessary.
+There are 3 options for implementing a Caravel User Project design using
+OpenLane:
+
+1. `Macro-First Hardening`: Harden the user macro(s) initially and incorporate
+   them into the user project wrapper without top-level standard cells. Ideal
+   for smaller designs, as this approach significantly reduces Placement and
+   Routing (PnR) and signoff time.
+1. `Full-Wrapper Flattening`: Merge the user macro(s) with the
+   user_project_wrapper, covering the entire wrapper area. While this method
+   demands more time and iterations for PnR and signoff, it ultimately enhances
+   performance, making it suitable for designs requiring the full wrapper area.
+1. `Top-Level Integration`: Place the user macro(s) within the wrapper alongside
+   standard cells at the top level. This method is typically chosen to introduce
+   buffering at the top-level, fitting scenarios where such an approach is
+   necessary.
 
 ```{seealso}
-Check out
+See the
 [Caravel Integration & Power Routing document](https://docs.google.com/document/d/1pf-wbpgjeNEM-1TcvX2OJTkHjqH_C9p-LURCASS0Zo8)
 for more information about these options.
 ```
 
-
----
+______________________________________________________________________
 
 ## 1. Macro-First Hardening strategy
 
-We will start by the first hardening option. So, we are going to harden the `aes` core with the wishbone wrapper as a macro first. Then harden the user project wrapper that will be integrated in Caravel.
+We will start with the first hardening option. That entails:
 
----
+1. Hardening the `aes` core with the Wishbone wrapper as a macro
+1. Hardening the `user_project_wrapper` with the `aes` macro hardened in the
+   previous step
+
+…the latter of which will be integrated into the Caravel harness.
+
+______________________________________________________________________
+
 ### AES Wishbone Wrapper Hardening
+
 #### Configuration
 
 1. Create a design directory to add our source files to:
@@ -106,7 +137,10 @@ We will start by the first hardening option. So, we are going to harden the `aes
    ```console
    $ mkdir -p ~/caravel_aes_accelerator/openlane/aes_wb_wrapper
    ```
-2. Create the file `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json` and add the following simple configuration to it
+
+1. Create the file
+   `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json` and add the
+   following simple configuration to it
 
 ```json
 {
@@ -127,17 +161,32 @@ We will start by the first hardening option. So, we are going to harden the `aes
     "FP_CORE_UTIL": 40
 }
 ```
-This is a basic configuration file which has only, design name, clock port, clock period of 25 ns, verilog files, and a core utilization of 40%. Typical values for the core utilization range from 25% to 60%.
 
+This is a basic configuration file which has only these variables:
 
----
+* {var}`::DESIGN_NAME`: the name of the design, which is equal to the name of
+  the top module in Verilog.
+* {var}`::CLOCK_PORT`: the name of the clock port in said top module.
+* {var}`::CLOCK_PERIOD`: the period of the primary clock port in nanoseconds,
+  used to determine the chip frequency. Generally, the lowest you can get away
+  with is the best.
+  {math}`\text{f} = 1 / (\texttt{CLOCK_PERIOD}ns) = 1 / (25\text{ns}) = 25 \text{MHz}`
+* {var}`Yosys.Synthesis::VERILOG_FILES`: List of input Verilog files.
+* {var}`OpenROAD.Floorplan::FP_CORE_UTIL`: The core utilization. Typical values
+  for the core utilization range from 25% to 60%. 40% is a good starting value-
+  we can adjust it later if we need to (i.e. one of the tools complain.)
+* {var}`OpenROAD.GeneratePDN::FP_PDN_MULTILAYER`: We set this to `false` as we
+  are hardening a chip for integration into Caravel. You may review
+  {doc}`/usage/pdn` for more information on this.
+
+______________________________________________________________________
 
 #### Running the flow
 
 Let's try running the flow from OpenLane:
 
 ```console
-[nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
+[nix-shell:~]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
 ```
 
 ````{tip}
@@ -145,7 +194,7 @@ Double-checking: are you inside a `nix-shell`? Your terminal prompt
 should look like this:
 
 ```console
-[nix-shell:~/openlane2]$
+[nix-shell:~]$
 ```
 
 If not, enter the following command in your terminal:
@@ -154,13 +203,15 @@ If not, enter the following command in your terminal:
 $ nix-shell --pure ~/openlane2/shell.nix
 ```
 ````
-The flow will finish successfully in ~20 minutes and we will see:
+
+The flow will finish successfully in ~20 minutes (depending on the speed of your
+computer) and we will see:
+
 ```console
 Flow complete.
 ```
 
-
----
+______________________________________________________________________
 
 #### Viewing the layout
 
@@ -180,74 +231,111 @@ Final layout of aes_wb_wrapper
 
 ```{tip}
 You can control the visible layers in KLayout by double-clicking on the
-layers you want to hide/unhide. In this figure, the layers `areaid.lowTapDensity` and `areaud.standardc` were hidden to view the layout more clearly.
- 
+layers you want to hide/unhide. In this figure, the layers `areaid.lowTapDensity`
+and `areaud.standardc` were hidden to view the layout more clearly.
 ```
 
-
----
+______________________________________________________________________
 
 #### Checking the reports
 
-You’ll find that a run directory (named something like `runs/RUN_2024-02-05_16-46-01`) was created when you ran OpenLane. Under this folder, the logs, reports, and physical views will be located. It is always a good idea to review all logs and reports for all the steps in your run. However, in this guide, we will only review the main signoff reports in:
-- [openroad-checkantennas](openroad-checkantennas)
-- [openroad-stapostpnr](openroad-stapostpnr)
-- [magic-drc](magic-drc)
-- [klayout-drc](klayout-drc)
-- [netgen-lvs](netgen-lvs)
+You’ll find that a run directory (named something like
+`runs/RUN_2024-02-05_16-46-01`) was created when you ran OpenLane. Under this
+folder, the logs, reports, and physical views will be located. It is always a
+good idea to review all logs and reports for all the steps in your run. However,
+in this guide, we will only review the main signoff reports from a couple of
+steps.
 
+______________________________________________________________________
 
----
+```{tip}
+The names of step directories are constructed as follows:
 
-##### openroad-checkantennas
+`{ordinal}-{step_id_slugified}`
 
-There are 2 `openroad-checkantennas` steps. One after `openroad-globalrouting` and the other after `openroad-detailedrouting`. The one we're interested in the one after `openroad-detailedrouting` as this is the final antenna check.
-```{seealso}
-For more information about antenna violations, check [this](../newcomers/index.md#antenna-check)
+…where `ordinal` is a counter showing in what order a step was run, and
+`step_id_slugified` is, broadly, the step's ID converted to lowercase and 
+dots replaced with dashes.
 ```
-Inside the step directory of `openroad-checkantennas` there is a reports directory which contains two files on has the full antenna check report from OpenROAD and a summary table of antenna violations:
+
+##### `OpenROAD.CheckAntennas`
+
+There are 2 {step}`OpenROAD.CheckAntennas` steps. One after
+{step}`OpenROAD.GlobalRouting` and the other after
+{step}`OpenROAD.DetailedRouting`. The one we're interested in the one after
+{step}`OpenROAD.DetailedRouting` as this is the final antenna check.
+
+```{seealso}
+For more information about antenna violations, check
+[this section again in the newcomers' guide](../../getting_started/newcomers/index.md#antenna-check).
+```
+
+Inside the step directory of {step}`OpenROAD.CheckAntennas` there is a reports
+directory which contains two files; one of which has the full antenna check
+report from OpenROAD and another with a summary table of antenna violations:
+
 ```
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
-┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                     ┃ Pin          ┃ Layer ┃
+┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                  ┃ Pin         ┃ Layer ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━┩
-│ 8.43                │ 400.00   │ 3373.21 │ net337                                  │ _19592_/A1  │ met3  │
-│ 4.06                │ 400.00   │ 1624.33 │ _06003_                                 │ _20370_/A_N │ met1  │
-│ 3.84                │ 400.00   │ 1534.48 │ net40                                   │ _19524_/A0  │ met3  │
-│ 3.68                │ 400.00   │ 1471.09 │ _09365_                                 │ wire82/A     │ met3  │
-│ 3.51                │ 400.00   │ 1402.54 │ aes.core.dec_block.block_w0_reg[12\] │ _35456_/A0  │ met3  │
-│ 3.33                │ 400.00   │ 1330.55 │ _13932_                                 │ _34198_/A   │ met3  │
-│ 3.33                │ 400.00   │ 1330.55 │ _13932_                                 │ _34199_/A1  │ met3  │
+│ 8.43             │ 400.00   │ 3373.21 │ net337                               │ _19592_/A1  │ met3  │
+│ 4.06             │ 400.00   │ 1624.33 │ _06003_                              │ _20370_/A_N │ met1  │
+│ 3.84             │ 400.00   │ 1534.48 │ net40                                │ _19524_/A0  │ met3  │
+│ 3.68             │ 400.00   │ 1471.09 │ _09365_                              │ wire82/A    │ met3  │
+│ 3.51             │ 400.00   │ 1402.54 │ aes.core.dec_block.block_w0_reg[12\] │ _35456_/A0  │ met3  │
+│ 3.33             │ 400.00   │ 1330.55 │ _13932_                              │ _34198_/A   │ met3  │
+│ 3.33             │ 400.00   │ 1330.55 │ _13932_                              │ _34199_/A1  │ met3  │
 ⋮
 ```
-As seen in the report, there are around 110 antenna violations some of which have high ratios up to `8`. It is recommended to fix all antenna violations with ratios higher than `3` and the higher the ratio (Partial/Required) the more severely it might affect the chip. In order to fix those antenna violations, one or more of the following solutions can be applied:
 
-1. Increase the number of iterations for antenna repair using {var}`openroad.repairantennas::GRT_ANTENNA_ITERS`. The default value is `3`. We can increase it to `10` by adding this to our `config.json` file.
+As seen in the report, there are around 110 antenna violations some of which
+have high ratios up to 8. It is recommended to fix all antenna violations with
+ratios higher than 3 and the higher the ratio `Partial/Required` the more
+severely it might affect the chip. In order to fix those antenna violations, one
+or more of the following solutions can be applied:
+
+1. Increase the number of iterations for antenna repair using
+   {var}`openroad.repairantennas::GRT_ANTENNA_ITERS`. The default value is `3`.
+   We can increase it to `10` by adding this to our `config.json` file.
+
 ```json
     "GRT_ANTENNA_ITERS": 10,
 ```
-2. Increase the margin for antenna repair using {var}`openroad.repairantennas::GRT_ANTENNA_MARGIN`. The default value is `10`. We can increase it to `15`.
+
+2. Increase the margin for antenna repair using
+   {var}`openroad.repairantennas::GRT_ANTENNA_MARGIN`. The default value is
+   `10`. We can increase it to `15`.
+
 ```json
     "GRT_ANTENNA_MARGIN": 15,
 ```
-3. Enable heuristic diode insertion using {var}`Classic::RUN_HEURISTIC_DIODE_INSERTION`:
+
+3. Enable heuristic diode insertion using
+   {var}`Classic::RUN_HEURISTIC_DIODE_INSERTION`:
+
 ```json
     "RUN_HEURISTIC_DIODE_INSERTION": true,
 ```
-4. Constrain the max wire length (value is in microns) using {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_WIRE_LENGTH`.
+
+4. Constrain the max wire length (in µm) using
+   {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_WIRE_LENGTH`.
+
 ```json
     "DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
 ```
-5. Optimize the global placement for minimum wirelength using {var}`OpenROAD.GlobalPlacement::PL_WIRE_LENGTH_COEF`.
+
+5. Optimize the global placement for minimum wirelength using
+   {var}`OpenROAD.GlobalPlacement::PL_WIRE_LENGTH_COEF`.
+
 ```json
     "PL_WIRE_LENGTH_COEF": 0.05,
 ```
 
+______________________________________________________________________
 
----
+##### `OpenROAD.STAPostPNR`
 
-##### openroad-stapostpnr
-
-Under `openroad-stapostpnr` there is a `summary.rpt`:
+Under `xx-openroad-stapostpnr` there should be a file called `summary.rpt`:
 
 ```text
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
@@ -266,10 +354,14 @@ Under `openroad-stapostpnr` there is a `summary.rpt`:
 │ max_ff_n40C… │ 0.1073       │ 0.1073       │ 0.0000   │ 0            │ 0            │ 13.4347      │ 19.1522      │ 0.0000    │ 0           │ 0            │ 239         │ 36           │
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴──────────────┴──────────────┴───────────┴─────────────┴──────────────┴─────────────┴──────────────┘
 ```
-As seen in the report, there are no hold nor setup violations. There are only Max Cap and Max Slew violations.
-To see the violations:
-1. Open the report `checks` under `openroad-stapostpnr/max_ss_100C_1v60` since this corner has the highest number of Max Cap and Max Slew violations.
-2. Search for `max slew` and you will find the violations listed as follows:
+
+As seen in the report, there are no hold nor setup violations. There are only
+Max Cap and Max Slew violations. To see the violations:
+
+1. Open the report `checks` under `xx-openroad-stapostpnr/max_ss_100C_1v60`
+   since this corner has the highest number of Max Cap and Max Slew violations.
+1. Search for `max slew` and you will find the violations listed as follows:
+
 ```text
 Pin                                        Limit        Slew       Slack
 ------------------------------------------------------------------------
@@ -285,36 +377,58 @@ _21294_/Y                               0.750000    1.773215   -1.023215 (VIOLAT
 wire91/A                                0.750000    1.683392   -0.933392 (VIOLATED)
 ⋮
 ```
-In order to fix the maximum slew/cap violations, one or more of the following solutions can be applied:
-1. Relax the {var}`::MAX_TRANSITION_CONSTRAINT` to 1.5ns as this is the constraint in the sky130 lib files
+
+In order to fix the maximum slew/cap violations, **one or more** of the
+following solutions can be applied:
+
+1. Relax the {var}`::MAX_TRANSITION_CONSTRAINT` to 1.5ns as this is the
+   constraint in the sky130 lib files
+
 ```json
     "MAX_TRANSITION_CONSTRAINT": 1.5,
 ```
-2. Increase the slew/cap repair margins using {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_SLEW_PCT` and {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_CAP_PCT`. The default value is 20%. We can increase it to 30%:
+
+2. Increase the slew/cap repair margins using
+   {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_SLEW_PCT` and
+   {var}`OpenROAD.RepairDesign::DESIGN_REPAIR_MAX_CAP_PCT`. The default value is
+   20%. We can increase it to 30%:
+
 ```json
     "DESIGN_REPAIR_MAX_SLEW_PCT": 30,
     "DESIGN_REPAIR_MAX_CAP_PCT": 30,
 ```
-3. Change the default timing corner using {var}`::DEFAULT_CORNER` for the corner with the most violations which will be `max_ss_100C_1v60` in our case:
+
+3. Change the default timing corner using {var}`::DEFAULT_CORNER` for the corner
+   with the most violations which will be `max_ss_100C_1v60` in our case:
+
 ```json
     "DEFAULT_CORNER": "max_ss_100C_1v60",
 ```
-4. Enable post global routing design optimizations using {var}`Classic::RUN_POST_GRT_DESIGN_REPAIR`:
+
+4. Enable post global routing design optimizations using
+   {var}`Classic::RUN_POST_GRT_DESIGN_REPAIR`:
+
 ```json
     "RUN_POST_GRT_DESIGN_REPAIR": true,
 ```
-5. Most importantly, it is recommended to use a specific constraint file to your design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
+
+5. Most importantly, it is recommended to use design-specific {term}`SDC` files
+   for your design using the {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and
+   {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE` variables.
+
 ```json
     "PNR_SDC_FILE": "dir::cons.sdc",
     "SIGNOFF_SDC_FILE": "dir::cons.sdc",
 ```
 
+______________________________________________________________________
 
----
+##### `Magic.DRC`
 
-##### magic-drc
+Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+that summarizes the DRC violations reported by Magic. The design is DRC clean so
+the report will look like this:
 
-Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
 ```text
 aes_wb_wrapper
 ----------------------------------------
@@ -324,12 +438,15 @@ aes_wb_wrapper
 
 ```
 
+______________________________________________________________________
 
----
+##### `KLayout.DRC`
 
-##### klayout-drc
+Under the directory `xx-klayout-drc` you will find a file named
+`violations.json` that summarizes the DRC violations reported by KLayout. The
+design is DRC clean so the report will look like this with `"total": 0` at the
+end:
 
-Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
 ```text
 {
   ⋮
@@ -338,11 +455,14 @@ Under the step `magic-drc` there is `violations.json` that summarizes the DRC vi
 
 ```
 
----
+______________________________________________________________________
 
-##### netgen-lvs
+##### `Netgen.LVS`
 
-Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+summarizes the LVS violations reported by netgen. The design is LVS clean so the
+last part of the report will look like this:
+
 ```text
 Cell pin lists are equivalent.
 Device classes aes_wb_wrapper and aes_wb_wrapper are equivalent.
@@ -351,11 +471,13 @@ Final result: Circuits match uniquely.
 
 ```
 
----
+______________________________________________________________________
 
 #### Re-running the flow with a modified configuration
 
-To fix the previous issues in the implementation, the following was added to the config file:
+To fix the previous issues in the implementation, the following was added to the
+config file:
+
 ```json
     "GRT_ANTENNA_ITERS": 10,
     "RUN_HEURISTIC_DIODE_INSERTION": true,
@@ -366,7 +488,10 @@ To fix the previous issues in the implementation, the following was added to the
     "PNR_SDC_FILE": "dir::pnr.sdc",
     "SIGNOFF_SDC_FILE": "dir::signoff.sdc"
 ```
-and the following 2 constraints files `pnr.sdc` and `signoff.sdc` were created at `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/`:
+
+…and the following 2 constraints files `pnr.sdc` and `signoff.sdc` were created
+at `~/caravel_aes_accelerator/openlane/aes_wb_wrapper/`:
+
 ````{dropdown} pnr.sdc
 ```tcl
 #------------------------------------------#
@@ -460,6 +585,7 @@ set_output_delay -min 1.27 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
 set_load 0.19 [all_outputs]
 ```
 ````
+
 ````{dropdown} signoff.sdc
 ```tcl
 #------------------------------------------#
@@ -554,9 +680,24 @@ set_output_delay -min 1.37 -clock [get_clocks {clk}] [get_ports {wbs_ack_o}]
 set_load 0.19 [all_outputs]
 ```
 ````
-The `Design Constraints` part has to do with the design itself. The `Retrieved Constraints` part retrieved from the Caravel chip boundary constraints with the `user_project_wrapper`. These constraints can be found [here](https://github.com/efabless/caravel_user_project_ol2/blob/a9dd629af92482842ddcaba8d95c298b41c1895b/openlane/user_project_wrapper/base_user_project_wrapper.sdc#L64). The PnR constraints file has more aggressive constraints than the signoff one, this is done to accommodate the gap between the optimization tool estimation of parasitics and the final extractions on the layout.
+
+The `Design Constraints` part has to do with the design itself. The
+`Retrieved Constraints` part retrieved from the Caravel chip boundary
+constraints with the `user_project_wrapper`. These constraints can be found
+[here](https://github.com/efabless/caravel_user_project_ol2/blob/a9dd629af92482842ddcaba8d95c298b41c1895b/openlane/user_project_wrapper/base_user_project_wrapper.sdc#L64).
+The PnR constraints file has more aggressive constraints than the signoff one,
+this is done to accommodate the gap between the optimization tool estimation of
+parasitics and the final extractions on the layout.
+
+```{seealso}
+For the most comprehensive guide available on making SDC files, we recommend this
+excellent book by Sridhar Gangadharan and Sanjay Churiwala:
+
+[Constraining Designs for Synthesis and Timing Analysis: A Practical Guide to Synopsys Design Constraints (SDC)](https://link.springer.com/book/10.1007/978-1-4614-3269-2)
+```
 
 So, the final `config.json` is as follows:
+
 ```json
 {
     "DESIGN_NAME": "aes_wb_wrapper",
@@ -591,10 +732,22 @@ Now let's try re-running the flow:
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
 ```
 
----
+______________________________________________________________________
 
 #### Re-checking the reports
-Now, the antenna report under `openroad-checkantennas-1/reports/antenna_summary.rpt` has much less violations:
+
+Now, the antenna report under
+`xx-openroad-checkantennas-1/reports/antenna_summary.rpt` has much less
+violations:
+
+```{note}
+The number of antenna violations may vary wildly depending on the configuration
+variables AND environment variables (such as the operating system) as the
+detailed router is highly heuristic.
+
+On macOS, around a dozen violations are returned.
+```
+
 ```text
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net     ┃ Pin        ┃ Layer ┃
@@ -604,7 +757,8 @@ Now, the antenna report under `openroad-checkantennas-1/reports/antenna_summary.
 └──────────────────┴──────────┴─────────┴─────────┴────────────┴───────┘
 ```
 
-Also, the STA report `openroad-stapostpnr/summary.rpt` has no issues:
+Also, the STA report at `xx-openroad-stapostpnr/summary.rpt` should have no
+issues:
 
 ```text
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
@@ -624,26 +778,40 @@ Also, the STA report `openroad-stapostpnr/summary.rpt` has no issues:
 │ max_ff_n… │ 0.1656    │ 0.1656    │ 0.0000   │ 0         │ 0         │ 11.1023   │ 19.0289   │ 0.0000    │ 0         │ 0         │ 0         │ 0        │
 └───────────┴───────────┴───────────┴──────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴──────────┘
 ```
----
+
+______________________________________________________________________
+
 #### Saving the views
-To save the views, run the following script with the following arguments in order:
+
+To save the views, run the following script with the following arguments in
+order:
+
 1. The directory of the project
-2. The macro name
-3. The successful run tag
+1. The macro name
+1. The successful run tag
 
 ```console
 [nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator aes_wb_wrapper RUN_TAG
 ```
-This will copy the physical views of the macro in the specified run to your project folder.
 
----
+This will copy the physical views of the macro in the specified run to your
+project folder.
+
+______________________________________________________________________
+
 ### User Project Wrapper Hardening
+
 #### Configuration
-The User Project Wrapper is a macro inside the Caravel chip which will include our design. To be able to use
-any design as a Caravel User Project, it has to match the footprint
-that Caravel is expecting. Also, the top-level design Caravel is expecting any Caravel User Project
-to have the IO pins at specific locations and with specific dimensions. So, we need a fixed floorplan, fixed IOs pin shapes
-and locations, and fixed power rings. The fixed configuration section can be found at the end of the configurations file `openlane/user_project_wrapper/config.json`:
+
+The User Project Wrapper is a macro inside the Caravel chip which will include
+our design. To be able to use any design as a Caravel User Project, it has to
+match the footprint that Caravel is expecting. Also, the top-level design
+Caravel is expecting any Caravel User Project to have the IO pins at specific
+locations and with specific dimensions. So, we need a fixed floorplan, fixed IOs
+pin shapes and locations, and fixed power rings. The fixed configuration section
+can be found at the end of the configurations file
+`openlane/user_project_wrapper/config.json`:
+
 ```json
     "//": "Fixed configurations for Caravel. You should NOT edit this section",
     "DESIGN_NAME": "user_project_wrapper",
@@ -675,8 +843,16 @@ and locations, and fixed power rings. The fixed configuration section can be fou
     "CLOCK_PERIOD": 25,
     "MAGIC_ZEROIZE_ORIGIN": 0
 ```
-The rest of the configuration file can be edited. Now, We need the following edits for the `openlane/user_project_wrapper/config.json` in order to integrate our macro inside the `user_project_wrapper`:
-1. Replace the `user_proj_example` in the `MACROS` variable with our macro. First, we change the physical views to `aes_wb_wrapper`. Second, we can modify the macro location to `[1500, 1500]` to be in the middle of the chip. The new macro variable will be:
+
+The rest of the configuration file can be edited. Now, We need the following
+edits for the `openlane/user_project_wrapper/config.json` in order to integrate
+our macro inside the `user_project_wrapper`:
+
+1. Replace the `user_proj_example` in the `MACROS` variable with our macro.
+   First, we change the physical views to `aes_wb_wrapper`. Second, we can
+   modify the macro location to `[1500, 1500]` to be in the middle of the chip.
+   The new macro variable will be:
+
 ```json
     "MACROS": {
         "aes_wb_wrapper": {
@@ -712,24 +888,30 @@ The rest of the configuration file can be edited. Now, We need the following edi
         }
     },
 ```
-2. Update the power pins in {var}`OpenROAD.GeneratePDN::PDN_MACRO_CONNECTIONS` to the macro power pins
+
+2. Update the power pins in {var}`OpenROAD.GeneratePDN::PDN_MACRO_CONNECTIONS`
+   to the macro power pins
+
 ```json
     "PDN_MACRO_CONNECTIONS": ["mprj vccd2 vssd2 VPWR VGND"],
 ```
+
 ```{admonition} Note
 :class: seealso
 If we have multiple macros, we can add more entries to the variable `MACROS`.
 ```
 
----
+______________________________________________________________________
+
 #### Running the flow
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
 ````{tip}
-Double-checking: are you inside a `nix-shell`? Your terminal prompt
-should look like this:
+Double-checking: are you inside a `nix-shell`? Your terminal prompt should look
+like this:
 
 ```console
 [nix-shell:~/openlane2]$
@@ -741,12 +923,14 @@ If not, enter the following command in your terminal:
 $ nix-shell --pure ~/openlane2/shell.nix
 ```
 ````
+
 The flow will finish successfully in ~7 minutes and we will see:
+
 ```console
 Flow complete.
 ```
 
----
+______________________________________________________________________
 
 #### Viewing the layout
 
@@ -769,21 +953,29 @@ You can control the visible layers in KLayout by double-clicking on the
 layers you want to hide/unhide. In this figure, the layers`areaid.lowTapDensity`, `areaid.diode` and `areaud.standardc` were hidden to view the layout more clearly.
  
 ```
-As seen in the layout, we have our aes macro placed around the middle and if we only show the layers: `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`. We will see long and unnecessary routes because of 2 things:
-1. The AES macro is placed very far from its connections. It should be placed at the bottom left corner.
-2. The pins of the AES macro should be on the south only.
+
+As seen in the layout, we have our aes macro placed around the middle and if we
+only show the layers: `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and
+`met3.drawing`. We will see long and unnecessary routes because of 2 things:
+
+1. The AES macro is placed very far from its connections. It should be placed at
+   the bottom left corner.
+1. The pins of the AES macro should be on the south only.
+
 ```{figure} ./mprj-gds-2.webp
 :align: center
 
 Long routes in the user_project_wrapper
 ```
 
----
+______________________________________________________________________
 
 #### Checking the reports
-##### openroad-checkantennas
 
-There are no antenna violations
+##### `OpenROAD.CheckAntennas`
+
+There should be no antenna violations.
+
 ```txt
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net ┃ Pin ┃ Layer ┃
@@ -791,10 +983,15 @@ There are no antenna violations
 └──────────────────┴──────────┴─────────┴─────┴─────┴───────┘
 ```
 
----
+______________________________________________________________________
 
-##### openroad-stapostpnr
-Looking at `openroad-stapostpnr/summary.rpt` and the `Max Slew` section in `openroad-stapostpnr/max_ss_100C_1v60/checks.rpt`, there are max transition violations. If we look at the nets with violations, we will find that those are the long nets we saw in the GDS.
+##### `OpenROAD.STAPostPNR`
+
+Looking at `xx-openroad-stapostpnr/summary.rpt` and the `Max Slew` section in
+`xx-openroad-stapostpnr/max_ss_100C_1v60/checks.rpt`, there are max transition
+violations. If we look at the nets with violations, we will find that those are
+the long nets we saw in the GDS.
+
 ```txt
 ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
 ┃                ┃ Hold Worst     ┃ Reg to Reg     ┃          ┃ Hold           ┃ of which Reg   ┃ Setup Worst    ┃ Reg to Reg     ┃           ┃ Setup          ┃ of which Reg   ┃ Max Cap       ┃ Max Slew       ┃
@@ -830,11 +1027,14 @@ wbs_dat_o[31]                           1.500000    3.301759   -1.801759 (VIOLAT
 wbs_dat_o[17]                           1.500000    2.757454   -1.257454 (VIOLATED)
 ```
 
----
+______________________________________________________________________
 
-##### magic-drc
+##### `Magic.DRC`
 
-Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
+Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+that summarizes the DRC violations reported by magic. The design is DRC clean so
+the report will look like this:
+
 ```text
 aes_wb_wrapper
 ----------------------------------------
@@ -844,12 +1044,15 @@ aes_wb_wrapper
 
 ```
 
+______________________________________________________________________
 
----
+##### `KLayout.DRC`
 
-##### klayout-drc
+Under the directory `xx-klayout-drc` you will find a file named
+`violations.json` file that summarizes the DRC violations reported by KLayout.
+The design is DRC clean so the report will look like this with `"total": 0` at
+the end:
 
-Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
 ```text
 {
   ⋮
@@ -858,11 +1061,14 @@ Under the step `magic-drc` there is `violations.json` that summarizes the DRC vi
 
 ```
 
----
+______________________________________________________________________
 
-##### netgen-lvs
+##### `Netgen.LVS`
 
-Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+summarizes the LVS violations reported by netgen. The design is LVS clean so the
+last part of the report will look like this:
+
 ```text
 Cell pin lists are equivalent.
 Device classes user_project_wrapper and user_project_wrapper are equivalent.
@@ -871,13 +1077,16 @@ Final result: Circuits match uniquely.
 
 ```
 
----
-
+______________________________________________________________________
 
 #### Re-running the flow with a modified configuration
 
-To fix the long routes issue that cause maximum transition violations, 3 things should be done:
-1. Create the pin order configuration file for `aes_wb_wrapper` in `openlane/aes_wb_wrapper/pin_order.cfg`:
+To fix the long routes issue that cause maximum transition violations, 3 things
+should be done:
+
+1. Create the pin order configuration file for `aes_wb_wrapper` in
+   `openlane/aes_wb_wrapper/pin_order.cfg`:
+
 ````{dropdown} pin_order.cfg
 ```txt
 #S
@@ -885,7 +1094,10 @@ wb_.*
 wbs_.*
 ```
 ````
-2. Add the `Odb.CustomIOPlacement::FP_PIN_ORDER_CFG` variable to `openlane/aes_wb_wrapper/config.json`
+
+2. Add the `Odb.CustomIOPlacement::FP_PIN_ORDER_CFG` variable to
+   `openlane/aes_wb_wrapper/config.json`
+
 ````{dropdown} config.json
 ```json
 {
@@ -916,7 +1128,9 @@ wbs_.*
 }
 ```
 ````
-3. Update the location of the macro in the `openlane/user_project_wrapper/config.json` to `[10, 20]`
+
+3. Update the location of the macro in the
+   `openlane/user_project_wrapper/config.json` to `[10, 20]`
 
 ````{dropdown} config.json
 ```json
@@ -989,8 +1203,7 @@ wbs_.*
 
     "//": "Magic variables",
     "MAGIC_DRC_USE_GDS": true,
-
-    "DRT_THREADS": 1,
+    
     "MAX_TRANSITION_CONSTRAINT": 1.5,
 
     "//": "Fixed configurations for Caravel. You should NOT edit this section",
@@ -1031,16 +1244,21 @@ Now let's re-run the flow for the `aes_wb_wrapper`:
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/aes_wb_wrapper/config.json
 ```
-Then, after checking the `aes_wb_wrapper` reports, save the physical views using:
+
+Then, after checking the `aes_wb_wrapper` reports, save the physical views
+using:
+
 ```console
 [nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator aes_wb_wrapper RUN_TAG
 ```
+
 Then rerun the `user_project_wrapper`
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
----
+______________________________________________________________________
 
 #### Re-checking the layout
 
@@ -1057,7 +1275,11 @@ Now our macro is placed at the bottom left corner close to the wishbone pins.
 
 Final layout of the user_project_wrapper
 ```
-And if we zoom to the AES macro and view only `prBoundary.boundary`, `met1.drawing`, `met2.drawing`, and `met3.drawing`, there are no long routes anymore.
+
+And if we zoom to the AES macro and view only `prBoundary.boundary`,
+`met1.drawing`, `met2.drawing`, and `met3.drawing`, there are no long routes
+anymore.
+
 ```{figure} ./mprj-gds-4.webp
 :align: center
 
@@ -1065,7 +1287,8 @@ Shorter routes in the user_project_wrapper
 ```
 
 #### Re-checking the reports
-The STA report `openroad-stapostpnr/summary.rpt` now has no issues:
+
+The STA report `xx-openroad-stapostpnr/summary.rpt` now has no issues:
 
 ```text
 ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
@@ -1085,30 +1308,43 @@ The STA report `openroad-stapostpnr/summary.rpt` now has no issues:
 └────────────────┴────────────────┴────────────────┴──────────┴────────────────┴────────────────┴───────────────┴────────────────┴───────────┴───────────────┴────────────────┴───────────────┴────────────────┘
 
 ```
----
+
+______________________________________________________________________
+
 #### Saving the views
-To save the views, run the following script with the following arguments in order:
+
+To save the views, run the following script with the following arguments in
+order:
+
 1. The directory of the project
-2. The macro name
-3. The successful run tag
+1. The macro name
+1. The successful run tag
 
 ```console
 [nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator user_project_wrapper RUN_TAG
 ```
-This will copy the physical views of the macro in the specified run to your project folder.
+
+This will copy the physical views of the macro in the specified run to your
+project folder.
 
 Congrats! Now you have an AES accelerator as a Caravel user project.
 
----
+______________________________________________________________________
 
 ## 2. Full-Wrapper Flattening strategy
 
-In this strategy we will harden the `user_project_wrapper` with the aes as one large flattened macro.
+In this strategy we will harden the `user_project_wrapper` with the aes as one
+large flattened macro.
 
 ### Configuration
-Since we will only harden the `user_project_wrapper`. Only the `openlane/user_project_wrapper/config.json` will be edited. The following edits are needed for the `user_project_wrapper`
-1. Add the AES verilog files
-```json    
+
+Since we will only harden the `user_project_wrapper`. Only the
+`openlane/user_project_wrapper/config.json` will be edited. The following edits
+are needed for the `user_project_wrapper`
+
+1. Add the AES Verilog files
+
+```json
     "VERILOG_FILES": [
         "dir::../../../secworks_aes/src/rtl/aes.v",
         "dir::../../../secworks_aes/src/rtl/aes_core.v",
@@ -1122,9 +1358,11 @@ Since we will only harden the `user_project_wrapper`. Only the `openlane/user_pr
         "dir::../../verilog/rtl/user_project_wrapper.v"
     ],
 ```
-2. Remove the `Macros configurations` section as there will not be any macros
-3. Update the hardening strategy part to the flattened version
-```json    
+
+1. Remove the `Macros configurations` section as there will not be any macros
+1. Update the hardening strategy part to the flattened version
+
+```json
     "//": "Hardening strategy variables (this is for 2-Full-Wrapper Flattening). Visit https://docs.google.com/document/d/1pf-wbpgjeNEM-1TcvX2OJTkHjqH_C9p-LURCASS0Zo8 for more info",
     "SYNTH_ELABORATE_ONLY": false,
     "RUN_POST_GPL_DESIGN_REPAIR": true,
@@ -1141,11 +1379,9 @@ Since we will only harden the `user_project_wrapper`. Only the `openlane/user_pr
         "vssd1": "dir::vsrc/upw_vssd1_vsrc.loc"
     },
 ```
-4. It is a good idea to increase the {var}`OpenROAD.DetailedRouting::DRT_THREADS` to the number of available threads on your machine
-```json
-    "DRT_THREADS": 16,
-```
+
 Now the full configuration file will be:
+
 ````{dropdown} config.json
 ```json
 {
@@ -1189,8 +1425,6 @@ Now the full configuration file will be:
 
     "//": "Magic variables",
     "MAGIC_DRC_USE_GDS": true,
-
-    "DRT_THREADS": 16,
     "MAX_TRANSITION_CONSTRAINT": 1.5,
 
     "//": "Fixed configurations for Caravel. You should NOT edit this section",
@@ -1226,17 +1460,21 @@ Now the full configuration file will be:
 ```
 ````
 
----
+______________________________________________________________________
+
 ### Running the flow
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
 The flow will finish successfully in ~2 hours and we will see:
+
 ```console
 Flow complete.
 ```
----
+
+______________________________________________________________________
 
 ### Viewing the layout
 
@@ -1246,7 +1484,9 @@ To open the final {term}`GDSII` layout run this command:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
-Now, we can see that there are STD cells all over the `user_project_wrapper` without any macros. Also, we can see that the logic is clustered in the bottom left corner close to the Wishbone bus.
+Now, we can see that there are STD cells all over the `user_project_wrapper`
+without any macros. Also, we can see that the logic is clustered in the bottom
+left corner close to the Wishbone bus.
 
 ```{figure} ./mprj-flattened-1.webp
 :align: center
@@ -1255,9 +1495,11 @@ Final layout of the user_project_wrapper after flattening
 ```
 
 ### Cheching the reports
-#### openroad-checkantennas
+
+#### `OpenROAD.CheckAntennas`
 
 There are around 260 antenna violations with ratios up to 7.
+
 ```txt
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                       ┃ Pin          ┃ Layer ┃
@@ -1272,12 +1514,16 @@ There are around 260 antenna violations with ratios up to 7.
 │ 3.45             │ 400.00   │ 1380.11 │ mprj.aes.core.enc_block.block_w1_reg[6\]  │ _22727_/A1   │ met1  │
 ⋮
 ```
+
 We can fix those the same way we did in the AES [here](openroad-checkantennas).
 
----
+______________________________________________________________________
 
-#### openroad-stapostpnr
-Looking at `openroad-stapostpnr/summary.rpt`, there are multiple max Slew/Cap violations and 1 hold violation which is not Reg to Reg.
+#### `OpenROAD.STAPostPnR`
+
+Looking at `xx-openroad-stapostpnr/summary.rpt`, there are multiple max Slew/Cap
+violations and 1 hold violation which is not Reg to Reg.
+
 ```txt
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃              ┃ Hold Worst   ┃ Reg to Reg   ┃          ┃ Hold         ┃ of which Reg ┃ Setup Worst   ┃ Reg to Reg   ┃           ┃ Setup         ┃ of which Reg ┃ Max Cap       ┃ Max Slew     ┃
@@ -1295,39 +1541,61 @@ Looking at `openroad-stapostpnr/summary.rpt`, there are multiple max Slew/Cap vi
 │ max_ff_n40C… │ -0.0108      │ 0.1095       │ -0.0108  │ 1            │ 0            │ 11.1440       │ 18.5834      │ 0.0000    │ 0             │ 0            │ 0             │ 0            │
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴───────────────┴──────────────┴───────────┴───────────────┴──────────────┴───────────────┴──────────────┘
 ```
-The max Slew/Cap violations can be fixed the same way in [openroad-stapostpnr](openroad-stapostpnr). For the hold violations, it is in the `max_ff_n40C_1v95` corner. To investigate the timing path, open the report `openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in the first timing path.
 
-```{admonition} Note
-:class: seealso
-There might be more hold violations or no violations at all depending on the openlane2 version as this is a violation with a very small negative slack and the results can slightly change with openlane or OpenROAD updates.
+The max Slew/Cap violations can be fixed the same way in
+[openroad-stapostpnr](openroad-stapostpnr). For the hold violations, it is in
+the `max_ff_n40C_1v95` corner. To investigate the timing path, open the report
+`xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in
+the first timing path.
+
+```{note}
+There might be more hold violations or no violations at all depending on the
+version of OpenLane being used as this is a violation with a very small negative
+slack and the results can slightly change with OpenLane or OpenROAD updates.
 ```
 
 To fix hold violations, one or more of the following solutions can be applied:
-1. Enable post global routing timing optimizations using {var}`Classic::RUN_POST_GRT_RESIZER_TIMING`:
+
+1. Enable post global routing timing optimizations using
+   {var}`Classic::RUN_POST_GRT_RESIZER_TIMING`:
+
 ```json
     "RUN_POST_GRT_RESIZER_TIMING": true,
 ```
-2. Increase the hold repair margins using {var}`OpenROAD.ResizerTimingPostCTS::PL_RESIZER_HOLD_SLACK_MARGIN` and {var}`OpenROAD.ResizerTimingPostGRT::GRT_RESIZER_HOLD_SLACK_MARGIN`. The default values are `0.1ns` and `0.05ns`. We can increase those as follows:
+
+2. Increase the hold repair margins using
+   {var}`OpenROAD.ResizerTimingPostCTS::PL_RESIZER_HOLD_SLACK_MARGIN` and
+   {var}`OpenROAD.ResizerTimingPostGRT::GRT_RESIZER_HOLD_SLACK_MARGIN`. The
+   default values are `0.1ns` and `0.05ns`. We can increase those as follows:
+
 ```json
     "PL_RESIZER_HOLD_SLACK_MARGIN": 0.2,
     "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.2,
 ```
+
 3. Change the default timing corner using {var}`::DEFAULT_CORNER`:
+
 ```json
     "DEFAULT_CORNER": "max_tt_025C_1v80",
 ```
-4. Most importantly, it is recommended to use a specific constraint file to your design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
+
+4. Most importantly, it is recommended to use a specific constraint file to your
+   design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and
+   {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
+
 ```json
     "PNR_SDC_FILE": "dir::cons.sdc",
     "SIGNOFF_SDC_FILE": "dir::cons.sdc",
 ```
 
+______________________________________________________________________
 
----
+#### `Magic.DRC`
 
-#### magic-drc
+Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+that summarizes the DRC violations reported by magic. The design is DRC clean so
+the report will look like this:
 
-Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
 ```text
 aes_wb_wrapper
 ----------------------------------------
@@ -1337,12 +1605,15 @@ aes_wb_wrapper
 
 ```
 
+______________________________________________________________________
 
----
+#### `KLayout.DRC`
 
-#### klayout-drc
+Under the directory `xx-klayout-drc` you will find a file named
+`violations.json` that summarizes the DRC violations reported by KLayout. The
+design is DRC clean so the report will look like this with `"total": 0` at the
+end:
 
-Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
 ```text
 {
   ⋮
@@ -1351,11 +1622,14 @@ Under the step `magic-drc` there is `violations.json` that summarizes the DRC vi
 
 ```
 
----
+______________________________________________________________________
 
-#### netgen-lvs
+#### `Netgen.LVS`
 
-Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+summarizes the LVS violations reported by Netgen. The design is LVS clean so the
+last part of the report will look like this:
+
 ```text
 Cell pin lists are equivalent.
 Device classes user_project_wrapper and user_project_wrapper are equivalent.
@@ -1364,11 +1638,13 @@ Final result: Circuits match uniquely.
 
 ```
 
----
+______________________________________________________________________
 
 ### Re-running the flow with a modified configuration
 
-To fix the previous issues in the implementation, the following was added to the `user_project_wrapper` config file:
+To fix the previous issues in the implementation, the following was added to the
+`user_project_wrapper` config file:
+
 ```json
     "//": "New variables",
     "GRT_ANTENNA_ITERS": 10,
@@ -1380,7 +1656,13 @@ To fix the previous issues in the implementation, the following was added to the
     "RUN_POST_GRT_DESIGN_REPAIR": true,
     "RUN_POST_GRT_RESIZER_TIMING": true,
 ```
-and the following constraints file `pnr.sdc` was created at `~/caravel_aes_accelerator/openlane/user_project_wrapper/`. This file is originally copied from `~/caravel_aes_accelerator/openlane/user_project_wrapper/signoff.sdc` and edited to fix the transition and hold violations:
+
+and the following constraints file `pnr.sdc` was created at
+`~/caravel_aes_accelerator/openlane/user_project_wrapper/`. This file is
+originally copied from
+`~/caravel_aes_accelerator/openlane/user_project_wrapper/signoff.sdc` and edited
+to fix the transition and hold violations:
+
 ````{dropdown} pnr.sdc
 ```tcl
 # Copied from signoff.sdc then edited
@@ -1530,11 +1812,16 @@ if { $::env(IO_SYNC) } {
 set_load 0.19 [all_outputs]
 ```
 ````
+
 Then, the PnR sdc file path was edited in the json file.
+
 ```json
     "PNR_SDC_FILE": "dir::pnr.sdc",
 ```
-Now the final `~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json` file will be:
+
+Now the final
+`~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json` file will
+be:
 
 ````{dropdown} config.json
 ```json
@@ -1583,8 +1870,6 @@ Now the final `~/caravel_aes_accelerator/openlane/user_project_wrapper/config.js
 
     "//": "Magic variables",
     "MAGIC_DRC_USE_GDS": true,
-
-    "DRT_THREADS": 16,
     "MAX_TRANSITION_CONSTRAINT": 1.5,
 
     "//": "New variables",
@@ -1635,16 +1920,21 @@ Now let's try re-running the flow:
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
+
 The flow will finish successfully in ~2 hours and we will see:
+
 ```console
 Flow complete.
 ```
 
----
+______________________________________________________________________
 
 ### Re-checking the reports
 
-Now, the antenna report under `openroad-checkantennas-1/reports/antenna_summary.rpt` has much less violations:
+Now, the antenna report under
+`xx-openroad-checkantennas-1/reports/antenna_summary.rpt` has much less
+violations:
+
 ```text
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                 ┃ Pin        ┃ Layer ┃
@@ -1660,7 +1950,7 @@ Now, the antenna report under `openroad-checkantennas-1/reports/antenna_summary.
 ⋮
 ```
 
-Also, the STA report `openroad-stapostpnr/summary.rpt` has no issues:
+Also, the STA report `xx-openroad-stapostpnr/summary.rpt` has no issues:
 
 ```text
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
@@ -1680,39 +1970,51 @@ Also, the STA report `openroad-stapostpnr/summary.rpt` has no issues:
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴──────────────┴──────────────┴───────────┴───────────────┴──────────────┴───────────────┴──────────────┘
 ```
 
----
+______________________________________________________________________
 
 ### Saving the views
 
-To save the views, run the following script with the following arguments in order:
+To save the views, run the following script with the following arguments in
+order:
+
 1. The directory of the project
-2. The macro name
-3. The successful run tag
+1. The macro name
+1. The successful run tag
 
 ```console
 [nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator user_project_wrapper RUN_TAG
 ```
-This will copy the physical views of the macro in the specified run to your project folder.
+
+This will copy the physical views of the macro in the specified run to your
+project folder.
 
 Congrats! Now you have another AES accelerator as a Caravel user project.
 
----
+______________________________________________________________________
 
 ## 3. Top-Level Integration strategy
-In the top-level integration methodology, we will need the AES with the wishbone wrapper as a macro, then integrate it in the User Project's Wrapper with optimizations and cell insertion enabled on the top-level.
 
+In the top-level integration methodology, we will need the AES with the wishbone
+wrapper as a macro, then integrate it in the User Project's Wrapper with
+optimizations and cell insertion enabled on the top-level.
 
----
+______________________________________________________________________
 
 ### AES Wishbone Wrapper Hardening
-For the AES, we can the use the macro hardened in the Macro-first hardening strategy [here](#aes-wishbone-wrapper-hardening).
 
----
+For the AES, we can the use the macro hardened in the Macro-first hardening
+strategy [here](#aes-wishbone-wrapper-hardening).
+
+______________________________________________________________________
 
 ### User Project Wrapper Hardening
+
 #### Configuration
+
 The following edits are needed for this strategy:
+
 1. Change the Hardening strategy variables:
+
 ```json
     "//": "Hardening strategy variables (this is for 3-Top-Level Integration). Visit https://docs.google.com/document/d/1pf-wbpgjeNEM-1TcvX2OJTkHjqH_C9p-LURCASS0Zo8 for more info",
     "SYNTH_ELABORATE_ONLY": false,
@@ -1726,7 +2028,10 @@ The following edits are needed for this strategy:
     "RUN_CTS": true,
     "RUN_IRDROP_REPORT": false,
 ```
-2. Since we will have the AES as macro, the Macro Configurations section should be reverted:
+
+2. Since we will have the AES as macro, the Macro Configurations section should
+   be reverted:
+
 ```json
     "//": "Macros configurations",
     "MACROS": {
@@ -1764,7 +2069,10 @@ The following edits are needed for this strategy:
     },
     "PDN_MACRO_CONNECTIONS": ["mprj vccd2 vssd2 VPWR VGND"],
 ```
-3. Change the new variables section to just have antenna and maximum wire-length variables
+
+3. Change the new variables section to just have antenna and maximum wire-length
+   variables
+
 ```json
     "//": "New variables",
     "GRT_ANTENNA_ITERS": 10,
@@ -1773,6 +2081,7 @@ The following edits are needed for this strategy:
     "DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
     "CTS_CLK_MAX_WIRE_LENGTH": 800,
 ```
+
 So, the final config.json for the User Project's Wrapper will be:
 
 ````{dropdown} config.json
@@ -1848,8 +2157,7 @@ So, the final config.json for the User Project's Wrapper will be:
 
     "//": "Magic variables",
     "MAGIC_DRC_USE_GDS": true,
-
-    "DRT_THREADS": 16,
+    
     "MAX_TRANSITION_CONSTRAINT": 1.5,
 
     "//": "New variables",
@@ -1892,18 +2200,21 @@ So, the final config.json for the User Project's Wrapper will be:
 ```
 ````
 
----
+______________________________________________________________________
 
 #### Running the flow
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
 The flow will finish successfully in ~1.5 hours and we will see:
+
 ```console
 Flow complete.
 ```
----
+
+______________________________________________________________________
 
 #### Viewing the layout
 
@@ -1913,7 +2224,8 @@ To open the final {term}`GDSII` layout run this command:
 [nix-shell:~/openlane2]$ openlane --last-run --flow openinklayout ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
 
-Now, we can see that there are STD cells all over the `user_project_wrapper` and there is our macro in the middle.
+Now, we can see that there are STD cells all over the `user_project_wrapper` and
+there is our macro in the middle.
 
 ```{figure} ./mprj-top-1.webp
 :align: center
@@ -1922,9 +2234,12 @@ Final layout of the user_project_wrapper with Top-level integration
 ```
 
 ### Checking the reports
-#### openroad-checkantennas
 
-There are no antenna violations at all since we already have the antenna variables in our configuration.
+#### `OpenROAD.CheckAntennas`
+
+There are no antenna violations at all since we already have the antenna
+variables in our configuration.
+
 ```txt
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net ┃ Pin ┃ Layer ┃
@@ -1932,10 +2247,12 @@ There are no antenna violations at all since we already have the antenna variabl
 └──────────────────┴──────────┴─────────┴─────┴─────┴───────┘
 ```
 
----
+______________________________________________________________________
 
-#### openroad-stapostpnr
-Looking at `openroad-stapostpnr/summary.rpt`, there are no issues.
+#### `OpenROAD.STAPostPnR`
+
+Looking at `xx-openroad-stapostpnr/summary.rpt`, there are no issues.
+
 ```txt
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃               ┃ Hold Worst    ┃ Reg to Reg    ┃          ┃ Hold          ┃ of which Reg ┃ Setup Worst   ┃ Reg to Reg   ┃           ┃ Setup         ┃ of which Reg ┃ Max Cap       ┃ Max Slew     ┃
@@ -1959,11 +2276,14 @@ Looking at `openroad-stapostpnr/summary.rpt`, there are no issues.
 Despite the fact that the macro is placed very far from the top-level pins, there are no maximum slew violations because optimizations are enabled at the top-level and the long routes are being buffered.
 ```
 
----
+______________________________________________________________________
 
-#### magic-drc
+#### `Magic.DRC`
 
-Under the step `magic-drc` there is `reports/drc.rpt` that summarizes the DRC violations reported by magic. The design is DRC clean so the report will look like this:
+Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+that summarizes the DRC violations reported by magic. The design is DRC clean so
+the report will look like this:
+
 ```text
 aes_wb_wrapper
 ----------------------------------------
@@ -1973,12 +2293,14 @@ aes_wb_wrapper
 
 ```
 
+______________________________________________________________________
 
----
+#### `KLayout.DRC`
 
-#### klayout-drc
+Under the directory `xx-magic-drc` you will find a file named `violations.json`
+that summarizes the DRC violations reported by KLayout. The design is DRC clean
+so the report will look like this with `"total": 0` at the end:
 
-Under the step `magic-drc` there is `violations.json` that summarizes the DRC violations reported by klayout. The design is DRC clean so the report will look like this with `"total": 0` at the end:
 ```text
 {
   ⋮
@@ -1987,11 +2309,14 @@ Under the step `magic-drc` there is `violations.json` that summarizes the DRC vi
 
 ```
 
----
+______________________________________________________________________
 
-#### netgen-lvs
+#### `Netgen.LVS`
 
-Under the step `netgen-lvs` there is `lvs.rpt` that summarizes the LVS violations reported by netgen. The design is LVS clean so the last part of the report will look like this:
+Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+summarizes the LVS violations reported by netgen. The design is LVS clean so the
+last part of the report will look like this:
+
 ```text
 Cell pin lists are equivalent.
 Device classes user_project_wrapper and user_project_wrapper are equivalent.
@@ -2000,20 +2325,23 @@ Final result: Circuits match uniquely.
 
 ```
 
----
-
+______________________________________________________________________
 
 #### Saving the views
 
-To save the views, run the following script with the following arguments in order:
+To save the views, run the following script with the following arguments in
+order:
+
 1. The directory of the project
-2. The macro name
-3. The successful run tag
+1. The macro name
+1. The successful run tag
 
 ```console
 [nix-shell:~/openlane2]$ bash ~/caravel_aes_accelerator/openlane/copy_views.sh ~/caravel_aes_accelerator user_project_wrapper RUN_TAG
 ```
-This will copy the physical views of the macro in the specified run to your project folder.
 
-Congrats! Now you have a third different AES accelerator as a Caravel user project.
+This will copy the physical views of the macro in the specified run to your
+project folder.
 
+Congrats! Now you have a third different AES accelerator as a Caravel user
+project.

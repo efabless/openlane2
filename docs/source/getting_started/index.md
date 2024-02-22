@@ -1,5 +1,9 @@
 # Getting Started
 
+```{next}
+../usage
+```
+
 Before we get started, please pick one of these two options…
 <br />
 <br />
@@ -12,10 +16,6 @@ I am new to OpenLane
 
 <p><a href="./migrants/index.html" class="link-button">
 I have previously used OpenLane 1
-</a></p>
-
-<p><a href="./caravel/index.html" class="link-button">
-I want to use OpenLane 2 for a caravel chip
 </a></p>
 
 <p><a href="./installation_overview.html">
@@ -31,8 +31,13 @@ Just show me installation instructions.
 
 migrants/index
 newcomers/index
-openlane2-caravel/index
 installation_overview
 common/nix_installation/index
 common/docker_installation/index
 ```
+
+## Next Steps
+
+After you get started, we recommend this tutorial next:
+
+* {doc}`/usage/caravel/index`
