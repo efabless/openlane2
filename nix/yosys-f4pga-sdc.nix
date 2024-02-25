@@ -13,60 +13,45 @@
 # limitations under the License.
 {
   lib,
+  libedit,
+  libbsd,
   yosys,
   clangStdenv,
   fetchFromGitHub,
-  surelog,
-  capnproto,
-  antlr4,
-  pkg-config,
-  writeText,
+  zlib,
+  bash,
 }:
 clangStdenv.mkDerivation rec {
-  name = "yosys-synlig-sv";
-  dylibs = ["synlig-sv"];
+  name = "yosys-f4pga-sdc";
+  dylibs = ["sdc" "design_introspection"];
 
   src = fetchFromGitHub {
     owner = "chipsalliance";
-    repo = "synlig";
-    rev = "fe8f61f1480faa1ea63377c6f60de74e5dca2713";
-    sha256 = "sha256-IBydjoVCYLAb8fNnjgUC1FthScp/CMP17ljCpSEhErU=";
+    repo = "yosys-f4pga-plugins";
+    rev = "dfe9b1a15b494e7dd81a2b394dac30ea707ec5cc";
+    sha256 = "sha256-NJnu/uFCF+esqV2hrZughn1gdZXQJNTJbl1VyKns3XE=";
   };
   buildInputs = [
     yosys
     yosys.py3env
-    surelog
-    capnproto
-    antlr4.runtime.cpp
+    libedit
+    libbsd
+    zlib
   ];
-
-  nativeBuildInputs = [
-    pkg-config
-  ];
-
-  yosys-mk = writeText "yosys-mk" ''
-    t  := yosys
-    ts := ''$(call GetTargetStructName,''${t})
-
-    ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
-    ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
-  '';
   
-  postPatch = ''
-    sed -i 's/AST::process(design, current_ast,/AST::process(design, current_ast, false,/' frontends/systemverilog/uhdm_common_frontend.cc
-    rm third_party/Build.surelog.mk
-    cp ${yosys-mk} third_party/Build.yosys.mk
+  preConfigure = ''
+    patchShebangs .
   '';
 
   buildPhase = ''
-    make build@systemverilog-plugin\
-      -j$NIX_BUILD_CORES\
-      LDFLAGS="''$(yosys-config --ldflags)"
+    make SHELL=${bash}/bin/bash -C sdc-plugin -j$NIX_BUILD_CORES
+    make SHELL=${bash}/bin/bash -C design_introspection-plugin -j$NIX_BUILD_CORES
   '';
 
   installPhase = ''
     mkdir -p $out/share/yosys/plugins
-    mv build/release/systemverilog-plugin/systemverilog.so $out/share/yosys/plugins/synlig-sv.so
+    mv sdc-plugin/build/sdc.so $out/share/yosys/plugins/sdc.so
+    mv design_introspection-plugin/build/design_introspection.so $out/share/yosys/plugins/design_introspection.so
   '';
 
   computed_PATH = lib.makeBinPath buildInputs;
