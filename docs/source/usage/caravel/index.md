@@ -262,7 +262,7 @@ dots replaced with dashes.
 
 There are 2 {step}`OpenROAD.CheckAntennas` steps. One after
 {step}`OpenROAD.GlobalRouting` and the other after
-{step}`OpenROAD.DetailedRouting`. The one we're interested in is the one after
+{step}`OpenROAD.DetailedRouting`. We are interested in the one after
 {step}`OpenROAD.DetailedRouting` as this is the final antenna check.
 
 ```{seealso}
