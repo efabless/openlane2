@@ -38,6 +38,7 @@
   yosys-sby,
   yosys-eqy,
   yosys-ghdl,
+  yosys-f4pga-sdc,
   # PIP
   click,
   cloup,
@@ -85,6 +86,7 @@ buildPythonPackage rec {
         yosys-eqy
         yosys-lighter
         yosys-synlig-sv
+        yosys-f4pga-sdc
       ]
       ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
     opensta

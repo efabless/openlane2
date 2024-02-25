@@ -75,6 +75,7 @@
         yosys = callPackage ./nix/yosys.nix {};
         yosys-sby = callPackage ./nix/yosys-sby.nix {};
         yosys-eqy = callPackage ./nix/yosys-eqy.nix {};
+        yosys-f4pga-sdc = callPackage ./nix/yosys-f4pga-sdc.nix {};
         yosys-lighter = callPackage ./nix/yosys-lighter.nix {};
         yosys-synlig-sv = callPackage ./nix/yosys-synlig-sv.nix {};
         default = openlane;
