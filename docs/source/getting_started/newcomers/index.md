@@ -700,8 +700,8 @@ The checker runs thrice during the flow:
 First two are ran to see the impact of antenna repair step.
 ```
 
-Inside the step directory of `OpenROAD.CheckAntennas` there is a `reports`
-directory that contains two files: the full antenna check report from
+Inside the step directory of {step}`OpenROAD.CheckAntennas`, there is a `reports`
+directory that contains two files; the full antenna check report from
 `OpenROAD` and a summary table of antenna violations:
 
 ```text

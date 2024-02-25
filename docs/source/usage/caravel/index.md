@@ -105,7 +105,7 @@ OpenLane:
    performance, making it suitable for designs requiring the full wrapper area.
 1. `Top-Level Integration`: Place the user macro(s) within the wrapper alongside
    standard cells at the top level. This method is typically chosen to introduce
-   buffering at the top-level, fitting scenarios where such an approach is
+   buffering at the top level, fitting scenarios where such an approach is
    necessary.
 
 ```{seealso}
@@ -124,7 +124,7 @@ We will start with the first hardening option. That entails:
 1. Hardening the `user_project_wrapper` with the `aes` macro hardened in the
    previous step
 
-…the latter of which will be integrated into the Caravel harness.
+…the latter of which, will be integrated into the Caravel harness.
 
 ______________________________________________________________________
 
@@ -173,8 +173,8 @@ This is a basic configuration file which has only these variables:
   {math}`\text{f} = 1 / (\texttt{CLOCK_PERIOD}ns) = 1 / (25\text{ns}) = 25 \text{MHz}`
 * {var}`Yosys.Synthesis::VERILOG_FILES`: List of input Verilog files.
 * {var}`OpenROAD.Floorplan::FP_CORE_UTIL`: The core utilization. Typical values
-  for the core utilization range from 25% to 60%. 40% is a good starting value-
-  we can adjust it later if we need to (i.e. one of the tools complain.)
+  for the core utilization range from 25% to 60%. 40% is a good starting value -
+  we can adjust it later if we need to (i.e. one of the tools complains.)
 * {var}`OpenROAD.GeneratePDN::FP_PDN_MULTILAYER`: We set this to `false` as we
   are hardening a chip for integration into Caravel. You may review
   {doc}`/usage/pdn` for more information on this.
@@ -232,7 +232,7 @@ Final layout of aes_wb_wrapper
 ```{tip}
 You can control the visible layers in KLayout by double-clicking on the
 layers you want to hide/unhide. In this figure, the layers `areaid.lowTapDensity`
-and `areaud.standardc` were hidden to view the layout more clearly.
+and `areaid.standardc` were hidden to view the layout more clearly.
 ```
 
 ______________________________________________________________________
@@ -262,7 +262,7 @@ dots replaced with dashes.
 
 There are 2 {step}`OpenROAD.CheckAntennas` steps. One after
 {step}`OpenROAD.GlobalRouting` and the other after
-{step}`OpenROAD.DetailedRouting`. The one we're interested in the one after
+{step}`OpenROAD.DetailedRouting`. The one we're interested in is the one after
 {step}`OpenROAD.DetailedRouting` as this is the final antenna check.
 
 ```{seealso}
@@ -270,9 +270,9 @@ For more information about antenna violations, check
 [this section again in the newcomers' guide](../../getting_started/newcomers/index.md#antenna-check).
 ```
 
-Inside the step directory of {step}`OpenROAD.CheckAntennas` there is a reports
-directory which contains two files; one of which has the full antenna check
-report from OpenROAD and another with a summary table of antenna violations:
+Inside the step directory of {step}`OpenROAD.CheckAntennas`, there is a `reports`
+directory that contains two files; the full antenna check report from
+`OpenROAD` and a summary table of antenna violations:
 
 ```
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
@@ -324,7 +324,7 @@ or more of the following solutions can be applied:
     "DESIGN_REPAIR_MAX_WIRE_LENGTH": 800,
 ```
 
-5. Optimize the global placement for minimum wirelength using
+5. Optimize the global placement for minimum wire length using
    {var}`OpenROAD.GlobalPlacement::PL_WIRE_LENGTH_COEF`.
 
 ```json
@@ -355,7 +355,7 @@ Under `xx-openroad-stapostpnr` there should be a file called `summary.rpt`:
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴──────────────┴──────────────┴───────────┴─────────────┴──────────────┴─────────────┴──────────────┘
 ```
 
-As seen in the report, there are no hold nor setup violations. There are only
+As seen in the report, there are no hold or setup violations. There are only
 Max Cap and Max Slew violations. To see the violations:
 
 1. Open the report `checks` under `xx-openroad-stapostpnr/max_ss_100C_1v60`
@@ -405,7 +405,7 @@ following solutions can be applied:
     "DEFAULT_CORNER": "max_ss_100C_1v60",
 ```
 
-4. Enable post global routing design optimizations using
+4. Enable post-global routing design optimizations using
    {var}`Classic::RUN_POST_GRT_DESIGN_REPAIR`:
 
 ```json
@@ -425,7 +425,7 @@ ______________________________________________________________________
 
 ##### `Magic.DRC`
 
-Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+Under the directory `xx-magic-drc`, you will find a file named `reports/drc.rpt`
 that summarizes the DRC violations reported by Magic. The design is DRC clean so
 the report will look like this:
 
@@ -442,7 +442,7 @@ ______________________________________________________________________
 
 ##### `KLayout.DRC`
 
-Under the directory `xx-klayout-drc` you will find a file named
+Under the directory `xx-klayout-drc`, you will find a file named
 `violations.json` that summarizes the DRC violations reported by KLayout. The
 design is DRC clean so the report will look like this with `"total": 0` at the
 end:
@@ -459,7 +459,7 @@ ______________________________________________________________________
 
 ##### `Netgen.LVS`
 
-Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+Under the directory `xx-netgen-lvs`, you will find a file named `lvs.rpt` that
 summarizes the LVS violations reported by netgen. The design is LVS clean so the
 last part of the report will look like this:
 
@@ -506,7 +506,7 @@ puts "\[INFO\]: Creating clock {clk} for port $clk_input with period: 25"
 # Clock non-idealities
 set_propagated_clock [get_clocks {clk}]
 set_clock_uncertainty 0.12 [get_clocks {clk}]
-puts "\[INFO\]: Setting clock uncertainity to: 0.12"
+puts "\[INFO\]: Setting clock uncertainty to: 0.12"
 
 # Maximum transition time for the design nets
 set_max_transition 0.75 [current_design]
@@ -682,7 +682,7 @@ set_load 0.19 [all_outputs]
 ````
 
 The `Design Constraints` part has to do with the design itself. The
-`Retrieved Constraints` part retrieved from the Caravel chip boundary
+`Retrieved Constraints` part is retrieved from the Caravel chip boundary
 constraints with the `user_project_wrapper`. These constraints can be found
 [here](https://github.com/efabless/caravel_user_project_ol2/blob/a9dd629af92482842ddcaba8d95c298b41c1895b/openlane/user_project_wrapper/base_user_project_wrapper.sdc#L64).
 The PnR constraints file has more aggressive constraints than the signoff one,
@@ -807,7 +807,7 @@ The User Project Wrapper is a macro inside the Caravel chip which will include
 our design. To be able to use any design as a Caravel User Project, it has to
 match the footprint that Caravel is expecting. Also, the top-level design
 Caravel is expecting any Caravel User Project to have the IO pins at specific
-locations and with specific dimensions. So, we need a fixed floorplan, fixed IOs
+locations and with specific dimensions. So, we need a fixed floorplan, fixed I/Os
 pin shapes and locations, and fixed power rings. The fixed configuration section
 can be found at the end of the configurations file
 `openlane/user_project_wrapper/config.json`:
@@ -950,7 +950,8 @@ Final layout of the user_project_wrapper
 
 ```{tip}
 You can control the visible layers in KLayout by double-clicking on the
-layers you want to hide/unhide. In this figure, the layers`areaid.lowTapDensity`, `areaid.diode` and `areaud.standardc` were hidden to view the layout more clearly.
+layers you want to hide/unhide. In this figure, the layers `areaid.lowTapDensity`,
+`areaid.diode`, and `areaid.standardc` were hidden to view the layout more clearly.
  
 ```
 
@@ -1031,7 +1032,7 @@ ______________________________________________________________________
 
 ##### `Magic.DRC`
 
-Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+Under the directory `xx-magic-drc`, you will find a file named `reports/drc.rpt`
 that summarizes the DRC violations reported by magic. The design is DRC clean so
 the report will look like this:
 
@@ -1048,7 +1049,7 @@ ______________________________________________________________________
 
 ##### `KLayout.DRC`
 
-Under the directory `xx-klayout-drc` you will find a file named
+Under the directory `xx-klayout-drc`, you will find a file named
 `violations.json` file that summarizes the DRC violations reported by KLayout.
 The design is DRC clean so the report will look like this with `"total": 0` at
 the end:
@@ -1065,7 +1066,7 @@ ______________________________________________________________________
 
 ##### `Netgen.LVS`
 
-Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+Under the directory `xx-netgen-lvs`, you will find a file named `lvs.rpt` that
 summarizes the LVS violations reported by netgen. The design is LVS clean so the
 last part of the report will look like this:
 
@@ -1081,7 +1082,7 @@ ______________________________________________________________________
 
 #### Re-running the flow with a modified configuration
 
-To fix the long routes issue that cause maximum transition violations, 3 things
+To fix the long routes issue that causes maximum transition violations, 3 things
 should be done:
 
 1. Create the pin order configuration file for `aes_wb_wrapper` in
@@ -1333,7 +1334,7 @@ ______________________________________________________________________
 
 ## 2. Full-Wrapper Flattening strategy
 
-In this strategy we will harden the `user_project_wrapper` with the aes as one
+In this strategy, we will harden the `user_project_wrapper` with the aes as one
 large flattened macro.
 
 ### Configuration
@@ -1494,7 +1495,7 @@ left corner close to the Wishbone bus.
 Final layout of the user_project_wrapper after flattening
 ```
 
-### Cheching the reports
+### Checking the reports
 
 #### `OpenROAD.CheckAntennas`
 
@@ -1543,7 +1544,7 @@ violations and 1 hold violation which is not Reg to Reg.
 ```
 
 The max Slew/Cap violations can be fixed the same way in
-[openroad-stapostpnr](openroad-stapostpnr). For the hold violations, it is in
+[openroad-stapostpnr](openroad-stapostpnr). For the hold violation, it is in
 the `max_ff_n40C_1v95` corner. To investigate the timing path, open the report
 `xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in
 the first timing path.
@@ -1556,7 +1557,7 @@ slack and the results can slightly change with OpenLane or OpenROAD updates.
 
 To fix hold violations, one or more of the following solutions can be applied:
 
-1. Enable post global routing timing optimizations using
+1. Enable post-global routing timing optimizations using
    {var}`Classic::RUN_POST_GRT_RESIZER_TIMING`:
 
 ```json
@@ -1579,7 +1580,7 @@ To fix hold violations, one or more of the following solutions can be applied:
     "DEFAULT_CORNER": "max_tt_025C_1v80",
 ```
 
-4. Most importantly, it is recommended to use a specific constraint file to your
+4. Most importantly, it is recommended to use a specific constraint file for your
    design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and
    {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
 
@@ -1592,7 +1593,7 @@ ______________________________________________________________________
 
 #### `Magic.DRC`
 
-Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+Under the directory `xx-magic-drc`, you will find a file named `reports/drc.rpt`
 that summarizes the DRC violations reported by magic. The design is DRC clean so
 the report will look like this:
 
@@ -1609,7 +1610,7 @@ ______________________________________________________________________
 
 #### `KLayout.DRC`
 
-Under the directory `xx-klayout-drc` you will find a file named
+Under the directory `xx-klayout-drc`, you will find a file named
 `violations.json` that summarizes the DRC violations reported by KLayout. The
 design is DRC clean so the report will look like this with `"total": 0` at the
 end:
@@ -1626,7 +1627,7 @@ ______________________________________________________________________
 
 #### `Netgen.LVS`
 
-Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+Under the directory `xx-netgen-lvs`, you will find a file named `lvs.rpt` that
 summarizes the LVS violations reported by Netgen. The design is LVS clean so the
 last part of the report will look like this:
 
@@ -1698,7 +1699,7 @@ if { ![info exists ::env(SYNTH_CLK_DRIVING_CELL_PIN)] } {
 # Clock non-idealities
 set_propagated_clock [all_clocks]
 set_clock_uncertainty 0.15 [get_clocks {clk}]
-puts "\[INFO\]: Setting clock uncertainity to: 0.15"
+puts "\[INFO\]: Setting clock uncertainty to: 0.15"
 set_clock_transition $::env(SYNTH_CLOCK_TRANSITION) [get_clocks {clk}]
 puts "\[INFO\]: Setting clock transition to: $::env(SYNTH_CLOCK_TRANSITION)"
 
@@ -1813,7 +1814,7 @@ set_load 0.19 [all_outputs]
 ```
 ````
 
-Then, the PnR sdc file path was edited in the json file.
+Then, the PnR SDC file path was edited in the JSON file.
 
 ```json
     "PNR_SDC_FILE": "dir::pnr.sdc",
@@ -1996,13 +1997,13 @@ ______________________________________________________________________
 
 In the top-level integration methodology, we will need the AES with the wishbone
 wrapper as a macro, then integrate it in the User Project's Wrapper with
-optimizations and cell insertion enabled on the top-level.
+optimizations and cell insertion enabled on the top level.
 
 ______________________________________________________________________
 
 ### AES Wishbone Wrapper Hardening
 
-For the AES, we can the use the macro hardened in the Macro-first hardening
+For the AES, we can use the macro hardened in the Macro-first hardening
 strategy [here](#aes-wishbone-wrapper-hardening).
 
 ______________________________________________________________________
@@ -2070,7 +2071,7 @@ The following edits are needed for this strategy:
     "PDN_MACRO_CONNECTIONS": ["mprj vccd2 vssd2 VPWR VGND"],
 ```
 
-3. Change the new variables section to just have antenna and maximum wire-length
+3. Change the new variables section to just have the antenna and maximum wire-length
    variables
 
 ```json
@@ -2280,7 +2281,7 @@ ______________________________________________________________________
 
 #### `Magic.DRC`
 
-Under the directory `xx-magic-drc` you will find a file named `reports/drc.rpt`
+Under the directory `xx-magic-drc`, you will find a file named `reports/drc.rpt`
 that summarizes the DRC violations reported by magic. The design is DRC clean so
 the report will look like this:
 
@@ -2297,7 +2298,7 @@ ______________________________________________________________________
 
 #### `KLayout.DRC`
 
-Under the directory `xx-magic-drc` you will find a file named `violations.json`
+Under the directory `xx-magic-drc`, you will find a file named `violations.json`
 that summarizes the DRC violations reported by KLayout. The design is DRC clean
 so the report will look like this with `"total": 0` at the end:
 
@@ -2313,7 +2314,7 @@ ______________________________________________________________________
 
 #### `Netgen.LVS`
 
-Under the directory `xx-netgen-lvs` you will find a file named `lvs.rpt` that
+Under the directory `xx-netgen-lvs`, you will find a file named `lvs.rpt` that
 summarizes the LVS violations reported by netgen. The design is LVS clean so the
 last part of the report will look like this:
 
