@@ -56,7 +56,7 @@ realize an ASIC.
 
 Please note that the five mentioned steps are the major ones. There are several
 other design steps that are not mentioned here such as scan chain insertion and
-test patterns generations that are essential to testing the fabricated chip
+test pattern generations that are essential to testing the fabricated chip
 against fabrication defects.
 
 ```{figure} ./asic-flow-diagram.webp
@@ -124,7 +124,7 @@ ______________________________________________________________________
    $ nix-shell --pure ~/openlane2/shell.nix
    ```
 
-   Some packages will be downloaded (about 3GiB) and afterwards the terminal
+   Some packages will be downloaded (about 3GiB) and afterwards, the terminal
    prompt should change to:
 
    ```console
@@ -161,7 +161,7 @@ control unit. The block diagram of the PM32 is shown in the next figure.
 :scale: 60 %
 :align: center
 
-PM32 (32-bit parallel mutliplier)
+PM32 (32-bit parallel multiplier)
 ```
 
 The serial-by-parallel signed 32-bit multiplier `SPM` block inside the `PM32`
@@ -236,7 +236,7 @@ all available variables.
    [configuration](#configuration) content to it.
 
 1. Create the files `~/my_designs/pm32/pm32.v`, `~/my_designs/pm32/spm.v`, and
-   add [RTL](#rtl) content to it.
+   add [RTL](#rtl) content to them.
 
 1. Run the following command:
 
@@ -382,10 +382,10 @@ RUN_2023-12-27_16-59-15
 
 #### Final Results
 
-Inside the run directory, you may have noticed there is another, non-step
-specific folder named `final`.
+Inside the run directory, you may have noticed there is another, non-specific
+step folder named `final`.
 
-`final` contains a number of directories that contain all the different layout
+`final` contains several directories that contain all the different layout
 views produced by the flow. It looks like this:
 
 ```text
@@ -430,7 +430,7 @@ OpenLane runs a couple of Step(s) for the final signoff.
 #### DRC
 
 {term}`DRC` stands for Design Rule Checking which checks, against rules set by
-chip foundries , that the layout has to satisfy in order to be manufacturable,
+chip foundries, that the layout has to satisfy in order to be manufacturable,
 such as checking for minimum allowed spacing between two `met1` shapes.
 
 OpenLane runs two DRC steps using `Magic` and `KLayout`: {step}`Magic.DRC` and
@@ -482,8 +482,8 @@ Opening DRC xml file
 
 {term}`LVS` stands for Layout Versus Schematic. It compares the layout
 {term}`GDSII` or DEF/LEF, with the schematic which is usually in
-{term}`Verilog`, ensuring that connectivity in both views are matching.
-Sometimes, user configuration or even the tools have errors and such check is
+{term}`Verilog`, ensuring that connectivity in both views matches.
+Sometimes, user configuration or even the tools have errors and such a check is
 important to catch them.
 
 Common LVS errors include but are not limited to:
@@ -494,7 +494,7 @@ Common LVS errors include but are not limited to:
   partially connected. These must be connected properly.
 * Missing Components: An expected component has been left out of the layout.
 
-`Netgen.LVS` is the Step ran for LVS using a tool called {term}`Netgen`. First,
+`Netgen.LVS` is the Step run for LVS using a tool called {term}`Netgen`. First,
 the layout is converted to {term}`SPICE netlist`. Next, the layout and the
 schematic are inputted to Netgen, as shown in the diagram below:
 
@@ -506,7 +506,7 @@ LVS (Layout-versus-Schematic) Flow
 ```
 
 `Netgen` will generate multiple files that can be browsed in case of LVS errors.
-As all Step(s), these will be inside the Step's directory.
+As with all Step(s), these will be inside the Step's directory.
 
 You would want to look at `netgen-lvs.log` which has a summary of the results of
 `LVS`. Ideally, you would find the following at the end of this log file:
@@ -518,7 +518,7 @@ Circuits match uniquely.
 
 In case of errors, there is also `lvs.rpt` which is more detailed. Inside it,
 you will find tables comparing nodes between the layout and the schematic. On
-the left is the layout (`GDS`) and the schematic Verilog) is on the other side.
+the left is the layout (`GDS`) and the schematic (Verilog) is on the other side.
 Here is a sample of these tables:
 
 ```text
@@ -536,7 +536,7 @@ sky130_ef_sc_hd__decap_12 (132->1)         |sky130_ef_sc_hd__decap_12 (132->1)
 #### STA
 
 STA stands for Static Timing Analysis. The STA tool identifies the design timing
-paths and then calculates the data earliest and latest actual and required
+paths and then calculates the data's earliest and latest actual and required
 arrival times at every timing path endpoint. If the data arrives after (in case
 of setup checking) or before (hold checking) it is required, then we have a
 timing violation (negative slack). STA makes sure that a circuit will correctly
@@ -549,18 +549,18 @@ perform its function (but tells nothing about the correctness of that function.)
 STA (Static Timing Analysis) Flow
 ```
 
-The default flow runs as step called {step}`OpenROAD.STAPostPNR` for STA
+The default flow runs a step called {step}`OpenROAD.STAPostPNR` for STA
 signoff.
 
 ```{note}
 During the flow the step {step}`OpenROAD.STAMidPNR` is ran multiple times 
-The results are not as accurate as `OpenRAOD.STAPostPNR` since the design 
+The results are not as accurate as `OpenROAD.STAPostPNR` since the design 
 is not fully implemented yet. However, they provide a better sense of the impact
 multiple stages of the flow (such as optimizations steps) on STA results for the
 design.
 ```
 
-Inside the Step directory there is a file called `summary.rpt` which summarizes
+Inside the Step directory, there is a file called `summary.rpt` which summarizes
 important metrics for each {term}`IPVT` {term}`timing corner`:
 
 ```text
@@ -662,7 +662,7 @@ actually occur.
 #### Antenna Check
 
 Long metal wire segments that are connected to a transistor gate may damage the
-transistor thin gate oxide during the fabrication process due its collection of
+transistor's thin gate oxide during the fabrication process due to its collection of
 charges from the processing environment. This is called the antenna effect
 (Also, called Plasma Induced Gate Oxide Damage). Chip foundries normally supply
 antenna rules, which are rules that must be obeyed to avoid this problem. The
@@ -701,7 +701,7 @@ First two are ran to see the impact of antenna repair step.
 ```
 
 Inside the step directory of `OpenROAD.CheckAntennas` there is a `reports`
-directory which contains two files on has the full antenna check report from
+directory that contains two files: the full antenna check report from
 `OpenROAD` and a summary table of antenna violations:
 
 ```text
@@ -718,7 +718,7 @@ ______________________________________________________________________
 ### Adding custom pin placement configuration
 
 As seen in the previous layout, the pins of the `pm32` macro are placed
-randomly. If this macro will be integrated in a larger macro or chip, the pin
+randomly. If this macro will be integrated into a larger macro or chip, the pin
 placement should be according to the top-level connectivity. For example, if the
 clock pin will be derived from a clocking macro that will be placed on the east
 side of this macro, then the clock pin in the `pm32` should be placed on the
