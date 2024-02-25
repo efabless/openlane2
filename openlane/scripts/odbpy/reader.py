@@ -172,7 +172,7 @@ class OdbReader(object):
 
 def click_odb(function):
     @functools.wraps(function)
-    def wrapper(input_db, input_lefs, config_path, metrics, **kwargs):
+    def wrapper(input_db, input_lefs, config_path, **kwargs):
         reader = OdbReader(input_db, config_path=config_path)
 
         signature = inspect.signature(function)
@@ -195,8 +195,6 @@ def click_odb(function):
             kwargs["input_db"] = input_db
         if "input_lefs" in parameter_keys:
             kwargs["input_lefs"] = input_lefs
-        if "metrics" in parameter_keys:
-            kwargs["metrics"] = metrics
 
         if input_db.endswith(".def"):
             print(
@@ -216,11 +214,6 @@ def click_odb(function):
             help=f"Write {format} view",
         )(wrapper)
 
-    wrapper = click.option(
-        "--metrics",
-        default=(),
-        help="Metrics file",
-    )(wrapper)
     wrapper = click.option(
         "-l",
         "--input-lef",

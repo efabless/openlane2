@@ -1248,7 +1248,7 @@ class CheckAntennas(OpenROADStep):
             ]
             table.add_row(*row)
 
-        if not options.get_condensed_mode():
+        if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
             rich.print(table, file=f)
