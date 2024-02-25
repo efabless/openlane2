@@ -44,14 +44,13 @@
   nlohmann_json,
 }:
 stdenv.mkDerivation (finalAttrs: {
-  pname = "surelog";
-  version = "1.76";
+  name = "surelog";
 
   src = fetchFromGitHub {
     owner = "chipsalliance";
-    repo = finalAttrs.pname;
-    rev = "v${finalAttrs.version}";
-    hash = "sha256-Jfh6KGnPVksyCf2q7sQN6XSAWvbG+aW7/ynUuWKNUPs=";
+    repo = finalAttrs.name;
+    rev = "3e9c2d03c8164f76bf289f141856303477df5dec";
+    hash = "sha256-c4i/1tUONb5sz3OD1w8FSD7VRn/xoBGaVX7ChmujGCk=";
     fetchSubmodules = true; # Use the included UHDM to avoid extreme brainrot
   };
 
