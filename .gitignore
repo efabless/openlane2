@@ -33,7 +33,8 @@ slpp_all/
 
 # Testing
 .coverage
-htmlcov/
+.coverage.*
+htmlcov*/
 prof/
 sandbox/
 /designs

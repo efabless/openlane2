@@ -27,7 +27,7 @@ types-psutil
 # test
 pytest
 pytest-xdist
-coverage
+pytest-cov
 pyfakefs>=5.2.3,<6
 pillow>=10.0.1,<11
 

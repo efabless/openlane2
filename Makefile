@@ -45,17 +45,16 @@ lint: venv/manifest.txt
 	./venv/bin/flake8 .
 	./venv/bin/mypy --check-untyped-defs .
 
-.PHONY: test
-test: venv/manifest.txt
-	./venv/bin/coverage run -m pytest -n auto
-	./venv/bin/coverage report
-	./venv/bin/coverage html
+.PHONY: coverage-infrastructure
+coverage-infrastructure: venv/manifest.txt
+	./venv/bin/python3 -m pytest -n auto\
+		--cov=openlane --cov-config=.coveragerc --cov-report html:htmlcov_infra --cov-report term
 
-.PHONY: test-all
-test-all: venv/manifest.txt
-	./venv/bin/coverage run -m pytest --step-rx "." -n auto
-	./venv/bin/coverage report
-	./venv/bin/coverage html
+.PHONY: coverage-steps
+coverage-steps: venv/manifest.txt
+	./venv/bin/python3 -m pytest -n auto\
+		--cov=openlane.steps --cov-config=.coveragerc-steps --cov-report html:htmlcov_steps --cov-report term\
+		--step-rx "." -k test_all_steps
 
 .PHONY: check-license
 check-license: venv/manifest.txt

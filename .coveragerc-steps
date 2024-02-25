@@ -1,0 +1,14 @@
+[run]
+source = openlane/steps
+
+[report]
+omit =
+    /nix/*
+    venv/
+    test_*.py
+    */steps/__main__.py
+    */steps/__init__.py
+    */steps/step.py
+    */steps/tclstep.py
+    */steps/checker.py
+    */steps/cvc_rv.py
