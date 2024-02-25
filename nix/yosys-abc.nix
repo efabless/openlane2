@@ -41,8 +41,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "abc";
-    rev = "daad9ede0137dc58487a0abc126253e671a85b14";
-    sha256 = "sha256-5XeFYvdqT08xduFUDC5yK1jEOV1fYzyQD7N9ZmG3mpQ=";
+    rev = "896e5e7dedf9b9b1459fa019f1fa8aa8101fdf43";
+    sha256 = "sha256-sMBCIV698TIvU/sgTwgPFWDC1kl2TeGv+3pQ06gs7aM=";
   };
 
   patches = [
