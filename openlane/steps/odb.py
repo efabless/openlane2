@@ -101,6 +101,11 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
+        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+            DesignFormat.LEF in self.inputs
+        ):
+            lefs.append("--design-lef")
+            lefs.append(str(design_lef))
         return (
             [
                 "openroad",
@@ -121,6 +126,52 @@ class OdbpyStep(Step):
 
     def get_subcommand(self) -> List[str]:
         return []
+
+
+@Step.factory.register()
+class CheckMacroAntennaProperties(OdbpyStep):
+    id = "Odb.CheckMacroAntennaProperties"
+    name = "Check Antenna Properties of Macros Pins in Their LEF Views"
+    inputs = OdbpyStep.inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "check_antenna_properties.py",
+        )
+
+    def get_cells(self) -> List[str]:
+        macros = self.config["MACROS"]
+        cells = []
+        if macros:
+            cells = list(macros.keys())
+        return cells
+
+    def get_report_path(self) -> str:
+        return os.path.join(self.step_dir, "report.yaml")
+
+    def get_command(self) -> List[str]:
+        args = " ".join([f"--cell-name {name}" for name in self.get_cells()]).split()
+        args += ["--report-file", self.get_report_path()]
+        return super().get_command() + args
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if not self.get_cells():
+            info("No cells provided, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class CheckDesignAntennaProperties(CheckMacroAntennaProperties):
+    id = "Odb.CheckDesignAntennaProperties"
+    name = "Check Antenna Properties of Pins in The Generated Design LEF view"
+    inputs = CheckMacroAntennaProperties.inputs + [DesignFormat.LEF]
+
+    def get_cells(self) -> List[str]:
+        return [self.config["DESIGN_NAME"]]
 
 
 @Step.factory.register()

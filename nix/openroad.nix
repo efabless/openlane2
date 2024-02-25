@@ -44,13 +44,13 @@
 }:
 clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "c1fc5f730a59874a1b9735be82d267da8417c6e7";
+  rev = "0889970d1790a2617e69f253221b8bd7626e51dc";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-vcJBm3IIsSqbUM5F1ONaqmtHtxZZFFck2zenwWkRAuw=";
+    sha256 = "sha256-o8fwh+d1mpLvB3c1hVQFz3aqgstBvr1/sptKf+mh8Vc=";
   };
 
   cmakeFlagsAll = [
@@ -102,6 +102,10 @@ clangStdenv.mkDerivation rec {
     clp
     cbc
     re2
+  ];
+
+  patches = [
+    ./patches/openroad/antenna.patch
   ];
 
   nativeBuildInputs = [
