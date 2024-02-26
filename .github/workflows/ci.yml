@@ -368,13 +368,13 @@ jobs:
         uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             require("./.github/scripts/post_metrics.js")(
               github,
               context,
-              "${{ vars.BOT_USERNAME }}",
-              "${{ secrets.GH_TOKEN }}",
+              "github-actions[bot]",
+              "${{ secrets.GITHUB_TOKEN }}",
             ).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
         if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}

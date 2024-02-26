@@ -84,6 +84,7 @@ if { $::env(FP_PDN_MULTILAYER) == 1 } {
         -width $::env(FP_PDN_VWIDTH) \
         -pitch $::env(FP_PDN_VPITCH) \
         -offset $::env(FP_PDN_VOFFSET) \
+        -spacing $::env(FP_PDN_VSPACING) \
         -starts_with POWER -extend_to_core_ring
 }
 
