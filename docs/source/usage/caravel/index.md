@@ -270,8 +270,8 @@ For more information about antenna violations, check
 [this section again in the newcomers' guide](../../getting_started/newcomers/index.md#antenna-check).
 ```
 
-Inside the step directory of {step}`OpenROAD.CheckAntennas`, there is a `reports`
-directory that contains two files; the full antenna check report from
+Inside the step directory of {step}`OpenROAD.CheckAntennas`, there is a
+`reports` directory that contains two files; the full antenna check report from
 `OpenROAD` and a summary table of antenna violations:
 
 ```
@@ -355,8 +355,8 @@ Under `xx-openroad-stapostpnr` there should be a file called `summary.rpt`:
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴──────────────┴──────────────┴───────────┴─────────────┴──────────────┴─────────────┴──────────────┘
 ```
 
-As seen in the report, there are no hold or setup violations. There are only
-Max Cap and Max Slew violations. To see the violations:
+As seen in the report, there are no hold or setup violations. There are only Max
+Cap and Max Slew violations. To see the violations:
 
 1. Open the report `checks` under `xx-openroad-stapostpnr/max_ss_100C_1v60`
    since this corner has the highest number of Max Cap and Max Slew violations.
@@ -807,9 +807,9 @@ The User Project Wrapper is a macro inside the Caravel chip which will include
 our design. To be able to use any design as a Caravel User Project, it has to
 match the footprint that Caravel is expecting. Also, the top-level design
 Caravel is expecting any Caravel User Project to have the IO pins at specific
-locations and with specific dimensions. So, we need a fixed floorplan, fixed I/Os
-pin shapes and locations, and fixed power rings. The fixed configuration section
-can be found at the end of the configurations file
+locations and with specific dimensions. So, we need a fixed floorplan, fixed
+I/Os pin shapes and locations, and fixed power rings. The fixed configuration
+section can be found at the end of the configurations file
 `openlane/user_project_wrapper/config.json`:
 
 ```json
@@ -1544,8 +1544,8 @@ violations and 1 hold violation which is not Reg to Reg.
 ```
 
 The max Slew/Cap violations can be fixed the same way in
-[openroad-stapostpnr](openroad-stapostpnr). For the hold violation, it is in
-the `max_ff_n40C_1v95` corner. To investigate the timing path, open the report
+[openroad-stapostpnr](openroad-stapostpnr). For the hold violation, it is in the
+`max_ff_n40C_1v95` corner. To investigate the timing path, open the report
 `xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in
 the first timing path.
 
@@ -1580,8 +1580,8 @@ To fix hold violations, one or more of the following solutions can be applied:
     "DEFAULT_CORNER": "max_tt_025C_1v80",
 ```
 
-4. Most importantly, it is recommended to use a specific constraint file for your
-   design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and
+4. Most importantly, it is recommended to use a specific constraint file for
+   your design using {var}`OpenROAD.CheckSDCFiles::PNR_SDC_FILE` and
    {var}`OpenROAD.CheckSDCFiles::SIGNOFF_SDC_FILE`
 
 ```json
@@ -2003,8 +2003,8 @@ ______________________________________________________________________
 
 ### AES Wishbone Wrapper Hardening
 
-For the AES, we can use the macro hardened in the Macro-first hardening
-strategy [here](#aes-wishbone-wrapper-hardening).
+For the AES, we can use the macro hardened in the Macro-first hardening strategy
+[here](#aes-wishbone-wrapper-hardening).
 
 ______________________________________________________________________
 
@@ -2071,8 +2071,8 @@ The following edits are needed for this strategy:
     "PDN_MACRO_CONNECTIONS": ["mprj vccd2 vssd2 VPWR VGND"],
 ```
 
-3. Change the new variables section to just have the antenna and maximum wire-length
-   variables
+3. Change the new variables section to just have the antenna and maximum
+   wire-length variables
 
 ```json
     "//": "New variables",
