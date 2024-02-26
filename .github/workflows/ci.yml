@@ -78,7 +78,8 @@ jobs:
       - name: Install Linters
         run: make venv
       - name: Lint
-        run: make lint
+        run: |
+          PATH=$PWD/venv/bin:$PATH make lint
   build-py:
     runs-on: ubuntu-22.04
     needs: [lint, prepare-test-matrices]
