@@ -74,11 +74,6 @@ def _parse_yosys_check(
             ):
                 debug("Ignoring tristate-related error:")
                 debug(last_warning)
-            elif re.match(
-                ".*Warning: Wire .+ is used but has no driver.*", last_warning
-            ):
-                debug("Ignoring unsed but no driver warning:")
-                debug(last_warning)
             else:
                 debug("Encountered check error:")
                 debug(last_warning)
