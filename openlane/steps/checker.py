@@ -70,7 +70,12 @@ class MetricChecker(Step):
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {self.metric_description} found."
-                    if hasattr(self, "error_on_var") and self.error_on_var:
+                    if (
+                        hasattr(self, "error_on_var")
+                        and self.error_on_var
+                        and not self.config.get(self.error_on_var.name)
+                    ):
+                        debug(self.config.get(self.error_on_var.name))
                         warn(f"{error_msg}")
                     elif self.deferred:
                         err(f"{error_msg} - deferred")
@@ -219,7 +224,7 @@ class WireLength(MetricChecker):
         "ERROR_ON_LONG_WIRE",
         bool,
         "Checks if any wire length exceeds the threshold set in the PDK. If so, an error is raised at the end of the flow.",
-        default=False,
+        default=True,
         deprecated_names=["QUIT_ON_LONG_WIRE"],
     )
     config_vars = [error_on_var]
@@ -466,14 +471,18 @@ class TimingViolations(MetricChecker):
         return name, [deprecated_name]
 
     def is_error(self):
-        return self.config.get(self.get_error_on_variable_name()[0]) or self.config.get(
-            self.base_error_on_var_name
-        )
+        subclass_error = self.config.get(self.get_error_on_variable_name()[0])
+        if subclass_error is not None:
+            return subclass_error
+        else:
+            return self.config.get(self.base_error_on_var_name)
 
     def get_corners(self):
-        return self.config.get(self.get_corner_variable_name()) or self.config.get(
-            self.base_corner_var_name
-        )
+        subclass_corner = self.config.get(self.get_corner_variable_name())
+        if subclass_corner is not None:
+            return subclass_corner
+        else:
+            return self.config.get(self.base_corner_var_name)
 
     def check_timing_violations(
         self,
@@ -518,7 +527,7 @@ class TimingViolations(MetricChecker):
                 ]
             ]
 
-            specified_violating_corners = set(
+            err_violating_corner = set(
                 [
                     corner
                     for corner in violating_corners
@@ -527,42 +536,47 @@ class TimingViolations(MetricChecker):
                         for specified_corner in self.get_corners()
                         if fnmatch.fnmatch(corner, specified_corner)
                     ]
+                    and self.is_error()
                 ]
             )
 
-            unspecified_violating_corners = (
-                set(violating_corners) - specified_violating_corners
-            )
+            warn_violating_corner = set(violating_corners) - err_violating_corner
 
+            debug("Is error:")
+            debug(self.is_error())
             debug("corners ▶")
             debug(metric_corners)
             debug("unmatched config corners ▶")
             debug(unmatched_config_corners)
-            debug("specificed violating corners ▶")
-            debug(specified_violating_corners)
-            debug("unspecificed violating corners ▶")
-            debug(unspecified_violating_corners)
+            debug("error violating corners ▶")
+            debug(err_violating_corner)
+            debug("warn violating corners ▶")
+            debug(warn_violating_corner)
 
-            if unspecified_violating_corners:
-                warn_msg = f"{violation_type.title()} violations found in the following corners:\n"
-                warn_msg += "\n".join(sorted(unspecified_violating_corners))
-                warn(warn_msg)
-
-            error_found = False
-            msg = ""
+            err_msg = []
+            warn_msg = []
             if unmatched_config_corners:
-                msg += "The following specified TIMING_VIOLATIONS_CORNERS:\n"
-                msg += "\n".join(unmatched_config_corners)
-                error_found = True
-            if specified_violating_corners:
-                msg = f"{violation_type.title()} violations found in the following corners:\n"
-                msg += "\n".join(sorted(specified_violating_corners))
-                error_found = self.is_error()
+                err_msg.append("The following specified TIMING_VIOLATIONS_CORNERS:")
+                err_msg += unmatched_config_corners
 
-            if error_found:
-                raise DeferredStepError(msg)
-            else:
+            if warn_violating_corner:
+                warn_msg.append(
+                    f"{violation_type.title()} violations found in the following corners:"
+                )
+                warn_msg += sorted(warn_violating_corner)
+
+            if err_violating_corner:
+                err_msg.append(
+                    f"{violation_type.title()} violations found in the following corners:"
+                )
+                err_msg += sorted(err_violating_corner)
+
+            if warn_msg:
+                warn("\n".join(warn_msg))
+            if not err_violating_corner:
                 verbose(f"No {violation_type} violations found")
+            if err_msg:
+                raise DeferredStepError("\n".join(err_msg))
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         self.check_timing_violations(
