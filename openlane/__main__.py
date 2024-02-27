@@ -145,12 +145,11 @@ def run(
             _force_run_dir=_force_run_dir,
         )
     except FlowException as e:
-        err(f"The flow has encountered an unexpected error: {e}")
+        err(f"The flow has encountered an unexpected error:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(1)
     except FlowError as e:
-        if "deferred" not in str(e):
-            err(f"The following error was encountered while running the flow: {e}")
+        err(f"The following error was encountered while running the flow:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(2)
 

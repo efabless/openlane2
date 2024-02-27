@@ -35,6 +35,7 @@ class MetricChecker(Step):
     metric_name: ClassVar[str] = NotImplemented
     metric_description: ClassVar[str] = NotImplemented
     deferred: ClassVar[bool] = True
+    error_on_var: Optional[Variable]
 
     @classmethod
     def get_help_md(Self, **kwargs):  # pragma: no cover
@@ -47,6 +48,7 @@ class MetricChecker(Step):
         else:
             dynamic_docstring += " an immediate error"
         dynamic_docstring += f" if {Self.metric_description} (metric: ``{Self.metric_name}``) are >= {threshold_string}."
+        dynamic_docstring += " Doesn't raise an error depending on error_on_var"
 
         return super().get_help_md(docstring_override=dynamic_docstring, **kwargs)
 
@@ -68,7 +70,9 @@ class MetricChecker(Step):
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {self.metric_description} found."
-                    if self.deferred:
+                    if self.error_on_var:
+                        warn(f"{error_msg}")
+                    elif self.deferred:
                         err(f"{error_msg} - deferred")
                         raise DeferredStepError(error_msg)
                     else:
@@ -94,6 +98,15 @@ class YosysUnmappedCells(MetricChecker):
     metric_name = "design__instance_unmapped__count"
     metric_description = "Unmapped Yosys instances"
 
+    error_on_var = Variable(
+        "ERROR_ON_UNMAPPED_CELLS",
+        bool,
+        "Checks for unmapped cells after synthesis and quits immediately if so.",
+        deprecated_names=["QUIT_ON_UNMAPPED_CELLS", "CHECK_UNMAPPED_CELLS"],
+        default=True,
+    )
+    config_vars = [error_on_var]
+
 
 @Step.factory.register()
 class YosysSynthChecks(MetricChecker):
@@ -103,6 +116,15 @@ class YosysSynthChecks(MetricChecker):
 
     metric_name = "synthesis__check_error__count"
     metric_description = "Yosys check errors"
+    config_vars = [
+        Variable(
+            "ERROR_ON_SYNTH_CHECKS",
+            bool,
+            "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
+            default=True,
+            deprecated_names=["QUIT_ON_SYNTH_CHECKS"],
+        ),
+    ]
 
 
 @Step.factory.register()
@@ -114,6 +136,16 @@ class TrDRC(MetricChecker):
     metric_name = "route__drc_errors"
     metric_description = "Routing DRC errors"
 
+    config_vars = [
+        Variable(
+            "ERROR_ON_TR_DRC",
+            bool,
+            "Checks for DRC violations after routing and exits the flow if any was found.",
+            default=True,
+            deprecated_names=["QUIT_ON_TR_DRC"],
+        ),
+    ]
+
 
 @Step.factory.register()
 class MagicDRC(MetricChecker):
@@ -123,6 +155,16 @@ class MagicDRC(MetricChecker):
 
     metric_name = "magic__drc_error__count"
     metric_description = "Magic DRC errors"
+
+    config_vars = [
+        Variable(
+            "ERROR_ON_MAGIC_DRC",
+            bool,
+            "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
+            default=True,
+            deprecated_names=["QUIT_ON_MAGIC_DRC"],
+        ),
+    ]
 
 
 @Step.factory.register()
@@ -134,6 +176,16 @@ class IllegalOverlap(MetricChecker):
     metric_name = "magic__illegal_overlap__count"
     metric_description = "Magic Illegal Overlap errors"
 
+    config_vars = [
+        Variable(
+            "ERROR_ON_ILLEGAL_OVERLAPS",
+            bool,
+            "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
+            default=True,
+            deprecated_names=["QUIT_ON_ILLEGAL_OVERLAPS"],
+        ),
+    ]
+
 
 @Step.factory.register()
 class DisconnectedPins(MetricChecker):
@@ -144,6 +196,16 @@ class DisconnectedPins(MetricChecker):
     metric_name = "design__disconnected_pin__count"
     metric_description = "Disconnected pins count"
 
+    config_vars = [
+        Variable(
+            "ERROR_ON_DISCONNECTED_PINS",
+            bool,
+            "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
+            default=True,
+            deprecated_names=["QUIT_ON_DISCONNECTED_PINS"],
+        ),
+    ]
+
 
 @Step.factory.register()
 class WireLength(MetricChecker):
@@ -152,6 +214,15 @@ class WireLength(MetricChecker):
 
     metric_name = "route__wirelength__max"
     metric_description = "Threshold-surpassing long wires"
+
+    error_on_var = Variable(
+        "ERROR_ON_LONG_WIRE",
+        bool,
+        "Checks if any wire length exceeds the threshold set in the PDK. If so, an error is raised at the end of the flow.",
+        default=False,
+        deprecated_names=["QUIT_ON_LONG_WIRE"],
+    )
+    config_vars = [error_on_var]
 
     def get_threshold(self) -> Optional[Decimal]:
         threshold = self.config["WIRE_LENGTH_THRESHOLD"]
@@ -171,6 +242,15 @@ class XOR(MetricChecker):
     metric_name = "design__xor_difference__count"
     metric_description = "XOR differences"
 
+    error_on_var = Variable(
+        "ERROR_ON_XOR_ERROR",
+        bool,
+        "Checks for geometric differences between the Magic and KLayout stream-outs. If any exist, raise an error at the end of the flow.",
+        default=True,
+        deprecated_names=["QUIT_ON_XOR_ERROR"],
+    )
+    config_vars = [error_on_var]
+
 
 @Step.factory.register()
 class LVS(MetricChecker):
@@ -181,6 +261,16 @@ class LVS(MetricChecker):
     metric_name = "design__lvs_error__count"
     metric_description = "LVS errors"
 
+    config_vars = [
+        Variable(
+            "ERROR_ON_LVS_ERROR",
+            bool,
+            "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
+            default=True,
+            deprecated_names=["QUIT_ON_LVS_ERROR"],
+        ),
+    ]
+
 
 @Step.factory.register()
 class PowerGridViolations(MetricChecker):
@@ -189,6 +279,16 @@ class PowerGridViolations(MetricChecker):
 
     metric_name = "design__power_grid_violation__count"
     metric_description = "power grid violations (as reported by OpenROAD PSM- you may ignore these if LVS passes)"
+
+    config_vars = [
+        Variable(
+            "ERROR_ON_PDN_VIOLATIONS",
+            bool,
+            "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
+            default=True,
+            deprecated_names=["QUIT_ON_PDN_VIOLATIONS", " FP_PDN_CHECK_NODES"],
+        ),
+    ]
 
 
 @Step.factory.register()
@@ -201,6 +301,15 @@ class LintErrors(MetricChecker):
     metric_name = "design__lint_error__count"
     metric_description = "Lint errors"
 
+    error_on_var = Variable(
+        "ERROR_ON_LINTER_ERRORS",
+        bool,
+        "Quit immediately on any linter errors.",
+        default=True,
+        deprecated_names=["QUIT_ON_VERILATOR_ERRORS", "QUIT_ON_LINTER_ERRORS"],
+    )
+    config_vars = [error_on_var]
+
 
 @Step.factory.register()
 class LintWarnings(MetricChecker):
@@ -212,6 +321,15 @@ class LintWarnings(MetricChecker):
     metric_name = "design__lint_warning__count"
     metric_description = "Lint warnings"
 
+    error_on_var = Variable(
+        "QUIT_ON_LINTER_WARNINGS",
+        bool,
+        "Quit immediately on any linter warnings.",
+        default=False,
+        deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
+    )
+    config_vars = [error_on_var]
+
 
 @Step.factory.register()
 class LintTimingConstructs(MetricChecker):
@@ -222,6 +340,15 @@ class LintTimingConstructs(MetricChecker):
 
     metric_name = "design__lint_timing_construct__count"
     metric_description = "Lint Timing Errors"
+
+    error_on_var = Variable(
+        "ERROR_ON_LINTER_TIMING_CONSTRUCTS",
+        bool,
+        "Quit immediately on any discovered timing constructs during linting.",
+        default=True,
+        deprecated_names=["QUIT_ON_LINTER_TIMING_CONSTRUCTS"],
+    )
+    config_vars = [error_on_var]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metric_value = state_in.metrics.get(self.metric_name)
@@ -250,20 +377,103 @@ class KLayoutDRC(MetricChecker):
     metric_name = "klayout__drc_error__count"
     metric_description = "KLayout DRC errors"
 
+    error_on_var = Variable(
+        "ERROR_ON_KLAYOUT_DRC",
+        bool,
+        "Checks for DRC violations after KLayout DRC is executed and exits the flow if any was found.",
+        default=True,
+        deprecated_names=["QUIT_ON_KLAYOUT_DRC"],
+    )
+    config_vars = [error_on_var]
+
 
 class TimingViolations(MetricChecker):
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
     violation_type: str = NotImplemented
 
-    config_vars = [
-        Variable(
-            "TIMING_VIOLATIONS_CORNERS",
-            List[str],
-            "A list of wildcards matching IPVT corners to use during checking for timing violations.",
-            default=["*tt*"],
-        ),
-    ]
+    base_corner_var_name = "TIMING_VIOLATIONS_CORNERS"
+    base_error_on_var_name = "ERROR_ON_TIMING_VIOLATIONS"
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        base_error_on_var = Variable(
+            cls.base_error_on_var_name,
+            bool,
+            "Check for timing violations in selected corners",
+            default=True,
+            deprecated_names=["QUIT_ON_TIMING_VIOLATIONS"],
+        )
+        base_config_vars = [
+            Variable(
+                cls.base_corner_var_name,
+                List[str],
+                "A list of wildcards matching IPVT corners to use during checking for timing violations.",
+                default=["*tt*"],
+            ),
+            base_error_on_var,
+        ]
+        subclass_corner_config_var = [
+            variable
+            for variable in cls.config_vars
+            if variable.name == cls.get_corner_variable_name()
+        ]
+        subclass_error_on_config_var = [
+            variable
+            for variable in cls.config_vars
+            if variable.name == cls.get_error_on_variable_name()
+        ]
+        cls.config_vars = [] if not cls.config_vars else cls.config_vars
+        cls.config_vars += base_config_vars
+        cls.config_vars += (
+            [
+                Variable(
+                    f"{cls.get_corner_variable_name()}",
+                    Optional[List[str]],
+                    f"A list of wildcards matching IPVT corners to use during checking for {cls.violation_type} violations",
+                )
+            ]
+            if not subclass_corner_config_var
+            else subclass_corner_config_var
+        )
+        cls.config_vars += (
+            [
+                Variable(
+                    f"{cls.get_error_on_variable_name()[0]}",
+                    Optional[bool],
+                    f"Raise an error if {cls.violation_type} violations are found. Otherwise a warning is printed",
+                    deprecated_names=cls.get_error_on_variable_name()[1],
+                )
+            ]
+            if not subclass_error_on_config_var
+            else subclass_error_on_config_var
+        )
+
+    @classmethod
+    def get_corner_variable_name(cls):
+        return (
+            f"{cls.violation_type.upper().replace(' ', '_')}_{cls.base_corner_var_name}"
+        )
+
+    @classmethod
+    def get_error_on_variable_name(cls):
+        name = f"{cls.base_error_on_var_name}".replace(
+            "ERROR_ON_TIMING",
+            f"ERROR_ON_{cls.violation_type.upper().replace(' ', '_')}",
+        )
+        deprecated_name = name.replace("ERROR_ON", "QUIT_ON")
+        return name, [deprecated_name]
+
+    def is_error(self):
+        return self.config.get(self.get_error_on_variable_name()[0]) or self.config.get(
+            self.base_error_on_var_name
+        )
+
+    def get_corners(self):
+        return self.config.get(self.get_corner_variable_name()) or self.config.get(
+            self.base_corner_var_name
+        )
 
     def check_timing_violations(
         self,
@@ -289,7 +499,7 @@ class TimingViolations(MetricChecker):
             unmatched_config_corners = set(
                 [
                     config_corner
-                    for config_corner in self.config["TIMING_VIOLATIONS_CORNERS"]
+                    for config_corner in self.get_corners()
                     if not [
                         corner
                         for corner in metric_corners
@@ -297,39 +507,59 @@ class TimingViolations(MetricChecker):
                     ]
                 ]
             )
-            matched_corners = set(
+            violating_corners = [
+                corner
+                for corner in metric_corners
+                if metrics[f"{metric_basename}:{corner}"] > threshold
+                and [
+                    config_corner
+                    for config_corner in metric_corners
+                    if fnmatch.fnmatch(corner, config_corner)
+                ]
+            ]
+
+            specified_violating_corners = set(
                 [
                     corner
-                    for corner in metric_corners
+                    for corner in violating_corners
                     if [
-                        config_corner
-                        for config_corner in self.config["TIMING_VIOLATIONS_CORNERS"]
-                        if fnmatch.fnmatch(corner, config_corner)
+                        specified_corner
+                        for specified_corner in self.get_corners()
+                        if fnmatch.fnmatch(corner, specified_corner)
                     ]
                 ]
             )
-            violating_corners = [
-                corner
-                for corner in matched_corners
-                if metrics[f"{metric_basename}:{corner}"] > threshold
-            ]
+
+            unspecified_violating_corners = (
+                set(violating_corners) - specified_violating_corners
+            )
 
             debug("corners ▶")
             debug(metric_corners)
             debug("unmatched config corners ▶")
             debug(unmatched_config_corners)
-            debug("matched corners ▶")
-            debug(matched_corners)
-            debug("violating corners ▶")
-            debug(violating_corners)
+            debug("specificed violating corners ▶")
+            debug(specified_violating_corners)
+            debug("unspecificed violating corners ▶")
+            debug(unspecified_violating_corners)
 
+            if unspecified_violating_corners:
+                warn_msg = f"{violation_type.title()} violations found in the following corners:\n"
+                warn_msg += "\n".join(sorted(unspecified_violating_corners))
+                warn(warn_msg)
+
+            error_found = False
+            msg = ""
             if unmatched_config_corners:
-                msg = "The following specified TIMING_VIOLATIONS_CORNERS:\n"
+                msg += "The following specified TIMING_VIOLATIONS_CORNERS:\n"
                 msg += "\n".join(unmatched_config_corners)
-                raise DeferredStepError(msg)
-            if violating_corners:
-                msg = f"{violation_type} violations found in the following corners:\n"
-                msg += "\n".join(violating_corners)
+                error_found = True
+            if specified_violating_corners:
+                msg = f"{violation_type.title()} violations found in the following corners:\n"
+                msg += "\n".join(sorted(specified_violating_corners))
+                error_found = self.is_error()
+
+            if error_found:
                 raise DeferredStepError(msg)
             else:
                 verbose(f"No {violation_type} violations found")
@@ -353,6 +583,26 @@ class SetupViolations(TimingViolations):
     violation_type = "setup"
 
     metric_name = "timing__setup_vio__count"
+
+
+@Step.factory.register()
+class MaxCapViolations(TimingViolations):
+    id = "Checker.MaxCapViolations"
+    name = "Max Cap Violations Checker"
+    long_name = "Maximum Capacitance Violations Checker"
+    violation_type = "max cap"
+
+    metric_name = "design__max_cap_violation__count"
+
+
+@Step.factory.register()
+class MaxSlewViolations(TimingViolations):
+    id = "Checker.MaxSlewViolations"
+    name = "Max Slew Violations Checker"
+    long_name = "Maximum Slew Violations Checker"
+    violation_type = "max slew"
+
+    metric_name = "design__max_slew_violation__count"
 
 
 @Step.factory.register()

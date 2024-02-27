@@ -1037,7 +1037,6 @@ class GlobalPlacement(OpenROADStep):
             warn(
                 f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
             )
-            print(env.get("__PL_SKIP_IO"))
         return super().run(state_in, env=env, **kwargs)
 
 
