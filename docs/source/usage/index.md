@@ -7,7 +7,7 @@ hardening macros and writing custom flows and scripts.
 :glob:
 :maxdepth: 2
 
-caravel
+caravel/index
 pdn
 about_pdks
 corners_and_sta
