@@ -564,7 +564,6 @@ class MaxSlewViolations(TimingViolations):
     violation_type = "max slew"
 
     metric_name = "design__max_slew_violation__count"
-    corner_override = ["*"]
 
 
 @Step.factory.register()
@@ -575,3 +574,5 @@ class HoldViolations(TimingViolations):
     violation_type = "hold"
 
     metric_name = "timing__hold_vio__count"
+
+    corner_override = ["*"]

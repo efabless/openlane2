@@ -21,10 +21,12 @@ from typing import Callable, Optional
 
 import pytest
 from _pytest.fixtures import SubRequest
+from openlane.logging import set_log_level
 
 
 @pytest.fixture()
 def _step_enabled(request: SubRequest, test: str):
+    set_log_level("DEBUG")
     step_rx = request.config.option.step_rx
     if re.search(step_rx, test) is None:
         pytest.skip()
