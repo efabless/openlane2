@@ -70,7 +70,7 @@ class MetricChecker(Step):
             if metric_value is not None:
                 if metric_value > threshold:
                     error_msg = f"{metric_value} {self.metric_description} found."
-                    if self.error_on_var:
+                    if hasattr(self, "error_on_var") and self.error_on_var:
                         warn(f"{error_msg}")
                     elif self.deferred:
                         err(f"{error_msg} - deferred")
