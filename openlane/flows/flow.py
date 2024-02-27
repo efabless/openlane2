@@ -486,6 +486,16 @@ class Flow(ABC):
 
         :returns: ``(success, state_list)``
         """
+
+        handlers: List[logging.Handler] = []
+
+        warning_stream = StringIO()
+        warning_stream_handler = logging.StreamHandler(warning_stream)
+        warning_stream_handler.setLevel("WARNING")
+        warning_stream_handler.addFilter(LevelFilter(["WARNING"]))
+        handlers.append(warning_stream_handler)
+        register_additional_handler(warning_stream_handler)
+
         if last_run and tag is not None:
             raise FlowException("tag and last_run cannot be used simultaneously.")
 
@@ -576,7 +586,6 @@ class Flow(ABC):
         # Stored until next start()
         self.toolbox = Toolbox(os.path.join(self.run_dir, "tmp"))
 
-        handlers: List[logging.Handler] = []
         for level in ["WARNING", "ERROR"]:
             path = os.path.join(self.run_dir, f"{level.lower()}.log")
             handler = logging.FileHandler(path, mode="a+")
@@ -584,13 +593,6 @@ class Flow(ABC):
             handler.addFilter(LevelFilter([level]))
             handlers.append(handler)
             register_additional_handler(handler)
-
-        warning_stream = StringIO()
-        warning_stream_handler = logging.StreamHandler(warning_stream)
-        warning_stream_handler.setLevel("WARNING")
-        warning_stream_handler.addFilter(LevelFilter(["WARNING"]))
-        handlers.append(warning_stream_handler)
-        register_additional_handler(warning_stream_handler)
 
         path = os.path.join(self.run_dir, "flow.log")
         handler = logging.FileHandler(path, mode="a+")

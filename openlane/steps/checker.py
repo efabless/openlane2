@@ -396,20 +396,13 @@ class TimingViolations(MetricChecker):
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
     violation_type: str = NotImplemented
+    corner_override: Optional[List[str]] = None
 
     base_corner_var_name = "TIMING_VIOLATIONS_CORNERS"
-    base_error_on_var_name = "ERROR_ON_TIMING_VIOLATIONS"
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        base_error_on_var = Variable(
-            cls.base_error_on_var_name,
-            bool,
-            "Check for timing violations in selected corners",
-            default=True,
-            deprecated_names=["QUIT_ON_TIMING_VIOLATIONS"],
-        )
         base_config_vars = [
             Variable(
                 cls.base_corner_var_name,
@@ -417,68 +410,25 @@ class TimingViolations(MetricChecker):
                 "A list of wildcards matching IPVT corners to use during checking for timing violations.",
                 default=["*tt*"],
             ),
-            base_error_on_var,
-        ]
-        subclass_corner_config_var = [
-            variable
-            for variable in cls.config_vars
-            if variable.name == cls.get_corner_variable_name()
-        ]
-        subclass_error_on_config_var = [
-            variable
-            for variable in cls.config_vars
-            if variable.name == cls.get_error_on_variable_name()
         ]
         cls.config_vars = [] if not cls.config_vars else cls.config_vars
         cls.config_vars += base_config_vars
-        cls.config_vars += (
-            [
-                Variable(
-                    f"{cls.get_corner_variable_name()}",
-                    Optional[List[str]],
-                    f"A list of wildcards matching IPVT corners to use during checking for {cls.violation_type} violations",
-                )
-            ]
-            if not subclass_corner_config_var
-            else subclass_corner_config_var
-        )
-        cls.config_vars += (
-            [
-                Variable(
-                    f"{cls.get_error_on_variable_name()[0]}",
-                    Optional[bool],
-                    f"Raise an error if {cls.violation_type} violations are found. Otherwise a warning is printed",
-                    deprecated_names=cls.get_error_on_variable_name()[1],
-                )
-            ]
-            if not subclass_error_on_config_var
-            else subclass_error_on_config_var
-        )
+        cls.config_vars += [cls.get_corner_variable()]
 
     @classmethod
-    def get_corner_variable_name(cls):
-        return (
-            f"{cls.violation_type.upper().replace(' ', '_')}_{cls.base_corner_var_name}"
+    def get_corner_variable(cls) -> Variable:
+        replace_by = cls.violation_type.upper().replace(" ", "_")
+        variable = Variable(
+            cls.base_corner_var_name.replace("TIMING", replace_by),
+            Optional[List[str]],
+            f"A list of wildcards matching IPVT corners to use during checking for {cls.violation_type} violations",
         )
-
-    @classmethod
-    def get_error_on_variable_name(cls):
-        name = f"{cls.base_error_on_var_name}".replace(
-            "ERROR_ON_TIMING",
-            f"ERROR_ON_{cls.violation_type.upper().replace(' ', '_')}",
-        )
-        deprecated_name = name.replace("ERROR_ON", "QUIT_ON")
-        return name, [deprecated_name]
-
-    def is_error(self):
-        subclass_error = self.config.get(self.get_error_on_variable_name()[0])
-        if subclass_error is not None:
-            return subclass_error
-        else:
-            return self.config.get(self.base_error_on_var_name)
+        if cls.corner_override:
+            variable.default = cls.corner_override
+        return variable
 
     def get_corners(self):
-        subclass_corner = self.config.get(self.get_corner_variable_name())
+        subclass_corner = self.config.get(self.get_corner_variable().name)
         if subclass_corner is not None:
             return subclass_corner
         else:
@@ -536,14 +486,11 @@ class TimingViolations(MetricChecker):
                         for specified_corner in self.get_corners()
                         if fnmatch.fnmatch(corner, specified_corner)
                     ]
-                    and self.is_error()
                 ]
             )
 
             warn_violating_corner = set(violating_corners) - err_violating_corner
 
-            debug("Is error:")
-            debug(self.is_error())
             debug("corners ▶")
             debug(metric_corners)
             debug("unmatched config corners ▶")
@@ -617,6 +564,7 @@ class MaxSlewViolations(TimingViolations):
     violation_type = "max slew"
 
     metric_name = "design__max_slew_violation__count"
+    corner_override = ["*"]
 
 
 @Step.factory.register()
