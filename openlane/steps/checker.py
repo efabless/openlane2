@@ -412,6 +412,7 @@ class TimingViolations(MetricChecker):
                 List[str],
                 "A list of wildcards matching IPVT corners to use during checking for timing violations.",
                 default=["*tt*"],
+                deprecated_names=["TIMING_VIOLATIONS_CORNERS"],
             ),
             cls.get_corner_variable(),
         ]
