@@ -3,7 +3,7 @@
   mdformat --wrap 80 --end-of-line lf Changelog.md
 -->
 
-# 2.0.0rc1
+# 2.0.0b17
 
 ## CLI
 
@@ -13,9 +13,7 @@
 * Added new flag, `--run-example`, which instantiates and runs one of the
   example designs
 * Added new flag, `--condensed`, which sets `logging.options.condensed_mode` and
-  changes the default for the log level to `VERBOSE` and showing the progress
-  bar to `False`
-* Added ability to pass multiple configuration files
+  changes the default for showing the progress bar to `False`
 * Added new entry script, `openlane.config`, which allows configuration files to
   be interactively generated
 * Fixed bug where 0 config files causes a crash
@@ -49,9 +47,12 @@
   * Subprocesses now inherit `sys.path` in `PYTHONPATH` which allows `nix run`
     to work properly
 * `Odb.ApplyDEFTemplate`
-* Added `FP_TEMPLATE_MATCH_MODE`, with values `strict` (default) or `permissive`
-  with `strict` raising an error if any pins are missing from either the
-  template or the design.
+  * Added `FP_TEMPLATE_MATCH_MODE`, with values `strict` (default) or
+    `permissive` with `strict` raising an error if any pins are missing from
+    either the template or the design.
+  * Warn when the template DEF die area is different from the design die area.
+  * No longer copies the die area from the DEF template file-- floorplanning
+    needs to be executed correctly first. `DIE_AREA`
 * `Odb.CustomIOPlacement`
   * Completely re-implemented pin placement file parser in Antlr4 for more
     thorough syntax and semantic checking at
@@ -74,13 +75,10 @@
   * Added new `antenna_summary.rpt` file with a summary table for antennas
     matching that of OpenLane 1
 * `OpenROAD.Floorplan`
-  * `FP_DEF_TEMPLATE` now handled by this step using OpenROAD's
-    `read_def -floorplan_initialize` feature
   * `PL_TARGET_DENSITY_PCT` default calculation now prioritizes using metric
     `design__instance__utilization` if available.
   * Fixed a crash where obstructions were passed as floats instead of database
     unit integers and caused a crash.
-  * Removed `FP_SIZING`: Can be inferred from the existence of `FP_DEF_TEMPLATE`
 * `OpenROAD.GeneratePDN`
   * Renamed `DESIGN_IS_CORE` to `FP_PDN_MULTILAYER`, which is more accurate to
     its functionality
@@ -89,6 +87,8 @@
     core ring
   * Fixed issue where a PDN core ring would still be created on two layers even
     if `FP_PDN_MULTILAYER` is set to false- an error is thrown now
+  * Fixed issue where `FP_PDN_VSPACING` is not passed to `add_pdn_stripe` when
+    `FP_PDN_MULTILAYER` is set to false (thanks @mole99)
   * **API Break**: `FP_PDN_CHECK_NODES` is no longer a config variable for this
     step. The relevant checks are always run now, however, they do not cause the
     flow to exit immediately, rather, they generate
@@ -122,6 +122,7 @@
     * Verilog Header
     * Netlist/Powered Netlist
     * Lib File
+  * Fixed bug where Lighter would not be executed properly
 * `Yosys.Synthesis`
   * Updated error for bad area/delay format to make a bit more sense
   * Updated internal `stat` calls to Yosys to pass the liberty arguments so the
@@ -165,7 +166,6 @@
     * Both gated by `QUIT_ON_TIMING_VIOLATIONS`
     * Each gated by `QUIT_ON_SETUP_VIOLATIONS`, `QUIT_ON_HOLD_VIOLATIONS`
       respectively
-  * Removed `Odb.ApplyDEFTemplate`- now redundant to `OpenROAD.Floorplan`
 
 ## Tool Updates
 
@@ -187,6 +187,8 @@
   * New class in API, the `Family` class, helps provide more meaningful error
     reporting if the user provides an invalid PDK variant (and resolves to a
     variant if just a PDK name is provided)
+* Updated Yosys to `0.38`/`543faed`
+  * Added Yosys F4PGA SDC plugin (currently unused)
 * Added KLayout's python module to the explicit list of requirements
 
 ## Testing
@@ -199,6 +201,12 @@
 
 * Created new folder in module, `examples` which contains example designs (of
   which `spm` is used as a smoke test)
+* `__main__`
+  * Two new commandline flags added
+  * `--save-views-to`: Saves all views to a directory in a structure after
+    successful flow completion using `State.save_snapshot`
+  * `--ef-save-views-to`: Saves all views to a directory in the Efabless
+    format/convention, such as the one used by Caravel User Project.
 * `openlane.logging`
   * `LogLevels` is now an IntEnum instead of a class with global variables
   * Create a custom formatter for logging output instead of passing the
@@ -239,16 +247,32 @@
   * `Macro` has two new views now, `vh` and `pnl`
   * New `DesignFormat` added: * `openlane.config.DesignFormat`
 * `openlane.steps`
-  * `load()`'s pdk_root flag can now be passed as `None` where it will default
-    to `cwd`
-  * `create_reproducible()`
-    * Added `flatten` to public API, which flattens the file structure with the
-      exception of the PDK
-    * Modified behavior of flatten to allow including the PDK (which isn't
-      flattened)
-    * Generated `run_ol.sh` now passes ARGV to the final command (backwards
-      compatible with old behavior)
-      * Primary use for this: `run` command now accepts `--pdk-root` flag
+  * `__main__`
+    * Use default `--pdk-root` for `run` command
+  * `Step`
+    * `load()`'s pdk_root flag can now be passed as `None` where it will default
+      to `cwd`
+    * New method `load_finished()` to load concluded steps (which loads the
+      output state and step directory)
+    * `factory`
+      * New method `from_step_config()` which attempts to load a step from an
+        input configuration file
+        * Reworked step-loading function to use `from_step_config()` where
+          appropriate
+    * `create_reproducible()`
+      * Added `flatten` to public API, which flattens the file structure with
+        the exception of the PDK, which is saved to `pdk/$PDK`
+      * Modified behavior of flatten to allow including the PDK (which isn't
+        flattened)
+      * Generated `run_ol.sh` now passes ARGV to the final command (backwards
+        compatible with old behavior)
+        * Primary use for this: `run` command now accepts `--pdk-root` flag
+    * Added runtime to `*.process_stats.json`
+  * `openlane.flows`
+    * Added new instance variable, `config_resolved_path`, which contains the
+      path to the `resolved.json` of a run
+    * Flows resuming existing runs now load previously concluded steps into
+      `self.step_objects` so they may be inspected
 * Fixed an issue where Docker images did not properly have dependencies of
   dependencies set in `PYTHONPATH`.
 * Fixed a corner case where some OpenLane 1 JSON configs that use Tcl-style
@@ -288,8 +312,9 @@
 
 * Added Glossary
 * Added FAQ
-* Separated the "Getting Started" guide into a tutorial for newcomers and a
-  migration guide for OpenLane veterans
+* Added note on restarting Nix after configuring the Cachix substituter
+* Added a first stab at (conservative) minimum requirements for running
+  OpenLane- you can definitely get away with less at your own risk
 * Added extensions to make the documentation better to write and use:
   * `sphinx-tippy` for tooltips
   * `sphinx-copybutton` for copying terminal commands
@@ -298,6 +323,11 @@
   MyST roles
 * Added a new target to the `Makefile`, `watch-docs`, which watches for changes
   to rebuild the docs (requires `nodemon`)
+* Separated the "Getting Started" guide into a tutorial for newcomers and a
+  migration guide for OpenLane veterans
+* Changed *all* `.png` files to `.webp` (saves considerable space, around 66%
+  per image)
+* Updated all Microsoft Windows screenshots to a cool 150% UI scale
 * Updated generated documentation for steps, flows and universal configuration
   variable
 * Updated Readme to reflect `aarch64` support
