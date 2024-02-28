@@ -402,6 +402,7 @@ class TimingViolations(MetricChecker):
     corner_override: Optional[List[str]] = None
 
     base_corner_var_name = "TIMING_VIOLATION_CORNERS"
+    match_none_wildcard = ""
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -431,8 +432,16 @@ class TimingViolations(MetricChecker):
         return variable
 
     def get_corner_wildcards(self):
-        subclass_corner_override = self.config.get(self.get_corner_variable().name)
-        return subclass_corner_override or self.config.get(self.base_corner_var_name)
+        wildcards = self.config.get(self.get_corner_variable().name) or self.config.get(
+            self.base_corner_var_name
+        )
+        assert wildcards is not None
+        wildcards = [
+            wildcard
+            for wildcard in wildcards
+            if wildcard is not self.match_none_wildcard
+        ]
+        return wildcards
 
     def check_timing_violations(
         self,
@@ -553,6 +562,7 @@ class MaxCapViolations(TimingViolations):
     violation_type = "max cap"
 
     metric_name = "design__max_cap_violation__count"
+    corner_override = [""]
 
 
 @Step.factory.register()
@@ -563,6 +573,7 @@ class MaxSlewViolations(TimingViolations):
     violation_type = "max slew"
 
     metric_name = "design__max_slew_violation__count"
+    corner_override = [""]
 
 
 @Step.factory.register()
