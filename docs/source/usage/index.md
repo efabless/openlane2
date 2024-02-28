@@ -7,8 +7,7 @@ hardening macros and writing custom flows and scripts.
 :glob:
 :maxdepth: 2
 
-hardening_macros
-chip_integration
+caravel/index
 pdn
 about_pdks
 corners_and_sta

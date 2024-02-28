@@ -57,7 +57,7 @@ jobs:
       - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -369,13 +369,13 @@ jobs:
         uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             require("./.github/scripts/post_metrics.js")(
               github,
               context,
-              "${{ vars.BOT_USERNAME }}",
-              "${{ secrets.GH_TOKEN }}",
+              "github-actions[bot]",
+              "${{ secrets.GITHUB_TOKEN }}",
             ).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
         if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}
