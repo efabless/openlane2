@@ -44,6 +44,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import sys
 from typing import Tuple, Optional
 
 import pya
@@ -139,7 +140,10 @@ def stream_out(
         for i in top_only_layout.each_cell():
             if i.is_empty():
                 missing_gds = True
-                print(f"[ERROR] LEF Cell '{i.name}' has no matching GDS cell.")
+                print(
+                    f"[ERROR] LEF Cell '{i.name}' has no matching GDS cell.",
+                    file=sys.stderr,
+                )
 
         if missing_gds:
             raise Exception("One or more cell GDS files are missing.")

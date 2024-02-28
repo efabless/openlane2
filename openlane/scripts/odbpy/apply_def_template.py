@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import defutil
+import utl
 
 from reader import click_odb, click
 
@@ -32,12 +33,9 @@ def cli(reader, input_lefs, permissive, def_template):
         def_template,
         permissive,
     )
-
-    defutil.move_diearea(
-        reader.db,
-        input_lefs,
-        def_template,
-    )
+    area = defutil.get_die_area(def_template, input_lefs)
+    area_metric = f"{area[0]} {area[1]} {area[2]} {area[3]}"
+    utl.metric("design__die__bbox", area_metric)
 
 
 if __name__ == "__main__":

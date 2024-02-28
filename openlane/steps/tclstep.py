@@ -138,7 +138,7 @@ class TclStep(Step):
         env["TECH_LEF"] = tech_lefs[0]
 
         macro_lefs = self.toolbox.get_macro_views(self.config, DesignFormat.LEF)
-        env["MACRO_LEFS"] = " ".join([str(lef) for lef in macro_lefs])
+        env["MACRO_LEFS"] = TclUtils.join([str(lef) for lef in macro_lefs])
 
         for element in self.config.keys():
             value = self.config[element]

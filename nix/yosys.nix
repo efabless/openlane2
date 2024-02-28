@@ -56,8 +56,8 @@
     src = fetchFromGitHub {
       owner = "YosysHQ";
       repo = "yosys";
-      rev = "4a1b5599258881f579a2d95274754bcd8fc171bd";
-      sha256 = "sha256-GHDsMBj7DRb9ffESgzd1HzDAA6Cyft5PomidvIMzn9g=";
+      rev = "543faed9c8cd7c33bbb407577d56e4b7444ba61c";
+      sha256 = "sha256-mzMBhnIEgToez6mGFOvO7zBA+rNivZ9OnLQsjBBDamA=";
     };
 
     nativeBuildInputs = [pkg-config bison flex];

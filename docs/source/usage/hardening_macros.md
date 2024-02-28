@@ -29,8 +29,8 @@ You should start by setting the basic configuration file for your design.
 
 You can configure any of the variables in these lists:
 
-* {doc}`../reference/common_flow_vars`
-* {doc}`../reference/common_pdk_vars`
+* {doc}`/reference/common_flow_vars`
+* {doc}`/reference/common_pdk_vars`
 * The declared configuration variables of
   {ref}`the default Flow's steps <classic-config-vars>`
   * Click on each step to see its configuration variables.
@@ -200,7 +200,7 @@ set as follows:
     * {var}`OpenROAD.GeneratePDN::FP_PDN_HORIZONTAL_HALO`
     * {var}`OpenROAD.GeneratePDN::FP_PDN_VERTICAL_HALO`
 
-There is also {var}`::GPL_CELL_PADDING`. This will treat cells as "wider" than
+There is also {var}`OpenROAD.GlobalPlacement::GPL_CELL_PADDING`. This will treat cells as "wider" than
 they are, which has an impact on routing and diode insertion. If you increase
 the padding, make sure to recalculate the `PL_TARGET_DENSITY_PCT` as such:
 {math}`util \approx FP\_CORE\_UTIL + 10 + 5 * GPL\_CELL\_PADDING`.
@@ -210,7 +210,7 @@ the padding, make sure to recalculate the `PL_TARGET_DENSITY_PCT` as such:
 For a rundown of what detailed placement does, please see the Detailed Placement
 step documentation {step}`here <OpenROAD.DetailedPlacement>`.
 
-The only value to consider here is the {var}`::DPL_CELL_PADDING`, which must be
+The only value to consider here is the {var}`OpenROAD.DetailedPlacement::DPL_CELL_PADDING`, which must be
 less than or equal to the `GPL_CELL_PADDING` specified above.
 
 ## Clock Tree Synthesis
