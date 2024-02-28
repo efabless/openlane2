@@ -120,15 +120,14 @@ class YosysSynthChecks(MetricChecker):
 
     metric_name = "synthesis__check_error__count"
     metric_description = "Yosys check errors"
-    config_vars = [
-        Variable(
-            "ERROR_ON_SYNTH_CHECKS",
-            bool,
-            "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
-            default=True,
-            deprecated_names=["QUIT_ON_SYNTH_CHECKS"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_SYNTH_CHECKS",
+        bool,
+        "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
+        default=True,
+        deprecated_names=["QUIT_ON_SYNTH_CHECKS"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
@@ -140,15 +139,14 @@ class TrDRC(MetricChecker):
     metric_name = "route__drc_errors"
     metric_description = "Routing DRC errors"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_TR_DRC",
-            bool,
-            "Checks for DRC violations after routing and exits the flow if any was found.",
-            default=True,
-            deprecated_names=["QUIT_ON_TR_DRC"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_TR_DRC",
+        bool,
+        "Checks for DRC violations after routing and exits the flow if any was found.",
+        default=True,
+        deprecated_names=["QUIT_ON_TR_DRC"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
@@ -160,15 +158,14 @@ class MagicDRC(MetricChecker):
     metric_name = "magic__drc_error__count"
     metric_description = "Magic DRC errors"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_MAGIC_DRC",
-            bool,
-            "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
-            default=True,
-            deprecated_names=["QUIT_ON_MAGIC_DRC"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_MAGIC_DRC",
+        bool,
+        "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
+        default=True,
+        deprecated_names=["QUIT_ON_MAGIC_DRC"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
@@ -180,15 +177,14 @@ class IllegalOverlap(MetricChecker):
     metric_name = "magic__illegal_overlap__count"
     metric_description = "Magic Illegal Overlap errors"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_ILLEGAL_OVERLAPS",
-            bool,
-            "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
-            default=True,
-            deprecated_names=["QUIT_ON_ILLEGAL_OVERLAPS"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_ILLEGAL_OVERLAPS",
+        bool,
+        "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
+        default=True,
+        deprecated_names=["QUIT_ON_ILLEGAL_OVERLAPS"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
@@ -200,15 +196,14 @@ class DisconnectedPins(MetricChecker):
     metric_name = "design__disconnected_pin__count"
     metric_description = "Disconnected pins count"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_DISCONNECTED_PINS",
-            bool,
-            "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
-            default=True,
-            deprecated_names=["QUIT_ON_DISCONNECTED_PINS"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_DISCONNECTED_PINS",
+        bool,
+        "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
+        default=True,
+        deprecated_names=["QUIT_ON_DISCONNECTED_PINS"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
@@ -265,15 +260,14 @@ class LVS(MetricChecker):
     metric_name = "design__lvs_error__count"
     metric_description = "LVS errors"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_LVS_ERROR",
-            bool,
-            "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
-            default=True,
-            deprecated_names=["QUIT_ON_LVS_ERROR"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_LVS_ERROR",
+        bool,
+        "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
+        default=True,
+        deprecated_names=["QUIT_ON_LVS_ERROR"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
