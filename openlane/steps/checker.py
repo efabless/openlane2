@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import fnmatch
-
-from typing import ClassVar, Tuple, List
+from typing import ClassVar, Set, Tuple, List
 from decimal import Decimal
 from typing import Optional
 
@@ -22,6 +20,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError
 
 from ..logging import err, warn, info, debug, verbose
 from ..config import Variable
+from ..common import Filter, parse_metric_modifiers
 
 
 class MetricChecker(Step):
@@ -35,7 +34,7 @@ class MetricChecker(Step):
     metric_name: ClassVar[str] = NotImplemented
     metric_description: ClassVar[str] = NotImplemented
     deferred: ClassVar[bool] = True
-    error_on_var: Optional[Variable]
+    error_on_var: Optional[Variable] = None
 
     @classmethod
     def get_help_md(Self, **kwargs):  # pragma: no cover
@@ -393,27 +392,29 @@ class KLayoutDRC(MetricChecker):
 
 
 class TimingViolations(MetricChecker):
+    """
+    TODO
+    """
+
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
     violation_type: str = NotImplemented
     corner_override: Optional[List[str]] = None
 
-    base_corner_var_name = "TIMING_VIOLATIONS_CORNERS"
+    base_corner_var_name = "TIMING_VIOLATION_CORNERS"
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        base_config_vars = [
+        cls.config_vars += [
             Variable(
                 cls.base_corner_var_name,
                 List[str],
                 "A list of wildcards matching IPVT corners to use during checking for timing violations.",
                 default=["*tt*"],
             ),
+            cls.get_corner_variable(),
         ]
-        cls.config_vars = [] if not cls.config_vars else cls.config_vars
-        cls.config_vars += base_config_vars
-        cls.config_vars += [cls.get_corner_variable()]
 
     @classmethod
     def get_corner_variable(cls) -> Variable:
@@ -421,18 +422,15 @@ class TimingViolations(MetricChecker):
         variable = Variable(
             cls.base_corner_var_name.replace("TIMING", replace_by),
             Optional[List[str]],
-            f"A list of wildcards matching IPVT corners to use during checking for {cls.violation_type} violations",
+            f"A list of wildcards matching IPVT corners to use during checking for {cls.violation_type} violations.",
         )
         if cls.corner_override:
             variable.default = cls.corner_override
         return variable
 
-    def get_corners(self):
-        subclass_corner = self.config.get(self.get_corner_variable().name)
-        if subclass_corner is not None:
-            return subclass_corner
-        else:
-            return self.config.get(self.base_corner_var_name)
+    def get_corner_wildcards(self):
+        subclass_corner_override = self.config.get(self.get_corner_variable().name)
+        return subclass_corner_override or self.config.get(self.base_corner_var_name)
 
     def check_timing_violations(
         self,
@@ -449,74 +447,73 @@ class TimingViolations(MetricChecker):
             for key, value in state_in.metrics.items()
             if metric_basename in key
         }
-        debug("metrics ▶")
+        debug("Metrics ▶")
         debug(metrics)
         if not metrics:
-            warn(f"No metrics found for {metric_basename}")
+            warn(f"No metrics found for {metric_basename}.")
         else:
-            metric_corners = set([key.split(":")[1] for key in metrics.keys()])
-            unmatched_config_corners = set(
-                [
-                    config_corner
-                    for config_corner in self.get_corners()
-                    if not [
-                        corner
-                        for corner in metric_corners
-                        if fnmatch.fnmatch(corner, config_corner)
-                    ]
-                ]
+            metric_corners = set(
+                [parse_metric_modifiers(key)[1]["corner"] for key in metrics.keys()]
             )
-            violating_corners = [
-                corner
-                for corner in metric_corners
-                if metrics[f"{metric_basename}:{corner}"] > threshold
-                and [
-                    config_corner
-                    for config_corner in metric_corners
-                    if fnmatch.fnmatch(corner, config_corner)
-                ]
-            ]
 
-            err_violating_corner = set(
+            all_config_wildcards = set(self.get_corner_wildcards())
+            corner_filter = Filter(all_config_wildcards)
+            matched_config_wildcards: Set[str] = set()
+            for corner in metric_corners:
+                matched_config_wildcards.update(
+                    corner_filter.get_matching_wildcards(corner)
+                )
+            unmatched_config_wildcards = all_config_wildcards - matched_config_wildcards
+
+            matched_corners = set(corner_filter.filter(metric_corners))
+            unmatched_corners = metric_corners - matched_corners
+
+            all_violating_corners = set(
                 [
                     corner
-                    for corner in violating_corners
-                    if [
-                        specified_corner
-                        for specified_corner in self.get_corners()
-                        if fnmatch.fnmatch(corner, specified_corner)
-                    ]
+                    for corner in metric_corners
+                    if metrics[f"{metric_basename}:{corner}"] > threshold
                 ]
             )
 
-            warn_violating_corner = set(violating_corners) - err_violating_corner
+            matched_violating_corners = all_violating_corners.intersection(
+                matched_corners
+            )
 
-            debug("corners ▶")
+            err_violating_corner = matched_violating_corners
+            warn_violating_corner = all_violating_corners - matched_violating_corners
+
+            debug("All corners ▶")
             debug(metric_corners)
-            debug("unmatched config corners ▶")
-            debug(unmatched_config_corners)
-            debug("error violating corners ▶")
+            debug("Corners unmatched by config ▶")
+            debug(unmatched_corners)
+            debug("Violations at corners causing errors ▶")
             debug(err_violating_corner)
-            debug("warn violating corners ▶")
+            debug("Violations at corners causing warnings ▶")
             debug(warn_violating_corner)
 
             err_msg = []
             warn_msg = []
-            if unmatched_config_corners:
-                err_msg.append("The following specified TIMING_VIOLATIONS_CORNERS:")
-                err_msg += unmatched_config_corners
+            if len(unmatched_config_wildcards):
+                err_msg.append(
+                    f"One or more wildcards specified in {self.get_corner_variable().name} did not match any corners:"
+                )
+                for wildcard in sorted(unmatched_config_wildcards):
+                    err_msg.append(f"- {wildcard}")
 
-            if warn_violating_corner:
+            if len(warn_violating_corner):
                 warn_msg.append(
                     f"{violation_type.title()} violations found in the following corners:"
                 )
-                warn_msg += sorted(warn_violating_corner)
+                for corner in sorted(warn_violating_corner):
+                    warn_msg.append(f"* {corner}")
 
             if err_violating_corner:
                 err_msg.append(
                     f"{violation_type.title()} violations found in the following corners:"
                 )
-                err_msg += sorted(err_violating_corner)
+                for corner in sorted(err_violating_corner):
+                    err_msg.append(f"* {corner}")
 
             if warn_msg:
                 warn("\n".join(warn_msg))
