@@ -406,6 +406,7 @@ class TimingViolations(MetricChecker):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
+        cls.config_vars = cls.config_vars.copy()
         cls.config_vars += [
             Variable(
                 cls.base_corner_var_name,
