@@ -390,6 +390,10 @@ class TimingViolations(MetricChecker):
     """
     Abstract class for timing violations.
 
+    This class creates `*_VIOLATION_CORNERS` variable for a subclass based on
+    with a name based on `violation_type`. The default value is `[""]` which
+    indicates matching no corners. This can be overriden by `corner_override`
+
     :cvar violation_type:
         Type of the timing violation. Used in log messages.
 
