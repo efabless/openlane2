@@ -102,7 +102,11 @@ class Lint(Step):
         )
 
         bb_with_guards = os.path.join(self.step_dir, "bb.v")
-        with open(bb_path, "r", encoding="utf8",) as bb_in, open(
+        with open(
+            bb_path,
+            "r",
+            encoding="utf8",
+        ) as bb_in, open(
             bb_with_guards,
             "w",
             encoding="utf8",

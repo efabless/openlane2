@@ -193,8 +193,8 @@ class DisconnectedPins(MetricChecker):
     name = "Disconnected Pins Checker"
     deferred = False
 
-    metric_name = "design__disconnected_pin__count"
-    metric_description = "Disconnected pins count"
+    metric_name = "design__critical_disconnected_pin__count"
+    metric_description = "critical disconnected pins"
 
     error_on_var = Variable(
         "ERROR_ON_DISCONNECTED_PINS",

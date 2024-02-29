@@ -353,7 +353,7 @@ class SynthesisCommon(YosysStep):
             "SYNTH_ABC_BUFFERING",
             bool,
             "Enables `abc` cell buffering.",
-            default=True,
+            default=False,
             deprecated_names=["SYNTH_BUFFERING"],
         ),
         Variable(

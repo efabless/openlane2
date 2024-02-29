@@ -614,7 +614,11 @@ def test_get_timing_files_warnings(
     netlist_bk = cfg["MACROS"]["b"].nl
     cfg["MACROS"]["b"].nl = []
 
-    assert toolbox.get_timing_files(cfg, None, True,) == (
+    assert toolbox.get_timing_files(
+        cfg,
+        None,
+        True,
+    ) == (
         "nom_tt_025C_1v80",
         ["/pdk/my.lib", "/cwd/a/lib/tt.lib", "/cwd/b/lib/tt.lib"],
     ), "get_timing_files returned unexpected result"
@@ -629,7 +633,11 @@ def test_get_timing_files_warnings(
     spefs_bk = cfg["MACROS"]["b"].spef
     cfg["MACROS"]["b"].spef = {}
 
-    assert toolbox.get_timing_files(cfg, None, True,) == (
+    assert toolbox.get_timing_files(
+        cfg,
+        None,
+        True,
+    ) == (
         "nom_tt_025C_1v80",
         ["/pdk/my.lib", "/cwd/a/lib/tt.lib", "/cwd/b/lib/tt.lib"],
     ), "get_timing_files returned unexpected result"
@@ -643,7 +651,11 @@ def test_get_timing_files_warnings(
     # 2. No SCLs
     cfg = cfg.copy(LIB={})
 
-    assert toolbox.get_timing_files(cfg, None, True,) == (
+    assert toolbox.get_timing_files(
+        cfg,
+        None,
+        True,
+    ) == (
         "nom_tt_025C_1v80",
         [
             "/cwd/a/lib/tt.lib",

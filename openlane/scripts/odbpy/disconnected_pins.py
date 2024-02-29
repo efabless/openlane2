@@ -14,92 +14,276 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from typing import List
+import sys
+from dataclasses import dataclass
+from typing import Dict, Literal, Optional, Sequence, Union
 
 import odb
+import utl
 
 from reader import click, click_odb, OdbReader
 from reader import rich
 from reader import Table
 
-import utl
+
+def is_connected(term: Union[odb.dbITerm, odb.dbBTerm]) -> bool:
+    if isinstance(term, odb.dbITerm):
+        return term.getNet() is not None
+    # all bterms have a net, we need to check if it has another
+    net = term.getNet()
+    iterms = net.getITerms()
+    return len(iterms) != 0
 
 
-def is_connected(iterm: odb.dbITerm) -> bool:
-    return iterm.getNet() is not None
+@dataclass
+class Port:
+    polarity: Literal["INPUT", "OUTPUT", "INOUT"]
+    pg: Optional[Literal["POWER", "GROUND"]]
+    connected: bool = False
 
 
-def is_special(iterm: odb.dbITerm) -> bool:
-    return iterm.getSigType() == "POWER" or iterm.getSigType() == "GROUND"
+class Module(object):
+    @dataclass
+    class PortStats:
+        inputs = 0
+        inputs_connected = 0
+        outputs = 0
+        outputs_connected = 0
+        power_inouts = 0
+        power_inouts_connected = 0
+        ground_inouts = 0
+        ground_inouts_connected = 0
+        other_inouts = 0
+        other_inouts_connected = 0
+
+        @classmethod
+        def from_object(
+            Self,
+            module: "Module",
+        ):
+            result = Self()
+            for terminal in module.ports.values():
+                if terminal.polarity == "INPUT":
+                    result.inputs += 1
+                    if terminal.connected:
+                        result.inputs_connected += 1
+                elif terminal.polarity == "OUTPUT":
+                    result.outputs += 1
+                    if terminal.connected:
+                        result.outputs_connected += 1
+                elif terminal.polarity == "INOUT":
+                    if terminal.pg == "POWER":
+                        result.power_inouts += 1
+                        if terminal.connected:
+                            result.power_inouts_connected += 1
+                    elif terminal.pg == "GROUND":
+                        result.ground_inouts += 1
+                        if terminal.connected:
+                            result.ground_inouts_connected += 1
+                    else:
+                        result.other_inouts += 1
+                        if terminal.connected:
+                            result.other_inouts_connected += 1
+            return result
+
+        @property
+        def disconnected_pin_count(self) -> int:
+            return (
+                (self.inputs - self.inputs_connected)
+                + (self.outputs - self.outputs_connected)
+                + (self.power_inouts - self.power_inouts_connected)
+                + (self.ground_inouts - self.ground_inouts_connected)
+                + (self.other_inouts - self.other_inouts_connected)
+            )
+
+        @property
+        def top_module_critical_disconnected_pin_count(self) -> int:
+            # At least one of each kind needs to be connected, otherwise there
+            # are critical disconnects.
+            critical_disconnected_pins = 0
+            if self.inputs_connected == 0 and self.inputs != 0:
+                critical_disconnected_pins += self.inputs
+            if self.outputs_connected == 0 and self.outputs != 0:
+                critical_disconnected_pins += self.outputs
+            if self.power_inouts_connected == 0:
+                critical_disconnected_pins += self.power_inouts
+            if self.ground_inouts_connected == 0:
+                critical_disconnected_pins += self.ground_inouts
+
+            return critical_disconnected_pins
+
+        @property
+        def instance_critical_disconnected_pin_count(self):
+            critical_disconnected_pins = 0
+            if self.inputs_connected != self.inputs:
+                critical_disconnected_pins += self.inputs - self.inputs_connected
+            elif self.outputs_connected == 0:
+                critical_disconnected_pins += self.outputs
+            elif self.power_inouts != self.power_inouts_connected:
+                critical_disconnected_pins += (
+                    self.power_inouts - self.power_inouts_connected
+                )
+            elif self.ground_inouts != self.ground_inouts_connected:
+                critical_disconnected_pins += (
+                    self.ground_inouts - self.ground_inouts_connected
+                )
+            return critical_disconnected_pins
+
+    def __init__(self, object: Union[odb.dbBlock, odb.dbInst]) -> None:
+        self.name = object.getName()
+        self.ports: Dict[str, Port] = {}
+        terminals = (
+            object.getBTerms()
+            if isinstance(object, odb.dbBlock)
+            else object.getITerms()
+        )
+        power_found = False
+        ground_found = True
+        for terminal in terminals:
+            pg = terminal.getSigType()
+            if pg == "POWER":
+                power_found = True
+            elif pg == "GROUND":
+                ground_found = True
+            self.ports[terminal.getName()] = Port(
+                terminal.getIoType(),
+                pg=terminal.getSigType(),
+                connected=is_connected(terminal),
+            )
+        if not power_found:
+            print(
+                f"[ERROR] Macro/instance {object.getName()} has no power pins- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+                file=sys.stderr,
+            )
+            self.ports["<ANY POWER PIN>"] = Port("INOUT", "POWER", False)
+        if not ground_found:
+            print(
+                f"[ERROR] Macro/instance {object.getName()} has no ground pins- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+                file=sys.stderr,
+            )
+            self.ports["<ANY GROUND PIN>"] = Port("INOUT", "GROUND", False)
+        self._port_stats = Module.PortStats.from_object(self)
+        if self._port_stats.outputs != 0 and self._port_stats.outputs_connected == 0:
+            print(
+                f"[ERROR] No outputs of macro/instance '{object.getName()}' are connected- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+                file=sys.stderr,
+            )
+        if (
+            self._port_stats.inputs_connected != self._port_stats.inputs
+            and not isinstance(object, odb.dbBlock)
+        ):
+            print(
+                f"[ERROR] Some inputs of instance '{object.getName()}' are not connected- add it to IGNORE_DISCONNECTED_MODULES if this is intentional",
+                file=sys.stderr,
+            )
+        self.disconnected_pin_count = self._port_stats.disconnected_pin_count
+        self.critical_disconnected_pin_count = (
+            self._port_stats.top_module_critical_disconnected_pin_count
+            if isinstance(object, odb.dbBlock)
+            else self._port_stats.instance_critical_disconnected_pin_count
+        )
+
+    def write_disconnected_pins(self, full_table: Table, critical_table: Table):
+        if self.disconnected_pin_count == 0:
+            return
+        row = (
+            self.name,
+            "\n".join(
+                [k for k, v in self.ports.items() if v.pg is not None and v.connected]
+            ),
+            "\n".join(
+                [
+                    k
+                    for k, v in self.ports.items()
+                    if v.pg is not None and not v.connected
+                ]
+            ),
+            "\n".join(
+                [k for k, v in self.ports.items() if v.pg is None and v.connected]
+            ),
+            "\n".join(
+                [k for k, v in self.ports.items() if v.pg is None and not v.connected]
+            ),
+        )
+        full_table.add_row(*row)
+        if self.critical_disconnected_pin_count == 0:
+            return
+        critical_table.add_row(*row)
 
 
-def has_disconnect(instance: odb.dbInst) -> bool:
-    return (
-        True
-        if [iterm for iterm in instance.getITerms() if not is_connected(iterm)]
-        else False
-    )
-
-
-@click.option(
-    "--ignore-module", default=[""], multiple=True, type=str, help="Modules to ignore"
-)
 @click.command()
+@click.option(
+    "--write-full-table-to",
+    type=click.Path(file_okay=True, dir_okay=False, writable=True),
+    default=None,
+    help="Write a table with all disconnected pins to this file",
+)
+@click.option(
+    "--ignore-module",
+    "ignore_modules",
+    default=(),
+    multiple=True,
+    type=str,
+    help="Modules to ignore",
+)
 @click_odb
 def main(
     reader: OdbReader,
-    ignore_module: List[str],
+    ignore_modules: Sequence[str],
+    write_full_table_to: Optional[str],
 ):
     db = reader.db
     block = db.getChip().getBlock()
     instances = block.getInsts()
-    table = Table(
-        "Instance", "Power", "Disconnected", "Signal", "Disconnected", title=""
+    full_table = Table(
+        "Macro/Instance",
+        "Power Pins",
+        "Disconnected",
+        "Signal Pins",
+        "Disconnected",
+        title="",
+        min_width=160,
     )
-    disconnected_pins_count = 0
+    critical_table = Table(
+        "Macro/Instance",
+        "Power Pins",
+        "Disconnected",
+        "Signal Pins",
+        "Disconnected",
+        title="",
+    )
 
-    instances_with_disconnect = [
-        instance
-        for instance in instances
-        if has_disconnect(instance)
-        and (instance.getMaster().getName() not in ignore_module)
-    ]
+    disconnected_pin_count, critical_disconnected_pin_count = (0, 0)
+    if block.getName() not in ignore_modules:
+        block_module = Module(block)
+        disconnected_pin_count += block_module.disconnected_pin_count
+        critical_disconnected_pin_count += block_module.critical_disconnected_pin_count
+        block_module.write_disconnected_pins(full_table, critical_table)
 
-    for instance in instances_with_disconnect:
-        iterms = instance.getITerms()
-        signal_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if not is_special(iterm)
-        ]
-        power_pins = [
-            iterm.getMTerm().getName() for iterm in iterms if is_special(iterm)
-        ]
-        disconnected_power_pins = [
-            iterm.getMTerm().getName()
-            for iterm in iterms
-            if is_special(iterm) and not is_connected(iterm)
-        ]
-        disconnected_signal_pins = [
-            iterm.getMTerm().getName()
-            for iterm in iterms
-            if not is_special(iterm) and not is_connected(iterm)
-        ]
-        table.add_row(
-            instance.getName(),
-            ",".join(power_pins),
-            ",".join(disconnected_power_pins),
-            ",".join(signal_pins),
-            ",".join(disconnected_signal_pins),
+    for instance in instances:
+        if instance.getMaster().getName() in ignore_modules:
+            continue
+        instance_module = Module(instance)
+        disconnected_pin_count += instance_module.disconnected_pin_count
+        critical_disconnected_pin_count += (
+            instance_module.critical_disconnected_pin_count
         )
-        disconnected_pins_count += len(disconnected_signal_pins) + len(
-            disconnected_power_pins
-        )
-    if disconnected_pins_count > 0:
-        rich.print(table)
+        instance_module.write_disconnected_pins(full_table, critical_table)
 
-    print(f"Found {disconnected_pins_count} disconnected pin(s).")
+    print(
+        f"Found {disconnected_pin_count} disconnected pin(s), of which {critical_disconnected_pin_count} are critical."
+    )
 
-    utl.metric_integer("design__disconnected_pin__count", disconnected_pins_count)
+    if critical_table.row_count > 0:
+        rich.print(critical_table)
+    if full_table.row_count > 0:
+        if full_table_path := write_full_table_to:
+            rich.print(full_table, file=open(full_table_path, "w", encoding="utf8"))
+
+    utl.metric_integer("design__disconnected_pin__count", disconnected_pin_count)
+    utl.metric_integer(
+        "design__critical_disconnected_pin__count", critical_disconnected_pin_count
+    )
 
 
 if __name__ == "__main__":

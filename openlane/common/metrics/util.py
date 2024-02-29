@@ -171,7 +171,7 @@ class MetricDiff(object):
         if fields := sort_by:
             differences = sorted(
                 differences,
-                key=lambda x: _key_from_metrics(fields, x.metric_name),
+                key=lambda x: _key_from_metrics(fields, x.metric_name),  # type: ignore # (mypy bug)
             )
 
         table = ""

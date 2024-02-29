@@ -29,8 +29,8 @@ You should start by setting the basic configuration file for your design.
 
 You can configure any of the variables in these lists:
 
-* {doc}`../reference/common_flow_vars`
-* {doc}`../reference/common_pdk_vars`
+* {doc}`/reference/common_flow_vars`
+* {doc}`/reference/common_pdk_vars`
 * The declared configuration variables of
   {ref}`the default Flow's steps <classic-config-vars>`
   * Click on each step to see its configuration variables.

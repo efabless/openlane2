@@ -17,9 +17,10 @@ if { $::env(MAGIC_LEF_WRITE_USE_GDS) } {
 } else {
     source $::env(SCRIPTS_DIR)/magic/common/read.tcl
     read_tech_lef
-    read_pdk_lef
-    read_macro_lef
-    read_extra_lef
+    read_pdk_gds
+    read_macro_gds
+    read_extra_gds
+    load (REFRESHLAYOUT?)
     read_def
 }
 
@@ -27,7 +28,7 @@ if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
     # they both must exist and be equal in length
     # current assumption: they cannot have a common ground
     if { ! [info exists ::env(VDD_NETS)] || ! [info exists ::env(GND_NETS)] } {
-        puts "\[ERROR] VDD_NETS and GND_NETS must *both* either be defined or undefined"
+        puts stderr "\[ERROR] VDD_NETS and GND_NETS must *both* either be defined or undefined"
         exit -1
     }
 } else {

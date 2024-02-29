@@ -19,7 +19,7 @@ Like flows, each Step subclass must:
 
 ```{important}
 Do NOT call the `run` method of any `Step` from outside of `Step` and its
-subclasses- consider it a private method. `start` is class-independent and
+subclasses- consider it a protected method. `start` is class-independent and
 does some incredibly important processing.
 
 You should not be overriding `start` either, which is marked **final**.
@@ -37,8 +37,8 @@ But also, each Step is required to:
 * Declare any used configuration variables in the `config_vars` attribute.
 
 ```{important}
-Don't forget the [`Step` strictures](#ref-step-strictures).
-Some of them are programmatically enforced, but are still not.
+Don't forget the [`Step` strictures](#ref-step-strictures). Some of them are
+programmatically enforced, but some are still not.
 ```
 
 ### Writing Config Variables

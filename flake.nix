@@ -89,21 +89,32 @@
         callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
       in rec {
         default = callPackage (self.createOpenLaneShell {
+        }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
+        dev = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            nbqa
           ];
           extra-python-packages = with pkgs.python3.pkgs; [
             pyfakefs
             pytest
             pytest-xdist
+            pytest-cov
             pillow
             mdformat
-          ];
-        }) {};
-        notebook = callPackage (self.createOpenLaneShell {
-          extra-packages = with pkgs; [
-            jupyter
+            black
+            flake8
+            mypy
+            types-deprecated
+            types-pyyaml
+            types-psutil
+            lxml-stubs
           ];
         }) {};
         docs = callPackage (self.createOpenLaneShell {
