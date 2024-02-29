@@ -69,7 +69,7 @@ The Nix method involves installing the Nix build utility/package management
 software and cloning the OpenLane repository.
 
 You can install Nix and set up the OpenLane binary cache by following the
-instructions at {ref}`nix-based-installation`
+instructions at {ref}`nix-based-installation`.
 
 Afterwards, you can run an example as follows:
 
