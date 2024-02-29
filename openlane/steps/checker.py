@@ -409,7 +409,7 @@ class TimingViolations(MetricChecker):
 
     violation_type: str = NotImplemented
     match_none_wildcard = ""
-    corner_override: List[str] = [match_none_wildcard]
+    corner_override: Optional[List[str]] = None
     base_corner_var_name = "TIMING_VIOLATION_CORNERS"
 
     def __init_subclass__(cls, **kwargs):
