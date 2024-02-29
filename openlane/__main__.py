@@ -117,15 +117,15 @@ def run(
         )
         ctx.exit(1)
     except InvalidConfig as e:
-        info(f"[green]Errors have occurred while loading the {e.config}.")
+        if len(e.warnings) > 0:
+            warn("The following warnings have been generated:")
+            for warning in e.warnings:
+                warn(warning)
+        err(f"Errors have occurred while loading the {e.config}.")
         for error in e.errors:
             err(error)
 
-        if len(e.warnings) > 0:
-            info("The following warnings have also been generated:")
-            for warning in e.warnings:
-                warn(warning)
-        info("OpenLane will now quit. Please check your configuration.")
+        err("OpenLane will now quit. Please check your configuration.")
         ctx.exit(1)
     except ValueError as e:
         err(e)
