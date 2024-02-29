@@ -374,7 +374,7 @@ jobs:
             require("./.github/scripts/post_metrics.js")(
               github,
               context,
-              "openlane-bot",
+              "github-actions[bot]",
               "${{ secrets.GH_TOKEN }}",
             ).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
