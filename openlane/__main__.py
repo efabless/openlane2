@@ -130,7 +130,7 @@ def run(
     except ValueError as e:
         err(e)
         debug(traceback.format_exc())
-        info("OpenLane will now quit.")
+        err("OpenLane will now quit.")
         ctx.exit(1)
 
     try:
