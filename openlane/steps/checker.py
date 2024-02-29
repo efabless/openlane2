@@ -388,16 +388,25 @@ class KLayoutDRC(MetricChecker):
 
 class TimingViolations(MetricChecker):
     """
-    TODO
+    Abstract class for timing violations.
+
+    :cvar violation_type:
+        Type of the timing violation. Used in log messages.
+
+    :cvar corner_override:
+        Overrides the subclass's `*_VIOLATION_CORNERS` variable.
+
+    :cvar match_none_wildcard:
+        Wildcard used to match no corners.
     """
 
     name = "Timing Violations Checker"
     long_name = "Timing Violations Checker"
-    violation_type: str = NotImplemented
-    corner_override: Optional[List[str]] = None
 
-    base_corner_var_name = "TIMING_VIOLATION_CORNERS"
+    violation_type: str = NotImplemented
     match_none_wildcard = ""
+    corner_override: List[str] = [match_none_wildcard]
+    base_corner_var_name = "TIMING_VIOLATION_CORNERS"
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
