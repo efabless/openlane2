@@ -108,7 +108,7 @@ ______________________________________________________________________
 
 ## Installation
 
-1. Follow the instructions [here](https://app.cachix.org/cache/openlane) to
+1. Follow the instructions in {ref}`nix-based-installation` to
    install {term}`Nix` and set up {term}`Cachix`.
 
 1. Open a terminal and clone OpenLane as follows:
