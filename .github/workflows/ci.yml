@@ -374,7 +374,7 @@ jobs:
             require("./.github/scripts/post_metrics.js")(
               github,
               context,
-              "${{ vars.BOT_USERNAME }}",
+              "github-actions[bot]",
               "${{ secrets.GH_TOKEN }}",
             ).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
