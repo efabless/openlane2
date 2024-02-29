@@ -47,7 +47,9 @@ class MetricChecker(Step):
         else:
             dynamic_docstring += " an immediate error"
         dynamic_docstring += f" if {Self.metric_description} (metric: ``{Self.metric_name}``) are >= {threshold_string}."
-        dynamic_docstring += " Doesn't raise an error depending on error_on_var"
+        dynamic_docstring += (
+            " Doesn't raise an error depending on error_on_var if defined."
+        )
 
         return super().get_help_md(docstring_override=dynamic_docstring, **kwargs)
 
@@ -278,15 +280,14 @@ class PowerGridViolations(MetricChecker):
     metric_name = "design__power_grid_violation__count"
     metric_description = "power grid violations (as reported by OpenROAD PSM- you may ignore these if LVS passes)"
 
-    config_vars = [
-        Variable(
-            "ERROR_ON_PDN_VIOLATIONS",
-            bool,
-            "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
-            default=True,
-            deprecated_names=["QUIT_ON_PDN_VIOLATIONS", " FP_PDN_CHECK_NODES"],
-        ),
-    ]
+    error_on_var = Variable(
+        "ERROR_ON_PDN_VIOLATIONS",
+        bool,
+        "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
+        default=True,
+        deprecated_names=["QUIT_ON_PDN_VIOLATIONS", " FP_PDN_CHECK_NODES"],
+    )
+    config_vars = [error_on_var]
 
 
 @Step.factory.register()
