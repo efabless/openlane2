@@ -1070,29 +1070,13 @@ class GlobalPlacementSkipIO(GlobalPlacement):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config["FP_IO_MODE"] == "random_equidistant":
-            info(
-                "FP_IO_MODE set to 'random_equidistant'. Skipping the first global placement iteration…"
-            )
-            return {}, {}
-        elif self.config["PL_TARGET_DENSITY_PCT"] is None:
-            expr = (
-                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
-            )
-            expr = min(expr, 100)
-            env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
-            warn(
-                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
-            )
-        env["__PL_SKIP_IO"] = "1"
-
         if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
                 f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
             )
             return {}, {}
-
-        return OpenROADStep.run(self, state_in, env=env, **kwargs)
+        env["__PL_SKIP_IO"] = "1"
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
