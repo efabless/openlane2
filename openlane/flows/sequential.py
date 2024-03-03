@@ -19,7 +19,7 @@ from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 from .flow import Flow, FlowException, FlowError
 from ..common import Filter
 from ..state import State
-from ..logging import info, success, err, debug
+from ..logging import info, success, debug
 from ..steps import (
     Step,
     StepError,
@@ -279,10 +279,10 @@ class SequentialFlow(Flow):
             if to_resolved and to_resolved == step.id:
                 executing = False
         if len(deferred_errors) != 0:
-            err("The following deferred step errors have been encountered:")
-            for error in deferred_errors:
-                err(error)
-            raise FlowError("One or more deferred errors were encountered.")
+            raise FlowError(
+                "One or more deferred errors were encountered:\n"
+                + "\n".join(deferred_errors)
+            )
 
         assert self.run_dir is not None
         debug(f"Run concluded ▶ '{self.run_dir}'")

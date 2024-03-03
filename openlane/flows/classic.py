@@ -161,92 +161,6 @@ _common_config_vars = [
         "Enables the KLayout.DRC step.",
         default=True,
     ),
-    Variable(
-        "QUIT_ON_UNMAPPED_CELLS",
-        bool,
-        "Checks for unmapped cells after synthesis and quits immediately if so.",
-        deprecated_names=["CHECK_UNMAPPED_CELLS"],
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_SYNTH_CHECKS",
-        bool,
-        "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_TR_DRC",
-        bool,
-        "Checks for DRC violations after routing and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_MAGIC_DRC",
-        bool,
-        "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_DISCONNECTED_PINS",
-        bool,
-        "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LONG_WIRE",
-        bool,
-        "Checks if any wire length exceeds the threshold set in the PDK. If so, an error is raised at the end of the flow.",
-        default=False,
-    ),
-    Variable(
-        "QUIT_ON_XOR_ERROR",
-        bool,
-        "Checks for geometric differences between the Magic and KLayout stream-outs. If any exist, raise an error at the end of the flow.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_ILLEGAL_OVERLAPS",
-        bool,
-        "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LVS_ERROR",
-        bool,
-        "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_KLAYOUT_DRC",
-        bool,
-        "Checks for DRC violations after KLayout DRC is executed and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_PDN_VIOLATIONS",
-        bool,
-        "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
-        default=True,
-        deprecated_names=["FP_PDN_CHECK_NODES"],
-    ),
-    Variable(
-        "QUIT_ON_SETUP_VIOLATIONS",
-        bool,
-        "Check for setup violations in selected corners",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_HOLD_VIOLATIONS",
-        bool,
-        "Check for setup violations in selected corners",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_TIMING_VIOLATIONS",
-        bool,
-        "Check for timing violations in selected corners",
-        default=True,
-    ),
 ]
 
 _common_gating_config_vars = {
@@ -274,27 +188,15 @@ _common_gating_config_vars = {
         "RUN_KLAYOUT_STREAMOUT",
     ],
     "Netgen.LVS": ["RUN_LVS"],
-    "Checker.YosysUnmappedCells": ["QUIT_ON_UNMAPPED_CELLS"],
-    "Checker.YosysSynthChecks": ["QUIT_ON_SYNTH_CHECKS"],
-    "Checker.TrDRC": ["RUN_DRT", "QUIT_ON_TR_DRC"],
-    "Checker.MagicDRC": ["RUN_MAGIC_DRC", "QUIT_ON_MAGIC_DRC"],
-    "Checker.DisconnectedPins": ["QUIT_ON_DISCONNECTED_PINS"],
-    "Checker.WireLength": ["QUIT_ON_LONG_WIRE"],
+    "Checker.TrDRC": ["RUN_DRT"],
+    "Checker.MagicDRC": ["RUN_MAGIC_DRC"],
     "Checker.XOR": [
-        "QUIT_ON_XOR_ERROR",
         "RUN_KLAYOUT_XOR",
         "RUN_MAGIC_STREAMOUT",
         "RUN_KLAYOUT_STREAMOUT",
     ],
-    "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
-    "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
-    "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
-    "Checker.PowerGridViolations": ["QUIT_ON_PDN_VIOLATIONS"],
-    "Checker.SetupViolations": [
-        "QUIT_ON_TIMING_VIOLATIONS",
-        "QUIT_ON_SETUP_VIOLATIONS",
-    ],
-    "Checker.HoldViolations": ["QUIT_ON_TIMING_VIOLATIONS", "QUIT_ON_HOLD_VIOLATIONS"],
+    "Checker.LVS": ["RUN_LVS"],
+    "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC"],
 }
 
 
@@ -379,6 +281,8 @@ class Classic(SequentialFlow):
         Yosys.EQY,
         Checker.SetupViolations,
         Checker.HoldViolations,
+        Checker.MaxSlewViolations,
+        Checker.MaxCapViolations,
         Misc.ReportManufacturability,
     ]
 
@@ -396,27 +300,6 @@ class Classic(SequentialFlow):
             default=True,
             deprecated_names=["RUN_VERILATOR"],
         ),
-        Variable(
-            "QUIT_ON_LINTER_ERRORS",
-            bool,
-            "Quit immediately on any linter errors.",
-            default=True,
-            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
-        ),
-        Variable(
-            "QUIT_ON_LINTER_WARNINGS",
-            bool,
-            "Quit immediately on any linter warnings.",
-            default=False,
-            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
-        ),
-        Variable(
-            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
-            bool,
-            "Quit immediately on any discovered timing constructs during linting.",
-            default=True,
-            deprecated_names=["QUIT_ON_LINTER_TIMING_CONSTRUCTS"],
-        ),
     ]
 
     gating_config_vars = _common_gating_config_vars.copy()
@@ -426,11 +309,10 @@ Classic.gating_config_vars.update(
     {
         "Yosys.EQY": ["RUN_EQY"],
         "Verilator.Lint": ["RUN_LINTER"],
-        "Checker.LintErrors": ["RUN_LINTER", "QUIT_ON_LINTER_ERRORS"],
-        "Checker.LintWarnings": ["RUN_LINTER", "QUIT_ON_LINTER_WARNINGS"],
+        "Checker.LintErrors": ["RUN_LINTER"],
+        "Checker.LintWarnings": ["RUN_LINTER"],
         "Checker.LintTimingConstructs": [
             "RUN_LINTER",
-            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
         ],
     }
 )
