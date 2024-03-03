@@ -16,10 +16,9 @@ import re
 import json
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Dict, Tuple
+from typing import Dict, Tuple
 
 from .step import ViewsUpdate, MetricsUpdate, Step
-from .tclstep import TclStep
 
 from ..common import Path, mkdirp
 from ..logging import warn
