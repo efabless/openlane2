@@ -38,6 +38,8 @@ class TclUtils(object):
             Otherwise, the string is returned in double quotes, with any unsafe
             characters escaped with a backslash.
         """
+        if s == "":
+            return '""'
         if not _find_unsafe(s):
             return s
         return '"' + _escapes_in_quotes.sub(r"\\\1", s).replace("\n", r"\n") + '"'
