@@ -36,7 +36,7 @@ def cli(xml_file, json_file):
     json_database["total"] = total
 
     with open(json_file, "w", encoding="utf8") as f:
-        json.dump(json_database, f)
+        json.dump(json_database, f, indent=4)
 
     print(f"%OL_METRIC_I klayout__drc_error__count {total}")
 

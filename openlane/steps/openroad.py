@@ -53,7 +53,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable, Config, Macro
+from ..config import Variable, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -708,6 +708,12 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_SIZING",
+            Literal["absolute", "relative"],
+            "Sizing mode for floorplanning",
+            default="relative",
+        ),
+        Variable(
             "FP_ASPECT_RATIO",
             Decimal,
             "The core's aspect ratio (height / width).",
@@ -777,20 +783,6 @@ class Floorplan(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "floorplan.tcl")
 
-    @classmethod
-    def get_mode(Self, config: Config) -> Mode:
-        mode = ""
-        if config.get("FP_DEF_TEMPLATE") and config.get("DIE_AREA"):
-            warn("Specifing DIE_AREA with FP_DEF_TEMPLATE is redundant")
-        if config.get("FP_DEF_TEMPLATE"):
-            mode = Self.Mode.TEMPLATE
-        elif config.get("DIE_AREA"):
-            mode = Self.Mode.ABSOULTE
-        else:
-            mode = Self.Mode.RELATIVE
-        debug(f"Floorplan mode: {mode}")
-        return mode
-
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         path = self.config["FP_TRACKS_INFO"]
         tracks_info_str = open(path).read()
@@ -801,7 +793,6 @@ class Floorplan(OpenROADStep):
 
         kwargs, env = self.extract_env(kwargs)
         env["TRACKS_INFO_FILE_PROCESSED"] = new_tracks_info
-        env["_FP_MODE"] = self.get_mode(self.config)
         return super().run(state_in, env=env, **kwargs)
 
 
@@ -839,6 +830,11 @@ class IOPlacement(OpenROADStep):
                 Optional[Path],
                 "Path to a custom pin configuration file.",
             ),
+            Variable(
+                "FP_DEF_TEMPLATE",
+                Optional[Path],
+                "Points to the DEF file to be used as a template.",
+            ),
         ]
     )
 
@@ -849,9 +845,9 @@ class IOPlacement(OpenROADStep):
         if self.config["FP_PIN_ORDER_CFG"] is not None:
             info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
-        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
+        if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
-                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
+                f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping {self.id}…"
             )
             return {}, {}
 
@@ -1069,34 +1065,23 @@ class GlobalPlacementSkipIO(GlobalPlacement):
             Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
-        )
+        ),
+        Variable(
+            "FP_DEF_TEMPLATE",
+            Optional[Path],
+            "Points to the DEF file to be used as a template.",
+        ),
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config["FP_IO_MODE"] == "random_equidistant":
+        if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
-                "FP_IO_MODE set to 'random_equidistant'. Skipping the first global placement iteration…"
+                f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
             )
             return {}, {}
-        elif self.config["PL_TARGET_DENSITY_PCT"] is None:
-            expr = (
-                self.config["FP_CORE_UTIL"] + (5 * self.config["GPL_CELL_PADDING"]) + 10
-            )
-            expr = min(expr, 100)
-            env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
-            warn(
-                f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
-            )
         env["__PL_SKIP_IO"] = "1"
-
-        if Floorplan.get_mode(self.config) == Floorplan.Mode.TEMPLATE:
-            info(
-                f"Floorplan was loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
-            )
-            return {}, {}
-
-        return OpenROADStep.run(self, state_in, env=env, **kwargs)
+        return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
@@ -1252,7 +1237,7 @@ class CheckAntennas(OpenROADStep):
             ]
             table.add_row(*row)
 
-        if not options.get_condensed_mode():
+        if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
             rich.print(table, file=f)

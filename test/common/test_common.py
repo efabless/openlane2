@@ -43,7 +43,9 @@ def test_is_string():
 def test_parse_metric_modifiers():
     from openlane.common import parse_metric_modifiers
 
-    assert parse_metric_modifiers("category__name__optional_name_modifier__etc",) == (
+    assert parse_metric_modifiers(
+        "category__name__optional_name_modifier__etc",
+    ) == (
         "category__name__optional_name_modifier__etc",
         {},
     ), "Improperly parsed metric without modifiers"

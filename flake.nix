@@ -75,6 +75,7 @@
         yosys = callPackage ./nix/yosys.nix {};
         yosys-sby = callPackage ./nix/yosys-sby.nix {};
         yosys-eqy = callPackage ./nix/yosys-eqy.nix {};
+        yosys-f4pga-sdc = callPackage ./nix/yosys-f4pga-sdc.nix {};
         yosys-lighter = callPackage ./nix/yosys-lighter.nix {};
         yosys-synlig-sv = callPackage ./nix/yosys-synlig-sv.nix {};
         default = openlane;
@@ -88,21 +89,32 @@
         callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
       in rec {
         default = callPackage (self.createOpenLaneShell {
+        }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
+        dev = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            nbqa
           ];
           extra-python-packages = with pkgs.python3.pkgs; [
             pyfakefs
             pytest
             pytest-xdist
+            pytest-cov
             pillow
             mdformat
-          ];
-        }) {};
-        notebook = callPackage (self.createOpenLaneShell {
-          extra-packages = with pkgs; [
-            jupyter
+            black
+            flake8
+            mypy
+            types-deprecated
+            types-pyyaml
+            types-psutil
+            lxml-stubs
           ];
         }) {};
         docs = callPackage (self.createOpenLaneShell {

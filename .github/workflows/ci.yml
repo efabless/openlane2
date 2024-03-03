@@ -57,7 +57,7 @@ jobs:
       - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -78,7 +78,8 @@ jobs:
       - name: Install Linters
         run: make venv
       - name: Lint
-        run: make lint
+        run: |
+          PATH=$PWD/venv/bin:$PATH make lint
   build-py:
     runs-on: ubuntu-22.04
     needs: [lint, prepare-test-matrices]
@@ -364,7 +365,7 @@ jobs:
         with:
           name: metrics
           path: current
-      - name: "[PRs] Compare to main and comment result"
+      - name: "[PRs] Compare to main and comment result (if the workflow has secrets access)"
         uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
@@ -373,7 +374,7 @@ jobs:
             require("./.github/scripts/post_metrics.js")(
               github,
               context,
-              "${{ vars.BOT_USERNAME }}",
+              "openlane-bot",
               "${{ secrets.GH_TOKEN }}",
             ).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"

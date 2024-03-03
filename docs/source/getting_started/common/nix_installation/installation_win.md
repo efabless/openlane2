@@ -42,12 +42,16 @@ Windows 10 is up-to-date.
 
 ## Installing Nix
 
-You can install Nix by following the instructions at https://nixos.org/download.html
-in your WSL terminal.
+To install Nix, you first need to install `curl`:
 
 ```console
-sudo apt-get install -y curl
-sh <(curl -L https://nixos.org/nix/install) --no-daemon --yes
+$ sudo apt-get install -y curl
+```
+
+Then install Nix by running the following command:
+
+```console 
+$ sh <(curl -L https://nixos.org/nix/install) --no-daemon --yes --nix-extra-conf-file <(echo "experimental-features = nix-command flakes\nextra-substituters = https://openlane.cachix.org\nextra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=\n")
 ```
 
 Enter your password if prompted. This should take around 5 minutes.

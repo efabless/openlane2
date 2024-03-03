@@ -34,8 +34,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "yosyshq";
     repo = "eqy";
-    rev = "9fa132ee621a785480da7c7cf52219264ec980b3";
-    sha256 = "sha256-JKEjjwgoR4rwaRyvk7jezXlC6ARiJ78wkq+qLeF7q9g=";
+    rev = "5791c90fa6d6076b3c1ff37a3bd65e66f7748230";
+    sha256 = "sha256-zgD8jjtK3pvHxOWvCpFyIuLYsJS5AQMrSARcqjFm9Js=";
   };
 
   makeFlags = [
