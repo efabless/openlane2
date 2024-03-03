@@ -64,7 +64,7 @@ module pm32 (
 
     wire y = (state==RUNNING) ? Y[0] : 1'b0;
 
-    spm #(.size(32)) spm32(
+    spm #(.SIZE(32)) spm32(
         .clk(clk),
         .rst(rst),
         .x(mc),
