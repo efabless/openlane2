@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+source $::env(_TCL_ENV_IN)
+
 proc read_verilog_files {top_module} {
     set verilog_include_args [list]
     if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {

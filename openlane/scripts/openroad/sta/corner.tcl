@@ -29,7 +29,7 @@ set_cmd_units\
 
 set sta_report_default_digits 6
 
-if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
+if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
     read_current_odb
 
     # Internal API- brittle

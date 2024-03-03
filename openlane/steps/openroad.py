@@ -214,18 +214,15 @@ class OpenROADStep(TclStep):
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
-        env["_sdc_in"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        env["_pnr_libs"] = TclUtils.join([str(lib) for lib in lib_list])
-        env["_macro_libs"] = TclUtils.join(
-            [
-                str(lib)
-                for lib in self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-            ]
+        env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        env["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
+        env["_MACRO_LIBS"] = TclStep.value_to_tcl(
+            self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
         )
 
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
         excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
-        env["_pnr_excluded_cells"] = TclUtils.join(excluded_cells)
+        env["_PNR_EXCLUDED_CELLS"] = TclUtils.join(excluded_cells)
 
         python_path_elements = site.getsitepackages() + sys.path
         if current_pythonpath := env.get("PYTHONPATH"):
@@ -241,7 +238,7 @@ class OpenROADStep(TclStep):
 
         1. Before the `super()` call: It creates a version of the lib file
         minus cells that are known bad (i.e. those that fail DRC) and pass it on
-        in the environment variable `_pnr_libs`.
+        in the environment variable `_PNR_LIBS`.
 
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
@@ -368,10 +365,10 @@ class STAPrePNR(STAStep):
             prioritize_nl=prioritize_nl,
         )
 
-        env["OPENSTA"] = "1"
-        env["CURRENT_CORNER_NAME"] = timing_corner
-        env["CURRENT_CORNER_TIMING_VIEWS"] = " ".join(timing_file_list)
-        env["SDF_SAVE_DIR"] = self.step_dir
+        env["_OPENSTA"] = "1"
+        env["_CURRENT_CORNER_NAME"] = timing_corner
+        env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(timing_file_list)
+        env["_SDF_SAVE_DIR"] = self.step_dir
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
@@ -509,8 +506,8 @@ class STAPostPNR(STAPrePNR):
 
         env = self.prepare_env(env, state_in)
 
-        env["OPENSTA"] = "1"
-        env["_sdc_in"] = (
+        env["_OPENSTA"] = "1"
+        env["_SDC_IN"] = (
             self.config["SIGNOFF_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         )
 
@@ -522,9 +519,9 @@ class STAPostPNR(STAPrePNR):
             corner_dir = os.path.join(self.step_dir, corner)
             mkdirp(corner_dir)
 
-            current_env["CURRENT_CORNER_NAME"] = corner
-            current_env["LIB_SAVE_DIR"] = corner_dir
-            current_env["SDF_SAVE_DIR"] = corner_dir
+            current_env["_CURRENT_CORNER_NAME"] = corner
+            current_env["_LIB_SAVE_DIR"] = corner_dir
+            current_env["_SDF_SAVE_DIR"] = corner_dir
 
             if not isinstance(state_in[DesignFormat.SPEF], dict):
                 raise StepException(
@@ -555,7 +552,9 @@ class STAPostPNR(STAPrePNR):
                 corner,
                 prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
             )
-            current_env["CURRENT_CORNER_TIMING_VIEWS"] = " ".join(timing_file_list)
+            current_env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(
+                timing_file_list
+            )
 
             log_path = os.path.join(corner_dir, "sta.log")
 

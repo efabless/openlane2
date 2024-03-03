@@ -95,7 +95,7 @@ def get_metrics(stats: Dict) -> Dict:
     return metrics
 
 
-class NetgenStep(TclStep):
+class NetgenStep(Step):
     inputs = []
     outputs = []
 
@@ -109,12 +109,14 @@ class NetgenStep(TclStep):
         ),
     ]
 
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        return {}, self.run_subprocess(
+            ["netgen", "-batch", "source", self.get_script_path()]
+        )
+
     @abstractmethod
     def get_script_path(self):
         pass
-
-    def get_command(self) -> List[str]:
-        return ["netgen", "-batch", "source"]
 
 
 @Step.factory.register()
@@ -132,9 +134,6 @@ class LVS(NetgenStep):
     id = "Netgen.LVS"
     name = "Netgen LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
-
-    def get_command(self) -> List[str]:
-        return super().get_command() + [self.get_script_path()]
 
     def get_script_path(self):
         return os.path.join(self.step_dir, "lvs_script.lvs")

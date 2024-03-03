@@ -293,7 +293,7 @@ class YosysStep(TclStep):
                 )
             )
 
-        env["_deps_script"] = _deps_script
+        env["_DEPS_SCRIPT"] = _deps_script
 
         return super().run(state_in, env=env, **kwargs)
 
@@ -458,9 +458,9 @@ class SynthesisCommon(YosysStep):
                 except subprocess.CalledProcessError:
                     warn(f"{scl} not supported by Lighter.")
 
-            env["_lighter_dff_map"] = lighter_dff_map
+            env["_LIGHTER_DFF_MAP"] = lighter_dff_map
 
-        # env["_sdc_in"] = (
+        # env["_SDC_IN"] = (
         #     self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
         # )
 
