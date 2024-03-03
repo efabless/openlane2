@@ -1584,7 +1584,7 @@ class IRDropReport(OpenROADStep):
 
         if self.config["VSRC_LOC_FILES"] is None:
             warn(
-                "VSRC_LOC_FILES was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for VSRC_LOC_FILES."
+                "'VSRC_LOC_FILES' was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for 'VSRC_LOC_FILES'."
             )
 
         if voltage := self.toolbox.get_lib_voltage(str(libs_in[0])):
