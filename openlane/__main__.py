@@ -117,20 +117,20 @@ def run(
         )
         ctx.exit(1)
     except InvalidConfig as e:
-        info(f"[green]Errors have occurred while loading the {e.config}.")
+        if len(e.warnings) > 0:
+            warn("The following warnings have been generated:")
+            for warning in e.warnings:
+                warn(warning)
+        err(f"Errors have occurred while loading the {e.config}.")
         for error in e.errors:
             err(error)
 
-        if len(e.warnings) > 0:
-            info("The following warnings have also been generated:")
-            for warning in e.warnings:
-                warn(warning)
-        info("OpenLane will now quit. Please check your configuration.")
+        err("OpenLane will now quit. Please check your configuration.")
         ctx.exit(1)
     except ValueError as e:
         err(e)
         debug(traceback.format_exc())
-        info("OpenLane will now quit.")
+        err("OpenLane will now quit.")
         ctx.exit(1)
 
     try:
@@ -145,12 +145,11 @@ def run(
             _force_run_dir=_force_run_dir,
         )
     except FlowException as e:
-        err(f"The flow has encountered an unexpected error: {e}")
+        err(f"The flow has encountered an unexpected error:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(1)
     except FlowError as e:
-        if "deferred" not in str(e):
-            err(f"The following error was encountered while running the flow: {e}")
+        err(f"The following error was encountered while running the flow:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(2)
 
