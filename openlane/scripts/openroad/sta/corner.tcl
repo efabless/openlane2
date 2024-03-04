@@ -257,6 +257,11 @@ set r2r_hold_vios 0
 set total_setup_vios 0
 set r2r_setup_vios 0
 
+set max_violator_count 999999999
+if { [info exists ::env(STA_MAX_VIOLATOR_COUNT)] } {
+    set max_violator_count $::env(STA_MAX_VIOLATOR_COUNT)
+}
+
 set hold_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
 foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
