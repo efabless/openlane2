@@ -153,8 +153,9 @@ class CheckMacroAntennaProperties(OdbpyStep):
         return os.path.join(self.step_dir, "report.yaml")
 
     def get_command(self) -> List[str]:
-        args = " ".join([f"--cell-name {name}" for name in self.get_cells()]).split()
-        args += ["--report-file", self.get_report_path()]
+        args = ["--report-file", self.get_report_path()]
+        for name in self.get_cells():
+            args += ["--cell-name", name]
         return super().get_command() + args
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
