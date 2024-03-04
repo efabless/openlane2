@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+source $::env(_TCL_ENV_IN)
+
 proc read_verilog_files {top_module} {
     set verilog_include_args [list]
     if {[info exist ::env(VERILOG_INCLUDE_DIRS)]} {
@@ -38,7 +40,7 @@ proc read_verilog_files {top_module} {
         read_systemverilog -top $::env(DESIGN_NAME) {*}$::_synlig_defines {*}$synlig_params -sverilog {*}$verilog_include_args {*}$::env(VERILOG_FILES)
     } else {
         foreach file $::env(VERILOG_FILES) {
-            read_verilog -sv {*}$verilog_include_args $file
+            read_verilog -noautowire -sv {*}$verilog_include_args $file
         }
 
         if { [info exists ::env(SYNTH_PARAMETERS) ] } {

@@ -26,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 from ..config import Variable
 from ..logging import info, warn
 from ..state import DesignFormat, State
-from ..common import Path, get_script_dir
+from ..common import Path, get_script_dir, mkdirp
 
 
 class KLayoutStep(Step):
@@ -359,9 +359,11 @@ class DRC(KLayoutStep):
 
     def run_sky130(self, state_in: State, **kwargs) -> MetricsUpdate:
         kwargs, env = self.extract_env(kwargs)
+        reports_dir = os.path.join(self.step_dir, "reports")
+        mkdirp(reports_dir)
         drc_script_path = self.config["KLAYOUT_DRC_RUNSET"]
-        xml_report = os.path.join(self.step_dir, "violations.xml")
-        json_report = os.path.join(self.step_dir, "violations.json")
+        xml_report = os.path.join(reports_dir, "drc_violations.klayout.xml")
+        json_report = os.path.join(reports_dir, "drc_violations.klayout.json")
         feol = str(self.config["KLAYOUT_DRC_OPTIONS"]["feol"]).lower()
         beol = str(self.config["KLAYOUT_DRC_OPTIONS"]["beol"]).lower()
         floating_metal = str(

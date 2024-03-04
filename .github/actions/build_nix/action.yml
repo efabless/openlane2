@@ -62,7 +62,7 @@ runs:
           --option system ${{ inputs.nix_system }}\
           --extra-platforms ${{ inputs.nix_system }}\
           --accept-flake-config\
-          .#devShells.${{ inputs.nix_system }}.default --command pytest --step-rx '.' -n auto
+          .#devShells.${{ inputs.nix_system }}.dev --command pytest --step-rx '.' -n auto
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       if: inputs.run_tests == 'true'

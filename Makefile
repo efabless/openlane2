@@ -18,7 +18,7 @@ openlane:
 	@$(MAKE) docker-image
 
 .PHONY: docker-image
-docker-image: venv
+docker-image:
 	cat $(shell nix-build docker.nix) | docker load
 
 .PHONY: docs
@@ -27,10 +27,10 @@ docs: venv
 
 .PHONY: host-docs
 host-docs: venv
-	./venv/bin/python3 -m http.server --directory ./docs/build/html
+	python3 -m http.server --directory ./docs/build/html
 	
 .PHONY: watch-docs
-watch-docs: venv
+watch-docs:
 	nodemon\
 		-w .\
 		-e md,py,css\
@@ -40,22 +40,21 @@ watch-docs: venv
 		-x "$(MAKE) docs && python3 -m http.server --directory docs/build/html"
 
 .PHONY: lint
-lint: venv/manifest.txt
-	./venv/bin/black --check .
-	./venv/bin/flake8 .
-	./venv/bin/mypy --check-untyped-defs .
+lint:
+	black --check .
+	flake8 .
+	mypy --check-untyped-defs .
 
-.PHONY: test
-test: venv/manifest.txt
-	./venv/bin/coverage run -m pytest -n auto
-	./venv/bin/coverage report
-	./venv/bin/coverage html
+.PHONY: coverage-infrastructure
+coverage-infrastructure:
+	python3 -m pytest -n auto\
+		--cov=openlane --cov-config=.coveragerc --cov-report html:htmlcov_infra --cov-report term
 
-.PHONY: test-all
-test-all: venv/manifest.txt
-	./venv/bin/coverage run -m pytest --step-rx "." -n auto
-	./venv/bin/coverage report
-	./venv/bin/coverage html
+.PHONY: coverage-steps
+coverage-steps:
+	python3 -m pytest -n auto\
+		--cov=openlane.steps --cov-config=.coveragerc-steps --cov-report html:htmlcov_steps --cov-report term\
+		--step-rx "." -k test_all_steps
 
 .PHONY: check-license
 check-license: venv/manifest.txt

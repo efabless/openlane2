@@ -146,7 +146,6 @@ def _generate_read_deps(
     formats_so_far: List[DesignFormat] = []
     for format in format_list:
         views = toolbox.get_macro_views(config, format, unless_exist=formats_so_far)
-        print(format, views, formats_so_far)
         for view in views:
             view_escaped = TclUtils.escape(str(view))
             if format == DesignFormat.LIB:
@@ -294,7 +293,7 @@ class YosysStep(TclStep):
                 )
             )
 
-        env["_deps_script"] = _deps_script
+        env["_DEPS_SCRIPT"] = _deps_script
 
         return super().run(state_in, env=env, **kwargs)
 
@@ -354,7 +353,7 @@ class SynthesisCommon(YosysStep):
             "SYNTH_ABC_BUFFERING",
             bool,
             "Enables `abc` cell buffering.",
-            default=True,
+            default=False,
             deprecated_names=["SYNTH_BUFFERING"],
         ),
         Variable(
@@ -429,6 +428,11 @@ class SynthesisCommon(YosysStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
+        # Variable(
+        #     "SYNTH_SDC_FILE",
+        #     Optional[Path],
+        #     "Specifies the SDC file read during all Synthesis steps",
+        # ),
     ]
 
     def get_script_path(self):
@@ -454,9 +458,13 @@ class SynthesisCommon(YosysStep):
                 except subprocess.CalledProcessError:
                     warn(f"{scl} not supported by Lighter.")
 
-            env["_lighter_dff_map"] = lighter_dff_map
+            env["_LIGHTER_DFF_MAP"] = lighter_dff_map
 
-        views_updates, metric_updates = super().run(state_in, **kwargs)
+        # env["_SDC_IN"] = (
+        #     self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        # )
+
+        views_updates, metric_updates = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()

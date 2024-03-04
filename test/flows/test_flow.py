@@ -20,6 +20,7 @@ import pytest
 
 from openlane.flows import flow
 from openlane.config import Variable
+from openlane.steps import step
 
 mock_variables = pytest.mock_variables
 
@@ -49,13 +50,14 @@ def MockStepTuple(variable: Variable):
             json.dump(
                 {
                     "not_really_a_valid_header": True,
-                    "cfg_var_value": self.config["DUMMY_VARIABLE"],
+                    "cfg_var_value": str(self.config["DUMMY_VARIABLE"]),
                 },
                 open(out_file, "w", encoding="utf8"),
             )
+
             return {
                 DesignFormat.JSON_HEADER: Path(out_file),
-            }, {"whatever": 0}
+            }, {"step": state_in.metrics.get("step", -1) + 1}
 
     class StepB(Step):
         id = "Test.StepB"
@@ -69,13 +71,13 @@ def MockStepTuple(variable: Variable):
             json.dump(
                 {
                     "probably_a_valid_header": False,
-                    "previous_invalid_header": state_in[DesignFormat.JSON_HEADER],
+                    "previous_invalid_header": str(state_in[DesignFormat.JSON_HEADER]),
                 },
                 open(out_file, "w", encoding="utf8"),
             )
             return {
                 DesignFormat.JSON_HEADER: Path(out_file),
-            }, {"step": 0}
+            }, {"step": state_in.metrics.get("step", -1) + 1}
 
     class StepC(Step):
         id = "Test.StepC"
@@ -97,7 +99,7 @@ def MockStepTuple(variable: Variable):
             )
             return {
                 DesignFormat.JSON_HEADER: Path(out_file),
-            }, {"step": 1}
+            }, {"step": state_in.metrics.get("step", -1) + 1}
 
     return (StepA, StepB, StepC)
 
@@ -271,10 +273,14 @@ def test_progress_bar(DummyFlow: Type[flow.Flow]):
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
-@mock_variables([flow])
-def test_run_tags(DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture):
-    from openlane.flows import FlowException
-    from openlane.state import State
+@mock_variables([flow, step])
+def test_run_tags(caplog: pytest.LogCaptureFixture, MockStepTuple):
+    from openlane.flows import FlowException, SequentialFlow
+
+    StepA, StepB, _ = MockStepTuple
+
+    class DummySeq(SequentialFlow):
+        Steps = [StepB, StepA]
 
     def create_dir(path):
         pathlib.Path(path).mkdir(parents=True, exist_ok=True)
@@ -284,7 +290,7 @@ def test_run_tags(DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture):
         with open(path, "w") as f:
             f.write(contents)
 
-    flow = DummyFlow(
+    flow = DummySeq(
         {
             "DESIGN_NAME": "WHATEVER",
             "DUMMY_VARIABLE": "PINGAS",
@@ -311,22 +317,15 @@ def test_run_tags(DummyFlow: Type[flow.Flow], caplog: pytest.LogCaptureFixture):
     ), ".start() with an empty folder did not print a message about a new run"
     caplog.clear()
 
-    create_dir("/cwd/runs/MY_TAG2")
-    create_file(
-        "/cwd/runs/MY_TAG2/01-step_a/state_out.json",
-        contents=State({}, metrics={"step": 0}).dumps(),
-    )
-    create_file(
-        "/cwd/runs/MY_TAG2/02-step_b/state_out.json",
-        contents=State({}, metrics={"step": 1}).dumps(),
-    )
+    flow.start(tag="MY_TAG2")
+    caplog.clear()
 
     state = flow.start(tag="MY_TAG2")
     assert (
         "Using existing run at" in caplog.text
     ), ".start() with a non-empty folder did not print a message about an existing run"
     assert (
-        state.metrics["step"] == 1
+        state.metrics["step"] == 3
     ), ".start() using existing run failed to return latest state"
     caplog.clear()
 

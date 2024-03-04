@@ -17,6 +17,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import psutil
 import shutil
 import textwrap
@@ -56,6 +57,7 @@ from ..common import (
     GenericDictEncoder,
     Toolbox,
     Path,
+    RingBuffer,
     mkdirp,
     slugify,
     final,
@@ -114,6 +116,12 @@ class StepSignalled(StepException):
     pass
 
 
+class StepNotFound(NameError):
+    def __init__(self, *args: object, id: Optional[str] = None) -> None:
+        super().__init__(*args)
+        self.id = id
+
+
 REPORT_START_LOCUS = "%OL_CREATE_REPORT"
 REPORT_END_LOCUS = "%OL_END_REPORT"
 METRIC_LOCUS = "%OL_METRIC"
@@ -131,7 +139,11 @@ class ProcessStatsThread(Thread):
         self.process = process
         self.result = None
         self.interval = interval
-        self.time = {"cpu_time_user": 0.0, "cpu_time_system": 0.0}
+        self.time = {
+            "cpu_time_user": 0.0,
+            "cpu_time_system": 0.0,
+            "runtime": 0.0,
+        }
         if sys.platform == "linux":
             self.time["cpu_time_iowait"] = 0.0
 
@@ -152,6 +164,7 @@ class ProcessStatsThread(Thread):
         try:
             count = 1
             status = self.process.status()
+            now = datetime.datetime.now()
             while status not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
                 with self.process.oneshot():
                     cpu = self.process.cpu_percent()
@@ -159,6 +172,8 @@ class ProcessStatsThread(Thread):
                     cpu_time = self.process.cpu_times()
                     threads = self.process.num_threads()
 
+                    runtime = datetime.datetime.now() - now
+                    self.time["runtime"] = runtime.total_seconds()
                     self.time["cpu_time_user"] = cpu_time.user
                     self.time["cpu_time_system"] = cpu_time.system
                     if sys.platform == "linux":
@@ -558,10 +573,7 @@ class Step(ABC):
         assert (
             self.end_time is not None
         ), "End time not set even though self.state_out exists"
-        result = ""
-        time_elapsed = self.end_time - self.start_time
-
-        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
+        result = f"#### Time Elapsed: {'%.2f' % (self.end_time - self.start_time)}s\n"
 
         views_updated = []
         for id, value in dict(self.state_out).items():
@@ -600,7 +612,9 @@ class Step(ABC):
         IPython.display.display(IPython.display.Markdown(self._repr_markdown_()))
 
     @classmethod
-    def _load_config_from_file(Self, config_path: str, pdk_root: str = ".") -> Config:
+    def _load_config_from_file(
+        Self, config_path: Union[str, os.PathLike], pdk_root: str = "."
+    ) -> Config:
         config, _ = Config.load(
             config_in=json.loads(open(config_path).read(), parse_float=Decimal),
             flow_config_vars=Self.get_all_config_variables(),
@@ -613,7 +627,7 @@ class Step(ABC):
     @classmethod
     def load(
         Self,
-        config: Union[str, Config],
+        config: Union[str, os.PathLike, Config],
         state_in: Union[str, State],
         pdk_root: Optional[str] = None,
     ) -> Step:
@@ -634,6 +648,19 @@ class Step(ABC):
             as-is.
         :returns: The created step object
         """
+        if Self.id == NotImplemented:  # If abstract
+            id, Target = Step.factory.from_step_config(config)
+            if id is None:
+                raise StepNotFound(
+                    "Attempted to initialize abstract Step, and no step ID was found in the configuration."
+                )
+            if Target is None:
+                raise StepNotFound(
+                    "Attempted to initialize abstract Step, and Step designated in configuration file not found.",
+                    id=id,
+                )
+            return Target.load(config, state_in, pdk_root)
+
         pdk_root = pdk_root or "."
         if not isinstance(config, Config):
             config = Self._load_config_from_file(config, pdk_root)
@@ -644,6 +671,39 @@ class Step(ABC):
             state_in=state_in,
             _no_revalidate_conf=True,
         )
+
+    @classmethod
+    def load_finished(
+        Self,
+        step_dir: str,
+        pdk_root: Optional[str] = None,
+        search_steps: Optional[List[Type[Step]]] = None,
+    ) -> "Step":
+        config_path = os.path.join(step_dir, "config.json")
+        state_in_path = os.path.join(step_dir, "state_in.json")
+        state_out_path = os.path.join(step_dir, "state_out.json")
+        for file in config_path, state_in_path, state_out_path:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(file)
+
+        try:
+            step_object = Self.load(config_path, state_in_path, pdk_root)
+        except StepNotFound as e:
+            if e.id is not None:
+                search_steps = search_steps or []
+                Matched: Optional[Type[Step]] = None
+                for step in search_steps:
+                    if step.get_implementation_id() == e.id:
+                        Matched = step
+                        break
+                if Matched is None:
+                    raise e from None
+                step_object = Matched.load(config_path, state_in_path, pdk_root)
+            else:
+                raise e from None
+        step_object.step_dir = step_dir
+        step_object.state_out = State.loads(open(state_out_path).read())
+        return step_object
 
     @classmethod
     def get_all_config_variables(Self) -> List[Variable]:
@@ -929,10 +989,13 @@ class Step(ABC):
             raise StepException(
                 f"Step {self.name} generated invalid state: {e}"
             ) from None
-        self.end_time = time.time()
 
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
+
+        self.end_time = time.time()
+        with open(os.path.join(self.step_dir, "runtime.txt"), "w") as f:
+            f.write(format_elapsed_time(self.end_time - self.start_time))
 
         return self.state_out
 
@@ -1053,12 +1116,13 @@ class Step(ABC):
 
         process_stats_thread = ProcessStatsThread(process)
         process_stats_thread.start()
-        lines = ""
+
+        line_buffer = RingBuffer(str, 10)
         if process_stdout := process.stdout:
             current_rpt = None
             try:
                 while line := process_stdout.readline():
-                    lines += line
+                    line_buffer.push(line)
                     log_file.write(line)
                     if self.step_dir is not None and line.startswith(
                         REPORT_START_LOCUS
@@ -1102,11 +1166,13 @@ class Step(ABC):
         log_file.close()
         if returncode != 0:
             if returncode > 0:
-                split_lines = lines.split("\n")
-                log = "\n".join(split_lines[-10:])
-                if log.strip() != "":
-                    err(escape(log))
-                err(f"Log file: '{os.path.relpath(log_path)}'")
+                err("Subprocess had a non-zero exit.")
+                concatenated = ""
+                for line in line_buffer:
+                    concatenated += line
+                if concatenated.strip() != "":
+                    err(f"Last {len(line_buffer)} line(s):\n" + escape(concatenated))
+                err(f"Full log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return generated_metrics
@@ -1156,6 +1222,21 @@ class Step(ABC):
         """
 
         __registry: ClassVar[Dict[str, Type[Step]]] = {}
+
+        @classmethod
+        def from_step_config(
+            Self, step_config_path: Union[Config, str, os.PathLike]
+        ) -> Tuple[Optional[str], Optional[Type[Step]]]:
+            if isinstance(step_config_path, Config):
+                step_id = Config.meta.step
+            else:
+                config_dict = json.load(open(step_config_path, encoding="utf8"))
+                meta = config_dict.get("meta") or {}
+                step_id = meta.get("step")
+            if step_id is None:
+                return (None, None)
+            step_id = str(step_id)
+            return (step_id, Self.get(step_id))
 
         @classmethod
         def register(Self) -> Callable[[Type[Step]], Type[Step]]:

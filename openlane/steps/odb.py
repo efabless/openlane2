@@ -23,7 +23,6 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
-from deprecated.sphinx import deprecated
 
 from .common_variables import io_layer_variables
 from .openroad import DetailedPlacement, GlobalRouting
@@ -102,13 +101,18 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
+        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+            DesignFormat.LEF in self.inputs
+        ):
+            lefs.append("--design-lef")
+            lefs.append(str(design_lef))
         return (
             [
                 "openroad",
                 "-exit",
                 "-no_splash",
                 "-metrics",
-                metrics_path,
+                str(metrics_path),
                 "-python",
                 self.get_script_path(),
             ]
@@ -122,6 +126,53 @@ class OdbpyStep(Step):
 
     def get_subcommand(self) -> List[str]:
         return []
+
+
+@Step.factory.register()
+class CheckMacroAntennaProperties(OdbpyStep):
+    id = "Odb.CheckMacroAntennaProperties"
+    name = "Check Antenna Properties of Macros Pins in Their LEF Views"
+    inputs = OdbpyStep.inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "check_antenna_properties.py",
+        )
+
+    def get_cells(self) -> List[str]:
+        macros = self.config["MACROS"]
+        cells = []
+        if macros:
+            cells = list(macros.keys())
+        return cells
+
+    def get_report_path(self) -> str:
+        return os.path.join(self.step_dir, "report.yaml")
+
+    def get_command(self) -> List[str]:
+        args = ["--report-file", self.get_report_path()]
+        for name in self.get_cells():
+            args += ["--cell-name", name]
+        return super().get_command() + args
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if not self.get_cells():
+            info("No cells provided, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class CheckDesignAntennaProperties(CheckMacroAntennaProperties):
+    id = "Odb.CheckDesignAntennaProperties"
+    name = "Check Antenna Properties of Pins in The Generated Design LEF view"
+    inputs = CheckMacroAntennaProperties.inputs + [DesignFormat.LEF]
+
+    def get_cells(self) -> List[str]:
+        return [self.config["DESIGN_NAME"]]
 
 
 @Step.factory.register()
@@ -162,16 +213,25 @@ class ApplyDEFTemplate(OdbpyStep):
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
 
-    @deprecated(
-        version="2.0.0b17",
-        reason="Template def is now applied in OpenROAD.Floorplan.",
-        action="once",
-    )
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
             return {}, {}
-        return super().run(state_in, **kwargs)
+
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        design_area_string = self.state_in.result().metrics.get("design__die__bbox")
+        if design_area_string:
+            template_area_string = metrics_updates["design__die__bbox"]
+            template_area = [Decimal(point) for point in template_area_string.split()]
+            design_area = [Decimal(point) for point in design_area_string.split()]
+            if template_area != design_area:
+                warn(
+                    "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
+                )
+                warn(
+                    f"Design area: {design_area_string}. Template def area: {template_area_string}"
+                )
+        return views_updates, {}
 
 
 @Step.factory.register()
@@ -342,6 +402,29 @@ class ReportWireLength(OdbpyStep):
 
 @Step.factory.register()
 class ReportDisconnectedPins(OdbpyStep):
+    """
+    Creates a table of disconnected pins in the design, updating metrics as
+    appropriate.
+
+    Disconnected pins may be marked "critical" if they are very likely to
+    result in a dead design. We determine if a pin is critical as follows:
+
+    * For the top-level macro: for these four kinds of pins: inputs, outputs,
+    power inouts, and ground inouts, at least one of each kind must be connected
+    or else all pins of a certain kind are counted as critical disconnected
+    pins.
+    * For instances:
+        * Any unconnected input is a critical disconnected pin.
+        * If there isn't at least one output connected, all disconnected
+            outputs are critical disconnected pins.
+        * Any disconnected power inout pins are critical disconnected pins.
+
+    The metrics ``design__disconnected_pin__count`` and
+    ``design__critical_disconnected_pin__count`` is updated. It is recommended
+    to use the checker ``Checker.DisconnectedPins`` to check that there are
+    no critical disconnected pins.
+    """
+
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 

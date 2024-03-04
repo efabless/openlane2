@@ -14,12 +14,23 @@
 from __future__ import annotations
 
 import os
-import json
+import threading
 from enum import Enum
 from decimal import Decimal
 from abc import abstractmethod
 from dataclasses import is_dataclass, asdict
-from typing import Any, ClassVar, Iterable, List, Mapping, Tuple
+from typing import (
+    Any,
+    ClassVar,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Dict,
+    Union,
+)
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepException
 
@@ -27,7 +38,6 @@ from ..state import State, DesignFormat
 from ..common import (
     Path,
     TclUtils,
-    GenericDictEncoder,
     get_script_dir,
     protected,
     is_string,
@@ -62,7 +72,7 @@ class TclStep(Step):
         * Otherwise, the value is passed to ``str()``.
         """
         if is_dataclass(value):
-            return json.dumps(asdict(value), cls=GenericDictEncoder)
+            return TclStep.value_to_tcl(asdict(value))
         elif isinstance(value, Mapping):
             result = []
             for v_key, v_value in value.items():
@@ -138,7 +148,7 @@ class TclStep(Step):
         env["TECH_LEF"] = tech_lefs[0]
 
         macro_lefs = self.toolbox.get_macro_views(self.config, DesignFormat.LEF)
-        env["MACRO_LEFS"] = " ".join([str(lef) for lef in macro_lefs])
+        env["MACRO_LEFS"] = TclUtils.join([str(lef) for lef in macro_lefs])
 
         for element in self.config.keys():
             value = self.config[element]
@@ -208,3 +218,60 @@ class TclStep(Step):
             overrides[output] = path
 
         return overrides, generated_metrics
+
+    @protected
+    def run_subprocess(
+        self,
+        cmd: Sequence[Union[str, os.PathLike]],
+        log_to: Optional[Union[str, os.PathLike]] = None,
+        silent: bool = False,
+        report_dir: Optional[Union[str, os.PathLike]] = None,
+        env: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        if env is not None:
+            thread_postfix = f"_{threading.current_thread().name}"
+            if threading.current_thread() is threading.main_thread():
+                thread_postfix = ""
+
+            env_in_dir = report_dir or self.step_dir
+            env_in_file = os.path.join(env_in_dir, f"_env{thread_postfix}.tcl")
+
+            ENV_ALLOWLIST = [
+                "PATH",
+                "PYTHONPATH",
+                "SCRIPTS_DIR",
+                "STEP_DIR",
+                "PDK_ROOT",
+                "PDK",
+            ]
+            env_in: List[Tuple[str, str]] = list(env.items())
+
+            # Create new "blank" env dict
+            #
+            # For all values:
+            # If a value is unchanged: keep as is
+            # If a value is changed and is in ENV_ALLOWLIST: emplace in dict
+            # If a value is changed and is not in ENV_ALLOWLIST: write to file
+            #
+            # Emplace file to be sourced in dict with key ``_TCL_ENV_IN``
+            env = os.environ.copy()
+            with open(env_in_file, "w") as f:
+                for key, value in env_in:
+                    if key in env and env[key] == value:
+                        continue
+                    if key in ENV_ALLOWLIST:
+                        env[key] = value
+                    else:
+                        f.write(
+                            f"set ::env({key}) {TclUtils.escape(TclStep.value_to_tcl(value))}\n"
+                        )
+            env["_TCL_ENV_IN"] = env_in_file
+        return super().run_subprocess(
+            cmd=cmd,
+            log_to=log_to,
+            silent=silent,
+            report_dir=report_dir,
+            env=env,
+            **kwargs,
+        )

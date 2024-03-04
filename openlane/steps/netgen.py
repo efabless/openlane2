@@ -22,7 +22,7 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..common import Path, mkdirp
+from ..common import Path, mkdirp, get_script_dir
 from ..logging import warn
 from ..config import Variable
 from ..state import DesignFormat, State
@@ -172,6 +172,22 @@ class LVS(NetgenStep):
 
         design_name = self.config["DESIGN_NAME"]
         reports_dir = os.path.join(self.step_dir, "reports")
+        stats_file = os.path.join(reports_dir, "lvs.netgen.rpt")
+        stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
+        mkdirp(reports_dir)
+
+        setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
+
+        with open(self.get_script_path(), "w") as f:
+            for lib in spice_files:
+                print(
+                    f"puts \"Reading SPICE netlist file '{lib}'...\"",
+                    file=f,
+                )
+                print(
+                    f"readnet spice {lib} 1",
+                    file=f,
+                )
         stats_file = os.path.join(reports_dir, "lvs.rpt")
         stats_file_json = os.path.join(reports_dir, "lvs.json")
         netgen_setup = os.path.join(self.step_dir, "setup.tcl")
@@ -196,7 +212,7 @@ foreach cell $cells1 {
         """
         )
         with open(netgen_setup, "w") as f:
-            f.write(open(self.config["NETGEN_SETUP"]).read())
+            f.write(open(setup_script).read())
             f.write(netgen_extra)
         spice_files_commands = []
         for lib in spice_files:
