@@ -18,6 +18,8 @@
 
 ## CLI
 
+* Fixed `--ef-save-views-to` not saving `.mag`, `.gds` views
+
 ## Steps
 
 * `Checker.*`
@@ -75,11 +77,28 @@
 
 ## Misc. Enhancements/Bugfixes
 
-* `openlane.flows.flow`:
+* `openlane.flows.Flow`:
   * All warnings captured are now printed at the end of the flow à la OpenLane
     1\.
-* `openlane.flows.sequential`:
+* `openlane.flows.SequentialFlow`:
   * Deferred errors are now handled in the same way normal errors are.
+* Various internal environment variables changed from `_lower_snake_case` to
+  `_UPPER_SNAKE_CASE` for (relative) consistency
+* `openlane.common.TclUtils`
+  * Empty strings now escaped as `""`
+* `openlane.steps.Step`
+  * Printing of last 10 lines of a file now uses a ring buffer instead of
+    concatenating then splitting then joining
+* `openlane.steps.TclStep`
+  * Various handcrafted joins in subclasses now use `TclStep.value_to_tcl` or
+    `TclUtils.join`
+  * **API Break**: `value_to_tcl` no longer converts dataclasses to JSON,
+    rather, they're converted to Tcl dicts
+  * **API Break**: `run_subprocess` now intercepts and passes most environment
+    variables are now passed indirectly, i.e., a file is made and placed under
+    the variable `_TCL_ENV_IN`, which is then to be sourced by scripts. This
+    helps avoid the 1 MiB args + env limit in macOS / 2 MiB args + env limit in
+    Linux.
 
 ## API Breaks
 
