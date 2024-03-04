@@ -54,7 +54,9 @@
     now matches `OpenROAD.GlobalPlacement`.
 * `Yosys.*`
   * Verilog files are now read with `-noautowire`. This changes the default
-    `default_nettype` to `none`, no longer tolerating implicitly declared wires.
+    `default_nettype` to `none`, no longer tolerating implicitly declared wires
+    unless `default_nettype` is explicitly set to something else in a particular
+    source file.
 
 ## Flows
 
