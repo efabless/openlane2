@@ -246,7 +246,7 @@ def run_example(
         config_file = os.path.join(final_path, "config.json")
 
         # 3. Run
-        status = run(
+        run(
             ctx,
             flow_name=None,
             pdk_root=pdk_root,
@@ -264,10 +264,7 @@ def run_example(
             _force_run_dir=None,
             design_dir=None,
         )
-        if status == 0:
-            info("Smoke test passed.")
-        else:
-            err("Smoke test failed.")
+        info("Smoke test passed.")
     except KeyboardInterrupt:
         info("Smoke test aborted.")
         status = -1
