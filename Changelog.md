@@ -3,6 +3,114 @@
   mdformat --wrap 80 --end-of-line lf Changelog.md
 -->
 
+<!--
+## CLI
+## Steps
+## Flows
+## Tool Updates
+## Testing
+## Misc. Enhancements/Bugfixes
+## API Breaks
+## Documentation
+-->
+
+# 2.0.0rc1
+
+## CLI
+
+* Fixed `--ef-save-views-to` not saving `.mag`, `.gds` views
+
+## Steps
+
+* `Checker.*`
+  * Created new `ERROR_ON` variables with the removed `QUIT_ON` variables from
+    the `Classic` flow being added as deprecated names for these variables.
+  * Disabling `ERROR_ON*` (previously `QUIT_ON*`) no longer bypasses a step
+    entirely. A warning will be generated and the flow will not quit.
+* `Checker.TimingViolations`
+  * `TIMING_VIOLATIONS_CORNERS` renamed to `TIMING_VIOLATION_CORNERS`
+  * Now creates a new variable `<violation_type>_VIOLATION_CORNERS` for its
+    subclasses. This allows for fine-grained control of the IPVT corners checked
+    by each subclass.
+  * Now generates errors for violations occuring at `TIMING_VIOLATION_CORNERS`
+    (unless the subclass variable override is defined) and generates warnings
+    for violations in the rest of the IPVT corners.
+* `Checker.HoldViolations`
+  * Added `HOLD_VIOLATION_CORNERS` which takes precedence over
+    `TIMING_VIOLATION_CORNERS`
+* `Checker.SetupViolations`
+  * Added `SETUP_VIOLATION_CORNERS` acting similar to `HOLD_VIOLATION_CORNERS`.
+* Created `Checker.MaxCapViolations`
+  * Reports maximum capacitance violations.
+  * Added `MAX_CAP_VIOLATION_CORNERS`. It defaults to `[""]` which is the value
+    for matching no corners (i.e. all violations are reported as warnings).
+* Created `Checker.MaxSlewViolations`
+  * Reports maximum slew violations.
+  * Added `MAX_SLEW_VIOLATION_CORNERS`. It defaults to `[""]` which is the value
+    for matching no corners (i.e. all violations are reported as warnings).
+* `OpenROAD.GlobalPlacementSkipIO`
+  * Fixed a bug where `PL_TARGET_DENSITY_PCT` is calculated base on
+    `FP_CORE_UTIL` in designs with `FP_SIZING` set to `absolute`. The behavior
+    now matches `OpenROAD.GlobalPlacement`.
+* `Yosys.*`
+  * Verilog files are now read with `-noautowire`. This changes the default
+    `default_nettype` to `none`, no longer tolerating implicitly declared wires
+    unless `default_nettype` is explicitly set to something else in a particular
+    source file.
+
+## Flows
+
+* `Classic`, `VHDLClassic`
+  * **API Break**: Removed all `QUIT_ON*` variables from the flow itself
+  * Added `Checker.MaxSlewViolations`
+  * Added `Checker.MaxCapViolations`
+
+## Tool Updates
+
+* Updated `black` to `23` + matching formatting changes to the code
+* Makefile no longer creates venvs for most targets
+* Default Nix shell no longer includes development-specific tools (jdupes,
+  alejandra, pytest…), new devShell `dev` includes these tools and more
+
+## Testing
+
+* Created two coverage commands in the `Makefile`, one for infrastructure unit
+  tests and the other for step unit tests
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.flows.Flow`:
+  * All warnings captured are now printed at the end of the flow à la OpenLane
+    1\.
+* `openlane.flows.SequentialFlow`:
+  * Deferred errors are now handled in the same way normal errors are.
+* Various internal environment variables changed from `_lower_snake_case` to
+  `_UPPER_SNAKE_CASE` for (relative) consistency
+* `openlane.common.TclUtils`
+  * Empty strings now escaped as `""`
+* `openlane.steps.Step`
+  * Printing of last 10 lines of a file now uses a ring buffer instead of
+    concatenating then splitting then joining
+* `openlane.steps.TclStep`
+  * Various handcrafted joins in subclasses now use `TclStep.value_to_tcl` or
+    `TclUtils.join`
+  * **API Break**: `value_to_tcl` no longer converts dataclasses to JSON,
+    rather, they're converted to Tcl dicts
+  * **API Break**: `run_subprocess` now intercepts and passes most environment
+    variables are now passed indirectly, i.e., a file is made and placed under
+    the variable `_TCL_ENV_IN`, which is then to be sourced by scripts. This
+    helps avoid the 1 MiB args + env limit in macOS / 2 MiB args + env limit in
+    Linux.
+
+## API Breaks
+
+* **API Break**: Removed all `QUIT_ON*` variables from the the `Classic`,
+  `VHDLClassic` per se, however they are not translated variables.
+
+## Documentation
+
+* Fixed bug with newcomer's guide (thanks @calvbore)
+
 # 2.0.0b17
 
 ## CLI
