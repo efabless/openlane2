@@ -753,6 +753,8 @@ class Flow(ABC):
             DesignFormat.SDF: (os.path.join("sdf", "multicorner"), "sdf"),
             DesignFormat.SPEF: (os.path.join("spef", "multicorner"), "spef"),
             DesignFormat.LIB: (os.path.join("lib", "multicorner"), "lib"),
+            DesignFormat.GDS: ("gds", "gds"),
+            DesignFormat.MAG: ("mag", "mag"),
         }
 
         def visitor(key, value, top_key, _, __):
