@@ -35,9 +35,6 @@ source $::env(SCRIPTS_DIR)/yosys/common.tcl
 set report_dir $::env(STEP_DIR)/reports
 file mkdir $report_dir
 
-# inputs expected as env vars
-set vtop $::env(DESIGN_NAME)
-
 source $::env(_deps_script)
 
 set lib_args [list]
@@ -76,125 +73,9 @@ puts $outfile "set_driving_cell $::env(SYNTH_DRIVING_CELL)"
 puts $outfile "set_load $::env(OUTPUT_CAP_LOAD)"
 close $outfile
 
-
-# Assemble Scripts (By Strategy)
-set abc_rs_K    "resub,-K,"
-set abc_rs      "resub"
-set abc_rsz     "resub,-z"
-set abc_rf      "drf,-l"
-set abc_rfz     "drf,-l,-z"
-set abc_rw      "drw,-l"
-set abc_rwz     "drw,-l,-z"
-set abc_rw_K    "drw,-l,-K"
-if { $::env(SYNTH_ABC_LEGACY_REFACTOR) == "1" } {
-    set abc_rf      "refactor"
-    set abc_rfz     "refactor,-z"
-}
-if { $::env(SYNTH_ABC_LEGACY_REWRITE) == "1" } {
-    set abc_rw      "rewrite"
-    set abc_rwz     "rewrite,-z"
-    set abc_rw_K    "rewrite,-K"
-}
-set abc_b       "balance"
-
-set abc_resyn2        "${abc_b}; ${abc_rw}; ${abc_rf}; ${abc_b}; ${abc_rw}; ${abc_rwz}; ${abc_b}; ${abc_rfz}; ${abc_rwz}; ${abc_b}"
-set abc_share         "strash; multi,-m; ${abc_resyn2}"
-set abc_resyn2a       "${abc_b};${abc_rw};${abc_b};${abc_rw};${abc_rwz};${abc_b};${abc_rwz};${abc_b}"
-set abc_resyn3        "balance;resub;resub,-K,6;balance;resub,-z;resub,-z,-K,6;balance;resub,-z,-K,5;balance"
-set abc_resyn2rs      "${abc_b};${abc_rs_K},6;${abc_rw};${abc_rs_K},6,-N,2;${abc_rf};${abc_rs_K},8;${abc_rw};${abc_rs_K},10;${abc_rwz};${abc_rs_K},10,-N,2;${abc_b},${abc_rs_K},12;${abc_rfz};${abc_rs_K},12,-N,2;${abc_rwz};${abc_b}"
-
-set abc_choice        "fraig_store; ${abc_resyn2}; fraig_store; ${abc_resyn2}; fraig_store; fraig_restore"
-set abc_choice2      "fraig_store; balance; fraig_store; ${abc_resyn2}; fraig_store; ${abc_resyn2}; fraig_store; ${abc_resyn2}; fraig_store; fraig_restore"
-
-set abc_map_old_cnt			"map,-p,-a,-B,0.2,-A,0.9,-M,0"
-set abc_map_old_dly         "map,-p,-B,0.2,-A,0.9,-M,0"
-set abc_retime_area         "retime,-D,{D},-M,5"
-set abc_retime_dly          "retime,-D,{D},-M,6"
-set abc_map_new_area        "amap,-m,-Q,0.1,-F,20,-A,20,-C,5000"
-
-set abc_area_recovery_1       "${abc_choice}; map;"
-set abc_area_recovery_2       "${abc_choice2}; map;"
-
-set map_old_cnt			    "map,-p,-a,-B,0.2,-A,0.9,-M,0"
-set map_old_dly			    "map,-p,-B,0.2,-A,0.9,-M,0"
-set abc_retime_area   	"retime,-D,{D},-M,5"
-set abc_retime_dly    	"retime,-D,{D},-M,6"
-set abc_map_new_area  	"amap,-m,-Q,0.1,-F,20,-A,20,-C,5000"
-
-if { $::env(SYNTH_ABC_BUFFERING) == 1 } {
-    set max_tr_arg ""
-    if { $max_TR != 0 } {
-        set max_tr_arg ",-S,${max_TR}"
-    }
-    set abc_fine_tune		"buffer,-N,${max_FO}${max_tr_arg};upsize,{D};dnsize,{D}"
-} elseif {$::env(SYNTH_SIZING)} {
-    set abc_fine_tune       "upsize,{D};dnsize,{D}"
-} else {
-    set abc_fine_tune       ""
-}
-
-
-set delay_scripts [list \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_dly}; scleanup;${abc_map_old_dly};retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_dly}; scleanup;${abc_choice2};${abc_map_old_dly};${abc_area_recovery_2}; retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_dly}; scleanup;${abc_choice};${abc_map_old_dly};${abc_area_recovery_1}; retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_area};scleanup;${abc_choice2};${abc_map_new_area};${abc_choice2};${abc_map_old_dly};retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    "+read_constr,${sdc_file};&get -n;&st;&dch;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;buffer -c -N ${max_FO};topo;stime -c;upsize -c;dnsize -c;;stime,-p;print_stats -m" \
-]
-
-set area_scripts [list \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_area};scleanup;${abc_choice2};${abc_map_new_area};retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_resyn2};${abc_retime_area};scleanup;${abc_choice2};${abc_map_new_area};${abc_choice2};${abc_map_new_area};retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    \
-    "+read_constr,${sdc_file};fx;mfs;strash;${abc_rf};${abc_choice2};${abc_retime_area};scleanup;${abc_choice2};${abc_map_new_area};${abc_choice2};${abc_map_new_area};retime,-D,{D};&get,-n;&st;&dch;&nf;&put;${abc_fine_tune};stime,-p;print_stats -m" \
-    "+read_constr,${sdc_file};strash;dch;map -B 0.9;topo;stime -c;buffer -c -N ${max_FO};upsize -c;dnsize -c;stime,-p;print_stats -m" \
-]
-
-set all_scripts [list {*}$delay_scripts {*}$area_scripts]
-
-set strategy_parts [split $::env(SYNTH_STRATEGY)]
-
-proc synth_strategy_format_err { } {
-    upvar area_scripts area_scripts
-    upvar delay_scripts delay_scripts
-    log -stderr "\[ERROR] Misformatted SYNTH_STRATEGY (\"$::env(SYNTH_STRATEGY)\")."
-    log -stderr "\[ERROR] Correct format is \"DELAY 0-[expr [llength $delay_scripts]-1]|AREA 0-[expr [llength $area_scripts]-1]\"."
-    exit 1
-}
-
-if { [llength $strategy_parts] != 2 } {
-    synth_strategy_format_err
-}
-
-set strategy_type [lindex $strategy_parts 0]
-set strategy_type_idx [lindex $strategy_parts 1]
-
-if { $strategy_type != "AREA" && $strategy_type != "DELAY" } {
-    log -stderr "\[ERROR] AREA|DELAY tokens not found. ($strategy_type)"
-    synth_strategy_format_err
-}
-
-if { $strategy_type == "DELAY" && $strategy_type_idx >= [llength $delay_scripts] } {
-    log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
-    synth_strategy_format_err
-}
-
-if { $strategy_type == "AREA" && $strategy_type_idx >= [llength $area_scripts] } {
-    log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
-    synth_strategy_format_err
-}
-
-if { $strategy_type == "DELAY" } {
-    set strategy_script [lindex $delay_scripts $strategy_type_idx]
-    set strategy_name "DELAY $strategy_type_idx"
-} else {
-    set strategy_script [lindex $area_scripts $strategy_type_idx]
-    set strategy_name "AREA $strategy_type_idx"
-}
+source $::env(SCRIPTS_DIR)/yosys/construct_abc_script.tcl
+set strategy_name $::env(SYNTH_STRATEGY)
+set strategy_script [ol_abc_scripts::get_script $strategy_name]
 
 # Get Adder Type
 set adder_type $::env(SYNTH_ADDER_TYPE)
@@ -206,7 +87,7 @@ if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
 
 # Start Synthesis
 if { [info exists ::env(VERILOG_FILES) ]} {
-    read_verilog_files $vtop
+    read_verilog_files $::env(DESIGN_NAME)
 } elseif { [info exists ::env(VHDL_FILES)] } {
     ghdl {*}$::env(VHDL_FILES) -e $::env(DESIGN_NAME)
 } else {
@@ -214,19 +95,11 @@ if { [info exists ::env(VERILOG_FILES) ]} {
     exit -1
 }
 
-if { [info exists ::env(SYNTH_PARAMETERS) ] } {
-    foreach define $::env(SYNTH_PARAMETERS) {
-        set param_and_value [split $define "="]
-        lassign $param_and_value param value
-        chparam -set $param $value $vtop
-    }
-}
-
-select -module $vtop
+select -module $::env(DESIGN_NAME)
 catch {show -format dot -prefix $::env(STEP_DIR)/hierarchy}
 select -clear
-hierarchy -check -top $vtop
-yosys rename -top $vtop
+hierarchy -check -top $::env(DESIGN_NAME)
+yosys rename -top $::env(DESIGN_NAME)
 
 if { $::env(SYNTH_ELABORATE_ONLY) } {
     yosys proc
