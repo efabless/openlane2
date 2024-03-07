@@ -328,36 +328,7 @@ def model_blackboxing():
 
         `ifdef NO_PRIMITIVES
         `else
-        primitive sky130_fd_sc_hd__udp_dff$NSR (
-            Q    ,
-            SET  ,
-            RESET,
-            CLK_N,
-            D
-        );
-
-            output Q    ;
-            input  SET  ;
-            input  RESET;
-            input  CLK_N;
-            input  D    ;
-
-            reg Q;
-
-            table
-            // SET RESET CLK_N  D  :  Qt : Qt+1
-                0    1     ?    ?  :  ?  :  0    ; // Asserting reset
-                0    *     ?    ?  :  0  :  0    ; // Changing reset
-                1    ?     ?    ?  :  ?  :  1    ; // Asserting set (dominates reset)
-                *    0     ?    ?  :  1  :  1    ; // Changing set
-                0    ?    (01)  0  :  ?  :  0    ; // rising clock
-                ?    0    (01)  1  :  ?  :  1    ; // rising clock
-                0    ?     p    0  :  0  :  0    ; // potential rising clock
-                ?    0     p    1  :  1  :  1    ; // potential rising clock
-                0    0     n    ?  :  ?  :  -    ; // Clock falling register output does not change
-                0    0     ?    *  :  ?  :  -    ; // Changing Data
-            endtable
-        endprimitive
+        /* removed primitive */
         `endif // NO_PRIMITIVES
 
         `celldefine

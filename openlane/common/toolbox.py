@@ -434,7 +434,7 @@ class Toolbox(object):
             return out_path
 
         commands = ""
-        for define in list(defines) + ["NO_PRIMITIVES"]:
+        for define in list(defines):
             commands += f"verilog_defines -D{define};\n"
         commands += f"read_verilog -pwires -sv -lib {out_path};\n"
 
