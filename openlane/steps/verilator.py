@@ -24,7 +24,12 @@ from ..common import Path
 
 @Step.factory.register()
 class Lint(Step):
-    """Lint design Verilog source files"""
+    """
+    Lints inputs RTL Verilog files.
+
+    The linting is done with the defines for power and ground inputs on, as more
+    macros are available with powered netlists than unpowered netlists.
+    """
 
     id = "Verilator.Lint"
     name = "Verilator Lint"
@@ -37,6 +42,13 @@ class Lint(Step):
             "VERILOG_FILES",
             List[Path],
             "The paths of the design's Verilog files.",
+        ),
+        Variable(
+            "VERILOG_POWER_DEFINE",
+            str,
+            "Specifies the name of the define used to guard power and ground connections in the input RTL.",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+            default="USE_POWER_PINS",
         ),
         Variable(
             "LINTER_INCLUDE_PDK_MODELS",
@@ -83,41 +95,56 @@ class Lint(Step):
         metrics_updates: MetricsUpdate = {}
         extra_args = []
 
-        scl_models = (
-            self.config["CELL_VERILOG_MODELS"]
-            or self.config["CELL_BB_VERILOG_MODELS"]
-            or []
+        blackboxes = []
+        models = []
+
+        if cell_verilog_models := self.config["CELL_VERILOG_MODELS"]:
+            blackboxes.append(
+                self.toolbox.create_blackbox_model(
+                    frozenset(cell_verilog_models),
+                    frozenset(["USE_POWER_PINS"]),
+                )
+            )
+
+        macro_views = self.toolbox.get_macro_views_by_priority(
+            self.config,
+            [
+                DesignFormat.VERILOG_HEADER,
+                DesignFormat.POWERED_NETLIST,
+                DesignFormat.NETLIST,
+            ],
         )
-        input_models = (
-            scl_models
-            + self.toolbox.get_macro_views(self.config, DesignFormat.NETLIST)
-            + (self.config["EXTRA_VERILOG_MODELS"] or [])
-        )  # not +=: break reference!
+        for view, format in macro_views:
+            if format == DesignFormat.VERILOG_HEADER:
+                blackboxes.append(str(view))
+            else:
+                models.append(str(view))
 
-        defines = self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
+        if extra_verilog_models := self.config["EXTRA_VERILOG_MODELS"]:
+            models += extra_verilog_models
 
-        bb_path = self.toolbox.create_blackbox_model(
-            frozenset([str(path) for path in input_models]),
-            frozenset(defines),
-        )
+        defines = [
+            self.config["VERILOG_POWER_DEFINE"],
+            f"PDK_{self.config['PDK']}",
+            f"SCL_{self.config['STD_CELL_LIBRARY']}",
+        ]
+        defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
-        bb_with_guards = os.path.join(self.step_dir, "bb.v")
-        with open(
-            bb_path,
-            "r",
-            encoding="utf8",
-        ) as bb_in, open(
-            bb_with_guards,
-            "w",
-            encoding="utf8",
-        ) as bb_out:
-            "\n/* verilator lint_off UNUSEDSIGNAL */\n$out_str\n/* verilator lint_on UNUSEDSIGNAL */\n/* verilator lint_on UNDRIVEN */"
-            print("/* verilator lint_off UNDRIVEN */", file=bb_out)
-            print("/* verilator lint_off UNUSEDSIGNAL */", file=bb_out)
-            for line in bb_in:
-                bb_out.write(line)
-            print("/* verilator lint_on UNDRIVEN */", file=bb_out)
-            print("/* verilator lint_on UNUSEDSIGNAL */", file=bb_out)
+        if len(models):
+            bb_path = self.toolbox.create_blackbox_model(
+                frozenset([str(path) for path in models]),
+                frozenset(defines),
+            )
+            blackboxes.append(bb_path)
+
+        vlt_file = os.path.join(self.step_dir, "_deps.vlt")
+        with open(vlt_file, "w") as f:
+            f.write("`verilator_config\n")
+            f.write("lint_off -rule DECLFILENAME\n")
+            f.write("lint_off -rule EOFNEWLINE\n")
+            for blackbox in blackboxes:
+                f.write(f'lint_off -rule UNDRIVEN -file "{blackbox}"\n')
+                f.write(f'lint_off -rule UNUSEDSIGNAL -file "{blackbox}"\n')
 
         if not self.config["QUIT_ON_LINTER_WARNINGS"]:
             extra_args.append("--Wno-fatal")
@@ -142,8 +169,9 @@ class Lint(Step):
                     "--Wno-EOFNEWLINE",
                     "--top-module",
                     self.config["DESIGN_NAME"],
+                    vlt_file,
                 ]
-                + [bb_with_guards]
+                + blackboxes
                 + self.config["VERILOG_FILES"]
                 + extra_args,
                 env=env,

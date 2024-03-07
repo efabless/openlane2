@@ -95,22 +95,35 @@ def _generate_read_deps(
 ) -> str:
     commands = "set ::_synlig_defines [list]\n"
 
-    if synth_defines := config.get("VERILOG_DEFINES"):
-        for define in synth_defines:
-            commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
-            commands += (
-                f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{define}')}\n"
-            )
+    synth_defines = [f"PDK_{config['PDK']}", f"SCL_{config['STD_CELL_LIBRARY']}\""]
+    synth_defines += config["VERILOG_DEFINES"] or []
+    for define in synth_defines:
+        commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
+        commands += (
+            f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{define}')}\n"
+        )
+
+    scl_lib_list = toolbox.filter_views(config, config["LIB"])
 
     if power_defines:
         if power_define := config.get("VERILOG_POWER_DEFINE"):
             commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
             commands += f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
 
-    scl_lib_list = toolbox.filter_views(config, config["LIB"])
-    for lib in scl_lib_list:
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+    # Try your best to use powered blackbox models if power_defines is true
+    if power_defines and config["CELL_VERILOG_MODELS"] is not None:
+        scl_blackbox_models = toolbox.create_blackbox_model(
+            frozenset(config["CELL_VERILOG_MODELS"]),
+            frozenset(["USE_POWER_PINS"]),
+        )
+        commands += f"read_verilog -sv -lib {scl_blackbox_models}\n"
+    else:
+        # Fall back to scl_lib_list if you cant
+        for lib in scl_lib_list:
+            lib_str = TclUtils.escape(str(lib))
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+            )
 
     excluded_cells: Set[str] = set(config["EXTRA_EXCLUDED_CELLS"] or [])
     excluded_cells.update(process_list_file(config["SYNTH_EXCLUDED_CELL_FILE"]))
@@ -143,16 +156,14 @@ def _generate_read_deps(
             DesignFormat.LIB,
         ]
     )
-    formats_so_far: List[DesignFormat] = []
-    for format in format_list:
-        views = toolbox.get_macro_views(config, format, unless_exist=formats_so_far)
-        for view in views:
-            view_escaped = TclUtils.escape(str(view))
-            if format == DesignFormat.LIB:
-                commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {view_escaped}\n"
-            else:
-                commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {view_escaped}\n"
-        formats_so_far.append(format)
+    for view, format in toolbox.get_macro_views_by_priority(config, format_list):
+        view_escaped = TclUtils.escape(str(view))
+        if format == DesignFormat.LIB:
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {view_escaped}\n"
+            )
+        else:
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {view_escaped}\n"
 
     if libs := config.get("EXTRA_LIBS"):
         for lib in libs:
