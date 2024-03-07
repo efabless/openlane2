@@ -96,7 +96,9 @@ def _generate_read_deps(
     commands = "set ::_synlig_defines [list]\n"
 
     synth_defines = [f"PDK_{config['PDK']}", f"SCL_{config['STD_CELL_LIBRARY']}\""]
-    synth_defines += config.get("VERILOG_DEFINES", []) # VERILOG_DEFINES not defined for VHDLSynthesis
+    synth_defines += config.get(
+        "VERILOG_DEFINES", []
+    )  # VERILOG_DEFINES not defined for VHDLSynthesis
     for define in synth_defines:
         commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
         commands += (
@@ -106,7 +108,9 @@ def _generate_read_deps(
     scl_lib_list = toolbox.filter_views(config, config["LIB"])
 
     if power_defines:
-        if power_define := config.get("VERILOG_POWER_DEFINE"): # VERILOG_POWER_DEFINE not defined for VHDLSynthesis
+        if power_define := config.get(
+            "VERILOG_POWER_DEFINE"
+        ):  # VERILOG_POWER_DEFINE not defined for VHDLSynthesis
             commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
             commands += f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
 
