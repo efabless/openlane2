@@ -222,10 +222,10 @@ if { [info exists ::env(SYNTH_PARAMETERS) ] } {
     }
 }
 
+hierarchy -check -top $vtop
 select -module $vtop
 catch {show -format dot -prefix $::env(STEP_DIR)/hierarchy}
 select -clear
-hierarchy -check -top $vtop
 yosys rename -top $vtop
 
 if { $::env(SYNTH_ELABORATE_ONLY) } {
