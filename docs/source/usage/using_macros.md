@@ -272,7 +272,7 @@ One solution is as follows:
 ```verilog
 module Top(…);
 
-`ifdef PnR
+`ifdef __pnr__
 BarrelShifter barrelShifter (
 `ifdef USE_POWER_PINS
   .VPWR(VPWR),
@@ -295,6 +295,6 @@ endmodule
 ```
 
 This will preserve the original RTL for simulation, but when Synthesizing/
-Linting using OpenLane, `PnR` will be defined, thereby using the header for the
-hardened version of the Macro. Additionally, as the power pins have no relevance
+Linting using OpenLane, `__pnr__` will be defined, thereby using the header for
+the hardened version of the Macro. Additionally, as the power pins have no relevance
 for the RTL, they can simply be left out when PnR is not defined.

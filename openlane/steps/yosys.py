@@ -99,7 +99,7 @@ def _generate_read_deps(
         f"PDK_{config['PDK']}",
         f"SCL_{config['STD_CELL_LIBRARY']}\"",
         "__openlane__",
-        "PnR",
+        "__pnr__",
     ]
     synth_defines += (
         config.get("VERILOG_DEFINES") or []
