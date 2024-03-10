@@ -118,7 +118,7 @@ class NetgenStep(TclStep):
             "NETGEN_INCLUDE_MARCOS_NETLIST",
             bool,
             "A flag that enables including the gate-level netlist of the design while running Netgen",
-            default=True,
+            default=False,
         ),
     ]
 
