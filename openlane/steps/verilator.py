@@ -127,6 +127,8 @@ class Lint(Step):
             self.config["VERILOG_POWER_DEFINE"],
             f"PDK_{self.config['PDK']}",
             f"SCL_{self.config['STD_CELL_LIBRARY']}",
+            "__openlane__",
+            "PnR",
         ]
         defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 

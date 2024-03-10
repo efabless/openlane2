@@ -95,7 +95,12 @@ def _generate_read_deps(
 ) -> str:
     commands = "set ::_synlig_defines [list]\n"
 
-    synth_defines = [f"PDK_{config['PDK']}", f"SCL_{config['STD_CELL_LIBRARY']}\""]
+    synth_defines = [
+        f"PDK_{config['PDK']}",
+        f"SCL_{config['STD_CELL_LIBRARY']}\"",
+        "__openlane__",
+        "PnR",
+    ]
     synth_defines += (
         config.get("VERILOG_DEFINES") or []
     )  # VERILOG_DEFINES not defined for VHDLSynthesis

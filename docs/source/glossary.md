@@ -6,7 +6,7 @@
 IPVT
 
     Short for Interconnect, Process, Voltage, and Temperature, the four
-    components of a timing corner in OpenLane.
+    components of a {term}`timing corner` in OpenLane.
 
 timing corner
 
@@ -153,6 +153,8 @@ LEF
     An abstract view of pre-hardened macros and standard cells, containing
     information about the cell's dimensions, pin positions and elements on
     metal layers.
+    
+    The LEF language is defined in the {term}`LEFDEFREF`.
 
 DEF
 
@@ -163,6 +165,20 @@ DEF
 
     When a design is hardened, {term}`LEF` and {term}`GDSII` views are
     generated from the DEF view.
+    
+    The DEF language is defined in the {term}`LEFDEFREF`.
+    
+LEFDEFREF
+
+    Nickname/abbreviation/whatever for the LEF/DEF Language Reference by Cadence
+    Inc.
+    
+    The LEFDEFREF is obtainable for free from Silicon Integration Initiative,
+    Inc.'s
+    [Complimentary OpenAccess Tools, Libraries, and Utilities](https://si2.org/oa-tools-utils-libs/).
+    
+    As of the time of writing, it is also available from the
+    [ISPD's 2018 detailed routing contest downloads](https://www.ispd.cc/contests/18/lefdefref.pdf).
 
 CSV
 
@@ -232,11 +248,11 @@ FPGA
     Short for Field-Programmable Gate Array.
 
     An integrated circuit that can be reprogrammed to perform various digital
-    functions much, much faster than a general-purpose computer, but at a price,
-    area and performance penalty compared to a dedicated ASIC.
+    functions much, much faster than a general-purpose computer, but at a
+    recurring cost, area and performance penalty compared to a dedicated ASIC.
     
     Popular for prototyping ASICs or for niche applications where the upfront
-    cost of an ASIC.
+    cost of an ASIC is not financially justifiable.
 
 EDA
 
@@ -295,5 +311,25 @@ On-chip variation
     or environmental conditions.
 
     Sometimes abbreviated as OCV.
+    
+STA
+
+    Short for Static Timing Analysis.
+    
+    A method for determining the validity of a chip's timing parameters without
+    performing a full functional simulation thereof.
+    
+    A chip for which STA reveals no timing constraint violations is said to
+    have achieved {term}`timing closure`.
+    
+timing closure
+
+    A term given for designs for which STA has revealed that there exist no
+    violations of timing constraints at a certain clock period and at all
+    {term}`timing corner`s.
+    
+    Designs that have not achieved timing closure are usually not suitable
+    for tape-out. 
+    
 
 ```
