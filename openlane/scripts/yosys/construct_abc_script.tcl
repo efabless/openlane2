@@ -1,4 +1,4 @@
-namespace eval ol_abc_scripts {
+namespace eval yosys_ol {
     set abc_rs_K    "resub,-K,"
     set abc_rs      "resub"
     set abc_rsz     "resub,-z"
@@ -74,12 +74,12 @@ namespace eval ol_abc_scripts {
         \
         "+read_constr,${sdc_file};&get -n;&st;&dch;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;&get -n;&st;&syn2;&if -g -K 6;&synch2;&nf;&put;buffer -c -N ${max_FO};topo;stime -c;upsize -c;dnsize -c;;stime,-p;print_stats -m"]
 
-    proc get_script {strategy} {
+    proc get_abc_script {strategy} {
         set strategy_parts [split $strategy]
 
         proc malformed_strategy {strategy} {
             log -stderr "\[ERROR] Misformatted SYNTH_STRATEGY (\"$strategy\")."
-            log -stderr "\[ERROR] Correct format is \"DELAY 0-[expr [llength $ol_abc_scripts::delay_scripts]-1]|AREA 0-[expr [llength $ol_abc_scripts::area_scripts]-1]\"."
+            log -stderr "\[ERROR] Correct format is \"DELAY 0-[expr [llength $yosys_ol::delay_scripts]-1]|AREA 0-[expr [llength $yosys_ol::area_scripts]-1]\"."
             exit 1
         }
 
@@ -95,20 +95,20 @@ namespace eval ol_abc_scripts {
             malformed_strategy $strategy
         }
 
-        if { $strategy_type == "DELAY" && $strategy_type_idx >= [llength $ol_abc_scripts::delay_scripts] } {
+        if { $strategy_type == "DELAY" && $strategy_type_idx >= [llength $yosys_ol::delay_scripts] } {
             log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
             malformed_strategy $strategy
         }
 
-        if { $strategy_type == "AREA" && $strategy_type_idx >= [llength $ol_abc_scripts::area_scripts] } {
+        if { $strategy_type == "AREA" && $strategy_type_idx >= [llength $yosys_ol::area_scripts] } {
             log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
             malformed_strategy $strategy
         }
 
         if { $strategy_type == "DELAY" } {
-            set strategy_script [lindex $ol_abc_scripts::delay_scripts $strategy_type_idx]
+            set strategy_script [lindex $yosys_ol::delay_scripts $strategy_type_idx]
         } else {
-            set strategy_script [lindex $ol_abc_scripts::area_scripts $strategy_type_idx]
+            set strategy_script [lindex $yosys_ol::area_scripts $strategy_type_idx]
         }
         return $strategy_script
     }

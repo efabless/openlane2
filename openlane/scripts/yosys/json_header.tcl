@@ -17,8 +17,8 @@ set vtop $::env(DESIGN_NAME)
 
 source $::env(_deps_script)
 
-read_verilog_files $vtop
-hierarchy -check -top $vtop
+yosys_ol::read_verilog_files $vtop
+hierarchy -check -top $vtop -nokeep_prints -nokeep_asserts
 yosys rename -top $vtop
 yosys proc
 json -o $::env(SAVE_JSON_HEADER)
