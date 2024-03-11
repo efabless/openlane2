@@ -177,7 +177,8 @@ LEFDEFREF
     Inc.'s
     [Complimentary OpenAccess Tools, Libraries, and Utilities](https://si2.org/oa-tools-utils-libs/).
     
-    As of the time of writing, it is also available from the
+    As of the time of writing, a slightly out of date but still valid version is
+    also available from the
     [ISPD's 2018 detailed routing contest downloads](https://www.ispd.cc/contests/18/lefdefref.pdf).
 
 CSV
