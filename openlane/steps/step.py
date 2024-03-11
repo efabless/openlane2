@@ -1040,6 +1040,7 @@ class Step(ABC):
         silent: bool = False,
         report_dir: Optional[Union[str, os.PathLike]] = None,
         env: Optional[Dict[str, Any]] = None,
+        _popen_callable: Callable[..., psutil.Popen] = psutil.Popen,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -1107,7 +1108,7 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
-        process = psutil.Popen(
+        process = _popen_callable(
             cmd_str,
             encoding="utf8",
             env=env,
