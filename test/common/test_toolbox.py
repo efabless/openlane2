@@ -19,60 +19,56 @@ from unittest import mock
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from openlane.state import DesignFormat
-
 
 @pytest.fixture()
 def mock_macros_config():
-    from openlane.config import Config, Macro, Instance
+    from openlane.config import Macro, Instance
 
-    return Config(
-        {
-            "DEFAULT_CORNER": "nom_tt_025C_1v80",
-            "LIB": {
-                "*": "/pdk/my.lib",
-            },
-            "MACROS": {
-                "a": Macro(
-                    gds=[""],
-                    lef=[""],
-                    instances={"instance_a": Instance((0, 10), "N")},
-                    nl=[],
-                    spef={},
-                    lib={
-                        "nom_tt_025C_1v80": ["/cwd/a/lib/tt.lib"],
-                        "nom_ss_n40C_1v80": ["/cwd/a/lib/ss.lib"],
-                        "min_ff_025C_5v00": ["/cwd/a/lib/ff.lib"],
-                    },
-                    spice=[],
-                    sdf={},
-                    json_h=None,
-                ),
-                "b": Macro(
-                    gds=[""],
-                    lef=[""],
-                    instances={"instance_b": Instance((0, 10), "FS")},
-                    nl=[
-                        "/cwd/b/spef/nl1.v",
-                        "/cwd/b/spef/nl2.v",
-                    ],
-                    spef={
-                        "min_*": ["/cwd/b/spef/min.spef"],
-                        "nom_*": ["/cwd/b/spef/nom.spef"],
-                        "max_*": ["/cwd/b/spef/max.spef"],
-                    },
-                    lib={
-                        "nom_tt_025C_1v80": ["/cwd/b/lib/tt.lib"],
-                        "nom_ss_n40C_1v80": ["/cwd/b/lib/ss.lib"],
-                        "min_ff_025C_5v00": ["/cwd/b/lib/ff.lib"],
-                    },
-                    spice=[],
-                    sdf={},
-                    json_h=None,
-                ),
-            },
-        }
-    )
+    return {
+        "DEFAULT_CORNER": "nom_tt_025C_1v80",
+        "LIB": {
+            "*": "/pdk/my.lib",
+        },
+        "MACROS": {
+            "a": Macro(
+                gds=[""],
+                lef=[""],
+                instances={"instance_a": Instance((0, 10), "N")},
+                nl=[],
+                spef={},
+                lib={
+                    "nom_tt_025C_1v80": ["/cwd/a/lib/tt.lib"],
+                    "nom_ss_n40C_1v80": ["/cwd/a/lib/ss.lib"],
+                    "min_ff_025C_5v00": ["/cwd/a/lib/ff.lib"],
+                },
+                spice=[],
+                sdf={},
+                json_h=None,
+            ),
+            "b": Macro(
+                gds=[""],
+                lef=[""],
+                instances={"instance_b": Instance((0, 10), "FS")},
+                nl=[
+                    "/cwd/b/spef/nl1.v",
+                    "/cwd/b/spef/nl2.v",
+                ],
+                spef={
+                    "min_*": ["/cwd/b/spef/min.spef"],
+                    "nom_*": ["/cwd/b/spef/nom.spef"],
+                    "max_*": ["/cwd/b/spef/max.spef"],
+                },
+                lib={
+                    "nom_tt_025C_1v80": ["/cwd/b/lib/tt.lib"],
+                    "nom_ss_n40C_1v80": ["/cwd/b/lib/ss.lib"],
+                    "min_ff_025C_5v00": ["/cwd/b/lib/ff.lib"],
+                },
+                spice=[],
+                sdf={},
+                json_h=None,
+            ),
+        },
+    }
 
 
 @pytest.fixture()
@@ -437,6 +433,8 @@ def test_filter_views(corner, expected, mock_macros_config):
 
 
 def gmv_parameters(f):
+    from openlane.state import DesignFormat
+
     f = pytest.mark.parametrize(
         ("view", "corner", "unless_exist", "expected"),
         [
@@ -477,14 +475,13 @@ def test_get_macro_views_without_macros(
     unless_exist,
     expected,
 ):
-    from openlane.config import Config
     from openlane.common import Toolbox
 
     toolbox = Toolbox(".")
 
     assert (
         toolbox.get_macro_views(
-            Config({"DEFAULT_CORNER": "nom_ss_n40C_1v80", "MACROS": None}),
+            {"DEFAULT_CORNER": "nom_ss_n40C_1v80", "MACROS": None},
             view,
             corner,
             unless_exist,
@@ -509,6 +506,85 @@ def test_get_macro_views_with_macros(
         toolbox.get_macro_views(mock_macros_config, view, corner, unless_exist)
         == expected
     ), "get_macro_views returned unexpected result"
+
+
+def test_get_macro_views_by_priority():
+    from openlane.state import DesignFormat
+    from openlane.config import Macro, Instance
+    from openlane.common import Toolbox
+
+    cfg = {
+        "MACROS": {
+            "macro_a": Macro(
+                gds=[""],
+                lef=[""],
+                instances={"instance_a": Instance((10, 10), "N")},
+                nl=["macro_a.nl.v"],
+                spef={
+                    "nom_*": ["a_nom.spef"],
+                    "min_*": ["a_nin.spef"],
+                    "max_*": ["a_max.spef"],
+                },
+                lib={
+                    "nom_tt_025C_1v80": ["a_tt.lib"],
+                    "nom_ss_n40C_1v80": ["a_ss.lib"],
+                    "min_ff_025C_5v00": ["a_ff.lib"],
+                },
+                spice=[],
+                sdf={},
+                json_h=None,
+            ),
+            "macro_b": Macro(
+                gds=[""],
+                lef=[""],
+                instances={"instance_b": Instance((30, 30), "N")},
+                pnl=["macro_b.pnl.v"],
+                spef={
+                    "nom_*": ["b_nom.spef"],
+                    "min_*": ["b_nin.spef"],
+                    "max_*": ["b_max.spef"],
+                },
+                lib={},
+                spice=[],
+                sdf={},
+                json_h=None,
+            ),
+            "macro_c": Macro(
+                gds=[""],
+                lef=[""],
+                instances={"instance_c": Instance((30, 30), "N")},
+                nl=["macro_c.nl.v"],
+                vh=["macro_c.vh"],
+                spef={
+                    "nom_*": ["b_nom.spef"],
+                    "min_*": ["b_nin.spef"],
+                    "max_*": ["b_max.spef"],
+                },
+                lib={},
+                spice=[],
+                sdf={},
+                json_h=None,
+            ),
+        }
+    }
+
+    toolbox = Toolbox(".")
+
+    assert set(
+        toolbox.get_macro_views_by_priority(
+            cfg,
+            [
+                DesignFormat.VERILOG_HEADER,
+                DesignFormat.NETLIST,
+                DesignFormat.POWERED_NETLIST,
+            ],
+            "nom_tt_025C_1v80",
+        )
+    ) == {
+        ("macro_a.nl.v", DesignFormat.NETLIST),
+        ("macro_b.pnl.v", DesignFormat.POWERED_NETLIST),
+        ("macro_c.vh", DesignFormat.VERILOG_HEADER),
+    }, "test_get_macro_views_by_priority returned unexpected result"
 
 
 @pytest.mark.parametrize(
@@ -620,7 +696,8 @@ def test_get_timing_files_warnings(
     cfg["MACROS"]["b"].spef = spefs_bk
 
     # 2. No SCLs
-    cfg = cfg.copy(LIB={})
+    cfg = cfg.copy()
+    cfg["LIB"] = {}
 
     assert toolbox.get_timing_files(
         cfg,

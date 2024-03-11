@@ -186,11 +186,17 @@ class Toolbox(object):
         self,
         config: Mapping[str, Any],
         design_formats: Sequence[DesignFormat],
+        timing_corner: Optional[str] = None,
     ) -> List[Tuple[Path, DesignFormat]]:
         result: List[Tuple[Path, DesignFormat]] = []
         formats_so_far: List[DesignFormat] = []
         for format in design_formats:
-            views = self.get_macro_views(config, format, unless_exist=formats_so_far)
+            views = self.get_macro_views(
+                config,
+                format,
+                unless_exist=formats_so_far,
+                timing_corner=timing_corner,
+            )
             for view in views:
                 result.append((view, format))
             formats_so_far.append(format)
