@@ -193,8 +193,7 @@ class Toolbox(object):
             views = self.get_macro_views(config, format, unless_exist=formats_so_far)
             for view in views:
                 result.append((view, format))
-            if len(views):
-                break
+            formats_so_far.append(format)
         return result
 
     def get_timing_files(
@@ -436,7 +435,7 @@ class Toolbox(object):
         commands = ""
         for define in list(defines):
             commands += f"verilog_defines -D{define};\n"
-        commands += f"read_verilog -pwires -sv -lib {out_path};\n"
+        commands += f"read_verilog -sv -lib {out_path};\n"
 
         output_log_path = f"{out_path}_yosys.log"
         output_log = open(output_log_path, "wb")

@@ -170,7 +170,7 @@ DEF
     
 LEFDEFREF
 
-    Nickname/abbreviation/whatever for the LEF/DEF Language Reference by Cadence
+    Refers to the LEF/DEF Language Reference by Cadence
     Inc.
     
     The LEFDEFREF is obtainable for free from Silicon Integration Initiative,
@@ -329,7 +329,15 @@ timing closure
     {term}`timing corner`s.
     
     Designs that have not achieved timing closure are usually not suitable
-    for tape-out. 
+    for tape-out.
+    
+IEEE
+
+    Short for the Institute of Electrical and Electronics Engineers.
+    
+    A professional association for electronics and electrical engineers. IEEE
+    sets the standard for a number of formats in the EDA space, including 
+    the Verilog Hardware Description Language.
     
 
 ```

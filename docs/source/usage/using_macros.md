@@ -2,14 +2,14 @@
 
 The majority of chip designs are not actually synthesized, placed, routed and
 streamed out all in one flow. Rather, parts of the design are usually hardened
-first, which are then **integrated** into a so-called **top-level chip**. These
+first, which are then **integrated** into a **top-level chip**. These
 pre-hardened parts of a design are called "macros."
 
-There are a number of advantages to using Macros in PnR, including but not
+There are a number of advantages to using Macros in {term}`PnR`, including but not
 limited to:
 
 * **Faster PnR**: If a macro has extremely complex routing, i.e. a latch-based
-  SRAM for example, you can save the time of {term}`PnR` on that module when
+  SRAM for example, you can save the time of PnR on that module when
   you're iterating on your own design's PnR process.
 
 * **Reuse**: Some macros are commonly reused between multiple designs, so the
@@ -34,7 +34,7 @@ views for OpenLane are the {term}`LEF` (`.lef`) and the {term}`GDSII` (`.gds`)
 views- the former of which is used in PnR and the latter is used for tape-out.
 
 * Library Exchange Format ({term}`LEF`/.`lef`): Essential
-  * The "interface" of a Macro; indicating things indicating things such as its
+  * The "interface" of a Macro; indicating things such as its
     dimensions, locations of the pins, other structures on the metal layers
     (that may obstruct routing,) et cetera.
   * Used during PnR.
@@ -42,23 +42,23 @@ views- the former of which is used in PnR and the latter is used for tape-out.
   * Contains all of the information from the LEF and also other information that
     PnR tools are not concerned with, such as the patterns on the actual silicon
     layers (vs. just the metal layer.)
-  * used during stream-out.
+  * Used during stream-out.
 * The Gate-Level Netlist (`.gl.v`/`.nl.v`): Optional
-  * may be used during STA (see [relevant section](#sta)).
-  * used as a fallback during hierarchy checks and linting if neither Verilog
+  * May be used during STA (see [relevant section](#sta)).
+  * Used as a fallback during hierarchy checks and linting if neither Verilog
     headers (`.vh`) nor powered gate-level netlists (`.pnl.v`) exist. It is not
     recommended for this use as the linting may fail.
-  * used as a fallback during synthesis if verilog headers (`.vh`) do not exist.
+  * Used as a fallback during synthesis if Verilog headers (`.vh`) do not exist.
 * The Powered Gate-Level Netlist (`.pnl.v`): Optional
   * Same as the netlist, but also has the power pins connected
-  * used as a fallback during hierarchy checks and linting if Verilog headers
+  * Used as a fallback during hierarchy checks and linting if Verilog headers
     (`.vh`) do not exist.
-  * used as a fallback during synthesis if neither Verilog headers nor regular
+  * Used as a fallback during synthesis if neither Verilog headers nor regular
     netlists (`.gl.v`/`.nl.v`) exist. It is not recommended for this use as
     synthesis checks may fail.
 * Lib file (`.lib`): Optional
-  * may be used during STA (see [relevant section](#sta)).
-  * used as a last resort for synthesis if no Verilog header (`.vh`) or any
+  * May be used during STA (see [relevant section](#sta)).
+  * Used as a last resort for synthesis if no Verilog header (`.vh`) or any
     netlists (`.nl.v`/`.gl.v`/`.pnl.v`) are available. It is not recommended for
     this use as synthesis checks may fail.
 * {term}`SPEF` (`.spef`): Optional
@@ -70,8 +70,8 @@ views- the former of which is used in PnR and the latter is used for tape-out.
 * {term}`SDF` (`.sdf`): Optional
   * currently unused. As OpenLane produces SDF views of all macros, it is
     prudent to include it anyway.
-* Yosys JSON Header (`.json`): Optional
-  * A JSON netlist produced by {term}`Yosys` that provides the Powered Netlist
+* {term}`Yosys` JSON Header (`.json`): Optional
+  * A JSON netlist produced by Yosys that provides the Powered Netlist
     in a Python-parseable format.
   * currently, it is unused by the flow as far as macros are concerned, but it
     may be used in the future.
@@ -185,7 +185,8 @@ these files could be used:
   available,) and if either is not available, `.lib` is used as a fallback, and
   if that doesn't exist, STA is done in black-boxed mode.
 * If `false`, `.lib` is used, and if it is not available, `.nl.v` and `.spef`
-  are used as a fallback, STA is done in black-boxed mode.
+  are used as a fallback. If neither are available, STA is done in black-boxed
+  mode.
 
 In commercial flows, typically, just `.lib` is used. However, the lack of an
 accurate open source `.lib` file generator and OpenSTA producing very accurate
