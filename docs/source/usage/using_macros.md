@@ -213,8 +213,7 @@ macro_name instance_name(
   .ground_pin1(ground_net1),
 `endif
   .signal_pin1(signal_net1),
-  .signal_pin2(signal_net2),
-  …
+  .signal_pin2(signal_net2)
 );
 ```
 
@@ -238,12 +237,20 @@ For example, let's assume you want to harden this submodule as a Macro:
 // BarrelShifter.v
 module BarrelShifter #(
   parameter width = 32
-) (…);
-⋮
+) (
+  VPWR,
+  VGND,
+  A,
+  O,
+  shmt
+);
+// ...
 endmodule
 
 // Top.v
-module Top(…);
+module Top(
+  // ...
+);
 BarrelShifter #(
   width=16
 ) barrelShifter(
@@ -271,7 +278,9 @@ THAT default value, which is `32`, breaking the simulation process.
 One solution is as follows:
 
 ```verilog
-module Top(…);
+module Top(
+  // ...
+);
 
 `ifdef __pnr__
 BarrelShifter barrelShifter (
@@ -282,7 +291,7 @@ BarrelShifter barrelShifter (
   .A(in),
   .O(out)
   .shamt(shamt)
-)
+);
 `else
 BarrelShifter #(
   width=16
