@@ -19,7 +19,7 @@ set report_dir $::env(STEP_DIR)/reports
 file mkdir $report_dir
 
 # Load Macro Dependencies
-source $::env(_deps_script)
+source $::env(_DEPS_SCRIPT)
 
 # Prepare Liberty Flags
 set lib_args [list]
@@ -128,9 +128,9 @@ if { $adder_type == "RCA"} {
     }
 }
 
-if { [info exists ::env(_lighter_dff_map)] } {
-    puts "Using Lighter with map '$::env(_lighter_dff_map)'..."
-    reg_clock_gating -map $::env(_lighter_dff_map)
+if { [info exists ::env(_LIGHTER_DFF_MAP)] } {
+    puts "Using Lighter with map '$::env(_LIGHTER_DFF_MAP)'…"
+    reg_clock_gating -map $::env(_LIGHTER_DFF_MAP)
 }
 
 yosys_ol::ol_synth $::env(DESIGN_NAME) $report_dir
@@ -227,7 +227,7 @@ run_strategy\
 if { $::env(SYNTH_NO_FLAT) } {
     design -reset
 
-    source $::env(_deps_script)
+    source $::env(_DEPS_SCRIPT)
 
     file copy -force $::env(SAVE_NETLIST) $::env(STEP_DIR)/$::env(DESIGN_NAME).hierarchy.nl.v
     read_verilog -sv $::env(SAVE_NETLIST)

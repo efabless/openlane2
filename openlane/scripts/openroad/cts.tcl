@@ -27,9 +27,9 @@ repair_clock_inverters
 
 puts "\[INFO\] Configuring cts characterization…"
 set cts_characterization_args [list]
-lappend -max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # pF -> F
-if { [info exists ::env(MAX_FANOUT_CONSTRAINT)] } {
-    lappend -max_slew [expr {$::env(MAX_FANOUT_CONSTRAINT) * 1e-9}]; # ns -> S
+lappend cts_characterization_args -max_cap [expr {$::env(CTS_MAX_CAP) * 1e-12}]; # pF -> F
+if { [info exists ::env(MAX_TRANSITION_CONSTRAINT)] } {
+    lappend cts_characterization_args -max_slew [expr {$::env(MAX_TRANSITION_CONSTRAINT) * 1e-9}]; # ns -> S
 }
 configure_cts_characterization {*}$cts_characterization_args
 

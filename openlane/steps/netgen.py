@@ -21,7 +21,7 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..common import Path, mkdirp
+from ..common import Path, mkdirp, get_script_dir
 from ..logging import warn
 from ..config import Variable
 from ..state import DesignFormat, State
@@ -160,6 +160,8 @@ class LVS(NetgenStep):
         stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
 
+        setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
+
         with open(self.get_script_path(), "w") as f:
             for lib in spice_files:
                 print(
@@ -172,7 +174,7 @@ class LVS(NetgenStep):
                 )
 
             print(
-                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {stats_file} -json",
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {setup_script} {stats_file} -json",
                 file=f,
             )
 

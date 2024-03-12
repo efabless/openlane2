@@ -57,6 +57,7 @@ from ..common import (
     GenericDictEncoder,
     Toolbox,
     Path,
+    RingBuffer,
     mkdirp,
     slugify,
     final,
@@ -572,10 +573,7 @@ class Step(ABC):
         assert (
             self.end_time is not None
         ), "End time not set even though self.state_out exists"
-        result = ""
-        time_elapsed = self.end_time - self.start_time
-
-        result += f"#### Time Elapsed: {'%.2f' % time_elapsed}s\n"
+        result = f"#### Time Elapsed: {'%.2f' % (self.end_time - self.start_time)}s\n"
 
         views_updated = []
         for id, value in dict(self.state_out).items():
@@ -991,10 +989,13 @@ class Step(ABC):
             raise StepException(
                 f"Step {self.name} generated invalid state: {e}"
             ) from None
-        self.end_time = time.time()
 
         with open(os.path.join(self.step_dir, "state_out.json"), "w") as f:
             f.write(self.state_out.dumps())
+
+        self.end_time = time.time()
+        with open(os.path.join(self.step_dir, "runtime.txt"), "w") as f:
+            f.write(format_elapsed_time(self.end_time - self.start_time))
 
         return self.state_out
 
@@ -1039,6 +1040,7 @@ class Step(ABC):
         silent: bool = False,
         report_dir: Optional[Union[str, os.PathLike]] = None,
         env: Optional[Dict[str, Any]] = None,
+        _popen_callable: Callable[..., psutil.Popen] = psutil.Popen,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -1106,7 +1108,7 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
-        process = psutil.Popen(
+        process = _popen_callable(
             cmd_str,
             encoding="utf8",
             env=env,
@@ -1115,12 +1117,13 @@ class Step(ABC):
 
         process_stats_thread = ProcessStatsThread(process)
         process_stats_thread.start()
-        lines = ""
+
+        line_buffer = RingBuffer(str, 10)
         if process_stdout := process.stdout:
             current_rpt = None
             try:
                 while line := process_stdout.readline():
-                    lines += line
+                    line_buffer.push(line)
                     log_file.write(line)
                     if self.step_dir is not None and line.startswith(
                         REPORT_START_LOCUS
@@ -1164,11 +1167,13 @@ class Step(ABC):
         log_file.close()
         if returncode != 0:
             if returncode > 0:
-                split_lines = lines.split("\n")
-                log = "\n".join(split_lines[-10:])
-                if log.strip() != "":
-                    err(escape(log))
-                err(f"Log file: '{os.path.relpath(log_path)}'")
+                err("Subprocess had a non-zero exit.")
+                concatenated = ""
+                for line in line_buffer:
+                    concatenated += line
+                if concatenated.strip() != "":
+                    err(f"Last {len(line_buffer)} line(s):\n" + escape(concatenated))
+                err(f"Full log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return generated_metrics
