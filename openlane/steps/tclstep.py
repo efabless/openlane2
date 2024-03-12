@@ -241,6 +241,7 @@ class TclStep(Step):
                 "PATH",
                 "PYTHONPATH",
                 "SCRIPTS_DIR",
+                "DESIGN_DIR",
                 "STEP_DIR",
                 "PDK_ROOT",
                 "PDK",
