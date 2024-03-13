@@ -7,14 +7,9 @@
     - s44
     - zipdiv
     - blink
-    - name: xtea
-      config_file: config.tcl
     - usb
     - usb_cdc_core
-    - name: latch
-      config_file: config_good.json
-    - name: latch
-      config_file: config_bad.json
+    - cell_inverter
     - spm
     - gcd
     - caravel_upw
@@ -23,6 +18,12 @@
     - manual_macro_placement_test
     - aes_user_project_wrapper
     - user_proj_timer
+    - name: xtea
+      config_file: config.tcl
+    - name: latch
+      config_file: config_good.json
+    - name: latch
+      config_file: config_bad.json
     - name: EF_PSRAM_CTRL_V2
       ipm: v1.0.3
     - name: EF_UART
@@ -37,6 +38,8 @@
       ipm: v1.0.1
     - name: EF_GPIO
       ipm: v1.0.0
+    - name: dual_spm
+      script: integrate.py
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
@@ -60,6 +63,8 @@
     - zipdiv
     - blink
     - wbqspiflash
+    - inverter
+    - cell_inverter
     - name: latch
       config_file: config_good.json
     - name: latch
