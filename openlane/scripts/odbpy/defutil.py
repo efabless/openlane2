@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from reader import OdbReader, click_odb, click
+from reader import click_odb, click
 from typing import Tuple, List
 from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
@@ -26,24 +26,6 @@ from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 @click.group()
 def cli():
     pass
-
-
-@click.command("extract_core_dims")
-@click.option("-o", "--output-data", required=True, help="Output")
-@click.option("-l", "--input-lef", required=True, help="Merged LEF file")
-@click.argument("input_def")
-def extract_core_dims(output_data, input_lef, input_def):
-    reader = OdbReader(input_lef, input_def)
-    core_area = reader.block.getCoreArea()
-
-    with open(output_data, "w") as f:
-        print(
-            f"{core_area.dx() / reader.dbunits} {core_area.dy() / reader.dbunits}",
-            file=f,
-        )
-
-
-cli.add_command(extract_core_dims)
 
 
 @click.command("mark_component_fixed")
@@ -59,31 +41,6 @@ def mark_component_fixed(cell_name, reader):
 
 
 cli.add_command(mark_component_fixed)
-
-
-@click.command("merge_components")
-@click.option(
-    "-w",
-    "--with-components-from",
-    "donor_def",
-    required=True,
-    help="A donor def file from which to extract components.",
-)
-@click_odb
-def merge_components(reader, donor_def, input_lefs):
-    """
-    Adds all components in a donor DEF file that do not exist in the (recipient) INPUT_DEF.
-
-    Existing components with the same name will *not* be overwritten.
-    """
-    donor = OdbReader(input_lefs, donor_def)
-    recipient = reader
-
-    for instance in donor.instances:
-        odb.dbInst_create(recipient.block, instance.getMaster(), instance.getName())
-
-
-cli.add_command(merge_components)
 
 
 def get_die_area(def_file, input_lefs):
