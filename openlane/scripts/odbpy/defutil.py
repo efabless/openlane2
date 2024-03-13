@@ -145,7 +145,7 @@ def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate
         return True
 
 
-def relocate_pins(db, input_lefs, template_def, permissive):
+def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False):
     # --------------------------------
     # 1. Find list of all bterms in existing database
     # --------------------------------
@@ -273,12 +273,28 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     if mismatches_found and not permissive:
         exit(os.EX_DATAERR)
 
+    if copy_def_power:
+        # If asked, we copy power pins from template
+        for bterm in template_bterms:
+            if bterm.getSigType() not in ["POWER", "GROUND"]:
+                continue
+            pin_name = bterm.getName()
+            pin_net = odb.dbNet.create(output_block, pin_name, True)
+            pin_net.setSpecial()
+            pin_net.setSigType(bterm.getSigType())
+            pin_bterm = odb.dbBTerm.create(pin_net, pin_name)
+            pin_bterm.setSigType(bterm.getSigType())
+            output_bterms.append(pin_bterm)
+
     grid_errors = False
     for output_bterm in output_bterms:
         name = output_bterm.getName()
         output_bpins = output_bterm.getBPins()
 
-        if name not in template_bterm_locations or name not in all_bterm_names:
+        if name not in template_bterm_locations:
+            continue
+
+        if (name not in all_bterm_names) and not copy_def_power:
             continue
 
         for output_bpin in output_bpins:

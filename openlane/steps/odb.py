@@ -197,6 +197,12 @@ class ApplyDEFTemplate(OdbpyStep):
             "Whether to require that the pin set of the DEF template and the design should be identical. In permissive mode, pins that are in the design and not in the template will be excluded, and vice versa.",
             default="strict",
         ),
+        Variable(
+            "FP_TEMPLATE_COPY_POWER_PINS",
+            bool,
+            "Whether to copy all power pins from the DEF template to the design.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
@@ -207,11 +213,14 @@ class ApplyDEFTemplate(OdbpyStep):
         )
 
     def get_command(self) -> List[str]:
-        return super().get_command() + [
+        args = [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
+        if self.config["FP_TEMPLATE_COPY_POWER_PINS"]:
+            args.append("--copy-def-power")
+        return super().get_command() + args
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:

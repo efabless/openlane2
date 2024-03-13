@@ -21,17 +21,24 @@ from reader import click_odb, click
 @click.command()
 @click.option("-t", "--def-template", required=True, help="Template DEF")
 @click.option(
+    "--copy-def-power",
+    default=False,
+    is_flag=True,
+    help="Whether to copy power pins from the DEF template",
+)
+@click.option(
     "--permissive/--strict",
     default=False,
     help="Whether to treat pin matching permissively (ignoring non-matching pins) or strictly (flagging all non-matching pins as errors)",
 )
 @click_odb
-def cli(reader, input_lefs, permissive, def_template):
+def cli(reader, input_lefs, permissive, copy_def_power, def_template):
     defutil.relocate_pins(
         reader.db,
         input_lefs,
         def_template,
         permissive,
+        copy_def_power,
     )
     area = defutil.get_die_area(def_template, input_lefs)
     area_metric = f"{area[0]} {area[1]} {area[2]} {area[3]}"
