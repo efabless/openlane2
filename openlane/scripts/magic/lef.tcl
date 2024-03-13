@@ -45,6 +45,6 @@ if { $::env(MAGIC_WRITE_FULL_LEF) } {
     lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef
 } else {
     puts "\[INFO] Writing abstract LEF"
-    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef -hide
+    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef -hide -pinonly
 }
 puts "\[INFO] LEF Write Complete"
