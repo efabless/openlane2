@@ -319,7 +319,7 @@ jobs:
               ${{ matrix.design.config }}
           else
             nix develop --accept-flake-config --command\
-              ${{ matrix.design.script }}\
+              python3 ${{ matrix.design.script }}\
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
