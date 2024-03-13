@@ -202,7 +202,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     )
 
     # --------------------------------
-    # 3. Create a dict with net -> pin location. Check for only one pin location to exist, overwise return an error
+    # 3. Create a dict with net -> pin locations.
     # --------------------------------
     template_bterm_locations = dict()
 
