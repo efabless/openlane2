@@ -35,6 +35,7 @@ watch-docs:
 		-w .\
 		-e md,py,css\
 		-i "docs/build/**/*"\
+		-i "docs/build/*"\
 		-i "docs/source/reference/*_vars.md"\
 		-i "docs/source/reference/flows.md"\
 		-x "$(MAKE) docs && python3 -m http.server --directory docs/build/html"

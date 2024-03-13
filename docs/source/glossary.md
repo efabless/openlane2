@@ -327,7 +327,7 @@ timing closure
 
     A term given for designs for which STA has revealed that there exist no
     violations of timing constraints at a certain clock period and at all
-    {term}`timing corner`s.
+    {term}`timing corners <timing corner>`.
     
     Designs that have not achieved timing closure are usually not suitable
     for tape-out.
@@ -340,5 +340,18 @@ IEEE
     sets the standard for a number of formats in the EDA space, including 
     the Verilog Hardware Description Language.
     
+SPEF
+    
+    Short for Standard Parasitic Exchange Format.
+    
+    An {term}`IEEE` standard for representing parasitic resistances and
+    capacitances of wires in a circuit.
+    
+SDF
+
+    Short for Standard Delay Format.
+    
+    An {term}`IEEE` standard for representing and interpreting timing data for
+    use at any stage of an electronic design process.
 
 ```

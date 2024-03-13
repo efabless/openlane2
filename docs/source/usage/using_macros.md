@@ -100,7 +100,7 @@ explanation is as follows:
   * `pnl`: List of Powered Gate-level Netlists (if any)
   * `spice`: List of SPICE files (if any)
   * `lib`: Dictionary of LIB files.
-    * The keys of the dictionary are wildcards matching {term}`timing corners`,
+    * The keys of the dictionary are wildcards matching {term}`timing corners <timing corner>`,
       and the values are paths for lib files that are characterized for those
       timing corners. For example:
     * `"*_tt_025C_1v80": ["dir::lib0.lib"]` will match `lib0.lib` to all of
