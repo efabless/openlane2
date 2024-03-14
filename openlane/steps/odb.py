@@ -200,7 +200,7 @@ class ApplyDEFTemplate(OdbpyStep):
         Variable(
             "FP_TEMPLATE_COPY_POWER_PINS",
             bool,
-            "Whether to copy all power pins from the DEF template to the design.",
+            "Whether to *always* copy all power pins from the DEF template to the design.",
             default=False,
         ),
     ]
