@@ -40,11 +40,18 @@ puts "\[INFO] Ignoring '$::env(VDD_NETS) $::env(GND_NETS)'"
 lef nocheck $::env(VDD_NETS) $::env(GND_NETS)
 
 # Write LEF
-if { $::env(MAGIC_WRITE_FULL_LEF) } {
-    puts "\[INFO] Writing non-abstract (full) LEF"
-    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef
+set lefwrite_opts [list]
+if { !$::env(MAGIC_WRITE_FULL_LEF) } {
+    puts "\[INFO] Writing non-abstract (full) LEF…"
 } else {
-    puts "\[INFO] Writing abstract LEF"
-    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef -hide
+    lappend lefwrite_opts -hide
+    puts "\[INFO] Writing abstract LEF…"
 }
-puts "\[INFO] LEF Write Complete"
+if { $::env(MAGIC_WRITE_LEF_PINONLY) } {
+    puts "\[INFO] Specifying -pinonly (nets connected to pins on the same layer are declared as obstructions)…"
+    lappend lefwrite_opts -pinonly
+} else {
+    puts "\[INFO] Not specifiying -pinonly (nets connected to pins on the same layer are declared as part of the pin)…"
+}
+lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef {*}$lefwrite_opts
+puts "\[INFO] LEF Write Complete."
