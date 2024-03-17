@@ -26,6 +26,7 @@ from typing import (
     Dict,
     FrozenSet,
     Iterable,
+    Literal,
     Mapping,
     Optional,
     Sequence,
@@ -44,7 +45,7 @@ from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
 from ..state import DesignFormat
 from ..common import Filter
-from ..logging import debug, warn, err, verbose
+from ..logging import debug, warn, err
 
 
 class Toolbox(object):
@@ -180,6 +181,26 @@ class Toolbox(object):
                 result += [Path(views)]
 
         return [element for element in result if str(element) != Path._dummy_path]
+
+    def get_macro_views_by_priority(
+        self,
+        config: Mapping[str, Any],
+        design_formats: Sequence[DesignFormat],
+        timing_corner: Optional[str] = None,
+    ) -> List[Tuple[Path, DesignFormat]]:
+        result: List[Tuple[Path, DesignFormat]] = []
+        formats_so_far: List[DesignFormat] = []
+        for format in design_formats:
+            views = self.get_macro_views(
+                config,
+                format,
+                unless_exist=formats_so_far,
+                timing_corner=timing_corner,
+            )
+            for view in views:
+                result.append((view, format))
+            formats_so_far.append(format)
+        return result
 
     def get_timing_files(
         self,
@@ -374,38 +395,40 @@ class Toolbox(object):
         defines: FrozenSet[str],
     ) -> str:
         mkdirp(self.tmp_dir)
-
-        class State(IntEnum):
-            output = 0
-            dont = 1
-
-        verbose(f"Creating cell models for {input_models}…")
-
         out_path = os.path.join(self.tmp_dir, f"{uuid.uuid4().hex}.bb.v")
+        debug(f"Creating cell models for {input_models} at '{out_path}'…")
         bad_yosys_line = re.compile(r"^\s+(\w+|(\\\S+?))\s*\(.*\).*;")
-        final_files = []
 
+        stack: List[Literal["specify", "primitive"]] = []
         with open(out_path, "w", encoding="utf8") as out:
             for model in input_models:
-                patched_path = os.path.join(
-                    self.tmp_dir, f"{uuid.uuid4().hex}.patched.v"
-                )
-                patched = open(patched_path, "w", encoding="utf8")
-                state = State.output
-                for line in open(model, "r", encoding="utf8"):
-                    if state == State.output:
-                        if line.strip().startswith("specify"):
-                            state = State.dont
-                        elif bad_yosys_line.search(line) is None:
-                            print(line.strip("\n"), file=patched)
-                            print(line.strip("\n"), file=out)
-                    elif state == State.dont:
-                        if line.strip().startswith("endspecify"):
-                            print("/* removed specify */", file=out)
-                            state = State.output
-                patched.close()
-                print("", file=out)
-                final_files.append(patched_path)
+                try:
+                    for line in open(model, "r", encoding="utf8"):
+                        if len(stack) == 0:
+                            if line.strip().startswith("specify"):
+                                stack.append("specify")
+                            elif line.strip().startswith("primitive"):
+                                stack.append("primitive")
+                            elif bad_yosys_line.search(line) is None:
+                                print(line.strip("\n"), file=out)
+                        else:
+                            if line.strip().startswith("endspecify"):
+                                current = stack.pop()
+                                if current != "specify":
+                                    raise ValueError(
+                                        f"Invalid specify block in {model}"
+                                    )
+                                print("/* removed specify */", file=out)
+                            elif line.strip().startswith("endprimitive"):
+                                current = stack.pop()
+                                if current != "primitive":
+                                    raise ValueError(
+                                        f"Invalid primitive block in {model}"
+                                    )
+                                print("/* removed primitive */", file=out)
+                    print("", file=out)
+                except ValueError as e:
+                    err(f"Failed to pre-process input models for linting: {e}")
 
         yosys = shutil.which("yosys") or shutil.which("yowasp-yosys")
 
@@ -416,10 +439,9 @@ class Toolbox(object):
             return out_path
 
         commands = ""
-        for define in list(defines) + ["NO_PRIMITIVES"]:
+        for define in list(defines):
             commands += f"verilog_defines -D{define};\n"
-        for file in final_files:
-            commands += f"read_verilog -sv -lib {file};\n"
+        commands += f"read_verilog -sv -lib {out_path};\n"
 
         output_log_path = f"{out_path}_yosys.log"
         output_log = open(output_log_path, "wb")

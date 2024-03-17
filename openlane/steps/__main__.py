@@ -15,6 +15,7 @@ import os
 import shlex
 import shutil
 import datetime
+import functools
 import subprocess
 from functools import partial
 from typing import IO, Any, Dict, Optional, Sequence, Union
@@ -224,13 +225,13 @@ def eject(ctx, output, state_in, config, id):
     class Stop(Exception):
         pass
 
-    def run_subprocess_subsitute(
+    def popen_substitute(
         cmd: Sequence[Union[str, os.PathLike]],
         env: Optional[Dict[str, Any]] = None,
         stdin: Optional[IO[Any]] = None,
         *args,
         **kwargs,
-    ):
+    ) -> subprocess.Popen:
         nonlocal found_env, found_cmd, found_stdin_data
         found_cmd = cmd
         found_env = env
@@ -238,7 +239,10 @@ def eject(ctx, output, state_in, config, id):
             found_stdin_data = found_stdin.read()
         raise Stop()
 
-    step.run_subprocess = run_subprocess_subsitute
+    step.run_subprocess = functools.partial(
+        step.run_subprocess,
+        _popen_callable=popen_substitute,
+    )
 
     try:
         step.start(
@@ -278,7 +282,11 @@ def eject(ctx, output, state_in, config, id):
     }
     if found_env is not None:
         for key, value in found_env.items():
-            if value == current_env.get(key) or key in filtered_env:
+            if (
+                value == current_env.get(key)
+                or key in filtered_env
+                or key in ["PATH", "PYTHONPATH"]
+            ):
                 continue
             if os.path.isabs(value) and os.path.exists(value):
                 if value.startswith(canon_scripts_dir):

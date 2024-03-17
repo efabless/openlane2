@@ -191,6 +191,12 @@ class WriteLEF(MagicStep):
             "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view of the macro LEF view via magic.",
             default=False,
         ),
+        Variable(
+            "MAGIC_WRITE_LEF_PINONLY",
+            bool,
+            "If true, the LEF write will mark only areas that are port labels as pins, while marking the rest of each related net as an obstruction. Otherwise, the labeled port and the any connected metal on the same layer are marked as a pin.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
