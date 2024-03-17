@@ -22,7 +22,7 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..common import Path, mkdirp, get_script_dir
+from ..common import Path, mkdirp, get_script_dir, TclUtils
 from ..logging import warn
 from ..config import Variable
 from ..state import DesignFormat, State
@@ -152,9 +152,6 @@ class LVS(NetgenStep):
     def get_script_path(self):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
-        #    def get_script_path(self):
-        #        return "/home/karim/work/caravel_user_project/lvs/user_project_wrapper/lvs_results/2024-02-01-11-49-05/tmp/lvs.script"
-
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         spice_files = []
         if self.config["CELL_SPICE_MODELS"] is None:
@@ -176,8 +173,6 @@ class LVS(NetgenStep):
         stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
 
-        setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
-
         with open(self.get_script_path(), "w") as f:
             for lib in spice_files:
                 print(
@@ -190,30 +185,9 @@ class LVS(NetgenStep):
                 )
         stats_file = os.path.join(reports_dir, "lvs.rpt")
         stats_file_json = os.path.join(reports_dir, "lvs.json")
-        netgen_setup = os.path.join(self.step_dir, "setup.tcl")
+        netgen_setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
         mkdirp(reports_dir)
 
-        netgen_extra = textwrap.dedent(
-            r"""
-#---------------------------------------------------------------
-# Equate prefixed layout cells with corresponding source
-foreach cell $cells1 {
-    set layout $cell
-    while {[regexp {([A-Z][A-Z0-9]_)(.*)} $layout match prefix cellname]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-        }
-        set layout $cellname
-    }
-}
-        """
-        )
-        with open(netgen_setup, "w") as f:
-            f.write(open(setup_script).read())
-            f.write(netgen_extra)
         spice_files_commands = []
         for lib in spice_files:
             spice_files_commands.append(
@@ -225,15 +199,25 @@ foreach cell $cells1 {
         macros_commands += [
             f"readnet verilog {state_in[DesignFormat.POWERED_NETLIST]} $circuit2"
         ]
-        macros = self.config.get("MACROS")
-        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"] and macros:
-            for macro_name in macros:
-                nls = macros[macro_name].nl
-                for nl in nls:
-                    macros_commands.append(
-                        f"puts \"Reading Verilog netlist file '{str(nl)}'...\""
-                    )
-                    macros_commands.append(f"readnet verilog {str(nl)} $circuit2")
+
+        format_list = [
+            DesignFormat.POWERED_NETLIST,
+            DesignFormat.NETLIST,
+            DesignFormat.VERILOG_HEADER,
+        ]
+
+        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"]:
+            macros_views = []
+            for view, _ in self.toolbox.get_macro_views_by_priority(
+                self.config, format_list
+            ):
+                macros_views.append(TclUtils.escape(str(view)))
+
+            for netlist in macros_views:
+                macros_commands.append(
+                    f"puts \"Reading Verilog netlist file '{str(netlist)}'...\""
+                )
+                macros_commands.append(f"readnet verilog {str(netlist)} $circuit2")
 
         netgen_commands = (
             (
@@ -249,7 +233,7 @@ foreach cell $cells1 {
         )
         netgen_commands += spice_files_commands
         netgen_commands += macros_commands
-        netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup} {stats_file} -blackbox -json'.split(
+        netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup_script} {stats_file} -blackbox -json'.split(
             "\n"
         )
         with open(self.get_script_path(), "w") as f:
