@@ -11,6 +11,7 @@ caravel/index
 pdn
 about_pdks
 corners_and_sta
+using_macros
 writing_custom_flows
 writing_custom_steps
 ```

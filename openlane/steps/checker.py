@@ -285,7 +285,7 @@ class PowerGridViolations(MetricChecker):
         bool,
         "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
         default=True,
-        deprecated_names=["QUIT_ON_PDN_VIOLATIONS", " FP_PDN_CHECK_NODES"],
+        deprecated_names=["QUIT_ON_PDN_VIOLATIONS", "FP_PDN_CHECK_NODES"],
     )
     config_vars = [error_on_var]
 

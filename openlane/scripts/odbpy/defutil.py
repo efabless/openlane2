@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from reader import OdbReader, click_odb, click
+from reader import click_odb, click
 from typing import Tuple, List
 from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
@@ -26,24 +26,6 @@ from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 @click.group()
 def cli():
     pass
-
-
-@click.command("extract_core_dims")
-@click.option("-o", "--output-data", required=True, help="Output")
-@click.option("-l", "--input-lef", required=True, help="Merged LEF file")
-@click.argument("input_def")
-def extract_core_dims(output_data, input_lef, input_def):
-    reader = OdbReader(input_lef, input_def)
-    core_area = reader.block.getCoreArea()
-
-    with open(output_data, "w") as f:
-        print(
-            f"{core_area.dx() / reader.dbunits} {core_area.dy() / reader.dbunits}",
-            file=f,
-        )
-
-
-cli.add_command(extract_core_dims)
 
 
 @click.command("mark_component_fixed")
@@ -59,31 +41,6 @@ def mark_component_fixed(cell_name, reader):
 
 
 cli.add_command(mark_component_fixed)
-
-
-@click.command("merge_components")
-@click.option(
-    "-w",
-    "--with-components-from",
-    "donor_def",
-    required=True,
-    help="A donor def file from which to extract components.",
-)
-@click_odb
-def merge_components(reader, donor_def, input_lefs):
-    """
-    Adds all components in a donor DEF file that do not exist in the (recipient) INPUT_DEF.
-
-    Existing components with the same name will *not* be overwritten.
-    """
-    donor = OdbReader(input_lefs, donor_def)
-    recipient = reader
-
-    for instance in donor.instances:
-        odb.dbInst_create(recipient.block, instance.getMaster(), instance.getName())
-
-
-cli.add_command(merge_components)
 
 
 def get_die_area(def_file, input_lefs):
@@ -145,7 +102,7 @@ def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate
         return True
 
 
-def relocate_pins(db, input_lefs, template_def, permissive):
+def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False):
     # --------------------------------
     # 1. Find list of all bterms in existing database
     # --------------------------------
@@ -202,7 +159,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     )
 
     # --------------------------------
-    # 3. Create a dict with net -> pin location. Check for only one pin location to exist, overwise return an error
+    # 3. Create a dict with net -> pin locations.
     # --------------------------------
     template_bterm_locations = dict()
 
@@ -273,12 +230,28 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     if mismatches_found and not permissive:
         exit(os.EX_DATAERR)
 
+    if copy_def_power:
+        # If asked, we copy power pins from template
+        for bterm in template_bterms:
+            if bterm.getSigType() not in ["POWER", "GROUND"]:
+                continue
+            pin_name = bterm.getName()
+            pin_net = odb.dbNet.create(output_block, pin_name, True)
+            pin_net.setSpecial()
+            pin_net.setSigType(bterm.getSigType())
+            pin_bterm = odb.dbBTerm.create(pin_net, pin_name)
+            pin_bterm.setSigType(bterm.getSigType())
+            output_bterms.append(pin_bterm)
+
     grid_errors = False
     for output_bterm in output_bterms:
         name = output_bterm.getName()
         output_bpins = output_bterm.getBPins()
 
-        if name not in template_bterm_locations or name not in all_bterm_names:
+        if name not in template_bterm_locations:
+            continue
+
+        if (name not in all_bterm_names) and not copy_def_power:
             continue
 
         for output_bpin in output_bpins:
