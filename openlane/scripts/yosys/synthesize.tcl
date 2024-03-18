@@ -37,11 +37,6 @@ foreach lib $dfflib {
     lappend dfflib_args -liberty $lib
 }
 
-set dfflib $::env(SYNTH_LIBS)
-if {[info exists ::env(DFF_LIB_SYNTH)]} {
-    set dfflib $::env(DFF_LIB_SYNTH)
-}
-
 set max_FO $::env(MAX_FANOUT_CONSTRAINT)
 set max_TR 0
 if { [info exist ::env(MAX_TRANSITION_CONSTRAINT)]} {

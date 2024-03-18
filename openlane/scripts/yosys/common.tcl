@@ -42,13 +42,13 @@ namespace eval yosys_ol {
         proc_dff
         proc_memwr
         proc_clean
-        opt_expr -keepdc
+        tee -o "$report_dir/pre_synth_chk.rpt" check
+        opt_expr
     }
 
     proc ol_synth {design_name report_dir} {
         hierarchy -check -top $design_name -nokeep_prints -nokeep_asserts
         yosys_ol::ol_proc $report_dir
-        tee -o "$report_dir/pre_synth_chk.rpt" check
         if { $::env(SYNTH_NO_FLAT) != 1 } {
             flatten
         }
