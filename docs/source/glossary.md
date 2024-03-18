@@ -153,7 +153,7 @@ LEF
     An abstract view of pre-hardened macros and standard cells, containing
     information about the cell's dimensions, pin positions and elements on
     metal layers.
-    
+
     The LEF language is defined in the {term}`LEFDEFREF`.
 
 DEF
@@ -165,18 +165,18 @@ DEF
 
     When a design is hardened, {term}`LEF` and {term}`GDSII` views are
     generated from the DEF view.
-    
+
     The DEF language is defined in the {term}`LEFDEFREF`.
-    
+
 LEFDEFREF
 
     Refers to the LEF/DEF Language Reference by Cadence
     Inc.
-    
+
     The LEFDEFREF is obtainable for free from Silicon Integration Initiative,
     Inc.'s
     [Complimentary OpenAccess Tools, Libraries, and Utilities](https://si2.org/oa-tools-utils-libs/).
-    
+
     As of the time of writing, a slightly out of date but still valid version is
     also available from the
     [ISPD's 2018 detailed routing contest downloads](https://www.ispd.cc/contests/18/lefdefref.pdf).
@@ -190,10 +190,10 @@ CSV
 JSON
 
     Short for JavaScript Object Notation.
-    
+
     A data interchange format derived from JavaScript supporting numeric, Boolean
     and string values as well as lists and hashmaps composed of the above.
-    
+
     OpenLane uses JSON as the primary form for loading and storing configuration
     data.
 
@@ -251,7 +251,7 @@ FPGA
     An integrated circuit that can be reprogrammed to perform various digital
     functions much, much faster than a general-purpose computer, but at a
     recurring cost, area and performance penalty compared to a dedicated ASIC.
-    
+
     Popular for prototyping ASICs or for niche applications where the upfront
     cost of an ASIC is not financially justifiable.
 
@@ -312,45 +312,45 @@ On-chip variation
     or environmental conditions.
 
     Sometimes abbreviated as OCV.
-    
+
 STA
 
     Short for Static Timing Analysis.
-    
+
     A method for determining the validity of a chip's timing parameters without
     performing a full functional simulation thereof.
-    
+
     A chip for which STA reveals no timing constraint violations is said to
     have achieved {term}`timing closure`.
-    
+
 timing closure
 
     A term given for designs for which STA has revealed that there exist no
     violations of timing constraints at a certain clock period and at all
     {term}`timing corners <timing corner>`.
-    
+
     Designs that have not achieved timing closure are usually not suitable
     for tape-out.
-    
+
 IEEE
 
     Short for the Institute of Electrical and Electronics Engineers.
-    
+
     A professional association for electronics and electrical engineers. IEEE
     sets the standard for a number of formats in the EDA space, including 
     the Verilog Hardware Description Language.
-    
+
 SPEF
-    
+
     Short for Standard Parasitic Exchange Format.
-    
+
     An {term}`IEEE` standard for representing parasitic resistances and
     capacitances of wires in a circuit.
-    
+
 SDF
 
     Short for Standard Delay Format.
-    
+
     An {term}`IEEE` standard for representing and interpreting timing data for
     use at any stage of an electronic design process.
 
