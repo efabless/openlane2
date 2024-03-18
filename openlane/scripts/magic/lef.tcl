@@ -41,7 +41,7 @@ lef nocheck $::env(VDD_NETS) $::env(GND_NETS)
 
 # Write LEF
 set lefwrite_opts [list]
-if { !$::env(MAGIC_WRITE_FULL_LEF) } {
+if { $::env(MAGIC_WRITE_FULL_LEF) } {
     puts "\[INFO] Writing non-abstract (full) LEF…"
 } else {
     lappend lefwrite_opts -hide
