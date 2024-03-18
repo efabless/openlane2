@@ -258,6 +258,7 @@ The names of step directories are constructed as follows:
 dots replaced with dashes.
 ```
 
+(caravel-openroad-checkantennas-with-fixes)=
 ##### `OpenROAD.CheckAntennas`
 
 There are 2 {step}`OpenROAD.CheckAntennas` steps. One after
@@ -333,6 +334,7 @@ or more of the following solutions can be applied:
 
 ______________________________________________________________________
 
+(caravel-openroad-stapostpnr-with-fixes)=
 ##### `OpenROAD.STAPostPNR`
 
 Under `xx-openroad-stapostpnr` there should be a file called `summary.rpt`:
@@ -1516,7 +1518,7 @@ There are around 260 antenna violations with ratios up to 7.
 ⋮
 ```
 
-We can fix those the same way we did in the AES [here](#openroadcheckantennas).
+We can fix those the same way we did in the AES [here](#caravel-openroad-checkantennas-with-fixes).
 
 ______________________________________________________________________
 
@@ -1543,11 +1545,11 @@ violations and 1 hold violation which is not Reg to Reg.
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴───────────────┴──────────────┴───────────┴───────────────┴──────────────┴───────────────┴──────────────┘
 ```
 
-The max Slew/Cap violations can be fixed the same way in
-[openroad-stapostpnr](#openroadstapostpnr). For the hold violation, it is in the
-`max_ff_n40C_1v95` corner. To investigate the timing path, open the report
-`xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in
-the first timing path.
+The max Slew/Cap violations can be fixed the same way as in
+[this section](#caravel-openroad-stapostpnr-with-fixes). For the hold violation,
+it is in the `max_ff_n40C_1v95` corner. To investigate the timing path, open the
+report `xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will
+be in the first timing path.
 
 ```{note}
 There might be more hold violations or no violations at all depending on the
