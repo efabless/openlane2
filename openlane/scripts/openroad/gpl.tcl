@@ -59,6 +59,14 @@ if { [info exists ::env(__PL_SKIP_IO)] } {
 	lappend arg_list -skip_io
 }
 
+if { [info exists ::env(PL_MIN_PHI_COEFFICIENT)] } {
+	lappend arg_list -min_phi_coef $::env(PL_MIN_PHI_COEFFICIENT)
+}
+
+if { [info exists ::env(PL_MAX_PHI_COEFFICIENT)] } {
+	lappend arg_list -max_phi_coef $::env(PL_MAX_PHI_COEFFICIENT)
+}
+
 set cell_pad_side [expr $::env(GPL_CELL_PADDING) / 2]
 
 lappend arg_list -pad_right $cell_pad_side

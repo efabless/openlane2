@@ -1008,6 +1008,16 @@ class GlobalPlacement(OpenROADStep):
                 deprecated_names=["PL_WIRELENGTH_COEF"],
             ),
             Variable(
+                "PL_MIN_PHI_COEFFICIENT",
+                Optional[Decimal],
+                "Sets a lower bound on the µ_k variable in the GPL algorithm. Useful if global placement diverges. See https://openroad.readthedocs.io/en/latest/main/src/gpl/README.html",
+            ),
+            Variable(
+                "PL_MAX_PHI_COEFFICIENT",
+                Optional[Decimal],
+                "Sets a upper bound on the µ_k variable in the GPL algorithm. Useful if global placement diverges.See https://openroad.readthedocs.io/en/latest/main/src/gpl/README.html",
+            ),
+            Variable(
                 "FP_CORE_UTIL",
                 Decimal,
                 "The core utilization percentage.",
