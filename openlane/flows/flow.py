@@ -463,6 +463,8 @@ class Flow(ABC):
         last_run: bool = False,
         _force_run_dir: Optional[str] = None,
         _no_load_previous_steps: bool = False,
+        *,
+        overwrite: bool = False,
         **kwargs,
     ) -> State:
         """
@@ -483,6 +485,8 @@ class Flow(ABC):
 
             If ``last_run`` and ``tag`` are both set, a :class:`FlowException` will
             also be raised.
+        :param overwrite: If true and a run with the desired tag was found, the
+            contents will be deleted instead of appended.
 
         :returns: ``(success, state_list)``
         """
@@ -530,6 +534,10 @@ class Flow(ABC):
             entries = os.listdir(self.run_dir)
             if len(entries) == 0:
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
+            elif overwrite:
+                shutil.rmtree(self.run_dir)
+                raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
+
             info(f"Using existing run at '{tag}' with the '{self.name}' flow.")
 
             # Extract maximum step ordinal + load finished steps

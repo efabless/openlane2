@@ -399,6 +399,7 @@ class CheckMacroInstances(STAPrePNR):
     """
 
     id = "OpenROAD.CheckMacroInstances"
+    name = "Check Macro Instances"
     outputs = []
 
     config_vars = OpenROADStep.config_vars
