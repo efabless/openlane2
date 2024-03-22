@@ -105,7 +105,7 @@ def manual_macro_place(reader, config, fixed):
 
     if len(macros):
         print("Declared macros not instantiated in design:", file=sys.stderr)
-        for macro in macros.value():
+        for macro in macros.values():
             print(f"* {macro[0]}", file=sys.stderr)
         exit(1)
 
