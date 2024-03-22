@@ -1806,10 +1806,15 @@ class CTS(ResizerStep):
             ),
             Variable(
                 "CTS_MAX_CAP",
-                Decimal,
-                "Defines the maximum capacitance, used in CTS.",
+                Optional[Decimal],
+                "Overrides the maximum capacitance used in CTS.",
                 units="pF",
-                pdk=True,
+            ),
+            Variable(
+                "CTX_MAX_SLEW",
+                Optional[Decimal],
+                "Overrides the maximum transition time used in CTS.",
+                units="ns",
             ),
         ]
     )

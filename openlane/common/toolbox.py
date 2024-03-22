@@ -391,7 +391,7 @@ class Toolbox(object):
 
     def create_blackbox_model(
         self,
-        input_models: FrozenSet[str],
+        input_models: Union[frozenset, Tuple[str, ...]],
         defines: FrozenSet[str],
     ) -> str:
         mkdirp(self.tmp_dir)
