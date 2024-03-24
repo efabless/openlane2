@@ -23,12 +23,16 @@
 
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixos-23.11;
+    lef-parser.url = "git+file:///Users/donn/efabless/lefdefparser"; #github:efabless/lef_parser;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
+  
+  inputs.lef-parser.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = {
     self,
     nixpkgs,
+    lef-parser,
     ...
   }: {
     # Helper functions
@@ -44,6 +48,7 @@
             inherit system;
             overlays = [
               (import ./nix/overlay.nix)
+              (new: old: { lef-parser = lef-parser.outputs.packages."${system}".default; })
             ];
           })
       );
