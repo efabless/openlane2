@@ -20,16 +20,16 @@
         ]
       },
       "locked": {
-        "dirtyRev": "42860d1b27256492b5f9accd9c2dbcce18b5ca89-dirty",
-        "dirtyShortRev": "42860d1-dirty",
-        "lastModified": 1711311495,
-        "narHash": "sha256-LcCRr3mwObzr/aeTOMIS3kVje8wnRiZ3IQ3WPDcQZc8=",
-        "type": "git",
-        "url": "file:///Users/donn/efabless/lefdefparser"
+        "narHash": "sha256-iubKVRDcEl1RS2g6YXxcOb1rhJccwrPQZ0YofvCcOko=",
+        "owner": "efabless",
+        "repo": "lef_parser",
+        "rev": "2abbb40678e03b2b282ab9fa1c8381821e6477ae",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///Users/donn/efabless/lefdefparser"
+        "owner": "efabless",
+        "repo": "lef_parser",
+        "type": "github"
       }
     },
     "nixpkgs": {

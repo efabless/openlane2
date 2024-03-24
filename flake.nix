@@ -23,7 +23,7 @@
 
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixos-23.11;
-    lef-parser.url = "git+file:///Users/donn/efabless/lefdefparser"; #github:efabless/lef_parser;
+    lef-parser.url = github:efabless/lef_parser;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
   
