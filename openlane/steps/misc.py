@@ -13,6 +13,9 @@
 # limitations under the License.
 import os
 from typing import Tuple
+from io import TextIOWrapper
+
+import lef_parser
 
 from .step import ViewsUpdate, MetricsUpdate, Step
 from ..common import Path
@@ -157,4 +160,121 @@ class ReportManufacturability(Step):
 
         with open(report_file, "w") as f:
             print(f"{antenna_report}\n{lvs_report}\n{drc_report}", file=f)
+        return {}, {}
+
+
+def get_macro_antenna_info(macro: lef_parser.Macro, f: TextIOWrapper):
+    inout_pins = []
+    input_pins = []
+    output_pins = []
+    for pin in macro.pins.values():
+        if pin.kind in ["POWER", "GROUND", "ANALOG"]:
+            continue
+        if pin.direction == "INOUT" and (
+            pin.antennaDiffArea is None and pin.antennaGateArea is None
+        ):
+            inout_pins.append(pin.name)
+        elif pin.direction == "INPUT" and pin.antennaGateArea is None:
+            input_pins.append(pin.name)
+        elif pin.direction == "OUTPUT" and pin.antennaDiffArea is None:
+            output_pins.append(pin.name)
+    if len(inout_pins) + len(input_pins) + len(output_pins):
+        print(f"* {macro.name}", file=f)
+        if inout_pins:
+            print(
+                "  * INOUT pin(s) without antenna gate information nor antenna diffusion information:",
+                file=f,
+            )
+            for pin in inout_pins:
+                print(f"    * {pin}", file=f)
+        if input_pins:
+            print(
+                "  * INPUT pin(s) without antenna gate information:",
+                file=f,
+            )
+            for pin in input_pins:
+                print(f"    * {pin}", file=f)
+        if output_pins:
+            print(
+                "  * OUTPUT pin(s) without antenna diffusion information:",
+                file=f,
+            )
+            for pin in input_pins:
+                print(f"    * {pin}, file=f")
+        return True
+    return False
+
+
+@Step.factory.register()
+class CheckMacroAntennaProperties(Step):
+    """
+    Sanity-checks the LEF files of input macros for antenna information:
+    * Antenna Gate Area for Inputs
+    * Antenna Diffusion Area for Inouts
+    * Either or Both for Inouts
+
+    If a pin is missing this information, estimates for the antenna effect and
+    diode insertion may not be accurate. However, it may also be missing
+    because the pin(s) in question are not internally connected to anything.
+    """
+
+    id = "Misc.CheckMacroAntennaProperties"
+    name = "Check Antenna Properties of Macros Pins in Their LEF Views"
+    inputs = []
+    outputs = []
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        missing_values_found = False
+        report_path = os.path.join(self.step_dir, "macro_antenna_info.rpt")
+        with open(report_path, "w") as f:
+            for macro in self.toolbox.get_macro_views(self.config, DesignFormat.LEF):
+                lef = lef_parser.parse(macro)
+                for macro in lef.macros.values():
+                    missing_values_found = (
+                        missing_values_found or get_macro_antenna_info(macro, f)
+                    )
+            if not missing_values_found:
+                print("* No macros found with missing antenna information.", file=f)
+            else:
+                warn(
+                    f"One or more macros have missing antenna information on their pin(s): {os.path.relpath(report_path)}"
+                )
+        return {}, {}
+
+
+@Step.factory.register()
+class CheckDesignAntennaProperties(Step):
+    """
+    Sanity-checks the output LEF for antenna information:
+    * Antenna Gate Area for Inputs
+    * Antenna Diffusion Area for Inouts
+    * Either or Both for Inouts
+
+    If a pin is missing this information, designs instantiating this Macro
+    may get bad estimates for the antenna effect and
+    diode insertion may not be accurate. However, it may also be missing
+    because the pin(s) in question are not internally connected to anything.
+    """
+
+    id = "Misc.CheckDesignAntennaProperties"
+    name = "Check Antenna Properties of the Design's LEF view"
+    inputs = [DesignFormat.LEF]
+    outputs = []
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        lef = lef_parser.parse(str(state_in[DesignFormat.LEF]))
+        report_path = os.path.join(self.step_dir, "macro_antenna_info.rpt")
+        with open(report_path, "w") as f:
+            missing_values_found = get_macro_antenna_info(
+                lef.macros[self.config["DESIGN_NAME"]], f
+            )
+            if not missing_values_found:
+                print(
+                    "* Design LEF successfully generated with antenna information.",
+                    file=f,
+                )
+            else:
+                warn(
+                    f"Generated LEF for the design is missing antenna information on some pins: {os.path.relpath(report_path)}"
+                )
         return {}, {}

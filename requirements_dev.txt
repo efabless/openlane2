@@ -3,7 +3,6 @@ wheel
 
 # lint
 black>=23,<24
-black[jupyter]
 flake8>=4
 flake8-no-implicit-concat==0.3.3
 flake8-pytest-style
