@@ -78,9 +78,6 @@ jobs:
       - name: Install Linters
         run: |
           make venv
-
-          # TEMP
-          ./venv/bin/python3 -m pip install git+https://github.com/efabless/lef_parser
       - name: Lint
         run: |
           PATH=$PWD/venv/bin:$PATH make lint
@@ -113,10 +110,7 @@ jobs:
           volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
         run: |
-          make venv
-
-          # TEMP
-          ./venv/bin/python3 -m pip install git+https://github.com/efabless/lef_parser
+          make ./venv/bin/coverage
 
           ./venv/bin/coverage run -m pytest -n auto --pdk-root="${{ github.workspace }}/.volare-sky130"
           ./venv/bin/coverage report
