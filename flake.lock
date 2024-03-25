@@ -20,10 +20,10 @@
         ]
       },
       "locked": {
-        "narHash": "sha256-iubKVRDcEl1RS2g6YXxcOb1rhJccwrPQZ0YofvCcOko=",
+        "narHash": "sha256-+7IcvzC5nh+qawyTnpo6J15PcUtSrjk/ftKoa1IGCzY=",
         "owner": "efabless",
         "repo": "lef_parser",
-        "rev": "2abbb40678e03b2b282ab9fa1c8381821e6477ae",
+        "rev": "e8d9f5e04dfd3da7afe4fd7e42d694e4e37962db",
         "type": "github"
       },
       "original": {

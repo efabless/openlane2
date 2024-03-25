@@ -185,22 +185,22 @@ def get_macro_antenna_info(macro: lef_parser.Macro, f: TextIOWrapper):
                 "  * INOUT pin(s) without antenna gate information nor antenna diffusion information:",
                 file=f,
             )
-            for pin in inout_pins:
-                print(f"    * {pin}", file=f)
+            for pin_name in inout_pins:
+                print(f"    * {pin_name}", file=f)
         if input_pins:
             print(
                 "  * INPUT pin(s) without antenna gate information:",
                 file=f,
             )
-            for pin in input_pins:
-                print(f"    * {pin}", file=f)
+            for pin_name in input_pins:
+                print(f"    * {pin_name}", file=f)
         if output_pins:
             print(
                 "  * OUTPUT pin(s) without antenna diffusion information:",
                 file=f,
             )
-            for pin in input_pins:
-                print(f"    * {pin}, file=f")
+            for pin_name in input_pins:
+                print(f"    * {pin_name}, file=f")
         return True
     return False
 
@@ -229,9 +229,9 @@ class CheckMacroAntennaProperties(Step):
         with open(report_path, "w") as f:
             for macro in self.toolbox.get_macro_views(self.config, DesignFormat.LEF):
                 lef = lef_parser.parse(macro)
-                for macro in lef.macros.values():
+                for lef_macro in lef.macros.values():
                     missing_values_found = (
-                        missing_values_found or get_macro_antenna_info(macro, f)
+                        missing_values_found or get_macro_antenna_info(lef_macro, f)
                     )
             if not missing_values_found:
                 print("* No macros found with missing antenna information.", file=f)
