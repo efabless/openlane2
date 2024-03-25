@@ -1806,10 +1806,15 @@ class CTS(ResizerStep):
             ),
             Variable(
                 "CTS_MAX_CAP",
-                Decimal,
-                "Defines the maximum capacitance, used in CTS.",
+                Optional[Decimal],
+                "Overrides the maximum capacitance CTS characterization will test. If omitted, the capacitance is extracted from the lib information of the buffers in CTS_CLK_BUFFERS.",
                 units="pF",
-                pdk=True,
+            ),
+            Variable(
+                "CTS_MAX_SLEW",
+                Optional[Decimal],
+                "Overrides the maximum transition time CTS characterization will test. If omitted, the slew is extracted from the lib information of the buffers in CTS_CLK_BUFFERS.",
+                units="ns",
             ),
         ]
     )
