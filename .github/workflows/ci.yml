@@ -76,8 +76,7 @@ jobs:
         with:
           python-version: "3.8"
       - name: Install Linters
-        run: |
-          make venv
+        run: make venv
       - name: Lint
         run: |
           PATH=$PWD/venv/bin:$PATH make lint
@@ -110,7 +109,7 @@ jobs:
           volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
         run: |
-          make ./venv/bin/coverage
+          make venv
 
           ./venv/bin/coverage run -m pytest -n auto --pdk-root="${{ github.workspace }}/.volare-sky130"
           ./venv/bin/coverage report
