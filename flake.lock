@@ -13,6 +13,25 @@
         "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
       }
     },
+    "lef-parser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "narHash": "sha256-+7IcvzC5nh+qawyTnpo6J15PcUtSrjk/ftKoa1IGCzY=",
+        "owner": "efabless",
+        "repo": "lef_parser",
+        "rev": "e8d9f5e04dfd3da7afe4fd7e42d694e4e37962db",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "lef_parser",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
@@ -31,6 +50,7 @@
     "root": {
       "inputs": {
         "flake-compat": "flake-compat",
+        "lef-parser": "lef-parser",
         "nixpkgs": "nixpkgs"
       }
     }

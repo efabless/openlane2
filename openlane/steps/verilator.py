@@ -97,6 +97,7 @@ class Lint(Step):
 
         blackboxes = []
         models = []
+        lefs = []
 
         if cell_verilog_models := self.config["CELL_VERILOG_MODELS"]:
             blackboxes.append(
@@ -110,15 +111,14 @@ class Lint(Step):
             self.config,
             [
                 DesignFormat.VERILOG_HEADER,
-                DesignFormat.POWERED_NETLIST,
-                DesignFormat.NETLIST,
+                DesignFormat.LEF,
             ],
         )
         for view, format in macro_views:
             if format == DesignFormat.VERILOG_HEADER:
                 blackboxes.append(str(view))
             else:
-                models.append(str(view))
+                lefs.append(str(view))
 
         if extra_verilog_models := self.config["EXTRA_VERILOG_MODELS"]:
             models += extra_verilog_models
@@ -138,6 +138,11 @@ class Lint(Step):
                 frozenset(defines),
             )
             blackboxes.append(bb_path)
+
+        for lef in lefs:
+            blackboxes.append(
+                self.toolbox.header_from_lef(lef, self.config["VERILOG_POWER_DEFINE"])
+            )
 
         vlt_file = os.path.join(self.step_dir, "_deps.vlt")
         with open(vlt_file, "w") as f:

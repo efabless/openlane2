@@ -156,6 +156,7 @@ def _generate_read_deps(
             DesignFormat.POWERED_NETLIST,
             DesignFormat.NETLIST,
             DesignFormat.LIB,
+            DesignFormat.LEF,
         ]
         if power_defines
         else [
@@ -163,6 +164,7 @@ def _generate_read_deps(
             DesignFormat.NETLIST,
             DesignFormat.POWERED_NETLIST,
             DesignFormat.LIB,
+            DesignFormat.LEF,
         ]
     )
     for view, format in toolbox.get_macro_views_by_priority(config, format_list):
@@ -171,6 +173,11 @@ def _generate_read_deps(
             commands += (
                 f"read_liberty -lib -ignore_miss_dir -setattr blackbox {view_escaped}\n"
             )
+        elif format == DesignFormat.LEF:
+            lef_header = toolbox.header_from_lef(
+                str(view), config.get("VERILOG_POWER_DEFINE", "")
+            )
+            commands += f"read_verilog -sv -lib {TclUtils.escape(lef_header)}\n"
         else:
             commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {view_escaped}\n"
 

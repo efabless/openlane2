@@ -39,7 +39,7 @@
   yosys-eqy,
   yosys-ghdl,
   yosys-f4pga-sdc,
-  # PIP
+  # Python
   click,
   cloup,
   pyyaml,
@@ -52,6 +52,7 @@
   psutil,
   pytestCheckHook,
   pyfakefs,
+  lef-parser,
   system,
 }:
 buildPythonPackage rec {
@@ -118,6 +119,7 @@ buildPythonPackage rec {
       ioplace-parser
       psutil
       klayout-pymod
+      lef-parser
     ]
     ++ includedTools;
 
