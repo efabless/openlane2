@@ -12,10 +12,10 @@ at <https://openlane.readthedocs.io>.
 
 OpenLane 2 is a powerful and versatile infrastructure library that enables the
 construction of digital ASIC implementation flows based on open-source and
-commercial EDA tools. It includes a reference flow (Classic) that is built
+commercial EDA tools. It includes a reference flow ({flow}`Classic`) that is built
 entirely using open-source EDA tools, and it allows designers to abstract the
 underlying tools and configure their behavior with a single configuration file.
-OpenLane 2 also supports the ability to freely extend or modify the flow using
+OpenLane 2 also supports the ability to freely extend or modify flows using
 Python scripts and utilities.
 
 Currently, OpenLane 2 and its default flow support all variants of the open-source
@@ -26,7 +26,7 @@ See [Using PDKs](./usage/about_pdks.md) for more info.
 Here are some of the key benefits of using OpenLane 2:
 
 * **Flexibility and extensibility**: OpenLane 2 is designed to be flexible and
-  extensible, allowing designers to customize the flow to meet their specific
+  extensible, allowing designers to customize flows to meet their specific
   needs. This can be done by writing Python scripts and utilities,
   or by modifying the existing configuration file.
 * **Open source**: OpenLane 2 is an open-source project, which means that it is

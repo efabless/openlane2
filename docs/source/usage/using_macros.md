@@ -73,8 +73,6 @@ views- the former of which is used in PnR and the latter is used for tape-out.
 * {term}`Yosys` JSON Header (`.json`): Optional
   * A JSON netlist produced by Yosys that provides the Powered Netlist
     in a Python-parseable format.
-  * currently, it is unused by the flow as far as macros are concerned, but it
-    may be used in the future.
 
 ## In OpenLane Configurations
 
@@ -228,7 +226,7 @@ macro_name instance_name(
 );
 ```
 
-This is used by the flow to create a hierarchy of power nets for the design,
+This is used by flows to create a hierarchy of power nets for the design,
 which is later used in constructing the power distribution network and
 connecting macros together.
 

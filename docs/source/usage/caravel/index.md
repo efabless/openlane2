@@ -183,6 +183,8 @@ ______________________________________________________________________
 
 #### Running the flow
 
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
+
 Let's try running the flow from OpenLane:
 
 ```console
@@ -1467,6 +1469,8 @@ ______________________________________________________________________
 
 ### Running the flow
 
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
@@ -2206,6 +2210,8 @@ So, the final config.json for the User Project's Wrapper will be:
 ______________________________________________________________________
 
 #### Running the flow
+
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
 
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json

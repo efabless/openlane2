@@ -22,11 +22,11 @@ docker-image:
 	cat $(shell nix-build docker.nix) | docker load
 
 .PHONY: docs
-docs: venv
+docs:
 	$(MAKE) -C docs html
 
 .PHONY: host-docs
-host-docs: venv
+host-docs:
 	python3 -m http.server --directory ./docs/build/html
 	
 .PHONY: watch-docs
