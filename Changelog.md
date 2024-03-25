@@ -14,6 +14,115 @@
 ## Documentation
 -->
 
+# 2.0.0rc2
+
+## CLI
+
+* `openlane.steps`
+  * `eject` \*now overrides `psutils.Popen()` instead of `run_subprocess`,
+    allowing it to run at a lower level
+  * `PATH`, `PYTHONPATH` now excluded from `run.sh`
+
+## Steps
+
+* `Checker.PowerGridViolations`
+
+  * Fixed mistakenly added whitespace in `FP_PDN_CHECK_NODES`
+
+* `Magic.WriteLEF`
+
+  * Added new variable `MAGIC_WRITE_LEF_PINONLY`, which writes the LEF with with
+    the `-pinonly` option; declaring nets connected to pins on the same metal
+    layer as obstructions and not part of the pin
+
+* `OpenROAD.CTS`
+  * Made `CTS_MAX_CAP` a non-PDK value, and also optional as the values in
+    the PDK configuration are bad and OpenROAD does a better job without it
+  * CTS no longer passes `MAX_TRANSITION_CONSTRAINT`, instead using a new
+    variable `CTS_MAX_SLEW` if it exists
+  * Fixed issue where no arguments were passed to
+    `configure_cts_characterization`
+  * Fixed bug where an incorrect value was passed to the `-max_slew` option
+
+* `Odb.ApplyDEFTemplate`
+
+  * Added new variable, `FP_TEMPLATE_COPY_POWER_PINS`, that *always* copies
+    power pins from the DEF template
+  * Power pins are now filtered and exempt from placement otherwise, allowing
+    the step to be runnable after PDN generation
+
+* `Odb.CustomIOPlacement`
+
+  * Power pins are now filtered and exempt from placement, allowing the step to
+    be runnable after PDN generation
+
+* `OpenROAD.GlobalPlacement`
+
+  * Added `PL_MIN_PHI_COEFFICIENT`, `PL_MAX_PHI_COEFFICIENT` for when global
+    placement diverges
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * **API Break**: Verilog names of macros are now considered instead of DEF
+    names in the event of a mismatch (e.g. for instances with `[]` or `/` in the
+    name.)
+
+* `Verilator.Lint`
+
+  * Now works with the preprocessor macro `VERILOG_POWER_DEFINE` being defined -
+    justification is that most macros come with a powered netlist than a regular
+    netlist
+  * `CELL_BB_VERILOG_MODELS` is no longer used, with the blackbox models always
+    getting generated (so power pins can be included)
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+  * Fixed issue where the order of files may not be preserved for macros, causing
+    linting to fail
+  * Internally adjusted how linter flags are set; a `.vlt` file is used to turn
+    off certain linting rules for the black-box models instead of copying and
+    wrapping the black-box comments in comments
+
+* `Yosys.*`
+
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+
+* `Yosys.JsonHeader`
+
+  * Now reads generated black-boxed models of the standard cells with power pins
+    instead of lib files, allowing power pins to be explicitly specified for
+    hand-instantiated cells as well without issue
+
+## Flows
+
+* `Classic`
+  * Added `Odb.AddRoutingObstructions` before global routing
+  * Added `Odb.RemoveRoutingObstructions` after detailed routing
+  * Moved PDN generation steps before Global Placement
+
+## Tool Updates
+
+* `magic` -> `8.3.466`/`bfd938b`
+  * Addresses a bug with reading DEF files using generated vias
+
+## Testing
+
+## Misc. Enhancements/Bugfixes
+
+* PDK backwards-compatibility script now skips migrating `LIB_*` if `LIB`
+  already exists
+* "Default" constraints made exclusive to `sky130` and `gf180mcu`
+
+## API Breaks
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * **API Break**: Verilog names of macros are now considered instead of DEF
+    names in the event of a mismatch (e.g. for instances with `[]` or `/` in the
+    name.)
+
+## Documentation
+
 # 2.0.0rc1
 
 ## CLI
