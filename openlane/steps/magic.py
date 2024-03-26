@@ -84,7 +84,7 @@ class MagicStep(TclStep):
         Variable(
             "CELL_MAGLEFS",
             Optional[List[Path]],
-            "A list of pre-processed abstract LEF views for cells. Read as a fallback for undefined cells in scripts where cells are blackboxed.",
+            "A list of pre-processed abstract LEF views for cells. Read as a fallback for undefined cells in scripts where cells are black-boxed.",
             pdk=True,
         ),
         Variable(
@@ -398,6 +398,11 @@ class SpiceExtraction(MagicStep):
             bool,
             "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
             default=False,
+        ),
+        Variable(
+            "MAGIC_EXT_ABSTRACT_CELLS",
+            Optional[List[str]],
+            "A list of cell names to be abstracted (black-boxed) during SPICE extraction",
         ),
         Variable(
             "MAGIC_NO_EXT_UNIQUE",

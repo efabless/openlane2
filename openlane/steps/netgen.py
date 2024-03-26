@@ -115,9 +115,9 @@ class NetgenStep(TclStep):
             pdk=True,
         ),
         Variable(
-            "NETGEN_INCLUDE_MARCOS_NETLIST",
+            "NETGEN_INCLUDE_MARCO_NETLIST",
             bool,
-            "A flag that enables including the gate-level netlist of the design while running Netgen",
+            "A flag that enables including the gate-level netlist of macros while running Netgen",
             default=False,
         ),
     ]
@@ -183,8 +183,6 @@ class LVS(NetgenStep):
                     f"readnet spice {lib} 1",
                     file=f,
                 )
-        stats_file = os.path.join(reports_dir, "lvs.rpt")
-        stats_file_json = os.path.join(reports_dir, "lvs.json")
         netgen_setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
         mkdirp(reports_dir)
 
@@ -206,7 +204,7 @@ class LVS(NetgenStep):
             DesignFormat.VERILOG_HEADER,
         ]
 
-        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"]:
+        if self.config["NETGEN_INCLUDE_MARCO_NETLIST"]:
             macros_views = []
             for view, _ in self.toolbox.get_macro_views_by_priority(
                 self.config, format_list
