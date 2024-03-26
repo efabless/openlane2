@@ -255,7 +255,11 @@ def io_place(
 
     print("Top-level design name:", reader.name)
 
-    bterms = reader.block.getBTerms()
+    bterms = [
+        bterm
+        for bterm in reader.block.getBTerms()
+        if bterm.getSigType() not in ["POWER", "GROUND"]
+    ]
 
     for side, side_info in info_by_side.items():
         min = (

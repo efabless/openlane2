@@ -14,13 +14,14 @@
 # flake8: noqa E402
 import odb
 import json
-from fnmatch import fnmatch
 from openroad import Tech, Design
 
+import re
 import sys
 import locale
 import inspect
 import functools
+from fnmatch import fnmatch
 from typing import Callable, Dict
 
 # -- START: Environment Fixes
@@ -84,8 +85,15 @@ class OdbReader(object):
             self.dbunits = self.block.getDefUnits()
             self.instances = self.block.getInsts()
 
+        busbitchars = re.escape("[]")  # TODO: Get alternatives from LEF parser
+        dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
+        self.escape_verilog_rx = re.compile(rf"([{dividerchar + busbitchars}])")
+
     def add_lef(self, new_lef):
         self.ord_tech.readLef(new_lef)
+
+    def escape_verilog_name(self, name_in: str) -> str:
+        return self.escape_verilog_rx.sub(r"\\\1", name_in)
 
     def _dpl(self):
         """

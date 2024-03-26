@@ -44,13 +44,13 @@
 }:
 clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "cb73ebfab02e6eed32f08287b45522c61ef542f8";
+  rev = "bfd938b5e2321cf9a6c15f398fbc987b56fcc179";
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-NH0CEEQd6PfXO/4+REwm45Xd5ySS0UwRmT5scnxGzmE=";
+    sha256 = "sha256-xNhPnNGoJ8YiG6NFeFhOuKTB56rQvggJugIvukao6U8=";
   };
 
   nativeBuildInputs = [python3 gnused];

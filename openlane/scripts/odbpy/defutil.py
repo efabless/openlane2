@@ -193,10 +193,10 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
         ]
     )
 
-    print(f"Found {len(template_bterm_locations)} template_bterms:")
+    print(f"Found {len(template_bterm_locations)} template_bterms…")
 
-    for name in template_bterm_locations.keys():
-        print(f"  * {name}: {template_bterm_locations[name]}")
+    # for name in template_bterm_locations.keys():
+    #     print(f"  * {name}: {template_bterm_locations[name]}")
 
     # --------------------------------
     # 4. Modify the pins in out def, according to dict
@@ -206,10 +206,19 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
     output_block = output_db.getChip().getBlock()
     output_bterms = output_block.getBTerms()
 
-    output_bterm_names = set([bterm.getName() for bterm in output_bterms])
-
+    if copy_def_power:
+        output_bterm_names = set([bterm.getName() for bterm in output_bterms])
+    else:
+        output_bterm_names = set(
+            [
+                bterm.getName()
+                for bterm in output_bterms
+                if bterm.getNet().getSigType() not in ["POWER", "GROUND"]
+            ]
+        )
     not_in_design = template_bterm_names - output_bterm_names
     not_in_template = output_bterm_names - template_bterm_names
+
     mismatches_found = False
     for is_in, not_in, pins in [
         ("template", "design", not_in_design),
@@ -496,7 +505,7 @@ def add_obstructions(reader, input_lefs, obstructions):
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
-        print("Creating an obstruction on", layer, "at", *bbox, "(DBU)")
+        print(f"Creating an obstruction on {layer} at {bbox} (DBU)…")
         odb.dbObstruction_create(reader.block, reader.tech.findLayer(layer), *bbox)
 
 
@@ -545,18 +554,14 @@ def remove_obstructions(reader, input_lefs, obstructions):
             sys.exit(METAL_LAYER_ERROR)
         for odb_obstruction in existing_obstructions:
             if odb_obstruction[0:2] == obs:
-                print("Removing obstruction on", layer, "at", *bbox, "(DBU)")
+                print(f"Removing obstruction on {layer} at {bbox} (DBU)…")
                 found = True
                 odb.dbObstruction_destroy(odb_obstruction[2])
             if found:
                 break
         if not found:
             print(
-                "[ERROR] Obstruction on",
-                layer,
-                "at",
-                *bbox,
-                "(DBU) not found.",
+                f"[ERROR] Obstruction on {layer} at {bbox} (DBU) not found.",
                 file=sys.stderr,
             )
             sys.exit(NOT_FOUND_ERROR)

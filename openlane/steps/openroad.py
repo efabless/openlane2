@@ -399,6 +399,7 @@ class CheckMacroInstances(STAPrePNR):
     """
 
     id = "OpenROAD.CheckMacroInstances"
+    name = "Check Macro Instances"
     outputs = []
 
     config_vars = OpenROADStep.config_vars
@@ -1006,6 +1007,16 @@ class GlobalPlacement(OpenROADStep):
                 + " Decreasing the variable will modify the initial placement of the standard cells to reduce the wirelengths",
                 default=0.25,
                 deprecated_names=["PL_WIRELENGTH_COEF"],
+            ),
+            Variable(
+                "PL_MIN_PHI_COEFFICIENT",
+                Optional[Decimal],
+                "Sets a lower bound on the µ_k variable in the GPL algorithm. Useful if global placement diverges. See https://openroad.readthedocs.io/en/latest/main/src/gpl/README.html",
+            ),
+            Variable(
+                "PL_MAX_PHI_COEFFICIENT",
+                Optional[Decimal],
+                "Sets a upper bound on the µ_k variable in the GPL algorithm. Useful if global placement diverges.See https://openroad.readthedocs.io/en/latest/main/src/gpl/README.html",
             ),
             Variable(
                 "FP_CORE_UTIL",
@@ -1795,10 +1806,15 @@ class CTS(ResizerStep):
             ),
             Variable(
                 "CTS_MAX_CAP",
-                Decimal,
-                "Defines the maximum capacitance, used in CTS.",
+                Optional[Decimal],
+                "Overrides the maximum capacitance CTS characterization will test. If omitted, the capacitance is extracted from the lib information of the buffers in CTS_CLK_BUFFERS.",
                 units="pF",
-                pdk=True,
+            ),
+            Variable(
+                "CTS_MAX_SLEW",
+                Optional[Decimal],
+                "Overrides the maximum transition time CTS characterization will test. If omitted, the slew is extracted from the lib information of the buffers in CTS_CLK_BUFFERS.",
+                units="ns",
             ),
         ]
     )

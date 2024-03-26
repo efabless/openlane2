@@ -156,6 +156,17 @@ would be declared as:
   }
 ```
 
+```{admonition} On Instance Names
+:class: tip
+
+Instance names should match the name as instantiated in Verilog, i.e.,
+without escaping any characters for layout formats.
+
+For example, if you instantiate an array of macros `spm spm_inst[1:0]`,
+the first instance's name should be `spm_inst[0]`, not
+`spm_inst\[0\]` or similar.
+```
+
 ## STA
 
 Without certain files, STA is performed in what is known as **black-boxed**
