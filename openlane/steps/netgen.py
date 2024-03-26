@@ -115,7 +115,7 @@ class NetgenStep(TclStep):
             pdk=True,
         ),
         Variable(
-            "NETGEN_INCLUDE_MARCO_NETLIST",
+            "NETGEN_INCLUDE_MARCO_NETLISTS",
             bool,
             "A flag that enables including the gate-level netlist of macros while running Netgen",
             default=False,
@@ -204,7 +204,7 @@ class LVS(NetgenStep):
             DesignFormat.VERILOG_HEADER,
         ]
 
-        if self.config["NETGEN_INCLUDE_MARCO_NETLIST"]:
+        if self.config["NETGEN_INCLUDE_MARCO_NETLISTS"]:
             macros_views = []
             for view, _ in self.toolbox.get_macro_views_by_priority(
                 self.config, format_list
