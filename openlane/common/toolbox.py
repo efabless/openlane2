@@ -45,7 +45,7 @@ from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
 from ..state import DesignFormat
 from ..common import Filter
-from ..logging import debug, warn, err
+from ..logging import debug, warn, warn_once, err
 
 
 class Toolbox(object):
@@ -202,6 +202,93 @@ class Toolbox(object):
             formats_so_far.append(format)
         return result
 
+    def get_timing_files_categorized(
+        self,
+        config: Mapping[str, Any],
+        timing_corner: Optional[str] = None,
+        prioritize_nl: bool = False,
+    ) -> Tuple[str, List[Path], List[Path], List[Tuple[str, Path]]]:
+        """
+        Returns the lib files for a given configuration and timing corner.
+
+        :param config: A configuration object or a similar mapping.
+        :param timing_corner:
+            A fully qualified IPVT corner to get SCL libs for.
+
+            If not specified, the value for ``DEFAULT_CORNER`` from the SCL will
+            be used.
+        :param prioritize_nl:
+            Do not return lib files for macros that have gate-Level Netlists and
+            SPEF views.
+
+            If set to ``false``\\, only lib files are returned.
+        :returns: A tuple of:
+            * The name of the timing corner
+            * A list of lib files
+            * A list of netlists
+            * A list of tuples of instances and SPEFs
+        """
+        from ..config import Macro
+
+        timing_corner = timing_corner or config["DEFAULT_CORNER"]
+
+        all_libs: List[Path] = self.filter_views(config, config["LIB"], timing_corner)
+        if len(all_libs) == 0:
+            warn_once(f"No SCL lib files found for {timing_corner}.")
+
+        all_netlists: List[Path] = []
+        all_spefs: List[Tuple[str, Path]] = []
+
+        macros = config["MACROS"]
+        if macros is None:
+            macros = {}
+
+        for module, macro in macros.items():
+            if not isinstance(macro, Macro):
+                raise TypeError(
+                    f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
+                )
+            if prioritize_nl:
+                netlists = macro.nl
+                if isinstance(netlists, Path):
+                    netlists = [netlists]
+
+                spefs = self.filter_views(
+                    config,
+                    macro.spef,
+                    timing_corner,
+                )
+                if len(netlists) and not len(spefs):
+                    warn_once(
+                        f"Netlists found for macro {module}, but no parasitics extraction found at corner {timing_corner}. The netlist cannot be used for timing on this module."
+                    )
+                elif len(spefs) and not len(netlists):
+                    warn_once(
+                        f"Parasitics extraction(s) found for macro {module} at corner {timing_corner}, but no netlist found. The parasitics cannot be used for timing on this module."
+                    )
+                elif len(spefs) and len(netlists):
+                    debug(f"Adding {[netlists + spefs]} to timing info…")
+                    all_netlists += netlists
+                    for spef in spefs:
+                        for instance in macro.instances:
+                            all_spefs.append((instance, spef))
+                    continue
+            # NL/SPEF not prioritized or not found
+            libs = self.filter_views(
+                config,
+                macro.lib,
+                timing_corner,
+            )
+            if not len(libs):
+                warn_once(
+                    f"No libs found for macro {module} at corner {timing_corner}. The module will be black-boxed."
+                )
+                continue
+            debug(f"Adding {libs} to timing info…")
+            all_libs += libs
+
+        return (timing_corner, all_libs, all_netlists, all_spefs)
+
     def get_timing_files(
         self,
         config: Mapping[str, Any],
@@ -232,65 +319,16 @@ class Toolbox(object):
             It is left up to the step or tool to process this list as they see
             fit.
         """
-        from ..config import Macro
 
-        timing_corner = timing_corner or config["DEFAULT_CORNER"]
-
-        result: List[Union[str, Path]] = []
-        result += self.filter_views(config, config["LIB"], timing_corner)
-
-        if len(result) == 0:
-            warn(f"No SCL lib files found for {timing_corner}.")
-
-        macros = config["MACROS"]
-        if macros is None:
-            macros = {}
-
-        for module, macro in macros.items():
-            if not isinstance(macro, Macro):
-                raise TypeError(
-                    f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
-                )
-            if prioritize_nl:
-                netlists = macro.nl
-                if isinstance(netlists, Path):
-                    netlists = [netlists]
-
-                spefs = self.filter_views(
-                    config,
-                    macro.spef,
-                    timing_corner,
-                )
-                if len(netlists) and not len(spefs):
-                    warn(
-                        f"Netlists found for macro {module}, but no parasitics extraction found at corner {timing_corner}. The netlist cannot be used for timing on this module."
-                    )
-                elif len(spefs) and not len(netlists):
-                    warn(
-                        f"Parasitics extraction(s) found for macro {module} at corner {timing_corner}, but no netlist found. The parasitics cannot be used for timing on this module."
-                    )
-                elif len(spefs) and len(netlists):
-                    debug(f"Adding {[netlists + spefs]} to timing info…")
-                    result += netlists
-                    for spef in spefs:
-                        for instance in macro.instances:
-                            result.append(f"{instance}@{spef}")
-                    continue
-            # NL/SPEF not prioritized or not found
-            libs = self.filter_views(
-                config,
-                macro.lib,
-                timing_corner,
-            )
-            if not len(libs):
-                warn(
-                    f"No libs found for macro {module} at corner {timing_corner}. The module will be black-boxed."
-                )
-                continue
-            debug(f"Adding {libs} to timing info…")
-            result += libs
-
-        return (timing_corner, [str(path) for path in result])
+        timing_corner, libs, netlists, spefs = self.get_timing_files_categorized(
+            config=config,
+            timing_corner=timing_corner,
+            prioritize_nl=prioritize_nl,
+        )
+        results = [str(path) for path in libs + netlists]
+        for instance, spef in spefs:
+            results.append(f"{instance}@{spef}")
+        return (timing_corner, results)
 
     def render_png(
         self,
@@ -315,7 +353,7 @@ class Toolbox(object):
                 render_step.start(self, d)
                 return open(os.path.join(d, "out.png"), "rb").read()
         except InvalidConfig:
-            warn("PDK is incompatible with KLayout. Unable to generate preview.")
+            warn_once("PDK is incompatible with KLayout. Unable to generate preview.")
             return None
         except StepError as e:
             warn(f"Failed to generate preview: {e}.")
@@ -433,7 +471,7 @@ class Toolbox(object):
         yosys = shutil.which("yosys") or shutil.which("yowasp-yosys")
 
         if yosys is None:
-            warn(
+            warn_once(
                 "yosys and yowasp-yosys not found in PATH. This may trigger issues with blackboxing."
             )
             return out_path

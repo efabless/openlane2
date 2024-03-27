@@ -15,7 +15,7 @@ import click
 import atexit
 import logging
 from enum import IntEnum
-from typing import ClassVar, Iterable, Union
+from typing import ClassVar, Iterable, Union, Set
 
 import rich.console
 import rich.logging
@@ -296,6 +296,29 @@ def warn(msg: object, /, **kwargs):
 
     :param msg: The message to log
     """
+    if kwargs.get("stacklevel") is None:
+        kwargs["stacklevel"] = 2
+    __event_logger.warning(f"{msg}", **kwargs)
+
+
+_warning_set: Set[str] = set()
+
+
+def warn_once(msg: str, /, **kwargs):
+    """
+    Logs an item to the OpenLane logger with a warning Unicode character and
+    gold/bold rich formatting syntax with the log level WARNING.
+
+    However, unlike :func:`warn`, the warning will be emitted only once-
+    subsequent invocations with the same message will not emit anything to the
+    logger(s).
+
+    :param msg: The message to log
+    """
+    global _warning_set
+    if msg in _warning_set:
+        return
+    _warning_set.add(msg)
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2
     __event_logger.warning(f"{msg}", **kwargs)
