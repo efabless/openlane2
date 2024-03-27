@@ -32,7 +32,7 @@ $ sudo pkill nix-daemon
 
 If you *do* know what this means, the values are as follows:
 
-```conf
+```ini
 extra-substituters = https://openlane.cachix.org
 extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
 ```
