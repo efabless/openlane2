@@ -183,6 +183,8 @@ ______________________________________________________________________
 
 #### Running the flow
 
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
+
 Let's try running the flow from OpenLane:
 
 ```console
@@ -258,6 +260,7 @@ The names of step directories are constructed as follows:
 dots replaced with dashes.
 ```
 
+(caravel-openroad-checkantennas-with-fixes)=
 ##### `OpenROAD.CheckAntennas`
 
 There are 2 {step}`OpenROAD.CheckAntennas` steps. One after
@@ -333,6 +336,7 @@ or more of the following solutions can be applied:
 
 ______________________________________________________________________
 
+(caravel-openroad-stapostpnr-with-fixes)=
 ##### `OpenROAD.STAPostPNR`
 
 Under `xx-openroad-stapostpnr` there should be a file called `summary.rpt`:
@@ -977,7 +981,7 @@ ______________________________________________________________________
 
 There should be no antenna violations.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net ┃ Pin ┃ Layer ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━╇━━━━━╇━━━━━━━┩
@@ -993,7 +997,7 @@ Looking at `xx-openroad-stapostpnr/summary.rpt` and the `Max Slew` section in
 violations. If we look at the nets with violations, we will find that those are
 the long nets we saw in the GDS.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
 ┃                ┃ Hold Worst     ┃ Reg to Reg     ┃          ┃ Hold           ┃ of which Reg   ┃ Setup Worst    ┃ Reg to Reg     ┃           ┃ Setup          ┃ of which Reg   ┃ Max Cap       ┃ Max Slew       ┃
 ┃ Corner/Group   ┃ Slack          ┃ Paths          ┃ Hold TNS ┃ Violations     ┃ to Reg         ┃ Slack          ┃ Paths          ┃ Setup TNS ┃ Violations     ┃ to Reg         ┃ Violations    ┃ Violations     ┃
@@ -1011,7 +1015,7 @@ the long nets we saw in the GDS.
 └────────────────┴────────────────┴────────────────┴──────────┴────────────────┴────────────────┴────────────────┴────────────────┴───────────┴────────────────┴────────────────┴───────────────┴────────────────┘
 ```
 
-```txt
+```
 Max Slew
 
 Pin                                        Limit        Slew       Slack
@@ -1089,7 +1093,7 @@ should be done:
    `openlane/aes_wb_wrapper/pin_order.cfg`:
 
 ````{dropdown} pin_order.cfg
-```txt
+```
 #S
 wb_.*
 wbs_.*
@@ -1465,6 +1469,8 @@ ______________________________________________________________________
 
 ### Running the flow
 
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
@@ -1501,7 +1507,7 @@ Final layout of the user_project_wrapper after flattening
 
 There are around 260 antenna violations with ratios up to 7.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net                                       ┃ Pin          ┃ Layer ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -1516,7 +1522,7 @@ There are around 260 antenna violations with ratios up to 7.
 ⋮
 ```
 
-We can fix those the same way we did in the AES [here](openroad-checkantennas).
+We can fix those the same way we did in the AES [here](#caravel-openroad-checkantennas-with-fixes).
 
 ______________________________________________________________________
 
@@ -1525,7 +1531,7 @@ ______________________________________________________________________
 Looking at `xx-openroad-stapostpnr/summary.rpt`, there are multiple max Slew/Cap
 violations and 1 hold violation which is not Reg to Reg.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃              ┃ Hold Worst   ┃ Reg to Reg   ┃          ┃ Hold         ┃ of which Reg ┃ Setup Worst   ┃ Reg to Reg   ┃           ┃ Setup         ┃ of which Reg ┃ Max Cap       ┃ Max Slew     ┃
 ┃ Corner/Group ┃ Slack        ┃ Paths        ┃ Hold TNS ┃ Violations   ┃ to Reg       ┃ Slack         ┃ Paths        ┃ Setup TNS ┃ Violations    ┃ to Reg       ┃ Violations    ┃ Violations   ┃
@@ -1543,11 +1549,11 @@ violations and 1 hold violation which is not Reg to Reg.
 └──────────────┴──────────────┴──────────────┴──────────┴──────────────┴──────────────┴───────────────┴──────────────┴───────────┴───────────────┴──────────────┴───────────────┴──────────────┘
 ```
 
-The max Slew/Cap violations can be fixed the same way in
-[openroad-stapostpnr](openroad-stapostpnr). For the hold violation, it is in the
-`max_ff_n40C_1v95` corner. To investigate the timing path, open the report
-`xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will be in
-the first timing path.
+The max Slew/Cap violations can be fixed the same way as in
+[this section](#caravel-openroad-stapostpnr-with-fixes). For the hold violation,
+it is in the `max_ff_n40C_1v95` corner. To investigate the timing path, open the
+report `xx-openroad-stapostpnr/max_ff_n40C_1v95/min.rpt` and the violation will
+be in the first timing path.
 
 ```{note}
 There might be more hold violations or no violations at all depending on the
@@ -2205,6 +2211,8 @@ ______________________________________________________________________
 
 #### Running the flow
 
+To harden macros with OpenLane, we use the default flow, {flow}`Classic`.
+
 ```console
 [nix-shell:~/openlane2]$ openlane ~/caravel_aes_accelerator/openlane/user_project_wrapper/config.json
 ```
@@ -2241,7 +2249,7 @@ Final layout of the user_project_wrapper with Top-level integration
 There are no antenna violations at all since we already have the antenna
 variables in our configuration.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━┳━━━━━┳━━━━━━━┓
 ┃ Partial/Required ┃ Required ┃ Partial ┃ Net ┃ Pin ┃ Layer ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━╇━━━━━╇━━━━━━━┩
@@ -2254,7 +2262,7 @@ ______________________________________________________________________
 
 Looking at `xx-openroad-stapostpnr/summary.rpt`, there are no issues.
 
-```txt
+```
 ┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
 ┃               ┃ Hold Worst    ┃ Reg to Reg    ┃          ┃ Hold          ┃ of which Reg ┃ Setup Worst   ┃ Reg to Reg   ┃           ┃ Setup         ┃ of which Reg ┃ Max Cap       ┃ Max Slew     ┃
 ┃ Corner/Group  ┃ Slack         ┃ Paths         ┃ Hold TNS ┃ Violations    ┃ to Reg       ┃ Slack         ┃ Paths        ┃ Setup TNS ┃ Violations    ┃ to Reg       ┃ Violations    ┃ Violations   ┃

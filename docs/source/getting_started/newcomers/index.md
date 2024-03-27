@@ -76,10 +76,10 @@ OpenLane Flow
 
 OpenLane is a powerful and versatile infrastructure library that enables the
 construction of digital ASIC physical implementation flows based on open-source
-and commercial EDA tools. It includes a reference flow (Classic) that is
+and commercial EDA tools. It includes a reference flow ({flow}`Classic`) that is
 constructed entirely using open-source EDA tools –abstracting their behavior and
 allowing the user to configure them using a single file (See Figure 1). OpenLane
-also supports extending or modifying the flow using Python scripts and
+also supports extending or modifying flows using Python scripts and
 utilities. Here are some of the key benefits of using OpenLane:
 
 * Flexibility and extensibility: OpenLane is designed to be flexible and
@@ -194,7 +194,7 @@ and `pm32.v`.
 
 Designs in OpenLane have configuration files. A configuration file contains
 values set by the user for various {py:class}`openlane.config.Variable`(s). With
-them, you control the OpenLane flow. This is the configuration file for the
+them, you control the flows. This is the configuration file for the
 `pm32` design:
 
 ````{dropdown} config.json
@@ -553,7 +553,9 @@ The default flow runs a step called {step}`OpenROAD.STAPostPNR` for STA
 signoff.
 
 ```{note}
-During the flow the step {step}`OpenROAD.STAMidPNR` is ran multiple times 
+During the {flow}`Classic` flow the step {step}`OpenROAD.STAMidPNR` is ran
+multiple times.
+
 The results are not as accurate as `OpenROAD.STAPostPNR` since the design 
 is not fully implemented yet. However, they provide a better sense of the impact
 multiple stages of the flow (such as optimizations steps) on STA results for the
