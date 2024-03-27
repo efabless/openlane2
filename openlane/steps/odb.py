@@ -557,7 +557,7 @@ class CustomIOPlacement(OdbpyStep):
             "QUIT_ON_UNMATCHED_IO",
             bool,
             "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
-            default=True,
+            default=False,
             deprecated_names=["FP_IO_UNMATCHED_ERROR"],
         ),
     ]

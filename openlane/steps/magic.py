@@ -274,12 +274,12 @@ class StreamOut(MagicStep):
             macro_gds = []
             env_copy = env.copy()
             for macro in self.config["MACROS"].keys():
-                macro_gdses = [str(path) for path in self.config["MACROS"][macro].gds]
-                if len(macro_gdses) > 1:
-                    raise StepException(
-                        "Multiple GDSII files in one Macro currently unsupported when MAGIC_MACRO_STD_CELL_SOURCE is set to 'macro'."
-                    )
-                env_copy["_GDS_IN"] = macro_gdses[0]
+                macro_gdses = [
+                    str(path)
+                    for path in self.config["MACROS"][macro].gds
+                    if path != Path._dummy_path
+                ]
+                env_copy["_GDS_IN"] = macro_gdses
                 env_copy["_MACRO_NAME_IN"] = macro
 
                 generated_metrics = super().run_subprocess(

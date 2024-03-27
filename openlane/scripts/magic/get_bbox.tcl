@@ -1,4 +1,6 @@
-gds read $::env(_GDS_IN)
+foreach gds_file $::env(_GDS_IN) {
+    gds read $gds_file
+}
 load $::env(_MACRO_NAME_IN)
 set properties [property]
 foreach property [property] {
