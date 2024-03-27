@@ -134,8 +134,8 @@ jobs:
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
           EXTRA_NIX_CONF
 
-          cat /etc/nix/nix.conf
-          cat /etc/bash.bashrc
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+          echo "PATH=$PATH" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -164,6 +164,9 @@ jobs:
           extra-substituters = https://openlane.cachix.org
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
           EXTRA_NIX_CONF
+
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+          echo "PATH=$PATH" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -191,6 +194,9 @@ jobs:
           extra-substituters = https://openlane.cachix.org
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
           EXTRA_NIX_CONF
+
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+          echo "PATH=$PATH" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
