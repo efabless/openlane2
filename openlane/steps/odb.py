@@ -350,7 +350,7 @@ class ManualMacroPlacement(OdbpyStep):
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
             warn(
-                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
         elif macros := self.config.get("MACROS"):
@@ -557,7 +557,7 @@ class CustomIOPlacement(OdbpyStep):
             "QUIT_ON_UNMATCHED_IO",
             bool,
             "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
-            default=True,
+            default=False,
             deprecated_names=["FP_IO_UNMATCHED_ERROR"],
         ),
     ]

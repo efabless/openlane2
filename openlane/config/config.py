@@ -47,7 +47,6 @@ from ..common import (
     GenericDict,
     GenericImmutableDict,
     TclUtils,
-    Path,
     AnyPath,
     is_string,
 )
@@ -895,52 +894,6 @@ class Config(GenericImmutableDict[str, Any]):
                 if dis in [4, 6]:
                     mutable["RUN_HEURISTIC_DIODE_INSERTION"] = True
                     mutable["DIODE_ON_PORTS"] = "in"
-
-        # Macros
-        if mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is None:
-            mutable["MACROS"] = {}
-
-            extra_spef_list = mutable["EXTRA_SPEFS"]
-            del mutable["EXTRA_SPEFS"]
-            if isinstance(extra_spef_list, str):
-                extra_spef_list = extra_spef_list.split(" ")
-
-            if not isinstance(extra_spef_list, list):
-                errors.append(
-                    f"Invalid type for 'EXTRA_SPEFS': {type(extra_spef_list)}. It is recommended that you update your configuration to use the Macro object."
-                )
-            elif len(extra_spef_list) % 4 != 0:
-                errors.append(
-                    "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you update your configuration to use the Macro object."
-                )
-            else:
-                warnings.append(
-                    "The configuration variable 'EXTRA_SPEFS' is deprecated. Check the docs on how to use the new 'MACROS' configuration variable."
-                )
-                for i in range(len(extra_spef_list) // 4):
-                    start = i * 4
-                    module, min, nom, max = (
-                        extra_spef_list[start],
-                        extra_spef_list[start + 1],
-                        extra_spef_list[start + 2],
-                        extra_spef_list[start + 3],
-                    )
-                    macro_dict: Dict[str, Any] = {
-                        "gds": [Path._dummy_path],
-                        "lef": [Path._dummy_path],
-                    }
-                    macro_dict["spef"] = {
-                        "min_*": [min],
-                        "nom_*": [nom],
-                        "max_*": [max],
-                    }
-                    mutable["MACROS"][module] = macro_dict
-        elif (
-            mutable.get("EXTRA_SPEFS") is not None and mutable.get("MACROS") is not None
-        ):
-            errors.append(
-                "EXTRA_SPEFS cannot be defined simultaneously with its successor variable, MACROS"
-            )
 
         for variable in variables:
             try:

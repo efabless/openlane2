@@ -96,18 +96,9 @@ proc read_timing_info {args} {
 
     puts "Reading timing models for corner $corner_name…"
 
-    set macro_spefs [list]
-    set macro_nls [list]
-    set corner_models $::env(_CURRENT_CORNER_TIMING_VIEWS)
-    foreach model $corner_models {
-        if { [string match *.spef $model] || [string match *.spef.gz $model] } {
-            lappend macro_spefs $corner_name $model
-        } elseif { [string match *.v $model] } {
-            lappend macro_nls $model
-        } else {
-            puts "Reading timing library for the '$corner_name' corner at '$model'…"
-            read_liberty -corner $corner_name $model
-        }
+    foreach lib $::env(_CURRENT_CORNER_LIBS) {
+        puts "Reading cell library for the '$corner_name' corner at '$lib'…"
+        read_liberty -corner $corner_name $lib
     }
 
     if { [info exists ::env(EXTRA_LIBS) ] } {
@@ -119,7 +110,7 @@ proc read_timing_info {args} {
     }
 
     set blackbox_wildcard {/// sta-blackbox}
-    foreach nl $macro_nls {
+    foreach nl $::env(_CURRENT_CORNER_NETLISTS) {
         puts "Reading macro netlist at '$nl'…"
         if { [catch {read_verilog $nl} err] } {
             puts "Error while reading macro netlist '$nl':"
@@ -145,22 +136,44 @@ proc read_timing_info {args} {
     } else {
         read_current_netlist
     }
-    set ::macro_spefs $macro_spefs
+}
+
+proc lshift {inputlist} {
+    upvar $inputlist argv
+    set arg  [lindex $argv 0]
+    #set argv [lrange $argv 1 end] ;# below is much faster - lreplace can make use of unshared Tcl_Obj to avoid alloc'ing the result
+    set argv [lreplace $argv[set argv {}] 0 0]
+    return $arg
 }
 
 proc read_spefs {} {
-    if { [info exists ::env(CURRENT_SPEF_BY_CORNER)] } {
-        foreach {corner_name spef} $::env(CURRENT_SPEF_BY_CORNER) {
-            puts "Reading top-level design parasitics for the '$corner_name' corner at '$spef'…"
-            read_spef -corner $corner_name $spef
+    if { [info exists ::env(_CURRENT_SPEF_BY_CORNER)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        puts "Reading top-level design parasitics for the '$corner_name' corner at '$::env(_CURRENT_SPEF_BY_CORNER)'…"
+        read_spef -corner $corner_name $::env(_CURRENT_SPEF_BY_CORNER)
+    }
+    if { [info exists ::env(_CURRENT_CORNER_SPEFS)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        foreach spefs $::env(_CURRENT_CORNER_SPEFS) {
+            set instance_path [lshift spefs]
+            foreach spef $spefs {
+                puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
+                read_spef -corner $corner_name -path $instance_path $spef
+            }
         }
     }
-    if { [info exists ::macro_spefs] } {
-        foreach {corner_name spef_info} $::macro_spefs {
-            set fields [split $spef_info "@"]
-            lassign $fields instance_path spef
-            puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
-            read_spef -corner $corner_name -path $instance_path $spef
+    if { [info exists ::env(_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        foreach pair $::env(_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT) {
+            set module_name [lindex $pair 0]
+            set spef [lindex $pair 1]
+            foreach cell [get_cells * -hierarchical] {
+                if { "[get_property $cell ref_name]" eq "$module_name"} {
+                    set instance_path [get_property $cell full_name]
+                    puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
+                    read_spef -corner $corner_name -path $instance_path $spef
+                }
+            }
         }
     }
 }
