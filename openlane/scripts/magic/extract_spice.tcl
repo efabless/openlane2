@@ -22,6 +22,13 @@ if { $::env(MAGIC_EXT_USE_GDS) } {
     read_def
 }
 
+if { [info exists ::env(MAGIC_EXT_ABSTRACT_CELLS)] } {
+    foreach cell $::env(MAGIC_EXT_ABSTRACT_CELLS) {
+        load $cell
+        property LEFview true
+    }
+}
+
 load $::env(DESIGN_NAME) -dereference
 
 set backup $::env(PWD)

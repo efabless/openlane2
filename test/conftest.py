@@ -136,9 +136,9 @@ def _chdir_tmp(request: SubRequest):
     else:
         dir = tempfile.mkdtemp()
         with chdir(dir):
-            print(f"TMP: {dir}")
+            print(f"\nTMP: {dir}")
             yield
-            print(f"TMP: {dir}")
+            print(f"\nTMP: {dir}")
 
 
 MOCK_PDK_VARS = [
