@@ -22,11 +22,11 @@ docker-image:
 	cat $(shell nix-build docker.nix) | docker load
 
 .PHONY: docs
-docs: venv
+docs:
 	$(MAKE) -C docs html
 
 .PHONY: host-docs
-host-docs: venv
+host-docs:
 	python3 -m http.server --directory ./docs/build/html
 	
 .PHONY: watch-docs
@@ -35,6 +35,7 @@ watch-docs:
 		-w .\
 		-e md,py,css\
 		-i "docs/build/**/*"\
+		-i "docs/build/*"\
 		-i "docs/source/reference/*_vars.md"\
 		-i "docs/source/reference/flows.md"\
 		-x "$(MAKE) docs && python3 -m http.server --directory docs/build/html"

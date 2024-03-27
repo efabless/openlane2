@@ -1,4 +1,4 @@
-# Corners and Static-Timing Analysis
+# Timing Corners
 
 To ensure a chip can continue to function under various conditions, the chip
 must undergo static timing analysis under different **timing corners**.
@@ -41,28 +41,6 @@ The default extraction utility for OpenLane, OpenROAD OpenRCX, only accounts for
 the interconnect corner.
 ```
 
-## Violations
-
-STA reports many kinds of timing-related violations in the design, including but
-not limited to:
-
-* Setup violation: A register's data input was changed too soon before a clock edge.
-  Setup violations do not necessarily mean a dead chip, however the final chip
-  may have to run at a lower clock, which is not acceptable for some applications.
-* Hold violation: A register's data output was changed too soon AFTER a clock edge.
-  Chips with hold violations are effectively dead.
-* Slew violation: A signal taking too long to transition from LO to HI, or HI
-  to LO. This typically happens when a cell is too small for the capacitance
-  load it is handling, or when a cell's input has a slew violation.
-
-<!--
-  * Fanout violation: One gate is driving too many other gates, which may lead
-    to slew violations.
-  * Max capacitance violation: One gate is driving gates with a total capacitive
-    load exceeding the one rated for by this gate (or the value set by the
-    designer's constraints), which may lead to slew violations.
--->
-
 ## Default Flow Configuration
 
 In its current state, the default OpenLane flow allows SCLs to configure the following:
@@ -91,8 +69,3 @@ The sky130A/sky130_fd_sc_hd SCL, for example, comes with configurations for thes
 
 As a user, you are free to override these values as you would any other PDK/SCL
 variables, however, it is your responsibility to keep the consistent.
-
-For most STA invocations, the **first** PVT corner will be used (timing does not
-incorporate parasitics until the very end.)
-
-<!-- TODO: MCSTA/Macro >

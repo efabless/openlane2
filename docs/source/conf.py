@@ -50,9 +50,11 @@ third_party_extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.mathjax",
+    "sphinxcontrib.bibtex",
     "sphinx_design",
     "sphinx_tippy",
     "sphinx_copybutton",
+    "sphinx_subfigure",
 ]
 extensions = third_party_extensions + custom_extensions
 try:
@@ -132,6 +134,9 @@ html_css_files = [
 
 numfig = True
 
+# Bibtex
+bibtex_bibfiles = ["refs.bib"]
+bibtex_default_style = "unsrt"
 
 # Autodoc
 generate_module_autodocs = [("openlane", "reference/api")]
@@ -145,6 +150,7 @@ myst_enable_extensions = [
     "colon_fence",
     "attrs_block",
     "attrs_inline",
+    "dollarmath",
 ]
 myst_url_schemes = {
     "http": None,

@@ -14,9 +14,9 @@ new: old: {
   python3 = old.python3.override {
     packageOverrides = pFinalAttrs: pPreviousAttrs: {
       mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
-        postPatch = ''
-          sed -i 's/primary_marker = "-"/primary_marker = "*"/' src/mdformat/renderer/_util.py
-        '';
+        patches = [
+          ./patches/mdformat/donns_tweaks.patch
+        ];
         pytestCheckPhase = "true";
       });
     };
