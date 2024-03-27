@@ -133,6 +133,9 @@ jobs:
           extra-substituters = https://openlane.cachix.org
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
           EXTRA_NIX_CONF
+
+          cat /etc/nix/nix.conf
+          cat /etc/bash.bashrc
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
