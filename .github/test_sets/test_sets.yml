@@ -16,7 +16,10 @@
     - io_placer
     - test_sram_macro
     - manual_macro_placement_test
-    - aes_user_project_wrapper
+    - name: aes_user_project_wrapper
+      config_file: config.json
+    - name: aes_user_project_wrapper
+      config_file: config_old.json
     - user_proj_timer
     - name: xtea
       config_file: config.tcl
