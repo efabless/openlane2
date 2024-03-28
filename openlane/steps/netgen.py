@@ -17,7 +17,7 @@ import json
 import textwrap
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
@@ -114,12 +114,6 @@ class NetgenStep(TclStep):
             deprecated_names=["NETGEN_SETUP_FILE"],
             pdk=True,
         ),
-        Variable(
-            "NETGEN_INCLUDE_MARCO_NETLISTS",
-            bool,
-            "A flag that enables including the gate-level netlist of macros while running Netgen",
-            default=False,
-        ),
     ]
 
     @abstractmethod
@@ -145,6 +139,19 @@ class LVS(NetgenStep):
     id = "Netgen.LVS"
     name = "Netgen LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
+    config_vars = NetgenStep.config_vars + [
+        Variable(
+            "LVS_INCLUDE_MARCO_NETLISTS",
+            bool,
+            "A flag that enables including the gate-level netlist of macros while running Netgen",
+            default=False,
+        ),
+        Variable(
+            "LVS_FLATTEN_CELLS",
+            Optional[List[str]],
+            "A list of cell names to be flattened while running LVS",
+        ),
+    ]
 
     def get_command(self) -> List[str]:
         return super().get_command() + [self.get_script_path()]
@@ -204,7 +211,7 @@ class LVS(NetgenStep):
             DesignFormat.VERILOG_HEADER,
         ]
 
-        if self.config["NETGEN_INCLUDE_MARCO_NETLISTS"]:
+        if self.config["LVS_INCLUDE_MARCO_NETLISTS"]:
             macros_views = []
             for view, _ in self.toolbox.get_macro_views_by_priority(
                 self.config, format_list

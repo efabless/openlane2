@@ -15,3 +15,14 @@ foreach cell $cells1 {
         set layout $cellname
     }
 }
+
+if { [info exists ::env(LVS_FLATTEN_CELLS)] } {
+    foreach cell $::env(LVS_FLATTEN_CELLS) {
+        if { [lsearch $cells1 "$cell"] >= 0 } {
+            flatten class "-circuit1 $cell"
+        }
+        if { [lsearch $cells2 "$cell"] >= 0 } {
+            flatten class "-circuit2 $cell"
+        }
+    }
+}
