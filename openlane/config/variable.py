@@ -235,20 +235,20 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
         type_string = str(some)
 
     if inspect.isclass(some) and issubclass(some, Enum):
-        type_string = "｜".join([str(e.name) for e in some])
+        type_string = "｜<br />".join([str(e.name) for e in some])
         type_string = f"`{type_string}`"
     else:
         origin, args = get_origin(some), get_args(some)
         if origin is not None:
             if origin == Union:
                 arg_strings = [repr_type(arg) for arg in args]
-                type_string = "｜".join(arg_strings)
+                type_string = "｜<br />".join(arg_strings)
                 type_string = f"({type_string})"
             elif origin == Literal:
-                return "｜".join([repr(arg) for arg in args])
+                return "｜<br />".join([repr(arg) for arg in args])
             else:
                 arg_strings = [repr_type(arg) for arg in args]
-                type_string = f"{type_string}[{','.join(arg_strings)}]"
+                type_string = f"{type_string}[{', '.join(arg_strings)}]"
 
     return type_string + ("?" if optional else "")
 

@@ -57,7 +57,7 @@ from .common_variables import (
 from ..config import Variable, Macro, Config
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, warn_once, verbose, console, options
+from ..logging import debug, err, info, warn, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -336,7 +336,7 @@ def _set_corner_files(
     env["_CURRENT_CORNER_NAME"] = timing_corner
     if extra_spef_list := config.get("EXTRA_SPEFS"):
         extra_spef_pairs = []
-        warn_once(
+        warn(
             "The configuration variable 'EXTRA_SPEFS' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
         )
         if len(extra_spef_list) % 4 != 0:

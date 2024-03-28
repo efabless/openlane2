@@ -45,7 +45,7 @@ from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
 from ..state import DesignFormat
 from ..common import Filter
-from ..logging import debug, warn, warn_once, err
+from ..logging import debug, warn, err
 
 
 class Toolbox(object):
@@ -234,7 +234,7 @@ class Toolbox(object):
 
         all_libs: List[Path] = self.filter_views(config, config["LIB"], timing_corner)
         if len(all_libs) == 0:
-            warn_once(f"No SCL lib files found for {timing_corner}.")
+            warn(f"No SCL lib files found for {timing_corner}.")
 
         all_netlists: List[Path] = []
         all_spefs: List[Tuple[str, Path]] = []
@@ -259,11 +259,11 @@ class Toolbox(object):
                     timing_corner,
                 )
                 if len(netlists) and not len(spefs):
-                    warn_once(
+                    warn(
                         f"Netlists found for macro {module}, but no parasitics extraction found at corner {timing_corner}. The netlist cannot be used for timing on this module."
                     )
                 elif len(spefs) and not len(netlists):
-                    warn_once(
+                    warn(
                         f"Parasitics extraction(s) found for macro {module} at corner {timing_corner}, but no netlist found. The parasitics cannot be used for timing on this module."
                     )
                 elif len(spefs) and len(netlists):
@@ -280,7 +280,7 @@ class Toolbox(object):
                 timing_corner,
             )
             if not len(libs):
-                warn_once(
+                warn(
                     f"No libs found for macro {module} at corner {timing_corner}. The module will be black-boxed."
                 )
                 continue
@@ -353,7 +353,7 @@ class Toolbox(object):
                 render_step.start(self, d)
                 return open(os.path.join(d, "out.png"), "rb").read()
         except InvalidConfig:
-            warn_once("PDK is incompatible with KLayout. Unable to generate preview.")
+            warn("PDK is incompatible with KLayout. Unable to generate preview.")
             return None
         except StepError as e:
             warn(f"Failed to generate preview: {e}.")
@@ -471,7 +471,7 @@ class Toolbox(object):
         yosys = shutil.which("yosys") or shutil.which("yowasp-yosys")
 
         if yosys is None:
-            warn_once(
+            warn(
                 "yosys and yowasp-yosys not found in PATH. This may trigger issues with blackboxing."
             )
             return out_path
