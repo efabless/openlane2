@@ -36,8 +36,9 @@
     layer as obstructions and not part of the pin
 
 * `OpenROAD.CTS`
-  * Made `CTS_MAX_CAP` a non-PDK value, and also optional as the values in
-    the PDK configuration are bad and OpenROAD does a better job without it
+
+  * Made `CTS_MAX_CAP` a non-PDK value, and also optional as the values in the
+    PDK configuration are bad and OpenROAD does a better job without it
   * CTS no longer passes `MAX_TRANSITION_CONSTRAINT`, instead using a new
     variable `CTS_MAX_SLEW` if it exists
   * Fixed issue where no arguments were passed to
@@ -76,8 +77,8 @@
     getting generated (so power pins can be included)
   * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
     always defined as preprocessor macros
-  * Fixed issue where the order of files may not be preserved for macros, causing
-    linting to fail
+  * Fixed issue where the order of files may not be preserved for macros,
+    causing linting to fail
   * Internally adjusted how linter flags are set; a `.vlt` file is used to turn
     off certain linting rules for the black-box models instead of copying and
     wrapping the black-box comments in comments
@@ -122,6 +123,13 @@
     name.)
 
 ## Documentation
+
+* Adapted timing closure guide by [@shalan](https://github.com/shalan) to
+  OpenLane 2
+  * Converted to MyST Markdown
+  * All images made dark-mode friendly
+  * References to variables all now resolve properly
+* Fixed a number of inconsistencies and broken links.
 
 # 2.0.0rc1
 
