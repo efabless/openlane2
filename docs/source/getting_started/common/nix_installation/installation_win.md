@@ -20,6 +20,9 @@ OpenLane 2 *requires* WSL2. Make sure that you're using Windows 11, or
 Windows 10 is up-to-date.
 ```
 
+1. If you have an installation of WSL2 from 2023 or earlier, follow [Microsoft's official documention to enable `systemd`](https://learn.microsoft.com/en-us/windows/wsl/systemd)
+    * `systemd` is enabled by default for installations of WSL2 from mid-2023 or later.
+
 1. Click the Windows icon, type in "Windows PowerShell" and open it.
 
     ![The Windows 11 Start Menu with "powershell" typed into the search box, showing "Windows PowerShell" as the first match](../wsl/powershell.webp)
@@ -51,7 +54,11 @@ $ sudo apt-get install -y curl
 Then install Nix by running the following command:
 
 ```console 
-$ sh <(curl -L https://nixos.org/nix/install) --no-daemon --yes --nix-extra-conf-file <(echo "experimental-features = nix-command flakes\nextra-substituters = https://openlane.cachix.org\nextra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=\n")
+$ sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://openlane.cachix.org
+extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+EXTRA_NIX_CONF
 ```
 
 Enter your password if prompted. This should take around 5 minutes.
