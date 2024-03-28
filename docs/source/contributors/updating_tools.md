@@ -7,7 +7,7 @@ root of the OpenLane repo.
 ## Setting up the OpenLane Nix Cache
 
 If you somehow haven't done so already, follow the instructions in
-[**Nix Installation**](../getting_started/common/nix_installation/installation_linux.md#setting-up-the-binary-cache)
+[**Nix Installation**](../getting_started/common/nix_installation/installation_linux.md)
 to enable the OpenLane-specific binary cache.
 
 ## Finding the Current Version Info
@@ -108,4 +108,5 @@ If it errors out, this may be because of one of the following:
 See [Nix](./code.md#nix) under **Contributing Code** for more information about
 our conventions for Nix derivations.
 
-To gain a deeper understanding of the Nix programming language, try [Nix Pills](https://nixos.org/guides/nix-pills/index.html).
+To gain a deeper understanding of the Nix programming language, try
+[Nix Pills](https://nixos.org/guides/nix-pills/index.html).

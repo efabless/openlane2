@@ -69,6 +69,7 @@
         openlane = callPythonPackage ./default.nix {};
         surelog = callPackage ./nix/surelog.nix {};
         sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+        sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
         verilator = callPackage ./nix/verilator.nix {};
         volare = callPackage ./nix/volare.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};
@@ -141,6 +142,8 @@
             sphinx-copybutton
             self.packages.${pkgs.system}.sphinx-tippy
             sphinxcontrib-spelling
+            sphinxcontrib-bibtex
+            self.packages.${pkgs.system}.sphinx-subfigure
           ];
         }) {};
       }
