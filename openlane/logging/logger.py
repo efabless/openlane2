@@ -15,7 +15,7 @@ import click
 import atexit
 import logging
 from enum import IntEnum
-from typing import ClassVar, Iterable, Union, Set
+from typing import ClassVar, Iterable, Union
 
 import rich.console
 import rich.logging
