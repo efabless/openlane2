@@ -263,7 +263,7 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, prepare-test-matrices]
-    name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
+    name: Test Design ${{ matrix.design.test_name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
@@ -348,7 +348,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
+          name: ${{ matrix.design.test_name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_dir }}
 
       - name: Fetch Metrics
@@ -356,13 +356,13 @@ jobs:
         run: |
           nix develop --accept-flake-config --command openlane.state latest\
               ${{ matrix.design.run_dir }}\
-              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
       - name: Upload Metrics
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: metrics
-          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
   upload_metrics:
     name: Upload Metrics
     runs-on: ubuntu-22.04

@@ -17,7 +17,6 @@ import re
 import sys
 import json
 import site
-import shlex
 import tempfile
 import functools
 import subprocess
@@ -29,6 +28,7 @@ from base64 import b64encode
 from abc import abstractmethod
 from concurrent.futures import Future
 from typing import (
+    Any,
     List,
     Dict,
     Literal,
@@ -39,6 +39,7 @@ from typing import (
 )
 
 import yaml
+from openlane.common.toolbox import Toolbox
 import rich
 import rich.table
 
@@ -53,7 +54,7 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable, Macro
+from ..config import Variable, Macro, Config
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
 from ..logging import debug, err, info, warn, verbose, console, options
@@ -314,6 +315,60 @@ class STAMidPNR(STAStep):
     outputs = []
 
 
+def _set_corner_files(
+    toolbox: Toolbox,
+    config: Config,
+    env: Dict[str, Any],
+    timing_corner: Optional[str] = None,
+    prioritize_nl: bool = False,
+):
+    (
+        timing_corner,
+        libs,
+        netlists,
+        spefs,
+    ) = toolbox.get_timing_files_categorized(
+        config,
+        prioritize_nl=prioritize_nl,
+        timing_corner=timing_corner,
+    )
+
+    env["_CURRENT_CORNER_NAME"] = timing_corner
+    if extra_spef_list := config.get("EXTRA_SPEFS"):
+        extra_spef_pairs = []
+        warn(
+            "The configuration variable 'EXTRA_SPEFS' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
+        )
+        if len(extra_spef_list) % 4 != 0:
+            raise StepException(
+                "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you migrate your configuration to use the new 'MACROS' configuration variable."
+            )
+        for i in range(len(extra_spef_list) // 4):
+            start = i * 4
+            module, min, nom, max = (
+                extra_spef_list[start],
+                extra_spef_list[start + 1],
+                extra_spef_list[start + 2],
+                extra_spef_list[start + 3],
+            )
+            mapping = {
+                "min_*": [min],
+                "nom_*": [nom],
+                "max_*": [max],
+            }
+            spef = str(
+                toolbox.filter_views(config, mapping, timing_corner=timing_corner)[0]
+            )
+            extra_spef_pairs.append((module, spef))
+        env["_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT"] = TclStep.value_to_tcl(
+            extra_spef_pairs
+        )
+
+    env["_CURRENT_CORNER_LIBS"] = TclStep.value_to_tcl(libs)
+    env["_CURRENT_CORNER_NETLISTS"] = TclStep.value_to_tcl(netlists)
+    env["_CURRENT_CORNER_SPEFS"] = TclStep.value_to_tcl(spefs)
+
+
 @Step.factory.register()
 class STAPrePNR(STAStep):
     """
@@ -345,6 +400,11 @@ class STAPrePNR(STAStep):
             Optional[int],
             "Maximum number of violators to list in violator_list.rpt",
         ),
+        Variable(
+            "EXTRA_SPEFS",
+            Optional[List[Union[str, Path]]],
+            "A variable that only exists for backwards compatibility with OpenLane <2.0.0 and should not be used by new designs.",
+        ),
     ]
 
     def get_command(self) -> List[str]:
@@ -360,14 +420,9 @@ class STAPrePNR(STAStep):
             else:
                 prioritize_nl = False
 
-        timing_corner, timing_file_list = self.toolbox.get_timing_files(
-            self.config,
-            prioritize_nl=prioritize_nl,
-        )
+        _set_corner_files(self.toolbox, self.config, env, prioritize_nl=prioritize_nl)
 
         env["_OPENSTA"] = "1"
-        env["_CURRENT_CORNER_NAME"] = timing_corner
-        env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(timing_file_list)
         env["_SDF_SAVE_DIR"] = self.step_dir
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
@@ -520,7 +575,6 @@ class STAPostPNR(STAPrePNR):
             corner_dir = os.path.join(self.step_dir, corner)
             mkdirp(corner_dir)
 
-            current_env["_CURRENT_CORNER_NAME"] = corner
             current_env["_LIB_SAVE_DIR"] = corner_dir
             current_env["_SDF_SAVE_DIR"] = corner_dir
 
@@ -545,16 +599,14 @@ class STAPostPNR(STAPrePNR):
                 warn(
                     f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
-            spef = spefs[0]
-            current_env["CURRENT_SPEF_BY_CORNER"] = f"{corner} {spef}"
+            current_env["_CURRENT_SPEF_BY_CORNER"] = spefs[0]
 
-            _, timing_file_list = self.toolbox.get_timing_files(
+            _set_corner_files(
+                self.toolbox,
                 self.config,
-                corner,
+                current_env,
+                timing_corner=corner,
                 prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
-            )
-            current_env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(
-                timing_file_list
             )
 
             log_path = os.path.join(corner_dir, "sta.log")
@@ -1724,13 +1776,15 @@ class ResizerStep(OpenROADStep):
         lib_set_set = set()
         count = 0
         for corner in corners:
-            _, libs = self.toolbox.get_timing_files(self.config, corner)
+            _, libs, _, _ = self.toolbox.get_timing_files_categorized(
+                self.config, corner
+            )
             lib_set = frozenset(libs)
             if lib_set in lib_set_set:
                 debug(f"Liberty files for '{corner}' already accounted for- skipped")
                 continue
             lib_set_set.add(lib_set)
-            env[f"RSZ_CORNER_{count}"] = f"{corner} {shlex.join(libs)}"
+            env[f"RSZ_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
             debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 
