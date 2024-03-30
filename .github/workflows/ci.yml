@@ -126,7 +126,16 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Install Nix
+        run: |
+          sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+          extra-experimental-features = nix-command flakes
+          extra-substituters = https://openlane.cachix.org
+          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+          EXTRA_NIX_CONF
+
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+          echo "PATH=$PATH" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -148,7 +157,7 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/nix-installer-action@main # Using the DS Nix installer because it also sets up binfmt
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -169,7 +178,16 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Install Nix
+        run: |
+          sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+          extra-experimental-features = nix-command flakes
+          extra-substituters = https://openlane.cachix.org
+          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+          EXTRA_NIX_CONF
+
+          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+          echo "PATH=$PATH" >> $GITHUB_ENV
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -245,7 +263,7 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, prepare-test-matrices]
-    name: Test Design ${{ matrix.design.name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
+    name: Test Design ${{ matrix.design.test_name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
@@ -330,7 +348,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.design.name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
+          name: ${{ matrix.design.test_name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_dir }}
 
       - name: Fetch Metrics
@@ -338,13 +356,13 @@ jobs:
         run: |
           nix develop --accept-flake-config --command openlane.state latest\
               ${{ matrix.design.run_dir }}\
-              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+              --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
       - name: Upload Metrics
         if: ${{ always() }}
         uses: actions/upload-artifact@v3
         with:
           name: metrics
-          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.name }}.metrics.json
+          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
   upload_metrics:
     name: Upload Metrics
     runs-on: ubuntu-22.04

@@ -596,7 +596,7 @@ class Step(ABC):
             for var in Self.config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.id)}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.id)}}}{pdk_superscript} | {var.type_repr_md(for_document=True)} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
             result += "\n"
 
         result = (
