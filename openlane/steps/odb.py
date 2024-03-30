@@ -25,9 +25,21 @@ from typing import List, Literal, Optional, Tuple
 
 
 from .common_variables import io_layer_variables
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+    SupportsOpenROADAlerts,
+)
 from .openroad import DetailedPlacement, GlobalRouting
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info, verbose
+from .step import (
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+    CompositeStep,
+    DefaultOutputProcessor,
+)
+from ..logging import warn, info, verbose, err
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -35,12 +47,25 @@ from ..common import Path, get_script_dir
 inf_rx = re.compile(r"\b(-?)inf\b")
 
 
-class OdbpyStep(Step):
+class OdbpyStep(Step, SupportsOpenROADAlerts):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        if alert.code in ["ORD-0039", "ODB-0220"]:
+            return alert
+        if alert.cls == "error":
+            err(str(alert))
+        elif alert.cls == "warning":
+            warn(str(alert))
+        return alert
+
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
+
+        output_processing = [OpenROADOutputProcessor, DefaultOutputProcessor]
+        if "output_processing" in kwargs:
+            output_processing = kwargs.pop("output_processing")
 
         automatic_outputs = set(self.outputs).intersection(
             [DesignFormat.ODB, DesignFormat.DEF]
@@ -65,14 +90,15 @@ class OdbpyStep(Step):
         python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
         env["PYTHONPATH"] = ":".join(python_path_elements)
 
-        generated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             command,
             env=env,
+            output_processing=output_processing,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = generated_metrics
+        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -655,7 +681,7 @@ class PortDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
@@ -695,7 +721,7 @@ class DiodesOnPorts(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
 

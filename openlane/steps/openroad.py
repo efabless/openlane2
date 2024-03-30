@@ -42,7 +42,20 @@ import yaml
 import rich
 import rich.table
 
-from .step import CompositeStep, ViewsUpdate, MetricsUpdate, Step, StepException
+from .step import (
+    CompositeStep,
+    DefaultOutputProcessor,
+    StepError,
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+)
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+    SupportsOpenROADAlerts,
+)
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -161,7 +174,7 @@ class CheckSDCFiles(Step):
         return {}, {}
 
 
-class OpenROADStep(TclStep):
+class OpenROADStep(TclStep, SupportsOpenROADAlerts):
     inputs = [DesignFormat.ODB]
     outputs = [
         DesignFormat.ODB,
@@ -208,6 +221,15 @@ class OpenROADStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
+    def on_alert(self, alert: OpenROADAlert):
+        if alert.code in ["ODB-0220"]:
+            return
+        if alert.cls == "error":
+            err(str(alert))
+        elif alert.cls == "warning":
+            warn(str(alert))
+        return alert
+
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
@@ -244,9 +266,48 @@ class OpenROADStep(TclStep):
         updates the State's `metrics` property with any new metrics in that object.
         """
         kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state_in)
 
-        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
+        output_processing = [OpenROADOutputProcessor, DefaultOutputProcessor]
+        if "output_processing" in kwargs:
+            output_processing = kwargs.pop("output_processing")
 
+        command = self.get_command()
+
+        subprocess_result = self.run_subprocess(
+            command,
+            env=env,
+            check=check,
+            output_processing=output_processing,
+            **kwargs,
+        )
+
+        generated_metrics = subprocess_result["generated_metrics"]
+
+        views_updates: ViewsUpdate = {}
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            path = Path(env[f"SAVE_{output.name}"])
+            if not path.exists():
+                continue
+            views_updates[output] = path
+
+        # 1. Parse warnings and errors
+        alerts = subprocess_result["openroad_alerts"]
+        if subprocess_result["returncode"] != 0:
+            error_string = "\n".join(
+                [str(alert) for alert in alerts if alert.cls == "error"]
+            )
+            raise StepError(
+                f"{self.id} failed with the following errors:\n{error_string}"
+            )
+
+        # 2. Metrics
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
@@ -255,9 +316,9 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = inf
                 elif value == "-Infinity":
                     or_metrics_out[key] = -inf
-            metrics_updates.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
+        metric_updates_with_aggregates = aggregate_metrics(generated_metrics)
 
         return views_updates, metric_updates_with_aggregates
 
@@ -488,7 +549,7 @@ class STAPostPNR(STAPrePNR):
             odb_design,
         ] + lefs
 
-        filter_unannotated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             filter_unannotated_cmd,
             log_to=os.path.join(corner_dir, "filter_unannotated.log"),
             env=env,
@@ -496,11 +557,13 @@ class STAPostPNR(STAPrePNR):
             report_dir=corner_dir,
         )
 
+        generated_metrics = subprocess_result["generated_metrics"]
+
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read())
-            filter_unannotated_metrics.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        return filter_unannotated_metrics
+        return generated_metrics
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -560,13 +623,14 @@ class STAPostPNR(STAPrePNR):
             log_path = os.path.join(corner_dir, "sta.log")
 
             try:
-                generated_metrics = self.run_subprocess(
+                subprocess_result = self.run_subprocess(
                     self.get_command(),
                     log_to=log_path,
                     env=current_env,
                     silent=True,
                     report_dir=corner_dir,
                 )
+                generated_metrics = subprocess_result["generated_metrics"]
 
                 filter_unannotated_metrics = self.filter_unannotated_report(
                     corner=corner,
@@ -617,17 +681,17 @@ class STAPostPNR(STAPrePNR):
                 return f"[green]{formatted_slack}"
 
         table = rich.table.Table()
-        table.add_column("Corner/Group")
+        table.add_column("Corner/Group", width=20)
         table.add_column("Hold Worst Slack")
         table.add_column("Reg to Reg Paths")
         table.add_column("Hold TNS")
-        table.add_column("Hold Violations")
-        table.add_column("of which Reg to Reg")
+        table.add_column("Hold Vio Count")
+        table.add_column("⊃ reg-to-reg")
         table.add_column("Setup Worst Slack")
         table.add_column("Reg to Reg Paths")
         table.add_column("Setup TNS")
-        table.add_column("Setup Violations")
-        table.add_column("of which Reg to Reg")
+        table.add_column("Setup Vio Count")
+        table.add_column("⊃ reg-to-reg")
         table.add_column("Max Cap Violations")
         table.add_column("Max Slew Violations")
         for corner in ["Overall"] + self.config["STA_CORNERS"]:
@@ -658,6 +722,7 @@ class STAPostPNR(STAPrePNR):
         if not options.get_condensed_mode():
             console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
+            table.width = 160
             rich.print(table, file=f)
 
         views_updates: ViewsUpdate = {}
@@ -958,17 +1023,7 @@ class GeneratePDN(OpenROADStep):
         return views_updates, metric_updates_with_aggregates
 
 
-@Step.factory.register()
-class GlobalPlacement(OpenROADStep):
-    """
-    Performs a somewhat nebulous initial placement for standard cells in a
-    floorplan. While the placement is not concrete, it is enough to start
-    accounting for issues such as fanout, transition time, et cetera.
-    """
-
-    id = "OpenROAD.GlobalPlacement"
-    name = "Global Placement"
-
+class _GlobalPlacement(OpenROADStep):
     config_vars = (
         OpenROADStep.config_vars
         + routing_layer_variables
@@ -983,22 +1038,10 @@ class GlobalPlacement(OpenROADStep):
                 ],
             ),
             Variable(
-                "PL_TIME_DRIVEN",
-                bool,
-                "Specifies whether the placer should use time driven placement.",
-                default=True,
-            ),
-            Variable(
                 "PL_SKIP_INITIAL_PLACEMENT",
                 bool,
                 "Specifies whether the placer should run initial placement or not.",
                 default=False,
-            ),
-            Variable(
-                "PL_ROUTABILITY_DRIVEN",
-                bool,
-                "Specifies whether the placer should use routability driven placement.",
-                default=True,
             ),
             Variable(
                 "PL_WIRE_LENGTH_COEF",
@@ -1049,14 +1092,41 @@ class GlobalPlacement(OpenROADStep):
             expr = util + (5 * self.config["GPL_CELL_PADDING"]) + 10
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
-            warn(
+            info(
                 f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
             )
         return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
-class GlobalPlacementSkipIO(GlobalPlacement):
+class GlobalPlacement(_GlobalPlacement):
+    """
+    Performs a somewhat nebulous initial placement for standard cells in a
+    floorplan. While the placement is not concrete, it is enough to start
+    accounting for issues such as fanout, transition time, et cetera.
+    """
+
+    id = "OpenROAD.GlobalPlacement"
+    name = "Global Placement"
+
+    config_vars = _GlobalPlacement.config_vars + [
+        Variable(
+            "PL_TIME_DRIVEN",
+            bool,
+            "Specifies whether the placer should use time driven placement.",
+            default=True,
+        ),
+        Variable(
+            "PL_ROUTABILITY_DRIVEN",
+            bool,
+            "Specifies whether the placer should use routability driven placement.",
+            default=True,
+        ),
+    ]
+
+
+@Step.factory.register()
+class GlobalPlacementSkipIO(_GlobalPlacement):
     """
     Performs global placement without taking I/O into consideration.
 
@@ -1069,7 +1139,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
-    config_vars = GlobalPlacement.config_vars + [
+    config_vars = _GlobalPlacement.config_vars + [
         Variable(
             "FP_IO_MODE",
             Literal["matching", "random_equidistant", "annealing"],
@@ -1230,17 +1300,17 @@ class CheckAntennas(OpenROADStep):
         table = rich.table.Table()
         decimal_places = 2
         row = []
-        table.add_column("Partial/Required")
-        table.add_column("Required")
+        table.add_column("P / R")
         table.add_column("Partial")
+        table.add_column("Required")
         table.add_column("Net")
         table.add_column("Pin")
         table.add_column("Layer")
         for violation in violations:
             row = [
                 f"{violation.partial_to_required:.{decimal_places}f}",
-                f"{violation.required_ratio:.{decimal_places}f}",
                 f"{violation.partial_ratio:.{decimal_places}f}",
+                f"{violation.required_ratio:.{decimal_places}f}",
                 f"{violation.net}",
                 f"{violation.pin}",
                 f"{violation.layer}",
@@ -1250,6 +1320,7 @@ class CheckAntennas(OpenROADStep):
         if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
+            table.width = 80
             rich.print(table, file=f)
 
     def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:

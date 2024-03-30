@@ -299,7 +299,7 @@ class XOR(KLayoutStep):
         thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
         info(f"Running XOR with {thread_count} threads…")
 
-        metric_updates = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             [
                 "ruby",
                 os.path.join(
@@ -322,7 +322,7 @@ class XOR(KLayoutStep):
             env=env,
         )
 
-        return {}, metric_updates
+        return {}, subprocess_result["generated_metrics"]
 
 
 @Step.factory.register()
@@ -406,7 +406,7 @@ class DRC(KLayoutStep):
             env=env,
         )
 
-        return self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             [
                 "python3",
                 os.path.join(
@@ -420,6 +420,7 @@ class DRC(KLayoutStep):
             env=env,
             log_to=os.path.join(self.step_dir, "xml_drc_report_to_json.log"),
         )
+        return subprocess_result["generated_metrics"]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metrics_updates: MetricsUpdate = {}

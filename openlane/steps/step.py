@@ -17,22 +17,24 @@ import os
 import sys
 import json
 import time
-import datetime
 import psutil
 import shutil
 import textwrap
+import datetime
 import subprocess
 from signal import Signals
 from decimal import Decimal
+from io import TextIOWrapper
+from threading import Thread
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
-from threading import Thread
 from typing import (
     Any,
     List,
     Callable,
+    Literal,
     Optional,
     Set,
     Union,
@@ -41,6 +43,8 @@ from typing import (
     Dict,
     ClassVar,
     Type,
+    Generic,
+    TypeVar,
 )
 
 from rich.markup import escape
@@ -76,6 +80,65 @@ from ..logging import (
     debug,
 )
 from ..__version__ import __version__
+
+
+VT = TypeVar("VT")
+
+
+class OutputProcessor(ABC, Generic[VT]):
+    key: ClassVar[str] = NotImplemented
+
+    def __init__(self, step: Step, report_dir: str, silent: bool) -> None:
+        self.step = step
+        self.report_dir: str = report_dir
+        self.silent: bool = silent
+
+    @abstractmethod
+    def process_line(self, line: str) -> bool:
+        pass
+
+    @abstractmethod
+    def result(self) -> VT:
+        pass
+
+
+class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
+    key = "generated_metrics"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generated_metrics: Dict[str, Any] = {}
+        self.current_rpt: Optional[TextIOWrapper] = None
+
+    def process_line(self, line: str) -> bool:
+        if self.step.step_dir is not None and line.startswith(REPORT_START_LOCUS):
+            if self.current_rpt is not None:
+                self.current_rpt.close()
+            report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
+            report_path = os.path.join(self.report_dir, report_name)
+            self.current_rpt = open(report_path, "w")
+        elif line.startswith(REPORT_END_LOCUS):
+            if self.current_rpt is not None:
+                self.current_rpt.close()
+            self.current_rpt = None
+        elif line.startswith(METRIC_LOCUS):
+            command, name, value = line.split(" ", maxsplit=3)
+            metric_type: Union[Type[str], Type[int], Type[float]] = str
+            if command.endswith("_I"):
+                metric_type = int
+            elif command.endswith("_F"):
+                metric_type = float
+            self.generated_metrics[name] = metric_type(value)
+        elif self.current_rpt is not None:
+            # No echo- the timing reports especially can be very large
+            # and terminal emulators will slow the flow down.
+            self.current_rpt.write(line)
+        elif not self.silent:
+            logging.subprocess(line.strip())
+        return True
+
+    def result(self) -> Dict[str, Any]:
+        return self.generated_metrics
 
 
 class StepError(RuntimeError):
@@ -1040,6 +1103,11 @@ class Step(ABC):
         silent: bool = False,
         report_dir: Optional[Union[str, os.PathLike]] = None,
         env: Optional[Dict[str, Any]] = None,
+        *,
+        check: bool = True,
+        output_processing: Union[
+            Sequence[Type[OutputProcessor]], Literal["default"]
+        ] = "default",
         _popen_callable: Callable[..., psutil.Popen] = psutil.Popen,
         **kwargs,
     ) -> Dict[str, Any]:
@@ -1077,9 +1145,8 @@ class Step(ABC):
         """
         if report_dir is None:
             report_dir = self.step_dir
+        report_dir = str(report_dir)
         mkdirp(report_dir)
-
-        generated_metrics: Dict[str, Any] = {}
 
         log_path = log_to or self.get_log_path()
         log_file = open(log_path, "w")
@@ -1108,6 +1175,14 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
+        output_processors: List[OutputProcessor] = [
+            DefaultOutputProcessor(self, report_dir, silent)
+        ]
+        if output_processing != "default":
+            output_processors = []
+            for cls in output_processing:
+                output_processors.append(cls(self, report_dir, silent))
+
         process = _popen_callable(
             cmd_str,
             encoding="utf8",
@@ -1120,37 +1195,13 @@ class Step(ABC):
 
         line_buffer = RingBuffer(str, 10)
         if process_stdout := process.stdout:
-            current_rpt = None
             try:
-                while line := process_stdout.readline():
-                    line_buffer.push(line)
+                for line in process_stdout:
                     log_file.write(line)
-                    if self.step_dir is not None and line.startswith(
-                        REPORT_START_LOCUS
-                    ):
-                        if current_rpt is not None:
-                            current_rpt.close()
-                        report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                        report_path = os.path.join(report_dir, report_name)
-                        current_rpt = open(report_path, "w")
-                    elif line.startswith(REPORT_END_LOCUS):
-                        if current_rpt is not None:
-                            current_rpt.close()
-                        current_rpt = None
-                    elif line.startswith(METRIC_LOCUS):
-                        command, name, value = line.split(" ", maxsplit=3)
-                        metric_type: Union[Type[str], Type[int], Type[float]] = str
-                        if command.endswith("_I"):
-                            metric_type = int
-                        elif command.endswith("_F"):
-                            metric_type = float
-                        generated_metrics[name] = metric_type(value)
-                    elif current_rpt is not None:
-                        # No echo- the timing reports especially can be very large
-                        # and terminal emulators will slow the flow down.
-                        current_rpt.write(line)
-                    elif not silent and "table template" not in line:  # sky130 ff hack
-                        logging.subprocess(line.strip())
+                    line_buffer.push(line)
+                    for processor in output_processors:
+                        if processor.process_line(line):
+                            break
             except UnicodeDecodeError as e:
                 raise StepException(f"Subprocess emitted non-UTF-8 output: {e}")
         process_stats_thread.join()
@@ -1163,9 +1214,17 @@ class Step(ABC):
                 f,
                 indent=4,
             )
+
+        result: Dict[str, Any] = {}
         returncode = process.wait()
         log_file.close()
-        if returncode != 0:
+        result["returncode"] = returncode
+        result["log_path"] = log_path
+
+        for processor in output_processors:
+            result[processor.key] = processor.result()
+
+        if check and returncode != 0:
             if returncode > 0:
                 err("Subprocess had a non-zero exit.")
                 concatenated = ""
@@ -1176,7 +1235,7 @@ class Step(ABC):
                 err(f"Full log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
-        return generated_metrics
+        return result
 
     @protected
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
