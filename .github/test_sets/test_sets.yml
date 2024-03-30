@@ -16,13 +16,20 @@
     - io_placer
     - test_sram_macro
     - manual_macro_placement_test
-    - aes_user_project_wrapper
+    - name: aes_user_project_wrapper
+      test_name: aes_upw_new
+      config_file: config.json
+    - name: aes_user_project_wrapper
+      test_name: aes_upw_old
+      config_file: config_old.json
     - user_proj_timer
     - name: xtea
       config_file: config.tcl
     - name: latch
+      test_name: latch_good
       config_file: config_good.json
     - name: latch
+      test_name: latch_bad
       config_file: config_bad.json
     - name: EF_PSRAM_CTRL_V2
       ipm: v1.0.3
@@ -66,8 +73,10 @@
     - inverter
     - cell_inverter
     - name: latch
+      test_name: latch_good
       config_file: config_good.json
     - name: latch
+      test_name: latch_bad
       config_file: config_bad.json
 - scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set

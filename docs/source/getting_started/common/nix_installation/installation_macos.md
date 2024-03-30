@@ -15,7 +15,11 @@
 Simply run this (entire) command in `Terminal.app`:
 
 ```console
-$ sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file <(echo "experimental-features = nix-command flakes\nextra-substituters = https://openlane.cachix.org\nextra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=\n")
+$ sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://openlane.cachix.org
+extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+EXTRA_NIX_CONF
 ```
 
 Enter your password if prompted. This should take around 5 minutes.

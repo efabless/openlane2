@@ -25,13 +25,11 @@ $ sudo apt-get install -y curl
 After that, simply run this command:
 
 ```console
-$ sh <(curl -L https://nixos.org/nix/install) --daemon --yes --nix-extra-conf-file <(echo "experimental-features = nix-command flakes\nextra-substituters = https://openlane.cachix.org\nextra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=\n")
-```
-
-```{tip}
-If you're using a non-systemd based Linux, you will need to pass `--no-daemon`
-instead of `--daemon`. If you do not know what any of that means, you may
-safely ignore this tip box.
+$ sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+extra-experimental-features = nix-command flakes
+extra-substituters = https://openlane.cachix.org
+extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+EXTRA_NIX_CONF
 ```
 
 Enter your password if prompted. This should take around 5 minutes.

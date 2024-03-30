@@ -14,7 +14,7 @@
 import os
 import re
 import subprocess
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
 from ..config import Variable
@@ -96,8 +96,10 @@ class Lint(Step):
         extra_args = []
 
         blackboxes = []
-        models = []
-        lefs = []
+
+        model_list: List[str] = []
+        lefs: List[str] = []
+        model_set: Set[str] = set()
 
         if cell_verilog_models := self.config["CELL_VERILOG_MODELS"]:
             blackboxes.append(
@@ -111,18 +113,28 @@ class Lint(Step):
             self.config,
             [
                 DesignFormat.VERILOG_HEADER,
+                DesignFormat.POWERED_NETLIST,
+                DesignFormat.NETLIST,
                 DesignFormat.LEF,
             ],
         )
         for view, format in macro_views:
             if format == DesignFormat.VERILOG_HEADER:
                 blackboxes.append(str(view))
+            elif format == DesignFormat.LEF:
+                lefs.append(lef)
             else:
-                lefs.append(str(view))
+                str_view = str(view)
+                if str_view not in model_set:
+                    model_set.add(str_view)
+                    model_list.append(str_view)
 
         if extra_verilog_models := self.config["EXTRA_VERILOG_MODELS"]:
-            models += extra_verilog_models
-
+            for model in extra_verilog_models:
+                str_model = str(model)
+                if str_model not in model_set:
+                    model_set.add(str_model)
+                    model_list.append(str_model)
         defines = [
             self.config["VERILOG_POWER_DEFINE"],
             f"PDK_{self.config['PDK']}",
@@ -132,9 +144,9 @@ class Lint(Step):
         ]
         defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
-        if len(models):
+        if len(model_list):
             bb_path = self.toolbox.create_blackbox_model(
-                frozenset([str(path) for path in models]),
+                tuple(model_list),
                 frozenset(defines),
             )
             blackboxes.append(bb_path)
