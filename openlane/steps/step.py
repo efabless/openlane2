@@ -86,6 +86,20 @@ VT = TypeVar("VT")
 
 
 class OutputProcessor(ABC, Generic[VT]):
+    """
+    An abstract base class that processes terminal output from
+    :meth:`openlane.steps.Step.run_subprocess`
+    and append a resultant key/value pair to its returned dictionary.
+
+    :param step: The step object instantiating this output processor
+    :param report_dir: The report directory for this instantiation of
+        ``run_subprocess``.
+    :param silent: Whether the ``run_subprocess`` was called with ``silent`` or
+        not.
+    :cvar key: The fixed key to be added to the return value of
+        ``run_subprocess``. Must be implemented by subclasses.
+    """
+
     key: ClassVar[str] = NotImplemented
 
     def __init__(self, step: Step, report_dir: str, silent: bool) -> None:
@@ -95,14 +109,45 @@ class OutputProcessor(ABC, Generic[VT]):
 
     @abstractmethod
     def process_line(self, line: str) -> bool:
+        """
+        Fires when a line is received by
+        :meth:`openlane.steps.Step.run_subprocess`. Subclasses may do any
+        arbitrary processing here.
+
+        :param line: The line emitted by the subprocess
+        :returns: ``True`` if the line is "consumed", i.e. other output
+            processors are skipped. ``False`` if the line is to be passed on
+            to later output processors.
+        """
         pass
 
     @abstractmethod
     def result(self) -> VT:
+        """
+        :returns: The result of all previous ``process_line`` calls.
+        """
         pass
 
 
 class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
+    """
+    An output processor that makes a number of special functions accessible to
+    subprocesses by simply printing keywords in the terminal, such as:
+
+    * ``%OL_CREATE_REPORT <file>``\\: Starts redirecting all output from
+      standard output to a report file inside the step directory, with the
+      name <file>.
+    * ``%OL_END_REPORT``: Stops redirection behavior.
+    * ``%OL_METRIC <name> <value>``\\: Adds a string metric with the name <name>
+      and the value <value> to this function's returned object.
+    * ``%OL_METRIC_F <name> <value>``\\: Adds a floating-point metric with the
+      name <name> and the value <value> to this function's returned object.
+    * ``%OL_METRIC_I <name> <value>``\\: Adds an integer metric with the name
+      <name> and the value <value> to this function's returned object.
+
+    Otherwise, the line is simply printed to the logger.
+    """
+
     key = "generated_metrics"
 
     def __init__(self, *args, **kwargs):
@@ -111,6 +156,10 @@ class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
         self.current_rpt: Optional[TextIOWrapper] = None
 
     def process_line(self, line: str) -> bool:
+        """
+        Always returns ``True``, so ``DefaultOutputProcessor`` should always be
+        at the end of your list.
+        """
         if self.step.step_dir is not None and line.startswith(REPORT_START_LOCUS):
             if self.current_rpt is not None:
                 self.current_rpt.close()
@@ -138,6 +187,9 @@ class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
         return True
 
     def result(self) -> Dict[str, Any]:
+        """
+        A dictionary of all generated metrics.
+        """
         return self.generated_metrics
 
 
@@ -1114,20 +1166,8 @@ class Step(ABC):
         """
         A helper function for :class:`Step` objects to run subprocesses.
 
-        The output from the subprocess is processed line-by-line. ``run_subprocess``
-        makes a number of special functions accessible to subprocesses by simply
-        printing keywords in the terminal, such as:
-
-        * ``%OL_CREATE_REPORT <file>``\\: Starts redirecting all output from
-          standard output to a report file inside the step directory, with the
-          name <file>.
-        * ``%OL_END_REPORT``: Stops redirection behavior.
-        * ``%OL_METRIC <name> <value>``\\: Adds a string metric with the name <name>
-          and the value <value> to this function's returned object.
-        * ``%OL_METRIC_F <name> <value>``\\: Adds a floating-point metric with the
-          name <name> and the value <value> to this function's returned object.
-        * ``%OL_METRIC_I <name> <value>``\\: Adds an integer metric with the name
-          <name> and the value <value> to this function's returned object.
+        The output from the subprocess is processed line-by-line by instances
+        of output processor classes.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
@@ -1136,12 +1176,28 @@ class Step(ABC):
             within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
+        :param report_dir: An optional override for where reports by output
+            processors
+
+        :param check: Whether to raise ``subprocess.CalledProcessError`` in
+            the event of a non-zero exit code. Set to ``False`` if you'd like
+            to do further processing on the output(s).
+        :param output_processing: Either ``default`` or a list of
+            :class:`openlane.steps.OutputProcessor` classes. In the default
+            case, only :class:`openlane.steps.DefaultOutputProcessor` is used.
         :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
-        :returns: A dictionary of any metrics generated using the ``%OL_METRIC{,_I,_F}``
-            directive.
-        :raises subprocess.CalledProcessError: If the process has a non-zero exit,
-            this exception will be raised.
+        :returns: A dictionary of output processor results.
+
+            These key/value pairs are included in all cases:
+            * ``returncode``: Exit code for the subprocess
+            * ``log_path``: The resolved log path for the subprocess
+
+            The other key value pairs depend on the ``key`` class variables
+            and :meth:`openlane.steps.OutputProcessor.result` methods of the
+            output processors.
+        :raises subprocess.CalledProcessError: If the process has a non-zero
+            exit, and ``check`` is True, this exception will be raised.
         """
         if report_dir is None:
             report_dir = self.step_dir

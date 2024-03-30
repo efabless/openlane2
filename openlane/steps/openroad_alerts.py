@@ -23,6 +23,10 @@ openroad_alert_rx = re.compile(r"^\[(WARNING|ERROR)(?:\s+([A-Z]+\-\d+))?\]\s*(.+
 
 @dataclass
 class OpenROADAlert:
+    """
+    Data structure encapsulating an alert (warning or error) from OpenROAD.
+    """
+
     cls: Literal["warning", "error"]
     code: Optional[str]
     message: str
@@ -36,11 +40,28 @@ class OpenROADAlert:
 
 @runtime_checkable
 class SupportsOpenROADAlerts(Protocol):
+    """
+    A listener for ``OpenROADOutputProcessor``. Fires whenever a line contains
+    an alert.
+    """
+
     def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        """
+        :param alert: The alert found in the processed line
+        :returns: The alert once again, modified at the step object's leisure
+        """
         ...
 
 
 class OpenROADOutputProcessor(OutputProcessor):
+    """
+    A special output processor for steps leveraging OpenROAD-based subprocesses.
+
+    It captures `[ERROR]` and `[WARNING]` lines into a data structure where they
+    can be further processed by the step itself rather than simply printed to
+    the terminal.
+    """
+
     key = "openroad_alerts"
 
     def __init__(self, *args, **kwargs) -> None:
@@ -52,6 +73,14 @@ class OpenROADOutputProcessor(OutputProcessor):
             )
 
     def process_line(self, line: str):
+        """
+        If a line contains an OpenROAD error/warning, it is processed and handed
+        over to the step's ``on_alert`` method.
+
+        :param line: The line in question
+        :returns: ``True`` if the line has alerts, ``False`` if the line has
+            no alerts
+        """
         if (
             "table template" in line or "message limit reached" in line
         ):  # sky130 ff hack
@@ -70,5 +99,8 @@ class OpenROADOutputProcessor(OutputProcessor):
             return True  # munch
         return False  # pass on to next output processor
 
-    def result(self):
+    def result(self) -> List[OpenROADAlert]:
+        """
+        :returns: A list of OpenROAD alerts captured by this output processor
+        """
         return self.alerts
