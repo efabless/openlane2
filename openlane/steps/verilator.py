@@ -119,12 +119,12 @@ class Lint(Step):
             ],
         )
         for view, format in macro_views:
+            str_view = str(view)
             if format == DesignFormat.VERILOG_HEADER:
                 blackboxes.append(str(view))
             elif format == DesignFormat.LEF:
-                lefs.append(lef)
+                lefs.append(str_view)
             else:
-                str_view = str(view)
                 if str_view not in model_set:
                     model_set.add(str_view)
                     model_list.append(str_view)
