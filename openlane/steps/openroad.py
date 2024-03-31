@@ -69,7 +69,7 @@ from .common_variables import (
 from ..config import Variable, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, verbose, console, options
+from ..logging import debug, info, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -301,13 +301,16 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
         # 1. Parse warnings and errors
         alerts = subprocess_result["openroad_alerts"]
         if subprocess_result["returncode"] != 0:
-            error_string = "\n".join(
-                [str(alert) for alert in alerts if alert.cls == "error"]
-            )
-            raise StepError(
-                f"{self.id} failed with the following errors:\n{error_string}"
-            )
-
+            error_strings = [str(alert) for alert in alerts if alert.cls == "error"]
+            if len(error_strings):
+                error_string = "\n".join(error_strings)
+                raise StepError(
+                    f"{self.id} failed with the following errors:\n{error_string}"
+                )
+            else:
+                raise StepException(
+                    f"{self.id} failed unexpectedly. Please check the logs and file an issue."
+                )
         # 2. Metrics
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
@@ -693,7 +696,7 @@ class STAPostPNR(STAPrePNR):
                 )
                 info(f"Finished STA for the {corner} timing corner.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed STA for the {corner} timing corner:")
+                self.err(f"Failed STA for the {corner} timing corner:")
                 raise e
 
             return {**generated_metrics, **filter_unannotated_metrics}
@@ -774,7 +777,7 @@ class STAPostPNR(STAPrePNR):
         if not options.get_condensed_mode():
             console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
-            table.width = 160
+            table.min_width = 160
             rich.print(table, file=f)
 
         views_updates: ViewsUpdate = {}
@@ -1372,7 +1375,7 @@ class CheckAntennas(OpenROADStep):
         if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
-            table.width = 80
+            table.min_width = 80
             rich.print(table, file=f)
 
     def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:
@@ -1636,7 +1639,7 @@ class RCX(OpenROADStep):
                 )
                 info(f"Finished RCX for {corner_qualifier}.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed RCX for the {corner_qualifier}:")
+                self.err(f"Failed RCX for the {corner_qualifier}:")
                 raise e
 
             return out

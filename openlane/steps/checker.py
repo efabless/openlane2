@@ -18,7 +18,7 @@ from typing import Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
-from ..logging import err, info, debug, verbose
+from ..logging import info, debug, verbose
 from ..config import Variable
 from ..common import Filter, parse_metric_modifiers
 
@@ -79,10 +79,10 @@ class MetricChecker(Step):
                         debug(self.config.get(self.error_on_var.name))
                         self.warn(f"{error_msg}")
                     elif self.deferred:
-                        err(f"{error_msg} - deferred")
+                        self.err(f"{error_msg} - deferred")
                         raise DeferredStepError(error_msg)
                     else:
-                        err(f"{error_msg}")
+                        self.err(f"{error_msg}")
                         raise StepError(error_msg)
 
                 else:
@@ -355,7 +355,7 @@ class LintTimingConstructs(MetricChecker):
         if metric_value is not None:
             if metric_value > 0:
                 error_msg = "Timing constructs found in the RTL. Please remove them or wrap them around an ifdef. It heavily unrecommended to rely on timing constructs for synthesis."
-                err(f"{error_msg}")
+                self.err(f"{error_msg}")
                 raise StepError(error_msg)
             else:
                 info(f"Check for {self.metric_description} clear.")

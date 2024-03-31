@@ -277,7 +277,7 @@ def main(
         rich.print(critical_table)
     if full_table.row_count > 0:
         if full_table_path := write_full_table_to:
-            full_table.width = 160
+            full_table.min_width = 160
             rich.print(full_table, file=open(full_table_path, "w", encoding="utf8"))
 
     utl.metric_integer("design__disconnected_pin__count", disconnected_pin_count)

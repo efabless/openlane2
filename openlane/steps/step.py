@@ -1306,13 +1306,15 @@ class Step(ABC):
 
         if check and returncode != 0:
             if returncode > 0:
-                err("Subprocess had a non-zero exit.")
+                self.err("Subprocess had a non-zero exit.")
                 concatenated = ""
                 for line in line_buffer:
                     concatenated += line
                 if concatenated.strip() != "":
-                    err(f"Last {len(line_buffer)} line(s):\n" + escape(concatenated))
-                err(f"Full log file: '{os.path.relpath(log_path)}'")
+                    self.err(
+                        f"Last {len(line_buffer)} line(s):\n" + escape(concatenated)
+                    )
+                self.err(f"Full log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return result
