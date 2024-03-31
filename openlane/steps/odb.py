@@ -51,6 +51,8 @@ class OdbpyStep(Step, SupportsOpenROADAlerts):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
     def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
         if alert.code in ["ORD-0039", "ODB-0220"]:
             return alert
@@ -62,10 +64,6 @@ class OdbpyStep(Step, SupportsOpenROADAlerts):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-
-        output_processing = [OpenROADOutputProcessor, DefaultOutputProcessor]
-        if "output_processing" in kwargs:
-            output_processing = kwargs.pop("output_processing")
 
         automatic_outputs = set(self.outputs).intersection(
             [DesignFormat.ODB, DesignFormat.DEF]
@@ -93,7 +91,6 @@ class OdbpyStep(Step, SupportsOpenROADAlerts):
         subprocess_result = self.run_subprocess(
             command,
             env=env,
-            output_processing=output_processing,
             **kwargs,
         )
 

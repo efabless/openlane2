@@ -185,6 +185,8 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
         DesignFormat.POWERED_NETLIST,
     ]
 
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
     config_vars = [
         Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
@@ -272,9 +274,6 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
         check = False
         if "check" in kwargs:
             check = kwargs.pop("check")
-        output_processing = [OpenROADOutputProcessor, DefaultOutputProcessor]
-        if "output_processing" in kwargs:
-            output_processing = kwargs.pop("output_processing")
 
         command = self.get_command()
 
@@ -282,7 +281,6 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
             command,
             env=env,
             check=check,
-            output_processing=output_processing,
             **kwargs,
         )
 

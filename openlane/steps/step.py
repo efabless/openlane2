@@ -34,7 +34,6 @@ from typing import (
     Any,
     List,
     Callable,
-    Literal,
     Optional,
     Set,
     Union,
@@ -419,6 +418,10 @@ class Step(ABC):
     :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
 
+    :cvar output_processors: A default set of
+        :class:`openlane.steps.OutputProcessor` classes for use with
+        :meth:`run_subprocess`.
+
     :ivar state_out:
         The last output state from running this step object, if it exists.
 
@@ -445,6 +448,7 @@ class Step(ABC):
     id: str = NotImplemented
     inputs: ClassVar[List[DesignFormat]] = NotImplemented
     outputs: ClassVar[List[DesignFormat]] = NotImplemented
+    output_processors: ClassVar[List[Type[OutputProcessor]]] = [DefaultOutputProcessor]
     config_vars: ClassVar[List[Variable]] = []
 
     # Instance Variables
@@ -1157,9 +1161,7 @@ class Step(ABC):
         env: Optional[Dict[str, Any]] = None,
         *,
         check: bool = True,
-        output_processing: Union[
-            Sequence[Type[OutputProcessor]], Literal["default"]
-        ] = "default",
+        output_processing: Optional[Sequence[Type[OutputProcessor]]] = None,
         _popen_callable: Callable[..., psutil.Popen] = psutil.Popen,
         **kwargs,
     ) -> Dict[str, Any]:
@@ -1182,9 +1184,8 @@ class Step(ABC):
         :param check: Whether to raise ``subprocess.CalledProcessError`` in
             the event of a non-zero exit code. Set to ``False`` if you'd like
             to do further processing on the output(s).
-        :param output_processing: Either ``default`` or a list of
-            :class:`openlane.steps.OutputProcessor` classes. In the default
-            case, only :class:`openlane.steps.DefaultOutputProcessor` is used.
+        :param output_processing: An override for the class's list of
+            :class:`openlane.steps.OutputProcessor` classes.
         :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
         :returns: A dictionary of output processor results.
@@ -1231,13 +1232,11 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
-        output_processors: List[OutputProcessor] = [
-            DefaultOutputProcessor(self, report_dir, silent)
-        ]
-        if output_processing != "default":
-            output_processors = []
-            for cls in output_processing:
-                output_processors.append(cls(self, report_dir, silent))
+        if output_processing is None:
+            output_processing = self.output_processors
+        output_processors = []
+        for cls in output_processing:
+            output_processors.append(cls(self, report_dir, silent))
 
         process = _popen_callable(
             cmd_str,
