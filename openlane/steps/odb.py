@@ -39,7 +39,7 @@ from .step import (
     CompositeStep,
     DefaultOutputProcessor,
 )
-from ..logging import warn, info, verbose, err
+from ..logging import info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -57,9 +57,9 @@ class OdbpyStep(Step, SupportsOpenROADAlerts):
         if alert.code in ["ORD-0039", "ODB-0220"]:
             return alert
         if alert.cls == "error":
-            err(str(alert))
+            self.err(str(alert))
         elif alert.cls == "warning":
-            warn(str(alert))
+            self.warn(str(alert))
         return alert
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -257,10 +257,10 @@ class ApplyDEFTemplate(OdbpyStep):
             template_area = [Decimal(point) for point in template_area_string.split()]
             design_area = [Decimal(point) for point in design_area_string.split()]
             if template_area != design_area:
-                warn(
+                self.warn(
                     "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
                 )
-                warn(
+                self.warn(
                     f"Design area: {design_area_string}. Template def area: {template_area_string}"
                 )
         return views_updates, {}
@@ -372,7 +372,7 @@ class ManualMacroPlacement(OdbpyStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
-            warn(
+            self.warn(
                 "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
@@ -684,7 +684,7 @@ class PortDiodePlacement(OdbpyStep):
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
@@ -787,7 +787,7 @@ class FuzzyDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 

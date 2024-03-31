@@ -221,6 +221,18 @@ class FlowProgressBar(object):
         return f"{str(self.__ordinal).zfill(max_stage_digits)}-"
 
 
+class _StepWarningFilter(LevelFilter):
+    def __init__(self) -> None:
+        super().__init__(["WARNING"])
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if hasattr(record, "step"):
+            record.step = f"[{record.step}] "
+        else:
+            record.step = ""
+        return super().filter(record)
+
+
 class Flow(ABC):
     """
     An abstract base class for a flow.
@@ -496,7 +508,9 @@ class Flow(ABC):
         warning_stream = StringIO()
         warning_stream_handler = logging.StreamHandler(warning_stream)
         warning_stream_handler.setLevel("WARNING")
-        warning_stream_handler.addFilter(LevelFilter(["WARNING"]))
+        warning_stream_handler.addFilter(_StepWarningFilter())
+        formatter = logging.Formatter("%(step)s%(message)s")
+        warning_stream_handler.setFormatter(formatter)
         handlers.append(warning_stream_handler)
         register_additional_handler(warning_stream_handler)
 

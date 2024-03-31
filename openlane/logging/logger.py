@@ -305,6 +305,9 @@ def err(msg: object, /, **kwargs):
     """
     Logs an item to the OpenLane logger terminal with an error Unicode character and
     red/bold rich formatting syntax with the log level ERROR.
+
+
+    :param msg: The message to log
     """
     if kwargs.get("stacklevel") is None:
         kwargs["stacklevel"] = 2

@@ -39,7 +39,6 @@ from typing import (
 )
 
 import yaml
-from openlane.common.toolbox import Toolbox
 import rich
 import rich.table
 
@@ -67,10 +66,10 @@ from .common_variables import (
     routing_layer_variables,
 )
 
-from ..config import Variable, Macro, Config
+from ..config import Variable, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, verbose, console, options
+from ..logging import debug, err, info, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -165,11 +164,11 @@ class CheckSDCFiles(Step):
         is_generic_fallback = default_sdc_file.default
         fallback_descriptor = "generic" if is_generic_fallback else "user-defined"
         if self.config["PNR_SDC_FILE"] is None:
-            warn(
+            self.warn(
                 f"'PNR_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         if self.config["SIGNOFF_SDC_FILE"] is None:
-            warn(
+            self.warn(
                 f"'SIGNOFF_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         return {}, {}
@@ -225,12 +224,15 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
         pass
 
     def on_alert(self, alert: OpenROADAlert):
-        if alert.code in ["ODB-0220"]:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # LEF thing obsolete
+        ]:
             return
         if alert.cls == "error":
-            err(str(alert))
+            self.err(str(alert), extra={"step": self.id})
         elif alert.cls == "warning":
-            warn(str(alert))
+            self.warn(str(alert), extra={"step": self.id})
         return alert
 
     def prepare_env(self, env: dict, state: State) -> dict:
@@ -375,8 +377,7 @@ class STAMidPNR(STAStep):
 
 
 def _set_corner_files(
-    toolbox: Toolbox,
-    config: Config,
+    step: Step,
     env: Dict[str, Any],
     timing_corner: Optional[str] = None,
     prioritize_nl: bool = False,
@@ -386,16 +387,16 @@ def _set_corner_files(
         libs,
         netlists,
         spefs,
-    ) = toolbox.get_timing_files_categorized(
-        config,
+    ) = step.toolbox.get_timing_files_categorized(
+        step.config,
         prioritize_nl=prioritize_nl,
         timing_corner=timing_corner,
     )
 
     env["_CURRENT_CORNER_NAME"] = timing_corner
-    if extra_spef_list := config.get("EXTRA_SPEFS"):
+    if extra_spef_list := step.config.get("EXTRA_SPEFS"):
         extra_spef_pairs = []
-        warn(
+        step.warn(
             "The configuration variable 'EXTRA_SPEFS' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
         )
         if len(extra_spef_list) % 4 != 0:
@@ -416,7 +417,9 @@ def _set_corner_files(
                 "max_*": [max],
             }
             spef = str(
-                toolbox.filter_views(config, mapping, timing_corner=timing_corner)[0]
+                step.toolbox.filter_views(
+                    step.config, mapping, timing_corner=timing_corner
+                )[0]
             )
             extra_spef_pairs.append((module, spef))
         env["_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT"] = TclStep.value_to_tcl(
@@ -479,7 +482,7 @@ class STAPrePNR(STAStep):
             else:
                 prioritize_nl = False
 
-        _set_corner_files(self.toolbox, self.config, env, prioritize_nl=prioritize_nl)
+        _set_corner_files(self, env, prioritize_nl=prioritize_nl)
 
         env["_OPENSTA"] = "1"
         env["_SDF_SAVE_DIR"] = self.step_dir
@@ -657,14 +660,13 @@ class STAPostPNR(STAPrePNR):
                     f"No SPEF file compatible with corner '{corner}' found."
                 )
             elif len(spefs) > 1:
-                warn(
+                self.warn(
                     f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
                 )
             current_env["_CURRENT_SPEF_BY_CORNER"] = spefs[0]
 
             _set_corner_files(
-                self.toolbox,
-                self.config,
+                self,
                 current_env,
                 timing_corner=corner,
                 prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
@@ -1590,7 +1592,7 @@ class RCX(OpenROADStep):
 
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
             if rcx_ruleset is None:
-                warn(
+                self.warn(
                     f"RCX ruleset for corner {corner} not found. The corner may be ill-defined."
                 )
                 return None
@@ -1603,10 +1605,10 @@ class RCX(OpenROADStep):
                 self.config, self.config["TECH_LEFS"], corner
             )
             if len(tech_lefs) < 1:
-                warn(f"No tech lef for timing corner {corner} found.")
+                self.warn(f"No tech lef for timing corner {corner} found.")
                 return None
             elif len(tech_lefs) > 1:
-                warn(
+                self.warn(
                     f"Multiple tech lefs found for timing corner {corner}. Only the first one matched will be used."
                 )
 
@@ -1719,7 +1721,7 @@ class IRDropReport(OpenROADStep):
         libs_in = self.toolbox.filter_views(self.config, self.config["LIB"])
 
         if self.config["VSRC_LOC_FILES"] is None:
-            warn(
+            self.warn(
                 "'VSRC_LOC_FILES' was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for 'VSRC_LOC_FILES'."
             )
 
@@ -1954,7 +1956,7 @@ class CTS(ResizerStep):
                 else:
                     env["CLOCK_NET"] = clock_port
             else:
-                warn(
+                self.warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
                 return {}, {}

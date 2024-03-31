@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
 from ..config import Variable
-from ..logging import info, warn
+from ..logging import info
 from ..state import DesignFormat, State
 from ..common import Path, get_script_dir, mkdirp
 
@@ -280,11 +280,11 @@ class XOR(KLayoutStep):
 
         layout_a = state_in[DesignFormat.MAG_GDS]
         if layout_a is None:
-            warn("No Magic stream-out has been performed. Skipping XOR process…")
+            self.warn("No Magic stream-out has been performed. Skipping XOR process…")
             return {}, {}
         layout_b = state_in[DesignFormat.KLAYOUT_GDS]
         if layout_b is None:
-            warn("No KLayout stream-out has been performed. Skipping XOR process…")
+            self.warn("No KLayout stream-out has been performed. Skipping XOR process…")
             return {}, {}
 
         assert isinstance(layout_a, Path)
@@ -427,7 +427,7 @@ class DRC(KLayoutStep):
         if self.config["PDK"] in ["sky130A", "sky130B"]:
             metrics_updates = self.run_sky130(state_in, **kwargs)
         else:
-            warn(
+            self.warn(
                 f"KLayout DRC is not supported for the {self.config['PDK']} PDK. This step will be skipped."
             )
 

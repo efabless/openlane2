@@ -483,7 +483,7 @@ class Step(ABC):
         self.__class__.assert_concrete()
 
         if flow is not None:
-            warn(
+            self.warn(
                 f"Passing 'flow' to a Step class's initializer is deprecated. Please update the flow '{type(flow).__name__}'."
             )
 
@@ -541,6 +541,31 @@ class Step(ABC):
         if cls.id != NotImplemented:
             if f".{cls.__name__}" not in cls.id:
                 debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
+
+    def warn(self, msg: object, /, **kwargs):
+        """
+        Logs an item to the OpenLane logger with a warning Unicode character and
+        gold/bold rich formatting syntax with the log level WARNING.
+
+        :param msg: The message to log
+        """
+        if kwargs.get("stacklevel") is None:
+            kwargs["stacklevel"] = 3
+        extra = kwargs.pop("extra", {})
+        extra["step"] = self.id
+        warn(msg, extra=extra, **kwargs)
+
+    def err(self, msg: object, /, **kwargs):
+        """
+        Logs an item to the OpenLane logger terminal with an error Unicode character and
+        red/bold rich formatting syntax with the log level ERROR.
+        :param msg: The message to log
+        """
+        if kwargs.get("stacklevel") is None:
+            kwargs["stacklevel"] = 3
+        extra = kwargs.pop("extra", {})
+        extra["step"] = self.id
+        err(msg, extra=extra, **kwargs)
 
     @classmethod
     def get_implementation_id(Self) -> str:
