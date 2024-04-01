@@ -56,7 +56,7 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
 
     if total_pin_count > tracks:
         print(
-            f"[ERROR] The {side} side of the floorplan doesn't have enough slots for all the pins: {total_pin_count}/{tracks}.",
+            f"[ERROR] The {side} side of the floorplan doesn't have enough slots for all the pins: {total_pin_count} pins/{tracks} slots.",
             file=sys.stderr,
         )
         print(

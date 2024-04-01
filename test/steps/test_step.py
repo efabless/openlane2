@@ -365,7 +365,7 @@ def test_run_subprocess(mock_run):
     with open(out_file, "w") as f:
         f.write(out_data)
 
-    out_metrics = step.run_subprocess(
+    actual_result = step.run_subprocess(
         ["cat", out_file], silent=True, log_to=subprocess_log_file
     )
     actual_out_data = ""
@@ -376,7 +376,7 @@ def test_run_subprocess(mock_run):
         actual_report_data = f.read()
 
     assert (
-        out_metrics == subprocess_result
+        actual_result == subprocess_result
     ), ".run_subprocess() generated invalid metrics"
     assert (
         actual_report_data.strip() == report_data

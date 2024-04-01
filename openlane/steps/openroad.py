@@ -54,7 +54,6 @@ from .step import (
 from .openroad_alerts import (
     OpenROADAlert,
     OpenROADOutputProcessor,
-    SupportsOpenROADAlerts,
 )
 from .tclstep import TclStep
 from .common_variables import (
@@ -174,7 +173,7 @@ class CheckSDCFiles(Step):
         return {}, {}
 
 
-class OpenROADStep(TclStep, SupportsOpenROADAlerts):
+class OpenROADStep(TclStep):
     inputs = [DesignFormat.ODB]
     outputs = [
         DesignFormat.ODB,
@@ -226,13 +225,14 @@ class OpenROADStep(TclStep, SupportsOpenROADAlerts):
     def on_alert(self, alert: OpenROADAlert):
         if alert.code in [
             "ORD-0039",  # .openroad ignored with -python
-            "ODB-0220",  # LEF thing obsolete
+            "ODB-0220",  # lef parsing/NOWIREEXTENSIONATPIN statement is obsolete in version 5.6 or later.
+            "STA-0122",  # table template \w+ not found
         ]:
             return
         if alert.cls == "error":
-            self.err(str(alert), extra={"step": self.id})
+            self.err(str(alert))
         elif alert.cls == "warning":
-            self.warn(str(alert), extra={"step": self.id})
+            self.warn(str(alert))
         return alert
 
     def prepare_env(self, env: dict, state: State) -> dict:
@@ -741,12 +741,12 @@ class STAPostPNR(STAPrePNR):
         table.add_column("Reg to Reg Paths")
         table.add_column("Hold TNS")
         table.add_column("Hold Vio Count")
-        table.add_column("⊃ reg-to-reg")
+        table.add_column("⊃ reg to reg")
         table.add_column("Setup Worst Slack")
         table.add_column("Reg to Reg Paths")
         table.add_column("Setup TNS")
         table.add_column("Setup Vio Count")
-        table.add_column("⊃ reg-to-reg")
+        table.add_column("⊃ reg to reg")
         table.add_column("Max Cap Violations")
         table.add_column("Max Slew Violations")
         for corner in ["Overall"] + self.config["STA_CORNERS"]:
@@ -777,7 +777,7 @@ class STAPostPNR(STAPrePNR):
         if not options.get_condensed_mode():
             console.print(table)
         with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
-            table.min_width = 160
+            table.width = 160
             rich.print(table, file=f)
 
         views_updates: ViewsUpdate = {}
@@ -1375,7 +1375,7 @@ class CheckAntennas(OpenROADStep):
         if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
-            table.min_width = 80
+            table.width = 80
             rich.print(table, file=f)
 
     def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:

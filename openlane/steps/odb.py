@@ -28,7 +28,6 @@ from .common_variables import io_layer_variables
 from .openroad_alerts import (
     OpenROADAlert,
     OpenROADOutputProcessor,
-    SupportsOpenROADAlerts,
 )
 from .openroad import DetailedPlacement, GlobalRouting
 from .step import (
@@ -47,14 +46,17 @@ from ..common import Path, get_script_dir
 inf_rx = re.compile(r"\b(-?)inf\b")
 
 
-class OdbpyStep(Step, SupportsOpenROADAlerts):
+class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
     output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
 
     def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
-        if alert.code in ["ORD-0039", "ODB-0220"]:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # LEF thing obsolete
+        ]:
             return alert
         if alert.cls == "error":
             self.err(str(alert))

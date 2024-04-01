@@ -544,8 +544,8 @@ class Step(ABC):
 
     def warn(self, msg: object, /, **kwargs):
         """
-        Logs an item to the OpenLane logger with a warning Unicode character and
-        gold/bold rich formatting syntax with the log level WARNING.
+        Logs to the OpenLane logger with the log level WARNING, appending the
+        step's ID as extra data.
 
         :param msg: The message to log
         """
@@ -557,8 +557,9 @@ class Step(ABC):
 
     def err(self, msg: object, /, **kwargs):
         """
-        Logs an item to the OpenLane logger terminal with an error Unicode character and
-        red/bold rich formatting syntax with the log level ERROR.
+        Logs to the OpenLane logger with the log level ERROR, appending the
+        step's ID as extra data.
+
         :param msg: The message to log
         """
         if kwargs.get("stacklevel") is None:

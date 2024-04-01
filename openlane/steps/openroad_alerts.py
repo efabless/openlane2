@@ -81,10 +81,6 @@ class OpenROADOutputProcessor(OutputProcessor):
         :returns: ``True`` if the line has alerts, ``False`` if the line has
             no alerts
         """
-        if (
-            "table template" in line or "message limit reached" in line
-        ):  # sky130 ff hack
-            return True
         if match := openroad_alert_rx.match(line):
             cls = match[1].lower()
             code = None
