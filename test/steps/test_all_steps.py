@@ -23,14 +23,14 @@ import pytest
 from _pytest.fixtures import SubRequest
 
 
-@pytest.fixture()
+@pytest.fixture
 def _step_enabled(request: SubRequest, test: str):
     step_rx = request.config.option.step_rx
     if re.search(step_rx, test) is None:
         pytest.skip()
 
 
-@pytest.fixture()
+@pytest.fixture
 def pdk_root(request):
     import volare
     from openlane.common import get_opdks_rev

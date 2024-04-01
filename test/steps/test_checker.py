@@ -18,7 +18,7 @@ from openlane.steps import step
 mock_variables = pytest.mock_variables
 
 
-@pytest.fixture()
+@pytest.fixture
 def PotatoesBurnt():
     from openlane.steps.checker import MetricChecker
 
@@ -33,7 +33,7 @@ def PotatoesBurnt():
     return PotatoesBurnt
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_potato_checker(PotatoesBurnt, mock_config):
     def impl(state_in):
         from openlane.common import Toolbox

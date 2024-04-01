@@ -25,12 +25,12 @@ from openlane.steps import step
 mock_variables = pytest.mock_variables
 
 
-@pytest.fixture()
+@pytest.fixture
 def variable():
     return Variable("DUMMY_VARIABLE", type=str, description="x")
 
 
-@pytest.fixture()
+@pytest.fixture
 def MockStepTuple(variable: Variable):
     from openlane.common import Path
     from openlane.steps import Step
@@ -104,7 +104,7 @@ def MockStepTuple(variable: Variable):
     return (StepA, StepB, StepC)
 
 
-@pytest.fixture()
+@pytest.fixture
 def DummyFlow(MockStepTuple):
     from openlane.flows import Flow
 
