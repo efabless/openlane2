@@ -19,7 +19,7 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from typing import Dict, List, Literal, Optional, Tuple, Type, Union
 
 
-@pytest.fixture()
+@pytest.fixture
 def _mock_fs():
     with Patcher() as patcher:
         patcher.fs.create_dir("/cwd")
@@ -162,7 +162,7 @@ def test_variable_construction():
     ), "Union magically switched types"
 
 
-@pytest.fixture()
+@pytest.fixture
 def variable():
     from openlane.common import Path
     from openlane.config import Variable
@@ -251,7 +251,7 @@ def test_compile_deprecated(variable):
     assert len(warning_list) == 1, "use of deprecated names did not produce a warning"
 
 
-@pytest.fixture()
+@pytest.fixture
 def test_enum():
     from enum import IntEnum
 
@@ -262,7 +262,7 @@ def test_enum():
     return TestEnum
 
 
-@pytest.fixture()
+@pytest.fixture
 def variable_set(variable, test_enum):
     from openlane.config import Variable
 
