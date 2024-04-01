@@ -42,14 +42,13 @@
   gcc,
   libgit2,
 }:
-clangStdenv.mkDerivation {
+clangStdenv.mkDerivation rec {
   name = "klayout";
+  version = "0.28.17-1";
 
-  src = fetchFromGitHub {
-    owner = "KLayout";
-    repo = "klayout";
-    rev = "5961eab84bd2d394f3ca94f9482622180d796010";
-    sha256 = "sha256-omeWS72J6mbA5mxsqwmsq1ytuhHa0rLZ+ErN66o+fiY=";
+  src = fetchTarball {
+    url = "https://github.com/KLayout/klayout/archive/refs/tags/v${version}.tar.gz";
+    sha256 = "sha256:0c2jm0n3vm4wyk25wpi1dlv00qnjqdmgpjmchv0hc5ysx47a2y6a";
   };
 
   patches = [
@@ -90,6 +89,8 @@ clangStdenv.mkDerivation {
       then "1"
       else "0"
     }" = "1" ]; then
+      export MAC_LIBGIT2_INC="${libgit2}/include"
+      export MAC_LIBGIT2_LIB="${libgit2}/lib"
       export LDFLAGS="-headerpad_max_install_names"
     fi
     ./build.sh\

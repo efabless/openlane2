@@ -22,7 +22,7 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from openlane.state import DesignFormat
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_macros_config():
     from openlane.config import Config, Macro, Instance
 
@@ -75,7 +75,7 @@ def mock_macros_config():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_lib_files():
     return {
         "example_lib.lib": textwrap.dedent(
@@ -151,7 +151,7 @@ def sample_lib_files():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def _lib_mock_fs(sample_lib_files):
     with Patcher() as patcher:
         patcher.fs.create_dir("/cwd")
@@ -173,7 +173,7 @@ def _lib_mock_fs(sample_lib_files):
         yield
 
 
-@pytest.fixture()
+@pytest.fixture
 def lib_trim_result():
     return [
         textwrap.dedent(
@@ -222,7 +222,7 @@ def lib_trim_result():
     ]
 
 
-@pytest.fixture()
+@pytest.fixture
 def model_blackboxing():
     start = textwrap.dedent(
         """
