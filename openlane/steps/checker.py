@@ -323,7 +323,7 @@ class LintWarnings(MetricChecker):
     error_on_var = Variable(
         "ERROR_ON_LINTER_WARNINGS",
         bool,
-        "Quit immediately on any linter warnings.",
+        "Raise an error immediately on any linter warnings.",
         default=False,
         deprecated_names=["QUIT_ON_VERILATOR_WARNINGS", "QUIT_ON_LINTER_WARNINGS"],
     )
