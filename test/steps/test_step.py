@@ -22,7 +22,7 @@ from openlane.steps import step
 mock_variables = pytest.mock_variables
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_run():
     def run(self, state_in, **kwargs):
         views_update = {}
