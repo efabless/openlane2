@@ -76,6 +76,7 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
     from openlane.steps import Step
     from openlane.state import State
     from openlane.common import Toolbox, get_script_dir
+    from openlane.steps.openroad_alerts import SupportsOpenROADAlerts
 
     sys.path.insert(0, os.getcwd())
 
@@ -109,6 +110,16 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
 
     Target = Step.factory.get(step)
 
+    openroad_alerts = []
+    if isinstance(Target, SupportsOpenROADAlerts):
+
+        def on_alert(self, alert):
+            nonlocal openroad_alerts
+            openroad_alerts.append(alert)
+            return alert
+
+        Target.on_alert = on_alert
+
     state_in, config = try_call(
         process_input,
         state_in=state_in,
@@ -141,4 +152,5 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
         step=target,
         test=test,
         caplog=caplog,
+        openroad_alerts=openroad_alerts,
     )

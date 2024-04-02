@@ -201,7 +201,7 @@ class TclStep(Step):
 
         env = self.prepare_env(env, state_in)
 
-        generated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             command,
             env=env,
             **kwargs,
@@ -217,7 +217,7 @@ class TclStep(Step):
                 continue
             overrides[output] = path
 
-        return overrides, generated_metrics
+        return overrides, subprocess_result["generated_metrics"]
 
     @protected
     def run_subprocess(
