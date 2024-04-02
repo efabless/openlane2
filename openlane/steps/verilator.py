@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import re
-import subprocess
 from typing import List, Optional, Set, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
