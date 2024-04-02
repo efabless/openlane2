@@ -11,4 +11,4 @@ psutil>=5.9.0
 httpx>=0.22.0, <0.28
 ioplace_parser~=0.1.0
 lef-parser~=0.1.0
-klayout==0.28.15
+klayout>=0.28.17.post1,<0.29.0
