@@ -105,7 +105,7 @@ namespace eval yosys_ol {
             read_systemverilog -top $::env(DESIGN_NAME) {*}$::_synlig_defines {*}$synlig_params -sverilog {*}$verilog_include_args {*}$::env(VERILOG_FILES)
         } else {
             foreach file $::env(VERILOG_FILES) {
-                read_verilog -defer -noautowire -sv {*}$verilog_include_args $file
+                read_verilog -noautowire -sv {*}$verilog_include_args $file
             }
 
             if { [info exists ::env(SYNTH_PARAMETERS) ] } {

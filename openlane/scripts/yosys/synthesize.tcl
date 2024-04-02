@@ -55,8 +55,6 @@ source $::env(SCRIPTS_DIR)/yosys/construct_abc_script.tcl
 set strategy_name $::env(SYNTH_STRATEGY)
 set strategy_script [yosys_ol::get_abc_script $strategy_name]
 
-puts "$strategy_script"
-
 # Start Synthesis
 if { [info exists ::env(VERILOG_FILES) ]} {
     yosys_ol::read_verilog_files $::env(DESIGN_NAME)
