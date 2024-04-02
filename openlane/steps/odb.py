@@ -552,6 +552,20 @@ class CustomIOPlacement(OdbpyStep):
 
     config_vars = io_layer_variables + [
         Variable(
+            "FP_IO_VLENGTH",
+            Optional[Decimal],
+            "The length of the pins with a north or south orientation. If unspecified by a PDK, the script will use the minimum value satisfying the minimum area constraint for the pin layer given the width (which is the minimum width for that routing layer).",
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "FP_IO_HLENGTH",
+            Optional[Decimal],
+            "The length of the pins with a east or west orientation. If unspecified by a PDK, the script will use the minimum value satisfying the minimum area constraint for the pin layer given the width (which is the minimum width for that routing layer * the thickness multiplier).",
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
             "FP_PIN_ORDER_CFG",
             Optional[Path],
             "Path to the configuration file. If set to `None`, this step is skipped.",
@@ -571,31 +585,34 @@ class CustomIOPlacement(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")
 
     def get_command(self) -> List[str]:
-        length = max(
-            self.config["FP_IO_VLENGTH"],
-            self.config["FP_IO_HLENGTH"],
-        )
+        length_args = []
+        if self.config["FP_IO_VLENGTH"] is not None:
+            length_args += ["--ver-length", self.config["FP_IO_VLENGTH"]]
+        if self.config["FP_IO_HLENGTH"] is not None:
+            length_args += ["--hor-length", self.config["FP_IO_HLENGTH"]]
 
-        return super().get_command() + [
-            "--config",
-            self.config["FP_PIN_ORDER_CFG"],
-            "--hor-layer",
-            self.config["FP_IO_HLAYER"],
-            "--ver-layer",
-            self.config["FP_IO_VLAYER"],
-            "--hor-width-mult",
-            str(self.config["FP_IO_VTHICKNESS_MULT"]),
-            "--ver-width-mult",
-            str(self.config["FP_IO_HTHICKNESS_MULT"]),
-            "--hor-extension",
-            str(self.config["FP_IO_HEXTEND"]),
-            "--ver-extension",
-            str(self.config["FP_IO_VEXTEND"]),
-            "--length",
-            str(length),
-            "--unmatched-error",
-            self.config["ERRORS_ON_UNMATCHED_IO"],
-        ]
+        return (
+            super().get_command()
+            + [
+                "--config",
+                self.config["FP_PIN_ORDER_CFG"],
+                "--hor-layer",
+                self.config["FP_IO_HLAYER"],
+                "--ver-layer",
+                self.config["FP_IO_VLAYER"],
+                "--hor-width-mult",
+                str(self.config["FP_IO_VTHICKNESS_MULT"]),
+                "--ver-width-mult",
+                str(self.config["FP_IO_HTHICKNESS_MULT"]),
+                "--hor-extension",
+                str(self.config["FP_IO_HEXTEND"]),
+                "--ver-extension",
+                str(self.config["FP_IO_VEXTEND"]),
+                "--unmatched-error",
+                self.config["ERRORS_ON_UNMATCHED_IO"],
+            ]
+            + length_args
+        )
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is None:

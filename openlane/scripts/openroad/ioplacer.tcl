@@ -18,14 +18,20 @@ if { [info exists ::env(CONTEXTUAL_IO_FLAG)] } {
 	read_lef $::env(placement_tmpfiles)/top_level.lef
 }
 
-if {$::env(FP_IO_HLENGTH) != "" && $::env(FP_IO_HLENGTH) != ""} {
-	set_pin_length -hor_length $::env(FP_IO_HLENGTH) \
-		-ver_length $::env(FP_IO_VLENGTH)
+if { [info exists ::env(FP_IO_HLENGTH)] } {
+	set_pin_length -hor_length $::env(FP_IO_HLENGTH)
 }
 
-if {$::env(FP_IO_HEXTEND) != "0" && $::env(FP_IO_VEXTEND) != "0"} {
-	set_pin_length_extension -hor_extension $::env(FP_IO_HEXTEND) \
-		-ver_extension $::env(FP_IO_VEXTEND)
+if { [info exists ::env(FP_IO_VLENGTH)] } {
+	set_pin_length -ver_length $::env(FP_IO_VLENGTH)
+}
+
+if { $::env(FP_IO_HEXTEND) != "0"} {
+	set_pin_length_extension -hor_extension $::env(FP_IO_HEXTEND)
+}
+
+if { $::env(FP_IO_VEXTEND) != "0"} {
+	set_pin_length_extension -ver_extension $::env(FP_IO_VEXTEND)
 }
 
 if {$::env(FP_IO_VTHICKNESS_MULT) != "" && $::env(FP_IO_HTHICKNESS_MULT) != ""} {
@@ -38,12 +44,12 @@ if { $::env(FP_IO_MODE) == "random_equidistant" } {
 	lappend arg_list -random
 }
 
-if { $::env(FP_IO_MIN_DISTANCE) != "" } {
+if { [info exists ::env(FP_IO_MIN_DISTANCE)] } {
 	lappend arg_list -min_distance $::env(FP_IO_MIN_DISTANCE)
 }
 
 if { $::env(FP_IO_MODE) == "annealing" } {
-    lappend arg_list -annealing
+	lappend arg_list -annealing
 }
 
 set HMETAL $::env(FP_IO_HLAYER)
