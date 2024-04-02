@@ -350,7 +350,7 @@ class ManualMacroPlacement(OdbpyStep):
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
             warn(
-                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
         elif macros := self.config.get("MACROS"):
@@ -419,13 +419,13 @@ class ReportDisconnectedPins(OdbpyStep):
     result in a dead design. We determine if a pin is critical as follows:
 
     * For the top-level macro: for these four kinds of pins: inputs, outputs,
-    power inouts, and ground inouts, at least one of each kind must be connected
-    or else all pins of a certain kind are counted as critical disconnected
-    pins.
+      power inouts, and ground inouts, at least one of each kind must be
+      connected or else all pins of a certain kind are counted as critical
+      disconnected pins.
     * For instances:
         * Any unconnected input is a critical disconnected pin.
         * If there isn't at least one output connected, all disconnected
-            outputs are critical disconnected pins.
+          outputs are critical disconnected pins.
         * Any disconnected power inout pins are critical disconnected pins.
 
     The metrics ``design__disconnected_pin__count`` and
@@ -534,6 +534,9 @@ class RemovePDNObstructions(RemoveRoutingObstructions):
     config_vars = AddPDNObstructions.config_vars
 
 
+_migrate_unmatched_io = lambda x: "unmatched_design" if x else "none"
+
+
 @Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
     """
@@ -554,11 +557,13 @@ class CustomIOPlacement(OdbpyStep):
             "Path to the configuration file. If set to `None`, this step is skipped.",
         ),
         Variable(
-            "QUIT_ON_UNMATCHED_IO",
-            bool,
-            "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
-            default=True,
-            deprecated_names=["FP_IO_UNMATCHED_ERROR"],
+            "ERRORS_ON_UNMATCHED_IO",
+            Literal["none", "unmatched_design", "unmatched_cfg", "both"],
+            "Controls whether to emit an error in: no situation, when pins exist in the design that do not exist in the config file, when pins exist in the config file that do not exist in the design, and both respectively. `both` is recommended, as the default is only for backwards compatibility with OpenLane 1.",
+            default="unmatched_design",  # Backwards compatible with OpenLane 1
+            deprecated_names=[
+                ("QUIT_ON_UNMATCHED_IO", _migrate_unmatched_io),
+            ],
         ),
     ]
 
@@ -588,11 +593,8 @@ class CustomIOPlacement(OdbpyStep):
             str(self.config["FP_IO_VEXTEND"]),
             "--length",
             str(length),
-            (
-                "--unmatched-error"
-                if self.config["QUIT_ON_UNMATCHED_IO"]
-                else "--ignore-unmatched"
-            ),
+            "--unmatched-error",
+            self.config["ERRORS_ON_UNMATCHED_IO"],
         ]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:

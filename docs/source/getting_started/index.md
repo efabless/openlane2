@@ -1,9 +1,5 @@
 # Getting Started
 
-```{next}
-../usage
-```
-
 Before we get started, please pick one of these two options…
 <br />
 <br />

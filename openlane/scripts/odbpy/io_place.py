@@ -153,7 +153,8 @@ def sorter(bterm, order: ioplace_parser.Order):
 @click.command()
 @click.option(
     "-u",
-    "--unmatched-error/--ignore-unmatched",
+    "--unmatched-error",
+    type=click.Choice(["none", "unmatched_design", "unmatched_cfg", "both"]),
     default=True,
     help="Treat unmatched pins as error",
 )
@@ -255,7 +256,11 @@ def io_place(
 
     print("Top-level design name:", reader.name)
 
-    bterms = reader.block.getBTerms()
+    bterms = [
+        bterm
+        for bterm in reader.block.getBTerms()
+        if bterm.getSigType() not in ["POWER", "GROUND"]
+    ]
 
     for side, side_info in info_by_side.items():
         min = (
@@ -315,20 +320,25 @@ def io_place(
         ("design", "config", not_in_config),
     ]:
         for name in pins:
-            mismatches_found = True
-            if not unmatched_error:
-                print(
-                    f"[WARNING] {name} not found in {not_in} but found in {is_in}.",
-                    file=sys.stderr,
-                )
-            else:
+            if (
+                is_in == "config"
+                and (unmatched_error in {"unmatched_cfg", "both"})
+                or is_in == "design"
+                and (unmatched_error in {"unmatched_design", "both"})
+            ):
+                mismatches_found = True
                 print(
                     f"[ERROR] {name} not found in {not_in} but found in {is_in}.",
                     file=sys.stderr,
                 )
+            else:
+                print(
+                    f"[WARNING] {name} not found in {not_in} but found in {is_in}.",
+                    file=sys.stderr,
+                )
 
-    if mismatches_found and unmatched_error:
-        print("Mismatches found.")
+    if mismatches_found:
+        print("Critical mismatches found.")
         exit(os.EX_DATAERR)
 
     if len(not_in_config) > 0:

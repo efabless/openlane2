@@ -203,6 +203,9 @@ _common_gating_config_vars = {
 @Flow.factory.register()
 class Classic(SequentialFlow):
     """
+    **Note: While OpenLane 2 has a stable release, the default flow is in beta
+    pending silicon validation. Use at your own risk.**
+
     A flow of type :class:`openlane.flows.SequentialFlow` that is the most
     similar to the original OpenLane 1.0 flow, running the Verilog RTL through
     Yosys, OpenROAD, KLayout and Magic to produce a valid GDSII for simpler designs.
@@ -228,14 +231,15 @@ class Classic(SequentialFlow):
         Odb.ManualMacroPlacement,
         OpenROAD.CutRows,
         OpenROAD.TapEndcapInsertion,
+        Odb.AddPDNObstructions,
+        OpenROAD.GeneratePDN,
+        Odb.RemovePDNObstructions,
+        Odb.AddRoutingObstructions,
         OpenROAD.GlobalPlacementSkipIO,
         OpenROAD.IOPlacement,
         Odb.CustomIOPlacement,
         Odb.ApplyDEFTemplate,
         OpenROAD.GlobalPlacement,
-        Odb.AddPDNObstructions,
-        OpenROAD.GeneratePDN,
-        Odb.RemovePDNObstructions,
         Odb.WriteVerilogHeader,
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
@@ -254,6 +258,7 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.STAMidPNR,
         OpenROAD.DetailedRouting,
+        Odb.RemoveRoutingObstructions,
         OpenROAD.CheckAntennas,
         Checker.TrDRC,
         Odb.ReportDisconnectedPins,

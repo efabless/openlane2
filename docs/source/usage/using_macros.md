@@ -73,8 +73,6 @@ views- the former of which is used in PnR and the latter is used for tape-out.
 * {term}`Yosys` JSON Header (`.json`): Optional
   * A JSON netlist produced by Yosys that provides the Powered Netlist
     in a Python-parseable format.
-  * currently, it is unused by the flow as far as macros are concerned, but it
-    may be used in the future.
 
 ## In OpenLane Configurations
 
@@ -100,7 +98,7 @@ explanation is as follows:
   * `pnl`: List of Powered Gate-level Netlists (if any)
   * `spice`: List of SPICE files (if any)
   * `lib`: Dictionary of LIB files.
-    * The keys of the dictionary are wildcards matching {term}`timing corners`,
+    * The keys of the dictionary are wildcards matching {term}`timing corners <timing corner>`,
       and the values are paths for lib files that are characterized for those
       timing corners. For example:
     * `"*_tt_025C_1v80": ["dir::lib0.lib"]` will match `lib0.lib` to all of
@@ -154,6 +152,17 @@ would be declared as:
       "spice": [],
       "sdf": {}
   }
+```
+
+```{admonition} On Instance Names
+:class: tip
+
+Instance names should match the name as instantiated in Verilog, i.e.,
+without escaping any characters for layout formats.
+
+For example, if you instantiate an array of macros `spm spm_inst[1:0]`,
+the first instance's name should be `spm_inst[0]`, not
+`spm_inst\[0\]` or similar.
 ```
 
 ## STA
@@ -217,7 +226,7 @@ macro_name instance_name(
 );
 ```
 
-This is used by the flow to create a hierarchy of power nets for the design,
+This is used by flows to create a hierarchy of power nets for the design,
 which is later used in constructing the power distribution network and
 connecting macros together.
 

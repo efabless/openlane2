@@ -68,11 +68,15 @@ def manual_macro_place(reader, config, fixed):
             if not line:
                 continue
             line = line.split()
-            macros[line[0]] = [
-                str(int(float(line[1]) * db_units_per_micron)),
-                str(int(float(line[2]) * db_units_per_micron)),
-                line[3],
+            name, x, y, orientation = line
+            macro_data = [
+                name,
+                int(float(x) * db_units_per_micron),
+                int(float(y) * db_units_per_micron),
+                orientation,
             ]
+            name_escaped = reader.escape_verilog_name(name)
+            macros[name_escaped] = macro_data
 
     print("Placing the following macros:")
     print(macros)
@@ -88,9 +92,10 @@ def manual_macro_place(reader, config, fixed):
         if inst_name in macros:
             print("Placing", inst_name)
             macro_data = macros[inst_name]
-            x = gridify(int(macro_data[0]), 5)
-            y = gridify(int(macro_data[1]), 5)
-            inst.setOrient(lef_rot_to_oa_rot(macro_data[2]))
+            _, x, y, orientation = macro_data
+            x = gridify(x, 5)
+            y = gridify(y, 5)
+            inst.setOrient(lef_rot_to_oa_rot(orientation))
             inst.setLocation(x, y)
             if fixed:
                 inst.setPlacementStatus("FIRM")
@@ -100,8 +105,8 @@ def manual_macro_place(reader, config, fixed):
 
     if len(macros):
         print("Declared macros not instantiated in design:", file=sys.stderr)
-        for macro in macros:
-            print(f"* {macro}", file=sys.stderr)
+        for macro in macros.values():
+            print(f"* {macro[0]}", file=sys.stderr)
         exit(1)
 
     print(f"Successfully placed {macros_cnt} instances.")

@@ -202,12 +202,12 @@ class Toolbox(object):
             formats_so_far.append(format)
         return result
 
-    def get_timing_files(
+    def get_timing_files_categorized(
         self,
         config: Mapping[str, Any],
         timing_corner: Optional[str] = None,
         prioritize_nl: bool = False,
-    ) -> Tuple[str, List[str]]:
+    ) -> Tuple[str, List[Path], List[Path], List[Tuple[str, Path]]]:
         """
         Returns the lib files for a given configuration and timing corner.
 
@@ -223,24 +223,21 @@ class Toolbox(object):
 
             If set to ``false``\\, only lib files are returned.
         :returns: A tuple of:
-
             * The name of the timing corner
-            * A heterogeneous list of files composed of: Lib files are returned as-is,
-              Netlists are returned as-is, and SPEF files are returned in the
-              format ``{instance_name}@{spef_path}``\\.
-
-            It is left up to the step or tool to process this list as they see
-            fit.
+            * A list of lib files
+            * A list of netlists
+            * A list of tuples of instances and SPEFs
         """
         from ..config import Macro
 
         timing_corner = timing_corner or config["DEFAULT_CORNER"]
 
-        result: List[Union[str, Path]] = []
-        result += self.filter_views(config, config["LIB"], timing_corner)
-
-        if len(result) == 0:
+        all_libs: List[Path] = self.filter_views(config, config["LIB"], timing_corner)
+        if len(all_libs) == 0:
             warn(f"No SCL lib files found for {timing_corner}.")
+
+        all_netlists: List[Path] = []
+        all_spefs: List[Tuple[str, Path]] = []
 
         macros = config["MACROS"]
         if macros is None:
@@ -271,10 +268,10 @@ class Toolbox(object):
                     )
                 elif len(spefs) and len(netlists):
                     debug(f"Adding {[netlists + spefs]} to timing info…")
-                    result += netlists
+                    all_netlists += netlists
                     for spef in spefs:
                         for instance in macro.instances:
-                            result.append(f"{instance}@{spef}")
+                            all_spefs.append((instance, spef))
                     continue
             # NL/SPEF not prioritized or not found
             libs = self.filter_views(
@@ -288,9 +285,50 @@ class Toolbox(object):
                 )
                 continue
             debug(f"Adding {libs} to timing info…")
-            result += libs
+            all_libs += libs
 
-        return (timing_corner, [str(path) for path in result])
+        return (timing_corner, all_libs, all_netlists, all_spefs)
+
+    def get_timing_files(
+        self,
+        config: Mapping[str, Any],
+        timing_corner: Optional[str] = None,
+        prioritize_nl: bool = False,
+    ) -> Tuple[str, List[str]]:
+        """
+        Returns the lib files for a given configuration and timing corner.
+
+        :param config: A configuration object or a similar mapping.
+        :param timing_corner:
+            A fully qualified IPVT corner to get SCL libs for.
+
+            If not specified, the value for ``DEFAULT_CORNER`` from the SCL will
+            be used.
+        :param prioritize_nl:
+            Do not return lib files for macros that have gate-Level Netlists and
+            SPEF views.
+
+            If set to ``false``\\, only lib files are returned.
+        :returns: A tuple of:
+
+            * The name of the timing corner
+            * A heterogeneous list of files composed of: Lib files are returned as-is,
+              Netlists are returned as-is, and SPEF files are returned in the
+              format ``{instance_name}@{spef_path}``\\.
+
+            It is left up to the step or tool to process this list as they see
+            fit.
+        """
+
+        timing_corner, libs, netlists, spefs = self.get_timing_files_categorized(
+            config=config,
+            timing_corner=timing_corner,
+            prioritize_nl=prioritize_nl,
+        )
+        results = [str(path) for path in libs + netlists]
+        for instance, spef in spefs:
+            results.append(f"{instance}@{spef}")
+        return (timing_corner, results)
 
     def render_png(
         self,
@@ -391,7 +429,7 @@ class Toolbox(object):
 
     def create_blackbox_model(
         self,
-        input_models: FrozenSet[str],
+        input_models: Union[frozenset, Tuple[str, ...]],
         defines: FrozenSet[str],
     ) -> str:
         mkdirp(self.tmp_dir)
