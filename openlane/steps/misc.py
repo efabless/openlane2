@@ -21,7 +21,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from ..common import Path
 from ..state import State, DesignFormat
 from ..steps import Netgen, Magic, KLayout, OpenROAD
-from ..logging import warn, options
+from ..logging import options
 
 
 @Step.factory.register()
@@ -79,7 +79,7 @@ class ReportManufacturability(Step):
                 report.append(f"Unmatched Nets: {unmatched_nets}")
                 report.append(f"Check the report directory of {lvs_step}.")
         except KeyError as key:
-            warn(f"{key} not reported. {lvs_step} may have been skipped.")
+            self.warn(f"{key} not reported. {lvs_step} may have been skipped.")
             report.append("N/A")
 
         report.append("")
@@ -97,7 +97,7 @@ class ReportManufacturability(Step):
 
         klayout = state_in.metrics.get("klayout__drc_error__count", "N/A")
         if klayout == "N/A":
-            warn(
+            self.warn(
                 f"klayout__drc_error__count not reported. {klayout_step} may have been skipped."
             )
         elif klayout > 0:
@@ -105,7 +105,7 @@ class ReportManufacturability(Step):
 
         magic = state_in.metrics.get("magic__drc_error__count", "N/A")
         if magic == "N/A":
-            warn(
+            self.warn(
                 f"magic__drc_error__count not reported. {magic_step} may have been skipped."
             )
         elif magic > 0:
@@ -143,7 +143,7 @@ class ReportManufacturability(Step):
                 report.append(f"Net violations: {nets}")
                 report.append(f"Check the report directory of {antenna_step}.")
         except KeyError as key:
-            warn(f"{key} not reported. {antenna_step} may have been skipped.")
+            self.warn(f"{key} not reported. {antenna_step} may have been skipped.")
             report.append("N/A")
 
         report.append("")

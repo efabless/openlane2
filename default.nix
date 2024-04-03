@@ -28,7 +28,7 @@
   opensta,
   openroad,
   surelog,
-  tcl,
+  tclFull,
   verilator,
   verilog,
   volare,
@@ -97,7 +97,7 @@ buildPythonPackage rec {
     magic
     verilog
     verilator
-    tcl
+    tclFull
     surelog
   ];
 

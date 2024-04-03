@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import re
-import subprocess
 from typing import List, Optional, Set, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
@@ -79,13 +78,6 @@ class Lint(Step):
             "LINTER_DEFINES",
             Optional[List[str]],
             "Linter-specific preprocessor definitions; overrides VERILOG_DEFINES for the lint step if exists",
-        ),
-        Variable(
-            "QUIT_ON_LINTER_WARNINGS",
-            bool,
-            "Quit on linter warnings.",
-            default=False,
-            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
         ),
     ]
 
@@ -165,8 +157,7 @@ class Lint(Step):
                 f.write(f'lint_off -rule UNDRIVEN -file "{blackbox}"\n')
                 f.write(f'lint_off -rule UNUSEDSIGNAL -file "{blackbox}"\n')
 
-        if not self.config["QUIT_ON_LINTER_WARNINGS"]:
-            extra_args.append("--Wno-fatal")
+        extra_args.append("--Wno-fatal")
 
         if self.config["LINTER_RELATIVE_INCLUDES"]:
             extra_args.append("--relative-includes")
@@ -177,26 +168,23 @@ class Lint(Step):
         for define in defines:
             extra_args.append(f"+define+{define}")
 
-        exit_error: Optional[subprocess.CalledProcessError] = None
-        try:
-            self.run_subprocess(
-                [
-                    "verilator",
-                    "--lint-only",
-                    "--Wall",
-                    "--Wno-DECLFILENAME",
-                    "--Wno-EOFNEWLINE",
-                    "--top-module",
-                    self.config["DESIGN_NAME"],
-                    vlt_file,
-                ]
-                + blackboxes
-                + self.config["VERILOG_FILES"]
-                + extra_args,
-                env=env,
-            )
-        except subprocess.CalledProcessError as e:
-            exit_error = e
+        result = self.run_subprocess(
+            [
+                "verilator",
+                "--lint-only",
+                "--Wall",
+                "--Wno-DECLFILENAME",
+                "--Wno-EOFNEWLINE",
+                "--top-module",
+                self.config["DESIGN_NAME"],
+                vlt_file,
+            ]
+            + blackboxes
+            + self.config["VERILOG_FILES"]
+            + extra_args,
+            env=env,
+            check=False,
+        )
 
         warnings_count = 0
         errors_count = 0
@@ -216,8 +204,10 @@ class Lint(Step):
                 if match := exiting_rx.search(line):
                     errors_count = int(match[1])
 
-            if exit_error is not None and errors_count == 0:
-                raise StepException(f"Verilator exited unexpectedly: {exit_error}")
+            if result["returncode"] != 0 and errors_count == 0:
+                raise StepException(
+                    f"Verilator exited unexpectedly with return code {result['returncode']}"
+                )
 
         metrics_updates.update({"design__lint_error__count": errors_count})
         metrics_updates.update(

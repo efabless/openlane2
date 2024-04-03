@@ -27,7 +27,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..config import Variable, Config
 from ..state import State, DesignFormat
-from ..logging import debug, verbose, info, warn
+from ..logging import debug, verbose, info
 from ..common import Path, get_script_dir, Toolbox, TclUtils, process_list_file
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
@@ -479,11 +479,11 @@ class SynthesisCommon(YosysStep):
                     files = raw.strip().splitlines()
                     lighter_dff_map = Path(files[0])
                 except FileNotFoundError:
-                    warn(
+                    self.warn(
                         "Lighter not found or not set up with OpenLane: If you're using a manual Lighter install, try setting LIGHTER_DFF_MAP explicitly."
                     )
                 except subprocess.CalledProcessError:
-                    warn(f"{scl} not supported by Lighter.")
+                    self.warn(f"{scl} not supported by Lighter.")
 
             env["_LIGHTER_DFF_MAP"] = lighter_dff_map
 
