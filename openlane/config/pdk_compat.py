@@ -138,6 +138,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         new["CLOCK_TRANSITION_CONSTRAINT"] = 0.15
         new["TIME_DERATING_CONSTRAINT"] = 5
         new["IO_DELAY_CONSTRAINT"] = 20
+        new["FP_IO_MIN_DISTANCE"] = 3
+        new["FP_IO_HLENGTH"] = 4
+        new["FP_IO_VLENGTH"] = 4
 
     # 8. "Implicit" Paths
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):

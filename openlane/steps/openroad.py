@@ -940,10 +940,10 @@ class IOPlacement(OpenROADStep):
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
-                Decimal,
-                "The minimum distance between the IOs.",
-                default=3,
+                Optional[Decimal],
+                "The minimum distance between two pins. If unspecified by a PDK, OpenROAD will use the length of two routing tracks.",
                 units="µm",
+                pdk=True,
             ),
             Variable(
                 "FP_PIN_ORDER_CFG",
@@ -954,6 +954,28 @@ class IOPlacement(OpenROADStep):
                 "FP_DEF_TEMPLATE",
                 Optional[Path],
                 "Points to the DEF file to be used as a template.",
+            ),
+            Variable(
+                "FP_IO_VLENGTH",
+                Optional[Decimal],
+                """
+                The length of the pins with a north or south orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
+                    * The pin width
+                    * The minimum value satisfying the minimum area constraint given the pin width
+                """,
+                units="µm",
+                pdk=True,
+            ),
+            Variable(
+                "FP_IO_HLENGTH",
+                Optional[Decimal],
+                """
+                The length of the pins with an east or west orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
+                    * The pin width
+                    * The minimum value satisfying the minimum area constraint given the pin width
+                """,
+                units="µm",
+                pdk=True,
             ),
         ]
     )
