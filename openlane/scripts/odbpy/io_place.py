@@ -266,15 +266,25 @@ def io_place(
     if hor_length is not None:
         H_LENGTH = int(micron_in_units * hor_length)
     else:
-        H_LENGTH = int(
-            math.ceil(H_LAYER.getArea() * micron_in_units * micron_in_units / H_WIDTH)
+        H_LENGTH = max(
+            int(
+                math.ceil(
+                    H_LAYER.getArea() * micron_in_units * micron_in_units / H_WIDTH
+                )
+            ),
+            H_WIDTH,
         )
 
     if ver_length is not None:
         V_LENGTH = int(micron_in_units * ver_length)
     else:
-        V_LENGTH = int(
-            math.ceil(V_LAYER.getArea() * micron_in_units * micron_in_units / V_WIDTH)
+        V_LENGTH = max(
+            int(
+                math.ceil(
+                    V_LAYER.getArea() * micron_in_units * micron_in_units / V_WIDTH
+                )
+            ),
+            V_WIDTH,
         )
 
     # read config + calculate minima

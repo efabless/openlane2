@@ -579,14 +579,22 @@ class CustomIOPlacement(OdbpyStep):
         Variable(
             "FP_IO_VLENGTH",
             Optional[Decimal],
-            "The length of the pins with a north or south orientation. If unspecified by a PDK, the script will use the minimum value satisfying the minimum area constraint for the pin layer given the width (which is the minimum width for that routing layer).",
+            """
+            The length of the pins with a north or south orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
             units="µm",
             pdk=True,
         ),
         Variable(
             "FP_IO_HLENGTH",
             Optional[Decimal],
-            "The length of the pins with a east or west orientation. If unspecified by a PDK, the script will use the minimum value satisfying the minimum area constraint for the pin layer given the width (which is the minimum width for that routing layer * the thickness multiplier).",
+            """
+            The length of the pins with an east or west orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
             units="µm",
             pdk=True,
         ),
