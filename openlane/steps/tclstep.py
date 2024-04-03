@@ -136,6 +136,7 @@ class TclStep(Step):
         """
         env = env.copy()
 
+        env["STEP_ID"] = self.get_implementation_id()
         env["SCRIPTS_DIR"] = os.path.abspath(get_script_dir())
         env["STEP_DIR"] = os.path.abspath(self.step_dir)
 
