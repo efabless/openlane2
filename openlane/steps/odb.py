@@ -25,9 +25,20 @@ from typing import List, Literal, Optional, Tuple
 
 
 from .common_variables import io_layer_variables
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+)
 from .openroad import DetailedPlacement, GlobalRouting
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info, verbose
+from .step import (
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+    CompositeStep,
+    DefaultOutputProcessor,
+)
+from ..logging import info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -38,6 +49,20 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
+
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # LEF thing obsolete
+        ]:
+            return alert
+        if alert.cls == "error":
+            self.err(str(alert))
+        elif alert.cls == "warning":
+            self.warn(str(alert))
+        return alert
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -65,14 +90,14 @@ class OdbpyStep(Step):
         python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
         env["PYTHONPATH"] = ":".join(python_path_elements)
 
-        generated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             command,
             env=env,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = generated_metrics
+        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -234,10 +259,10 @@ class ApplyDEFTemplate(OdbpyStep):
             template_area = [Decimal(point) for point in template_area_string.split()]
             design_area = [Decimal(point) for point in design_area_string.split()]
             if template_area != design_area:
-                warn(
+                self.warn(
                     "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
                 )
-                warn(
+                self.warn(
                     f"Design area: {design_area_string}. Template def area: {template_area_string}"
                 )
         return views_updates, {}
@@ -349,7 +374,7 @@ class ManualMacroPlacement(OdbpyStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
-            warn(
+            self.warn(
                 "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
@@ -674,11 +699,11 @@ class PortDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
@@ -714,7 +739,7 @@ class DiodesOnPorts(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -781,7 +806,7 @@ class FuzzyDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 

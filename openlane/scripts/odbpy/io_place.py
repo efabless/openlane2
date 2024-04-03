@@ -56,7 +56,12 @@ def equally_spaced_sequence(side, side_pin_placement, possible_locations):
 
     if total_pin_count > tracks:
         print(
-            f"There are more pins/virtual_pins: {total_pin_count}, than places to put them: {tracks} in the {side} side. Try making your floorplan area larger."
+            f"[ERROR] The {side} side of the floorplan doesn't have enough slots for all the pins: {total_pin_count} pins/{tracks} slots.",
+            file=sys.stderr,
+        )
+        print(
+            "[INFO] Try re-assigning pins to other sides or making the floorplan larger.",
+            file=sys.stderr,
         )
         sys.exit(1)
     elif total_pin_count == tracks:
@@ -299,7 +304,7 @@ def io_place(
             side_info.min_distance = min
         if side_info.min_distance < min:
             print(
-                f"[WARNING] Using min_distance {min} for {side} pins to avoid overlap.",
+                f"[WARNING] Overriding minimum distance {side_info.min_distance} with {min} for pins on side {side} to avoid overlap.",
                 file=sys.stderr,
             )
             side_info.min_distance = min
