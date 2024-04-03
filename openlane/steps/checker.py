@@ -18,7 +18,7 @@ from typing import Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError, State
 
-from ..logging import err, warn, info, debug, verbose
+from ..logging import info, debug, verbose
 from ..config import Variable
 from ..common import Filter, parse_metric_modifiers
 
@@ -63,7 +63,7 @@ class MetricChecker(Step):
         threshold = self.get_threshold()
 
         if threshold is None:
-            warn(
+            self.warn(
                 f"Threshold for {self.metric_description} is not set. The checker will be skipped."
             )
         else:
@@ -77,18 +77,18 @@ class MetricChecker(Step):
                         and not self.config.get(self.error_on_var.name)
                     ):
                         debug(self.config.get(self.error_on_var.name))
-                        warn(f"{error_msg}")
+                        self.warn(f"{error_msg}")
                     elif self.deferred:
-                        err(f"{error_msg} - deferred")
+                        self.err(f"{error_msg} - deferred")
                         raise DeferredStepError(error_msg)
                     else:
-                        err(f"{error_msg}")
+                        self.err(f"{error_msg}")
                         raise StepError(error_msg)
 
                 else:
                     info(f"Check for {self.metric_description} clear.")
             else:
-                warn(
+                self.warn(
                     f"The {self.metric_description} metric was not found. Are you sure the relevant step was run?"
                 )
 
@@ -323,7 +323,7 @@ class LintWarnings(MetricChecker):
     error_on_var = Variable(
         "ERROR_ON_LINTER_WARNINGS",
         bool,
-        "Quit immediately on any linter warnings.",
+        "Raise an error immediately on any linter warnings.",
         default=False,
         deprecated_names=["QUIT_ON_VERILATOR_WARNINGS", "QUIT_ON_LINTER_WARNINGS"],
     )
@@ -355,12 +355,12 @@ class LintTimingConstructs(MetricChecker):
         if metric_value is not None:
             if metric_value > 0:
                 error_msg = "Timing constructs found in the RTL. Please remove them or wrap them around an ifdef. It heavily unrecommended to rely on timing constructs for synthesis."
-                err(f"{error_msg}")
+                self.err(f"{error_msg}")
                 raise StepError(error_msg)
             else:
                 info(f"Check for {self.metric_description} clear.")
         else:
-            warn(
+            self.warn(
                 f"The {self.metric_description} metric was not found. Are you sure the relevant step was run?"
             )
 
@@ -469,7 +469,7 @@ class TimingViolations(MetricChecker):
         debug("Metrics ▶")
         debug(metrics)
         if not metrics:
-            warn(f"No metrics found for {metric_basename}.")
+            self.warn(f"No metrics found for {metric_basename}.")
         else:
             metric_corners = set(
                 [parse_metric_modifiers(key)[1]["corner"] for key in metrics.keys()]
@@ -535,7 +535,7 @@ class TimingViolations(MetricChecker):
                     err_msg.append(f"* {corner}")
 
             if warn_msg:
-                warn("\n".join(warn_msg))
+                self.warn("\n".join(warn_msg))
             if not err_violating_corner:
                 verbose(f"No {violation_type} violations found")
             if err_msg:

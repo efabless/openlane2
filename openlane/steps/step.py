@@ -17,18 +17,19 @@ import os
 import sys
 import json
 import time
-import datetime
 import psutil
 import shutil
 import textwrap
+import datetime
 import subprocess
 from signal import Signals
 from decimal import Decimal
+from io import TextIOWrapper
+from threading import Thread
 from inspect import isabstract
 from itertools import zip_longest
 from abc import abstractmethod, ABC
 from concurrent.futures import Future
-from threading import Thread
 from typing import (
     Any,
     List,
@@ -41,6 +42,8 @@ from typing import (
     Dict,
     ClassVar,
     Type,
+    Generic,
+    TypeVar,
 )
 
 from rich.markup import escape
@@ -76,6 +79,117 @@ from ..logging import (
     debug,
 )
 from ..__version__ import __version__
+
+
+VT = TypeVar("VT")
+
+
+class OutputProcessor(ABC, Generic[VT]):
+    """
+    An abstract base class that processes terminal output from
+    :meth:`openlane.steps.Step.run_subprocess`
+    and append a resultant key/value pair to its returned dictionary.
+
+    :param step: The step object instantiating this output processor
+    :param report_dir: The report directory for this instantiation of
+        ``run_subprocess``.
+    :param silent: Whether the ``run_subprocess`` was called with ``silent`` or
+        not.
+    :cvar key: The fixed key to be added to the return value of
+        ``run_subprocess``. Must be implemented by subclasses.
+    """
+
+    key: ClassVar[str] = NotImplemented
+
+    def __init__(self, step: Step, report_dir: str, silent: bool) -> None:
+        self.step = step
+        self.report_dir: str = report_dir
+        self.silent: bool = silent
+
+    @abstractmethod
+    def process_line(self, line: str) -> bool:
+        """
+        Fires when a line is received by
+        :meth:`openlane.steps.Step.run_subprocess`. Subclasses may do any
+        arbitrary processing here.
+
+        :param line: The line emitted by the subprocess
+        :returns: ``True`` if the line is "consumed", i.e. other output
+            processors are skipped. ``False`` if the line is to be passed on
+            to later output processors.
+        """
+        pass
+
+    @abstractmethod
+    def result(self) -> VT:
+        """
+        :returns: The result of all previous ``process_line`` calls.
+        """
+        pass
+
+
+class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
+    """
+    An output processor that makes a number of special functions accessible to
+    subprocesses by simply printing keywords in the terminal, such as:
+
+    * ``%OL_CREATE_REPORT <file>``\\: Starts redirecting all output from
+      standard output to a report file inside the step directory, with the
+      name <file>.
+    * ``%OL_END_REPORT``: Stops redirection behavior.
+    * ``%OL_METRIC <name> <value>``\\: Adds a string metric with the name <name>
+      and the value <value> to this function's returned object.
+    * ``%OL_METRIC_F <name> <value>``\\: Adds a floating-point metric with the
+      name <name> and the value <value> to this function's returned object.
+    * ``%OL_METRIC_I <name> <value>``\\: Adds an integer metric with the name
+      <name> and the value <value> to this function's returned object.
+
+    Otherwise, the line is simply printed to the logger.
+    """
+
+    key = "generated_metrics"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.generated_metrics: Dict[str, Any] = {}
+        self.current_rpt: Optional[TextIOWrapper] = None
+
+    def process_line(self, line: str) -> bool:
+        """
+        Always returns ``True``, so ``DefaultOutputProcessor`` should always be
+        at the end of your list.
+        """
+        if self.step.step_dir is not None and line.startswith(REPORT_START_LOCUS):
+            if self.current_rpt is not None:
+                self.current_rpt.close()
+            report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
+            report_path = os.path.join(self.report_dir, report_name)
+            self.current_rpt = open(report_path, "w")
+        elif line.startswith(REPORT_END_LOCUS):
+            if self.current_rpt is not None:
+                self.current_rpt.close()
+            self.current_rpt = None
+        elif line.startswith(METRIC_LOCUS):
+            command, name, value = line.split(" ", maxsplit=3)
+            metric_type: Union[Type[str], Type[int], Type[float]] = str
+            if command.endswith("_I"):
+                metric_type = int
+            elif command.endswith("_F"):
+                metric_type = float
+            self.generated_metrics[name] = metric_type(value)
+        elif self.current_rpt is not None:
+            # No echo- the timing reports especially can be very large
+            # and terminal emulators will slow the flow down.
+            self.current_rpt.write(line)
+        elif not self.silent:
+            logging.subprocess(line.strip())
+        return True
+
+    def result(self) -> Dict[str, Any]:
+        """
+        A dictionary of all generated metrics.
+        """
+        return self.generated_metrics
 
 
 class StepError(RuntimeError):
@@ -304,6 +418,10 @@ class Step(ABC):
     :cvar config_vars: A list of configuration :class:`openlane.config.Variable` objects
         to be used to alter the behavior of this Step.
 
+    :cvar output_processors: A default set of
+        :class:`openlane.steps.OutputProcessor` classes for use with
+        :meth:`run_subprocess`.
+
     :ivar state_out:
         The last output state from running this step object, if it exists.
 
@@ -330,6 +448,7 @@ class Step(ABC):
     id: str = NotImplemented
     inputs: ClassVar[List[DesignFormat]] = NotImplemented
     outputs: ClassVar[List[DesignFormat]] = NotImplemented
+    output_processors: ClassVar[List[Type[OutputProcessor]]] = [DefaultOutputProcessor]
     config_vars: ClassVar[List[Variable]] = []
 
     # Instance Variables
@@ -364,7 +483,7 @@ class Step(ABC):
         self.__class__.assert_concrete()
 
         if flow is not None:
-            warn(
+            self.warn(
                 f"Passing 'flow' to a Step class's initializer is deprecated. Please update the flow '{type(flow).__name__}'."
             )
 
@@ -422,6 +541,32 @@ class Step(ABC):
         if cls.id != NotImplemented:
             if f".{cls.__name__}" not in cls.id:
                 debug(f"Step '{cls.__name__}' has a non-matching ID: '{cls.id}'")
+
+    def warn(self, msg: object, /, **kwargs):
+        """
+        Logs to the OpenLane logger with the log level WARNING, appending the
+        step's ID as extra data.
+
+        :param msg: The message to log
+        """
+        if kwargs.get("stacklevel") is None:
+            kwargs["stacklevel"] = 3
+        extra = kwargs.pop("extra", {})
+        extra["step"] = self.id
+        warn(msg, extra=extra, **kwargs)
+
+    def err(self, msg: object, /, **kwargs):
+        """
+        Logs to the OpenLane logger with the log level ERROR, appending the
+        step's ID as extra data.
+
+        :param msg: The message to log
+        """
+        if kwargs.get("stacklevel") is None:
+            kwargs["stacklevel"] = 3
+        extra = kwargs.pop("extra", {})
+        extra["step"] = self.id
+        err(msg, extra=extra, **kwargs)
 
     @classmethod
     def get_implementation_id(Self) -> str:
@@ -1040,26 +1185,17 @@ class Step(ABC):
         silent: bool = False,
         report_dir: Optional[Union[str, os.PathLike]] = None,
         env: Optional[Dict[str, Any]] = None,
+        *,
+        check: bool = True,
+        output_processing: Optional[Sequence[Type[OutputProcessor]]] = None,
         _popen_callable: Callable[..., psutil.Popen] = psutil.Popen,
         **kwargs,
     ) -> Dict[str, Any]:
         """
         A helper function for :class:`Step` objects to run subprocesses.
 
-        The output from the subprocess is processed line-by-line. ``run_subprocess``
-        makes a number of special functions accessible to subprocesses by simply
-        printing keywords in the terminal, such as:
-
-        * ``%OL_CREATE_REPORT <file>``\\: Starts redirecting all output from
-          standard output to a report file inside the step directory, with the
-          name <file>.
-        * ``%OL_END_REPORT``: Stops redirection behavior.
-        * ``%OL_METRIC <name> <value>``\\: Adds a string metric with the name <name>
-          and the value <value> to this function's returned object.
-        * ``%OL_METRIC_F <name> <value>``\\: Adds a floating-point metric with the
-          name <name> and the value <value> to this function's returned object.
-        * ``%OL_METRIC_I <name> <value>``\\: Adds an integer metric with the name
-          <name> and the value <value> to this function's returned object.
+        The output from the subprocess is processed line-by-line by instances
+        of output processor classes.
 
         :param cmd: A list of variables, representing a program and its arguments,
             similar to how you would use it in a shell.
@@ -1068,18 +1204,32 @@ class Step(ABC):
             within one step.
         :param silent: If specified, the subprocess does not print anything to
             the terminal. Useful when running multiple processes simultaneously.
+        :param report_dir: An optional override for where reports by output
+            processors
+
+        :param check: Whether to raise ``subprocess.CalledProcessError`` in
+            the event of a non-zero exit code. Set to ``False`` if you'd like
+            to do further processing on the output(s).
+        :param output_processing: An override for the class's list of
+            :class:`openlane.steps.OutputProcessor` classes.
         :param \\*\\*kwargs: Passed on to subprocess execution: useful if you want to
             redirect stdin, stdout, etc.
-        :returns: A dictionary of any metrics generated using the ``%OL_METRIC{,_I,_F}``
-            directive.
-        :raises subprocess.CalledProcessError: If the process has a non-zero exit,
-            this exception will be raised.
+        :returns: A dictionary of output processor results.
+
+            These key/value pairs are included in all cases:
+            * ``returncode``: Exit code for the subprocess
+            * ``log_path``: The resolved log path for the subprocess
+
+            The other key value pairs depend on the ``key`` class variables
+            and :meth:`openlane.steps.OutputProcessor.result` methods of the
+            output processors.
+        :raises subprocess.CalledProcessError: If the process has a non-zero
+            exit, and ``check`` is True, this exception will be raised.
         """
         if report_dir is None:
             report_dir = self.step_dir
+        report_dir = str(report_dir)
         mkdirp(report_dir)
-
-        generated_metrics: Dict[str, Any] = {}
 
         log_path = log_to or self.get_log_path()
         log_file = open(log_path, "w")
@@ -1108,6 +1258,12 @@ class Step(ABC):
                     f"Environment variable for key '{key}' is of invalid type {type(value)}: {value}"
                 )
 
+        if output_processing is None:
+            output_processing = self.output_processors
+        output_processors = []
+        for cls in output_processing:
+            output_processors.append(cls(self, report_dir, silent))
+
         process = _popen_callable(
             cmd_str,
             encoding="utf8",
@@ -1120,37 +1276,13 @@ class Step(ABC):
 
         line_buffer = RingBuffer(str, 10)
         if process_stdout := process.stdout:
-            current_rpt = None
             try:
-                while line := process_stdout.readline():
-                    line_buffer.push(line)
+                for line in process_stdout:
                     log_file.write(line)
-                    if self.step_dir is not None and line.startswith(
-                        REPORT_START_LOCUS
-                    ):
-                        if current_rpt is not None:
-                            current_rpt.close()
-                        report_name = line[len(REPORT_START_LOCUS) + 1 :].strip()
-                        report_path = os.path.join(report_dir, report_name)
-                        current_rpt = open(report_path, "w")
-                    elif line.startswith(REPORT_END_LOCUS):
-                        if current_rpt is not None:
-                            current_rpt.close()
-                        current_rpt = None
-                    elif line.startswith(METRIC_LOCUS):
-                        command, name, value = line.split(" ", maxsplit=3)
-                        metric_type: Union[Type[str], Type[int], Type[float]] = str
-                        if command.endswith("_I"):
-                            metric_type = int
-                        elif command.endswith("_F"):
-                            metric_type = float
-                        generated_metrics[name] = metric_type(value)
-                    elif current_rpt is not None:
-                        # No echo- the timing reports especially can be very large
-                        # and terminal emulators will slow the flow down.
-                        current_rpt.write(line)
-                    elif not silent and "table template" not in line:  # sky130 ff hack
-                        logging.subprocess(line.strip())
+                    line_buffer.push(line)
+                    for processor in output_processors:
+                        if processor.process_line(line):
+                            break
             except UnicodeDecodeError as e:
                 raise StepException(f"Subprocess emitted non-UTF-8 output: {e}")
         process_stats_thread.join()
@@ -1163,20 +1295,30 @@ class Step(ABC):
                 f,
                 indent=4,
             )
+
+        result: Dict[str, Any] = {}
         returncode = process.wait()
         log_file.close()
-        if returncode != 0:
+        result["returncode"] = returncode
+        result["log_path"] = log_path
+
+        for processor in output_processors:
+            result[processor.key] = processor.result()
+
+        if check and returncode != 0:
             if returncode > 0:
-                err("Subprocess had a non-zero exit.")
+                self.err("Subprocess had a non-zero exit.")
                 concatenated = ""
                 for line in line_buffer:
                     concatenated += line
                 if concatenated.strip() != "":
-                    err(f"Last {len(line_buffer)} line(s):\n" + escape(concatenated))
-                err(f"Full log file: '{os.path.relpath(log_path)}'")
+                    self.err(
+                        f"Last {len(line_buffer)} line(s):\n" + escape(concatenated)
+                    )
+                self.err(f"Full log file: '{os.path.relpath(log_path)}'")
             raise subprocess.CalledProcessError(returncode, process.args)
 
-        return generated_metrics
+        return result
 
     @protected
     def extract_env(self, kwargs) -> Tuple[dict, Dict[str, str]]:
