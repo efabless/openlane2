@@ -225,8 +225,8 @@ class CheckMacroAntennaProperties(Step):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         missing_values_found = False
-        report_path = os.path.join(self.step_dir, "macro_antenna_info.rpt")
-        with open(report_path, "w") as f:
+        log = self.get_log_path()
+        with open(log, "w") as f:
             for macro in self.toolbox.get_macro_views(self.config, DesignFormat.LEF):
                 lef = lef_parser.parse(macro)
                 for lef_macro in lef.macros.values():
@@ -236,8 +236,8 @@ class CheckMacroAntennaProperties(Step):
             if not missing_values_found:
                 print("* No macros found with missing antenna information.", file=f)
             else:
-                warn(
-                    f"One or more macros have missing antenna information on their pin(s): {os.path.relpath(report_path)}"
+                self.warn(
+                    f"One or more macros have missing antenna information on their pin(s): {os.path.relpath(log)}"
                 )
         return {}, {}
 
@@ -263,8 +263,8 @@ class CheckDesignAntennaProperties(Step):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         lef = lef_parser.parse(str(state_in[DesignFormat.LEF]))
-        report_path = os.path.join(self.step_dir, "macro_antenna_info.rpt")
-        with open(report_path, "w") as f:
+        log = self.get_log_path()
+        with open(log, "w") as f:
             missing_values_found = get_macro_antenna_info(
                 lef.macros[self.config["DESIGN_NAME"]], f
             )
@@ -274,7 +274,7 @@ class CheckDesignAntennaProperties(Step):
                     file=f,
                 )
             else:
-                warn(
-                    f"Generated LEF for the design is missing antenna information on some pins: {os.path.relpath(report_path)}"
+                self.warn(
+                    f"Generated LEF for the design is missing antenna information on some pins: {os.path.relpath(log)}"
                 )
         return {}, {}
