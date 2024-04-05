@@ -22,7 +22,7 @@ from openlane.steps import Step, step as step_module
 mock_variables = pytest.mock_variables
 
 
-@pytest.fixture()
+@pytest.fixture
 def MetricIncrementer():
     from openlane.steps import Step
 

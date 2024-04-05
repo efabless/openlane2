@@ -25,6 +25,8 @@ from .step import (
     StepException,
     StepNotFound,
     Step,
+    OutputProcessor,
+    DefaultOutputProcessor,
     MetricsUpdate,
     ViewsUpdate,
 )
@@ -36,14 +38,20 @@ from . import checker as Checker
 from . import yosys as Yosys
 from .yosys import YosysStep
 
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+    SupportsOpenROADAlerts,
+)
+
 from . import openroad as OpenROAD
 from .openroad import OpenROADStep
 
-from . import magic as Magic
-from .magic import MagicStep
-
 from . import odb as Odb
 from .odb import OdbpyStep
+
+from . import magic as Magic
+from .magic import MagicStep
 
 from . import netgen as Netgen
 from .netgen import NetgenStep

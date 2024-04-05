@@ -31,6 +31,7 @@ set sta_report_default_digits 6
 
 if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
     read_current_odb
+    source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
     # Internal API- brittle
     if { [grt::have_routes] } {
@@ -43,7 +44,9 @@ if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
 }
 read_spefs
 
-set_propagated_clock [all_clocks]
+if { $::env(STEP_ID) != "OpenROAD.STAPrePNR"} {
+    set_propagated_clock [all_clocks]
+}
 
 set corner [lindex [sta::corners] 0]
 sta::set_cmd_corner $corner

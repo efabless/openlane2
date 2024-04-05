@@ -138,7 +138,7 @@ class MagicStep(TclStep):
 
         log_to = log_to or self.get_log_path()
 
-        generated_metrics = super().run_subprocess(
+        subprocess_result = super().run_subprocess(
             cmd,
             log_to,
             silent,
@@ -163,7 +163,7 @@ class MagicStep(TclStep):
                             f"Error encountered during running Magic: In {log_to}:\n\t{line}."
                         )
 
-        return generated_metrics
+        return subprocess_result
 
 
 @Step.factory.register()
@@ -282,12 +282,13 @@ class StreamOut(MagicStep):
                 env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
 
-                generated_metrics = super().run_subprocess(
+                subprocess_result = super().run_subprocess(
                     self.get_command(),
                     env=env_copy,
                     log_to=os.path.join(self.step_dir, f"{macro}.get_bbox.log"),
                     _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
+                generated_metrics = subprocess_result["generated_metrics"]
 
                 if generated_metrics == {}:
                     raise StepError(

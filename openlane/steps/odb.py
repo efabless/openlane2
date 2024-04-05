@@ -25,9 +25,20 @@ from typing import List, Literal, Optional, Tuple
 
 
 from .common_variables import io_layer_variables
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+)
 from .openroad import DetailedPlacement, GlobalRouting
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info, verbose
+from .step import (
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+    CompositeStep,
+    DefaultOutputProcessor,
+)
+from ..logging import info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -38,6 +49,20 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
+
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # LEF thing obsolete
+        ]:
+            return alert
+        if alert.cls == "error":
+            self.err(str(alert))
+        elif alert.cls == "warning":
+            self.warn(str(alert))
+        return alert
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -65,14 +90,14 @@ class OdbpyStep(Step):
         python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
         env["PYTHONPATH"] = ":".join(python_path_elements)
 
-        generated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             command,
             env=env,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = generated_metrics
+        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -234,10 +259,10 @@ class ApplyDEFTemplate(OdbpyStep):
             template_area = [Decimal(point) for point in template_area_string.split()]
             design_area = [Decimal(point) for point in design_area_string.split()]
             if template_area != design_area:
-                warn(
+                self.warn(
                     "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
                 )
-                warn(
+                self.warn(
                     f"Design area: {design_area_string}. Template def area: {template_area_string}"
                 )
         return views_updates, {}
@@ -349,8 +374,8 @@ class ManualMacroPlacement(OdbpyStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
-            warn(
-                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+            self.warn(
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
         elif macros := self.config.get("MACROS"):
@@ -534,6 +559,9 @@ class RemovePDNObstructions(RemoveRoutingObstructions):
     config_vars = AddPDNObstructions.config_vars
 
 
+_migrate_unmatched_io = lambda x: "unmatched_design" if x else "none"
+
+
 @Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
     """
@@ -549,16 +577,40 @@ class CustomIOPlacement(OdbpyStep):
 
     config_vars = io_layer_variables + [
         Variable(
+            "FP_IO_VLENGTH",
+            Optional[Decimal],
+            """
+            The length of the pins with a north or south orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "FP_IO_HLENGTH",
+            Optional[Decimal],
+            """
+            The length of the pins with an east or west orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
             "FP_PIN_ORDER_CFG",
             Optional[Path],
             "Path to the configuration file. If set to `None`, this step is skipped.",
         ),
         Variable(
-            "QUIT_ON_UNMATCHED_IO",
-            bool,
-            "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
-            default=True,
-            deprecated_names=["FP_IO_UNMATCHED_ERROR"],
+            "ERRORS_ON_UNMATCHED_IO",
+            Literal["none", "unmatched_design", "unmatched_cfg", "both"],
+            "Controls whether to emit an error in: no situation, when pins exist in the design that do not exist in the config file, when pins exist in the config file that do not exist in the design, and both respectively. `both` is recommended, as the default is only for backwards compatibility with OpenLane 1.",
+            default="unmatched_design",  # Backwards compatible with OpenLane 1
+            deprecated_names=[
+                ("QUIT_ON_UNMATCHED_IO", _migrate_unmatched_io),
+            ],
         ),
     ]
 
@@ -566,34 +618,34 @@ class CustomIOPlacement(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")
 
     def get_command(self) -> List[str]:
-        length = max(
-            self.config["FP_IO_VLENGTH"],
-            self.config["FP_IO_HLENGTH"],
-        )
+        length_args = []
+        if self.config["FP_IO_VLENGTH"] is not None:
+            length_args += ["--ver-length", self.config["FP_IO_VLENGTH"]]
+        if self.config["FP_IO_HLENGTH"] is not None:
+            length_args += ["--hor-length", self.config["FP_IO_HLENGTH"]]
 
-        return super().get_command() + [
-            "--config",
-            self.config["FP_PIN_ORDER_CFG"],
-            "--hor-layer",
-            self.config["FP_IO_HLAYER"],
-            "--ver-layer",
-            self.config["FP_IO_VLAYER"],
-            "--hor-width-mult",
-            str(self.config["FP_IO_VTHICKNESS_MULT"]),
-            "--ver-width-mult",
-            str(self.config["FP_IO_HTHICKNESS_MULT"]),
-            "--hor-extension",
-            str(self.config["FP_IO_HEXTEND"]),
-            "--ver-extension",
-            str(self.config["FP_IO_VEXTEND"]),
-            "--length",
-            str(length),
-            (
-                "--unmatched-error"
-                if self.config["QUIT_ON_UNMATCHED_IO"]
-                else "--ignore-unmatched"
-            ),
-        ]
+        return (
+            super().get_command()
+            + [
+                "--config",
+                self.config["FP_PIN_ORDER_CFG"],
+                "--hor-layer",
+                self.config["FP_IO_HLAYER"],
+                "--ver-layer",
+                self.config["FP_IO_VLAYER"],
+                "--hor-width-mult",
+                str(self.config["FP_IO_VTHICKNESS_MULT"]),
+                "--ver-width-mult",
+                str(self.config["FP_IO_HTHICKNESS_MULT"]),
+                "--hor-extension",
+                str(self.config["FP_IO_HEXTEND"]),
+                "--ver-extension",
+                str(self.config["FP_IO_VEXTEND"]),
+                "--unmatched-error",
+                self.config["ERRORS_ON_UNMATCHED_IO"],
+            ]
+            + length_args
+        )
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is None:
@@ -655,11 +707,11 @@ class PortDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
@@ -695,7 +747,7 @@ class DiodesOnPorts(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -762,7 +814,7 @@ class FuzzyDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 

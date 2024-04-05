@@ -23,7 +23,7 @@ These are variables that affect the entire PDK.
 | Variable Name | Type | Description | Units |
 | - | - | - | - |
 %for var in pdk_variables:
-| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md()} | ${var.desc_repr_md()} | ${var.units or ""} |
+| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)} | ${var.desc_repr_md()} | ${var.units or ""} |
 %endfor
 
 (univ_flow_cvars_scl)=
@@ -34,5 +34,5 @@ These are variables that affect a specific standard-cell library.
 | Variable Name | Type | Description | Units |
 | - | - | - | - |
 %for var in scl_variables:
-| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md()}  | ${var.desc_repr_md()} | ${var.units or ""} |
+| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)}  | ${var.desc_repr_md()} | ${var.units or ""} |
 %endfor
