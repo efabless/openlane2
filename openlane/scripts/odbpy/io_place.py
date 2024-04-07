@@ -176,7 +176,20 @@ def sorter(bterm, order: ioplace_parser.Order):
     ),
     help="Input configuration file",
 )
-@click.option("-L", "--length", default=2, type=float, help="Pin length in microns.")
+@click.option(
+    "-v",
+    "--ver-length",
+    default=None,
+    type=float,
+    help="Length for pins with N/S orientations in microns.",
+)
+@click.option(
+    "-h",
+    "--hor-length",
+    default=None,
+    type=float,
+    help="Length for pins with E/S orientations in microns.",
+)
 @click.option(
     "-V",
     "--ver-layer",
@@ -215,7 +228,8 @@ def io_place(
     hor_layer,
     ver_width_mult,
     hor_width_mult,
-    length,
+    hor_length,
+    ver_length,
     hor_extension,
     ver_extension,
     unmatched_error,
@@ -234,8 +248,6 @@ def io_place(
     config_file_name = config
     micron_in_units = reader.dbunits
 
-    LENGTH = int(micron_in_units * length)
-
     H_EXTENSION = int(micron_in_units * hor_extension)
     V_EXTENSION = int(micron_in_units * ver_extension)
 
@@ -244,11 +256,36 @@ def io_place(
 
     if V_EXTENSION < 0:
         V_EXTENSION = 0
+
     H_LAYER = reader.tech.findLayer(hor_layer)
     V_LAYER = reader.tech.findLayer(ver_layer)
 
     H_WIDTH = int(Decimal(hor_width_mult) * H_LAYER.getWidth())
     V_WIDTH = int(Decimal(ver_width_mult) * V_LAYER.getWidth())
+
+    if hor_length is not None:
+        H_LENGTH = int(micron_in_units * hor_length)
+    else:
+        H_LENGTH = max(
+            int(
+                math.ceil(
+                    H_LAYER.getArea() * micron_in_units * micron_in_units / H_WIDTH
+                )
+            ),
+            H_WIDTH,
+        )
+
+    if ver_length is not None:
+        V_LENGTH = int(micron_in_units * ver_length)
+    else:
+        V_LENGTH = max(
+            int(
+                math.ceil(
+                    V_LAYER.getArea() * micron_in_units * micron_in_units / V_WIDTH
+                )
+            ),
+            V_WIDTH,
+        )
 
     # read config + calculate minima
     config_file_str = open(config_file_name, "r", encoding="utf8").read()
@@ -424,17 +461,17 @@ def io_place(
             pin_bpin.setPlacementStatus("PLACED")
 
             if side in ["N", "S"]:
-                rect = odb.Rect(0, 0, V_WIDTH, LENGTH + V_EXTENSION)
+                rect = odb.Rect(0, 0, V_WIDTH, V_LENGTH + V_EXTENSION)
                 if side == "N":
-                    y = BLOCK_UR_Y - LENGTH
+                    y = BLOCK_UR_Y - V_LENGTH
                 else:
                     y = BLOCK_LL_Y - V_EXTENSION
                 rect.moveTo(slot - V_WIDTH // 2, y)
                 odb.dbBox_create(pin_bpin, V_LAYER, *rect.ll(), *rect.ur())
             else:
-                rect = odb.Rect(0, 0, LENGTH + H_EXTENSION, H_WIDTH)
+                rect = odb.Rect(0, 0, H_LENGTH + H_EXTENSION, H_WIDTH)
                 if side == "E":
-                    x = BLOCK_UR_X - LENGTH
+                    x = BLOCK_UR_X - H_LENGTH
                 else:
                     x = BLOCK_LL_X - H_EXTENSION
                 rect.moveTo(x, slot - H_WIDTH // 2)

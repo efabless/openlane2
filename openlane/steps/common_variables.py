@@ -32,20 +32,6 @@ io_layer_variables = [
         units="µm",
     ),
     Variable(
-        "FP_IO_VLENGTH",
-        Decimal,
-        "The length of the vertical IOs.",
-        default=4,
-        units="µm",
-    ),
-    Variable(
-        "FP_IO_HLENGTH",
-        Decimal,
-        "The length of the horizontal IOs.",
-        default=4,
-        units="µm",
-    ),
-    Variable(
         "FP_IO_VTHICKNESS_MULT",
         Decimal,
         "A multiplier for vertical pin thickness. Base thickness is the pins layer min width.",
