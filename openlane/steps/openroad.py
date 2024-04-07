@@ -764,6 +764,12 @@ class STAPostPNR(STAPrePNR):
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
 
+    def prepare_env(self, env: dict, state: State) -> dict:
+        env = super().prepare_env(env, state)
+        if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
+            env["_SDC_IN"] = signoff_sdc_file
+        return env
+
     def filter_unannotated_report(
         self,
         corner: str,
