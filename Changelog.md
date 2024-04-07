@@ -14,6 +14,198 @@
 ## Documentation
 -->
 
+# 2.0.0rc2
+
+## CLI
+
+* `openlane.steps`
+  * `eject` *now overrides `psutils.Popen()` instead of `run_subprocess`,
+    allowing it to run at a lower level
+  * `PATH`, `PYTHONPATH` now excluded from `run.sh`
+
+## Steps
+
+* `Checker.PowerGridViolations`
+
+  * Fixed mistakenly added whitespace in `FP_PDN_CHECK_NODES`
+
+* `Magic.WriteLEF`
+
+  * Added new variable `MAGIC_WRITE_LEF_PINONLY`, which writes the LEF with with
+    the `-pinonly` option; declaring nets connected to pins on the same metal
+    layer as obstructions and not part of the pin
+
+* `OpenROAD.*`, `Odb.*`
+
+  * Outputs now processed first by new class `OpenROADOutputProcessor`, which
+    captures warnings and errors from OpenROAD into a data structure and emits
+    them using OpenLane's logger
+
+* `OpenROAD.CTS`
+
+  * Made `CTS_MAX_CAP` a non-PDK value, and also optional as the values in the
+    PDK configuration are bad and OpenROAD does a better job without it
+  * CTS no longer passes `MAX_TRANSITION_CONSTRAINT`, instead using a new
+    variable `CTS_MAX_SLEW` if it exists
+  * Fixed issue where no arguments were passed to
+    `configure_cts_characterization`
+  * Fixed bug where an incorrect value was passed to the `-max_slew` option
+
+* `Odb.ApplyDEFTemplate`
+
+  * Added new variable, `FP_TEMPLATE_COPY_POWER_PINS`, that *always* copies
+    power pins from the DEF template
+  * Power pins are now filtered and exempt from placement otherwise, allowing
+    the step to be runnable after PDN generation
+
+* `Odb.CustomIOPlacement`
+
+  * Power pins are now filtered and exempt from placement, allowing the step to
+    be runnable after PDN generation
+  * `FP_IO_VLENGTH`, `FP_IO_HLENGTH` are now both optional PDK variables
+  * The values are now used properly instead of a taking the maximum of both for
+    both kinds of pins
+  * For PDKs that do not specify them, the script calculates default values
+    based on the layers' rules
+  * `QUIT_ON_UNMATCHED_IO` now migrates to new variable
+    `ERRORS_ON_UNMATCHED_IO`, an enumeration of four variables that controls
+    whether errors are emitted in:
+    * no situation
+    * situations where pins in the design are missing from the config file
+      (default, matching openlane 1)
+    * situations where pins in the config file are missing from the design (new)
+    * either situation
+  * Better error message for too many pins on the same side
+
+* `OpenROAD.GlobalPlacement`
+
+  * Added `PL_MIN_PHI_COEFFICIENT`, `PL_MAX_PHI_COEFFICIENT` for when global
+    placement diverges
+
+* `OpenROAD.GlobalPlacementSkipIO`
+
+  * `PL_TIMING_DRIVEN` and `PL_ROUTABILITY_DRIVEN` no longer passed (useless
+    with `-skip_io`)
+
+* `OpenROAD.IOPlacement`
+
+  * `FP_IO_VLENGTH`, `FP_IO_HLENGTH`, `FP_IO_MIN_DISTANCE` are now all optional
+    PDK variables
+    * For PDKs that do not specify them, OpenROAD calculates default values
+      based on the layers' rules
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * **API Break**: Verilog names of macros are now considered instead of DEF
+    names in the event of a mismatch (e.g. for instances with `[]` or `/` in the
+    name.)
+
+* `OpenROAD.STAPrePnR`, `OpenROAD.STAPostPnR`
+
+  * Added new configuration variable `EXTRA_SPEFS` ONLY for backwards
+    compatibility with OpenLane 1 that should not otherwise be used
+
+* `OpenROAD.STAPrePNR`
+
+  * Unset clock propagation for this step (misleading as the clock should be
+    ideal before CTS)
+
+* `Verilator.Lint`
+
+  * Now works with the preprocessor macro `VERILOG_POWER_DEFINE` being defined -
+    justification is that most macros come with a powered netlist than a regular
+    netlist
+  * `CELL_BB_VERILOG_MODELS` is no longer used, with the blackbox models always
+    getting generated (so power pins can be included)
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+  * Fixed issue where the order of files may not be preserved for macros,
+    causing linting to fail
+  * Internally adjusted how linter flags are set; a `.vlt` file is used to turn
+    off certain linting rules for the black-box models instead of copying and
+    wrapping the black-box comments in comments
+
+* `Yosys.*`
+
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+
+* `Yosys.JsonHeader`
+
+  * Now reads generated black-boxed models of the standard cells with power pins
+    instead of lib files, allowing power pins to be explicitly specified for
+    hand-instantiated cells as well without issue
+
+## Flows
+
+* `Classic`
+  * Added `Odb.AddRoutingObstructions` before global routing
+  * Added `Odb.RemoveRoutingObstructions` after detailed routing
+  * Moved PDN generation steps before Global Placement
+
+## Tool Updates
+
+* `magic` -> `8.3.466`/`bfd938b`
+  * Addresses a bug with reading DEF files using generated vias
+* Updated KLayout to `0.28.17-1`
+  * Relaxes PIP version range to accept newer patches (not newer minor versions)
+
+## Testing
+
+* Added an OpenLane 1-compatible configuration for `aes_user_project_wrapper` to
+  test back-compat
+* Ensured `open_proj_timer` config matches OpenLane 1's as closely as possible
+* Updated unit tests because newer versions of flake8 hate `pytest.fixture()`
+  for some reason
+* Updated step unit tests that look for OpenROAD alerts to use captured alerts
+  instead of checking the log.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.common`
+  * `Toolbox`
+    * New method, `get_timing_files_categorized`, returns the three design
+      formats in, get this, three separate lists
+* `openlane.config`
+  * `Config`
+    * No longer attempts to migrate `EXTRA_SPEFS` to `MACROS` because of
+      side-effects (e.g. the dummy paths)
+  * PDK backwards-compatibility script now skips migrating `LIB_*` if `LIB`
+    already exists
+    * "Default" constraints made exclusive to `sky130` and `gf180mcu`
+* `openlane.steps.Step`
+  * `run_subprocess`: New concept of "output processors"- classes that may do
+    processing on the output of a step to parse it
+    * Default output parsing behavior implemented as `DefaultOutputProcessor`
+    * `run_subprocess` no longer returns just metrics, rather, metrics are
+      returned under the key `generated_metrics` when the
+      `DefaultOutputProcessor` is used along with the results of other output
+      processors
+* Slightly adjusted widths of printed tables across the codebase for
+  readability.
+
+## API Breaks
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * Verilog names of macros are now considered instead of DEF names in the event
+    of a mismatch (e.g. for instances with `[]` or `/` in the name.)
+
+* `openlane.steps.Step`
+
+  * `run_subprocess` no longer returns just metrics, rather, metrics are
+    returned under the key `generated_metrics` when the `DefaultOutputProcessor`
+    is used along with the results of other output processors
+
+## Documentation
+
+* Adapted timing closure guide by [@shalan](https://github.com/shalan) to
+  OpenLane 2
+  * Converted to MyST Markdown
+  * All images made dark-mode friendly
+  * References to variables all now resolve properly
+* Fixed a number of inconsistencies and broken links.
+
 # 2.0.0rc1
 
 ## CLI
@@ -327,7 +519,7 @@
     * `condensed_mode`: boolean to make the logs terser and suppress messages
       with `SUBPROCESS` level unconditionally
     * `show_progress_bar`: boolean, self-explanatory
-  * **API Break**: Removed `LogLevelsDict`, LogLevels\[\] now works just fine
+  * **API Break**: Removed `LogLevelsDict`, LogLevels[] now works just fine
   * Changed all instances of `WARN` to `WARNING` for consistency
   * Fixed bug where `VERBOSE` logging in internal plain output mode simply used
     `print`
@@ -625,7 +817,8 @@
     * `cbc`: Use c++14 instead of the default c++17 (`register` declarations)
     * `lemon-graph`: `sed` patch `register` declaration
     * `spdlog-internal-fmt`: `spdlog` but with its internal `fmt` as the
-      external `fmt` causes some problems\* `clp` to support `aarch64-linux`
+      external `fmt` causes some problems
+    * `clp` to support `aarch64-linux`
     * `cairo`: to enable X11 support on macOS
     * `or-tools`: to use a new SDK on `x86-64-darwin` (see
       [this](https://github.com/NixOS/nixpkgs/issues/272156#issuecomment-1839904283)
@@ -869,7 +1062,7 @@
 * open_pdks -> `1341f54`
 * yosys -> `14d50a1` to match OL1
 * Restored ancient `{DATA,CLOCK}_WIRE_RC_LAYER` variables, with translation
-  behavior from `WIRE_RC_LAYER` to \`DATA_WIRE_RC_LAYER
+  behavior from `WIRE_RC_LAYER` to `DATA_WIRE_RC_LAYER`
 * Created new PDK variable `CELL_SPICE_MODELS` to handle .spice models of the
   SCLs instead of globbing in-step
 * Changed default value of `MAGIC_DRC_USE_GDS`
