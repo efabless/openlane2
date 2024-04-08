@@ -18,7 +18,6 @@ import re
 import httpx
 import shlex
 import pathlib
-import getpass
 import tempfile
 import subprocess
 from typing import List, Sequence, Optional, Union, Tuple
@@ -37,16 +36,8 @@ def permission_args(osinfo: OSInfo) -> List[str]:
         and osinfo.container_info.engine == "docker"
         and not osinfo.container_info.rootless
     ):
-        uid = (
-            subprocess.check_output(["id", "-u", getpass.getuser()])
-            .decode("utf8")
-            .strip()
-        )
-        gid = (
-            subprocess.check_output(["id", "-g", getpass.getuser()])
-            .decode("utf8")
-            .strip()
-        )
+        uid = os.getuid()
+        gid = os.getgid()
 
         return ["--user", f"{uid}:{gid}"]
 

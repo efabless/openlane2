@@ -14,6 +14,15 @@
 ## Documentation
 -->
 
+# 2.0.0rc3
+
+## CLI
+* Resolved bug causing nonexistent mounted volumes to be created as root when
+  using a non-rootless container engine with `--dockerized`.
+* Fixed issue where PIP versions of OpenLane would not be able to copy examples
+  properly.
+* Environment detection scripts no longer use `nix-info`, saving time.
+
 # 2.0.0rc2
 
 ## CLI
