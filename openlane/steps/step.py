@@ -1260,7 +1260,7 @@ class Step(ABC):
             output_processors.append(cls(self, report_dir, silent))
 
         verbose(
-            f"Logging subprocess to [link=file://{os.path.abspath(log_path)}]{os.path.relpath(log_path)}[/link])…"
+            f"Logging subprocess to [repr.filename][link=file://{os.path.abspath(log_path)}]{os.path.relpath(log_path)}[/link][/repr.filename]…"
         )
         process = _popen_callable(
             cmd_str,
