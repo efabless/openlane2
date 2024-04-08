@@ -1259,8 +1259,8 @@ class Step(ABC):
         for cls in output_processing:
             output_processors.append(cls(self, report_dir, silent))
 
-        debug(
-            f"Log file ▶️ (Log: [link=file://{os.path.abspath(log_path)}]{os.path.relpath(log_path)}[/link]) "
+        verbose(
+            f"Logging subprocess to [link=file://{os.path.abspath(log_path)}]{os.path.relpath(log_path)}[/link])…"
         )
         process = _popen_callable(
             cmd_str,
