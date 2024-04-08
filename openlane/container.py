@@ -23,6 +23,7 @@ import tempfile
 import subprocess
 from typing import List, Sequence, Optional, Union, Tuple
 
+from .common import mkdirp
 from .logging import err, info, warn
 from .env_info import OSInfo
 
@@ -193,6 +194,12 @@ def run_in_container(
     mount_args += ["-v", f"{from_home}:{to_home}"]
 
     from_pdk, to_pdk = sanitize_path(volare.get_volare_home(pdk_root))
+
+    try:
+        mkdirp(from_pdk)
+    except FileExistsError:
+        raise ValueError(f"Invalid PDK root: '{from_pdk}' is a file")
+
     mount_args += [
         "-v",
         f"{from_pdk}:{to_pdk}",
@@ -228,6 +235,7 @@ def run_in_container(
             if os.path.isdir(mount):
                 mount_from, mount_to = sanitize_path(mount)
                 mount_args += ["-v", f"{mount_from}:{mount_to}"]
+                mkdirp(mount_from)
             else:
                 mount_args += ["-v", f"{mount}"]
 
