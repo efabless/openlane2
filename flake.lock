@@ -13,7 +13,40 @@
         "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
       }
     },
+    "libparse": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1713178934,
+        "narHash": "sha256-1w6HBBE2bWAD0GM98O8WZRmZDW9+EzD0KFvnnH2ho/k=",
+        "owner": "efabless",
+        "repo": "libparse-python",
+        "rev": "cec8b6dfd3d1c97bc5ccd1d0a41c44e51bc9c1eb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "libparse-python",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "c1be43e8e837b8dbee2b3665a007e761680f0c3d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-23.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
         "owner": "nixos",
@@ -31,7 +64,8 @@
     "root": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "nixpkgs": "nixpkgs"
+        "libparse": "libparse",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },

@@ -23,12 +23,14 @@
 
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixos-23.11;
+    libparse.url = github:efabless/libparse-python;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
   outputs = {
     self,
     nixpkgs,
+    libparse,
     ...
   }: {
     # Helper functions
@@ -53,12 +55,11 @@
     # Outputs
     packages = self.forAllSystems (pkgs: let
       callPackage = pkgs.lib.callPackageWith (pkgs // self.packages.${pkgs.system});
-      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
+      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // libparse.packages."${pkgs.system}" // self.packages.${pkgs.system});
     in
       rec {
         colab-env = callPackage ./nix/colab-env.nix {};
         ioplace-parser = callPackage ./nix/ioplace-parser.nix {};
-        libparse = callPackage ./nix/libparse.nix {};
         netgen = callPackage ./nix/netgen.nix {};
         magic = callPackage ./nix/magic.nix {};
         klayout = callPackage ./nix/klayout.nix {};
