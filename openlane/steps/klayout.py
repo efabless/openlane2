@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import shlex
 import sys
-import site
+import shlex
 import shutil
 import subprocess
 from os.path import abspath
@@ -50,24 +49,6 @@ class KLayoutStep(Step):
             pdk=True,
         ),
     ]
-
-    def run_subprocess(
-        self,
-        cmd: Sequence[Union[str, os.PathLike]],
-        log_to: Optional[Union[str, os.PathLike]] = None,
-        silent: bool = False,
-        report_dir: Optional[Union[str, os.PathLike]] = None,
-        env: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ) -> Dict[str, Any]:
-        env = env or os.environ.copy()
-        # Hack for Python subprocesses to get access to installed libraries
-        python_path_elements = site.getsitepackages() + sys.path
-        if current_pythonpath := env.get("PYTHONPATH"):
-            python_path_elements.append(current_pythonpath)
-
-        env["PYTHONPATH"] = ":".join(python_path_elements)
-        return super().run_subprocess(cmd, log_to, silent, report_dir, env, **kwargs)
 
     def get_cli_args(
         self,

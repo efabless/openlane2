@@ -14,9 +14,7 @@
 import io
 import os
 import re
-import sys
 import json
-import site
 import tempfile
 import functools
 import subprocess
@@ -250,12 +248,6 @@ class OpenROADStep(TclStep):
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
         excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
         env["_PNR_EXCLUDED_CELLS"] = TclUtils.join(excluded_cells)
-
-        python_path_elements = site.getsitepackages() + sys.path
-        if current_pythonpath := env.get("PYTHONPATH"):
-            python_path_elements.append(current_pythonpath)
-        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
-        env["PYTHONPATH"] = ":".join(python_path_elements)
 
         return env
 

@@ -86,7 +86,10 @@ clangStdenv.mkDerivation rec {
     boost183
     eigen
     tcl
-    python3
+    (python3.withPackages(p: with p; [
+      click
+      rich
+    ]))
     readline
     tclreadline
     spdlog-internal-fmt
