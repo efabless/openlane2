@@ -26,6 +26,8 @@
     libparse.url = github:efabless/libparse-python;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
+  
+  inputs.libparse.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = {
     self,
