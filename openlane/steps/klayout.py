@@ -18,7 +18,7 @@ import shutil
 import subprocess
 from os.path import abspath
 from base64 import b64encode
-from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
+from typing import Dict, Optional, List, Tuple, Union
 
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
