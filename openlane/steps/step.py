@@ -1078,13 +1078,8 @@ class Step(ABC):
 
         if not logging.options.get_condensed_mode():
             rule(f"{self.long_name}")
-        log_path = Path(self.get_log_path()).rel_if_child(
-            relative_prefix=f".{os.path.sep}"
-        )
 
-        verbose(
-            f"Running '{self.id}'… (Log: [link=file://{os.path.abspath(log_path)}]{log_path}[/link])"
-        )
+        verbose(f"Running '{self.id}'…")
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
@@ -1264,6 +1259,9 @@ class Step(ABC):
         for cls in output_processing:
             output_processors.append(cls(self, report_dir, silent))
 
+        verbose(
+            f"Logging subprocess to [repr.filename][link=file://{os.path.abspath(log_path)}]{os.path.relpath(log_path)}[/link][/repr.filename]…"
+        )
         process = _popen_callable(
             cmd_str,
             encoding="utf8",
