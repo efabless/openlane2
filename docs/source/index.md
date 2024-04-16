@@ -1,20 +1,21 @@
-# The OpenLane 2.0.0 BETA Documentation
+# The OpenLane 2 Documentation
 
 ```{note}
-This documentation pertains to the OpenLane 2.0.0 beta release available at
-<https://github.com/efabless/openlane2>. To disambiguate it from the stable
-version, the landing page refers to this release as "OpenLane 2."
+This documentation pertains to the infrastructure library available at
+<https://github.com/efabless/openlane2>. To disambiguate it from the flow
+designed for use with {term}`OpenMPW` and {term}`chipIgnite` the landing page
+refers to this release as "OpenLane 2."
 
-If you're using the stable version of OpenLane (available at
-<https://github.com/The-OpenROAD-Project/OpenLane>), you'll find the documentation
-at <https://openlane.readthedocs.io>.
+See [the FAQ](#faq-whats-openlane) for more info on which version of OpenLane
+you should be using.
 ```
 
 OpenLane 2 is a powerful and versatile infrastructure library that enables the
 construction of digital ASIC implementation flows based on open-source and
-commercial EDA tools. It includes a reference flow ({flow}`Classic`) that is built
-entirely using open-source EDA tools, and it allows designers to abstract the
-underlying tools and configure their behavior with a single configuration file.
+commercial EDA tools. It includes a reference flow
+({flow}`Classic`<sup>BETA</sup>) that is built entirely using open-source EDA
+tools, and allowing designers to abstract the underlying tools and configure
+their behavior with a single configuration file.
 OpenLane 2 also supports the ability to freely extend or modify flows using
 Python scripts and utilities.
 
