@@ -82,6 +82,8 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
+        env["PYTHONPATH"] = os.path.join(get_script_dir(), "odbpy")
+
         subprocess_result = self.run_subprocess(
             command,
             env=env,
