@@ -41,7 +41,17 @@
   flex,
   bison,
   clang-tools_14,
+  ioplace-parser,
 }:
+let
+  pyenv = (python3.withPackages(p: with p; [
+    click
+    rich
+    pyyaml
+    ioplace-parser
+  ]));
+  pyenv-sitepackages = "${pyenv}/${pyenv.sitePackages}";
+in
 clangStdenv.mkDerivation rec {
   name = "openroad";
   rev = "0889970d1790a2617e69f253221b8bd7626e51dc";
@@ -86,10 +96,7 @@ clangStdenv.mkDerivation rec {
     boost183
     eigen
     tcl
-    (python3.withPackages(p: with p; [
-      click
-      rich
-    ]))
+    pyenv
     readline
     tclreadline
     spdlog-internal-fmt
@@ -125,6 +132,10 @@ clangStdenv.mkDerivation rec {
   shellHook = ''
     export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " cmakeFlagsAll}"
   '';
+  
+  qtWrapperArgs = [
+    "--prefix PYTHONPATH : ${pyenv-sitepackages}"
+  ];
 
   meta = with lib; {
     description = "OpenROAD's unified application implementing an RTL-to-GDS flow";
