@@ -14,6 +14,12 @@
 ## Documentation
 -->
 
+# 2.0.0
+
+## Docs
+
+* Updated messaging to be a bit more consistent wrt OpenLane 1 vs OpenLane 2.
+
 # 2.0.0rc3
 
 ## CLI
@@ -22,6 +28,28 @@
 * Fixed issue where PIP versions of OpenLane would not be able to copy examples
   properly.
 * Environment detection scripts no longer use `nix-info`, saving time.
+
+
+## Steps
+* `OpenROAD.STAPrePnR`
+  * Now performs multicorner STA pre-PnR according to `STA_CORNERS`;
+    although if two corners have identical file lists the latter corner is
+    skipped
+  * Internally rearranged class structure so STA pre and post PnR share as
+    much code as possible
+
+* `Yosys.*`
+  * Fixes a bug where synthesis checks were not passed properly when `SYNTH_ELABORATE_ONLY` is true. 
+  * **Internal**:
+    * Created new namespace, `yosys_ol`, to encapsulate a number of reusable functions for modularity and readability
+    * Created two new functions `ol_proc` and `ol_synth`; to encapsulate our modified `synth` and `proc` instead of them being strewn across `synthesize.tcl`
+    * ABC script construction moved to standalone file
+
+## Misc
+* `openlane.steps`
+  * `Step`
+    * `.start()` no longer prints logs at the beginning as it may not
+      necessarily exist
 
 # 2.0.0rc2
 
