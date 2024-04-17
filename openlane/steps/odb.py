@@ -13,9 +13,7 @@
 # limitations under the License.
 import os
 import re
-import sys
 import json
-import site
 import shutil
 from math import inf
 from decimal import Decimal
@@ -84,11 +82,7 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        python_path_elements = site.getsitepackages() + sys.path
-        if current_pythonpath := env.get("PYTHONPATH"):
-            python_path_elements.append(current_pythonpath)
-        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
-        env["PYTHONPATH"] = ":".join(python_path_elements)
+        env["PYTHONPATH"] = os.path.join(get_script_dir(), "odbpy")
 
         subprocess_result = self.run_subprocess(
             command,

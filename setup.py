@@ -31,6 +31,7 @@ setup(
             "scripts/**/**/*",
             "examples/*",
             "examples/**/*",
+            "examples/**/**/*",
         ]
     },
     version=version,

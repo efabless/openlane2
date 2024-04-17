@@ -23,11 +23,12 @@ import os
 import re
 import sys
 import json
+import tempfile
 import platform
 import subprocess
 
 try:
-    from typing import Optional, Dict, List, Any  # noqa: F401
+    from typing import Optional, Dict, List  # noqa: F401
 except ImportError:
     pass
 
@@ -113,53 +114,69 @@ class ContainerInfo(StringRepresentable):
 
 
 class NixInfo(StringRepresentable):
-    version = ""  # type: str
-    multi_user = False  # type: bool
-    sandbox = False  # type: bool
-    channels = None  # type: Optional[Dict[str, List[str]]]
-    nixpkgs = ""  # type: str
+    version_string = ""  # type: str
+    channels = None  # type: Optional[Dict[str, str]]
+    nix_command = False  # type: bool
+    flakes = False  # type: bool
 
     def __init__(self) -> None:
-        self.version = ""  # type: str
-        self.multi_user = False  # type: bool
-        self.sandbox = False  # type: bool
-        self.channels = None  # type: Optional[Dict[str, List[str]]]
-        self.nixpkgs = ""  # type: str
+        self.version_string = ""
+        self.channels = None
+        self.nix_command = False
+        self.flakes = False
 
     @staticmethod
     def get():
         # type: () -> Optional['NixInfo']
         ninfo = NixInfo()
-
         try:
             try:
-                info_str = subprocess.check_output(
-                    ["nix-shell", "-p", "nix-info", "--run", "nix-info -m"]
-                ).decode("utf8")
+                version_str = subprocess.check_output(
+                    ["nix", "--version"], encoding="utf8"
+                )
+                ninfo.version_string = version_str.strip()
             except Exception as e:
-                raise Exception("Failed to get Docker info: %s" % str(e)) from None
+                raise Exception("Failed to get Nix info: %s" % str(e)) from None
 
-            for line in info_str.splitlines():
-                if line.strip() == "":
-                    continue
-                line = line[3:]
-                key, value_raw = line.split(": ", maxsplit=1)
-                key = key.strip(" -")
-                value = value_raw.strip(' `"')  # type: Any
-                if value == "yes":
-                    value = True
-                elif value == "no":
-                    value = False
-                if key in ninfo.__dict__:
-                    setattr(ninfo, key, value)
-                elif key.startswith("channels"):
-                    user = key[len("channels") + 1 : -1]
-                    ninfo.channels = ninfo.channels or {}
-                    ninfo.channels[user] = [
-                        el.strip() for el in value.split(",") if el.strip() != ""
-                    ]
-                elif key.startswith("multi-user"):
-                    ninfo.multi_user = value
+            try:
+                channels = {}
+                channels_raw = subprocess.check_output(
+                    ["nix-channel", "--list"], encoding="utf8"
+                )
+                for channel in channels_raw.splitlines():
+                    name, url = channel.split(maxsplit=1)
+                    channels[name] = url
+                ninfo.channels = channels
+            except Exception as e:
+                print(
+                    "Failed to get nix channels: %s" % str(e),
+                    file=sys.stderr,
+                )
+
+            with tempfile.TemporaryDirectory("ol-env-rpt") as d:
+                with open(os.path.join(d, "flake.nix"), "w") as f:
+                    f.write("{}")
+                nix_command = subprocess.run(
+                    ["nix", "eval"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    cwd=d,
+                    encoding="utf8",
+                )
+                nix_command_result = nix_command.stdout
+                if "'nix-command'" in nix_command_result:
+                    pass
+                elif "'flakes'" in nix_command_result:
+                    ninfo.nix_command = True
+                elif "lacks attribute" in nix_command_result:
+                    ninfo.nix_command = True
+                    ninfo.flakes = True
+                else:
+                    print(
+                        "'nix flake' returned unexpected output: %s"
+                        % nix_command_result,
+                        file=sys.stderr,
+                    )
 
             return ninfo
         except Exception as e:
@@ -183,7 +200,7 @@ class OSInfo(StringRepresentable):
         self.kernel_version = (
             platform.release()
         )  # Unintuitively enough, it's the kernel's release
-        self.supported = self.kernel in ["Darwin", "Linux", "Windows"]
+        self.supported = self.kernel in ["Darwin", "Linux"]
         self.distro = None
         self.distro_version = None
         self.python_version = platform.python_version()
