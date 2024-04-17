@@ -13,6 +13,46 @@
         "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
       }
     },
+    "ioplace-parser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1713262631,
+        "narHash": "sha256-0Lt3DVImH3TpwUh7sDW/6Cxsrmo5DDG+SCuirBFquXs=",
+        "owner": "efabless",
+        "repo": "ioplace_parser",
+        "rev": "f1c163e8184fbce2676a19a1d28c3e6c0b5ddaf2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "ioplace_parser",
+        "type": "github"
+      }
+    },
+    "libparse": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1713178934,
+        "narHash": "sha256-1w6HBBE2bWAD0GM98O8WZRmZDW9+EzD0KFvnnH2ho/k=",
+        "owner": "efabless",
+        "repo": "libparse-python",
+        "rev": "cec8b6dfd3d1c97bc5ccd1d0a41c44e51bc9c1eb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "libparse-python",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
@@ -31,6 +71,8 @@
     "root": {
       "inputs": {
         "flake-compat": "flake-compat",
+        "ioplace-parser": "ioplace-parser",
+        "libparse": "libparse",
         "nixpkgs": "nixpkgs"
       }
     }

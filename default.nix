@@ -21,7 +21,6 @@
   klayout,
   klayout-pymod,
   libparse,
-  ioplace-parser,
   immutabledict,
   magic,
   netgen,
@@ -115,7 +114,6 @@ buildPythonPackage rec {
       deprecated
       immutabledict
       libparse
-      ioplace-parser
       psutil
       klayout-pymod
     ]
