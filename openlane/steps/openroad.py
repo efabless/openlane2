@@ -221,13 +221,13 @@ class OpenROADStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
-    def on_alert(self, alert: OpenROADAlert):
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
         if alert.code in [
             "ORD-0039",  # .openroad ignored with -python
             "ODB-0220",  # lef parsing/NOWIREEXTENSIONATPIN statement is obsolete in version 5.6 or later.
             "STA-0122",  # table template \w+ not found
         ]:
-            return
+            return alert
         if alert.cls == "error":
             self.err(str(alert))
         elif alert.cls == "warning":
