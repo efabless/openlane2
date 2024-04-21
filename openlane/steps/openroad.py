@@ -225,7 +225,7 @@ class OpenROADStep(TclStep):
         if alert.code in [
             "ORD-0039",  # .openroad ignored with -python
             "ODB-0220",  # lef parsing/NOWIREEXTENSIONATPIN statement is obsolete in version 5.6 or later.
-            "STA-0122",  # table template \w+ not found
+            "STA-1256",  # table template \w+ not found
         ]:
             return
         if alert.cls == "error":
