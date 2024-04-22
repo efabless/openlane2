@@ -24,6 +24,7 @@ import utl
 from reader import click, click_odb, OdbReader
 from reader import rich
 from reader import Table
+from rich.console import Console
 
 
 def is_connected(term: Union[odb.dbITerm, odb.dbBTerm]) -> bool:
@@ -63,7 +64,6 @@ class Module(object):
         ):
             result = Self()
             for name, terminal in module.ports.items():
-                print(name, terminal.polarity)
                 if terminal.polarity == "INPUT":
                     result.inputs += 1
                     if terminal.connected:
@@ -118,21 +118,16 @@ class Module(object):
             critical_disconnected_pins = 0
             if self.inputs_connected != self.inputs:
                 critical_disconnected_pins += self.inputs - self.inputs_connected
-                print("hello1")
             elif self.outputs_connected == 0:
                 critical_disconnected_pins += self.outputs
-                print("hello2")
             elif self.power_inouts != self.power_inouts_connected:
                 critical_disconnected_pins += (
                     self.power_inouts - self.power_inouts_connected
                 )
-                print("hello3")
             elif self.ground_inouts != self.ground_inouts_connected:
                 critical_disconnected_pins += (
                     self.ground_inouts - self.ground_inouts_connected
                 )
-                print("hello4")
-            print(critical_disconnected_pins)
             return critical_disconnected_pins
 
     def __init__(self, object: Union[odb.dbBlock, odb.dbInst]) -> None:
@@ -151,11 +146,9 @@ class Module(object):
                 power_found = True
             elif signal_type == "GROUND":
                 ground_found = True
-            if terminal.getName() == "SRAM_0/ScanOutCC":
-                print("yalla", terminal.getIoType())
             self.ports[terminal.getName()] = Port(
                 terminal.getIoType(),
-                signal_type=terminal.getIoType(),
+                signal_type=terminal.getSigType(),
                 connected=is_connected(terminal),
             )
         if not power_found:
@@ -185,14 +178,11 @@ class Module(object):
                 file=sys.stderr,
             )
         self.disconnected_pin_count = self._port_stats.disconnected_pin_count
-        print(self.name)
         self.critical_disconnected_pin_count = (
             self._port_stats.top_module_critical_disconnected_pin_count
             if isinstance(object, odb.dbBlock)
             else self._port_stats.instance_critical_disconnected_pin_count
         )
-        if self.name == "SRAM_0":
-            exit(0)
 
     def write_disconnected_pins(self, full_table: Table, critical_table: Table):
         if self.disconnected_pin_count == 0:
@@ -301,7 +291,7 @@ def main(
         rich.print(critical_table)
     if full_table.row_count > 0:
         if full_table_path := write_full_table_to:
-            console = rich.console.Console(
+            console = Console(
                 file=open(full_table_path, "w", encoding="utf8"), width=160
             )
             console.print(full_table)
