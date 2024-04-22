@@ -38,7 +38,7 @@ def is_connected(term: Union[odb.dbITerm, odb.dbBTerm]) -> bool:
 @dataclass
 class Port:
     polarity: Literal["INPUT", "OUTPUT", "INOUT"]
-    pg: Optional[Literal["POWER", "GROUND"]]
+    signal_type: Optional[Literal["POWER", "GROUND", "SIGNAL"]]
     connected: bool = False
 
 
@@ -62,7 +62,8 @@ class Module(object):
             module: "Module",
         ):
             result = Self()
-            for terminal in module.ports.values():
+            for name, terminal in module.ports.items():
+                print(name, terminal.polarity)
                 if terminal.polarity == "INPUT":
                     result.inputs += 1
                     if terminal.connected:
@@ -72,11 +73,11 @@ class Module(object):
                     if terminal.connected:
                         result.outputs_connected += 1
                 elif terminal.polarity == "INOUT":
-                    if terminal.pg == "POWER":
+                    if terminal.signal_type == "POWER":
                         result.power_inouts += 1
                         if terminal.connected:
                             result.power_inouts_connected += 1
-                    elif terminal.pg == "GROUND":
+                    elif terminal.signal_type == "GROUND":
                         result.ground_inouts += 1
                         if terminal.connected:
                             result.ground_inouts_connected += 1
@@ -117,16 +118,21 @@ class Module(object):
             critical_disconnected_pins = 0
             if self.inputs_connected != self.inputs:
                 critical_disconnected_pins += self.inputs - self.inputs_connected
+                print("hello1")
             elif self.outputs_connected == 0:
                 critical_disconnected_pins += self.outputs
+                print("hello2")
             elif self.power_inouts != self.power_inouts_connected:
                 critical_disconnected_pins += (
                     self.power_inouts - self.power_inouts_connected
                 )
+                print("hello3")
             elif self.ground_inouts != self.ground_inouts_connected:
                 critical_disconnected_pins += (
                     self.ground_inouts - self.ground_inouts_connected
                 )
+                print("hello4")
+            print(critical_disconnected_pins)
             return critical_disconnected_pins
 
     def __init__(self, object: Union[odb.dbBlock, odb.dbInst]) -> None:
@@ -140,14 +146,16 @@ class Module(object):
         power_found = False
         ground_found = True
         for terminal in terminals:
-            pg = terminal.getSigType()
-            if pg == "POWER":
+            signal_type = terminal.getSigType()
+            if signal_type == "POWER":
                 power_found = True
-            elif pg == "GROUND":
+            elif signal_type == "GROUND":
                 ground_found = True
+            if terminal.getName() == "SRAM_0/ScanOutCC":
+                print("yalla", terminal.getIoType())
             self.ports[terminal.getName()] = Port(
                 terminal.getIoType(),
-                pg=terminal.getSigType(),
+                signal_type=terminal.getIoType(),
                 connected=is_connected(terminal),
             )
         if not power_found:
@@ -177,11 +185,14 @@ class Module(object):
                 file=sys.stderr,
             )
         self.disconnected_pin_count = self._port_stats.disconnected_pin_count
+        print(self.name)
         self.critical_disconnected_pin_count = (
             self._port_stats.top_module_critical_disconnected_pin_count
             if isinstance(object, odb.dbBlock)
             else self._port_stats.instance_critical_disconnected_pin_count
         )
+        if self.name == "SRAM_0":
+            exit(0)
 
     def write_disconnected_pins(self, full_table: Table, critical_table: Table):
         if self.disconnected_pin_count == 0:
@@ -189,20 +200,32 @@ class Module(object):
         row = (
             self.name,
             "\n".join(
-                [k for k, v in self.ports.items() if v.pg is not None and v.connected]
+                [
+                    k
+                    for k, v in self.ports.items()
+                    if v.signal_type in ["POWER", "GROUND"] and v.connected
+                ]
             ),
             "\n".join(
                 [
                     k
                     for k, v in self.ports.items()
-                    if v.pg is not None and not v.connected
+                    if v.signal_type in ["POWER", "GROUND"] and not v.connected
                 ]
             ),
             "\n".join(
-                [k for k, v in self.ports.items() if v.pg is None and v.connected]
+                [
+                    k
+                    for k, v in self.ports.items()
+                    if v.signal_type == "SIGNAL" and v.connected
+                ]
             ),
             "\n".join(
-                [k for k, v in self.ports.items() if v.pg is None and not v.connected]
+                [
+                    k
+                    for k, v in self.ports.items()
+                    if v.signal_type == "SIGNAL" and not v.connected
+                ]
             ),
         )
         full_table.add_row(*row)
@@ -242,6 +265,7 @@ def main(
         "Signal Pins",
         "Disconnected",
         title="",
+        show_lines=True,
     )
     critical_table = Table(
         "Macro/Instance",
@@ -277,8 +301,10 @@ def main(
         rich.print(critical_table)
     if full_table.row_count > 0:
         if full_table_path := write_full_table_to:
-            full_table.width = 160
-            rich.print(full_table, file=open(full_table_path, "w", encoding="utf8"))
+            console = rich.console.Console(
+                file=open(full_table_path, "w", encoding="utf8"), width=160
+            )
+            console.print(full_table)
 
     utl.metric_integer("design__disconnected_pin__count", disconnected_pin_count)
     utl.metric_integer(
