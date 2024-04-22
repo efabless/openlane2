@@ -56,7 +56,7 @@ proc set_global_connections {} {
                 }
             }
             if { $matched != 1 } {
-                puts "No regex match found for $instance_name defined in PDN_MACRO_CONNECTIONS"
+                puts "\[ERROR] No match found for regular expression '$instance_name' defined in PDN_MACRO_CONNECTIONS."
                 exit 1
             }
 
