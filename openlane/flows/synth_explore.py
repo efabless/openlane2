@@ -142,12 +142,12 @@ class SynthesisExploration(Flow):
         max_slack = max(map(lambda x: x[2], successful_results.values()))
         max_tns = max(map(lambda x: x[3], successful_results.values()))
 
-        table = rich.table.Table(width=80)
+        table = rich.table.Table()
         table.add_column("SYNTH_STRATEGY")
         table.add_column("Gates")
         table.add_column("Area (µm²)")
         table.add_column("Worst Setup Slack (ns)")
-        table.add_column("Total Negative Setup Slack (ns)")
+        table.add_column("Total -ve Setup Slack (ns)")
         for key, result in results.items():
             gates_s = "[red]Failed"
             area_s = "[red]Failed"
@@ -164,6 +164,7 @@ class SynthesisExploration(Flow):
         console.print(table)
         assert self.run_dir is not None
         with open(os.path.join(self.run_dir, "summary.rpt"), "w") as f:
+            table.width = 160
             rich.print(table, file=f)
 
         success("Flow complete.")

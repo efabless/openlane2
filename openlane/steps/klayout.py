@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import shlex
 import sys
 import site
+import shlex
 import shutil
 import subprocess
 from os.path import abspath
@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
 from ..config import Variable
-from ..logging import info, warn
+from ..logging import info
 from ..state import DesignFormat, State
 from ..common import Path, get_script_dir, mkdirp
 
@@ -51,7 +51,7 @@ class KLayoutStep(Step):
         ),
     ]
 
-    def run_subprocess(
+    def run_pya_script(
         self,
         cmd: Sequence[Union[str, os.PathLike]],
         log_to: Optional[Union[str, os.PathLike]] = None,
@@ -61,7 +61,7 @@ class KLayoutStep(Step):
         **kwargs,
     ) -> Dict[str, Any]:
         env = env or os.environ.copy()
-        # Hack for Python subprocesses to get access to installed libraries
+        # Pass site packages
         python_path_elements = site.getsitepackages() + sys.path
         if current_pythonpath := env.get("PYTHONPATH"):
             python_path_elements.append(current_pythonpath)
@@ -154,7 +154,7 @@ class Render(KLayoutStep):
 
         assert isinstance(input_view, Path)
 
-        self.run_subprocess(
+        self.run_pya_script(
             [
                 sys.executable,
                 os.path.join(get_script_dir(), "klayout", "render.py"),
@@ -197,7 +197,7 @@ class StreamOut(KLayoutStep):
         )
         kwargs, env = self.extract_env(kwargs)
 
-        self.run_subprocess(
+        self.run_pya_script(
             [
                 sys.executable,
                 os.path.join(
@@ -280,11 +280,11 @@ class XOR(KLayoutStep):
 
         layout_a = state_in[DesignFormat.MAG_GDS]
         if layout_a is None:
-            warn("No Magic stream-out has been performed. Skipping XOR process…")
+            self.warn("No Magic stream-out has been performed. Skipping XOR process…")
             return {}, {}
         layout_b = state_in[DesignFormat.KLAYOUT_GDS]
         if layout_b is None:
-            warn("No KLayout stream-out has been performed. Skipping XOR process…")
+            self.warn("No KLayout stream-out has been performed. Skipping XOR process…")
             return {}, {}
 
         assert isinstance(layout_a, Path)
@@ -299,7 +299,7 @@ class XOR(KLayoutStep):
         thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
         info(f"Running XOR with {thread_count} threads…")
 
-        metric_updates = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             [
                 "ruby",
                 os.path.join(
@@ -322,7 +322,7 @@ class XOR(KLayoutStep):
             env=env,
         )
 
-        return {}, metric_updates
+        return {}, subprocess_result["generated_metrics"]
 
 
 @Step.factory.register()
@@ -377,6 +377,7 @@ class DRC(KLayoutStep):
         input_view = state_in[DesignFormat.GDS]
         assert isinstance(input_view, Path)
 
+        # Not pya script - DRC script is not part of OpenLane
         self.run_subprocess(
             [
                 "klayout",
@@ -406,7 +407,7 @@ class DRC(KLayoutStep):
             env=env,
         )
 
-        return self.run_subprocess(
+        subprocess_result = self.run_pya_script(
             [
                 "python3",
                 os.path.join(
@@ -420,13 +421,14 @@ class DRC(KLayoutStep):
             env=env,
             log_to=os.path.join(self.step_dir, "xml_drc_report_to_json.log"),
         )
+        return subprocess_result["generated_metrics"]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         metrics_updates: MetricsUpdate = {}
         if self.config["PDK"] in ["sky130A", "sky130B"]:
             metrics_updates = self.run_sky130(state_in, **kwargs)
         else:
-            warn(
+            self.warn(
                 f"KLayout DRC is not supported for the {self.config['PDK']} PDK. This step will be skipped."
             )
 
@@ -495,6 +497,8 @@ class OpenGUI(KLayoutStep):
             ]
         )
 
+        # Not run_subprocess- need stdin, stdout, stderr to be accessible to the
+        # user normally
         subprocess.check_call(
             cmd,
             env=env,

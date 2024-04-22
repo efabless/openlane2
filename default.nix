@@ -21,14 +21,13 @@
   klayout,
   klayout-pymod,
   libparse,
-  ioplace-parser,
   immutabledict,
   magic,
   netgen,
   opensta,
   openroad,
   surelog,
-  tcl,
+  tclFull,
   verilator,
   verilog,
   volare,
@@ -96,7 +95,7 @@ buildPythonPackage rec {
     magic
     verilog
     verilator
-    tcl
+    tclFull
     surelog
   ];
 
@@ -115,7 +114,6 @@ buildPythonPackage rec {
       deprecated
       immutabledict
       libparse
-      ioplace-parser
       psutil
       klayout-pymod
     ]

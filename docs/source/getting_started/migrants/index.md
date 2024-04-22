@@ -17,7 +17,9 @@ backwards compatible, with some conveniences:
 
 ```{note}
 While the OpenLane 2 infrastructue is stable, the default OpenLane 2 flow in
-itself is in beta, pending silicon validation.
+itself is in beta, pending silicon validation, and we still recommend the
+OpenLane 1 flow for use with OpenMPW and chipIgnite. See [the FAQ](#faq-1v2) for
+more information.
 ```
 
 * Full configuration validation: if you have a typo, it will be caught, and if

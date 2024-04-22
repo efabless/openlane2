@@ -23,7 +23,6 @@ from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
 from ..common import Path, mkdirp, get_script_dir, TclUtils
-from ..logging import warn
 from ..config import Variable
 from ..state import DesignFormat, State
 
@@ -162,7 +161,7 @@ class LVS(NetgenStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         spice_files = []
         if self.config["CELL_SPICE_MODELS"] is None:
-            warn(
+            self.warn(
                 "This PDK does not appear to define any SPICE models. LVS will still run, but all cells will be black-boxed and the result may be inaccurate."
             )
         else:

@@ -14,10 +14,7 @@
 import io
 import os
 import re
-import sys
 import json
-import site
-import shlex
 import tempfile
 import functools
 import subprocess
@@ -27,8 +24,10 @@ from glob import glob
 from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
+from dataclasses import dataclass
 from concurrent.futures import Future
 from typing import (
+    Any,
     List,
     Dict,
     Literal,
@@ -42,7 +41,19 @@ import yaml
 import rich
 import rich.table
 
-from .step import CompositeStep, ViewsUpdate, MetricsUpdate, Step, StepException
+from .step import (
+    CompositeStep,
+    DefaultOutputProcessor,
+    StepError,
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+)
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+)
 from .tclstep import TclStep
 from .common_variables import (
     io_layer_variables,
@@ -56,7 +67,7 @@ from .common_variables import (
 from ..config import Variable, Macro
 from ..config.flow import option_variables
 from ..state import State, DesignFormat
-from ..logging import debug, err, info, warn, verbose, console, options
+from ..logging import debug, info, verbose, console, options
 from ..common import (
     Path,
     TclUtils,
@@ -151,11 +162,11 @@ class CheckSDCFiles(Step):
         is_generic_fallback = default_sdc_file.default
         fallback_descriptor = "generic" if is_generic_fallback else "user-defined"
         if self.config["PNR_SDC_FILE"] is None:
-            warn(
+            self.warn(
                 f"'PNR_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         if self.config["SIGNOFF_SDC_FILE"] is None:
-            warn(
+            self.warn(
                 f"'SIGNOFF_SDC_FILE' is not defined. Using {fallback_descriptor} fallback SDC for OpenROAD PnR steps."
             )
         return {}, {}
@@ -170,6 +181,8 @@ class OpenROADStep(TclStep):
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
     ]
+
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
 
     config_vars = [
         Variable(
@@ -208,6 +221,19 @@ class OpenROADStep(TclStep):
     def get_script_path(self) -> str:
         pass
 
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # lef parsing/NOWIREEXTENSIONATPIN statement is obsolete in version 5.6 or later.
+            "STA-0122",  # table template \w+ not found
+        ]:
+            return alert
+        if alert.cls == "error":
+            self.err(str(alert))
+        elif alert.cls == "warning":
+            self.warn(str(alert))
+        return alert
+
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
@@ -224,12 +250,6 @@ class OpenROADStep(TclStep):
         excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
         env["_PNR_EXCLUDED_CELLS"] = TclUtils.join(excluded_cells)
 
-        python_path_elements = site.getsitepackages() + sys.path
-        if current_pythonpath := env.get("PYTHONPATH"):
-            python_path_elements.append(current_pythonpath)
-        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
-        env["PYTHONPATH"] = ":".join(python_path_elements)
-
         return env
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -244,9 +264,47 @@ class OpenROADStep(TclStep):
         updates the State's `metrics` property with any new metrics in that object.
         """
         kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state_in)
 
-        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
 
+        command = self.get_command()
+
+        subprocess_result = self.run_subprocess(
+            command,
+            env=env,
+            check=check,
+            **kwargs,
+        )
+
+        generated_metrics = subprocess_result["generated_metrics"]
+
+        views_updates: ViewsUpdate = {}
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            path = Path(env[f"SAVE_{output.name}"])
+            if not path.exists():
+                continue
+            views_updates[output] = path
+
+        # 1. Parse warnings and errors
+        alerts = subprocess_result["openroad_alerts"]
+        if subprocess_result["returncode"] != 0:
+            error_strings = [str(alert) for alert in alerts if alert.cls == "error"]
+            if len(error_strings):
+                error_string = "\n".join(error_strings)
+                raise StepError(
+                    f"{self.id} failed with the following errors:\n{error_string}"
+                )
+            else:
+                raise StepException(
+                    f"{self.id} failed unexpectedly. Please check the logs and file an issue."
+                )
+        # 2. Metrics
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
@@ -255,9 +313,9 @@ class OpenROADStep(TclStep):
                     or_metrics_out[key] = inf
                 elif value == "-Infinity":
                     or_metrics_out[key] = -inf
-            metrics_updates.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
+        metric_updates_with_aggregates = aggregate_metrics(generated_metrics)
 
         return views_updates, metric_updates_with_aggregates
 
@@ -287,23 +345,12 @@ class OpenROADStep(TclStep):
         return None
 
 
-class STAStep(OpenROADStep):
-    """
-    Abstract class for an STA step
-    """
-
-    def layout_preview(self) -> Optional[str]:
-        return None
-
-    def get_script_path(self):
-        return os.path.join(get_script_dir(), "openroad", "sta", "corner.tcl")
-
-
 @Step.factory.register()
-class STAMidPNR(STAStep):
+class STAMidPNR(OpenROADStep):
     """
     Performs `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenROAD on an OpenROAD database, mid-PnR.
+    using OpenROAD on an OpenROAD database, mid-PnR, with estimated values for
+    parasitics.
     """
 
     id = "OpenROAD.STAMidPNR"
@@ -313,83 +360,130 @@ class STAMidPNR(STAStep):
     inputs = [DesignFormat.ODB]
     outputs = []
 
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "sta", "corner.tcl")
 
-@Step.factory.register()
-class STAPrePNR(STAStep):
-    """
-    Performs hierarchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
-    using OpenSTA on the pre-PnR Verilog netlist, with all available timing information
-    for standard cells and macros for the default timing corner as specified in
-    the ``DEFAULT_CORNER`` variable.
 
-    If timing information is not available for macros, the macro in question
-    will be black-boxed.
-    """
+class OpenSTAStep(OpenROADStep):
+    @dataclass(frozen=True)
+    class CornerFileList:
+        libs: Tuple[str, ...]
+        netlists: Tuple[str, ...]
+        spefs: Tuple[Tuple[str, str], ...]
+        extra_spefs_backcompat: Optional[Tuple[Tuple[str, str], ...]] = None
+        current_corner_spef: Optional[str] = None
+
+        def set_env(self, env: Dict[str, Any]):
+            env["_CURRENT_CORNER_LIBS"] = TclStep.value_to_tcl(self.libs)
+            env["_CURRENT_CORNER_NETLISTS"] = TclStep.value_to_tcl(self.netlists)
+            env["_CURRENT_CORNER_SPEFS"] = TclStep.value_to_tcl(self.spefs)
+            if self.extra_spefs_backcompat is not None:
+                env["_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT"] = TclStep.value_to_tcl(
+                    self.extra_spefs_backcompat
+                )
+            if self.current_corner_spef is not None:
+                env["_CURRENT_SPEF_BY_CORNER"] = self.current_corner_spef
 
     inputs = [DesignFormat.NETLIST]
-    outputs = [DesignFormat.SDF, DesignFormat.SDC]
-
-    id = "OpenROAD.STAPrePNR"
-    name = "STA (Pre-PnR)"
-    long_name = "Static Timing Analysis"
-
-    config_vars = STAStep.config_vars + [
-        Variable(
-            "STA_MACRO_PRIORITIZE_NL",
-            bool,
-            "Prioritize the use of Netlists + SPEF files over LIB files if available for Macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
-            default=True,
-        ),
-        Variable(
-            "STA_MAX_VIOLATOR_COUNT",
-            Optional[int],
-            "Maximum number of violators to list in violator_list.rpt",
-        ),
-    ]
 
     def get_command(self) -> List[str]:
         return ["sta", "-no_splash", "-exit", self.get_script_path()]
 
-    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        kwargs, env = self.extract_env(kwargs)
+    def prepare_env(self, env: Dict, state: State) -> Dict:
+        env = super().prepare_env(env, state)
+        env["_OPENSTA"] = "1"
+        return env
 
-        prioritize_nl: Optional[bool] = self.config.get("STA_MACRO_PRIORITIZE_NL")
-        if prioritize_nl is None:
-            if "prioritize_nl" in kwargs:
-                prioritize_nl = bool(kwargs.pop("prioritize_nl"))
-            else:
-                prioritize_nl = False
+    def layout_preview(self) -> Optional[str]:
+        return None
 
-        timing_corner, timing_file_list = self.toolbox.get_timing_files(
+    def _get_corner_files(
+        self: Step,
+        timing_corner: Optional[str] = None,
+        prioritize_nl: bool = False,
+    ) -> Tuple[str, CornerFileList]:
+        (
+            timing_corner,
+            libs,
+            netlists,
+            spefs,
+        ) = self.toolbox.get_timing_files_categorized(
             self.config,
             prioritize_nl=prioritize_nl,
+            timing_corner=timing_corner,
         )
+        state_in = self.state_in.result()
 
-        env["_OPENSTA"] = "1"
-        env["_CURRENT_CORNER_NAME"] = timing_corner
-        env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(timing_file_list)
-        env["_SDF_SAVE_DIR"] = self.step_dir
+        name = timing_corner
+        current_corner_spef = None
+        input_spef_dict = state_in[DesignFormat.SPEF]
+        if input_spef_dict is not None:
+            if not isinstance(input_spef_dict, dict):
+                raise StepException(
+                    "Malformed input state: value for 'spef' is not a dictionary"
+                )
 
-        views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
-
-        sdf_dict = state_in[DesignFormat.SDF] or {}
-        if not isinstance(sdf_dict, dict):
-            raise StepException(
-                "Malformed input state: value for LIB is not a dictionary."
+            current_corner_spefs = self.toolbox.filter_views(
+                self.config, input_spef_dict, timing_corner
             )
+            if len(current_corner_spefs) < 1:
+                raise StepException(
+                    f"No SPEF file compatible with corner '{timing_corner}' found."
+                )
+            elif len(current_corner_spefs) > 1:
+                self.warn(
+                    f"Multiple SPEF files compatible with corner '{timing_corner}' found. The first one encountered will be used."
+                )
+            current_corner_spef = str(current_corner_spefs[0])
 
-        sdfs = sorted(glob(os.path.join(self.step_dir, "*.sdf")))
-        for sdf in sdfs:
-            _, corner = os.path.basename(sdf)[:-4].split("__")
-            sdf_dict[corner] = Path(sdf)
+        extra_spefs_backcompat_raw = None
+        if extra_spef_list := self.config.get("EXTRA_SPEFS"):
+            extra_spefs_backcompat_raw = []
+            self.warn(
+                "The configuration variable 'EXTRA_SPEFS' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
+            )
+            if len(extra_spef_list) % 4 != 0:
+                raise StepException(
+                    "Invalid value for 'EXTRA_SPEFS': Element count not divisible by four. It is recommended that you migrate your configuration to use the new 'MACROS' configuration variable."
+                )
+            for i in range(len(extra_spef_list) // 4):
+                start = i * 4
+                module, min, nom, max = (
+                    extra_spef_list[start],
+                    extra_spef_list[start + 1],
+                    extra_spef_list[start + 2],
+                    extra_spef_list[start + 3],
+                )
+                mapping = {
+                    "min_*": [min],
+                    "nom_*": [nom],
+                    "max_*": [max],
+                }
+                spef = str(
+                    self.toolbox.filter_views(
+                        self.config, mapping, timing_corner=timing_corner
+                    )[0]
+                )
+                extra_spefs_backcompat_raw.append((module, spef))
 
-        views_updates[DesignFormat.SDF] = sdf_dict
+        extra_spefs_backcompat = None
+        if extra_spefs_backcompat_raw is not None:
+            extra_spefs_backcompat = tuple(extra_spefs_backcompat_raw)
 
-        return views_updates, metrics_updates
+        return (
+            name,
+            OpenSTAStep.CornerFileList(
+                libs=tuple([str(lib) for lib in libs]),
+                netlists=tuple([str(netlist) for netlist in netlists]),
+                spefs=tuple([(pair[0], str(pair[1])) for pair in spefs]),
+                extra_spefs_backcompat=extra_spefs_backcompat,
+                current_corner_spef=current_corner_spef,
+            ),
+        )
 
 
 @Step.factory.register()
-class CheckMacroInstances(STAPrePNR):
+class CheckMacroInstances(OpenSTAStep):
     """
     Checks if all macro instances declared in the configuration are, in fact,
     in the design, emitting an error otherwise.
@@ -424,7 +518,219 @@ class CheckMacroInstances(STAPrePNR):
 
         env["_check_macro_instances"] = TclUtils.join(macro_instance_pairs)
 
-        return super().run(state_in, prioritize_nl=True, env=env, **kwargs)
+        corner_name, file_list = self._get_corner_files(prioritize_nl=True)
+        file_list.set_env(env)
+        env["_CURRENT_CORNER_NAME"] = corner_name
+
+        return super().run(state_in, env=env, **kwargs)
+
+
+class MultiCornerSTA(OpenSTAStep):
+    outputs = [DesignFormat.SDF, DesignFormat.SDC]
+
+    config_vars = OpenSTAStep.config_vars + [
+        Variable(
+            "STA_MACRO_PRIORITIZE_NL",
+            bool,
+            "Prioritize the use of Netlists + SPEF files over LIB files if available for Macros. Useful if extraction was done using OpenROAD, where SPEF files are far more accurate.",
+            default=True,
+        ),
+        Variable(
+            "STA_MAX_VIOLATOR_COUNT",
+            Optional[int],
+            "Maximum number of violators to list in violator_list.rpt",
+        ),
+        Variable(
+            "EXTRA_SPEFS",
+            Optional[List[Union[str, Path]]],
+            "A variable that only exists for backwards compatibility with OpenLane <2.0.0 and should not be used by new designs.",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "sta", "corner.tcl")
+
+    def run_corner(
+        self,
+        state_in: State,
+        current_env: Dict[str, Any],
+        corner: str,
+        corner_dir: str,
+    ) -> Dict[str, Any]:
+        info(f"Starting STA for the {corner} timing corner…")
+        current_env["_CURRENT_CORNER_NAME"] = corner
+        log_path = os.path.join(corner_dir, "sta.log")
+
+        try:
+            subprocess_result = self.run_subprocess(
+                self.get_command(),
+                log_to=log_path,
+                env=current_env,
+                silent=True,
+                report_dir=corner_dir,
+            )
+
+            generated_metrics = subprocess_result["generated_metrics"]
+
+            info(f"Finished STA for the {corner} timing corner.")
+        except subprocess.CalledProcessError as e:
+            self.err(f"Failed STA for the {corner} timing corner:")
+            raise e
+
+        return generated_metrics
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state_in)
+
+        futures: Dict[str, Future[MetricsUpdate]] = {}
+        files_so_far: Dict[OpenSTAStep.CornerFileList, str] = {}
+        corners_used: Set[str] = set()
+        for corner in self.config["STA_CORNERS"]:
+            _, file_list = self._get_corner_files(
+                corner, prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"]
+            )
+            if previous := files_so_far.get(file_list):
+                info(
+                    f"Skipping corner {corner} for STA (identical to {previous} at this stage)…"
+                )
+                continue
+            files_so_far[file_list] = corner
+            corners_used.add(corner)
+
+            current_env = env.copy()
+            file_list.set_env(current_env)
+
+            corner_dir = os.path.join(self.step_dir, corner)
+            mkdirp(corner_dir)
+
+            futures[corner] = get_tpe().submit(
+                self.run_corner,
+                state_in,
+                current_env,
+                corner,
+                corner_dir,
+            )
+
+        metrics_updates: MetricsUpdate = {}
+        for corner, updates_future in futures.items():
+            metrics_updates.update(updates_future.result())
+
+        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
+
+        def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
+            if count is None:
+                return "[gray]?"
+            count = int(count)
+            if count == 0:
+                return f"[green]{count}"
+            else:
+                return f"[red]{count}"
+
+        def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
+            if slack is None:
+                return "[gray]?"
+            if slack == float(inf):
+                return "[gray]N/A"
+            slack = round(float(slack), 4)
+            formatted_slack = f"{slack:.4f}"
+            if slack < 0:
+                return f"[red]{formatted_slack}"
+            else:
+                return f"[green]{formatted_slack}"
+
+        table = rich.table.Table()
+        table.add_column("Corner/Group", width=20)
+        table.add_column("Hold Worst Slack")
+        table.add_column("Reg to Reg Paths")
+        table.add_column("Hold TNS")
+        table.add_column("Hold Vio Count")
+        table.add_column("of which reg to reg")
+        table.add_column("Setup Worst Slack")
+        table.add_column("Reg to Reg Paths")
+        table.add_column("Setup TNS")
+        table.add_column("Setup Vio Count")
+        table.add_column("of which reg to reg")
+        table.add_column("Max Cap Violations")
+        table.add_column("Max Slew Violations")
+        for corner in ["Overall"] + self.config["STA_CORNERS"]:
+            modifier = ""
+            if corner != "Overall":
+                if corner not in corners_used:
+                    continue
+                modifier = f"__corner:{corner}"
+            row = [corner]
+            for metric in [
+                "timing__hold__ws",
+                "timing__hold_r2r__ws",
+                "timing__hold__tns",
+                "timing__hold_vio__count",
+                "timing__hold_r2r_vio__count",
+                "timing__setup__ws",
+                "timing__setup_r2r__ws",
+                "timing__setup__tns",
+                "timing__setup_vio__count",
+                "timing__setup_r2r_vio__count",
+                "design__max_cap_violation__count",
+                "design__max_slew_violation__count",
+            ]:
+                formatter = format_count if metric.endswith("count") else format_slack
+                row.append(
+                    formatter(metric_updates_with_aggregates.get(f"{metric}{modifier}"))
+                )
+            table.add_row(*row)
+
+        if not options.get_condensed_mode():
+            console.print(table)
+        with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
+            table.width = 160
+            rich.print(table, file=f)
+
+        return {}, metric_updates_with_aggregates
+
+
+@Step.factory.register()
+class STAPrePNR(MultiCornerSTA):
+    """
+    Performs hierarchical `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
+    using OpenSTA on the pre-PnR Verilog netlist, with all available timing information
+    for standard cells and macros for multiple corners.
+
+    If timing information is not available for a Macro, the macro in question
+    will be black-boxed.
+    """
+
+    id = "OpenROAD.STAPrePNR"
+    name = "STA (Pre-PnR)"
+    long_name = "Static Timing Analysis (Pre-PnR)"
+
+    def run_corner(
+        self, state_in: State, current_env: Dict[str, Any], corner: str, corner_dir: str
+    ) -> Dict[str, Any]:
+        current_env["_SDF_SAVE_DIR"] = corner_dir
+        return super().run_corner(state_in, current_env, corner, corner_dir)
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+
+        sdf_dict = state_in[DesignFormat.SDF] or {}
+        if not isinstance(sdf_dict, dict):
+            raise StepException(
+                "Malformed input state: incoming value for SDF is not a dictionary."
+            )
+
+        sdf_dict = sdf_dict.copy()
+
+        for corner in self.config["STA_CORNERS"]:
+            sdf = os.path.join(
+                self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.sdf"
+            )
+            if os.path.isfile(sdf):
+                sdf_dict[corner] = Path(sdf)
+
+        views_updates[DesignFormat.SDF] = sdf_dict
+
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -449,6 +755,12 @@ class STAPostPNR(STAPrePNR):
 
     inputs = STAPrePNR.inputs + [DesignFormat.SPEF, DesignFormat.ODB]
     outputs = STAPrePNR.outputs + [DesignFormat.LIB]
+
+    def prepare_env(self, env: dict, state: State) -> dict:
+        env = super().prepare_env(env, state)
+        if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
+            env["_SDC_IN"] = signoff_sdc_file
+        return env
 
     def filter_unannotated_report(
         self,
@@ -488,7 +800,7 @@ class STAPostPNR(STAPrePNR):
             odb_design,
         ] + lefs
 
-        filter_unannotated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             filter_unannotated_cmd,
             log_to=os.path.join(corner_dir, "filter_unannotated.log"),
             env=env,
@@ -496,202 +808,56 @@ class STAPostPNR(STAPrePNR):
             report_dir=corner_dir,
         )
 
+        generated_metrics = subprocess_result["generated_metrics"]
+
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read())
-            filter_unannotated_metrics.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        return filter_unannotated_metrics
+        return generated_metrics
+
+    def run_corner(
+        self,
+        state_in: State,
+        current_env: Dict[str, Any],
+        corner: str,
+        corner_dir: str,
+    ) -> MetricsUpdate:
+        current_env["_LIB_SAVE_DIR"] = corner_dir
+        metrics_updates = super().run_corner(state_in, current_env, corner, corner_dir)
+        try:
+            filter_unannotated_metrics = self.filter_unannotated_report(
+                corner=corner,
+                checks_report=os.path.join(corner_dir, "checks.rpt"),
+                corner_dir=corner_dir,
+                env=current_env,
+                odb_design=str(state_in[DesignFormat.ODB]),
+            )
+        except subprocess.CalledProcessError as e:
+            self.err(
+                f"Failed filtering unannotated nets for the {corner} timing corner."
+            )
+            raise e
+        return {**metrics_updates, **filter_unannotated_metrics}
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        kwargs, env = self.extract_env(kwargs)
-
-        env = self.prepare_env(env, state_in)
-
-        env["_OPENSTA"] = "1"
-        env["_SDC_IN"] = (
-            self.config["SIGNOFF_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        )
-
-        def run_corner(corner: str):
-            nonlocal env
-
-            current_env = env.copy()
-
-            corner_dir = os.path.join(self.step_dir, corner)
-            mkdirp(corner_dir)
-
-            current_env["_CURRENT_CORNER_NAME"] = corner
-            current_env["_LIB_SAVE_DIR"] = corner_dir
-            current_env["_SDF_SAVE_DIR"] = corner_dir
-
-            if not isinstance(state_in[DesignFormat.SPEF], dict):
-                raise StepException(
-                    "Malformed input state: value for SPEF is not a dictionary."
-                )
-
-            input_spef_dict = state_in[DesignFormat.SPEF]
-            assert input_spef_dict is not None  # Checked by start
-            if not isinstance(input_spef_dict, dict):
-                raise StepException(
-                    "Malformed input state: value for 'spef' is not a dictionary"
-                )
-
-            spefs = self.toolbox.filter_views(self.config, input_spef_dict, corner)
-            if len(spefs) < 1:
-                raise StepException(
-                    f"No SPEF file compatible with corner '{corner}' found."
-                )
-            elif len(spefs) > 1:
-                warn(
-                    f"Multiple SPEF files compatible with corner '{corner}' found. The first one encountered will be used."
-                )
-            spef = spefs[0]
-            current_env["CURRENT_SPEF_BY_CORNER"] = f"{corner} {spef}"
-
-            _, timing_file_list = self.toolbox.get_timing_files(
-                self.config,
-                corner,
-                prioritize_nl=self.config["STA_MACRO_PRIORITIZE_NL"],
-            )
-            current_env["_CURRENT_CORNER_TIMING_VIEWS"] = TclUtils.join(
-                timing_file_list
-            )
-
-            log_path = os.path.join(corner_dir, "sta.log")
-
-            try:
-                generated_metrics = self.run_subprocess(
-                    self.get_command(),
-                    log_to=log_path,
-                    env=current_env,
-                    silent=True,
-                    report_dir=corner_dir,
-                )
-
-                filter_unannotated_metrics = self.filter_unannotated_report(
-                    corner=corner,
-                    checks_report=os.path.join(corner_dir, "checks.rpt"),
-                    corner_dir=corner_dir,
-                    env=env,
-                    odb_design=str(state_in[DesignFormat.ODB]),
-                )
-                info(f"Finished STA for the {corner} timing corner.")
-            except subprocess.CalledProcessError as e:
-                err(f"Failed STA for the {corner} timing corner:")
-                raise e
-
-            return {**generated_metrics, **filter_unannotated_metrics}
-
-        futures: Dict[str, Future[MetricsUpdate]] = {}
-        for corner in self.config["STA_CORNERS"]:
-            futures[corner] = get_tpe().submit(
-                run_corner,
-                corner,
-            )
-
-        metrics_updates: MetricsUpdate = {}
-        for corner, updates_future in futures.items():
-            metrics_updates.update(updates_future.result())
-
-        metric_updates_with_aggregates = aggregate_metrics(metrics_updates)
-
-        def format_count(count: Optional[Union[int, float, Decimal]]) -> str:
-            if count is None:
-                return "[gray]?"
-            count = int(count)
-            if count == 0:
-                return f"[green]{count}"
-            else:
-                return f"[red]{count}"
-
-        def format_slack(slack: Optional[Union[int, float, Decimal]]) -> str:
-            if slack is None:
-                return "[gray]?"
-            if slack == float(inf):
-                return "[gray]N/A"
-            slack = round(float(slack), 4)
-            formatted_slack = f"{slack:.4f}"
-            if slack < 0:
-                return f"[red]{formatted_slack}"
-            else:
-                return f"[green]{formatted_slack}"
-
-        table = rich.table.Table()
-        table.add_column("Corner/Group")
-        table.add_column("Hold Worst Slack")
-        table.add_column("Reg to Reg Paths")
-        table.add_column("Hold TNS")
-        table.add_column("Hold Violations")
-        table.add_column("of which Reg to Reg")
-        table.add_column("Setup Worst Slack")
-        table.add_column("Reg to Reg Paths")
-        table.add_column("Setup TNS")
-        table.add_column("Setup Violations")
-        table.add_column("of which Reg to Reg")
-        table.add_column("Max Cap Violations")
-        table.add_column("Max Slew Violations")
-        for corner in ["Overall"] + self.config["STA_CORNERS"]:
-            modifier = ""
-            if corner != "Overall":
-                modifier = f"__corner:{corner}"
-            row = [corner]
-            for metric in [
-                "timing__hold__ws",
-                "timing__hold_r2r__ws",
-                "timing__hold__tns",
-                "timing__hold_vio__count",
-                "timing__hold_r2r_vio__count",
-                "timing__setup__ws",
-                "timing__setup_r2r__ws",
-                "timing__setup__tns",
-                "timing__setup_vio__count",
-                "timing__setup_r2r_vio__count",
-                "design__max_cap_violation__count",
-                "design__max_slew_violation__count",
-            ]:
-                formatter = format_count if metric.endswith("count") else format_slack
-                row.append(
-                    formatter(metric_updates_with_aggregates.get(f"{metric}{modifier}"))
-                )
-            table.add_row(*row)
-
-        if not options.get_condensed_mode():
-            console.print(table)
-        with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
-            rich.print(table, file=f)
-
-        views_updates: ViewsUpdate = {}
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
         lib_dict = state_in[DesignFormat.LIB] or {}
         if not isinstance(lib_dict, dict):
             raise StepException(
                 "Malformed input state: value for LIB is not a dictionary."
             )
 
+        lib_dict.copy()
+
         for corner in self.config["STA_CORNERS"]:
-            lib_dict[corner] = Path(
-                os.path.join(
-                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.lib"
-                )
+            lib = os.path.join(
+                self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.lib"
             )
+            lib_dict[corner] = Path(lib)
 
         views_updates[DesignFormat.LIB] = lib_dict
-
-        sdf_dict = state_in[DesignFormat.SDF] or {}
-        if not isinstance(sdf_dict, dict):
-            raise StepException(
-                "Malformed input state: value for LIB is not a dictionary."
-            )
-
-        for corner in self.config["STA_CORNERS"]:
-            sdf_dict[corner] = Path(
-                os.path.join(
-                    self.step_dir, corner, f"{self.config['DESIGN_NAME']}__{corner}.sdf"
-                )
-            )
-
-        views_updates[DesignFormat.SDF] = sdf_dict
-
-        return views_updates, metric_updates_with_aggregates
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -820,10 +986,10 @@ class IOPlacement(OpenROADStep):
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
-                Decimal,
-                "The minimum distance between the IOs.",
-                default=3,
+                Optional[Decimal],
+                "The minimum distance between two pins. If unspecified by a PDK, OpenROAD will use the length of two routing tracks.",
                 units="µm",
+                pdk=True,
             ),
             Variable(
                 "FP_PIN_ORDER_CFG",
@@ -834,6 +1000,28 @@ class IOPlacement(OpenROADStep):
                 "FP_DEF_TEMPLATE",
                 Optional[Path],
                 "Points to the DEF file to be used as a template.",
+            ),
+            Variable(
+                "FP_IO_VLENGTH",
+                Optional[Decimal],
+                """
+                The length of the pins with a north or south orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
+                    * The pin width
+                    * The minimum value satisfying the minimum area constraint given the pin width
+                """,
+                units="µm",
+                pdk=True,
+            ),
+            Variable(
+                "FP_IO_HLENGTH",
+                Optional[Decimal],
+                """
+                The length of the pins with an east or west orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
+                    * The pin width
+                    * The minimum value satisfying the minimum area constraint given the pin width
+                """,
+                units="µm",
+                pdk=True,
             ),
         ]
     )
@@ -958,17 +1146,7 @@ class GeneratePDN(OpenROADStep):
         return views_updates, metric_updates_with_aggregates
 
 
-@Step.factory.register()
-class GlobalPlacement(OpenROADStep):
-    """
-    Performs a somewhat nebulous initial placement for standard cells in a
-    floorplan. While the placement is not concrete, it is enough to start
-    accounting for issues such as fanout, transition time, et cetera.
-    """
-
-    id = "OpenROAD.GlobalPlacement"
-    name = "Global Placement"
-
+class _GlobalPlacement(OpenROADStep):
     config_vars = (
         OpenROADStep.config_vars
         + routing_layer_variables
@@ -983,22 +1161,10 @@ class GlobalPlacement(OpenROADStep):
                 ],
             ),
             Variable(
-                "PL_TIME_DRIVEN",
-                bool,
-                "Specifies whether the placer should use time driven placement.",
-                default=True,
-            ),
-            Variable(
                 "PL_SKIP_INITIAL_PLACEMENT",
                 bool,
                 "Specifies whether the placer should run initial placement or not.",
                 default=False,
-            ),
-            Variable(
-                "PL_ROUTABILITY_DRIVEN",
-                bool,
-                "Specifies whether the placer should use routability driven placement.",
-                default=True,
             ),
             Variable(
                 "PL_WIRE_LENGTH_COEF",
@@ -1049,14 +1215,41 @@ class GlobalPlacement(OpenROADStep):
             expr = util + (5 * self.config["GPL_CELL_PADDING"]) + 10
             expr = min(expr, 100)
             env["PL_TARGET_DENSITY_PCT"] = f"{expr}"
-            warn(
+            info(
                 f"'PL_TARGET_DENSITY_PCT' not explicitly set, using dynamically calculated target density: {expr}…"
             )
         return super().run(state_in, env=env, **kwargs)
 
 
 @Step.factory.register()
-class GlobalPlacementSkipIO(GlobalPlacement):
+class GlobalPlacement(_GlobalPlacement):
+    """
+    Performs a somewhat nebulous initial placement for standard cells in a
+    floorplan. While the placement is not concrete, it is enough to start
+    accounting for issues such as fanout, transition time, et cetera.
+    """
+
+    id = "OpenROAD.GlobalPlacement"
+    name = "Global Placement"
+
+    config_vars = _GlobalPlacement.config_vars + [
+        Variable(
+            "PL_TIME_DRIVEN",
+            bool,
+            "Specifies whether the placer should use time driven placement.",
+            default=True,
+        ),
+        Variable(
+            "PL_ROUTABILITY_DRIVEN",
+            bool,
+            "Specifies whether the placer should use routability driven placement.",
+            default=True,
+        ),
+    ]
+
+
+@Step.factory.register()
+class GlobalPlacementSkipIO(_GlobalPlacement):
     """
     Performs global placement without taking I/O into consideration.
 
@@ -1069,7 +1262,7 @@ class GlobalPlacementSkipIO(GlobalPlacement):
     id = "OpenROAD.GlobalPlacementSkipIO"
     name = "Global Placement Skip IO"
 
-    config_vars = GlobalPlacement.config_vars + [
+    config_vars = _GlobalPlacement.config_vars + [
         Variable(
             "FP_IO_MODE",
             Literal["matching", "random_equidistant", "annealing"],
@@ -1230,17 +1423,17 @@ class CheckAntennas(OpenROADStep):
         table = rich.table.Table()
         decimal_places = 2
         row = []
-        table.add_column("Partial/Required")
-        table.add_column("Required")
+        table.add_column("P / R")
         table.add_column("Partial")
+        table.add_column("Required")
         table.add_column("Net")
         table.add_column("Pin")
         table.add_column("Layer")
         for violation in violations:
             row = [
                 f"{violation.partial_to_required:.{decimal_places}f}",
-                f"{violation.required_ratio:.{decimal_places}f}",
                 f"{violation.partial_ratio:.{decimal_places}f}",
+                f"{violation.required_ratio:.{decimal_places}f}",
                 f"{violation.net}",
                 f"{violation.pin}",
                 f"{violation.layer}",
@@ -1250,6 +1443,7 @@ class CheckAntennas(OpenROADStep):
         if not options.get_condensed_mode() and len(violations):
             console.print(table)
         with open(output_file, "w") as f:
+            table.width = 80
             rich.print(table, file=f)
 
     def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:
@@ -1469,7 +1663,7 @@ class RCX(OpenROADStep):
 
             rcx_ruleset = self.config["RCX_RULESETS"].get(corner)
             if rcx_ruleset is None:
-                warn(
+                self.warn(
                     f"RCX ruleset for corner {corner} not found. The corner may be ill-defined."
                 )
                 return None
@@ -1482,10 +1676,10 @@ class RCX(OpenROADStep):
                 self.config, self.config["TECH_LEFS"], corner
             )
             if len(tech_lefs) < 1:
-                warn(f"No tech lef for timing corner {corner} found.")
+                self.warn(f"No tech lef for timing corner {corner} found.")
                 return None
             elif len(tech_lefs) > 1:
-                warn(
+                self.warn(
                     f"Multiple tech lefs found for timing corner {corner}. Only the first one matched will be used."
                 )
 
@@ -1513,7 +1707,7 @@ class RCX(OpenROADStep):
                 )
                 info(f"Finished RCX for {corner_qualifier}.")
             except subprocess.CalledProcessError as e:
-                err(f"Failed RCX for the {corner_qualifier}:")
+                self.err(f"Failed RCX for the {corner_qualifier}:")
                 raise e
 
             return out
@@ -1598,7 +1792,7 @@ class IRDropReport(OpenROADStep):
         libs_in = self.toolbox.filter_views(self.config, self.config["LIB"])
 
         if self.config["VSRC_LOC_FILES"] is None:
-            warn(
+            self.warn(
                 "'VSRC_LOC_FILES' was not given a value, which may make the results of IR drop analysis inaccurate. If you are not integrating a top-level chip for manufacture, you may ignore this warning, otherwise, see the documentation for 'VSRC_LOC_FILES'."
             )
 
@@ -1724,13 +1918,15 @@ class ResizerStep(OpenROADStep):
         lib_set_set = set()
         count = 0
         for corner in corners:
-            _, libs = self.toolbox.get_timing_files(self.config, corner)
+            _, libs, _, _ = self.toolbox.get_timing_files_categorized(
+                self.config, corner
+            )
             lib_set = frozenset(libs)
             if lib_set in lib_set_set:
                 debug(f"Liberty files for '{corner}' already accounted for- skipped")
                 continue
             lib_set_set.add(lib_set)
-            env[f"RSZ_CORNER_{count}"] = f"{corner} {shlex.join(libs)}"
+            env[f"RSZ_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
             debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 
@@ -1831,7 +2027,7 @@ class CTS(ResizerStep):
                 else:
                     env["CLOCK_NET"] = clock_port
             else:
-                warn(
+                self.warn(
                     "No CLOCK_NET (or CLOCK_PORT) specified. CTS cannot be performed. Returning state unaltered…"
                 )
                 return {}, {}
