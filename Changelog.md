@@ -14,6 +14,16 @@
 ## Documentation
 -->
 
+# 2.0.1
+
+## Steps
+
+* `OpenROAD.*`
+ * Fixed alert about unmatched regexes in `PDN_MACRO_CONNECTIONS` not being
+   properly marked as an `[ERROR]`.
+ * Fixed crash when steps that generate OpenROAD alerts that are suppressed by
+   the flow experience a non-zero exit.  
+
 # 2.0.0
 
 ## Docs
