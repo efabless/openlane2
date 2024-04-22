@@ -366,7 +366,7 @@ o = partial(option, show_default=True)
         "--dockerized",
         default=False,
         is_flag=True,
-        is_eager=True,  # ddocker options should be processed before anything else
+        is_eager=True,  # docker options should be processed before anything else
         help="Run the remaining flags using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
         callback=cli_in_container,
     ),
