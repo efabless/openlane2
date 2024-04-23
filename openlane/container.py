@@ -249,4 +249,4 @@ def run_in_container(
     info("Running containerized command:")
     print(shlex.join(cmd))
 
-    os.execlp(CONTAINER_ENGINE, cmd)
+    os.execlp(CONTAINER_ENGINE, *cmd)
