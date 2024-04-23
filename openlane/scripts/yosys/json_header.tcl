@@ -20,4 +20,6 @@ yosys_ol::read_verilog_files $::env(DESIGN_NAME)
 hierarchy -check -top $::env(DESIGN_NAME) -nokeep_prints -nokeep_asserts
 yosys rename -top $::env(DESIGN_NAME)
 yosys proc
+flatten
+opt_clean -purge
 json -o $::env(SAVE_JSON_HEADER)
