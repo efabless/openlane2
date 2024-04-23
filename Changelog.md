@@ -18,8 +18,9 @@
 ## Steps
 
 * `Odb.ReportDisconnectedPins`
-  * Fixed bug with improper table widths in step directories
-  * Fixed a bug where pins with `USE SIGNAL` would be considered power pins
+  * Fixed table not being written to step directory 
+  * Fixed bug where table widths were not being set properly
+  * Fixed bug where pins with `USE SIGNAL` would be considered power pins
 
 # 2.0.1
 
