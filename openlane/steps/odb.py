@@ -474,6 +474,8 @@ class ReportDisconnectedPins(OdbpyStep):
             for module in ignored_modules:
                 command.append("--ignore-module")
                 command.append(module)
+        command.append("--write-full-table-to")
+        command.append(os.path.join(self.step_dir, "full_disconnected_pins_table.txt"))
         return command
 
 
