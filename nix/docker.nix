@@ -52,7 +52,9 @@ in (import ./create-docker.nix {
     extra-experimental-features = "nix-command flakes repl-flake";
   };
   maxLayers = 2;
+  channelURL = "https://nixos.org/channels/nixos-23.11";
   
+  image-created = "now";
   image-extraCommands = ''
     mkdir -p ./etc
     cat <<HEREDOC > ./etc/zshrc
@@ -64,8 +66,6 @@ in (import ./create-docker.nix {
     export PS1=$'%{\033[31m%}OpenLane Container (${openlane.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% ';
     HEREDOC
   '';
-  
-  image-created = "now";
   image-config-cmd = ["${zsh}/bin/zsh"];
   image-config-extra-env = [
       "LANG=C.UTF-8"
