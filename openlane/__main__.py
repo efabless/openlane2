@@ -290,7 +290,7 @@ def cli_in_container(
     docker_tty: bool = ctx.params.get("docker_tty", True)
     pdk_root = ctx.params.get("pdk_root")
     argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
-    
+
     final_argv = ["zsh"]
     if len(argv) != 0:
         final_argv = ["openlane"] + argv
