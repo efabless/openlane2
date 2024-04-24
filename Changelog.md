@@ -13,6 +13,14 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.2
+
+## Steps
+
+* `Odb.ReportDisconnectedPins`
+  * Fixed table not being written to step directory 
+  * Fixed bug where table widths were not being set properly
+  * Fixed bug where pins with `USE SIGNAL` would be considered power pins
 
 # 2.0.1
 
