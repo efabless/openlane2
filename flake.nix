@@ -91,8 +91,10 @@
 
     devShells = self.forAllSystems (
       pkgs: let
-        callPackage = pkgs.lib.callPackageWith (pkgs // self.packages.${pkgs.system});
-        callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
+        allPkgs = pkgs // self.packages.${pkgs.system};
+        allPythonPkgs = pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system};
+        callPackage = pkgs.lib.callPackageWith (allPkgs);
+        callPythonPackage = pkgs.lib.callPackageWith (allPythonPkgs);
       in rec {
         default = callPackage (self.createOpenLaneShell {
         }) {};
@@ -121,6 +123,13 @@
             types-pyyaml
             types-psutil
             lxml-stubs
+          ];
+        }) {};
+        analog = callPackage(self.createOpenLaneShell {
+          extra-packages = with allPkgs; [
+            cace
+            xschem
+            ngspice
           ];
         }) {};
         docs = callPackage (self.createOpenLaneShell {

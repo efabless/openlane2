@@ -41,8 +41,6 @@ buildPythonPackage rec {
     sed -i 's/setuptools_scm>=8/setuptools_scm>=7/' pyproject.toml
   '';
 
-  src2 = builtins.trace "${setuptools_scm.version}" src;
-
   buildInputs = [
     setuptools
     setuptools_scm
@@ -62,6 +60,7 @@ buildPythonPackage rec {
     description = "Circuit Automatic Characterization Engine";
     homepage = "https://github.com/efabless/cace";
     license = licenses.asl20;
+    mainProgram = "cace";
     platforms = platforms.linux ++ platforms.darwin;
   };
 }
