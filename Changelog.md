@@ -13,6 +13,17 @@
 ## API Breaks
 ## Documentation
 -->
+
+# 2.0.3
+
+## Tool Updates
+* Updated OpenROAD to `d423155`, OpenSTA to `a7f3421`
+  * Addresses an [antenna repair bug](https://github.com/efabless/openlane2/issues/459)
+
+## Testing
+* Updated a number of unit tests to reflect new OpenROAD error codes.
+* Fixed failing design integration tests.
+
 # 2.0.2
 
 ## Steps
