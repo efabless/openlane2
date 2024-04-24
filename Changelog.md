@@ -13,6 +13,24 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.2
+
+## Steps
+
+* `Odb.ReportDisconnectedPins`
+  * Fixed table not being written to step directory 
+  * Fixed bug where table widths were not being set properly
+  * Fixed bug where pins with `USE SIGNAL` would be considered power pins
+
+# 2.0.1
+
+## Steps
+
+* `OpenROAD.*`
+ * Fixed alert about unmatched regexes in `PDN_MACRO_CONNECTIONS` not being
+   properly marked as an `[ERROR]`.
+ * Fixed crash when steps that generate OpenROAD alerts that are suppressed by
+   the flow experience a non-zero exit.  
 
 # 2.0.0
 
