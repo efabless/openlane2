@@ -11,17 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# This is a modification of TK that explicitly uses X11 regardless of platform.
+#
+# This is important for some utilities such as Xschem which expect the X11
+# version of Tk even on macOS.
 {
-  symlinkJoin,
-  tcl,
-  tcllib,
-  tclx,
+  xorg,
+  tk,
 }:
-symlinkJoin {
-  name = "tclFull";
-  paths = [
-    tcl
-    tcllib
-    tclx
-  ];
-}
+(tk.override {
+  enableAqua = false;
+})
+.overrideAttrs (self: super: {
+  configureFlags =
+    super.configureFlags
+    ++ [
+      "--with-x"
+      "--x-includes=${xorg.libX11}/include"
+      "--x-libraries=${xorg.libX11}/lib"
+    ];
+
+  propagatedBuildInputs =
+    super.propagatedBuildInputs
+    ++ [
+      xorg.libX11
+    ];
+})

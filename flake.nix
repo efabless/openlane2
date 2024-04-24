@@ -56,11 +56,13 @@
       callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
     in
       rec {
+        cace = callPythonPackage ./nix/cace.nix {} ;
         colab-env = callPackage ./nix/colab-env.nix {};
         ioplace-parser = callPackage ./nix/ioplace-parser.nix {};
         libparse = callPackage ./nix/libparse.nix {};
-        netgen = callPackage ./nix/netgen.nix {};
         magic = callPackage ./nix/magic.nix {};
+        netgen = callPackage ./nix/netgen.nix {};
+        ngspice = callPackage ./nix/ngspice.nix {};
         klayout = callPackage ./nix/klayout.nix {};
         klayout-pymod = callPackage ./nix/klayout-pymod.nix {};
         opensta = callPackage ./nix/opensta.nix {};
@@ -71,8 +73,10 @@
         sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
         sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
         tclFull = callPackage ./nix/tclFull.nix {};
+        tk-x11 = callPackage ./nix/tk-x11.nix {};
         verilator = callPackage ./nix/verilator.nix {};
         volare = callPackage ./nix/volare.nix {};
+        xschem = callPackage ./nix/xschem.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};
         yosys = callPackage ./nix/yosys.nix {};
         yosys-sby = callPackage ./nix/yosys-sby.nix {};

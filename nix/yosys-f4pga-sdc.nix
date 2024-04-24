@@ -38,7 +38,7 @@ clangStdenv.mkDerivation rec {
     libbsd
     zlib
   ];
-  
+
   preConfigure = ''
     patchShebangs .
   '';

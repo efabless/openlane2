@@ -30,7 +30,7 @@ buildPythonPackage rec {
   propagatedBuildInputs = [
     sphinx
   ];
-  
+
   buildInputs = [
     flit
   ];

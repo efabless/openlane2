@@ -51,7 +51,7 @@ clangStdenv.mkDerivation rec {
     ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
     ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
   '';
-  
+
   postPatch = ''
     sed -i 's/AST::process(design, current_ast,/AST::process(design, current_ast, false,/' frontends/systemverilog/uhdm_common_frontend.cc
     rm third_party/Build.surelog.mk
