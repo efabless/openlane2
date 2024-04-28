@@ -54,13 +54,13 @@ let
 in
 clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "0889970d1790a2617e69f253221b8bd7626e51dc";
+  rev = "d423155d69de7f683a23f6916ead418a615ad4ad";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-o8fwh+d1mpLvB3c1hVQFz3aqgstBvr1/sptKf+mh8Vc=";
+    sha256 = "sha256-RrJYdvzxD64TeNAlPs6G4BKxflpQO6ED78SqQVH7EUE=";
   };
 
   cmakeFlagsAll = [
