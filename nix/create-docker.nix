@@ -33,6 +33,7 @@
 # ADDED
 , image-created ? null
 , image-extraCommands ? ""
+, image-config-cwd ? null
 , image-config-cmd ? [ "/root/.nix-profile/bin/bash" ]
 , image-config-extra-env ? []
 }:
@@ -309,6 +310,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   config = {
     Cmd = image-config-cmd;
+    Cwd = image-config-cwd;
     Env = [
       "USER=root"
       "PATH=${lib.concatStringsSep ":" [
