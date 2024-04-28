@@ -310,7 +310,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   config = {
     Cmd = image-config-cmd;
-    Cwd = image-config-cwd;
+    WorkingDir = image-config-cwd;
     Env = [
       "USER=root"
       "PATH=${lib.concatStringsSep ":" [
