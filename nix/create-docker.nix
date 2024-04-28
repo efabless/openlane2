@@ -35,6 +35,7 @@
 , image-extraCommands ? ""
 , image-config-cwd ? null
 , image-config-cmd ? [ "/root/.nix-profile/bin/bash" ]
+, image-config-extra-path ? []
 , image-config-extra-env ? []
 }:
 let
@@ -313,11 +314,11 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     WorkingDir = image-config-cwd;
     Env = [
       "USER=root"
-      "PATH=${lib.concatStringsSep ":" [
+      "PATH=${lib.concatStringsSep ":" ([
         "/root/.nix-profile/bin"
         "/nix/var/nix/profiles/default/bin"
         "/nix/var/nix/profiles/default/sbin"
-      ]}"
+      ] ++ image-config-extra-path)}"
       "MANPATH=${lib.concatStringsSep ":" [
         "/root/.nix-profile/share/man"
         "/nix/var/nix/profiles/default/share/man"
