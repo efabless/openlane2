@@ -13,6 +13,12 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.4
+
+## Steps
+* `Yosys.GenerateJSONHeader`
+  * Netlist is now flattened so `Odb.SetPowerConnections` can properly set pins
+    for nested macros with power pin names not equal to those of the SCL.
 
 # 2.0.3
 
