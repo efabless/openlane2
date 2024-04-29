@@ -62,7 +62,6 @@ in (import ./create-docker.nix {
     autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
     autoload -U colors && colors
 
-    export PATH="${openlane-env-bin}:${openlane.computed_PATH}:\''$PATH"
     export PS1=$'%{\033[31m%}OpenLane Container (${openlane.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% ';
     HEREDOC
   '';
@@ -74,5 +73,9 @@ in (import ./create-docker.nix {
       "EDITOR=nvim"
       "PYTHONPATH=${openlane-env-sitepackages}"
       "TMPDIR=/tmp"
+  ];
+  image-config-extra-path = [
+    "${openlane-env-bin}"
+    "${openlane.computed_PATH}"
   ];
 })

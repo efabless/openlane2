@@ -17,7 +17,7 @@
 /*
   This file is a modified version of
   https://raw.githubusercontent.com/NixOS/nix/master/docker.nix that exposes
-  more options for the final image.
+  more options for the final image and enables the use of sudo.
 */
 { pkgs ? import <nixpkgs> { }
 , lib ? pkgs.lib
@@ -56,6 +56,8 @@ let
     iana-etc
     git
     openssh
+    sudo
+    su
   ] ++ extraPkgs;
 
   users = {
@@ -92,6 +94,20 @@ let
         }
       )
       (lib.lists.range 1 32)
+  ) // lib.listToAttrs (
+    map
+      (
+        n: {
+          name = "openlane-user-${toString n}";
+          value = {
+            uid = n;
+            gid = 0;
+            groups = [ "root" ];
+            description = "OpenLane user account";
+          };
+        }
+      )
+      (lib.lists.range 1 29999)
   );
 
   groups = {
@@ -304,9 +320,32 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     rm -rf nix-support
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
   '' + image-extraCommands;
-  fakeRootCommands = ''
+  fakeRootCommands = let 
+    sudo = pkgs.sudo;
+    sudoLocalPath = (builtins.substring 1 999 "${sudo}/bin/sudo");
+  in ''
+    set -e
     chmod 1777 tmp
     chmod 1777 var/tmp
+    
+    # Enable sudo for all users (so they can use nix)
+    cp -r ${sudo} nix/store
+    
+    chmod u+s ${sudoLocalPath}
+    echo "ALL ALL=(ALL) NOPASSWD:ALL" > etc/sudoers
+    
+    mkdir -p etc/pam.d
+    if [[ ! -f etc/pam.d/other ]]; then
+      cat > etc/pam.d/other <<EOF
+    account sufficient pam_unix.so
+    auth sufficient pam_rootok.so
+    password requisite pam_unix.so nullok yescrypt
+    session required pam_unix.so
+    EOF
+    fi
+    if [[ ! -f etc/login.defs ]]; then
+      touch etc/login.defs
+    fi
   '';
 
   config = {
