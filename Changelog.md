@@ -16,6 +16,11 @@
 # 2.0.4
 
 ## Steps
+* `Odb.SetPowerConnections`
+  * Fixed bug where instances with special characters in their name and power
+    pins are not equal to those of the SCL would not get connected.
+  * Added assertion that exactly one pin is connected for every operation.
+  
 * `Yosys.GenerateJSONHeader`
   * Netlist is now flattened so `Odb.SetPowerConnections` can properly set pins
     for nested macros with power pin names not equal to those of the SCL.
