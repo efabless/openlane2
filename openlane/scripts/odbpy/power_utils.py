@@ -226,8 +226,16 @@ def set_power_connections(input_json, reader: OdbReader):
             region = design.getBlock().findRegion(region)
             if region is None:
                 utl.error(utl.PDN, 1504, f"Region {region} not defined")
-
-        design.getBlock().addGlobalConnect(region, inst_pattern, pin_pattern, net, True)
+        connected_items = design.getBlock().addGlobalConnect(
+            region, inst_pattern, pin_pattern, net, True
+        )
+        print(f"Made {connected_items} connections.")
+        assert (
+            connected_items != 0
+        ), f"Global connect failed to make any connections for '{inst_pattern}/{pin_pattern}' to {net_name}"
+        assert (
+            connected_items == 1
+        ), f"Global connect somehow made multiple connections for '{inst_pattern}/{pin_pattern}' to {net_name} -- please report this as a bug"
 
     design_str = open(input_json).read()
     design_dict = json.loads(design_str)
@@ -243,7 +251,7 @@ def set_power_connections(input_json, reader: OdbReader):
             print(f"Connecting power net {net_name} to {instance.name}/{pin}…")
             add_global_connection(
                 design=chip,
-                inst_pattern=re.escape(instance.name),
+                inst_pattern=re.escape(reader.escape_verilog_name(instance.name)),
                 net_name=net_name,
                 pin_pattern=pin,
                 power=True,
@@ -253,7 +261,7 @@ def set_power_connections(input_json, reader: OdbReader):
             print(f"Connecting ground net {net_name} to {instance.name}/{pin}…")
             add_global_connection(
                 design=chip,
-                inst_pattern=re.escape(instance.name),
+                inst_pattern=re.escape(reader.escape_verilog_name(instance.name)),
                 net_name=net_name,
                 pin_pattern=pin,
                 ground=True,
