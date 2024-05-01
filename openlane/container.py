@@ -15,12 +15,13 @@
 ## This file is internal to OpenLane 2 and is not part of the API.
 import os
 import re
+import uuid
 import httpx
 import shlex
 import pathlib
 import tempfile
 import subprocess
-from typing import List, Sequence, Optional, Union, Tuple
+from typing import List, NoReturn, Sequence, Optional, Union, Tuple
 
 from .common import mkdirp
 from .logging import err, info, warn
@@ -154,9 +155,8 @@ def run_in_container(
     pdk: Optional[str] = None,
     scl: Optional[str] = None,
     other_mounts: Optional[Sequence[str]] = None,
-    interactive: bool = False,
     tty: bool = False,
-) -> int:
+) -> NoReturn:
     # If imported at the top level, would interfere with Conda where Volare
     # would not be installed.
     import volare
@@ -173,9 +173,7 @@ def run_in_container(
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
 
-    terminal_args = []
-    if interactive:
-        terminal_args.append("-i")
+    terminal_args = ["-i"]
     if tty:
         terminal_args.append("-t")
 
@@ -230,11 +228,15 @@ def run_in_container(
             else:
                 mount_args += ["-v", f"{mount}"]
 
+    container_id = str(uuid.uuid4())
+
     cmd = (
         [
             CONTAINER_ENGINE,
             "run",
             "--rm",
+            "--name",
+            container_id,
         ]
         + terminal_args
         + permission_args(osinfo)
@@ -247,9 +249,4 @@ def run_in_container(
     info("Running containerized command:")
     print(shlex.join(cmd))
 
-    result = subprocess.call(
-        cmd,
-        stderr=subprocess.STDOUT,
-    )
-
-    return result
+    os.execlp(CONTAINER_ENGINE, *cmd)
