@@ -208,6 +208,7 @@ def set_power_connections(input_json, reader: OdbReader):
                 "The pin_pattern option for the "
                 + "add_global_connection command is required.",
             )
+            exit(1)
 
         net = design.getBlock().findNet(net_name)
         if net is None:
@@ -227,9 +228,29 @@ def set_power_connections(input_json, reader: OdbReader):
             if region is None:
                 utl.error(utl.PDN, 1504, f"Region {region} not defined")
         connected_items = design.getBlock().addGlobalConnect(
-            region, inst_pattern, pin_pattern, net, True
+            region,
+            re.escape(reader.escape_verilog_name(inst_pattern)),
+            re.escape(reader.escape_verilog_name(pin_pattern)),
+            net,
+            True,
         )
         print(f"Made {connected_items} connections.")
+        existing_connections = []
+        for term in net.getITerms():
+            existing_connections.append(
+                (term.getInst().getName(), term.getMTerm().getName())
+            )
+
+        for connection in existing_connections:
+            instance_name, pin_name = connection
+            if re.match(pin_pattern, pin_name) and re.match(
+                inst_pattern, instance_name
+            ):
+                print(
+                    f"{inst_pattern}/{pin_pattern} is already connected to {net.getName()}"
+                )
+                connected_items += 1
+
         assert (
             connected_items != 0
         ), f"Global connect failed to make any connections for '{inst_pattern}/{pin_pattern}' to {net_name}"
@@ -248,17 +269,18 @@ def set_power_connections(input_json, reader: OdbReader):
     for instance in macro_instances:
         for pin in instance.power_connections.keys():
             net_name = instance.power_connections[pin]
-            print(f"Connecting power net {net_name} to {instance.name}/{pin}…")
+            print(f"Connecting power net {net_name} to {instance.name}/{pin} …")
             add_global_connection(
                 design=chip,
-                inst_pattern=re.escape(reader.escape_verilog_name(instance.name)),
+                inst_pattern=instance.name,
+                # inst_pattern=re.escape(reader.escape_verilog_name(instance.name)),
                 net_name=net_name,
                 pin_pattern=pin,
                 power=True,
             )
         for pin in instance.ground_connections.keys():
             net_name = instance.ground_connections[pin]
-            print(f"Connecting ground net {net_name} to {instance.name}/{pin}…")
+            print(f"Connecting ground net {net_name} to {instance.name}/{pin} …")
             add_global_connection(
                 design=chip,
                 inst_pattern=re.escape(reader.escape_verilog_name(instance.name)),
