@@ -10,7 +10,7 @@ foreach cell $cells1 {
             ([lsearch $cells2 $cellname] >= 0)} {
             # netlist with the N names should always be the second netlist
             equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
+            puts stdout "Custom: Equating $cell in circuit 1 and $cellname in circuit 2"
         }
         set layout $cellname
     }

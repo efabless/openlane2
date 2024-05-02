@@ -403,7 +403,8 @@ class SpiceExtraction(MagicStep):
         Variable(
             "MAGIC_EXT_ABSTRACT_CELLS",
             Optional[List[str]],
-            "A list of cell names to be abstracted (black-boxed) during SPICE extraction",
+            "A list of regular experssions which are matched against the cells of a "
+            + "the design. Matches are abstracted (black-boxed) during SPICE extraction.",
         ),
         Variable(
             "MAGIC_NO_EXT_UNIQUE",
