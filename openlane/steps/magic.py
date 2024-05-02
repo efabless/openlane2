@@ -14,6 +14,8 @@
 import os
 import re
 import shutil
+import subprocess
+from signal import SIGKILL
 from decimal import Decimal
 from abc import abstractmethod
 from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
@@ -443,3 +445,58 @@ class SpiceExtraction(MagicStep):
         )
 
         return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class OpenGUI(MagicStep):
+    """
+    Opens the DEF view in the Magic GUI.
+    """
+
+    id = "Magic.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.DEF]
+    outputs = []
+
+    config_vars = MagicStep.config_vars + [
+        Variable(
+            "MAGIC_PRIORITIZE_GDS",
+            bool,
+            "Whether to prioritize GDS (if found) when running this step.",
+            default=True,
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "open.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        env = self.prepare_env(env, state_in)
+        env = self._reroute_env(env)
+
+        if DesignFormat.GDS in state_in:
+            env["CURRENT_GDS"] = self.value_to_tcl(state_in[DesignFormat.GDS])
+
+        cmd = [
+            "magic",
+            "-rcfile",
+            os.path.abspath(self.config["MAGICRC"]),
+            self.get_script_path(),
+        ]
+
+        # Not run_subprocess- need stdin, stdout, stderr to be accessible to the
+        # user normally
+        magic = subprocess.Popen(
+            cmd,
+            env=env,
+            cwd=self.step_dir,
+        )
+        try:
+            magic.wait()
+        except KeyboardInterrupt:
+            magic.send_signal(SIGKILL)
+
+        return {}, {}

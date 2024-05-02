@@ -37,7 +37,7 @@
   ncurses,
   tcl,
   tcsh,
-  tk,
+  tk-x11,
   cairo,
   python3,
   gnused,
@@ -61,13 +61,13 @@ clangStdenv.mkDerivation rec {
     ncurses
     tcl
     tcsh
-    tk
+    tk-x11
     cairo
   ];
 
   configureFlags = [
     "--with-tcl=${tcl}"
-    "--with-tk=${tk}"
+    "--with-tk=${tk-x11}"
     "--disable-werror"
   ];
 

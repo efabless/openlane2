@@ -77,6 +77,7 @@
         sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
         sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
         tclFull = callPackage ./nix/tclFull.nix {};
+        tk-x11 = callPackage ./nix/tk-x11.nix {};
         verilator = callPackage ./nix/verilator.nix {};
         volare = callPackage ./nix/volare.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};

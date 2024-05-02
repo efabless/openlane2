@@ -220,6 +220,52 @@ class TclStep(Step):
 
         return overrides, subprocess_result["generated_metrics"]
 
+    def _reroute_env(
+        self,
+        env: Dict[str, str],
+        report_dir: Optional[Union[str, os.PathLike]] = None,
+    ):
+        thread_postfix = f"_{threading.current_thread().name}"
+        if threading.current_thread() is threading.main_thread():
+            thread_postfix = ""
+
+        env_in_dir = report_dir or self.step_dir
+        env_in_file = os.path.join(env_in_dir, f"_env{thread_postfix}.tcl")
+
+        ENV_ALLOWLIST = [
+            "PATH",
+            "PYTHONPATH",
+            "SCRIPTS_DIR",
+            "DESIGN_DIR",
+            "STEP_DIR",
+            "PDK_ROOT",
+            "PDK",
+            "_TCL_ENV_IN",
+        ]
+        env_in: List[Tuple[str, str]] = list(env.items())
+
+        # Create new "blank" env dict
+        #
+        # For all values:
+        # If a value is unchanged: keep as is
+        # If a value is changed and is in ENV_ALLOWLIST: emplace in dict
+        # If a value is changed and is not in ENV_ALLOWLIST: write to file
+        #
+        # Emplace file to be sourced in dict with key ``_TCL_ENV_IN``
+        env = os.environ.copy()
+        with open(env_in_file, "a+") as f:
+            for key, value in env_in:
+                if key in env and env[key] == value:
+                    continue
+                if key in ENV_ALLOWLIST:
+                    env[key] = value
+                else:
+                    f.write(
+                        f"set ::env({key}) {TclUtils.escape(TclStep.value_to_tcl(value))}\n"
+                    )
+        env["_TCL_ENV_IN"] = env_in_file
+        return env
+
     @protected
     def run_subprocess(
         self,
@@ -231,44 +277,7 @@ class TclStep(Step):
         **kwargs,
     ) -> Dict[str, Any]:
         if env is not None:
-            thread_postfix = f"_{threading.current_thread().name}"
-            if threading.current_thread() is threading.main_thread():
-                thread_postfix = ""
-
-            env_in_dir = report_dir or self.step_dir
-            env_in_file = os.path.join(env_in_dir, f"_env{thread_postfix}.tcl")
-
-            ENV_ALLOWLIST = [
-                "PATH",
-                "PYTHONPATH",
-                "SCRIPTS_DIR",
-                "DESIGN_DIR",
-                "STEP_DIR",
-                "PDK_ROOT",
-                "PDK",
-            ]
-            env_in: List[Tuple[str, str]] = list(env.items())
-
-            # Create new "blank" env dict
-            #
-            # For all values:
-            # If a value is unchanged: keep as is
-            # If a value is changed and is in ENV_ALLOWLIST: emplace in dict
-            # If a value is changed and is not in ENV_ALLOWLIST: write to file
-            #
-            # Emplace file to be sourced in dict with key ``_TCL_ENV_IN``
-            env = os.environ.copy()
-            with open(env_in_file, "w") as f:
-                for key, value in env_in:
-                    if key in env and env[key] == value:
-                        continue
-                    if key in ENV_ALLOWLIST:
-                        env[key] = value
-                    else:
-                        f.write(
-                            f"set ::env({key}) {TclUtils.escape(TclStep.value_to_tcl(value))}\n"
-                        )
-            env["_TCL_ENV_IN"] = env_in_file
+            env = self._reroute_env(env, report_dir=report_dir)
         return super().run_subprocess(
             cmd=cmd,
             log_to=log_to,
