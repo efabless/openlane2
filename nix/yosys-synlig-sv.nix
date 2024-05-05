@@ -27,11 +27,12 @@ clangStdenv.mkDerivation rec {
   dylibs = ["synlig-sv"];
 
   src = fetchFromGitHub {
-    owner = "chipsalliance";
+    owner = "rowanG077";
     repo = "synlig";
-    rev = "fe8f61f1480faa1ea63377c6f60de74e5dca2713";
-    sha256 = "sha256-IBydjoVCYLAb8fNnjgUC1FthScp/CMP17ljCpSEhErU=";
+    rev = "c342ac4ca66fd2dbee5e1122d1a0380a3d13d0ef";
+    sha256 = "sha256-DpXxU+SdP8DybN2yyHlzLk65F50oOt8mxGijGeWyKSM=";
   };
+
   buildInputs = [
     yosys
     yosys.py3env
@@ -51,9 +52,8 @@ clangStdenv.mkDerivation rec {
     ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
     ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
   '';
-  
+
   postPatch = ''
-    sed -i 's/AST::process(design, current_ast,/AST::process(design, current_ast, false,/' frontends/systemverilog/uhdm_common_frontend.cc
     rm third_party/Build.surelog.mk
     cp ${yosys-mk} third_party/Build.yosys.mk
   '';

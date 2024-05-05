@@ -29,8 +29,8 @@ yosys.stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "yosyshq";
     repo = "sby";
-    rev = "7415abfcfa8bf14f024f28e61e62f23ccd892415";
-    sha256 = "sha256-+h+Ddv0FYgovu4ee5e6gA+IiD2wThtzFxOMiGkG99g8=";
+    rev = "7dd287f287a4e6ed5ea37026df90276b360482b8";
+    sha256 = "sha256-B5CpS3fXdRv7hDjpNsT1k/287ZLM6dIVCPkf0Cfbb+Y=";
   };
 
   makeFlags = [
