@@ -286,39 +286,31 @@ def cli_in_container(
     if not value:
         return
 
-    status = 0
     docker_mounts = list(ctx.params.get("docker_mounts") or ())
     docker_tty: bool = ctx.params.get("docker_tty", True)
     pdk_root = ctx.params.get("pdk_root")
     argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
 
-    interactive = True
     final_argv = ["zsh"]
     if len(argv) != 0:
         final_argv = ["openlane"] + argv
-        interactive = False
 
     docker_image = os.getenv(
         "OPENLANE_IMAGE_OVERRIDE", f"ghcr.io/efabless/openlane2:{__version__}"
     )
 
     try:
-        status = run_in_container(
+        run_in_container(
             docker_image,
             final_argv,
             pdk_root=pdk_root,
             other_mounts=docker_mounts,
-            interactive=interactive,
             tty=docker_tty,
         )
     except ValueError as e:
         print(e)
-        status = -1
     except Exception:
         traceback.print_exc()
-        status = -1
-    finally:
-        ctx.exit(status)
 
 
 o = partial(option, show_default=True)
@@ -366,7 +358,7 @@ o = partial(option, show_default=True)
         "--dockerized",
         default=False,
         is_flag=True,
-        is_eager=True,  # ddocker options should be processed before anything else
+        is_eager=True,  # docker options should be processed before anything else
         help="Run the remaining flags using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
         callback=cli_in_container,
     ),

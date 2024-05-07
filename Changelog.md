@@ -13,6 +13,28 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.4
+
+## Steps
+* `Odb.SetPowerConnections`
+  * Fixed bug where instances with special characters in their name and power
+    pins are not equal to those of the SCL would not get connected.
+  * Added assertion that exactly one pin is connected for every operation.
+  
+* `Yosys.GenerateJSONHeader`
+  * Netlist is now flattened so `Odb.SetPowerConnections` can properly set pins
+    for nested macros with power pin names not equal to those of the SCL.
+
+# 2.0.3
+
+## Tool Updates
+* Updated OpenROAD to `d423155`, OpenSTA to `a7f3421`
+  * Addresses an [antenna repair bug](https://github.com/efabless/openlane2/issues/459)
+
+## Testing
+* Updated a number of unit tests to reflect new OpenROAD error codes.
+* Fixed failing design integration tests.
+
 # 2.0.2
 
 ## Steps
