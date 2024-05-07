@@ -21,6 +21,8 @@
   bitwuzla,
   zlib,
   yosys-sby,
+  rev ? "5791c90fa6d6076b3c1ff37a3bd65e66f7748230",
+  sha256 ? "sha256-zgD8jjtK3pvHxOWvCpFyIuLYsJS5AQMrSARcqjFm9Js=",
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-eqy";
@@ -34,8 +36,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "yosyshq";
     repo = "eqy";
-    rev = "5791c90fa6d6076b3c1ff37a3bd65e66f7748230";
-    sha256 = "sha256-zgD8jjtK3pvHxOWvCpFyIuLYsJS5AQMrSARcqjFm9Js=";
+    inherit rev;
+    inherit sha256;
   };
 
   makeFlags = [

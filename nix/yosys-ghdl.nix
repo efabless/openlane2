@@ -38,6 +38,8 @@
   zlib,
   ghdl,
   pkg-config,
+  rev ? "c9b05e481423c55ffcbb856fd5296701f670808c",
+  sha256 ? "sha256-tT2+DXUtbJIBzBUBcyG2sz+3G+dTkciLVIczcRPr0Jw=",
 }:
 clangStdenv.mkDerivation {
   name = "yosys-ghdl";
@@ -46,8 +48,8 @@ clangStdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "ghdl";
     repo = "ghdl-yosys-plugin";
-    rev = "c9b05e481423c55ffcbb856fd5296701f670808c";
-    sha256 = "sha256-tT2+DXUtbJIBzBUBcyG2sz+3G+dTkciLVIczcRPr0Jw=";
+    inherit rev;
+    inherit sha256;
   };
 
   buildInputs = [

@@ -19,6 +19,8 @@
   libedit,
   libbsd,
   zlib,
+  rev ? "b8e7d4ece5d6e22ab62c03eead761c736dbcaf3c",
+  sha256 ? "sha256-gftQwWrq7KVVQXfb/SThOvbEJK0DoPpiQ3f3X1thBiQ=",
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-lighter";
@@ -27,8 +29,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "aucohl";
     repo = "lighter";
-    rev = "b8e7d4ece5d6e22ab62c03eead761c736dbcaf3c";
-    sha256 = "sha256-gftQwWrq7KVVQXfb/SThOvbEJK0DoPpiQ3f3X1thBiQ=";
+    inherit rev;
+    inherit sha256;
   };
 
   buildInputs = [

@@ -23,16 +23,18 @@
   bison,
   tcl,
   zlib,
+  rev ? "a7f34210b403fe399c170296d54258f10f92885f",
+  sha256 ? "sha256-2R+ox0kcjXX5Kc6dtH/OEOccU/m8FjW1qnb0kxM/ahE=",
 }:
 clangStdenv.mkDerivation rec {
   name = "opensta";
-  rev = "a7f34210b403fe399c170296d54258f10f92885f";
+  inherit rev;
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenSTA";
     inherit rev;
-    sha256 = "sha256-2R+ox0kcjXX5Kc6dtH/OEOccU/m8FjW1qnb0kxM/ahE=";
+    inherit sha256;
   };
 
   cmakeFlags = [

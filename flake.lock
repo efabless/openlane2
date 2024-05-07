@@ -73,7 +73,28 @@
         "flake-compat": "flake-compat",
         "ioplace-parser": "ioplace-parser",
         "libparse": "libparse",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "volare": "volare"
+      }
+    },
+    "volare": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1715072835,
+        "narHash": "sha256-lyNZy6arDmrIa+zefxp9X6di4qkVXZu08CfmOipANPU=",
+        "owner": "efabless",
+        "repo": "volare",
+        "rev": "03e8fa8e0a04c07d9cf91c09ccf989f6367344d2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "volare",
+        "type": "github"
       }
     }
   },

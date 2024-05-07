@@ -44,6 +44,8 @@
   libbsd,
   libffi,
   zlib,
+  rev ? "543faed9c8cd7c33bbb407577d56e4b7444ba61c",
+  sha256 ? "sha256-mzMBhnIEgToez6mGFOvO7zBA+rNivZ9OnLQsjBBDamA=",
 }: let
   py3env = python3.withPackages (pp:
     with pp; [
@@ -56,8 +58,8 @@
     src = fetchFromGitHub {
       owner = "YosysHQ";
       repo = "yosys";
-      rev = "543faed9c8cd7c33bbb407577d56e4b7444ba61c";
-      sha256 = "sha256-mzMBhnIEgToez6mGFOvO7zBA+rNivZ9OnLQsjBBDamA=";
+      inherit rev;
+      inherit sha256;
     };
 
     nativeBuildInputs = [pkg-config bison flex];
