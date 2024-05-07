@@ -257,7 +257,7 @@ class TclStep(Step):
             for key, value in env_in:
                 if key in env and env[key] == value:
                     continue
-                if key in ENV_ALLOWLIST:
+                if key in ENV_ALLOWLIST or key.startswith("_"):
                     env[key] = value
                 else:
                     f.write(
