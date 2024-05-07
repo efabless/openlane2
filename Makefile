@@ -19,7 +19,7 @@ openlane:
 
 .PHONY: docker-image
 docker-image:
-	cat $(shell nix-build docker.nix) | docker load
+	cat $(shell nix build --no-link --print-out-paths .#openlane-docker -L --verbose) | docker load
 
 .PHONY: docs
 docs:

@@ -50,7 +50,7 @@ import utl
 
 import re
 import json
-from typing import List
+from typing import List, Optional
 from collections import namedtuple
 
 from reader import OdbReader, click_odb, click
@@ -183,32 +183,13 @@ def set_power_connections(input_json, reader: OdbReader):
     def add_global_connection(
         design,
         *,
-        net_name=None,
-        inst_pattern=None,
-        pin_pattern=None,
-        power=False,
-        ground=False,
-        region=None,
+        net_name: str,
+        inst_name: str,
+        pin_name: str,
+        power: bool = False,
+        ground: bool = False,
+        region: Optional[odb.dbRegion] = None,
     ):
-        if net_name is None:
-            utl.error(
-                utl.PDN,
-                1501,
-                "The net option for the "
-                + "add_global_connection command is required.",
-            )
-
-        if inst_pattern is None:
-            inst_pattern = ".*"
-
-        if pin_pattern is None:
-            utl.error(
-                utl.PDN,
-                1502,
-                "The pin_pattern option for the "
-                + "add_global_connection command is required.",
-            )
-
         net = design.getBlock().findNet(net_name)
         if net is None:
             net = odb.dbNet_create(design.getBlock(), net_name)
@@ -226,8 +207,34 @@ def set_power_connections(input_json, reader: OdbReader):
             region = design.getBlock().findRegion(region)
             if region is None:
                 utl.error(utl.PDN, 1504, f"Region {region} not defined")
+                exit(-1)
 
-        design.getBlock().addGlobalConnect(region, inst_pattern, pin_pattern, net, True)
+        inst_def_name = reader.escape_verilog_name(inst_name)
+        pin_def_name = reader.escape_verilog_name(pin_name)
+
+        for term in net.getITerms():
+            if (
+                term.getInst().getName() == inst_def_name
+                and term.getMTerm().getName() == pin_def_name
+            ):
+                print(f"{inst_name}/{pin_name} is already connected to {net.getName()}")
+                return
+
+        connected_items = design.getBlock().addGlobalConnect(
+            region,
+            re.escape(inst_def_name),
+            re.escape(pin_def_name),
+            net,
+            True,
+        )
+        print(f"Made {connected_items} connections.")
+
+        assert (
+            connected_items != 0
+        ), f"Global connect failed to make any connections for '{inst_name}/{pin_name}' to {net_name}"
+        assert (
+            connected_items == 1
+        ), f"Global connect somehow made multiple connections for '{inst_name}/{pin_name}' to {net_name} -- please report this as a bug"
 
     design_str = open(input_json).read()
     design_dict = json.loads(design_str)
@@ -243,9 +250,9 @@ def set_power_connections(input_json, reader: OdbReader):
             print(f"Connecting power net {net_name} to {instance.name}/{pin}…")
             add_global_connection(
                 design=chip,
-                inst_pattern=re.escape(instance.name),
+                inst_name=instance.name,
                 net_name=net_name,
-                pin_pattern=pin,
+                pin_name=pin,
                 power=True,
             )
         for pin in instance.ground_connections.keys():
@@ -253,9 +260,9 @@ def set_power_connections(input_json, reader: OdbReader):
             print(f"Connecting ground net {net_name} to {instance.name}/{pin}…")
             add_global_connection(
                 design=chip,
-                inst_pattern=re.escape(instance.name),
+                inst_name=instance.name,
                 net_name=net_name,
-                pin_pattern=pin,
+                pin_name=pin,
                 ground=True,
             )
 

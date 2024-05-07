@@ -56,6 +56,7 @@
       );
 
     createOpenLaneShell = import ./nix/create-shell.nix;
+    createDockerImage = import ./nix/create-docker.nix;
 
     # Outputs
     packages = self.forAllSystems (pkgs: let

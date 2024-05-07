@@ -39,6 +39,7 @@
   yosys-ghdl,
   yosys-f4pga-sdc,
   # PIP
+  ruby,
   click,
   cloup,
   pyyaml,
@@ -116,6 +117,9 @@ buildPythonPackage rec {
       libparse
       psutil
       klayout-pymod
+      
+      # Ruby
+      ruby
     ]
     ++ includedTools;
 

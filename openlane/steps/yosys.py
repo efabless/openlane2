@@ -51,6 +51,7 @@ def _parse_yosys_check(
     report: io.TextIOBase,
     tristate_patterns: Optional[List[str]] = None,
     tristate_okay: bool = False,
+    elaborate_only: bool = False,
 ) -> int:
     verbose("Parsing synthesis checks…")
     errors_encountered: int = 0
@@ -68,7 +69,10 @@ def _parse_yosys_check(
 
             cells = re.findall(yosys_cell_rx, last_warning)
 
-            if tristate_okay and (
+            if elaborate_only and "but has no driver" in last_warning:
+                debug("Ignoring undriven cell in elaborate-only mode:")
+                debug(last_warning)
+            elif tristate_okay and (
                 ("tribuf" in last_warning)
                 or _check_any_tristate(cells, tristate_patterns)
             ):
@@ -511,6 +515,7 @@ class SynthesisCommon(YosysStep):
                 open(check_error_count_file),
                 self.config["TRISTATE_CELLS"],
                 self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
+                self.config["SYNTH_ELABORATE_ONLY"],
             )
 
         return views_updates, metric_updates
