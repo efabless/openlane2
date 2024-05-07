@@ -34,6 +34,8 @@
   fetchFromGitHub,
   cmake,
   libedit,
+  rev ? "896e5e7dedf9b9b1459fa019f1fa8aa8101fdf43",
+  sha256 ? "sha256-sMBCIV698TIvU/sgTwgPFWDC1kl2TeGv+3pQ06gs7aM=",
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-abc";
@@ -41,8 +43,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "YosysHQ";
     repo = "abc";
-    rev = "896e5e7dedf9b9b1459fa019f1fa8aa8101fdf43";
-    sha256 = "sha256-sMBCIV698TIvU/sgTwgPFWDC1kl2TeGv+3pQ06gs7aM=";
+    inherit rev;
+    inherit sha256;
   };
 
   patches = [

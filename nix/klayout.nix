@@ -41,14 +41,16 @@
   curl,
   gcc,
   libgit2,
+  version ? "0.28.17-1",
+  sha256 ? "sha256:0c2jm0n3vm4wyk25wpi1dlv00qnjqdmgpjmchv0hc5ysx47a2y6a",
 }:
 clangStdenv.mkDerivation rec {
   name = "klayout";
-  version = "0.28.17-1";
+  inherit version;
 
   src = fetchTarball {
     url = "https://github.com/KLayout/klayout/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256:0c2jm0n3vm4wyk25wpi1dlv00qnjqdmgpjmchv0hc5ysx47a2y6a";
+    inherit sha256;
   };
 
   patches = [
