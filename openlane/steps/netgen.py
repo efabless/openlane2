@@ -14,7 +14,6 @@
 import os
 import re
 import json
-import textwrap
 from decimal import Decimal
 from abc import abstractmethod
 from typing import List, Dict, Tuple
@@ -102,28 +101,16 @@ class NetgenStep(TclStep):
 
     config_vars = [
         Variable(
-            "MAGIC_EXT_USE_GDS",
-            bool,
-            "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
-            default=False,
-        ),
-        Variable(
             "NETGEN_SETUP",
             Path,
             "A path to the setup file for Netgen used to configure LVS. If set to None, this PDK will not support Netgen-based steps.",
             deprecated_names=["NETGEN_SETUP_FILE"],
             pdk=True,
         ),
-        Variable(
-            "NETGEN_INCLUDE_MARCOS_NETLIST",
-            bool,
-            "A flag that enables including the gate-level netlist of the design while running Netgen",
-            default=True,
-        ),
     ]
 
     @abstractmethod
-    def get_script_path(self) -> str:
+    def get_script_path(self):
         pass
 
     def get_command(self) -> List[str]:
@@ -152,9 +139,6 @@ class LVS(NetgenStep):
     def get_script_path(self):
         return os.path.join(self.step_dir, "lvs_script.lvs")
 
-        #    def get_script_path(self):
-        #        return "/home/karim/work/caravel_user_project/lvs/user_project_wrapper/lvs_results/2024-02-01-11-49-05/tmp/lvs.script"
-
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         spice_files = []
         if self.config["CELL_SPICE_MODELS"] is None:
@@ -172,94 +156,27 @@ class LVS(NetgenStep):
 
         design_name = self.config["DESIGN_NAME"]
         reports_dir = os.path.join(self.step_dir, "reports")
-        stats_file = os.path.join(reports_dir, "lvs.rpt")
-        stats_file_json = os.path.join(reports_dir, "lvs.json")
-        netgen_setup = os.path.join(self.step_dir, "setup.tcl")
+        stats_file = os.path.join(reports_dir, "lvs.json")
         mkdirp(reports_dir)
 
-        netgen_extra = textwrap.dedent(
-            r"""
-#---------------------------------------------------------------
-# Equate sram layout cells with corresponding source
-foreach cell $cells1 {
-    if {[regexp {([A-Z][A-Z0-9]_)*sky130_sram_([^_]+)_([^_]+)_([^_]+)_([^_]+)_(.+)} $cell match prefix memory_size memory_type matrix io cellname]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0) && \
-            ([lsearch $cells1 $cellname] < 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-            #equate pins "-circuit1 $cell" "-circuit2 $cellname"
-        }
-    }
-}
-
-# Equate prefixed layout cells with corresponding source
-foreach cell $cells1 {
-    set layout $cell
-    while {[regexp {([A-Z][A-Z0-9]_)(.*)} $layout match prefix cellname]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-        }
-        set layout $cellname
-    }
-}
-
-# Equate suffixed layout cells with corresponding source
-foreach cell $cells1 {
-    if {[regexp {(.*)(\$[0-9])} $cell match cellname suffix]} {
-        if {([lsearch $cells2 $cell] < 0) && \
-            ([lsearch $cells2 $cellname] >= 0)} {
-            # netlist with the N names should always be the second netlist
-            equate classes "-circuit2 $cellname" "-circuit1 $cell"
-            puts stdout "Equating $cell in circuit 1 and $cellname in circuit 2"
-        }
-    }
-}
-        """
-        )
-        with open(netgen_setup, "w") as f:
-            f.write(open(self.config["NETGEN_SETUP"]).read())
-            f.write(netgen_extra)
-        spice_files_commands = []
-        for lib in spice_files:
-            spice_files_commands.append(
-                f"puts \"Reading SPICE netlist file '{lib}'...\""
-            )
-            spice_files_commands.append(f"readnet spice {lib} $circuit2")
-
-        macros_commands = []
-        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"]:
-            for macro in self.config.get("MACROS", []):
-                nls = self.config["MACROS"][macro].nl
-                for nl in nls:
-                    macros_commands.append(
-                        f"puts \"Reading Verilog netlist file '{str(nl)}'...\""
-                    )
-                    macros_commands.append(f"readnet verilog {str(nl)} $circuit2")
-
-        netgen_commands = (
-            textwrap.dedent(
-                f"""
-                    set circuit1 [readnet spice {state_in[DesignFormat.SPICE]}]
-                    set circuit2 [readnet verilog {state_in[DesignFormat.POWERED_NETLIST]}]"""
-            )
-        ).split("\n")
-        netgen_commands += spice_files_commands
-        netgen_commands += macros_commands
-        netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup} {stats_file} -blackbox -json'.split(
-            "\n"
-        )
         with open(self.get_script_path(), "w") as f:
+            for lib in spice_files:
+                print(
+                    f"puts \"Reading SPICE netlist file '{lib}'...\"",
+                    file=f,
+                )
+                print(
+                    f"readnet spice {lib} 1",
+                    file=f,
+                )
+
             print(
-                "\n".join(netgen_commands),
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {stats_file} -json",
                 file=f,
             )
+
         views_updates, metrics_updates = super().run(state_in, **kwargs)
-        stats_string = open(stats_file_json).read()
+        stats_string = open(stats_file).read()
         lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
         metrics_updates.update(lvs_metrics)
 
