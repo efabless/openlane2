@@ -15,12 +15,13 @@
   symlinkJoin,
   tcl,
   tcllib,
-  tclx
-}: symlinkJoin {
-    name = "tclFull";
-    paths = [
-        tcl
-        tcllib
-        tclx
-    ];
+  tclx,
+}:
+symlinkJoin {
+  name = "tclFull";
+  paths = [
+    tcl
+    tcllib
+    tclx
+  ];
 }

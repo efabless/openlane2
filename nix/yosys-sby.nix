@@ -21,6 +21,8 @@
   boolector,
   z3,
   yices,
+  rev ? "7415abfcfa8bf14f024f28e61e62f23ccd892415",
+  sha256 ? "sha256-+h+Ddv0FYgovu4ee5e6gA+IiD2wThtzFxOMiGkG99g8=",
 }:
 yosys.stdenv.mkDerivation rec {
   name = "yosys-sby";
@@ -29,8 +31,8 @@ yosys.stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "yosyshq";
     repo = "sby";
-    rev = "7415abfcfa8bf14f024f28e61e62f23ccd892415";
-    sha256 = "sha256-+h+Ddv0FYgovu4ee5e6gA+IiD2wThtzFxOMiGkG99g8=";
+    inherit rev;
+    inherit sha256;
   };
 
   makeFlags = [

@@ -41,16 +41,18 @@
   cairo,
   python3,
   gnused,
+  rev ? "bfd938b5e2321cf9a6c15f398fbc987b56fcc179",
+  sha256 ? "sha256-xNhPnNGoJ8YiG6NFeFhOuKTB56rQvggJugIvukao6U8=",
 }:
 clangStdenv.mkDerivation rec {
   name = "magic-vlsi";
-  rev = "bfd938b5e2321cf9a6c15f398fbc987b56fcc179";
+  inherit rev;
 
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "magic";
     inherit rev;
-    sha256 = "sha256-xNhPnNGoJ8YiG6NFeFhOuKTB56rQvggJugIvukao6U8=";
+    inherit sha256;
   };
 
   nativeBuildInputs = [python3 gnused];

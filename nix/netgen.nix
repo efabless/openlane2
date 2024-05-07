@@ -19,14 +19,16 @@
   tk,
   m4,
   python3,
+  rev ? "87d8759a6980d297edcb9be6f8661867e4726f9a",
+  sha256 ? "sha256-wTreP/hVlXuo+SOC+jdROeC53o3tOF2M9eQIgX15zRo=",
 }:
 clangStdenv.mkDerivation {
   name = "netgen";
   src = fetchFromGitHub {
     owner = "RTimothyEdwards";
     repo = "netgen";
-    rev = "87d8759a6980d297edcb9be6f8661867e4726f9a";
-    sha256 = "sha256-wTreP/hVlXuo+SOC+jdROeC53o3tOF2M9eQIgX15zRo=";
+    inherit rev;
+    inherit sha256;
   };
 
   configureFlags = [

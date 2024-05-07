@@ -23,8 +23,7 @@
   zsh,
   silver-searcher,
   coreutils,
-}:
-let
+}: let
   # # We're fetchurl-ing this one so we don't want to use a fixed-output derivation
   # # like fetchFromGitHub
   # # See https://nixos.org/manual/nix/stable/language/import-from-derivation
@@ -53,7 +52,7 @@ in (import ./create-docker.nix {
   };
   maxLayers = 2;
   channelURL = "https://nixos.org/channels/nixos-23.11";
-  
+
   image-created = "now";
   image-extraCommands = ''
     mkdir -p ./etc
@@ -67,12 +66,12 @@ in (import ./create-docker.nix {
   '';
   image-config-cmd = ["${zsh}/bin/zsh"];
   image-config-extra-env = [
-      "LANG=C.UTF-8"
-      "LC_ALL=C.UTF-8"
-      "LC_CTYPE=C.UTF-8"
-      "EDITOR=nvim"
-      "PYTHONPATH=${openlane-env-sitepackages}"
-      "TMPDIR=/tmp"
+    "LANG=C.UTF-8"
+    "LC_ALL=C.UTF-8"
+    "LC_CTYPE=C.UTF-8"
+    "EDITOR=nvim"
+    "PYTHONPATH=${openlane-env-sitepackages}"
+    "TMPDIR=/tmp"
   ];
   image-config-extra-path = [
     "${openlane-env-bin}"

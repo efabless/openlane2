@@ -41,16 +41,18 @@
   which,
   glibcLocales,
   lib,
+  rev ? "67dfa37c560385827218350ea936eb1baf604240",
+  sha256 ? "sha256-f06UzNw2MQ5me03EPrVFhkwxKum/GLDzQbDNTBsJMJs=",
 }:
 clangStdenv.mkDerivation rec {
   name = "verilator";
-  rev = "67dfa37c560385827218350ea936eb1baf604240";
+  inherit rev;
 
   src = fetchFromGitHub {
     owner = "verilator";
     repo = "verilator";
     inherit rev;
-    sha256 = "sha256-f06UzNw2MQ5me03EPrVFhkwxKum/GLDzQbDNTBsJMJs=";
+    inherit sha256;
   };
 
   enableParallelBuilding = true;

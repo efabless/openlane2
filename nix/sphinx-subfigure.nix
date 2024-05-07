@@ -13,24 +13,27 @@
 # limitations under the License.
 {
   lib,
+  fetchurl,
   buildPythonPackage,
   sphinx,
   flit,
+  version ? "0.2.4",
+  sha256 ? "sha256-LFW8PwoVwftQ8JINvv5ndfsmOhYrX3TgbCGfp/ywINM=",
 }:
 buildPythonPackage rec {
   name = "sphinx-subfigure";
-  version = "0.2.4";
+  inherit version;
   format = "pyproject";
 
-  src = builtins.fetchurl {
+  src = fetchurl {
     url = "https://github.com/sphinx-extensions2/sphinx-subfigure/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256:1lr0n3yag7r1dkh78prb2qx2dyvmczzbw3cjy18gph8m18zvqm9c";
+    inherit sha256;
   };
 
   propagatedBuildInputs = [
     sphinx
   ];
-  
+
   buildInputs = [
     flit
   ];
