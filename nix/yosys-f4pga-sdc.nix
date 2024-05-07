@@ -20,6 +20,8 @@
   fetchFromGitHub,
   zlib,
   bash,
+  rev ? "dfe9b1a15b494e7dd81a2b394dac30ea707ec5cc",
+  sha256 ? "sha256-NJnu/uFCF+esqV2hrZughn1gdZXQJNTJbl1VyKns3XE=",
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-f4pga-sdc";
@@ -28,8 +30,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "chipsalliance";
     repo = "yosys-f4pga-plugins";
-    rev = "dfe9b1a15b494e7dd81a2b394dac30ea707ec5cc";
-    sha256 = "sha256-NJnu/uFCF+esqV2hrZughn1gdZXQJNTJbl1VyKns3XE=";
+    inherit rev;
+    inherit sha256;
   };
   buildInputs = [
     yosys
@@ -38,7 +40,7 @@ clangStdenv.mkDerivation rec {
     libbsd
     zlib
   ];
-  
+
   preConfigure = ''
     patchShebangs .
   '';

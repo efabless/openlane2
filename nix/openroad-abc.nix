@@ -16,6 +16,8 @@
   abc-verifier,
   fetchFromGitHub,
   zlib,
+  rev ? "d3916ac0337d599b30aeaf94e82b13338530ced3",
+  sha256 ? "sha256-osJzeOb0bgvbPGJjcpcfQzwcRJTZh1DYJ7RpFgw1NKg=",
 }:
 abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   name = "openroad-abc";
@@ -23,8 +25,8 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "abc";
-    rev = "d3916ac0337d599b30aeaf94e82b13338530ced3";
-    sha256 = "sha256-osJzeOb0bgvbPGJjcpcfQzwcRJTZh1DYJ7RpFgw1NKg=";
+    inherit rev;
+    inherit sha256;
   };
 
   patches = [

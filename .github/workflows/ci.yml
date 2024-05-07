@@ -192,6 +192,7 @@ jobs:
         uses: ./.github/actions/build_nix
         with:
           nix_system: x86_64-darwin
+          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"

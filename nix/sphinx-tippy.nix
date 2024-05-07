@@ -13,21 +13,24 @@
 # limitations under the License.
 {
   lib,
+  fetchurl,
   buildPythonPackage,
   sphinx,
   beautifulsoup4,
   jinja2,
   requests,
   flit,
+  version ? "0.4.1",
+  sha256 ? "sha256-nENglralwhDIJnPJp092mZqXXl+hB5rnJYqFM050H3k=",
 }:
 buildPythonPackage rec {
   name = "sphinx-tippy";
-  version = "0.4.1";
+  inherit version;
   format = "pyproject";
 
-  src = builtins.fetchurl {
+  src = fetchurl {
     url = "https://github.com/sphinx-extensions2/sphinx-tippy/archive/refs/tags/v${version}.tar.gz";
-    sha256 = "sha256:0y8zfi7371ca4pkrl1x1bxg9g6lrfr7sgjbk4v411hm5nsb60hww";
+    inherit sha256;
   };
 
   propagatedBuildInputs = [

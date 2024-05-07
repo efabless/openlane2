@@ -25,17 +25,20 @@
     nixpkgs.url = github:nixos/nixpkgs/nixos-23.11;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
+    volare.url = github:efabless/volare;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
   
   inputs.libparse.inputs.nixpkgs.follows = "nixpkgs";
   inputs.ioplace-parser.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.volare.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = {
     self,
     nixpkgs,
     libparse,
     ioplace-parser,
+    volare,
     ...
   }: {
     # Helper functions
@@ -61,7 +64,7 @@
     # Outputs
     packages = self.forAllSystems (pkgs: let
       callPackage = pkgs.lib.callPackageWith (pkgs // self.packages.${pkgs.system});
-      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // ioplace-parser.packages."${pkgs.system}" // libparse.packages."${pkgs.system}" // self.packages.${pkgs.system});
+      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // ioplace-parser.packages."${pkgs.system}" // libparse.packages."${pkgs.system}" // volare.packages."${pkgs.system}" // self.packages.${pkgs.system});
     in
       rec {
         colab-env = callPackage ./nix/colab-env.nix {};
@@ -78,7 +81,6 @@
         sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
         tclFull = callPackage ./nix/tclFull.nix {};
         verilator = callPackage ./nix/verilator.nix {};
-        volare = callPackage ./nix/volare.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};
         yosys = callPackage ./nix/yosys.nix {};
         yosys-sby = callPackage ./nix/yosys-sby.nix {};

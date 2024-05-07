@@ -21,6 +21,8 @@
   antlr4,
   pkg-config,
   writeText,
+  rev ? "fe8f61f1480faa1ea63377c6f60de74e5dca2713",
+  sha256 ? "sha256-IBydjoVCYLAb8fNnjgUC1FthScp/CMP17ljCpSEhErU=",
 }:
 clangStdenv.mkDerivation rec {
   name = "yosys-synlig-sv";
@@ -29,8 +31,8 @@ clangStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "chipsalliance";
     repo = "synlig";
-    rev = "fe8f61f1480faa1ea63377c6f60de74e5dca2713";
-    sha256 = "sha256-IBydjoVCYLAb8fNnjgUC1FthScp/CMP17ljCpSEhErU=";
+    inherit rev;
+    inherit sha256;
   };
   buildInputs = [
     yosys
@@ -51,7 +53,7 @@ clangStdenv.mkDerivation rec {
     ''${ts}.src_dir         := ''$(shell yosys-config --datdir/include)
     ''${ts}.mod_dir         := ''${TOP_DIR}third_party/yosys_mod/
   '';
-  
+
   postPatch = ''
     sed -i 's/AST::process(design, current_ast,/AST::process(design, current_ast, false,/' frontends/systemverilog/uhdm_common_frontend.cc
     rm third_party/Build.surelog.mk
