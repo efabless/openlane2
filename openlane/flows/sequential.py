@@ -19,7 +19,7 @@ from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 from .flow import Flow, FlowException, FlowError
 from ..common import Filter
 from ..state import State
-from ..logging import info, success, err, debug
+from ..logging import info, success, debug
 from ..steps import (
     Step,
     StepError,
@@ -268,26 +268,25 @@ class SequentialFlow(Flow):
                         step_dir=self.dir_for_step(step),
                     )
                 except StepException as e:
-                    raise FlowException(str(e))
+                    raise FlowException(str(e)) from None
                 except DeferredStepError as e:
                     deferred_errors.append(str(e))
                 except StepError as e:
-                    raise FlowError(str(e))
+                    raise FlowError(str(e)) from None
 
             self.progress_bar.end_stage(increment_ordinal=increment_ordinal)
 
             if to_resolved and to_resolved == step.id:
                 executing = False
         if len(deferred_errors) != 0:
-            err("The following deferred step errors have been encountered:")
-            for error in deferred_errors:
-                err(error)
-            raise FlowError("One or more deferred errors were encountered.")
+            raise FlowError(
+                "One or more deferred errors were encountered:\n"
+                + "\n".join(deferred_errors)
+            )
 
         assert self.run_dir is not None
-        final_views_path = os.path.join(self.run_dir, "final")
-        info(f"Saving final views to '{final_views_path}'…")
         debug(f"Run concluded ▶ '{self.run_dir}'")
+        final_views_path = os.path.join(self.run_dir, "final")
         try:
             current_state.save_snapshot(final_views_path)
         except Exception as e:

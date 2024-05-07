@@ -23,12 +23,19 @@
 
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixos-23.11;
+    libparse.url = github:efabless/libparse-python;
+    ioplace-parser.url = github:efabless/ioplace_parser;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
+  
+  inputs.libparse.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.ioplace-parser.inputs.nixpkgs.follows = "nixpkgs";
 
   outputs = {
     self,
     nixpkgs,
+    libparse,
+    ioplace-parser,
     ...
   }: {
     # Helper functions
@@ -49,32 +56,34 @@
       );
 
     createOpenLaneShell = import ./nix/create-shell.nix;
+    createDockerImage = import ./nix/create-docker.nix;
 
     # Outputs
     packages = self.forAllSystems (pkgs: let
       callPackage = pkgs.lib.callPackageWith (pkgs // self.packages.${pkgs.system});
-      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
+      callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // ioplace-parser.packages."${pkgs.system}" // libparse.packages."${pkgs.system}" // self.packages.${pkgs.system});
     in
       rec {
         colab-env = callPackage ./nix/colab-env.nix {};
-        ioplace-parser = callPackage ./nix/ioplace-parser.nix {};
-        libparse = callPackage ./nix/libparse.nix {};
         netgen = callPackage ./nix/netgen.nix {};
         magic = callPackage ./nix/magic.nix {};
         klayout = callPackage ./nix/klayout.nix {};
         klayout-pymod = callPackage ./nix/klayout-pymod.nix {};
         opensta = callPackage ./nix/opensta.nix {};
         openroad-abc = callPackage ./nix/openroad-abc.nix {};
-        openroad = callPackage ./nix/openroad.nix {};
+        openroad = callPythonPackage ./nix/openroad.nix {};
         openlane = callPythonPackage ./default.nix {};
         surelog = callPackage ./nix/surelog.nix {};
         sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+        sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+        tclFull = callPackage ./nix/tclFull.nix {};
         verilator = callPackage ./nix/verilator.nix {};
         volare = callPackage ./nix/volare.nix {};
         yosys-abc = callPackage ./nix/yosys-abc.nix {};
         yosys = callPackage ./nix/yosys.nix {};
         yosys-sby = callPackage ./nix/yosys-sby.nix {};
         yosys-eqy = callPackage ./nix/yosys-eqy.nix {};
+        yosys-f4pga-sdc = callPackage ./nix/yosys-f4pga-sdc.nix {};
         yosys-lighter = callPackage ./nix/yosys-lighter.nix {};
         yosys-synlig-sv = callPackage ./nix/yosys-synlig-sv.nix {};
         default = openlane;
@@ -88,22 +97,39 @@
         callPythonPackage = pkgs.lib.callPackageWith (pkgs // pkgs.python3.pkgs // self.packages.${pkgs.system});
       in rec {
         default = callPackage (self.createOpenLaneShell {
+        }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
+        dev = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            nbqa
           ];
           extra-python-packages = with pkgs.python3.pkgs; [
             pyfakefs
             pytest
             pytest-xdist
+            pytest-cov
             pillow
             mdformat
+            black
+            flake8
+            mypy
+            types-deprecated
+            types-pyyaml
+            types-psutil
+            lxml-stubs
           ];
         }) {};
         docs = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
             alejandra
+            imagemagick
             nodejs.pkgs.nodemon
           ];
           extra-python-packages = with pkgs.python3.pkgs; [
@@ -123,6 +149,8 @@
             sphinx-copybutton
             self.packages.${pkgs.system}.sphinx-tippy
             sphinxcontrib-spelling
+            sphinxcontrib-bibtex
+            self.packages.${pkgs.system}.sphinx-subfigure
           ];
         }) {};
       }

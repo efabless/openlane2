@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import json
 import shlex
 import shutil
 import datetime
+import functools
 import subprocess
 from functools import partial
 from typing import IO, Any, Dict, Optional, Sequence, Union
@@ -30,19 +30,10 @@ from cloup import (
 
 from .step import Step, StepError, StepException
 from ..logging import info, err, warn
+from ..flows import cloup_flow_opts
 from ..__version__ import __version__
 from ..common.cli import formatter_settings
 from ..common import mkdirp, Toolbox, get_openlane_root
-
-
-def extract_step_id(ctx: Context, json_in_path: str) -> Optional[str]:
-    try:
-        cfg = json.load(open(json_in_path, encoding="utf8"))
-        meta = cfg.get("meta") or {}
-        return meta.get("step")
-    except json.JSONDecodeError:
-        err("Invalid JSON provided for configuration object.")
-        ctx.exit(-1)
 
 
 def load_step_from_inputs(
@@ -52,19 +43,15 @@ def load_step_from_inputs(
     state_in: str,
     pdk_root: Optional[str] = None,
 ) -> Step:
-    if id is None:
-        id = extract_step_id(ctx, config)
-        if id is None:
+    Target = Step
+    if id is not None:
+        if Found := Step.factory.get(id):
+            Target = Found
+        else:
             err(
-                "Step ID not provided either in the Configuration object's .meta.step value or over the command-line."
+                f"No step registered with id '{id}'. Ensure all relevant plugins are installed."
             )
             ctx.exit(-1)
-    Target = Step.factory.get(id)
-    if Target is None:
-        err(
-            f"No step registered with id '{id}'. Ensure all relevant plugins are installed."
-        )
-        ctx.exit(-1)
 
     return Target.load(
         config=config,
@@ -129,8 +116,15 @@ o = partial(option, show_default=True)
     default=os.environ.pop("PDK_ROOT", None),
     help="Use this folder as the PDK root, if running a reproducible that doesn't include the PDK.",
 )
+@cloup_flow_opts(
+    config_options=False,
+    run_options=False,
+    sequential_flow_controls=False,
+    jobs=False,
+    accept_config_files=False,
+)
 @pass_context
-def run(ctx, output, state_in, config, id, pdk_root):
+def run(ctx, output, state_in, config, id, pdk_root, pdk, scl):
     """
     Runs a step using a step-specific configuration object and an input state.
 
@@ -231,13 +225,13 @@ def eject(ctx, output, state_in, config, id):
     class Stop(Exception):
         pass
 
-    def run_subprocess_subsitute(
+    def popen_substitute(
         cmd: Sequence[Union[str, os.PathLike]],
         env: Optional[Dict[str, Any]] = None,
         stdin: Optional[IO[Any]] = None,
         *args,
         **kwargs,
-    ):
+    ) -> subprocess.Popen:
         nonlocal found_env, found_cmd, found_stdin_data
         found_cmd = cmd
         found_env = env
@@ -245,7 +239,10 @@ def eject(ctx, output, state_in, config, id):
             found_stdin_data = found_stdin.read()
         raise Stop()
 
-    step.run_subprocess = run_subprocess_subsitute
+    step.run_subprocess = functools.partial(
+        step.run_subprocess,
+        _popen_callable=popen_substitute,
+    )
 
     try:
         step.start(
@@ -285,7 +282,11 @@ def eject(ctx, output, state_in, config, id):
     }
     if found_env is not None:
         for key, value in found_env.items():
-            if value == current_env.get(key) or key in filtered_env:
+            if (
+                value == current_env.get(key)
+                or key in filtered_env
+                or key in ["PATH", "PYTHONPATH"]
+            ):
                 continue
             if os.path.isabs(value) and os.path.exists(value):
                 if value.startswith(canon_scripts_dir):

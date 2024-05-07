@@ -75,14 +75,13 @@ class Instance:
     """
     Location information for an instance of a Macro.
 
-    :param location: The physical co-ordinates of the Macro's origin.
-    :param orientation: Whether the Macro is facing North or South.
-    :param placed: Whether the Macro is already placed or not. Useful with macros inside macros.
+    :param location: The physical co-ordinates of the Macro's origin. Leave
+        empty for automatic placement.
+    :param orientation: The orientation of the macro's placement. 'N'/'R0' by default.
     """
 
     location: Optional[Tuple[Decimal, Decimal]]
     orientation: Optional[Orientation]
-    placed: bool = False
 
 
 @dataclass
@@ -134,7 +133,9 @@ class Macro:
     lef: List[Path]
     instances: Dict[str, Instance] = field(default_factory=lambda: {})
 
+    vh: List[Path] = field(default_factory=lambda: [])
     nl: List[Path] = field(default_factory=lambda: [])
+    pnl: List[Path] = field(default_factory=lambda: [])
     spef: Dict[str, List[Path]] = field(default_factory=lambda: {})
     lib: Dict[str, List[Path]] = field(default_factory=lambda: {})
     spice: List[Path] = field(default_factory=lambda: [])
@@ -198,12 +199,9 @@ class Macro:
         instance_name: str,
         location: Tuple[Number, Number],
         orientation: Orientation = Orientation.N,
-        placed: bool = False,
     ):
         location = (Decimal(location[0]), Decimal(location[1]))
-        self.instances[instance_name] = Instance(
-            location, Orientation[orientation], placed
-        )
+        self.instances[instance_name] = Instance(location, Orientation[orientation])
 
 
 def is_optional(t: Type[Any]) -> bool:
@@ -250,7 +248,7 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
                 return "｜".join([repr(arg) for arg in args])
             else:
                 arg_strings = [repr_type(arg) for arg in args]
-                type_string = f"{type_string}[{','.join(arg_strings)}]"
+                type_string = f"{type_string}[{', '.join(arg_strings)}]"
 
     return type_string + ("?" if optional else "")
 
@@ -360,10 +358,14 @@ class Variable:
         """
         return some_of(self.type)
 
-    def type_repr_md(self) -> str:  # pragma: no cover
+    def type_repr_md(self, for_document: bool = False) -> str:  # pragma: no cover
         """
+        :param for_document: Adds HTML line breaks between sum type separators
+            for easier wrapping by web browsers/PDF renderers/what have you
         :returns: A pretty Markdown string representation of the Variable's type.
         """
+        if for_document:
+            return repr_type(self.type).replace("｜", "｜<br />")
         return repr_type(self.type)
 
     def desc_repr_md(self) -> str:  # pragma: no cover

@@ -23,7 +23,7 @@ from .tclstep import TclStep
 from ..state import DesignFormat, State
 
 from ..config import Variable
-from ..common import get_script_dir, DRC as DRCObject, Path
+from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
 class MagicStep(TclStep):
@@ -138,7 +138,7 @@ class MagicStep(TclStep):
 
         log_to = log_to or self.get_log_path()
 
-        generated_metrics = super().run_subprocess(
+        subprocess_result = super().run_subprocess(
             cmd,
             log_to,
             silent,
@@ -163,7 +163,7 @@ class MagicStep(TclStep):
                             f"Error encountered during running Magic: In {log_to}:\n\t{line}."
                         )
 
-        return generated_metrics
+        return subprocess_result
 
 
 @Step.factory.register()
@@ -182,13 +182,19 @@ class WriteLEF(MagicStep):
         Variable(
             "MAGIC_LEF_WRITE_USE_GDS",
             bool,
-            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using the DEF/LEF with concrete views.",
+            "A flag to choose whether to use GDS for LEF writing. If not, then the extraction will be done using abstract LEF views.",
             default=False,
         ),
         Variable(
             "MAGIC_WRITE_FULL_LEF",
             bool,
-            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view  of the macro LEF view via magic.",
+            "A flag to specify whether or not the output LEF should include all shapes inside the macro or an abstracted view of the macro LEF view via magic.",
+            default=False,
+        ),
+        Variable(
+            "MAGIC_WRITE_LEF_PINONLY",
+            bool,
+            "If true, the LEF write will mark only areas that are port labels as pins, while marking the rest of each related net as an obstruction. Otherwise, the labeled port and the any connected metal on the same layer are marked as a pin.",
             default=False,
         ),
     ]
@@ -276,12 +282,13 @@ class StreamOut(MagicStep):
                 env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
 
-                generated_metrics = super().run_subprocess(
+                subprocess_result = super().run_subprocess(
                     self.get_command(),
                     env=env_copy,
                     log_to=os.path.join(self.step_dir, f"{macro}.get_bbox.log"),
                     _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
+                generated_metrics = subprocess_result["generated_metrics"]
 
                 if generated_metrics == {}:
                     raise StepError(
@@ -343,10 +350,13 @@ class DRC(MagicStep):
         return os.path.join(get_script_dir(), "magic", "drc.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        reports_dir = os.path.join(self.step_dir, "reports")
+        mkdirp(reports_dir)
+
         views_updates, metrics_updates = super().run(state_in, **kwargs)
 
-        reports_dir = os.path.join(self.step_dir, "reports")
-        report_path = os.path.join(reports_dir, "drc.rpt")
+        report_path = os.path.join(reports_dir, "drc_violations.magic.rpt")
+        klayout_db_path = os.path.join(reports_dir, "drc_violations.magic.xml")
 
         # report_stats = os.stat(report_path)
         # drc_db_file = None
@@ -358,7 +368,6 @@ class DRC(MagicStep):
             # db_file=drc_db_file,
         )
 
-        klayout_db_path = os.path.join(reports_dir, "drc.klayout.xml")
         drc.to_klayout_xml(open(klayout_db_path, "wb"))
 
         metrics_updates["magic__drc_error__count"] = bbox_count

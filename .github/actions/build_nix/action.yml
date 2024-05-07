@@ -1,5 +1,5 @@
 name: Build/Cache Nix
-description: Builds `default.nix` for a platform, caching the results (if applicable)
+description: Builds default devShell for a platform, caching the results (if applicable)
 inputs:
   cachix_cache:
     description: "The name of the Cachix cache to download to and/or upload from"
@@ -13,37 +13,78 @@ inputs:
     description: "Shell to use"
     required: true
     default: "bash"
-  nix_build_args:
-    description: "Extra arguments to pass on to nix-build"
+  nix_system:
+    description: "The nix platform string to build for"
+    required: true
+    default: "x86_64-linux"
+  local_cache_key:
+    description: Key to use for the cache
     required: false
     default: ""
+  run_tests:
+    description: Whether to run unit tests and the smoke test
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
-    - name: Setup Nix
-      uses: ./.github/actions/setup_nix
+    - id: cache
+      name: Cache Derivation
+      uses: actions/cache@v3
       with:
-        cachix_cache: ${{ inputs.cachix_cache }}
-        cachix_token: "${{ inputs.cachix_token }}"
-    - name: Build
+        key: ${{ inputs.local_cache_key }}-${{ inputs.nix_system }}
+        path: /tmp/${{ inputs.local_cache_key }}
+    - id: Build
+      name: Build
       shell: ${{ inputs.shell }}
       run: |
+        substituters='https://${{ inputs.cachix_cache }}.cachix.org https://cache.nixos.org'
+        if [ '${{ inputs.local_cache_key }}' = '' ]; then
+          substituters="file:///tmp/${{ inputs.local_cache_key }} $substituters"
+        fi
         echo "#################################################################"
-        nix-env -f "<nixpkgs>" -iA bash
-        nix-build ${{ inputs.nix_build_args }} shell.nix
+        outPath=$(nix build\
+          --print-out-paths\
+          --no-link\
+          --accept-flake-config\
+          --option system ${{ inputs.nix_system }}\
+          --extra-platforms ${{ inputs.nix_system }}\
+          --option substituters "$substituters"\
+          .#devShells.${{ inputs.nix_system }}.default)
+        echo "out-path=$outPath" >> $GITHUB_OUTPUT
+        sudo du -hs /nix/store/* | sort -h | tail -n 20
     - name: Unit/Step Tests
       shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
       run: |
         echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "pytest --step-rx '.' -n auto"
+        nix develop\
+          --option system ${{ inputs.nix_system }}\
+          --extra-platforms ${{ inputs.nix_system }}\
+          --accept-flake-config\
+          .#devShells.${{ inputs.nix_system }}.dev --command pytest --step-rx '.' -n auto
     - name: Smoke Test
       shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
       run: |
         echo "#################################################################"
-        nix-shell ${{ inputs.nix_build_args }} --run "openlane --smoke-test"
-    - name: Push
+        nix run\
+          --option system ${{ inputs.nix_system }}\
+          --extra-platforms ${{ inputs.nix_system }}\
+          --accept-flake-config\
+          .#packages.${{ inputs.nix_system }}.openlane -- --smoke-test
+    - name: Push to local cache
+      shell: ${{ inputs.shell }}
+      if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
+      run: |
+        nix copy\
+          --to 'file:///tmp/${{ inputs.local_cache_key }}?compression=zstd&parallel-compression=true'\
+          ${{ steps.build.outputs.out-path }}
+    - name: Install + Push to Cachix
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix-build ${{ inputs.nix_build_args }} shell.nix | cachix push openlane
+        nix-env -iA cachix -f https://cachix.org/api/v1/install
+        cachix authtoken ${{ inputs.cachix_token }}
+        cachix push ${{ inputs.cachix_cache }} ${{ steps.build.outputs.out-path }}

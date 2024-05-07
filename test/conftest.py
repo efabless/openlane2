@@ -40,7 +40,7 @@ def pytest_assertrepr_compare(op, left, right):
         return return_value
 
 
-@pytest.fixture()
+@pytest.fixture
 def _mock_conf_fs():
     with Patcher() as patcher:
         rmtree("/run", ignore_errors=True)
@@ -125,7 +125,7 @@ class chdir_tmp(chdir):
         self.path = None
 
 
-@pytest.fixture()
+@pytest.fixture
 def _chdir_tmp(request: SubRequest):
     keep_tmp = request.config.getoption("--keep-tmp")
     import tempfile
@@ -262,7 +262,7 @@ def mock_variables(patch_in_objects: Optional[Iterable[Any]] = None):
     return decorator
 
 
-@pytest.fixture()
+@pytest.fixture
 @mock_variables()
 def mock_config():
     from openlane.config import Config

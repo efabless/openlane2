@@ -13,12 +13,13 @@
 # limitations under the License.
 yosys -import
 source $::env(SCRIPTS_DIR)/yosys/common.tcl
-set vtop $::env(DESIGN_NAME)
 
-read_deps "on"
+source $::env(_DEPS_SCRIPT)
 
-read_verilog_files $vtop
-hierarchy -check -top $vtop
-yosys rename -top $vtop
+yosys_ol::read_verilog_files $::env(DESIGN_NAME)
+hierarchy -check -top $::env(DESIGN_NAME) -nokeep_prints -nokeep_asserts
+yosys rename -top $::env(DESIGN_NAME)
 yosys proc
+flatten
+opt_clean -purge
 json -o $::env(SAVE_JSON_HEADER)

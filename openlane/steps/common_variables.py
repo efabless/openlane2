@@ -32,20 +32,6 @@ io_layer_variables = [
         units="µm",
     ),
     Variable(
-        "FP_IO_VLENGTH",
-        Decimal,
-        "The length of the vertical IOs.",
-        default=4,
-        units="µm",
-    ),
-    Variable(
-        "FP_IO_HLENGTH",
-        Decimal,
-        "The length of the horizontal IOs.",
-        default=4,
-        units="µm",
-    ),
-    Variable(
         "FP_IO_VTHICKNESS_MULT",
         Decimal,
         "A multiplier for vertical pin thickness. Base thickness is the pins layer min width.",
@@ -345,12 +331,6 @@ rsz_variables = dpl_variables + [
         Optional[List[str]],
         'A list of nets and instances as "don\'t touch" by design repairs or resizer optimizations.',
         default=None,
-    ),
-    Variable(
-        "RSZ_DONT_USE_CELLS",
-        Optional[List[str]],
-        "An optional list of cells to not use during design repair or resizer optimizations in addition to cells that are excluded from PNR altogether.",
-        deprecated_names=["DONT_USE_CELLS"],
     ),
     Variable(
         "RSZ_CORNERS",

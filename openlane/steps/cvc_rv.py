@@ -20,7 +20,6 @@ from typing import List, Optional, Tuple
 
 from .step import StepException, ViewsUpdate, MetricsUpdate, Step
 from ..common import Path
-from ..logging import warn
 from ..config import Variable, Config
 from ..state import DesignFormat, State
 
@@ -166,5 +165,5 @@ class ERC(Step):
             )
             return {}, {}
         except CVCNoSupport as e:
-            warn(f"Could not run CVC: {e}. Skipping…")
+            self.warn(f"Could not run CVC: {e}. Skipping…")
             return {}, {}

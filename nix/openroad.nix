@@ -41,16 +41,26 @@
   flex,
   bison,
   clang-tools_14,
+  ioplace-parser,
 }:
+let
+  pyenv = (python3.withPackages(p: with p; [
+    click
+    rich
+    pyyaml
+    ioplace-parser
+  ]));
+  pyenv-sitepackages = "${pyenv}/${pyenv.sitePackages}";
+in
 clangStdenv.mkDerivation rec {
   name = "openroad";
-  rev = "c1fc5f730a59874a1b9735be82d267da8417c6e7";
+  rev = "d423155d69de7f683a23f6916ead418a615ad4ad";
 
   src = fetchFromGitHub {
     owner = "The-OpenROAD-Project";
     repo = "OpenROAD";
     inherit rev;
-    sha256 = "sha256-vcJBm3IIsSqbUM5F1ONaqmtHtxZZFFck2zenwWkRAuw=";
+    sha256 = "sha256-RrJYdvzxD64TeNAlPs6G4BKxflpQO6ED78SqQVH7EUE=";
   };
 
   cmakeFlagsAll = [
@@ -86,7 +96,7 @@ clangStdenv.mkDerivation rec {
     boost183
     eigen
     tcl
-    python3
+    pyenv
     readline
     tclreadline
     spdlog-internal-fmt
@@ -104,6 +114,10 @@ clangStdenv.mkDerivation rec {
     re2
   ];
 
+  patches = [
+    ./patches/openroad/antenna.patch
+  ];
+
   nativeBuildInputs = [
     swig4
     pkg-config
@@ -118,6 +132,10 @@ clangStdenv.mkDerivation rec {
   shellHook = ''
     export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " cmakeFlagsAll}"
   '';
+  
+  qtWrapperArgs = [
+    "--prefix PYTHONPATH : ${pyenv-sitepackages}"
+  ];
 
   meta = with lib; {
     description = "OpenROAD's unified application implementing an RTL-to-GDS flow";

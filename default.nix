@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
-  system,
   lib,
   clangStdenv,
   fetchFromGitHub,
@@ -22,14 +21,13 @@
   klayout,
   klayout-pymod,
   libparse,
-  ioplace-parser,
   immutabledict,
   magic,
   netgen,
   opensta,
   openroad,
   surelog,
-  tcl,
+  tclFull,
   verilator,
   verilog,
   volare,
@@ -39,7 +37,9 @@
   yosys-sby,
   yosys-eqy,
   yosys-ghdl,
+  yosys-f4pga-sdc,
   # PIP
+  ruby,
   click,
   cloup,
   pyyaml,
@@ -52,7 +52,7 @@
   psutil,
   pytestCheckHook,
   pyfakefs,
-  httpx,
+  system,
 }:
 buildPythonPackage rec {
   name = "openlane";
@@ -86,6 +86,7 @@ buildPythonPackage rec {
         yosys-eqy
         yosys-lighter
         yosys-synlig-sv
+        yosys-f4pga-sdc
       ]
       ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
     opensta
@@ -95,7 +96,7 @@ buildPythonPackage rec {
     magic
     verilog
     verilator
-    tcl
+    tclFull
     surelog
   ];
 
@@ -114,10 +115,11 @@ buildPythonPackage rec {
       deprecated
       immutabledict
       libparse
-      ioplace-parser
       psutil
-      httpx
       klayout-pymod
+      
+      # Ruby
+      ruby
     ]
     ++ includedTools;
 

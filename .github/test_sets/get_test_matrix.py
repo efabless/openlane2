@@ -19,6 +19,8 @@ import json
 import yaml
 import click
 
+import volare
+
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 ol_dir = os.path.dirname(os.path.dirname(__dir__))
 
@@ -51,11 +53,15 @@ def main(scls, use_json, test_sets):
         pdk, scl = test_set["scl"].split("/")
         for design in test_set["designs"]:
             design_name = design
+            test_name = design_name
             script = empty_runner_script
             config_filename = "config.json"
+            ipm_version = "None"
             if not isinstance(design, str):
                 design_name = design["name"]
-                config_filename = design.get("config_file") or config_filename
+                test_name = design.get("test_name", design_name)
+                config_filename = design.get("config_file", config_filename)
+                ipm_version = design.get("ipm", "None")
                 script_filename = design.get("script")
                 if script_filename:
                     script = os.path.join(
@@ -64,17 +70,32 @@ def main(scls, use_json, test_sets):
             config_file = os.path.join(
                 ol_dir, "test", "designs", design_name, config_filename
             )
-            run_folder = os.path.join(
+            run_dir = os.path.join(
                 ol_dir, "test", "designs", design_name, "runs", f"{pdk}-{scl}"
             )
+            pdk_family = None
+            if family := volare.Family.by_name.get(pdk):
+                pdk_family = family.name
+            else:
+                for family in volare.Family.by_name.values():
+                    if pdk in family.variants:
+                        pdk_family = family.name
+                        break
+            if pdk_family is None:
+                raise Exception(
+                    f"Failed to determine pdk_family of {design_name} {pdk}/{scl}"
+                )
             designs.append(
                 {
                     "name": design_name,
                     "config": config_file,
-                    "run_folder": run_folder,
+                    "run_dir": run_dir,
                     "pdk": pdk,
                     "scl": scl,
                     "script": script,
+                    "ipm_version": ipm_version,
+                    "pdk_family": pdk_family,
+                    "test_name": test_name,
                 }
             )
 

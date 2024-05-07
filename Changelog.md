@@ -3,6 +3,713 @@
   mdformat --wrap 80 --end-of-line lf Changelog.md
 -->
 
+<!--
+## CLI
+## Steps
+## Flows
+## Tool Updates
+## Testing
+## Misc. Enhancements/Bugfixes
+## API Breaks
+## Documentation
+-->
+# 2.0.4
+
+## Steps
+* `Odb.SetPowerConnections`
+  * Fixed bug where instances with special characters in their name and power
+    pins are not equal to those of the SCL would not get connected.
+  * Added assertion that exactly one pin is connected for every operation.
+  
+* `Yosys.GenerateJSONHeader`
+  * Netlist is now flattened so `Odb.SetPowerConnections` can properly set pins
+    for nested macros with power pin names not equal to those of the SCL.
+
+# 2.0.3
+
+## Tool Updates
+* Updated OpenROAD to `d423155`, OpenSTA to `a7f3421`
+  * Addresses an [antenna repair bug](https://github.com/efabless/openlane2/issues/459)
+
+## Testing
+* Updated a number of unit tests to reflect new OpenROAD error codes.
+* Fixed failing design integration tests.
+
+# 2.0.2
+
+## Steps
+
+* `Odb.ReportDisconnectedPins`
+  * Fixed table not being written to step directory 
+  * Fixed bug where table widths were not being set properly
+  * Fixed bug where pins with `USE SIGNAL` would be considered power pins
+
+# 2.0.1
+
+## Steps
+
+* `OpenROAD.*`
+ * Fixed alert about unmatched regexes in `PDN_MACRO_CONNECTIONS` not being
+   properly marked as an `[ERROR]`.
+ * Fixed crash when steps that generate OpenROAD alerts that are suppressed by
+   the flow experience a non-zero exit.  
+
+# 2.0.0
+
+## Docs
+
+* Updated messaging to be a bit more consistent wrt OpenLane 1 vs OpenLane 2.
+
+# 2.0.0rc3
+
+## CLI
+* Resolved bug causing nonexistent mounted volumes to be created as root when
+  using a non-rootless container engine with `--dockerized`.
+* Fixed issue where PIP versions of OpenLane would not be able to copy examples
+  properly.
+* Environment detection scripts no longer use `nix-info`, saving time.
+
+
+## Steps
+* `OpenROAD.STAPrePnR`
+  * Now performs multicorner STA pre-PnR according to `STA_CORNERS`;
+    although if two corners have identical file lists the latter corner is
+    skipped
+  * Internally rearranged class structure so STA pre and post PnR share as
+    much code as possible
+
+* `Yosys.*`
+  * Fixes a bug where synthesis checks were not passed properly when `SYNTH_ELABORATE_ONLY` is true. 
+  * **Internal**:
+    * Created new namespace, `yosys_ol`, to encapsulate a number of reusable functions for modularity and readability
+    * Created two new functions `ol_proc` and `ol_synth`; to encapsulate our modified `synth` and `proc` instead of them being strewn across `synthesize.tcl`
+    * ABC script construction moved to standalone file
+
+## Misc
+* `openlane.steps`
+  * `Step`
+    * `.start()` no longer prints logs at the beginning as it may not
+      necessarily exist
+
+# 2.0.0rc2
+
+## CLI
+
+* `openlane.steps`
+  * `eject` *now overrides `psutils.Popen()` instead of `run_subprocess`,
+    allowing it to run at a lower level
+  * `PATH`, `PYTHONPATH` now excluded from `run.sh`
+
+## Steps
+
+* `Checker.PowerGridViolations`
+
+  * Fixed mistakenly added whitespace in `FP_PDN_CHECK_NODES`
+
+* `Magic.WriteLEF`
+
+  * Added new variable `MAGIC_WRITE_LEF_PINONLY`, which writes the LEF with with
+    the `-pinonly` option; declaring nets connected to pins on the same metal
+    layer as obstructions and not part of the pin
+
+* `OpenROAD.*`, `Odb.*`
+
+  * Outputs now processed first by new class `OpenROADOutputProcessor`, which
+    captures warnings and errors from OpenROAD into a data structure and emits
+    them using OpenLane's logger
+
+* `OpenROAD.CTS`
+
+  * Made `CTS_MAX_CAP` a non-PDK value, and also optional as the values in the
+    PDK configuration are bad and OpenROAD does a better job without it
+  * CTS no longer passes `MAX_TRANSITION_CONSTRAINT`, instead using a new
+    variable `CTS_MAX_SLEW` if it exists
+  * Fixed issue where no arguments were passed to
+    `configure_cts_characterization`
+  * Fixed bug where an incorrect value was passed to the `-max_slew` option
+
+* `Odb.ApplyDEFTemplate`
+
+  * Added new variable, `FP_TEMPLATE_COPY_POWER_PINS`, that *always* copies
+    power pins from the DEF template
+  * Power pins are now filtered and exempt from placement otherwise, allowing
+    the step to be runnable after PDN generation
+
+* `Odb.CustomIOPlacement`
+
+  * Power pins are now filtered and exempt from placement, allowing the step to
+    be runnable after PDN generation
+  * `FP_IO_VLENGTH`, `FP_IO_HLENGTH` are now both optional PDK variables
+  * The values are now used properly instead of a taking the maximum of both for
+    both kinds of pins
+  * For PDKs that do not specify them, the script calculates default values
+    based on the layers' rules
+  * `QUIT_ON_UNMATCHED_IO` now migrates to new variable
+    `ERRORS_ON_UNMATCHED_IO`, an enumeration of four variables that controls
+    whether errors are emitted in:
+    * no situation
+    * situations where pins in the design are missing from the config file
+      (default, matching openlane 1)
+    * situations where pins in the config file are missing from the design (new)
+    * either situation
+  * Better error message for too many pins on the same side
+
+* `OpenROAD.GlobalPlacement`
+
+  * Added `PL_MIN_PHI_COEFFICIENT`, `PL_MAX_PHI_COEFFICIENT` for when global
+    placement diverges
+
+* `OpenROAD.GlobalPlacementSkipIO`
+
+  * `PL_TIMING_DRIVEN` and `PL_ROUTABILITY_DRIVEN` no longer passed (useless
+    with `-skip_io`)
+
+* `OpenROAD.IOPlacement`
+
+  * `FP_IO_VLENGTH`, `FP_IO_HLENGTH`, `FP_IO_MIN_DISTANCE` are now all optional
+    PDK variables
+    * For PDKs that do not specify them, OpenROAD calculates default values
+      based on the layers' rules
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * **API Break**: Verilog names of macros are now considered instead of DEF
+    names in the event of a mismatch (e.g. for instances with `[]` or `/` in the
+    name.)
+
+* `OpenROAD.STAPrePnR`, `OpenROAD.STAPostPnR`
+
+  * Added new configuration variable `EXTRA_SPEFS` ONLY for backwards
+    compatibility with OpenLane 1 that should not otherwise be used
+
+* `OpenROAD.STAPrePNR`
+
+  * Unset clock propagation for this step (misleading as the clock should be
+    ideal before CTS)
+
+* `Verilator.Lint`
+
+  * Now works with the preprocessor macro `VERILOG_POWER_DEFINE` being defined -
+    justification is that most macros come with a powered netlist than a regular
+    netlist
+  * `CELL_BB_VERILOG_MODELS` is no longer used, with the blackbox models always
+    getting generated (so power pins can be included)
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+  * Fixed issue where the order of files may not be preserved for macros,
+    causing linting to fail
+  * Internally adjusted how linter flags are set; a `.vlt` file is used to turn
+    off certain linting rules for the black-box models instead of copying and
+    wrapping the black-box comments in comments
+
+* `Yosys.*`
+
+  * `__openlane__`, `__pnr__`, `PDK_{pdk_name}` and `SCL_{scl_name}` are all
+    always defined as preprocessor macros
+
+* `Yosys.JsonHeader`
+
+  * Now reads generated black-boxed models of the standard cells with power pins
+    instead of lib files, allowing power pins to be explicitly specified for
+    hand-instantiated cells as well without issue
+
+## Flows
+
+* `Classic`
+  * Added `Odb.AddRoutingObstructions` before global routing
+  * Added `Odb.RemoveRoutingObstructions` after detailed routing
+  * Moved PDN generation steps before Global Placement
+
+## Tool Updates
+
+* `magic` -> `8.3.466`/`bfd938b`
+  * Addresses a bug with reading DEF files using generated vias
+* Updated KLayout to `0.28.17-1`
+  * Relaxes PIP version range to accept newer patches (not newer minor versions)
+
+## Testing
+
+* Added an OpenLane 1-compatible configuration for `aes_user_project_wrapper` to
+  test back-compat
+* Ensured `open_proj_timer` config matches OpenLane 1's as closely as possible
+* Updated unit tests because newer versions of flake8 hate `pytest.fixture()`
+  for some reason
+* Updated step unit tests that look for OpenROAD alerts to use captured alerts
+  instead of checking the log.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.common`
+  * `Toolbox`
+    * New method, `get_timing_files_categorized`, returns the three design
+      formats in, get this, three separate lists
+* `openlane.config`
+  * `Config`
+    * No longer attempts to migrate `EXTRA_SPEFS` to `MACROS` because of
+      side-effects (e.g. the dummy paths)
+  * PDK backwards-compatibility script now skips migrating `LIB_*` if `LIB`
+    already exists
+    * "Default" constraints made exclusive to `sky130` and `gf180mcu`
+* `openlane.steps.Step`
+  * `run_subprocess`: New concept of "output processors"- classes that may do
+    processing on the output of a step to parse it
+    * Default output parsing behavior implemented as `DefaultOutputProcessor`
+    * `run_subprocess` no longer returns just metrics, rather, metrics are
+      returned under the key `generated_metrics` when the
+      `DefaultOutputProcessor` is used along with the results of other output
+      processors
+* Slightly adjusted widths of printed tables across the codebase for
+  readability.
+
+## API Breaks
+
+* `OpenROAD.ManualMacroPlacement`
+
+  * Verilog names of macros are now considered instead of DEF names in the event
+    of a mismatch (e.g. for instances with `[]` or `/` in the name.)
+
+* `openlane.steps.Step`
+
+  * `run_subprocess` no longer returns just metrics, rather, metrics are
+    returned under the key `generated_metrics` when the `DefaultOutputProcessor`
+    is used along with the results of other output processors
+
+## Documentation
+
+* Adapted timing closure guide by [@shalan](https://github.com/shalan) to
+  OpenLane 2
+  * Converted to MyST Markdown
+  * All images made dark-mode friendly
+  * References to variables all now resolve properly
+* Fixed a number of inconsistencies and broken links.
+
+# 2.0.0rc1
+
+## CLI
+
+* Fixed `--ef-save-views-to` not saving `.mag`, `.gds` views
+
+## Steps
+
+* `Checker.*`
+  * Created new `ERROR_ON` variables with the removed `QUIT_ON` variables from
+    the `Classic` flow being added as deprecated names for these variables.
+  * Disabling `ERROR_ON*` (previously `QUIT_ON*`) no longer bypasses a step
+    entirely. A warning will be generated and the flow will not quit.
+* `Checker.TimingViolations`
+  * `TIMING_VIOLATIONS_CORNERS` renamed to `TIMING_VIOLATION_CORNERS`
+  * Now creates a new variable `<violation_type>_VIOLATION_CORNERS` for its
+    subclasses. This allows for fine-grained control of the IPVT corners checked
+    by each subclass.
+  * Now generates errors for violations occuring at `TIMING_VIOLATION_CORNERS`
+    (unless the subclass variable override is defined) and generates warnings
+    for violations in the rest of the IPVT corners.
+* `Checker.HoldViolations`
+  * Added `HOLD_VIOLATION_CORNERS` which takes precedence over
+    `TIMING_VIOLATION_CORNERS`
+* `Checker.SetupViolations`
+  * Added `SETUP_VIOLATION_CORNERS` acting similar to `HOLD_VIOLATION_CORNERS`.
+* Created `Checker.MaxCapViolations`
+  * Reports maximum capacitance violations.
+  * Added `MAX_CAP_VIOLATION_CORNERS`. It defaults to `[""]` which is the value
+    for matching no corners (i.e. all violations are reported as warnings).
+* Created `Checker.MaxSlewViolations`
+  * Reports maximum slew violations.
+  * Added `MAX_SLEW_VIOLATION_CORNERS`. It defaults to `[""]` which is the value
+    for matching no corners (i.e. all violations are reported as warnings).
+* `OpenROAD.GlobalPlacementSkipIO`
+  * Fixed a bug where `PL_TARGET_DENSITY_PCT` is calculated base on
+    `FP_CORE_UTIL` in designs with `FP_SIZING` set to `absolute`. The behavior
+    now matches `OpenROAD.GlobalPlacement`.
+* `Yosys.*`
+  * Verilog files are now read with `-noautowire`. This changes the default
+    `default_nettype` to `none`, no longer tolerating implicitly declared wires
+    unless `default_nettype` is explicitly set to something else in a particular
+    source file.
+
+## Flows
+
+* `Classic`, `VHDLClassic`
+  * **API Break**: Removed all `QUIT_ON*` variables from the flow itself
+  * Added `Checker.MaxSlewViolations`
+  * Added `Checker.MaxCapViolations`
+
+## Tool Updates
+
+* Updated `black` to `23` + matching formatting changes to the code
+* Makefile no longer creates venvs for most targets
+* Default Nix shell no longer includes development-specific tools (jdupes,
+  alejandra, pytest…), new devShell `dev` includes these tools and more
+
+## Testing
+
+* Created two coverage commands in the `Makefile`, one for infrastructure unit
+  tests and the other for step unit tests
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.flows.Flow`:
+  * All warnings captured are now printed at the end of the flow à la OpenLane
+    1\.
+* `openlane.flows.SequentialFlow`:
+  * Deferred errors are now handled in the same way normal errors are.
+* Various internal environment variables changed from `_lower_snake_case` to
+  `_UPPER_SNAKE_CASE` for (relative) consistency
+* `openlane.common.TclUtils`
+  * Empty strings now escaped as `""`
+* `openlane.steps.Step`
+  * Printing of last 10 lines of a file now uses a ring buffer instead of
+    concatenating then splitting then joining
+* `openlane.steps.TclStep`
+  * Various handcrafted joins in subclasses now use `TclStep.value_to_tcl` or
+    `TclUtils.join`
+  * **API Break**: `value_to_tcl` no longer converts dataclasses to JSON,
+    rather, they're converted to Tcl dicts
+  * **API Break**: `run_subprocess` now intercepts and passes most environment
+    variables are now passed indirectly, i.e., a file is made and placed under
+    the variable `_TCL_ENV_IN`, which is then to be sourced by scripts. This
+    helps avoid the 1 MiB args + env limit in macOS / 2 MiB args + env limit in
+    Linux.
+
+## API Breaks
+
+* **API Break**: Removed all `QUIT_ON*` variables from the the `Classic`,
+  `VHDLClassic` per se, however they are not translated variables.
+
+## Documentation
+
+* Fixed bug with newcomer's guide (thanks @calvbore)
+
+# 2.0.0b17
+
+## CLI
+
+* Multiple configuration files now supported, incl. mixes of JSON and Tcl files
+* Added new flag, `--show-progress-bar/--hide-progress-bar`, also
+  self-explanatory
+* Added new flag, `--run-example`, which instantiates and runs one of the
+  example designs
+* Added new flag, `--condensed`, which sets `logging.options.condensed_mode` and
+  changes the default for showing the progress bar to `False`
+* Added new entry script, `openlane.config`, which allows configuration files to
+  be interactively generated
+* Fixed bug where 0 config files causes a crash
+
+## Steps
+
+* All steps:
+  * Change skipped-step `warn`s to `info` if the skip should not necessarily be
+    a cause for alarm
+  * Suppressed warnings about dead processes when tracking subprocess resource
+    usage
+  * Fixed crash when subprocesses emit non-UTF-8 output: Now a proper
+    `StepException` is raised
+* Created `KLayout.DRC`
+  * Only compatible with sky130 (skipped for other PDKs)
+* Created `Checker.PowerGridViolations`
+  * Raises deferred step error if `design__power_grid_violation__count` is
+    nonzero
+* Created `Checker.SetupViolations `, `Checker.HoldViolations` to check
+  setup/hold timing violations
+  * Add config variable `TIMING_VIOLATIONS_CORNERS`, which is a list of
+    wildcards to match corners those steps will flag an error on.
+* `KLayout.OpenGUI`
+  * Added a new boolean config var, `KLAYOUT_EDITOR_MODE` to that enables editor
+    mode in KLayout
+  * Added new variable `KLAYOUT_PRIORITIZE_GDS`, which as the name implies,
+    prioritizes GDS over DEF if there's a GDS in the input state.
+  * `cwd` for subprocess set to step directory for convenience
+  * Fixed bug where viewer mode was not working
+* `Odb.*`, `KLayout.*`
+  * Subprocesses now inherit `sys.path` in `PYTHONPATH` which allows `nix run`
+    to work properly
+* `Odb.ApplyDEFTemplate`
+  * Added `FP_TEMPLATE_MATCH_MODE`, with values `strict` (default) or
+    `permissive` with `strict` raising an error if any pins are missing from
+    either the template or the design.
+  * Warn when the template DEF die area is different from the design die area.
+  * No longer copies the die area from the DEF template file-- floorplanning
+    needs to be executed correctly first. `DIE_AREA`
+* `Odb.CustomIOPlacement`
+  * Completely re-implemented pin placement file parser in Antlr4 for more
+    thorough syntax and semantic checking at
+    https://github.com/efabless/ioplace_parser
+  * Formalized concept of annotations; documented three annotations:
+    `@min_distance`, `@bit_major`, and `@bus_major`.
+  * Rewrote `openlane/scripts/odbpy/io_place.py` to rely on the new parser +
+    general cleanup
+* `Odb.ManualMacroPlacement`
+  * Instances missing placement information are no longer treated as errors and
+    are simply skipped so it can be passed on to other steps (or if is
+    information about a nested macro)
+* Created new step `Odb.WriteVerilogHeader`
+  * Writes a `.vh` file using info from the layout post-PDN generation and the
+    Verilog header
+* `OpenROAD.*`
+  * Updated to handle `EXTRA_EXCLUDED_CELLS`
+  * No longer trimming liberty files, relying on `set_dont_use` instead
+* `OpenROAD.CheckAntennas`
+  * Added new `antenna_summary.rpt` file with a summary table for antennas
+    matching that of OpenLane 1
+* `OpenROAD.Floorplan`
+  * `PL_TARGET_DENSITY_PCT` default calculation now prioritizes using metric
+    `design__instance__utilization` if available.
+  * Fixed a crash where obstructions were passed as floats instead of database
+    unit integers and caused a crash.
+* `OpenROAD.GeneratePDN`
+  * Renamed `DESIGN_IS_CORE` to `FP_PDN_MULTILAYER`, which is more accurate to
+    its functionality
+  * Removed comments about assumptions as to the PDN stack config with regards
+    to top-level integrations vs macros: macros can have two PDN layers and a
+    core ring
+  * Fixed issue where a PDN core ring would still be created on two layers even
+    if `FP_PDN_MULTILAYER` is set to false- an error is thrown now
+  * Fixed issue where `FP_PDN_VSPACING` is not passed to `add_pdn_stripe` when
+    `FP_PDN_MULTILAYER` is set to false (thanks @mole99)
+  * **API Break**: `FP_PDN_CHECK_NODES` is no longer a config variable for this
+    step. The relevant checks are always run now, however, they do not cause the
+    flow to exit immediately, rather, they generate
+    `design__power_grid_violation__count ` metrics.
+* `OpenROAD.GlobalPlacementSkipIO`
+  * Updated to do nothing when `FP_DEF_TEMPLATE` is defined
+* `OpenROAD.IOPlacement`
+  * Updated to do nothing when `FP_DEF_TEMPLATE` is defined.
+* `OpenROAD.IRDropReport`
+  * Added `VSRC_LOC_FILES` for IR Drop, printing a warning if not given a value
+  * Rewrote internal IR drop script
+* `OpenROAD.Resizer*`, `OpenROAD.RepairDesign`
+  * `RSZ_DONT_USE_CELLS` removed, added as a deprecated name for
+    `EXTRA_EXCLUDED_CELLS`
+* `OpenROAD.STAPostPNR`
+  * Added hold/setup reg-to-reg worst violation to STA summary table.
+  * Added hold/setup tns to STA summary table.
+  * Slack values of zero are now highlighted green instead of red.
+  * Changed summary table column header from `reg-to-reg` to `Reg to Reg Paths`
+    for readability
+  * Fixed slacks for `Reg to Reg Paths` only showing negative values.
+* `Yosys.*`
+  * Updated to handle `EXTRA_EXCLUDED_CELLS`
+  * Internally replaced various `" ".join`s to `TclUtils.join`
+  * Implementation detail: "internal" variables to be lowercase and prefixed
+    with an underscore as a pseudo-convention
+  * Turned `read_deps` into one sourced script that is generated by Python
+    instead of a Tcl function (as was the case for `.EQY`)
+  * For maximum compatibility, priority of views used of macros changed, now, in
+    that order it's
+    * Verilog Header
+    * Netlist/Powered Netlist
+    * Lib File
+  * Fixed bug where Lighter would not be executed properly
+* `Yosys.Synthesis`
+  * Updated error for bad area/delay format to make a bit more sense
+  * Updated internal `stat` calls to Yosys to pass the liberty arguments so the
+    area can be consistently calculated
+  * Fixed bug where custom technology maps were not properly applied
+  * Removed `SYNTH_STRATEGY` value `AREA 4` -- never existed or worked
+
+## Flows
+
+* All flows
+  * Added a `flow.log`, logging at a `VERBOSE` log level
+  * Properly implemented filtering for `error.log` and `warning.log`
+  * Constructors updated to support multiple configuration files
+* Universal Flow Configuration Variables
+  * Created `TRISTATE_CELLS`, accepting `TRISTATE_CELL_PREFIX` from OpenLane 1
+    with translation behavior
+  * Created new PDK variable `MAX_CAPACITANCE_CONSTRAINT`
+    * Also added to `base.sdc`
+  * Created new variable `EXTRA_EXCLUDED_CELLS`, which allows the user to
+    exclude more cells throughout the entire flow
+  * Renamed `PRIMARY_SIGNOFF_TOOL` to `PRIMARY_GDSII_STREAMOUT_TOOL` with
+    translation behavior
+  * Renamed `GPIO_PADS_PREFIX` to `GPIO_PAD_CELLS` with translation behavior
+  * Renamed `FP_WELLTAP_CELL` to `WELLTAP_CELL` with translation behavior
+  * Renamed `FP_ENDCAP_CELL` to `ENDCAP_CELL` with translation behavior
+  * Renamed `SYNTH_EXCLUSION_CELL_LIST` to `SYNTH_EXCLUDED_CELL_FILE` with
+    translation behavior
+  * Renamed `PNR_EXCLUSION_CELL_LIST` to `PNR_EXCLUDED_CELL_FILE` with
+    translation behavior
+* `SynthesisExploration`
+  * Added new flow, `SynthesisExploration`, that tries all synthesis strategies
+    in parallel, performs STA and reports key area and delay metrics
+* `Classic`
+  * `ApplyDEFTemplate` now takes precedence over `CustomIOPlacement`, matching
+    OpenLane 1
+  * Added `Checker.PowerGridViolations` to the flow, gated by
+    `QUIT_ON_PDN_VIOLATIONS` (which has a deprecated name of
+    `FP_PDN_CHECK_NODES`) for back-compat with OpenLane 1 configurations
+  * Added `Checker.SetupViolations`, `Checker.HoldViolations` to the end of the
+    flow
+    * Both gated by `QUIT_ON_TIMING_VIOLATIONS`
+    * Each gated by `QUIT_ON_SETUP_VIOLATIONS`, `QUIT_ON_HOLD_VIOLATIONS`
+      respectively
+
+## Tool Updates
+
+* Repository turned into a [Flake](https://nixos.wiki/wiki/Flakes) with
+  `openlane` as the default output package and the previous shell environment as
+  the default output devShell
+  * `flake-compat` used so `nix-shell` continues to work as you'd expect for
+    classic nix
+* All package `.nix` files
+  * Now follow the `nixpkgs` convention of explicitly listing the dependencies
+    instead of taking `pkgs` as an argument
+  * Have a `meta` field
+* Reformatted all Nix code using
+  [alejandra](https://github.com/kamadorueda/alejandra)
+* Updated Open PDKs to `bdc9412`
+* Updated OpenROAD to `75f2f32`
+  * Added some conveniences for manual compilation to the Nix derivation
+* Updated Volare to `0.16.0`/`4732594`
+  * New class in API, the `Family` class, helps provide more meaningful error
+    reporting if the user provides an invalid PDK variant (and resolves to a
+    variant if just a PDK name is provided)
+* Updated Yosys to `0.38`/`543faed`
+  * Added Yosys F4PGA SDC plugin (currently unused)
+* Added KLayout's python module to the explicit list of requirements
+
+## Testing
+
+* Added various [IPM](https://github.com/efabless/ipm) designs to the CI
+* Added a full caravel user project example (wrapper + example) to the CI
+* Greatly expanded unit tests for individual steps
+
+## Misc. Enhancements/Bugfixes
+
+* Created new folder in module, `examples` which contains example designs (of
+  which `spm` is used as a smoke test)
+* `__main__`
+  * Two new commandline flags added
+  * `--save-views-to`: Saves all views to a directory in a structure after
+    successful flow completion using `State.save_snapshot`
+  * `--ef-save-views-to`: Saves all views to a directory in the Efabless
+    format/convention, such as the one used by Caravel User Project.
+* `openlane.logging`
+  * `LogLevels` is now an IntEnum instead of a class with global variables
+  * Create a custom formatter for logging output instead of passing the
+    formatting options as text to the logger
+  * Created new log level, `SUBPROCESS`, between `DEBUG` and `VERBOSE`, and made
+    it the new default
+  * Create a separate handler for logs with level `SUBPROCESS` that doesn't
+    print timestamps, level, etc
+  * New global singleton `options` created, which allows to configure both:
+    * `condensed_mode`: boolean to make the logs terser and suppress messages
+      with `SUBPROCESS` level unconditionally
+    * `show_progress_bar`: boolean, self-explanatory
+  * **API Break**: Removed `LogLevelsDict`, LogLevels[] now works just fine
+  * Changed all instances of `WARN` to `WARNING` for consistency
+  * Fixed bug where `VERBOSE` logging in internal plain output mode simply used
+    `print`
+* `openlane.state`
+  * Added new `DesignFormat`: `VERILOG_HEADER`
+* `openlane.common`
+  * `Toolbox`
+    * Objects no longer create a folder immediately upon construction
+    * `remove_cells_from_lib` now accepts wildcard patterns to match against
+      cells (to match the behavior of OpenROAD steps)
+    * `get_macro_views` can now take more than one `DesignFormat` for
+      `unless_exist`
+  * New `click` type, `IntEnumChoice`, which turns integer enums into a set of
+    choices accepting either the enum name or value
+  * New function `process_list_file` to process `.gitignore`-style files (list
+    element/comment/empty line)
+* `openlane.config`
+  * Updated to support an arbitrary number of a combination of Tcl files, JSON
+    files and python dictionaries (or any object conforming to `Mapping`) to
+    create configuration files, each with their own `Meta` values
+  * `design_dir` can now be set explicitly, but if unset will take `dirname` of
+    last config file passed (if applicable)
+  * Internally unified how Tcl-based configurations and others are parsed
+  * `Instance` fields `location`, `orientation` now optional
+  * `Macro` has two new views now, `vh` and `pnl`
+  * New `DesignFormat` added: * `openlane.config.DesignFormat`
+* `openlane.steps`
+  * `__main__`
+    * Use default `--pdk-root` for `run` command
+  * `Step`
+    * `load()`'s pdk_root flag can now be passed as `None` where it will default
+      to `cwd`
+    * New method `load_finished()` to load concluded steps (which loads the
+      output state and step directory)
+    * `factory`
+      * New method `from_step_config()` which attempts to load a step from an
+        input configuration file
+        * Reworked step-loading function to use `from_step_config()` where
+          appropriate
+    * `create_reproducible()`
+      * Added `flatten` to public API, which flattens the file structure with
+        the exception of the PDK, which is saved to `pdk/$PDK`
+      * Modified behavior of flatten to allow including the PDK (which isn't
+        flattened)
+      * Generated `run_ol.sh` now passes ARGV to the final command (backwards
+        compatible with old behavior)
+        * Primary use for this: `run` command now accepts `--pdk-root` flag
+    * Added runtime to `*.process_stats.json`
+  * `openlane.flows`
+    * Added new instance variable, `config_resolved_path`, which contains the
+      path to the `resolved.json` of a run
+    * Flows resuming existing runs now load previously concluded steps into
+      `self.step_objects` so they may be inspected
+* Fixed an issue where Docker images did not properly have dependencies of
+  dependencies set in `PYTHONPATH`.
+* Fixed a corner case where some OpenLane 1 JSON configs that use Tcl-style
+  dicts that include paths would fail conversion to a Python dict
+* Fixed a bug with ejected reproducible scripts keeping some nix store paths.
+* Fixed Docker images not having `TMPDIR` set by default
+* Updated Nix overlays to detect Darwin properly, added another fix for `jshon`
+* Updated Nix derivation to ignore `__pycache__` files
+* Suppressed tracebacks in more situations (too shouty)
+* Removed `PYTHONPATH` from `default.nix` - OpenLane now passes its
+  `site-packages` to subprocesses (less jank) (but still a bit jank)
+
+## API Breaks
+
+* Universal Flow Configuration Variables
+  * `CTS_ROOT_BUFFER`, `CTS_CLK_BUFFERS` and `CTS_MAX_CAP` all moved to
+    `OpenROAD.CTS`
+  * `IGNORE_DISCONNECTED_MODULES` moved to `Odb.ReportDisconnectedPins`
+  * `GPL_CELL_PADDING` moved to `OpenROAD.GlobalPlacement`
+  * `DPL_CELL_PADDING` moved to steps that have the rest of the `dpl` variables
+  * `GRT_LAYER_ADJUSTMENTS` moved to steps that have the rest of the routing
+    layer variables
+  * Moved `GRT_OBS` to `Odb.AddRoutingObstructions` as a deprecated name for
+    `ROUTING_OBSTRUCTIONS`
+  * Removed `FP_CONTEXT_DEF`, `FP_CONTEXT_LEF`, and `FP_PADFRAME_CFG`: To be
+    implemented
+  * Removed `LVS_INSERT_POWER_PINS`, `RUN_CVC`, `LEC_ENABLE`,
+    `CHECK_ASSIGN_STATEMENTS`
+* Moved `DesignFormat`, `DesignFormatObject` from `openlane.common` to
+  `openlane.state`
+* `openlane.common.Toolbox.remove_cells_from_lib` no longer accepts
+  `as_cell_lists` as an argument, requiring the use of `process_list_file`
+  instead
+* Removed `LogLevelsDict`, `LogLevels[]` now works just fine
+
+## Documentation
+
+* Added Glossary
+* Added FAQ
+* Added note on restarting Nix after configuring the Cachix substituter
+* Added a first stab at (conservative) minimum requirements for running
+  OpenLane- you can definitely get away with less at your own risk
+* Added extensions to make the documentation better to write and use:
+  * `sphinx-tippy` for tooltips
+  * `sphinx-copybutton` for copying terminal commands
+  * `sphinxcontrib-spelling` so we don't write "Verliog"
+* Custom extension so Flows, Steps and Variables can be referenced using custom
+  MyST roles
+* Added a new target to the `Makefile`, `watch-docs`, which watches for changes
+  to rebuild the docs (requires `nodemon`)
+* Separated the "Getting Started" guide into a tutorial for newcomers and a
+  migration guide for OpenLane veterans
+* Changed *all* `.png` files to `.webp` (saves considerable space, around 66%
+  per image)
+* Updated all Microsoft Windows screenshots to a cool 150% UI scale
+* Updated generated documentation for steps, flows and universal configuration
+  variable
+* Updated Readme to reflect `aarch64` support
+* Updated docstrings across the board for spelling and terminology mistakes
+
 # 2.0.0b16
 
 ## Steps
@@ -187,7 +894,8 @@
     * `cbc`: Use c++14 instead of the default c++17 (`register` declarations)
     * `lemon-graph`: `sed` patch `register` declaration
     * `spdlog-internal-fmt`: `spdlog` but with its internal `fmt` as the
-      external `fmt` causes some problems\* `clp` to support `aarch64-linux`
+      external `fmt` causes some problems
+    * `clp` to support `aarch64-linux`
     * `cairo`: to enable X11 support on macOS
     * `or-tools`: to use a new SDK on `x86-64-darwin` (see
       [this](https://github.com/NixOS/nixpkgs/issues/272156#issuecomment-1839904283)
@@ -431,7 +1139,7 @@
 * open_pdks -> `1341f54`
 * yosys -> `14d50a1` to match OL1
 * Restored ancient `{DATA,CLOCK}_WIRE_RC_LAYER` variables, with translation
-  behavior from `WIRE_RC_LAYER` to \`DATA_WIRE_RC_LAYER
+  behavior from `WIRE_RC_LAYER` to `DATA_WIRE_RC_LAYER`
 * Created new PDK variable `CELL_SPICE_MODELS` to handle .spice models of the
   SCLs instead of globbing in-step
 * Changed default value of `MAGIC_DRC_USE_GDS`

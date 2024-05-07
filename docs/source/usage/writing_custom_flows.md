@@ -95,7 +95,7 @@ The {py:meth}`openlane.flows.Flow.start` method will return a tuple comprised of
 
 ```{important}
 Do NOT call the `run` method of any `Flow` from outside of `Flow` and its
-subclasses- consider it a private method. `start` is class-independent and
+subclasses- consider it a protected method. `start` is class-independent and
 does some incredibly important processing.
 
 You should not be overriding `start` either.

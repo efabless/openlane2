@@ -14,13 +14,14 @@
 # flake8: noqa E402
 import odb
 import json
-from fnmatch import fnmatch
 from openroad import Tech, Design
 
+import re
 import sys
 import locale
 import inspect
 import functools
+from fnmatch import fnmatch
 from typing import Callable, Dict
 
 # -- START: Environment Fixes
@@ -39,11 +40,13 @@ from rich.table import Table
 rich
 click
 Table
+odb
 
 write_fn: Dict[str, Callable] = {
-    "def": lambda reader, file: file and odb.write_def(reader.block, file),
-    "odb": lambda reader, file: file and odb.write_db(reader.db, file),
+    "def": lambda reader, file: file and reader.design.writeDef(file),
+    "odb": lambda reader, file: file and reader.design.writeDb(file),
 }
+auto_handled_output_opts = [f"output_{key}" for key in write_fn]
 
 
 class OdbReader(object):
@@ -74,7 +77,7 @@ class OdbReader(object):
         self.libs = self.db.getLibs()
         self.cells = {}
         for lib in self.libs:
-            self.cells.update({m.getName(): m for m in lib.getMasters()})
+            self.cells.update({m: m for m in lib.getMasters()})
         if self.chip is not None:
             self.block = self.db.getChip().getBlock()
             self.name = self.block.getName()
@@ -82,8 +85,15 @@ class OdbReader(object):
             self.dbunits = self.block.getDefUnits()
             self.instances = self.block.getInsts()
 
+        busbitchars = re.escape("[]")  # TODO: Get alternatives from LEF parser
+        dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
+        self.escape_verilog_rx = re.compile(rf"([{dividerchar + busbitchars}])")
+
     def add_lef(self, new_lef):
-        odb.read_lef(self.db, new_lef)
+        self.ord_tech.readLef(new_lef)
+
+    def escape_verilog_name(self, name_in: str) -> str:
+        return self.escape_verilog_rx.sub(r"\\\1", name_in)
 
     def _dpl(self):
         """
@@ -182,11 +192,13 @@ def click_odb(function):
 
         outputs = []
         for key, value in kwargs.items():
-            if key.startswith("output_"):
+            if key in auto_handled_output_opts:
                 id = key[7:]
                 outputs.append((id, value))
 
-        kwargs = {k: kwargs[k] for k in kwargs.keys() if not k.startswith("output_")}
+        kwargs = {
+            k: kwargs[k] for k in kwargs.keys() if not k in auto_handled_output_opts
+        }
 
         if "input_db" in parameter_keys:
             kwargs["input_db"] = input_db
@@ -198,7 +210,6 @@ def click_odb(function):
                 "Error: Invocation was not updated to use an odb file.", file=sys.stderr
             )
             exit(1)
-
         function(**kwargs)
 
         for format, path in outputs:

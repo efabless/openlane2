@@ -7,29 +7,46 @@
     - s44
     - zipdiv
     - blink
-    - name: xtea
-      config_file: config.tcl
     - usb
     - usb_cdc_core
-    - name: latch
-      config_file: config_good.json
-    - name: latch
-      config_file: config_bad.json
+    - cell_inverter
     - spm
     - gcd
     - caravel_upw
     - io_placer
     - test_sram_macro
     - manual_macro_placement_test
-    - aes_user_project_wrapper
+    - name: aes_user_project_wrapper
+      test_name: aes_upw_new
+      config_file: config.json
+    - name: aes_user_project_wrapper
+      test_name: aes_upw_old
+      config_file: config_old.json
     - user_proj_timer
-    - EF_PSRAM_CTRL_V2
-    - MS_SPI_XIP_CACHE
-    - MS_DMAC_AHBL
-    - MS_CLK_RST
-    - EF_GPIO
-    - EF_TCC32
-    - EF_UART
+    - name: xtea
+      config_file: config.tcl
+    - name: latch
+      test_name: latch_good
+      config_file: config_good.json
+    - name: latch
+      test_name: latch_bad
+      config_file: config_bad.json
+    - name: EF_PSRAM_CTRL_V2
+      ipm: v1.0.3
+    - name: EF_UART
+      ipm: v1.0.0
+    - name: MS_SPI_XIP_CACHE
+      ipm: v1.0.0
+    - name: MS_DMAC_AHBL
+      ipm: v1.0.2
+    - name: MS_CLK_RST
+      ipm: v1.0.1
+    - name: EF_TCC32
+      ipm: v1.0.1
+    - name: EF_GPIO
+      ipm: v1.0.0
+    - name: dual_spm
+      script: integrate.py
 - scl: sky130A/sky130_fd_sc_hd
   name: extended_test_set
   designs:
@@ -53,9 +70,13 @@
     - zipdiv
     - blink
     - wbqspiflash
+    - inverter
+    - cell_inverter
     - name: latch
+      test_name: latch_good
       config_file: config_good.json
     - name: latch
+      test_name: latch_bad
       config_file: config_bad.json
 - scl: gf180mcuD/gf180mcu_fd_sc_mcu7t5v0
   name: extended_test_set

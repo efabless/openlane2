@@ -13,8 +13,7 @@
 # limitations under the License.
 import os
 import re
-import subprocess
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 from .step import Step, StepException, ViewsUpdate, MetricsUpdate
 from ..config import Variable
@@ -24,7 +23,12 @@ from ..common import Path
 
 @Step.factory.register()
 class Lint(Step):
-    """Lint design Verilog source files"""
+    """
+    Lints inputs RTL Verilog files.
+
+    The linting is done with the defines for power and ground inputs on, as more
+    macros are available with powered netlists than unpowered netlists.
+    """
 
     id = "Verilator.Lint"
     name = "Verilator Lint"
@@ -37,6 +41,13 @@ class Lint(Step):
             "VERILOG_FILES",
             List[Path],
             "The paths of the design's Verilog files.",
+        ),
+        Variable(
+            "VERILOG_POWER_DEFINE",
+            str,
+            "Specifies the name of the define used to guard power and ground connections in the input RTL.",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+            default="USE_POWER_PINS",
         ),
         Variable(
             "LINTER_INCLUDE_PDK_MODELS",
@@ -68,13 +79,6 @@ class Lint(Step):
             Optional[List[str]],
             "Linter-specific preprocessor definitions; overrides VERILOG_DEFINES for the lint step if exists",
         ),
-        Variable(
-            "QUIT_ON_LINTER_WARNINGS",
-            bool,
-            "Quit on linter warnings.",
-            default=False,
-            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
-        ),
     ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -83,40 +87,68 @@ class Lint(Step):
         metrics_updates: MetricsUpdate = {}
         extra_args = []
 
-        scl_models = (
-            self.config["CELL_VERILOG_MODELS"]
-            or self.config["CELL_BB_VERILOG_MODELS"]
-            or []
+        blackboxes = []
+
+        model_list: List[str] = []
+        model_set: Set[str] = set()
+
+        if cell_verilog_models := self.config["CELL_VERILOG_MODELS"]:
+            blackboxes.append(
+                self.toolbox.create_blackbox_model(
+                    frozenset(cell_verilog_models),
+                    frozenset(["USE_POWER_PINS"]),
+                )
+            )
+
+        macro_views = self.toolbox.get_macro_views_by_priority(
+            self.config,
+            [
+                DesignFormat.VERILOG_HEADER,
+                DesignFormat.POWERED_NETLIST,
+                DesignFormat.NETLIST,
+            ],
         )
-        input_models = (
-            scl_models
-            + self.toolbox.get_macro_views(self.config, DesignFormat.NETLIST)
-            + (self.config["EXTRA_VERILOG_MODELS"] or [])
-        )  # not +=: break reference!
+        for view, format in macro_views:
+            if format == DesignFormat.VERILOG_HEADER:
+                blackboxes.append(str(view))
+            else:
+                str_view = str(view)
+                if str_view not in model_set:
+                    model_set.add(str_view)
+                    model_list.append(str_view)
 
-        defines = self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
+        if extra_verilog_models := self.config["EXTRA_VERILOG_MODELS"]:
+            for model in extra_verilog_models:
+                str_model = str(model)
+                if str_model not in model_set:
+                    model_set.add(str_model)
+                    model_list.append(str_model)
+        defines = [
+            self.config["VERILOG_POWER_DEFINE"],
+            f"PDK_{self.config['PDK']}",
+            f"SCL_{self.config['STD_CELL_LIBRARY']}",
+            "__openlane__",
+            "__pnr__",
+        ]
+        defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
-        bb_path = self.toolbox.create_blackbox_model(
-            frozenset([str(path) for path in input_models]),
-            frozenset(defines),
-        )
+        if len(model_list):
+            bb_path = self.toolbox.create_blackbox_model(
+                tuple(model_list),
+                frozenset(defines),
+            )
+            blackboxes.append(bb_path)
 
-        bb_with_guards = os.path.join(self.step_dir, "bb.v")
-        with open(bb_path, "r", encoding="utf8",) as bb_in, open(
-            bb_with_guards,
-            "w",
-            encoding="utf8",
-        ) as bb_out:
-            "\n/* verilator lint_off UNUSEDSIGNAL */\n$out_str\n/* verilator lint_on UNUSEDSIGNAL */\n/* verilator lint_on UNDRIVEN */"
-            print("/* verilator lint_off UNDRIVEN */", file=bb_out)
-            print("/* verilator lint_off UNUSEDSIGNAL */", file=bb_out)
-            for line in bb_in:
-                bb_out.write(line)
-            print("/* verilator lint_on UNDRIVEN */", file=bb_out)
-            print("/* verilator lint_on UNUSEDSIGNAL */", file=bb_out)
+        vlt_file = os.path.join(self.step_dir, "_deps.vlt")
+        with open(vlt_file, "w") as f:
+            f.write("`verilator_config\n")
+            f.write("lint_off -rule DECLFILENAME\n")
+            f.write("lint_off -rule EOFNEWLINE\n")
+            for blackbox in blackboxes:
+                f.write(f'lint_off -rule UNDRIVEN -file "{blackbox}"\n')
+                f.write(f'lint_off -rule UNUSEDSIGNAL -file "{blackbox}"\n')
 
-        if not self.config["QUIT_ON_LINTER_WARNINGS"]:
-            extra_args.append("--Wno-fatal")
+        extra_args.append("--Wno-fatal")
 
         if self.config["LINTER_RELATIVE_INCLUDES"]:
             extra_args.append("--relative-includes")
@@ -127,25 +159,23 @@ class Lint(Step):
         for define in defines:
             extra_args.append(f"+define+{define}")
 
-        exit_error: Optional[subprocess.CalledProcessError] = None
-        try:
-            self.run_subprocess(
-                [
-                    "verilator",
-                    "--lint-only",
-                    "--Wall",
-                    "--Wno-DECLFILENAME",
-                    "--Wno-EOFNEWLINE",
-                    "--top-module",
-                    self.config["DESIGN_NAME"],
-                ]
-                + [bb_with_guards]
-                + self.config["VERILOG_FILES"]
-                + extra_args,
-                env=env,
-            )
-        except subprocess.CalledProcessError as e:
-            exit_error = e
+        result = self.run_subprocess(
+            [
+                "verilator",
+                "--lint-only",
+                "--Wall",
+                "--Wno-DECLFILENAME",
+                "--Wno-EOFNEWLINE",
+                "--top-module",
+                self.config["DESIGN_NAME"],
+                vlt_file,
+            ]
+            + blackboxes
+            + self.config["VERILOG_FILES"]
+            + extra_args,
+            env=env,
+            check=False,
+        )
 
         warnings_count = 0
         errors_count = 0
@@ -165,8 +195,10 @@ class Lint(Step):
                 if match := exiting_rx.search(line):
                     errors_count = int(match[1])
 
-            if exit_error is not None and errors_count == 0:
-                raise StepException(f"Verilator exited unexpectedly: {exit_error}")
+            if result["returncode"] != 0 and errors_count == 0:
+                raise StepException(
+                    f"Verilator exited unexpectedly with return code {result['returncode']}"
+                )
 
         metrics_updates.update({"design__lint_error__count": errors_count})
         metrics_updates.update(

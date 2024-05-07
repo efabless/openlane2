@@ -14,7 +14,6 @@
 import os
 import re
 import json
-import site
 import shutil
 from math import inf
 from decimal import Decimal
@@ -22,12 +21,22 @@ from functools import reduce
 from abc import abstractmethod
 from typing import List, Literal, Optional, Tuple
 
-from deprecated.sphinx import deprecated
 
 from .common_variables import io_layer_variables
+from .openroad_alerts import (
+    OpenROADAlert,
+    OpenROADOutputProcessor,
+)
 from .openroad import DetailedPlacement, GlobalRouting
-from .step import ViewsUpdate, MetricsUpdate, Step, StepException, CompositeStep
-from ..logging import warn, info
+from .step import (
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+    StepException,
+    CompositeStep,
+    DefaultOutputProcessor,
+)
+from ..logging import info, verbose
 from ..config import Variable, Macro
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
@@ -38,6 +47,20 @@ inf_rx = re.compile(r"\b(-?)inf\b")
 class OdbpyStep(Step):
     inputs = [DesignFormat.ODB]
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
+
+    output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
+    def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
+        if alert.code in [
+            "ORD-0039",  # .openroad ignored with -python
+            "ODB-0220",  # LEF thing obsolete
+        ]:
+            return alert
+        if alert.cls == "error":
+            self.err(str(alert))
+        elif alert.cls == "warning":
+            self.warn(str(alert))
+        return alert
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
@@ -59,20 +82,16 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        python_path_elements = site.getsitepackages()
-        if current_pythonpath := env.get("PYTHONPATH"):
-            python_path_elements.append(current_pythonpath)
-        python_path_elements.append(os.path.join(get_script_dir(), "odbpy"))
-        env["PYTHONPATH"] = ":".join(python_path_elements)
+        env["PYTHONPATH"] = os.path.join(get_script_dir(), "odbpy")
 
-        generated_metrics = self.run_subprocess(
+        subprocess_result = self.run_subprocess(
             command,
             env=env,
             **kwargs,
         )
 
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = generated_metrics
+        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -101,13 +120,18 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
+        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+            DesignFormat.LEF in self.inputs
+        ):
+            lefs.append("--design-lef")
+            lefs.append(str(design_lef))
         return (
             [
                 "openroad",
                 "-exit",
                 "-no_splash",
                 "-metrics",
-                metrics_path,
+                str(metrics_path),
                 "-python",
                 self.get_script_path(),
             ]
@@ -121,6 +145,53 @@ class OdbpyStep(Step):
 
     def get_subcommand(self) -> List[str]:
         return []
+
+
+@Step.factory.register()
+class CheckMacroAntennaProperties(OdbpyStep):
+    id = "Odb.CheckMacroAntennaProperties"
+    name = "Check Antenna Properties of Macros Pins in Their LEF Views"
+    inputs = OdbpyStep.inputs
+    outputs = []
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "check_antenna_properties.py",
+        )
+
+    def get_cells(self) -> List[str]:
+        macros = self.config["MACROS"]
+        cells = []
+        if macros:
+            cells = list(macros.keys())
+        return cells
+
+    def get_report_path(self) -> str:
+        return os.path.join(self.step_dir, "report.yaml")
+
+    def get_command(self) -> List[str]:
+        args = ["--report-file", self.get_report_path()]
+        for name in self.get_cells():
+            args += ["--cell-name", name]
+        return super().get_command() + args
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if not self.get_cells():
+            info("No cells provided, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@Step.factory.register()
+class CheckDesignAntennaProperties(CheckMacroAntennaProperties):
+    id = "Odb.CheckDesignAntennaProperties"
+    name = "Check Antenna Properties of Pins in The Generated Design LEF view"
+    inputs = CheckMacroAntennaProperties.inputs + [DesignFormat.LEF]
+
+    def get_cells(self) -> List[str]:
+        return [self.config["DESIGN_NAME"]]
 
 
 @Step.factory.register()
@@ -145,6 +216,12 @@ class ApplyDEFTemplate(OdbpyStep):
             "Whether to require that the pin set of the DEF template and the design should be identical. In permissive mode, pins that are in the design and not in the template will be excluded, and vice versa.",
             default="strict",
         ),
+        Variable(
+            "FP_TEMPLATE_COPY_POWER_PINS",
+            bool,
+            "Whether to *always* copy all power pins from the DEF template to the design.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
@@ -155,22 +232,34 @@ class ApplyDEFTemplate(OdbpyStep):
         )
 
     def get_command(self) -> List[str]:
-        return super().get_command() + [
+        args = [
             "--def-template",
             self.config["FP_DEF_TEMPLATE"],
             f"--{self.config['FP_TEMPLATE_MATCH_MODE']}",
         ]
+        if self.config["FP_TEMPLATE_COPY_POWER_PINS"]:
+            args.append("--copy-def-power")
+        return super().get_command() + args
 
-    @deprecated(
-        version="2.0.0b17",
-        reason="Template def is now applied in OpenROAD.Floorplan.",
-        action="once",
-    )
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
             return {}, {}
-        return super().run(state_in, **kwargs)
+
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        design_area_string = self.state_in.result().metrics.get("design__die__bbox")
+        if design_area_string:
+            template_area_string = metrics_updates["design__die__bbox"]
+            template_area = [Decimal(point) for point in template_area_string.split()]
+            design_area = [Decimal(point) for point in design_area_string.split()]
+            if template_area != design_area:
+                self.warn(
+                    "The die area specificied in FP_DEF_TEMPLATE is different than the design die area. Pin placement may be incorrect."
+                )
+                self.warn(
+                    f"Design area: {design_area_string}. Template def area: {template_area_string}"
+                )
+        return views_updates, {}
 
 
 @Step.factory.register()
@@ -185,7 +274,10 @@ class SetPowerConnections(OdbpyStep):
     inputs = [DesignFormat.JSON_HEADER, DesignFormat.ODB]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "set_power_connections.py")
+        return os.path.join(get_script_dir(), "odbpy", "power_utils.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["set-power-connections"]
 
     def get_command(self) -> List[str]:
         state_in = self.state_in.result()
@@ -193,6 +285,53 @@ class SetPowerConnections(OdbpyStep):
             "--input-json",
             str(state_in[DesignFormat.JSON_HEADER]),
         ]
+
+
+@Step.factory.register()
+class WriteVerilogHeader(OdbpyStep):
+    """
+    Writes a Verilog header of the module using information from the generated
+    PDN, guarded by the value of ``VERILOG_POWER_DEFINE``, and the JSON header.
+    """
+
+    id = "Odb.WriteVerilogHeader"
+    name = "Write Verilog Header"
+    inputs = [DesignFormat.ODB, DesignFormat.JSON_HEADER]
+    outputs = [DesignFormat.VERILOG_HEADER]
+
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "VERILOG_POWER_DEFINE",
+            str,
+            "Specifies the name of the define used to guard power and ground connections in the output Verilog header.",
+            deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+            default="USE_POWER_PINS",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "power_utils.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["write-verilog-header"]
+
+    def get_command(self) -> List[str]:
+        state_in = self.state_in.result()
+        return super().get_command() + [
+            "--output-vh",
+            os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh"),
+            "--input-json",
+            str(state_in[DesignFormat.JSON_HEADER]),
+            "--power-define",
+            self.config["VERILOG_POWER_DEFINE"],
+        ]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        views_updates, metrics_updates = super().run(state_in, **kwargs)
+        views_updates[DesignFormat.VERILOG_HEADER] = Path(
+            os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh")
+        )
+        return views_updates, metrics_updates
 
 
 @Step.factory.register()
@@ -229,8 +368,8 @@ class ManualMacroPlacement(OdbpyStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         cfg_file = Path(os.path.join(self.step_dir, "placement.cfg"))
         if cfg_ref := self.config.get("MACRO_PLACEMENT_CFG"):
-            warn(
-                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the 'MACROS' object."
+            self.warn(
+                "Using 'MACRO_PLACEMENT_CFG' is deprecated. It is recommended to use the new 'MACROS' configuration variable."
             )
             shutil.copyfile(cfg_ref, cfg_file)
         elif macros := self.config.get("MACROS"):
@@ -245,21 +384,17 @@ class ManualMacroPlacement(OdbpyStep):
                                 f"Misconstructed configuration: macro definition for key {module} is not of type 'Macro'."
                             )
                         for name, data in macro.instances.items():
-                            if data.placed:
-                                info(
-                                    f"Not placing already placed marco instance: {name}."
-                                )
-                            else:
-                                if not data.location:
+                            if data.location is not None:
+                                if data.orientation is None:
                                     raise StepException(
-                                        f"Unspecified key: location for non-placed macro instance: {name}."
-                                    )
-                                if not data.orientation:
-                                    raise StepException(
-                                        f"Unspecified key: orientation for non-placed macro instance: {name}"
+                                        f"Instance {name} of macro {module} has a location configured, but no orientation."
                                     )
                                 f.write(
                                     f"{name} {data.location[0]} {data.location[1]} {data.orientation}\n"
+                                )
+                            else:
+                                verbose(
+                                    f"Instance {name} of macro {module} has no location configured, ignoring…"
                                 )
 
         if not cfg_file.exists():
@@ -295,6 +430,29 @@ class ReportWireLength(OdbpyStep):
 
 @Step.factory.register()
 class ReportDisconnectedPins(OdbpyStep):
+    """
+    Creates a table of disconnected pins in the design, updating metrics as
+    appropriate.
+
+    Disconnected pins may be marked "critical" if they are very likely to
+    result in a dead design. We determine if a pin is critical as follows:
+
+    * For the top-level macro: for these four kinds of pins: inputs, outputs,
+      power inouts, and ground inouts, at least one of each kind must be
+      connected or else all pins of a certain kind are counted as critical
+      disconnected pins.
+    * For instances:
+        * Any unconnected input is a critical disconnected pin.
+        * If there isn't at least one output connected, all disconnected
+          outputs are critical disconnected pins.
+        * Any disconnected power inout pins are critical disconnected pins.
+
+    The metrics ``design__disconnected_pin__count`` and
+    ``design__critical_disconnected_pin__count`` is updated. It is recommended
+    to use the checker ``Checker.DisconnectedPins`` to check that there are
+    no critical disconnected pins.
+    """
+
     id = "Odb.ReportDisconnectedPins"
     name = "Report Disconnected Pins"
 
@@ -316,6 +474,8 @@ class ReportDisconnectedPins(OdbpyStep):
             for module in ignored_modules:
                 command.append("--ignore-module")
                 command.append(module)
+        command.append("--write-full-table-to")
+        command.append(os.path.join(self.step_dir, "full_disconnected_pins_table.txt"))
         return command
 
 
@@ -395,6 +555,9 @@ class RemovePDNObstructions(RemoveRoutingObstructions):
     config_vars = AddPDNObstructions.config_vars
 
 
+_migrate_unmatched_io = lambda x: "unmatched_design" if x else "none"
+
+
 @Step.factory.register()
 class CustomIOPlacement(OdbpyStep):
     """
@@ -410,16 +573,40 @@ class CustomIOPlacement(OdbpyStep):
 
     config_vars = io_layer_variables + [
         Variable(
+            "FP_IO_VLENGTH",
+            Optional[Decimal],
+            """
+            The length of the pins with a north or south orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
+            "FP_IO_HLENGTH",
+            Optional[Decimal],
+            """
+            The length of the pins with an east or west orientation. If unspecified by a PDK, the script will use whichever is higher of the following two values:
+                * The pin width
+                * The minimum value satisfying the minimum area constraint given the pin width
+            """,
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
             "FP_PIN_ORDER_CFG",
             Optional[Path],
             "Path to the configuration file. If set to `None`, this step is skipped.",
         ),
         Variable(
-            "QUIT_ON_UNMATCHED_IO",
-            bool,
-            "Exit on unmatched pins in a provided `FP_PIN_ORDER_CFG` file.",
-            default=True,
-            deprecated_names=["FP_IO_UNMATCHED_ERROR"],
+            "ERRORS_ON_UNMATCHED_IO",
+            Literal["none", "unmatched_design", "unmatched_cfg", "both"],
+            "Controls whether to emit an error in: no situation, when pins exist in the design that do not exist in the config file, when pins exist in the config file that do not exist in the design, and both respectively. `both` is recommended, as the default is only for backwards compatibility with OpenLane 1.",
+            default="unmatched_design",  # Backwards compatible with OpenLane 1
+            deprecated_names=[
+                ("QUIT_ON_UNMATCHED_IO", _migrate_unmatched_io),
+            ],
         ),
     ]
 
@@ -427,34 +614,34 @@ class CustomIOPlacement(OdbpyStep):
         return os.path.join(get_script_dir(), "odbpy", "io_place.py")
 
     def get_command(self) -> List[str]:
-        length = max(
-            self.config["FP_IO_VLENGTH"],
-            self.config["FP_IO_HLENGTH"],
-        )
+        length_args = []
+        if self.config["FP_IO_VLENGTH"] is not None:
+            length_args += ["--ver-length", self.config["FP_IO_VLENGTH"]]
+        if self.config["FP_IO_HLENGTH"] is not None:
+            length_args += ["--hor-length", self.config["FP_IO_HLENGTH"]]
 
-        return super().get_command() + [
-            "--config",
-            self.config["FP_PIN_ORDER_CFG"],
-            "--hor-layer",
-            self.config["FP_IO_HLAYER"],
-            "--ver-layer",
-            self.config["FP_IO_VLAYER"],
-            "--hor-width-mult",
-            str(self.config["FP_IO_VTHICKNESS_MULT"]),
-            "--ver-width-mult",
-            str(self.config["FP_IO_HTHICKNESS_MULT"]),
-            "--hor-extension",
-            str(self.config["FP_IO_HEXTEND"]),
-            "--ver-extension",
-            str(self.config["FP_IO_VEXTEND"]),
-            "--length",
-            str(length),
-            (
-                "--unmatched-error"
-                if self.config["QUIT_ON_UNMATCHED_IO"]
-                else "--ignore-unmatched"
-            ),
-        ]
+        return (
+            super().get_command()
+            + [
+                "--config",
+                self.config["FP_PIN_ORDER_CFG"],
+                "--hor-layer",
+                self.config["FP_IO_HLAYER"],
+                "--ver-layer",
+                self.config["FP_IO_VLAYER"],
+                "--hor-width-mult",
+                str(self.config["FP_IO_VTHICKNESS_MULT"]),
+                "--ver-width-mult",
+                str(self.config["FP_IO_HTHICKNESS_MULT"]),
+                "--hor-extension",
+                str(self.config["FP_IO_HEXTEND"]),
+                "--ver-extension",
+                str(self.config["FP_IO_VEXTEND"]),
+                "--unmatched-error",
+                self.config["ERRORS_ON_UNMATCHED_IO"],
+            ]
+            + length_args
+        )
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is None:
@@ -516,11 +703,11 @@ class PortDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
@@ -556,7 +743,7 @@ class DiodesOnPorts(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            warn("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -623,7 +810,7 @@ class FuzzyDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
-            warn(
+            self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 

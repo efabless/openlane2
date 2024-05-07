@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+source $::env(_TCL_ENV_IN)
 source $::env(SCRIPTS_DIR)/openroad/common/set_global_connections.tcl
 
 proc string_in_file {file_path substring} {
@@ -30,8 +30,8 @@ proc env_var_used {file var} {
 }
 
 proc read_current_sdc {} {
-    if { ![info exists ::env(SDC_IN)]} {
-        puts "\[INFO] SDC_IN not found. Not reading an SDC file."
+    if { ![info exists ::env(_SDC_IN)]} {
+        puts "\[INFO] _SDC_IN not found. Not reading an SDC file."
         return
     }
     set ::env(IO_PCT) [expr $::env(IO_DELAY_CONSTRAINT) / 100]
@@ -44,13 +44,13 @@ proc read_current_sdc {} {
         set ::env(SYNTH_MAX_TRAN) $::env(MAX_TRANSITION_CONSTRAINT)
     }
 
-    if { [env_var_used $::env(SDC_IN) SYNTH_DRIVING_CELL_PIN] == 1 } {
+    if { [env_var_used $::env(_SDC_IN) SYNTH_DRIVING_CELL_PIN] == 1 } {
         set ::env(SYNTH_DRIVING_CELL_PIN) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1]
         set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
     }
 
-    puts "Reading design constraints file at '$::env(SDC_IN)'…"
-    if {[catch {read_sdc $::env(SDC_IN)} errmsg]} {
+    puts "Reading design constraints file at '$::env(_SDC_IN)'…"
+    if {[catch {read_sdc $::env(_SDC_IN)} errmsg]} {
         puts stderr $errmsg
         exit 1
     }
@@ -60,12 +60,20 @@ proc read_current_sdc {} {
 proc read_current_netlist {args} {
     sta::parse_key_args "read_current_netlist" args \
         keys {}\
-        flags {-powered -all}
+        flags {-powered}
 
-    puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
-    if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
-        puts stderr $errmsg
-        exit 1
+    if { [info exists flags(-powered)] } {
+        puts "Reading top-level powered netlist at '$::env(CURRENT_POWERED_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_POWERED_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
+    } else {
+        puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
+        if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+            puts stderr $errmsg
+            exit 1
+        }
     }
 
     puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
@@ -76,26 +84,21 @@ proc read_current_netlist {args} {
 }
 
 proc read_timing_info {args} {
-    if { ![info exists ::env(CURRENT_CORNER_NAME)] } {
+    sta::parse_key_args "read_timing_info" args \
+        keys {}\
+        flags {-powered}
+
+    if { ![info exists ::env(_CURRENT_CORNER_NAME)] } {
         return
     }
-    set corner_name $::env(CURRENT_CORNER_NAME)
+    set corner_name $::env(_CURRENT_CORNER_NAME)
     define_corners $corner_name
 
     puts "Reading timing models for corner $corner_name…"
 
-    set macro_spefs [list]
-    set macro_nls [list]
-    set corner_models $::env(CURRENT_CORNER_TIMING_VIEWS)
-    foreach model $corner_models {
-        if { [string match *.spef $model] || [string match *.spef.gz $model] } {
-            lappend macro_spefs $corner_name $model
-        } elseif { [string match *.v $model] } {
-            lappend macro_nls $model
-        } else {
-            puts "Reading timing library for the '$corner_name' corner at '$model'…"
-            read_liberty -corner $corner_name $model
-        }
+    foreach lib $::env(_CURRENT_CORNER_LIBS) {
+        puts "Reading cell library for the '$corner_name' corner at '$lib'…"
+        read_liberty -corner $corner_name $lib
     }
 
     if { [info exists ::env(EXTRA_LIBS) ] } {
@@ -107,7 +110,7 @@ proc read_timing_info {args} {
     }
 
     set blackbox_wildcard {/// sta-blackbox}
-    foreach nl $macro_nls {
+    foreach nl $::env(_CURRENT_CORNER_NETLISTS) {
         puts "Reading macro netlist at '$nl'…"
         if { [catch {read_verilog $nl} err] } {
             puts "Error while reading macro netlist '$nl':"
@@ -128,29 +131,55 @@ proc read_timing_info {args} {
             }
         }
     }
-    read_current_netlist
-    set ::macro_spefs $macro_spefs
+    if { [info exists flags(-powered)] } {
+        read_current_netlist -powered
+    } else {
+        read_current_netlist
+    }
+}
+
+proc lshift {inputlist} {
+    upvar $inputlist argv
+    set arg  [lindex $argv 0]
+    #set argv [lrange $argv 1 end] ;# below is much faster - lreplace can make use of unshared Tcl_Obj to avoid alloc'ing the result
+    set argv [lreplace $argv[set argv {}] 0 0]
+    return $arg
 }
 
 proc read_spefs {} {
-    if { [info exists ::env(CURRENT_SPEF_BY_CORNER)] } {
-        foreach {corner_name spef} $::env(CURRENT_SPEF_BY_CORNER) {
-            puts "Reading top-level design parasitics for the '$corner_name' corner at '$spef'…"
-            read_spef -corner $corner_name $spef
+    if { [info exists ::env(_CURRENT_SPEF_BY_CORNER)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        puts "Reading top-level design parasitics for the '$corner_name' corner at '$::env(_CURRENT_SPEF_BY_CORNER)'…"
+        read_spef -corner $corner_name $::env(_CURRENT_SPEF_BY_CORNER)
+    }
+    if { [info exists ::env(_CURRENT_CORNER_SPEFS)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        foreach spefs $::env(_CURRENT_CORNER_SPEFS) {
+            set instance_path [lshift spefs]
+            foreach spef $spefs {
+                puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
+                read_spef -corner $corner_name -path $instance_path $spef
+            }
         }
     }
-    if { [info exists ::macro_spefs] } {
-        foreach {corner_name spef_info} $::macro_spefs {
-            set fields [split $spef_info "@"]
-            lassign $fields instance_path spef
-            puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
-            read_spef -corner $corner_name -path $instance_path $spef
+    if { [info exists ::env(_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT)] } {
+        set corner_name $::env(_CURRENT_CORNER_NAME)
+        foreach pair $::env(_CURRENT_CORNER_EXTRA_SPEFS_BACKCOMPAT) {
+            set module_name [lindex $pair 0]
+            set spef [lindex $pair 1]
+            foreach cell [get_cells * -hierarchical] {
+                if { "[get_property $cell ref_name]" eq "$module_name"} {
+                    set instance_path [get_property $cell full_name]
+                    puts "Reading '$instance_path' parasitics for the '$corner_name' corner at '$spef'…"
+                    read_spef -corner $corner_name -path $instance_path $spef
+                }
+            }
         }
     }
 }
 
 proc read_pnr_libs {args} {
-    # PNR_LIBS contains all libs and extra libs but with known-bad cells
+    # _PNR_LIBS contains all libs and extra libs but with known-bad cells
     # excluded, so OpenROAD can use cells by functionality and come up
     # with a valid design.
 
@@ -161,12 +190,12 @@ proc read_pnr_libs {args} {
 
     define_corners $::env(DEFAULT_CORNER)
 
-    foreach lib $::env(PNR_LIBS) {
+    foreach lib $::env(_PNR_LIBS) {
         puts "Reading library file at '$lib'…"
         read_liberty $lib
     }
-    if { [info exists ::env(MACRO_LIBS) ] } {
-        foreach macro_lib $::env(MACRO_LIBS) {
+    if { [info exists ::env(_MACRO_LIBS) ] } {
+        foreach macro_lib $::env(_MACRO_LIBS) {
             puts "Reading macro library file at '$macro_lib'…"
             read_liberty $macro_lib
         }
@@ -204,10 +233,7 @@ proc read_lefs {{tlef_key "TECH_LEF"}} {
 }
 
 proc set_dont_use_cells {} {
-    set_dont_use $::env(PNR_EXCLUDED_CELLS)
-    if { [info exists ::env(RSZ_DONT_USE_CELLS)] } {
-        set_dont_use $::env(RSZ_DONT_USE_CELLS)
-    }
+    set_dont_use $::env(_PNR_EXCLUDED_CELLS)
 }
 
 proc read_current_odb {args} {
@@ -309,25 +335,29 @@ proc write_views {args} {
 }
 
 proc write_sdfs {} {
-    if { [info exists ::env(SDF_SAVE_DIR)] } {
+    if { [info exists ::env(_SDF_SAVE_DIR)] } {
         set corners [sta::corners]
 
         puts "Writing SDF files for all corners…"
         foreach corner $corners {
             set corner_name [$corner name]
-            set target $::env(SDF_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.sdf
+            set target $::env(_SDF_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.sdf
             write_sdf -include_typ -divider . -corner $corner_name $target
         }
     }
 }
 
 proc write_libs {} {
-    if { [info exists ::env(LIB_SAVE_DIR)] && (![info exists ::(STA_PRE_CTS)] || !$::env(STA_PRE_CTS))} {
+    if { [info exists ::env(_LIB_SAVE_DIR)] } {
+        puts "Removing Clock latencies before writing libs…"
+        # This is to avoid OpenSTA writing a context-dependent timing model
+        set_clock_latency -source -max 0 [all_clocks]
+        set_clock_latency -source -min 0 [all_clocks]
         set corners [sta::corners]
         puts "Writing timing models for all corners…"
         foreach corner $corners {
             set corner_name [$corner name]
-            set target $::env(LIB_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.lib
+            set target $::env(_LIB_SAVE_DIR)/$::env(DESIGN_NAME)__$corner_name.lib
             puts "Writing timing models for the $corner_name corner to $target…"
             write_timing_model -corner $corner_name $target
         }
@@ -344,7 +374,7 @@ proc max {a b} {
 
 set ::metric_count 0
 set ::metrics_file ""
-if { [info exists ::env(OPENSTA)] && $::env(OPENSTA) } {
+if { [info exists ::env(_OPENSTA)] && $::env(_OPENSTA) } {
     proc write_metric_num {metric value} {
         if { $value == 1e30 } {
             set value inf

@@ -29,8 +29,9 @@ set_cmd_units\
 
 set sta_report_default_digits 6
 
-if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
+if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
     read_current_odb
+    source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
     # Internal API- brittle
     if { [grt::have_routes] } {
@@ -43,7 +44,9 @@ if { ![info exists ::env(OPENSTA)] || !$::env(OPENSTA) } {
 }
 read_spefs
 
-set_propagated_clock [all_clocks]
+if { $::env(STEP_ID) != "OpenROAD.STAPrePNR"} {
+    set_propagated_clock [all_clocks]
+}
 
 set corner [lindex [sta::corners] 0]
 sta::set_cmd_corner $corner
@@ -257,7 +260,12 @@ set r2r_hold_vios 0
 set total_setup_vios 0
 set r2r_setup_vios 0
 
-set hold_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max 0]
+set max_violator_count 999999999
+if { [info exists ::env(STA_MAX_VIOLATOR_COUNT)] } {
+    set max_violator_count $::env(STA_MAX_VIOLATOR_COUNT)
+}
+
+set hold_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count $max_violator_count -slack_max 0]
 foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
@@ -271,7 +279,7 @@ foreach path $hold_violating_paths {
 }
 
 set worst_r2r_hold_slack 1e30
-set hold_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count 999999999 -slack_max $worst_r2r_hold_slack]
+set hold_paths [find_timing_paths -unique_paths_to_endpoint -path_delay min -sort_by_slack -group_count $max_violator_count -slack_max $worst_r2r_hold_slack]
 foreach path $hold_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
@@ -285,7 +293,7 @@ foreach path $hold_paths {
     }
 }
 
-set setup_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max 0]
+set setup_violating_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count $max_violator_count -slack_max 0]
 foreach path $setup_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
@@ -299,7 +307,7 @@ foreach path $setup_violating_paths {
 }
 
 set worst_r2r_setup_slack 1e30
-set setup_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count 999999999 -slack_max $worst_r2r_setup_slack]
+set setup_paths [find_timing_paths -unique_paths_to_endpoint -path_delay max -sort_by_slack -group_count $max_violator_count -slack_max $worst_r2r_setup_slack]
 foreach path $setup_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]

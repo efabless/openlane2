@@ -2,8 +2,6 @@
 source = openlane
 
 [report]
-include =
-    openlane/*
 omit =
     /nix/*
     venv/
@@ -17,11 +15,13 @@ omit =
     */flows/classic.py
     */flows/misc.py
     */flows/optimizing.py
+    */flows/synth_explore.py
     */steps/klayout.py
     */steps/magic.py
     */steps/misc.py
     */steps/netgen.py
-    */steps/magic.py
+    */steps/odb.py
     */steps/openroad.py
     */steps/yosys.py
+    */steps/verilator.py
     */steps/cvc_rv.py

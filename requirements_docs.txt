@@ -10,3 +10,5 @@ docstring-parser>=0.15,<1
 sphinx-tippy>=0.4.1,<1
 sphinx-copybutton>=0.5.2,<1
 sphinxcontrib-spelling>=8.0.0,<9
+sphinxcontrib-bibtex>=2.6.0,<3
+sphinx-subfigure>=0.2.4,<1

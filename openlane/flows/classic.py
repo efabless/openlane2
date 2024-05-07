@@ -15,6 +15,7 @@ from typing import List, Type
 
 from .flow import Flow
 from .sequential import SequentialFlow
+from ..state import DesignFormat
 from ..config import Variable
 from ..steps import (
     Step,
@@ -160,92 +161,6 @@ _common_config_vars = [
         "Enables the KLayout.DRC step.",
         default=True,
     ),
-    Variable(
-        "QUIT_ON_UNMAPPED_CELLS",
-        bool,
-        "Checks for unmapped cells after synthesis and quits immediately if so.",
-        deprecated_names=["CHECK_UNMAPPED_CELLS"],
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_SYNTH_CHECKS",
-        bool,
-        "Quits the flow immediately if one or more synthesis check errors are flagged. This checks for combinational loops and/or wires with no drivers.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_TR_DRC",
-        bool,
-        "Checks for DRC violations after routing and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_MAGIC_DRC",
-        bool,
-        "Checks for DRC violations after magic DRC is executed and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_DISCONNECTED_PINS",
-        bool,
-        "Checks for disconnected instance pins after detailed routing and quits immediately if so.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LONG_WIRE",
-        bool,
-        "Checks if any wire length exceeds the threshold set in the PDK. If so, an error is raised at the end of the flow.",
-        default=False,
-    ),
-    Variable(
-        "QUIT_ON_XOR_ERROR",
-        bool,
-        "Checks for geometric differences between the Magic and KLayout stream-outs. If any exist, raise an error at the end of the flow.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_ILLEGAL_OVERLAPS",
-        bool,
-        "Checks for illegal overlaps during Magic extraction. In some cases, these imply existing undetected shorts in the design. It raises an error at the end of the flow if so.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_LVS_ERROR",
-        bool,
-        "Checks for LVS errors after Netgen is executed. If any exist, it raises an error at the end of the flow.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_KLAYOUT_DRC",
-        bool,
-        "Checks for DRC violations after KLayout DRC is executed and exits the flow if any was found.",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_PDN_VIOLATIONS",
-        bool,
-        "Checks for unconnected nodes in the power grid. If any exists, an error is raised at the end of the flow.",
-        default=True,
-        deprecated_names=["FP_PDN_CHECK_NODES"],
-    ),
-    Variable(
-        "QUIT_ON_SETUP_VIOLATIONS",
-        bool,
-        "Check for setup violations in selected corners",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_HOLD_VIOLATIONS",
-        bool,
-        "Check for setup violations in selected corners",
-        default=True,
-    ),
-    Variable(
-        "QUIT_ON_TIMING_VIOLATIONS",
-        bool,
-        "Check for timing violations in selected corners",
-        default=True,
-    ),
 ]
 
 _common_gating_config_vars = {
@@ -273,33 +188,24 @@ _common_gating_config_vars = {
         "RUN_KLAYOUT_STREAMOUT",
     ],
     "Netgen.LVS": ["RUN_LVS"],
-    "Checker.YosysUnmappedCells": ["QUIT_ON_UNMAPPED_CELLS"],
-    "Checker.YosysSynthChecks": ["QUIT_ON_SYNTH_CHECKS"],
-    "Checker.TrDRC": ["RUN_DRT", "QUIT_ON_TR_DRC"],
-    "Checker.MagicDRC": ["RUN_MAGIC_DRC", "QUIT_ON_MAGIC_DRC"],
-    "Checker.DisconnectedPins": ["QUIT_ON_DISCONNECTED_PINS"],
-    "Checker.WireLength": ["QUIT_ON_LONG_WIRE"],
+    "Checker.TrDRC": ["RUN_DRT"],
+    "Checker.MagicDRC": ["RUN_MAGIC_DRC"],
     "Checker.XOR": [
-        "QUIT_ON_XOR_ERROR",
         "RUN_KLAYOUT_XOR",
         "RUN_MAGIC_STREAMOUT",
         "RUN_KLAYOUT_STREAMOUT",
     ],
-    "Checker.IllegalOverlap": ["QUIT_ON_ILLEGAL_OVERLAPS"],
-    "Checker.LVS": ["RUN_LVS", "QUIT_ON_LVS_ERROR"],
-    "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC", "QUIT_ON_KLAYOUT_DRC"],
-    "Checker.PowerGridViolations": ["QUIT_ON_PDN_VIOLATIONS"],
-    "Checker.SetupViolations": [
-        "QUIT_ON_TIMING_VIOLATIONS",
-        "QUIT_ON_SETUP_VIOLATIONS",
-    ],
-    "Checker.HoldViolations": ["QUIT_ON_TIMING_VIOLATIONS", "QUIT_ON_HOLD_VIOLATIONS"],
+    "Checker.LVS": ["RUN_LVS"],
+    "Checker.KLayoutDRC": ["RUN_KLAYOUT_DRC"],
 }
 
 
 @Flow.factory.register()
 class Classic(SequentialFlow):
     """
+    **Note: While OpenLane 2 has a stable release, the default flow is in beta
+    pending silicon validation. Use at your own risk.**
+
     A flow of type :class:`openlane.flows.SequentialFlow` that is the most
     similar to the original OpenLane 1.0 flow, running the Verilog RTL through
     Yosys, OpenROAD, KLayout and Magic to produce a valid GDSII for simpler designs.
@@ -317,19 +223,24 @@ class Classic(SequentialFlow):
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
         OpenROAD.CheckSDCFiles,
+        OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
+        Odb.CheckMacroAntennaProperties,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,
         OpenROAD.CutRows,
         OpenROAD.TapEndcapInsertion,
-        OpenROAD.GlobalPlacementSkipIO,
-        OpenROAD.IOPlacement,
-        Odb.CustomIOPlacement,
-        OpenROAD.GlobalPlacement,
         Odb.AddPDNObstructions,
         OpenROAD.GeneratePDN,
         Odb.RemovePDNObstructions,
+        Odb.AddRoutingObstructions,
+        OpenROAD.GlobalPlacementSkipIO,
+        OpenROAD.IOPlacement,
+        Odb.CustomIOPlacement,
+        Odb.ApplyDEFTemplate,
+        OpenROAD.GlobalPlacement,
+        Odb.WriteVerilogHeader,
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
@@ -347,6 +258,7 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.STAMidPNR,
         OpenROAD.DetailedRouting,
+        Odb.RemoveRoutingObstructions,
         OpenROAD.CheckAntennas,
         Checker.TrDRC,
         Odb.ReportDisconnectedPins,
@@ -360,6 +272,7 @@ class Classic(SequentialFlow):
         Magic.StreamOut,
         KLayout.StreamOut,
         Magic.WriteLEF,
+        Odb.CheckDesignAntennaProperties,
         KLayout.XOR,
         Checker.XOR,
         Magic.DRC,
@@ -373,6 +286,8 @@ class Classic(SequentialFlow):
         Yosys.EQY,
         Checker.SetupViolations,
         Checker.HoldViolations,
+        Checker.MaxSlewViolations,
+        Checker.MaxCapViolations,
         Misc.ReportManufacturability,
     ]
 
@@ -390,27 +305,6 @@ class Classic(SequentialFlow):
             default=True,
             deprecated_names=["RUN_VERILATOR"],
         ),
-        Variable(
-            "QUIT_ON_LINTER_ERRORS",
-            bool,
-            "Quit immediately on any linter errors.",
-            default=True,
-            deprecated_names=["QUIT_ON_VERILATOR_ERRORS"],
-        ),
-        Variable(
-            "QUIT_ON_LINTER_WARNINGS",
-            bool,
-            "Quit immediately on any linter warnings.",
-            default=False,
-            deprecated_names=["QUIT_ON_VERILATOR_WARNINGS"],
-        ),
-        Variable(
-            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
-            bool,
-            "Quit immediately on any discovered timing constructs during linting.",
-            default=True,
-            deprecated_names=["QUIT_ON_LINTER_TIMING_CONSTRUCTS"],
-        ),
     ]
 
     gating_config_vars = _common_gating_config_vars.copy()
@@ -420,11 +314,10 @@ Classic.gating_config_vars.update(
     {
         "Yosys.EQY": ["RUN_EQY"],
         "Verilator.Lint": ["RUN_LINTER"],
-        "Checker.LintErrors": ["RUN_LINTER", "QUIT_ON_LINTER_ERRORS"],
-        "Checker.LintWarnings": ["RUN_LINTER", "QUIT_ON_LINTER_WARNINGS"],
+        "Checker.LintErrors": ["RUN_LINTER"],
+        "Checker.LintWarnings": ["RUN_LINTER"],
         "Checker.LintTimingConstructs": [
             "RUN_LINTER",
-            "QUIT_ON_LINTER_TIMING_CONSTRUCTS",
         ],
     }
 )
@@ -435,12 +328,12 @@ def _vhdlclassic_substitute_verilog_steps(
 ) -> List[Type[Step]]:
     result: List[Type[Step]] = [Yosys.VHDLSynthesis]
     for step in steps_in:
-        # Ignore Verilog-dependent header steps and such
+        # Ignore Verilog header-dependent steps and such
         if (
             step.id.startswith("Yosys.")
             or step.id.startswith("Checker.Lint")
             or step.id.startswith("Verilator.")
-            or step.id == "Odb.SetPowerConnections"
+            or DesignFormat.JSON_HEADER in step.inputs
         ):
             continue
         result.append(step)

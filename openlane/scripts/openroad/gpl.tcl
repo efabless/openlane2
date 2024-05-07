@@ -27,9 +27,9 @@ foreach inst $::insts {
 }
 
 if { !$placement_needed } {
-	puts "\[WARNING] All instances are FIXED/FIRM."
-	puts "\[WARNING] No need to perform global placement."
-	puts "\[WARNING] Skipping…"
+	puts stderr "\[WARNING] All instances are FIXED/FIRM."
+	puts stderr "\[WARNING] No need to perform global placement."
+	puts stderr "\[WARNING] Skipping…"
 	write_views
 	exit 0
 }
@@ -38,12 +38,12 @@ set arg_list [list]
 
 lappend arg_list -density [expr $::env(PL_TARGET_DENSITY_PCT) / 100.0]
 
-if { $::env(PL_TIME_DRIVEN) } {
+if { [info exists ::env(PL_TIME_DRIVEN)] && $::env(PL_TIME_DRIVEN) } {
 	source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 	lappend arg_list -timing_driven
 }
 
-if { $::env(PL_ROUTABILITY_DRIVEN) } {
+if { [info exists ::env(PL_ROUTABILITY_DRIVEN)] && $::env(PL_ROUTABILITY_DRIVEN) } {
 	source $::env(SCRIPTS_DIR)/openroad/common/set_routing_layers.tcl
 	set_macro_extension $::env(GRT_MACRO_EXTENSION)
 	source $::env(SCRIPTS_DIR)/openroad/common/set_layer_adjustments.tcl
@@ -57,6 +57,14 @@ if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
 
 if { [info exists ::env(__PL_SKIP_IO)] } {
 	lappend arg_list -skip_io
+}
+
+if { [info exists ::env(PL_MIN_PHI_COEFFICIENT)] } {
+	lappend arg_list -min_phi_coef $::env(PL_MIN_PHI_COEFFICIENT)
+}
+
+if { [info exists ::env(PL_MAX_PHI_COEFFICIENT)] } {
+	lappend arg_list -max_phi_coef $::env(PL_MAX_PHI_COEFFICIENT)
 }
 
 set cell_pad_side [expr $::env(GPL_CELL_PADDING) / 2]

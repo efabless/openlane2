@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from reader import OdbReader, click_odb, click
+from reader import click_odb, click
 from typing import Tuple, List
 from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
@@ -26,24 +26,6 @@ from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 @click.group()
 def cli():
     pass
-
-
-@click.command("extract_core_dims")
-@click.option("-o", "--output-data", required=True, help="Output")
-@click.option("-l", "--input-lef", required=True, help="Merged LEF file")
-@click.argument("input_def")
-def extract_core_dims(output_data, input_lef, input_def):
-    reader = OdbReader(input_lef, input_def)
-    core_area = reader.block.getCoreArea()
-
-    with open(output_data, "w") as f:
-        print(
-            f"{core_area.dx() / reader.dbunits} {core_area.dy() / reader.dbunits}",
-            file=f,
-        )
-
-
-cli.add_command(extract_core_dims)
 
 
 @click.command("mark_component_fixed")
@@ -61,29 +43,23 @@ def mark_component_fixed(cell_name, reader):
 cli.add_command(mark_component_fixed)
 
 
-@click.command("merge_components")
-@click.option(
-    "-w",
-    "--with-components-from",
-    "donor_def",
-    required=True,
-    help="A donor def file from which to extract components.",
-)
-@click_odb
-def merge_components(reader, donor_def, input_lefs):
-    """
-    Adds all components in a donor DEF file that do not exist in the (recipient) INPUT_DEF.
+def get_die_area(def_file, input_lefs):
+    die_area_dbu = (-1, -1, -1, -1)
+    db = odb.dbDatabase.create()
+    for lef in input_lefs:
+        odb.read_lef(db, lef)
+    odb.read_def(db.getTech(), def_file)
+    die_area = db.getChip().getBlock().getDieArea()
+    if die_area:
+        dbu = db.getChip().getBlock().getDefUnits()
+        die_area_dbu = (
+            die_area.xMin() / dbu,
+            die_area.yMin() / dbu,
+            die_area.xMax() / dbu,
+            die_area.yMax() / dbu,
+        )
 
-    Existing components with the same name will *not* be overwritten.
-    """
-    donor = OdbReader(input_lefs, donor_def)
-    recipient = reader
-
-    for instance in donor.instances:
-        odb.dbInst_create(recipient.block, instance.getMaster(), instance.getName())
-
-
-cli.add_command(merge_components)
+    return die_area_dbu
 
 
 def move_diearea(target_db, input_lefs, template_def):
@@ -120,12 +96,13 @@ def move_diearea_command(reader, input_lefs, template_def):
 def check_pin_grid(manufacturing_grid, dbu_per_microns, pin_name, pin_coordinate):
     if (pin_coordinate % manufacturing_grid) != 0:
         print(
-            f"[ERROR]: Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid."
+            f"[ERROR] Pin {pin_name}'s coordinate {pin_coordinate} does not lie on the manufacturing grid.",
+            file=sys.stderr,
         )  # IDK how to do this
         return True
 
 
-def relocate_pins(db, input_lefs, template_def, permissive):
+def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False):
     # --------------------------------
     # 1. Find list of all bterms in existing database
     # --------------------------------
@@ -154,6 +131,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
         if sigtype in ["POWER", "GROUND"]:
             print(
                 f"[WARNING] Bterm {source_name} is declared as a '{sigtype}' pin. It will be ignored.",
+                file=sys.stderr,
             )
             continue
         all_bterm_names.add(source_name)
@@ -181,7 +159,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     )
 
     # --------------------------------
-    # 3. Create a dict with net -> pin location. Check for only one pin location to exist, overwise return an error
+    # 3. Create a dict with net -> pin locations.
     # --------------------------------
     template_bterm_locations = dict()
 
@@ -215,10 +193,10 @@ def relocate_pins(db, input_lefs, template_def, permissive):
         ]
     )
 
-    print(f"Found {len(template_bterm_locations)} template_bterms:")
+    print(f"Found {len(template_bterm_locations)} template_bterms…")
 
-    for name in template_bterm_locations.keys():
-        print(f"  * {name}: {template_bterm_locations[name]}")
+    # for name in template_bterm_locations.keys():
+    #     print(f"  * {name}: {template_bterm_locations[name]}")
 
     # --------------------------------
     # 4. Modify the pins in out def, according to dict
@@ -228,10 +206,19 @@ def relocate_pins(db, input_lefs, template_def, permissive):
     output_block = output_db.getChip().getBlock()
     output_bterms = output_block.getBTerms()
 
-    output_bterm_names = set([bterm.getName() for bterm in output_bterms])
-
+    if copy_def_power:
+        output_bterm_names = set([bterm.getName() for bterm in output_bterms])
+    else:
+        output_bterm_names = set(
+            [
+                bterm.getName()
+                for bterm in output_bterms
+                if bterm.getNet().getSigType() not in ["POWER", "GROUND"]
+            ]
+        )
     not_in_design = template_bterm_names - output_bterm_names
     not_in_template = output_bterm_names - template_bterm_names
+
     mismatches_found = False
     for is_in, not_in, pins in [
         ("template", "design", not_in_design),
@@ -241,23 +228,39 @@ def relocate_pins(db, input_lefs, template_def, permissive):
             mismatches_found = True
             if permissive:
                 print(
-                    f"[WARN]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    f"[WARNING] {name} not found in {not_in} layout, but found in {is_in} layout.",
                 )
             else:
                 print(
-                    f"[ERROR]: {name} not found in {not_in} layout, but found in {is_in} layout.",
+                    f"[ERROR] {name} not found in {not_in} layout, but found in {is_in} layout.",
                     file=sys.stderr,
                 )
 
     if mismatches_found and not permissive:
         exit(os.EX_DATAERR)
 
+    if copy_def_power:
+        # If asked, we copy power pins from template
+        for bterm in template_bterms:
+            if bterm.getSigType() not in ["POWER", "GROUND"]:
+                continue
+            pin_name = bterm.getName()
+            pin_net = odb.dbNet.create(output_block, pin_name, True)
+            pin_net.setSpecial()
+            pin_net.setSigType(bterm.getSigType())
+            pin_bterm = odb.dbBTerm.create(pin_net, pin_name)
+            pin_bterm.setSigType(bterm.getSigType())
+            output_bterms.append(pin_bterm)
+
     grid_errors = False
     for output_bterm in output_bterms:
         name = output_bterm.getName()
         output_bpins = output_bterm.getBPins()
 
-        if name not in template_bterm_locations or name not in all_bterm_names:
+        if name not in template_bterm_locations:
+            continue
+
+        if (name not in all_bterm_names) and not copy_def_power:
             continue
 
         for output_bpin in output_bpins:
@@ -323,7 +326,7 @@ def relocate_pins(db, input_lefs, template_def, permissive):
 
     if grid_errors:
         print(
-            "[ERROR]: Some pins were grid-misaligned. Please check the log.",
+            "[ERROR] Some pins were grid-misaligned. Please check the log.",
             file=sys.stderr,
         )
         exit(os.EX_DATAERR)
@@ -502,7 +505,7 @@ def add_obstructions(reader, input_lefs, obstructions):
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
-        print("Creating an obstruction on", layer, "at", *bbox, "(DBU)")
+        print(f"Creating an obstruction on {layer} at {bbox} (DBU)…")
         odb.dbObstruction_create(reader.block, reader.tech.findLayer(layer), *bbox)
 
 
@@ -551,18 +554,14 @@ def remove_obstructions(reader, input_lefs, obstructions):
             sys.exit(METAL_LAYER_ERROR)
         for odb_obstruction in existing_obstructions:
             if odb_obstruction[0:2] == obs:
-                print("Removing obstruction on", layer, "at", *bbox, "(DBU)")
+                print(f"Removing obstruction on {layer} at {bbox} (DBU)…")
                 found = True
                 odb.dbObstruction_destroy(odb_obstruction[2])
             if found:
                 break
         if not found:
             print(
-                "[ERROR] Obstruction on",
-                layer,
-                "at",
-                *bbox,
-                "(DBU) not found.",
+                f"[ERROR] Obstruction on {layer} at {bbox} (DBU) not found.",
                 file=sys.stderr,
             )
             sys.exit(NOT_FOUND_ERROR)

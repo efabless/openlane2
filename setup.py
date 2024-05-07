@@ -31,6 +31,7 @@ setup(
             "scripts/**/**/*",
             "examples/*",
             "examples/**/*",
+            "examples/**/**/*",
         ]
     },
     version=version,
@@ -52,6 +53,7 @@ setup(
             "openlane = openlane.__main__:cli",
             "openlane.steps = openlane.steps.__main__:cli",
             "openlane.config = openlane.config.__main__:cli",
+            "openlane.state = openlane.state.__main__:cli",
             "openlane.env_info = openlane:env_info_cli",
         ]
     },

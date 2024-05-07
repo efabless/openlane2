@@ -17,7 +17,7 @@ import tkinter
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 
-@pytest.fixture()
+@pytest.fixture
 def _mock_fs():
     with Patcher() as patcher:
         patcher.fs.create_dir("/cwd")

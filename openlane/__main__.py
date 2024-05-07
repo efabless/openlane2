@@ -22,7 +22,7 @@ from textwrap import dedent
 from functools import partial
 from typing import Sequence, Tuple, Type, Optional, List, Union
 
-from click import Parameter, pass_context
+from click import Parameter, pass_context, Path
 from cloup import (
     option,
     option_group,
@@ -67,6 +67,8 @@ def run(
     config_override_strings: List[str],
     _force_run_dir: Optional[str],
     design_dir: Optional[str],
+    view_save_path: Optional[str] = None,
+    ef_view_save_path: Optional[str] = None,
 ):
     try:
         if len(config_files) == 0:
@@ -115,24 +117,24 @@ def run(
         )
         ctx.exit(1)
     except InvalidConfig as e:
-        info(f"[green]Errors have occurred while loading the {e.config}.")
+        if len(e.warnings) > 0:
+            warn("The following warnings have been generated:")
+            for warning in e.warnings:
+                warn(warning)
+        err(f"Errors have occurred while loading the {e.config}.")
         for error in e.errors:
             err(error)
 
-        if len(e.warnings) > 0:
-            info("The following warnings have also been generated:")
-            for warning in e.warnings:
-                warn(warning)
-        info("OpenLane will now quit. Please check your configuration.")
+        err("OpenLane will now quit. Please check your configuration.")
         ctx.exit(1)
     except ValueError as e:
         err(e)
         debug(traceback.format_exc())
-        info("OpenLane will now quit.")
+        err("OpenLane will now quit.")
         ctx.exit(1)
 
     try:
-        flow.start(
+        state_out = flow.start(
             tag=tag,
             last_run=last_run,
             frm=frm,
@@ -143,15 +145,18 @@ def run(
             _force_run_dir=_force_run_dir,
         )
     except FlowException as e:
-        err(f"The flow has encountered an unexpected error: {e}")
-        traceback.print_exc()
+        err(f"The flow has encountered an unexpected error:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(1)
     except FlowError as e:
-        if "deferred" not in str(e):
-            err(f"The following error was encountered while running the flow: {e}")
+        err(f"The following error was encountered while running the flow:\n{e}")
         err("OpenLane will now quit.")
         ctx.exit(2)
+
+    if vsp := view_save_path:
+        state_out.save_snapshot(vsp)
+    if evsp := ef_view_save_path:
+        flow._save_snapshot_ef(evsp)
 
 
 def print_version(ctx: Context, param: Parameter, value: bool):
@@ -241,7 +246,7 @@ def run_example(
         config_file = os.path.join(final_path, "config.json")
 
         # 3. Run
-        status = run(
+        run(
             ctx,
             flow_name=None,
             pdk_root=pdk_root,
@@ -259,10 +264,7 @@ def run_example(
             _force_run_dir=None,
             design_dir=None,
         )
-        if status == 0:
-            info("Smoke test passed.")
-        else:
-            err("Smoke test failed.")
+        info("Smoke test passed.")
     except KeyboardInterrupt:
         info("Smoke test aborted.")
         status = -1
@@ -284,39 +286,31 @@ def cli_in_container(
     if not value:
         return
 
-    status = 0
     docker_mounts = list(ctx.params.get("docker_mounts") or ())
     docker_tty: bool = ctx.params.get("docker_tty", True)
     pdk_root = ctx.params.get("pdk_root")
     argv = sys.argv[sys.argv.index("--dockerized") + 1 :]
 
-    interactive = True
     final_argv = ["zsh"]
     if len(argv) != 0:
         final_argv = ["openlane"] + argv
-        interactive = False
 
     docker_image = os.getenv(
         "OPENLANE_IMAGE_OVERRIDE", f"ghcr.io/efabless/openlane2:{__version__}"
     )
 
     try:
-        status = run_in_container(
+        run_in_container(
             docker_image,
             final_argv,
             pdk_root=pdk_root,
             other_mounts=docker_mounts,
-            interactive=interactive,
             tty=docker_tty,
         )
     except ValueError as e:
         print(e)
-        status = -1
     except Exception:
         traceback.print_exc()
-        status = -1
-    finally:
-        ctx.exit(status)
 
 
 o = partial(option, show_default=True)
@@ -325,6 +319,23 @@ o = partial(option, show_default=True)
 @command(
     no_args_is_help=True,
     formatter_settings=formatter_settings,
+)
+@option_group(
+    "Copy final views",
+    o(
+        "--save-views-to",
+        "view_save_path",
+        type=Path(file_okay=False, dir_okay=True),
+        default=None,
+        help="A directory to copy the final views to, where each format is saved under a directory named after the corner ID (much like the 'final' directory after running a flow.)",
+    ),
+    o(
+        "--ef-save-views-to",
+        "ef_view_save_path",
+        type=Path(file_okay=False, dir_okay=True),
+        default=None,
+        help="A directory to copy the final views to in the Efabless format, compatible with Caravel User Project.",
+    ),
 )
 @option_group(
     "Containerization options",
@@ -347,7 +358,7 @@ o = partial(option, show_default=True)
         "--dockerized",
         default=False,
         is_flag=True,
-        is_eager=True,  # ddocker options should be processed before anything else
+        is_eager=True,  # docker options should be processed before anything else
         help="Run the remaining flags using a Docker container. Some caveats apply. Must precede all options except --docker-mount, --docker-tty/--docker-no-tty.",
         callback=cli_in_container,
     ),

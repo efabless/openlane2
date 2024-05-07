@@ -94,48 +94,53 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         corner = f"*_{pvt}"
         lib_sta[corner] = lib_list
 
-    process_sta("LIB_SYNTH")
-    process_sta("LIB_SLOWEST")
-    process_sta("LIB_FASTEST")
+    if "LIB" not in config:
+        process_sta("LIB_SYNTH")
+        process_sta("LIB_SLOWEST")
+        process_sta("LIB_FASTEST")
 
-    if new["PDK"].startswith("sky130"):
-        new["STA_CORNERS"] = [
-            "nom_tt_025C_1v80",
-            "nom_ss_100C_1v60",
-            "nom_ff_n40C_1v95",
-            "min_tt_025C_1v80",
-            "min_ss_100C_1v60",
-            "min_ff_n40C_1v95",
-            "max_tt_025C_1v80",
-            "max_ss_100C_1v60",
-            "max_ff_n40C_1v95",
-        ]
-    elif new["PDK"].startswith("gf180mcu"):
-        new["STA_CORNERS"] = [
-            "nom_tt_025C_5v00",
-            "nom_ss_125C_4v50",
-            "nom_ff_n40C_5v50",
-            "min_tt_025C_5v00",
-            "min_ss_125C_4v50",
-            "min_ff_n40C_5v50",
-            "max_tt_025C_5v00",
-            "max_ss_125C_4v50",
-            "max_ff_n40C_5v50",
-        ]
+        if new["PDK"].startswith("sky130"):
+            new["STA_CORNERS"] = [
+                "nom_tt_025C_1v80",
+                "nom_ss_100C_1v60",
+                "nom_ff_n40C_1v95",
+                "min_tt_025C_1v80",
+                "min_ss_100C_1v60",
+                "min_ff_n40C_1v95",
+                "max_tt_025C_1v80",
+                "max_ss_100C_1v60",
+                "max_ff_n40C_1v95",
+            ]
+        elif new["PDK"].startswith("gf180mcu"):
+            new["STA_CORNERS"] = [
+                "nom_tt_025C_5v00",
+                "nom_ss_125C_4v50",
+                "nom_ff_n40C_5v50",
+                "min_tt_025C_5v00",
+                "min_ss_125C_4v50",
+                "min_ff_n40C_5v50",
+                "max_tt_025C_5v00",
+                "max_ss_125C_4v50",
+                "max_ff_n40C_5v50",
+            ]
 
-    new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
-    new["LIB"] = lib_sta
+        new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
+        new["LIB"] = lib_sta
 
     # 7. capacitance and such
     if "SYNTH_CAP_LOAD" in config:
         new["OUTPUT_CAP_LOAD"] = config["SYNTH_CAP_LOAD"]
         del new["SYNTH_CAP_LOAD"]
 
-    new["MAX_FANOUT_CONSTRAINT"] = 10
-    new["CLOCK_UNCERTAINTY_CONSTRAINT"] = 0.25
-    new["CLOCK_TRANSITION_CONSTRAINT"] = 0.15
-    new["TIME_DERATING_CONSTRAINT"] = 5
-    new["IO_DELAY_CONSTRAINT"] = 20
+    if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
+        new["MAX_FANOUT_CONSTRAINT"] = 10
+        new["CLOCK_UNCERTAINTY_CONSTRAINT"] = 0.25
+        new["CLOCK_TRANSITION_CONSTRAINT"] = 0.15
+        new["TIME_DERATING_CONSTRAINT"] = 5
+        new["IO_DELAY_CONSTRAINT"] = 20
+        new["FP_IO_MIN_DISTANCE"] = 3
+        new["FP_IO_HLENGTH"] = 4
+        new["FP_IO_VLENGTH"] = 4
 
     # 8. "Implicit" Paths
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):

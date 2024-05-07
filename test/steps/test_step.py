@@ -22,7 +22,7 @@ from openlane.steps import step
 mock_variables = pytest.mock_variables
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_run():
     def run(self, state_in, **kwargs):
         views_update = {}
@@ -303,8 +303,8 @@ def test_step_factory(mock_run):
 @mock_variables([step])
 def test_run_subprocess(mock_run):
     import subprocess
-    from openlane.steps import Step
     from openlane.config import Config
+    from openlane.steps import Step, StepException
     from openlane.state import DesignFormat, State
 
     state_in = State({DesignFormat.NETLIST: "abc"})
@@ -345,6 +345,12 @@ def test_run_subprocess(mock_run):
     report_data = "Hello World"
     extra_data = "Bye World"
     new_metric = {"new_metric": 1, "new_float_metric": 2.0}
+    subprocess_log_file = "test.log"
+    subprocess_result = {
+        "returncode": 0,
+        "generated_metrics": new_metric,
+        "log_path": subprocess_log_file,
+    }
     out_data = textwrap.dedent(
         f"""
         %OL_CREATE_REPORT {report_file}
@@ -359,8 +365,7 @@ def test_run_subprocess(mock_run):
     with open(out_file, "w") as f:
         f.write(out_data)
 
-    subprocess_log_file = "test.log"
-    out_metrics = step.run_subprocess(
+    actual_result = step.run_subprocess(
         ["cat", out_file], silent=True, log_to=subprocess_log_file
     )
     actual_out_data = ""
@@ -370,7 +375,9 @@ def test_run_subprocess(mock_run):
     with open(report_file) as f:
         actual_report_data = f.read()
 
-    assert out_metrics == new_metric, ".run_subprocess() generated invalid metrics"
+    assert (
+        actual_result == subprocess_result
+    ), ".run_subprocess() generated invalid metrics"
     assert (
         actual_report_data.strip() == report_data
     ), ".run_subprocess() generated invalid report"
@@ -380,3 +387,29 @@ def test_run_subprocess(mock_run):
 
     with pytest.raises(subprocess.CalledProcessError):
         step.run_subprocess(["false"])
+
+    class BadStep(Step):
+        id = "Test.BadStep"
+
+        inputs = []
+        outputs = []
+
+        config_vars = []
+
+        def run(self, *args, **kwargs):
+            self.run_subprocess(
+                [
+                    "python3",
+                    "-c",
+                    "import sys; stdout_b = sys.stdout.buffer; stdout_b.write(bytes([0xfa]))",
+                ],
+            )
+
+    step = BadStep(
+        config=Config(config_dict),
+        state_in=State(),
+        _no_revalidate_conf=True,
+    )
+
+    with pytest.raises(StepException, match="non-UTF-8"):
+        step.start(step_dir=".")

@@ -6,7 +6,7 @@
 IPVT
 
     Short for Interconnect, Process, Voltage, and Temperature, the four
-    components of a timing corner in OpenLane.
+    components of a {term}`timing corner` in OpenLane.
 
 timing corner
 
@@ -30,11 +30,11 @@ timing corner
 [sky130](https://github.com/google/skywater-pdk)
 
     The SkyWater Open Source {term}`PDK` is a collaboration between Google, Efabless and
-    SkyWater Technology Foundry to provide a fully open-source PDK and related
-    resources, which can be used to create manufacturable designs at SkyWater’s
-    facility. sky130 is a mature 180nm-130nm hybrid technology originally
-    developed internally by Cypress Semiconductor before being spun out into
-    SkyWater Technology and made accessible to general industry.
+    SkyWater Technology Foundry to provide a fully {term}`open-source` PDK and
+    related resources, which can be used to create manufacturable designs at
+    SkyWater’s facilities. sky130 is a mature 180nm-130nm hybrid technology
+    originally developed internally by Cypress Semiconductor before being spun
+    out into SkyWater Technology and made accessible to general industry.
 
     sky130 is the default PDK for use with OpenLane as it was the first entirely
     open-source PDK.
@@ -81,7 +81,8 @@ GDSII
 
 [KLayout](https://www.klayout.de/)
 
-    A free and open-source layout ({term}`DEF`/{term}`GDSII`) viewer and editor.
+    A free and {term}`open-source` layout ({term}`DEF`/{term}`GDSII`) viewer and
+    editor.
 
 PnR
 
@@ -96,9 +97,9 @@ PnR
 
 [OpenROAD](https://openroad.readthedocs.io/en/latest/)
 
-    An open-source tool chain for digital SoC layout generation, focusing on the
-    RTL-to-GDSII phase of system-on-chip design. It is used for floorplanning,
-    {term}`PnR` and design optimizations inside OpenLane.
+    An {term}`open-source` tool chain for digital SoC layout generation,
+    focusing on the RTL-to-GDSII phase of system-on-chip design. It is used for
+    floorplanning, {term}`PnR` and design optimizations inside OpenLane.
 
     OpenLane and OpenROAD are
     [loosely affiliated projects made by different teams](#faq-openlane-vs-openroad).
@@ -154,6 +155,8 @@ LEF
     information about the cell's dimensions, pin positions and elements on
     metal layers.
 
+    The LEF language is defined in the {term}`LEFDEFREF`.
+
 DEF
 
     Short for "Design Exchange Format".
@@ -164,6 +167,21 @@ DEF
     When a design is hardened, {term}`LEF` and {term}`GDSII` views are
     generated from the DEF view.
 
+    The DEF language is defined in the {term}`LEFDEFREF`.
+
+LEFDEFREF
+
+    Refers to the LEF/DEF Language Reference by Cadence
+    Inc.
+
+    The LEFDEFREF is obtainable for free from Silicon Integration Initiative,
+    Inc.'s
+    [Complimentary OpenAccess Tools, Libraries, and Utilities](https://si2.org/oa-tools-utils-libs/).
+
+    As of the time of writing, a slightly out of date but still valid version is
+    also available from the
+    [ISPD's 2018 detailed routing contest downloads](https://www.ispd.cc/contests/18/lefdefref.pdf).
+
 CSV
 
     Short for "Comma-separated Values".
@@ -173,10 +191,10 @@ CSV
 JSON
 
     Short for JavaScript Object Notation.
-    
+
     A data interchange format derived from JavaScript supporting numeric, Boolean
     and string values as well as lists and hashmaps composed of the above.
-    
+
     OpenLane uses JSON as the primary form for loading and storing configuration
     data.
 
@@ -188,7 +206,7 @@ Verilog
 
 [Netgen](http://opencircuitdesign.com/netgen)
 
-    A free and open-source tool for running {term}`LVS`.
+    A {term}`open-source` tool for running {term}`LVS`.
 
 SPICE
 
@@ -232,11 +250,11 @@ FPGA
     Short for Field-Programmable Gate Array.
 
     An integrated circuit that can be reprogrammed to perform various digital
-    functions much, much faster than a general-purpose computer, but at a price,
-    area and performance penalty compared to a dedicated ASIC.
-    
+    functions much, much faster than a general-purpose computer, but at a
+    recurring cost, area and performance penalty compared to a dedicated ASIC.
+
     Popular for prototyping ASICs or for niche applications where the upfront
-    cost of an ASIC.
+    cost of an ASIC is not financially justifiable.
 
 EDA
 
@@ -295,5 +313,89 @@ On-chip variation
     or environmental conditions.
 
     Sometimes abbreviated as OCV.
+
+STA
+
+    Short for Static Timing Analysis.
+
+    A method for determining the validity of a chip's timing parameters without
+    performing a full functional simulation thereof.
+
+    A chip for which STA reveals no timing constraint violations is said to
+    have achieved {term}`timing closure`.
+
+timing closure
+
+    A term given for designs for which STA has revealed that there exist no
+    violations of timing constraints at a certain clock period and at all
+    {term}`timing corners <timing corner>`.
+
+    Designs that have not achieved timing closure are usually not suitable
+    for tape-out.
+
+IEEE
+
+    Short for the Institute of Electrical and Electronics Engineers.
+
+    A professional association for electronics and electrical engineers. IEEE
+    sets the standard for a number of formats in the EDA space, including 
+    the Verilog Hardware Description Language.
+
+SPEF
+
+    Short for Standard Parasitic Exchange Format.
+
+    An {term}`IEEE` standard for representing parasitic resistances and
+    capacitances of wires in a circuit.
+
+SDF
+
+    Short for Standard Delay Format.
+
+    An {term}`IEEE` standard for representing and interpreting timing data for
+    use at any stage of an electronic design process.
+
+open-source
+
+    A model for releasing products where upon the source files are also made
+    available for free (as in free spreech, not necessarily but usually
+    also free of cost) modification and redistribution.
+    
+    The term is more accurately defined by the Open Source Initiative (OSI) at
+    this link: https://opensource.org/osd
+    
+Caravel
+
+    A test harness by Efabless Corporation for use with the {term}`OpenMPW`
+    and {term}`chipIgnite` programs, that enforces a common pinout for all
+    user projects as well as providing a number of base functions, including
+    a management SoC, I/O configuration, power, clocking, and more.
+    
+    See https://caravel-harness.readthedocs.io/en/latest/ for more info.
+
+OpenMPW
+
+    A program by Google sponsoring a free Multi-Project Wafer for
+    {term}`open-source` hardware projects. OpenLane was initially developed for
+    use with the OpenMPW project.
+    
+    See https://developers.google.com/silicon for more info.
+    
+chipIgnite
+
+    A program by Efabless Corporation for manufacturing chips based on the
+    {term}`sky130` PDK; using the same harness and tools as the {term}`OpenMPW`
+    program but allowing for (optional) proprietary designs.
+    
+    See https://efabless.com/chipignite for more info.
+
+MPW
+    
+    Short for Multi-Project Wafer.
+    
+    A wafer produced aggregating a number of different chips, allowing the cost
+    of a wafer to be spread across multiple projects.
+    
+    {term}`OpenMPW` and {term}`chipIgnite` are examples of MPW projects.
 
 ```

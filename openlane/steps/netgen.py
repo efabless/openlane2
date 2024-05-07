@@ -21,8 +21,7 @@ from typing import List, Dict, Tuple
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..common import Path, mkdirp
-from ..logging import warn
+from ..common import Path, mkdirp, get_script_dir
 from ..config import Variable
 from ..state import DesignFormat, State
 
@@ -142,7 +141,7 @@ class LVS(NetgenStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         spice_files = []
         if self.config["CELL_SPICE_MODELS"] is None:
-            warn(
+            self.warn(
                 "This PDK does not appear to define any SPICE models. LVS will still run, but all cells will be black-boxed and the result may be inaccurate."
             )
         else:
@@ -156,8 +155,11 @@ class LVS(NetgenStep):
 
         design_name = self.config["DESIGN_NAME"]
         reports_dir = os.path.join(self.step_dir, "reports")
-        stats_file = os.path.join(reports_dir, "lvs.json")
+        stats_file = os.path.join(reports_dir, "lvs.netgen.rpt")
+        stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
+
+        setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
 
         with open(self.get_script_path(), "w") as f:
             for lib in spice_files:
@@ -171,12 +173,12 @@ class LVS(NetgenStep):
                 )
 
             print(
-                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {self.config['NETGEN_SETUP']} {stats_file} -json",
+                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {setup_script} {stats_file} -json",
                 file=f,
             )
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
-        stats_string = open(stats_file).read()
+        stats_string = open(stats_file_json).read()
         lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
         metrics_updates.update(lvs_metrics)
 

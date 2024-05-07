@@ -20,15 +20,15 @@ import textwrap
 import subprocess
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Literal, Optional, Tuple
+from typing import List, Literal, Optional, Set, Tuple
 
 from .tclstep import TclStep
 from .step import ViewsUpdate, MetricsUpdate, Step
 
 from ..config import Variable, Config
 from ..state import State, DesignFormat
-from ..logging import debug, verbose, info, warn
-from ..common import Path, get_script_dir, Toolbox, TclUtils
+from ..logging import debug, verbose, info
+from ..common import Path, get_script_dir, Toolbox, TclUtils, process_list_file
 
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
@@ -51,6 +51,7 @@ def _parse_yosys_check(
     report: io.TextIOBase,
     tristate_patterns: Optional[List[str]] = None,
     tristate_okay: bool = False,
+    elaborate_only: bool = False,
 ) -> int:
     verbose("Parsing synthesis checks…")
     errors_encountered: int = 0
@@ -68,7 +69,10 @@ def _parse_yosys_check(
 
             cells = re.findall(yosys_cell_rx, last_warning)
 
-            if tristate_okay and (
+            if elaborate_only and "but has no driver" in last_warning:
+                debug("Ignoring undriven cell in elaborate-only mode:")
+                debug(last_warning)
+            elif tristate_okay and (
                 ("tribuf" in last_warning)
                 or _check_any_tristate(cells, tristate_patterns)
             ):
@@ -88,6 +92,107 @@ def _parse_yosys_check(
     return errors_encountered
 
 
+def _generate_read_deps(
+    config: Config,
+    toolbox: Toolbox,
+    power_defines: bool = False,
+) -> str:
+    commands = "set ::_synlig_defines [list]\n"
+
+    synth_defines = [
+        f"PDK_{config['PDK']}",
+        f"SCL_{config['STD_CELL_LIBRARY']}\"",
+        "__openlane__",
+        "__pnr__",
+    ]
+    synth_defines += (
+        config.get("VERILOG_DEFINES") or []
+    )  # VERILOG_DEFINES not defined for VHDLSynthesis
+    for define in synth_defines:
+        commands += f"verilog_defines {TclUtils.escape(f'-D{define}')}\n"
+        commands += (
+            f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{define}')}\n"
+        )
+
+    scl_lib_list = toolbox.filter_views(config, config["LIB"])
+
+    if power_defines:
+        if power_define := config.get(
+            "VERILOG_POWER_DEFINE"
+        ):  # VERILOG_POWER_DEFINE not defined for VHDLSynthesis
+            commands += f"verilog_defines {TclUtils.escape(f'-D{power_define}')}\n"
+            commands += f"lappend ::_synlig_defines {TclUtils.escape(f'+define+{power_define}')}\n"
+
+    # Try your best to use powered blackbox models if power_defines is true
+    if power_defines and config["CELL_VERILOG_MODELS"] is not None:
+        scl_blackbox_models = toolbox.create_blackbox_model(
+            frozenset(config["CELL_VERILOG_MODELS"]),
+            frozenset(["USE_POWER_PINS"]),
+        )
+        commands += f"read_verilog -sv -lib {scl_blackbox_models}\n"
+    else:
+        # Fall back to scl_lib_list if you cant
+        for lib in scl_lib_list:
+            lib_str = TclUtils.escape(str(lib))
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+            )
+
+    excluded_cells: Set[str] = set(config["EXTRA_EXCLUDED_CELLS"] or [])
+    excluded_cells.update(process_list_file(config["SYNTH_EXCLUDED_CELL_FILE"]))
+    excluded_cells.update(process_list_file(config["PNR_EXCLUDED_CELL_FILE"]))
+
+    lib_synth = toolbox.remove_cells_from_lib(
+        frozenset([str(lib) for lib in scl_lib_list]),
+        excluded_cells=frozenset(excluded_cells),
+    )
+    commands += f"set ::env(SYNTH_LIBS) {TclUtils.escape(TclUtils.join(lib_synth))}\n"
+
+    verilog_include_args = []
+    if dirs := config.get("VERILOG_INCLUDE_DIRS"):
+        for dir in dirs:
+            verilog_include_args.append(f"-I{dir}")
+
+    # Priorities from higher to lower
+    format_list = (
+        [
+            DesignFormat.VERILOG_HEADER,
+            DesignFormat.POWERED_NETLIST,
+            DesignFormat.NETLIST,
+            DesignFormat.LIB,
+        ]
+        if power_defines
+        else [
+            DesignFormat.VERILOG_HEADER,
+            DesignFormat.NETLIST,
+            DesignFormat.POWERED_NETLIST,
+            DesignFormat.LIB,
+        ]
+    )
+    for view, format in toolbox.get_macro_views_by_priority(config, format_list):
+        view_escaped = TclUtils.escape(str(view))
+        if format == DesignFormat.LIB:
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {view_escaped}\n"
+            )
+        else:
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {view_escaped}\n"
+
+    if libs := config.get("EXTRA_LIBS"):
+        for lib in libs:
+            lib_str = TclUtils.escape(str(lib))
+            commands += (
+                f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
+            )
+
+    if models := config["EXTRA_VERILOG_MODELS"]:
+        for model in models:
+            model_str = TclUtils.escape(str(model))
+            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
+
+    return commands
+
+
 verilog_rtl_cfg_vars = [
     Variable(
         "VERILOG_FILES",
@@ -102,9 +207,10 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_POWER_DEFINE",
-        Optional[str],
-        "Specifies the name of the define used to guard power and ground connections",
+        str,
+        "Specifies the name of the define used to guard power and ground connections in the input RTL.",
         deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
+        default="USE_POWER_PINS",
     ),
     Variable(
         "VERILOG_INCLUDE_DIRS",
@@ -196,39 +302,22 @@ class YosysStep(TclStep):
         pass
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        power_defines = False
+        if "power_defines" in kwargs:
+            power_defines = kwargs.pop("power_defines")
+
         kwargs, env = self.extract_env(kwargs)
 
-        lib_list = [
-            str(e) for e in self.toolbox.filter_views(self.config, self.config["LIB"])
-        ]
-        lib_synth = self.toolbox.remove_cells_from_lib(
-            frozenset(lib_list),
-            excluded_cells=frozenset(
-                [
-                    str(self.config["SYNTH_EXCLUSION_CELL_LIST"]),
-                    str(self.config["PNR_EXCLUSION_CELL_LIST"]),
-                ]
-            ),
-            as_cell_lists=True,
-        )
+        _deps_script = os.path.join(self.step_dir, "_deps.tcl")
 
-        env["SYNTH_LIBS"] = " ".join(lib_synth)
-        env["FULL_LIBS"] = " ".join(lib_list)
+        with open(_deps_script, "w") as f:
+            f.write(
+                _generate_read_deps(
+                    self.config, self.toolbox, power_defines=power_defines
+                )
+            )
 
-        macro_libs = self.toolbox.get_macro_views(
-            self.config,
-            DesignFormat.LIB,
-        )
-        if len(macro_libs) != 0:
-            env["MACRO_LIBS"] = " ".join([str(lib) for lib in macro_libs])
-
-        macro_nls = self.toolbox.get_macro_views(
-            self.config,
-            DesignFormat.NETLIST,
-            unless_exist=DesignFormat.LIB,
-        )
-        if len(macro_nls) != 0:
-            env["MACRO_NLS"] = " ".join([str(nl) for nl in macro_nls])
+        env["_DEPS_SCRIPT"] = _deps_script
 
         return super().run(state_in, env=env, **kwargs)
 
@@ -246,6 +335,9 @@ class JsonHeader(YosysStep):
         return os.path.join(get_script_dir(), "yosys", "json_header.tcl")
 
     config_vars = YosysStep.config_vars + verilog_rtl_cfg_vars
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        return super().run(state_in, power_defines=True, **kwargs)
 
 
 class SynthesisCommon(YosysStep):
@@ -285,7 +377,7 @@ class SynthesisCommon(YosysStep):
             "SYNTH_ABC_BUFFERING",
             bool,
             "Enables `abc` cell buffering.",
-            default=True,
+            default=False,
             deprecated_names=["SYNTH_BUFFERING"],
         ),
         Variable(
@@ -360,6 +452,11 @@ class SynthesisCommon(YosysStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
+        # Variable(
+        #     "SYNTH_SDC_FILE",
+        #     Optional[Path],
+        #     "Specifies the SDC file read during all Synthesis steps",
+        # ),
     ]
 
     def get_script_path(self):
@@ -379,15 +476,19 @@ class SynthesisCommon(YosysStep):
                     files = raw.strip().splitlines()
                     lighter_dff_map = Path(files[0])
                 except FileNotFoundError:
-                    warn(
+                    self.warn(
                         "Lighter not found or not set up with OpenLane: If you're using a manual Lighter install, try setting LIGHTER_DFF_MAP explicitly."
                     )
                 except subprocess.CalledProcessError:
-                    warn(f"{scl} not supported by Lighter.")
+                    self.warn(f"{scl} not supported by Lighter.")
 
-            env["_lighter_dff_map"] = lighter_dff_map
+            env["_LIGHTER_DFF_MAP"] = lighter_dff_map
 
-        views_updates, metric_updates = super().run(state_in, **kwargs)
+        # env["_SDC_IN"] = (
+        #     self.config["SYNTH_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        # )
+
+        views_updates, metric_updates = super().run(state_in, env=env, **kwargs)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
@@ -414,6 +515,7 @@ class SynthesisCommon(YosysStep):
                 open(check_error_count_file),
                 self.config["TRISTATE_CELLS"],
                 self.config["SYNTH_CHECKS_ALLOW_TRISTATE"],
+                self.config["SYNTH_ELABORATE_ONLY"],
             )
 
         return views_updates, metric_updates
@@ -461,56 +563,6 @@ class VHDLSynthesis(SynthesisCommon):
             "The paths of the design's VHDL files.",
         ),
     ]
-
-
-def _generate_read_deps(
-    config: Config,
-    toolbox: Toolbox,
-    power_defines: bool = False,
-    include_scls: bool = True,
-) -> str:
-    commands = ""
-
-    if synth_defines := config["VERILOG_DEFINES"]:
-        for define in synth_defines:
-            flag = TclUtils.escape(f"-D{define}")
-            commands += f"verilog_defines {flag}\n"
-
-    if power_defines:
-        if define := config["VERILOG_POWER_DEFINE"]:
-            flag = TclUtils.escape(f"-D{define}")
-            commands += f"verilog_defines {flag}"
-
-    for lib in toolbox.filter_views(config, config["LIB"]):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-
-    for lib in toolbox.get_macro_views(config, DesignFormat.LIB):
-        lib_str = TclUtils.escape(str(lib))
-        commands += f"read_liberty -lib -ignore_miss_dir -setattr blackbox {lib_str}\n"
-
-    verilog_include_args = []
-    if dirs := config["VERILOG_INCLUDE_DIRS"]:
-        for dir in dirs:
-            verilog_include_args.append(f"-I{dir}")
-
-    leftover_macro_nls = toolbox.get_macro_views(
-        config,
-        DesignFormat.NETLIST,
-        unless_exist=DesignFormat.LIB,
-    )
-    for nl in leftover_macro_nls:
-        nl_str = TclUtils.escape(str(nl))
-        commands += (
-            f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {nl_str}\n"
-        )
-
-    if models := config["EXTRA_VERILOG_MODELS"]:
-        for model in models:
-            model_str = TclUtils.escape(str(model))
-            commands += f"read_verilog -sv -lib {TclUtils.join(verilog_include_args)} {model_str}\n"
-
-    return commands
 
 
 @Step.factory.register()

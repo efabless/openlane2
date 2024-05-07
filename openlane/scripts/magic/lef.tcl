@@ -17,9 +17,10 @@ if { $::env(MAGIC_LEF_WRITE_USE_GDS) } {
 } else {
     source $::env(SCRIPTS_DIR)/magic/common/read.tcl
     read_tech_lef
-    read_pdk_lef
-    read_macro_lef
-    read_extra_lef
+    read_pdk_gds
+    read_macro_gds
+    read_extra_gds
+    load (REFRESHLAYOUT?)
     read_def
 }
 
@@ -27,7 +28,7 @@ if { [info exists ::env(VDD_NETS)] || [info exists ::env(GND_NETS)] } {
     # they both must exist and be equal in length
     # current assumption: they cannot have a common ground
     if { ! [info exists ::env(VDD_NETS)] || ! [info exists ::env(GND_NETS)] } {
-        puts "\[ERROR] VDD_NETS and GND_NETS must *both* either be defined or undefined"
+        puts stderr "\[ERROR] VDD_NETS and GND_NETS must *both* either be defined or undefined"
         exit -1
     }
 } else {
@@ -39,11 +40,18 @@ puts "\[INFO] Ignoring '$::env(VDD_NETS) $::env(GND_NETS)'"
 lef nocheck $::env(VDD_NETS) $::env(GND_NETS)
 
 # Write LEF
+set lefwrite_opts [list]
 if { $::env(MAGIC_WRITE_FULL_LEF) } {
-    puts "\[INFO] Writing non-abstract (full) LEF"
-    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef
+    puts "\[INFO] Writing non-abstract (full) LEF…"
 } else {
-    puts "\[INFO] Writing abstract LEF"
-    lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef -hide
+    lappend lefwrite_opts -hide
+    puts "\[INFO] Writing abstract LEF…"
 }
-puts "\[INFO] LEF Write Complete"
+if { $::env(MAGIC_WRITE_LEF_PINONLY) } {
+    puts "\[INFO] Specifying -pinonly (nets connected to pins on the same layer are declared as obstructions)…"
+    lappend lefwrite_opts -pinonly
+} else {
+    puts "\[INFO] Not specifiying -pinonly (nets connected to pins on the same layer are declared as part of the pin)…"
+}
+lef write $::env(STEP_DIR)/$::env(DESIGN_NAME).lef {*}$lefwrite_opts
+puts "\[INFO] LEF Write Complete."

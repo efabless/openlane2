@@ -15,6 +15,13 @@ At a minimum, the default flow for OpenLane 2, named {flow}`Classic`, is essenti
 more robust re-implementation of the OpenLane 1 flow that is still entirely
 backwards compatible, with some conveniences:
 
+```{note}
+While the OpenLane 2 infrastructue is stable, the default OpenLane 2 flow in
+itself is in beta, pending silicon validation, and we still recommend the
+OpenLane 1 flow for use with OpenMPW and chipIgnite. See [the FAQ](#faq-1v2) for
+more information.
+```
+
 * Full configuration validation: if you have a typo, it will be caught, and if
   you accidentally provide a string to a number, it will be caught.
 * More graceful failures: if the design fails mid-flow, because of a more strict
@@ -23,10 +30,10 @@ backwards compatible, with some conveniences:
   * In OpenLane 1, they are all extracted at the end.
 * The ability to use command-line flow control options such as `--from`, `--to`,
   `--skip` and `--only`, with the ability to resume from a snapshot of your
-  design at a certain part of the flow, without worrying about surprises related
+  design at certain parts of flows, without worrying about surprises related
   to state variables missing.
 
-```{figure} ./configurable_flow.png
+```{figure} ./configurable_flow.webp
 Writing custom flows and steps using OpenLane 2
 ```
 
@@ -69,10 +76,7 @@ The Nix method involves installing the Nix build utility/package management
 software and cloning the OpenLane repository.
 
 You can install Nix and set up the OpenLane binary cache by following the
-instructions at [Cachix](https://openlane.cachix.org).
-
-For more detailed instructions, see
-{ref}`nix-based-installation`
+instructions at {ref}`nix-based-installation`.
 
 Afterwards, you can run an example as follows:
 
@@ -130,7 +134,7 @@ documented them in the following sections for your convenience:
 ./variables
 ```
 
-## Running the flow
+## Running flows
 
 The command line interface for OpenLane 2 is more streamlined, and entirely
 handled by the OpenLane 2 Python module instead of relying on Makefiles.
@@ -166,10 +170,15 @@ The example designs are now copied to the current working directory before being
 run, instead of relying on a global "OpenLane installation" directory.
 ```
 
+```{tip}
+Whenever you don't specify a flow, the {flow}`Classic` flow will be used by
+default.
+```
+
 ```!migration_comparison[bash] ### Running your own design
 ./flow.tcl ~/my_designs/picorv32
 ---
-openlane ~/my_designs/picorv32/config.json
+openlane [--flow Classic] ~/my_designs/picorv32/config.json
 ---
 We've done away with providing the design folder and automatically trying to
 detect which configuration file should be run, instead opting to use the
@@ -254,7 +263,7 @@ the configuration file and any command-line overrides, and also some metadata
 such as the flow used and the version of OpenLane.
 
 The generated `resolved.json` is a valid OpenLane configuration file for the
-same flow; so you may re-run the flow with the same exact configuration as follows:
+same flow; so you may re-run a flow with the same exact configuration as follows:
 
 ```bash
 openlane <path to run folder>/resolved.json
