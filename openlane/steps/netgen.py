@@ -232,10 +232,9 @@ foreach cell $cells1 {
             spice_files_commands.append(f"readnet spice {lib} $circuit2")
 
         macros_commands = []
-        macros = self.config.get("MACROS")
-        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"] and macros:
-            for macro_name in macros:
-                nls = macros[macro_name].nl
+        if self.config["NETGEN_INCLUDE_MARCOS_NETLIST"]:
+            for macro in self.config.get("MACROS", []):
+                nls = self.config["MACROS"][macro].nl
                 for nl in nls:
                     macros_commands.append(
                         f"puts \"Reading Verilog netlist file '{str(nl)}'...\""
