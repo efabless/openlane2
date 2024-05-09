@@ -22,6 +22,45 @@ if { $::env(MAGIC_EXT_USE_GDS) } {
     read_def
 }
 
+if { [info exists ::env(MAGIC_EXT_ABSTRACT_CELLS)] } {
+    set cells [cellname list allcells]
+    set matching_cells ""
+    foreach expression $::env(MAGIC_EXT_ABSTRACT_CELLS) {
+        set matched 0
+        foreach cell $cells {
+            if { [regexp $expression $cell] } {
+                puts "$cell matched with the expression '$expression'"
+                set matching_cells "$cell $matching_cells"
+                set matched 1
+            }
+        }
+        if { $matched == 0 } {
+            puts "\[WARNING] Failed to match the experssion '$expression' with cells in the design"
+        }
+    }
+    foreach cell $matching_cells {
+        load $cell
+        property LEFview true
+    }
+}
+
+if { [info exists ::env(MAGIC_EXT_ABSTRACT_CELLS_RX)] } {
+    set cells [cellname list allcells]
+    set matching_cells ""
+    foreach expression $::env(MAGIC_EXT_ABSTRACT_CELLS_RX) {
+        foreach cell $cells {
+            if { [regexp $expression $cell] } {
+                puts "$cell matched with $expression"
+                set matching_cells "$cell $matching_cells"
+            }
+        }
+    }
+    foreach cell $matching_cells {
+        load $cell
+        property LEFview true
+    }
+}
+
 load $::env(DESIGN_NAME) -dereference
 
 set backup $::env(PWD)

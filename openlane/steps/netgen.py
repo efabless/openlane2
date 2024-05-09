@@ -14,14 +14,15 @@
 import os
 import re
 import json
+import textwrap
 from decimal import Decimal
 from abc import abstractmethod
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from .step import ViewsUpdate, MetricsUpdate, Step
 from .tclstep import TclStep
 
-from ..common import Path, mkdirp, get_script_dir
+from ..common import Path, mkdirp, get_script_dir, TclUtils
 from ..config import Variable
 from ..state import DesignFormat, State
 
@@ -100,6 +101,12 @@ class NetgenStep(TclStep):
 
     config_vars = [
         Variable(
+            "MAGIC_EXT_USE_GDS",
+            bool,
+            "A flag to choose whether to use GDS for spice extraction or not. If not, then the extraction will be done using the DEF/LEF, which is faster.",
+            default=False,
+        ),
+        Variable(
             "NETGEN_SETUP",
             Path,
             "A path to the setup file for Netgen used to configure LVS. If set to None, this PDK will not support Netgen-based steps.",
@@ -109,7 +116,7 @@ class NetgenStep(TclStep):
     ]
 
     @abstractmethod
-    def get_script_path(self):
+    def get_script_path(self) -> str:
         pass
 
     def get_command(self) -> List[str]:
@@ -131,6 +138,19 @@ class LVS(NetgenStep):
     id = "Netgen.LVS"
     name = "Netgen LVS"
     inputs = [DesignFormat.SPICE, DesignFormat.POWERED_NETLIST]
+    config_vars = NetgenStep.config_vars + [
+        Variable(
+            "LVS_INCLUDE_MARCO_NETLISTS",
+            bool,
+            "A flag that enables including the gate-level netlist of macros while running Netgen",
+            default=False,
+        ),
+        Variable(
+            "LVS_FLATTEN_CELLS",
+            Optional[List[str]],
+            "A list of cell names to be flattened while running LVS",
+        ),
+    ]
 
     def get_command(self) -> List[str]:
         return super().get_command() + [self.get_script_path()]
@@ -159,8 +179,6 @@ class LVS(NetgenStep):
         stats_file_json = os.path.join(reports_dir, "lvs.netgen.json")
         mkdirp(reports_dir)
 
-        setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
-
         with open(self.get_script_path(), "w") as f:
             for lib in spice_files:
                 print(
@@ -171,12 +189,62 @@ class LVS(NetgenStep):
                     f"readnet spice {lib} 1",
                     file=f,
                 )
+        netgen_setup_script = os.path.join(get_script_dir(), "netgen", "setup.tcl")
+        mkdirp(reports_dir)
 
+        spice_files_commands = []
+        for lib in spice_files:
+            spice_files_commands.append(
+                f"puts \"Reading SPICE netlist file '{lib}'...\""
+            )
+            spice_files_commands.append(f"readnet spice {lib} $circuit2")
+
+        macros_commands = []
+        macros_commands += [
+            f"readnet verilog {state_in[DesignFormat.POWERED_NETLIST]} $circuit2"
+        ]
+
+        format_list = [
+            DesignFormat.POWERED_NETLIST,
+            DesignFormat.NETLIST,
+            DesignFormat.VERILOG_HEADER,
+        ]
+
+        if self.config["LVS_INCLUDE_MARCO_NETLISTS"]:
+            macros_views = []
+            for view, _ in self.toolbox.get_macro_views_by_priority(
+                self.config, format_list
+            ):
+                macros_views.append(TclUtils.escape(str(view)))
+
+            for netlist in macros_views:
+                macros_commands.append(
+                    f"puts \"Reading Verilog netlist file '{str(netlist)}'...\""
+                )
+                macros_commands.append(f"readnet verilog {str(netlist)} $circuit2")
+
+        netgen_commands = (
+            (
+                textwrap.dedent(
+                    f"""
+                    set circuit1 [readnet spice {state_in[DesignFormat.SPICE]}]
+                    set circuit2 [readnet verilog /dev/null]"""
+                )
+            )
+            .lstrip()
+            .rstrip()
+            .split("\n")
+        )
+        netgen_commands += spice_files_commands
+        netgen_commands += macros_commands
+        netgen_commands += f'lvs "$circuit1 {design_name}" "$circuit2 {design_name}" {netgen_setup_script} {stats_file} -blackbox -json'.split(
+            "\n"
+        )
+        with open(self.get_script_path(), "w") as f:
             print(
-                f"lvs {{ {state_in[DesignFormat.SPICE]} {design_name} }} {{ {state_in[DesignFormat.POWERED_NETLIST]} {design_name} }} {setup_script} {stats_file} -json",
+                "\n".join(netgen_commands),
                 file=f,
             )
-
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         stats_string = open(stats_file_json).read()
         lvs_metrics = get_metrics(json.loads(stats_string, parse_float=Decimal))
