@@ -300,12 +300,8 @@ class Flow(ABC):
                 if self.step is not None:
                     prefix = f"[{self.step}] "
                 postfix = ""
-                if self.repeats > 1:
-                    postfix = f"{self.repeats} repeats"
-                if self.similar > 1:
-                    if len(postfix):
-                        postfix += ", "
-                    postfix += f"{self.similar} similar"
+                if self.repeats + self.similar:
+                    postfix = f"and {self.repeats + self.similar} similar warnings"
                 if len(postfix):
                     postfix = f" ({postfix})"
                 return f"{prefix}{self.message}{postfix}"
