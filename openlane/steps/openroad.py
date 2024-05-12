@@ -229,9 +229,9 @@ class OpenROADStep(TclStep):
         ]:
             return alert
         if alert.cls == "error":
-            self.err(str(alert))
+            self.err(str(alert), extra={"key": alert.code})
         elif alert.cls == "warning":
-            self.warn(str(alert))
+            self.warn(str(alert), extra={"key": alert.code})
         return alert
 
     def prepare_env(self, env: dict, state: State) -> dict:
