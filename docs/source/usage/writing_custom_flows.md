@@ -122,14 +122,12 @@ You may instantiate and use steps inside flows as follows:
 synthesis = Yosys.Synthesis(
     config=self.config,
     state_in=...,
-    flow=self,
 )
 synthesis.start()
 
 sdc_load = OpenROAD.CheckSDCFiles(
     config=self.config,
     state_in=synthesis.state_out,
-    flow=self
 )
 ```
 
