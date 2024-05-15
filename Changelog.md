@@ -13,6 +13,13 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.5
+
+## Misc. Enhancements/Bugfixes
+* The flow warning summary now only shows the first instance of any warning
+  emitted, instead showing two numbers for identical warnings in other steps
+  and for similar warnings (e.g. same OpenROAD code.)
+
 # 2.0.4
 
 ## Steps
