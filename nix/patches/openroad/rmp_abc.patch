@@ -1,0 +1,15 @@
+diff --git a/src/rmp/src/CMakeLists.txt b/src/rmp/src/CMakeLists.txt
+index 676819197..fec6f3d3b 100644
+--- a/src/rmp/src/CMakeLists.txt
++++ b/src/rmp/src/CMakeLists.txt
+@@ -90,6 +90,7 @@ target_link_libraries(rmp_abc_library
+     dbSta_lib
+     libabc
+     utl_lib
++    ${ABC_LIBRARY}
+ )
+ 
+ if (Python3_FOUND AND BUILD_PYTHON)
+-- 
+2.42.0
+

@@ -31,18 +31,18 @@ def check_cells(odb_cells):
             if mterm.getSigType() in ["GROUND", "POWER", "ANALOG"]:
                 continue
             pin_name = mterm.getName()
-            has_diff_area = mterm.hasDiffArea()
-            has_gate_area = (
+            diff_area = mterm.getDiffArea()
+            gate_area = (
                 mterm.getDefaultAntennaModel()
-                and mterm.getDefaultAntennaModel().hasGateArea()
-                or False
+                and mterm.getDefaultAntennaModel().getGateArea()
+                or []
             )
             io_type = mterm.getIoType()
-            if io_type == "INOUT" and not (has_diff_area or has_gate_area):
+            if io_type == "INOUT" and not (len(diff_area) or len(gate_area)):
                 inout_pins.append(pin_name)
-            elif io_type == "INPUT" and not has_gate_area:
+            elif io_type == "INPUT" and not len(gate_area):
                 input_pins.append(pin_name)
-            elif io_type == "OUTPUT" and not has_diff_area:
+            elif io_type == "OUTPUT" and not len(diff_area):
                 output_pins.append(pin_name)
         if inout_pins:
             print(
