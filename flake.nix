@@ -54,10 +54,11 @@
     packages = nix-eda.forAllSystems package-config (util:
       with util;
         rec {
-          magic = inputPkgs.magic.override {
-            rev = "291ba96285bcd7c2176f95229fc540bd88a25b88";
-            sha256 = "sha256-PE3mgjoe9kvEU/Ln++Dkpzag/7dAQBl7CBOxQJS/wk0=";
-          };
+          # # Override Example
+          # magic = inputPkgs.magic.override {
+          #   rev = "291ba96285bcd7c2176f95229fc540bd88a25b88";
+          #   sha256 = "sha256-PE3mgjoe9kvEU/Ln++Dkpzag/7dAQBl7CBOxQJS/wk0=";
+          # };
           colab-env = callPackage ./nix/colab-env.nix {};
           opensta = callPackage ./nix/opensta.nix {};
           openroad-abc = callPackage ./nix/openroad-abc.nix {};
