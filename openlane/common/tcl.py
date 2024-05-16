@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import re
 import tkinter
 from typing import Dict, Mapping, Any, Iterable
 
-_setter_rx = re.compile(r"set\s+(?:\:\:)?env\(\s*(\w+)\s*\)")
+_env_rx = re.compile(r"(?:\:\:)?env\((\w+)\)")
 _find_unsafe = re.compile(r"[^\w@%+=:,./-]", re.ASCII).search
 _escapes_in_quotes = re.compile(r"([\\\$\"\[])")
 
@@ -57,43 +56,25 @@ class TclUtils(object):
     @staticmethod
     def _eval_env(env_in: Mapping[str, Any], tcl_in: str) -> Dict[str, Any]:
         interpreter = tkinter.Tcl()
-        keys_modified = _setter_rx.findall(tcl_in)
+
+        interpreter.eval("array unset ::env")
+        for key, value in env_in.items():
+            interpreter.setvar(f"env({key})", str(value))
 
         env_out = dict(env_in)
-        rollback = {}
-        for key, value in env_in.items():
-            rollback[key] = os.getenv(key)
-            os.environ[key] = str(value)
 
-        tcl_script = f"""
-        {tcl_in}
-        set counter 0
-        foreach key [array names ::env] {{
-            set "key$counter" $key
-            set "value$counter" $::env($key)
-            incr counter
-        }}
-        """
-        interpreter.eval(tcl_script)
+        def py_set(key, value=None):
+            if match := _env_rx.fullmatch(key):
+                if value is not None:
+                    env_out[match.group(1)] = value
 
-        for key, value in rollback.items():
-            if value is not None:
-                os.environ[key] = value
-            else:
-                del os.environ[key]
+        py_set_name = interpreter.register(py_set)
+        interpreter.call("rename", py_set_name, "_py_set")
+        interpreter.call("rename", "set", "_orig_set")
+        interpreter.eval(
+            "proc set args { _py_set {*}$args; tailcall _orig_set {*}$args; }"
+        )
 
-        counter = 0
-        while True:
-            key_var = f"key{counter}"
-            value_var = f"value{counter}"
-
-            try:
-                key = interpreter.getvar(key_var)
-            except tkinter.TclError:
-                break
-            value = interpreter.getvar(value_var)
-            if key in keys_modified:
-                env_out[key] = value
-            counter += 1
+        interpreter.eval(tcl_in)
 
         return env_out
