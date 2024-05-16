@@ -13,6 +13,14 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.7
+
+## Misc Enhancements/Bugfixes
+
+* Overhauled Tcl configuration loading code to fix a number of bugs that may
+  occur when a Tcl file sources another Tcl file, such as for TinyTapeout
+  configs (thanks @htfab)
+
 # 2.0.6
 
 ## Misc. Enhancements/Bugfixes
