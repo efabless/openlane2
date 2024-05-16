@@ -13,6 +13,12 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.6
+
+## Misc. Enhancements/Bugfixes
+* Fixed a crash on Linux distributions where `/etc/lsb-release` includes
+  comments.
+
 # 2.0.5
 
 ## Misc. Enhancements/Bugfixes
