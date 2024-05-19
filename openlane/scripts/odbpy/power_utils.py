@@ -133,6 +133,9 @@ class Design(object):
         cells = self.yosys_design_object["cells"]
         for cell_name in cells.keys():
             module = cells[cell_name]["type"]
+            if module.startswith("$"):
+                # yosys primitive
+                continue
             power_pins = self.extract_power_pins(cell_name)
             ground_pins = self.extract_ground_pins(cell_name)
             instances.append(
