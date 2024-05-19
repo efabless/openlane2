@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+puts "%OL_METRIC_F magic__cif__scale [magic::i2u 1]"
+
 if { $::env(MAGIC_EXT_USE_GDS) } {
     gds read $::env(CURRENT_GDS)
 } else {

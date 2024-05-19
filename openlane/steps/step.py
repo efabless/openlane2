@@ -171,11 +171,11 @@ class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
             self.current_rpt = None
         elif line.startswith(METRIC_LOCUS):
             command, name, value = line.split(" ", maxsplit=3)
-            metric_type: Union[Type[str], Type[int], Type[float]] = str
+            metric_type: Union[Type[str], Type[int], Type[Decimal]] = str
             if command.endswith("_I"):
                 metric_type = int
             elif command.endswith("_F"):
-                metric_type = float
+                metric_type = Decimal
             self.generated_metrics[name] = metric_type(value)
         elif self.current_rpt is not None:
             # No echo- the timing reports especially can be very large

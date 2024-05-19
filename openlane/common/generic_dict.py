@@ -56,10 +56,10 @@ class GenericDictEncoder(json.JSONEncoder):
         elif isinstance(o, Enum):
             return o.name
         elif isinstance(o, Decimal):
-            if o.as_integer_ratio()[1] == 1:
-                return int(o)
-            else:
+            if o.is_infinite() or o.as_integer_ratio()[1] != 1:
                 return float(o)
+            else:
+                return int(o)
         return o
 
 

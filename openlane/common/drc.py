@@ -14,6 +14,7 @@
 import io
 import re
 import json
+import shlex
 from enum import IntEnum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
@@ -24,7 +25,7 @@ BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
 @dataclass
 class Violation:
-    rules: List[Tuple[str, str]]
+    rules: List[Tuple[str, str]]  # (layer, rule)
     description: str
     bounding_boxes: List[BoundingBox] = field(default_factory=list)
 
@@ -132,6 +133,56 @@ class DRC:
                 violations[violation.category_name] = violation
                 bbox_count += 1
 
+        return (Self(module, violations), bbox_count)
+
+    @classmethod
+    def from_magic_feedback(
+        Self, feedback: io.TextIOWrapper, cif_scale: Decimal, module: str
+    ) -> Tuple["DRC", int]:
+        bbox_count = 0
+        violations: Dict[str, Violation] = {}
+        last_bounding_box: Optional[BoundingBox] = None
+        lex = shlex.shlex(feedback.read(), posix=True)
+        components = list(lex)
+        while len(components):
+            instruction = components.pop(0)
+            if instruction == "box":
+                if len(components) < 4:
+                    raise ValueError(
+                        "Invalid syntax: 'box' command has less than 4 arguments"
+                    )
+                lx, ly, ux, uy = components[0:4]
+                last_bounding_box = (
+                    Decimal(lx) * cif_scale,
+                    Decimal(ly) * cif_scale,
+                    Decimal(ux) * cif_scale,
+                    Decimal(uy) * cif_scale,
+                )
+                bbox_count += 1
+                components = components[4:]
+            elif instruction == "feedback":
+                try:
+                    subcmd = components.pop(0)
+                except IndexError:
+                    raise ValueError("feedback not given subcommand")
+                if subcmd != "add":
+                    raise ValueError(f"Unsuppoorted feedback subcommand {subcmd}")
+
+                try:
+                    rule = components.pop(0)
+                    _ = components.pop(0)
+                except IndexError:
+                    raise ValueError(
+                        "Invalid syntax: 'feedback add' command has less than 2 arguments"
+                    )
+                if rule not in violations:
+                    violations[rule] = Violation(
+                        [("UNKNOWN", f"UNKNOWN{len(violations)}")], rule, []
+                    )
+                if last_bounding_box is None:
+                    raise ValueError("Attempted to add feedback without a box selected")
+                violations[rule].bounding_boxes.append(last_bounding_box)
+        violations = {vio.category_name: vio for vio in violations.values()}
         return (Self(module, violations), bbox_count)
 
     def dumps(self):
