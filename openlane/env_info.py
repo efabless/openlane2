@@ -246,6 +246,8 @@ class OSInfo(StringRepresentable):
                 for line in os_release.split("\n"):
                     if line.strip() == "":
                         continue
+                    if line.strip().startswith("#"):
+                        continue
                     key, value = line.split("=")
                     value = value.strip('"')
 
