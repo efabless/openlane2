@@ -334,7 +334,7 @@ def test_magic_feedback():
     drc_object, count = DRC.from_magic_feedback(
         io.StringIO(FEEDBACK_EXAMPLE), Decimal("0.05"), "EXAMPLE"
     )
-    assert count == 22, f"Incorrect number of violations extracted"
+    assert count == 22, "Incorrect number of violations extracted"
     assert (
         drc_object.violations == expected_violations
     ), "Violations extracted have one or more critical data mismatches"
