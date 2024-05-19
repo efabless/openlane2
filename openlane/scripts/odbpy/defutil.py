@@ -182,6 +182,7 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
                         box.yMin(),
                         box.xMax(),
                         box.yMax(),
+                        template_pin.getPlacementStatus(),
                     )
                 )
 
@@ -322,7 +323,7 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
                 template_bterm_location_tuple[3],
                 template_bterm_location_tuple[4],
             )
-            output_new_bpin.setPlacementStatus("PLACED")
+            output_new_bpin.setPlacementStatus(template_bterm_location_tuple[5])
 
     if grid_errors:
         print(
