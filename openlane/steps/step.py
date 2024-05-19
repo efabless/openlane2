@@ -916,9 +916,12 @@ class Step(ABC):
 
             if not include_pdk and x.startswith(pdk_path):
                 return x.replace(pdk_path, "pdk_dir::")
-
-            target_relpath = os.path.join(".", "files", x[1:])
-            target_abspath = os.path.join(files_path, x[1:])
+            target_path = x
+            if os.path.isabs(target_path):
+                _, p = os.path.splitdrive(x)  # Windows
+                target_path = p[1:]
+            target_relpath = os.path.join(".", "files", target_path)
+            target_abspath = os.path.join(files_path, target_path)
 
             if flatten:
                 if include_pdk and x.startswith(pdk_path):
