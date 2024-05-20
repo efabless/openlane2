@@ -14,6 +14,7 @@
 import os
 import re
 import shutil
+import functools
 from decimal import Decimal
 from abc import abstractmethod
 from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
@@ -444,19 +445,28 @@ class SpiceExtraction(MagicStep):
 
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         try:
-            se_feedback, se_feedback_count = DRCObject.from_magic_feedback(
+            se_feedback, _ = DRCObject.from_magic_feedback(
                 open(feedback_path, encoding="utf8"),
                 metrics_updates["magic__cif__scale"],
                 self.config["DESIGN_NAME"],
             )
+            illegal_overlap_count = functools.reduce(
+                lambda a, b: a + len(b.bounding_boxes),
+                [
+                    v
+                    for v in se_feedback.violations.values()
+                    if "Illegal overlap" in v.description
+                ],
+                0,
+            )
             with open(os.path.join(self.step_dir, "feedback.xml"), "wb") as f:
                 se_feedback.to_klayout_xml(f)
-            metrics_updates["magic__illegal_overlap__count"] = se_feedback_count
+            metrics_updates["magic__illegal_overlap__count"] = illegal_overlap_count
         except ValueError as e:
             self.warn(
                 f"Failed to convert SPICE extraction feedback to KLayout database format: {e}"
             )
             metrics_updates["magic__illegal_overlap__count"] = (
-                open(feedback_path, encoding="utf8").read().count("box")
+                open(feedback_path, encoding="utf8").read().count("Illegal overlap")
             )
         return views_updates, metrics_updates

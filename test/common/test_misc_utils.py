@@ -174,8 +174,8 @@ def test_magic_feedback():
     from openlane.common import DRC, Violation
 
     expected_violations = {
-        "UNKNOWN.UNKNOWN0": Violation(
-            rules=[("UNKNOWN", "UNKNOWN0")],
+        "obsm4-metal4.ILLEGAL_OVERLAP": Violation(
+            rules=[("obsm4-metal4", "ILLEGAL_OVERLAP")],
             description="Illegal overlap between obsm4 and metal4 (types do not connect)",
             bounding_boxes=[
                 (
@@ -234,8 +234,8 @@ def test_magic_feedback():
                 ),
             ],
         ),
-        "UNKNOWN.UNKNOWN1": Violation(
-            rules=[("UNKNOWN", "UNKNOWN1")],
+        "obsm4-via4.ILLEGAL_OVERLAP": Violation(
+            rules=[("obsm4-via4", "ILLEGAL_OVERLAP")],
             description="Illegal overlap between obsm4 and via4 (types do not connect)",
             bounding_boxes=[
                 (

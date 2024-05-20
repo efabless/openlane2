@@ -42,6 +42,9 @@ class Violation:
         return f"{self.layer}.{self.rule}"
 
 
+illegal_overlap_rx = re.compile(r"between (\w+) and (\w+)")
+
+
 @dataclass
 class DRC:
     """
@@ -175,10 +178,14 @@ class DRC:
                     raise ValueError(
                         "Invalid syntax: 'feedback add' command has less than 2 arguments"
                     )
+                vio_layer = "UNKNOWN"
+                vio_rulenum = f"UNKNOWN{len(violations)}"
+                if "Illegal overlap" in rule:
+                    vio_rulenum = "ILLEGAL_OVERLAP"
+                    if match := illegal_overlap_rx.search(rule):
+                        vio_layer = "-".join((match[1], match[2]))
                 if rule not in violations:
-                    violations[rule] = Violation(
-                        [("UNKNOWN", f"UNKNOWN{len(violations)}")], rule, []
-                    )
+                    violations[rule] = Violation([(vio_layer, vio_rulenum)], rule, [])
                 if last_bounding_box is None:
                     raise ValueError("Attempted to add feedback without a box selected")
                 violations[rule].bounding_boxes.append(last_bounding_box)
@@ -229,10 +236,10 @@ class DRC:
                                 visited = ET.Element("visited")
                                 visited.text = "false"
                                 multiplicity = ET.Element("multiplicity")
-                                multiplicity.text = "1"
+                                multiplicity.text = str(len(violation.bounding_boxes))
                                 xf.write(cell, category, visited, multiplicity)
                                 with xf.element("values"):
                                     llx, lly, urx, ury = bounding_box
                                     value = ET.Element("value")
-                                    value.text = f"box: ({llx},{lly};{urx},{ury})"
+                                    value.text = f"polygon: ({llx},{lly};{urx},{lly};{urx},{ury};{llx},{ury})"
                                     xf.write(value)
