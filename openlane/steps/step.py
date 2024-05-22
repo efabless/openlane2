@@ -958,7 +958,7 @@ class Step(ABC):
             return Path(target_relpath)
 
         # 1. Config
-        dumpable_config = copy_recursive(self.config, translator=visitor)
+        dumpable_config: dict = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
             "step": self.__class__.get_implementation_id(),
@@ -976,6 +976,10 @@ class Step(ABC):
             # If not including the PDK, pdk_root is going to have to be
             # passed to the config when running the reproducibkle.
             pass
+
+        dumpable_config = {
+            k: dumpable_config[k] for k in sorted(dumpable_config)
+        }  # sort dict
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
