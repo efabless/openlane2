@@ -57,9 +57,17 @@ class SequentialFlow(Flow):
         a specific ID to execute.
     """
 
+    Substitutions: Optional[Dict[str, Union[str, Type[Step], None]]] = None
     gating_config_vars: Dict[str, List[str]] = {}
 
     def __init_subclass__(Self, scm_type=None, name=None, **kwargs):
+        Self.Steps = Self.Steps.copy()  # Break global reference
+        Self.config_vars = Self.config_vars.copy()
+        Self.gating_config_vars = Self.gating_config_vars.copy()
+        if substitute := Self.Substitutions:
+            for key, item in substitute.items():
+                Self.__substitute_step(Self, key, item)
+
         Self.__normalize_step_ids(Self)
 
         # Validate Gating Config Vars
@@ -74,9 +82,7 @@ class SequentialFlow(Flow):
         for id, variable_names in Self.gating_config_vars.items():
             matching_steps = list(Filter([id]).filter(step_id_set))
             if id not in step_id_set and len(matching_steps) < 1:
-                raise TypeError(
-                    f"Gated Step '{id}' does not match any Step in Flow '{Self.__qualname__}'"
-                )
+                continue
             for var_name in variable_names:
                 if var_name not in variables_by_name:
                     raise TypeError(
@@ -102,6 +108,62 @@ class SequentialFlow(Flow):
 
         return CustomSequentialFlow
 
+    def __init__(
+        self,
+        *args,
+        Substitute: Optional[Dict[str, Union[str, Type[Step], None]]] = None,
+        **kwargs,
+    ):
+        self.Steps = self.Steps.copy()  # Break global reference
+
+        if substitute := Substitute:
+            for key, item in substitute.items():
+                self.__substitute_step(self, key, item)
+
+            self.__normalize_step_ids(self)
+
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def __substitute_step(
+        target: Union[SequentialFlow, Type[SequentialFlow]],
+        id: str,
+        with_step: Union[str, Type[Step], None],
+    ):
+        step_indices: List[int] = []
+        for i, step in enumerate(target.Steps):
+            if (
+                step.id
+                != NotImplemented  # Will be validated later by initialization: ignore for now
+                and step.id.lower() == id.lower()
+            ):
+                step_indices.append(i)
+
+        if len(step_indices) == 0:
+            if with_step is None:
+                raise FlowException(
+                    f"Could not remove '{id}': no steps with ID '{id}' found in flow"
+                )
+            raise FlowException(
+                f"Could not substitute '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
+            )
+
+        if with_step is None:
+            for index in reversed(step_indices):
+                del target.Steps[index]
+            return
+
+        if isinstance(with_step, str):
+            with_step_opt = Step.factory.get(with_step)
+            if with_step_opt is None:
+                raise FlowException(
+                    f"Could not substitute '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
+                )
+            with_step = with_step_opt
+
+        for i in step_indices:
+            target.Steps[i] = with_step
+
     @staticmethod
     def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):
         ids_used: Set[str] = set()
@@ -119,52 +181,6 @@ class SequentialFlow(Flow):
             if id != step.id:
                 target.Steps[i] = step.with_id(id)
             ids_used.add(id)
-
-    def __init__(
-        self,
-        *args,
-        Substitute: Optional[Dict[str, Union[str, Type[Step]]]] = None,
-        **kwargs,
-    ):
-        self.Steps = self.Steps.copy()  # Break global reference
-
-        if substitute := Substitute:
-            for key, item in substitute.items():
-                self.__substitute_step(key, item)
-
-            self.__normalize_step_ids(self)
-
-        super().__init__(*args, **kwargs)
-
-    def __substitute_step(
-        self,
-        id: str,
-        with_step: Union[str, Type[Step]],
-    ):
-        step_indices: List[int] = []
-        for i, step in enumerate(self.Steps):
-            if (
-                step.id
-                != NotImplemented  # Will be validated later by initialization: ignore for now
-                and step.id.lower() == id.lower()
-            ):
-                step_indices.append(i)
-
-        if len(step_indices) == 0:
-            raise FlowException(
-                f"Could not substitute '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
-            )
-
-        if isinstance(with_step, str):
-            with_step_opt = Step.factory.get(with_step)
-            if with_step_opt is None:
-                raise FlowException(
-                    f"Could not substitute '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
-                )
-            with_step = with_step_opt
-
-        for i in step_indices:
-            self.Steps[i] = with_step
 
     def run(
         self,

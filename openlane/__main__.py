@@ -236,13 +236,6 @@ def run_example(
             subprocess.check_call(["chmod", "-R", "755", final_path])
 
         pdk_root = ctx.params.get("pdk_root")
-        if ctx.obj["use_volare"]:
-            import volare
-
-            volare_home = volare.get_volare_home(ctx.params.get("pdk_root"))
-            fetched = volare.fetch(volare_home, "sky130", common.get_opdks_rev())
-            pdk_root = fetched.get_dir(volare_home)
-
         config_file = os.path.join(final_path, "config.json")
 
         # 3. Run
@@ -393,7 +386,10 @@ o = partial(option, show_default=True)
     ),
     constraint=mutually_exclusive,
 )
-@cloup_flow_opts(_enable_debug_flags=True, sequential_flow_reproducible=True)
+@cloup_flow_opts(
+    _enable_debug_flags=True,
+    sequential_flow_reproducible=True,
+)
 @pass_context
 def cli(ctx, /, **kwargs):
     """
