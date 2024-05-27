@@ -13,7 +13,7 @@
 # limitations under the License.
 source $::env(_TCL_ENV_IN)
 
-if {[catch {source $::env(MAGIC_SCRIPT)} err]} {
+if {[catch {source $::env(_MAGIC_SCRIPT)} err]} {
     puts "Error: $err"
     exit 1
 }

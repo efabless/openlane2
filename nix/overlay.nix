@@ -54,15 +54,6 @@ new: old: {
       }
     else (old.jshon);
 
-  ## Cairo X11 on Mac
-  cairo =
-    if (old.stdenv.isDarwin)
-    then
-      (old.cairo.override {
-        x11Support = true;
-      })
-    else (old.cairo);
-
   ## Alligned alloc not available on the default SDK for x86_64-darwin (10.12!!)
   or-tools =
     if old.system == "x86_64-darwin"
