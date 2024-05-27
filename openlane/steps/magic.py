@@ -15,6 +15,8 @@ import os
 import re
 import shutil
 import functools
+import subprocess
+from signal import SIGKILL
 from decimal import Decimal
 from abc import abstractmethod
 from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
@@ -109,13 +111,14 @@ class MagicStep(TclStep):
             "-dnull",
             "-noconsole",
             "-rcfile",
-            os.path.abspath(self.config["MAGICRC"]),
+            self.config["MAGICRC"],
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"),
         ]
 
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
+        env["_MAGIC_SCRIPT"] = self.get_script_path()
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
@@ -131,12 +134,6 @@ class MagicStep(TclStep):
         env: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> Dict[str, Any]:
-        env = (env or {}).copy()
-        env["MAGIC_SCRIPT"] = self.get_script_path()
-        if alternate_script := kwargs.get("_script"):
-            env["MAGIC_SCRIPT"] = alternate_script
-            del kwargs["_script"]
-
         log_to = log_to or self.get_log_path()
 
         subprocess_result = super().run_subprocess(
@@ -282,12 +279,14 @@ class StreamOut(MagicStep):
                     )
                 env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
+                env_copy["_MAGIC_SCRIPT"] = os.path.join(
+                    get_script_dir(), "magic", "get_bbox.tcl"
+                )
 
                 subprocess_result = super().run_subprocess(
                     self.get_command(),
                     env=env_copy,
                     log_to=os.path.join(self.step_dir, f"{macro}.get_bbox.log"),
-                    _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
                 generated_metrics = subprocess_result["generated_metrics"]
 
@@ -470,3 +469,58 @@ class SpiceExtraction(MagicStep):
                 open(feedback_path, encoding="utf8").read().count("Illegal overlap")
             )
         return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class OpenGUI(MagicStep):
+    """
+    Opens the DEF view in the Magic GUI.
+    """
+
+    id = "Magic.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.DEF]
+    outputs = []
+
+    config_vars = MagicStep.config_vars + [
+        Variable(
+            "MAGIC_GUI_USE_GDS",
+            bool,
+            "Whether to prioritize GDS (if found) when running this step.",
+            default=True,
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "open.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        env = self.prepare_env(env, state_in)
+        env = self._reroute_env(env)
+
+        if DesignFormat.GDS in state_in:
+            env["CURRENT_GDS"] = self.value_to_tcl(state_in[DesignFormat.GDS])
+
+        cmd = [
+            "magic",
+            "-rcfile",
+            self.config["MAGICRC"],
+            self.get_script_path(),
+        ]
+
+        # Not run_subprocess- need stdin, stdout, stderr to be accessible to the
+        # user normally
+        magic = subprocess.Popen(
+            cmd,
+            env=env,
+            cwd=self.step_dir,
+        )
+        try:
+            magic.wait()
+        except KeyboardInterrupt:
+            magic.send_signal(SIGKILL)
+
+        return {}, {}

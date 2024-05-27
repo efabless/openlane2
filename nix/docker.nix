@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
+  createDockerImage,
   dockerTools,
   system,
   pkgs,
@@ -34,47 +35,48 @@
   openlane-env = python3.withPackages (ps: with ps; [openlane]);
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   openlane-env-bin = "${openlane-env}/bin";
-in (import ./create-docker.nix {
-  inherit pkgs;
-  inherit lib;
-  name = "openlane";
-  tag = "tmp-${system}";
-  extraPkgs = with dockerTools; [
-    git
-    zsh
-    neovim
-    silver-searcher
+in
+  createDockerImage {
+    inherit pkgs;
+    inherit lib;
+    name = "openlane";
+    tag = "tmp-${system}";
+    extraPkgs = with dockerTools; [
+      git
+      zsh
+      neovim
+      silver-searcher
 
-    openlane-env
-  ];
-  nixConf = {
-    extra-experimental-features = "nix-command flakes repl-flake";
-  };
-  maxLayers = 2;
-  channelURL = "https://nixos.org/channels/nixos-23.11";
+      openlane-env
+    ];
+    nixConf = {
+      extra-experimental-features = "nix-command flakes repl-flake";
+    };
+    maxLayers = 2;
+    channelURL = "https://nixos.org/channels/nixos-23.11";
 
-  image-created = "now";
-  image-extraCommands = ''
-    mkdir -p ./etc
-    cat <<HEREDOC > ./etc/zshrc
-    autoload -U compinit && compinit
-    autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
-    autoload -U colors && colors
+    image-created = "now";
+    image-extraCommands = ''
+      mkdir -p ./etc
+      cat <<HEREDOC > ./etc/zshrc
+      autoload -U compinit && compinit
+      autoload -U promptinit && promptinit && prompt suse && setopt prompt_sp
+      autoload -U colors && colors
 
-    export PS1=$'%{\033[31m%}OpenLane Container (${openlane.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% ';
-    HEREDOC
-  '';
-  image-config-cmd = ["${zsh}/bin/zsh"];
-  image-config-extra-env = [
-    "LANG=C.UTF-8"
-    "LC_ALL=C.UTF-8"
-    "LC_CTYPE=C.UTF-8"
-    "EDITOR=nvim"
-    "PYTHONPATH=${openlane-env-sitepackages}"
-    "TMPDIR=/tmp"
-  ];
-  image-config-extra-path = [
-    "${openlane-env-bin}"
-    "${openlane.computed_PATH}"
-  ];
-})
+      export PS1=$'%{\033[31m%}OpenLane Container (${openlane.version})%{\033[0m%}:%{\033[32m%}%~%{\033[0m%}%% ';
+      HEREDOC
+    '';
+    image-config-cmd = ["${zsh}/bin/zsh"];
+    image-config-extra-env = [
+      "LANG=C.UTF-8"
+      "LC_ALL=C.UTF-8"
+      "LC_CTYPE=C.UTF-8"
+      "EDITOR=nvim"
+      "PYTHONPATH=${openlane-env-sitepackages}"
+      "TMPDIR=/tmp"
+    ];
+    image-config-extra-path = [
+      "${openlane-env-bin}"
+      "${openlane.computed_PATH}"
+    ];
+  }

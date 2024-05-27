@@ -16,6 +16,7 @@
     "ioplace-parser": {
       "inputs": {
         "nixpkgs": [
+          "nix-eda",
           "nixpkgs"
         ]
       },
@@ -36,6 +37,7 @@
     "libparse": {
       "inputs": {
         "nixpkgs": [
+          "nix-eda",
           "nixpkgs"
         ]
       },
@@ -50,6 +52,24 @@
       "original": {
         "owner": "efabless",
         "repo": "libparse-python",
+        "type": "github"
+      }
+    },
+    "nix-eda": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1715762084,
+        "narHash": "sha256-ho3bgzv4DnahsMrMIYIk8dVIyp35+oEzCx18p27BmSc=",
+        "owner": "efabless",
+        "repo": "nix-eda",
+        "rev": "facd74ff9583bc876b608aaa17e6fa6ab7a7ba7b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "efabless",
+        "repo": "nix-eda",
         "type": "github"
       }
     },
@@ -73,13 +93,14 @@
         "flake-compat": "flake-compat",
         "ioplace-parser": "ioplace-parser",
         "libparse": "libparse",
-        "nixpkgs": "nixpkgs",
+        "nix-eda": "nix-eda",
         "volare": "volare"
       }
     },
     "volare": {
       "inputs": {
         "nixpkgs": [
+          "nix-eda",
           "nixpkgs"
         ]
       },
