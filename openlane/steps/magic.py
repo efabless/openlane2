@@ -19,7 +19,7 @@ import subprocess
 from signal import SIGKILL
 from decimal import Decimal
 from abc import abstractmethod
-from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
+from typing import Any, Literal, List, Optional, Tuple
 
 from .step import (
     DefaultOutputProcessor,
