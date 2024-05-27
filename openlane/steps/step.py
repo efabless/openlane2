@@ -966,16 +966,18 @@ class Step(ABC):
 
         del dumpable_config["DESIGN_DIR"]
 
-        del dumpable_config["PDK_ROOT"]
-        if flatten and include_pdk:
+        if include_pdk:
+            pdk_dirname = dumpable_config["PDK_ROOT"]
+            if flatten:
+                pdk_dirname = pdk_root_flat_dirname
+
             # So it's always the first one:
-            dumpable_config = {"PDK_ROOT": pdk_root_flat_dirname, **dumpable_config}
+            dumpable_config = {"PDK_ROOT": pdk_dirname, **dumpable_config}
+
         else:
-            # If not flattened; there's no explicit PDK root needed, as all
-            # the files are symlinked.
             # If not including the PDK, pdk_root is going to have to be
-            # passed to the config when running the reproducibkle.
-            pass
+            # passed to the config when running the reproducible.
+            del dumpable_config["PDK_ROOT"]
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:
