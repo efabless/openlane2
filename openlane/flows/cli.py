@@ -32,7 +32,7 @@ from cloup.constraints import (
 from cloup.typing import Decorator
 
 from .flow import Flow
-from ..common import set_tpe, cli
+from ..common import set_tpe, cli, get_opdks_rev
 from ..logging import set_log_level, verbose, err, options, LogLevels
 from ..state import State, InvalidState
 
@@ -399,7 +399,7 @@ def cloup_flow_opts(
                 else:
                     import volare
 
-                    opdks_rev = volare_pdk_override or pdk
+                    opdks_rev = volare_pdk_override or get_opdks_rev()
                     volare_home = volare.get_volare_home(pdk_root)
 
                     include_libraries = ["default"]
