@@ -14,6 +14,7 @@
 import io
 import re
 import json
+import shlex
 from enum import IntEnum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
@@ -24,7 +25,7 @@ BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
 
 @dataclass
 class Violation:
-    rules: List[Tuple[str, str]]
+    rules: List[Tuple[str, str]]  # (layer, rule)
     description: str
     bounding_boxes: List[BoundingBox] = field(default_factory=list)
 
@@ -39,6 +40,9 @@ class Violation:
     @property
     def category_name(self) -> str:
         return f"{self.layer}.{self.rule}"
+
+
+illegal_overlap_rx = re.compile(r"between (\w+) and (\w+)")
 
 
 @dataclass
@@ -134,6 +138,60 @@ class DRC:
 
         return (Self(module, violations), bbox_count)
 
+    @classmethod
+    def from_magic_feedback(
+        Self, feedback: io.TextIOWrapper, cif_scale: Decimal, module: str
+    ) -> Tuple["DRC", int]:
+        bbox_count = 0
+        violations: Dict[str, Violation] = {}
+        last_bounding_box: Optional[BoundingBox] = None
+        lex = shlex.shlex(feedback.read(), posix=True)
+        components = list(lex)
+        while len(components):
+            instruction = components.pop(0)
+            if instruction == "box":
+                if len(components) < 4:
+                    raise ValueError(
+                        "Invalid syntax: 'box' command has less than 4 arguments"
+                    )
+                lx, ly, ux, uy = components[0:4]
+                last_bounding_box = (
+                    Decimal(lx) * cif_scale,
+                    Decimal(ly) * cif_scale,
+                    Decimal(ux) * cif_scale,
+                    Decimal(uy) * cif_scale,
+                )
+                bbox_count += 1
+                components = components[4:]
+            elif instruction == "feedback":
+                try:
+                    subcmd = components.pop(0)
+                except IndexError:
+                    raise ValueError("feedback not given subcommand")
+                if subcmd != "add":
+                    raise ValueError(f"Unsuppoorted feedback subcommand {subcmd}")
+
+                try:
+                    rule = components.pop(0)
+                    _ = components.pop(0)
+                except IndexError:
+                    raise ValueError(
+                        "Invalid syntax: 'feedback add' command has less than 2 arguments"
+                    )
+                vio_layer = "UNKNOWN"
+                vio_rulenum = f"UNKNOWN{len(violations)}"
+                if "Illegal overlap" in rule:
+                    vio_rulenum = "ILLEGAL_OVERLAP"
+                    if match := illegal_overlap_rx.search(rule):
+                        vio_layer = "-".join((match[1], match[2]))
+                if rule not in violations:
+                    violations[rule] = Violation([(vio_layer, vio_rulenum)], rule, [])
+                if last_bounding_box is None:
+                    raise ValueError("Attempted to add feedback without a box selected")
+                violations[rule].bounding_boxes.append(last_bounding_box)
+        violations = {vio.category_name: vio for vio in violations.values()}
+        return (Self(module, violations), bbox_count)
+
     def dumps(self):
         """
         :returns: The DRC object as a JSON string.
@@ -178,10 +236,10 @@ class DRC:
                                 visited = ET.Element("visited")
                                 visited.text = "false"
                                 multiplicity = ET.Element("multiplicity")
-                                multiplicity.text = "1"
+                                multiplicity.text = str(len(violation.bounding_boxes))
                                 xf.write(cell, category, visited, multiplicity)
                                 with xf.element("values"):
                                     llx, lly, urx, ury = bounding_box
                                     value = ET.Element("value")
-                                    value.text = f"box: ({llx},{lly};{urx},{ury})"
+                                    value.text = f"polygon: ({llx},{lly};{urx},{lly};{urx},{ury};{llx},{ury})"
                                     xf.write(value)
