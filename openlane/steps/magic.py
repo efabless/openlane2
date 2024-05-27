@@ -21,7 +21,15 @@ from decimal import Decimal
 from abc import abstractmethod
 from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
 
-from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
+from .step import (
+    DefaultOutputProcessor,
+    OutputProcessor,
+    StepError,
+    StepException,
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+)
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
@@ -29,9 +37,41 @@ from ..config import Variable
 from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
+class MagicOutputProcessor(OutputProcessor):
+    _error_patterns = [
+        re.compile(rx)
+        for rx in [
+            r"DEF read.*\(Error\).*",
+            r"LEF read.*\(Error\).*",
+            r"Error while reading cell(?!.*Warning:).*",
+            r".*Calma output error.*",
+            r".*is an abstract view.*",
+        ]
+    ]
+
+    key = "magic_output"
+
+    def __init__(self, step: Step, report_dir: str, silent: bool) -> None:
+        super().__init__(step, report_dir, silent)
+        self.fatal_error_count = 0
+
+    def process_line(self, line: str) -> bool:
+        for pattern in self._error_patterns:
+            if pattern.match(line):
+                self.fatal_error_count += 1
+                self.step.err(line)
+                return True
+        return False
+
+    def result(self) -> Any:
+        return {"fatal_error_count": self.fatal_error_count}
+
+
 class MagicStep(TclStep):
     inputs = [DesignFormat.GDS]
     outputs = []
+
+    output_processors = [MagicOutputProcessor, DefaultOutputProcessor]
 
     config_vars = [
         Variable(
@@ -125,43 +165,42 @@ class MagicStep(TclStep):
 
         return env
 
-    def run_subprocess(
-        self,
-        cmd: Sequence[Union[str, os.PathLike]],
-        log_to: Optional[Union[str, os.PathLike]] = None,
-        silent: bool = False,
-        report_dir: Optional[Union[str, os.PathLike]] = None,
-        env: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ) -> Dict[str, Any]:
-        log_to = log_to or self.get_log_path()
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state_in)
 
-        subprocess_result = super().run_subprocess(
-            cmd,
-            log_to,
-            silent,
-            report_dir,
-            env,
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
+
+        command = self.get_command()
+
+        subprocess_result = self.run_subprocess(
+            command,
+            env=env,
+            check=check,
             **kwargs,
         )
 
-        if self.config["MAGIC_CAPTURE_ERRORS"]:
-            error_patterns = [
-                r"DEF read.*\(Error\).*",
-                r"LEF read.*\(Error\).*",
-                r"Error while reading cell(?!.*Warning:).*",
-                r".*Calma output error.*",
-                r".*is an abstract view.*",
-            ]
+        if (
+            self.config["MAGIC_CAPTURE_ERRORS"]
+            and subprocess_result["magic_output"]["fatal_error_count"]
+        ):
+            raise StepError("Encountered one or more fatal errors while running Magic.")
 
-            for line in open(log_to, encoding="utf8"):
-                for pattern in error_patterns:
-                    if re.match(pattern, line):
-                        raise StepError(
-                            f"Error encountered during running Magic: In {log_to}:\n\t{line}."
-                        )
+        generated_metrics = subprocess_result["generated_metrics"]
 
-        return subprocess_result
+        views_updates: ViewsUpdate = {}
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            path = Path(env[f"SAVE_{output.name}"])
+            if not path.exists():
+                continue
+            views_updates[output] = path
+
+        return views_updates, generated_metrics
 
 
 @Step.factory.register()
@@ -442,11 +481,12 @@ class SpiceExtraction(MagicStep):
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
+        cif_scale = Decimal(open(os.path.join(self.step_dir, "cif_scale.txt")).read())
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
         try:
             se_feedback, _ = DRCObject.from_magic_feedback(
                 open(feedback_path, encoding="utf8"),
-                metrics_updates["magic__cif__scale"],
+                cif_scale,
                 self.config["DESIGN_NAME"],
             )
             illegal_overlap_count = functools.reduce(
