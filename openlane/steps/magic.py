@@ -464,7 +464,7 @@ class OpenGUI(MagicStep):
 
     config_vars = MagicStep.config_vars + [
         Variable(
-            "MAGIC_PRIORITIZE_GDS",
+            "MAGIC_GUI_USE_GDS",
             bool,
             "Whether to prioritize GDS (if found) when running this step.",
             default=True,

@@ -456,10 +456,11 @@ class OpenGUI(KLayoutStep):
             default=False,
         ),
         Variable(
-            "KLAYOUT_PRIORITIZE_GDS",
+            "KLAYOUT_GUI_USE_GDS",
             bool,
             "Whether to prioritize GDS (if found) when running this step.",
             default=True,
+            deprecated_names=["KLAYOUT_PRIORITIZE_GDS"],
         ),
     ]
 
@@ -470,7 +471,7 @@ class OpenGUI(KLayoutStep):
             mode_args.append("--editor")
 
         layout = state_in[DesignFormat.DEF]
-        if self.config["KLAYOUT_PRIORITIZE_GDS"]:
+        if self.config["KLAYOUT_GUI_USE_GDS"]:
             if gds := state_in[DesignFormat.GDS]:
                 layout = gds
         assert isinstance(layout, Path)

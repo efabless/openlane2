@@ -1,4 +1,4 @@
-# Copyright 2020 Efabless Corporation
+# Copyright 2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 source $::env(_TCL_ENV_IN)
 
-if { $::env(MAGIC_PRIORITIZE_GDS) && [info exists ::env(CURRENT_GDS)] } {
+if { $::env(MAGIC_GUI_USE_GDS) && [info exists ::env(CURRENT_GDS)] } {
     gds read $::env(CURRENT_GDS)
 } else {
     source $::env(SCRIPTS_DIR)/magic/common/read.tcl
