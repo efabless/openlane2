@@ -26,6 +26,7 @@
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
+    devshell.url = github:numtide/devshell;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
@@ -39,12 +40,13 @@
     libparse,
     ioplace-parser,
     volare,
+    devshell,
     ...
   }: let
     package-config = {
       current = self;
       withInputs = [nix-eda ioplace-parser libparse volare];
-      overlays = [(import ./nix/overlay.nix)];
+      overlays = [(import ./nix/overlay.nix) devshell.overlays.default];
     };
   in {
     # Helper functions

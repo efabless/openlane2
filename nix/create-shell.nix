@@ -15,6 +15,7 @@
   extra-packages ? [],
   extra-python-packages ? [],
   openlane-plugins ? [],
+  numtide-devshell ? false,
 }: ({
   lib,
   openlane,
@@ -27,6 +28,7 @@
   graphviz,
   python3,
   mkShell,
+  devshell,
 }: let
   openlane-env = (
     python3.withPackages (pp:
@@ -39,29 +41,47 @@
   );
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
+  prompt = ''\[\033[1;32m\][nix-shell:\w]\$\[\033[0m\] '';
+  packages =
+    [
+      openlane-env
+
+      # Conveniences
+      git
+      zsh
+      delta
+      neovim
+      gtkwave
+      coreutils
+      graphviz
+    ]
+    ++ extra-packages
+    ++ openlane.includedTools
+    ++ pluginIncludedTools;
 in
-  mkShell {
-    name = "openlane-shell";
+  if numtide-devshell
+  then
+    devshell.mkShell {
+      devshell.packages = packages;
+      env = [
+        {
+          name = "PYTHONPATH";
+          value = "${openlane-env-sitepackages}";
+        }
+      ];
+      devshell.interactive.PS1 = {
+        text = ''PS1="${prompt}"'';
+      };
+      motd = "";
+    }
+  else
+    mkShell {
+      name = "openlane-shell";
 
-    propagatedBuildInputs =
-      [
-        openlane-env
+      propagatedBuildInputs = packages;
 
-        # Conveniences
-        git
-        zsh
-        delta
-        neovim
-        gtkwave
-        coreutils
-        graphviz
-      ]
-      ++ extra-packages
-      ++ openlane.includedTools
-      ++ pluginIncludedTools;
-
-    PYTHONPATH = "${openlane-env-sitepackages}"; # Allows venvs to work properly
-    shellHook = ''
-      export PS1="\n\[\033[1;32m\][nix-shell:\w]\$\[\033[0m\] ";
-    '';
-  })
+      PYTHONPATH = "${openlane-env-sitepackages}"; # Allows venvs to work properly
+      shellHook = ''
+        export PS1="\n${prompt}";
+      '';
+    })
