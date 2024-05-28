@@ -15,7 +15,7 @@
   extra-packages ? [],
   extra-python-packages ? [],
   openlane-plugins ? [],
-  numtide-devshell ? false,
+  numtide-devshell ? null,
 }: ({
   lib,
   openlane,
@@ -28,7 +28,6 @@
   graphviz,
   python3,
   mkShell,
-  devshell,
 }: let
   openlane-env = (
     python3.withPackages (pp:
@@ -59,9 +58,9 @@
     ++ openlane.includedTools
     ++ pluginIncludedTools;
 in
-  if numtide-devshell
+  if numtide-devshell != null
   then
-    devshell.mkShell {
+    numtide-devshell.mkShell {
       devshell.packages = packages;
       env = [
         {
