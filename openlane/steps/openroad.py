@@ -2101,6 +2101,12 @@ class RepairDesignPostGPL(ResizerStep):
             units="%",
             deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
         ),
+        Variable(
+            "DESIGN_REPAIR_REMOVE_BUFFERS",
+            bool,
+            "Invokes OpenROAD's remove_buffers command to remove buffers from synthesis, which gives OpenROAD more flexibility when buffering nets.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
