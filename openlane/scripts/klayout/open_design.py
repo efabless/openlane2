@@ -70,4 +70,4 @@ def open_design(input_lefs: Tuple[str, ...], lyt: str, lyp: str, lym: str, input
 
 
 if __name__ == "__main__":
-    open_design(shlex.split(os.getenv("KLAYOUT_ARGV")))
+    open_design(shlex.split(os.environ["KLAYOUT_ARGV"]))

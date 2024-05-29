@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from .flow import Flow
 from .sequential import SequentialFlow
-from ..steps import KLayout, OpenROAD
+from ..steps import KLayout, OpenROAD, Magic
 
 
 @Flow.factory.register()
@@ -51,3 +51,21 @@ class OpenInOpenROAD(SequentialFlow):
     name = "Opening in OpenROAD"
 
     Steps = [OpenROAD.OpenGUI]
+
+
+@Flow.factory.register()
+class OpenInMagic(SequentialFlow):
+    """
+    This 'flow' actually just has one step that opens the GDS or DEF from
+    the initial state object in Magic.
+
+    Intended for use with run tags that have already been run with
+    another flow, i.e. ::
+
+      openlane [...]
+      openlane --last-run --flow OpenInMagic [...]
+    """
+
+    name = "Opening in Magic"
+
+    Steps = [Magic.OpenGUI]
