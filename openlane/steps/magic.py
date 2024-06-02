@@ -14,11 +14,22 @@
 import os
 import re
 import shutil
+import functools
+import subprocess
+from signal import SIGKILL
 from decimal import Decimal
 from abc import abstractmethod
-from typing import Any, Dict, Literal, List, Optional, Sequence, Tuple, Union
+from typing import Any, Literal, List, Optional, Tuple
 
-from .step import StepError, StepException, ViewsUpdate, MetricsUpdate, Step
+from .step import (
+    DefaultOutputProcessor,
+    OutputProcessor,
+    StepError,
+    StepException,
+    ViewsUpdate,
+    MetricsUpdate,
+    Step,
+)
 from .tclstep import TclStep
 from ..state import DesignFormat, State
 
@@ -26,9 +37,41 @@ from ..config import Variable
 from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
+class MagicOutputProcessor(OutputProcessor):
+    _error_patterns = [
+        re.compile(rx)
+        for rx in [
+            r"DEF read.*\(Error\).*",
+            r"LEF read.*\(Error\).*",
+            r"Error while reading cell(?!.*Warning:).*",
+            r".*Calma output error.*",
+            r".*is an abstract view.*",
+        ]
+    ]
+
+    key = "magic_output"
+
+    def __init__(self, step: Step, report_dir: str, silent: bool) -> None:
+        super().__init__(step, report_dir, silent)
+        self.fatal_error_count = 0
+
+    def process_line(self, line: str) -> bool:
+        for pattern in self._error_patterns:
+            if pattern.match(line):
+                self.fatal_error_count += 1
+                self.step.err(line)
+                return True
+        return False
+
+    def result(self) -> Any:
+        return {"fatal_error_count": self.fatal_error_count}
+
+
 class MagicStep(TclStep):
     inputs = [DesignFormat.GDS]
     outputs = []
+
+    output_processors = [MagicOutputProcessor, DefaultOutputProcessor]
 
     config_vars = [
         Variable(
@@ -108,62 +151,56 @@ class MagicStep(TclStep):
             "-dnull",
             "-noconsole",
             "-rcfile",
-            os.path.abspath(self.config["MAGICRC"]),
+            self.config["MAGICRC"],
             os.path.join(get_script_dir(), "magic", "wrapper.tcl"),
         ]
 
     def prepare_env(self, env: dict, state: State) -> dict:
         env = super().prepare_env(env, state)
 
+        env["_MAGIC_SCRIPT"] = self.get_script_path()
         env["MACRO_GDS_FILES"] = ""
         for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
             env["MACRO_GDS_FILES"] += f" {gds}"
 
         return env
 
-    def run_subprocess(
-        self,
-        cmd: Sequence[Union[str, os.PathLike]],
-        log_to: Optional[Union[str, os.PathLike]] = None,
-        silent: bool = False,
-        report_dir: Optional[Union[str, os.PathLike]] = None,
-        env: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ) -> Dict[str, Any]:
-        env = (env or {}).copy()
-        env["MAGIC_SCRIPT"] = self.get_script_path()
-        if alternate_script := kwargs.get("_script"):
-            env["MAGIC_SCRIPT"] = alternate_script
-            del kwargs["_script"]
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        env = self.prepare_env(env, state_in)
 
-        log_to = log_to or self.get_log_path()
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
 
-        subprocess_result = super().run_subprocess(
-            cmd,
-            log_to,
-            silent,
-            report_dir,
-            env,
+        command = self.get_command()
+
+        subprocess_result = self.run_subprocess(
+            command,
+            env=env,
+            check=check,
             **kwargs,
         )
 
-        if self.config["MAGIC_CAPTURE_ERRORS"]:
-            error_patterns = [
-                r"DEF read.*\(Error\).*",
-                r"LEF read.*\(Error\).*",
-                r"Error while reading cell(?!.*Warning:).*",
-                r".*Calma output error.*",
-                r".*is an abstract view.*",
-            ]
+        if (
+            self.config["MAGIC_CAPTURE_ERRORS"]
+            and subprocess_result["magic_output"]["fatal_error_count"]
+        ):
+            raise StepError("Encountered one or more fatal errors while running Magic.")
 
-            for line in open(log_to, encoding="utf8"):
-                for pattern in error_patterns:
-                    if re.match(pattern, line):
-                        raise StepError(
-                            f"Error encountered during running Magic: In {log_to}:\n\t{line}."
-                        )
+        generated_metrics = subprocess_result["generated_metrics"]
 
-        return subprocess_result
+        views_updates: ViewsUpdate = {}
+        for output in self.outputs:
+            if output.value.multiple:
+                # Too step-specific.
+                continue
+            path = Path(env[f"SAVE_{output.name}"])
+            if not path.exists():
+                continue
+            views_updates[output] = path
+
+        return views_updates, generated_metrics
 
 
 @Step.factory.register()
@@ -281,12 +318,14 @@ class StreamOut(MagicStep):
                     )
                 env_copy["_GDS_IN"] = macro_gdses[0]
                 env_copy["_MACRO_NAME_IN"] = macro
+                env_copy["_MAGIC_SCRIPT"] = os.path.join(
+                    get_script_dir(), "magic", "get_bbox.tcl"
+                )
 
                 subprocess_result = super().run_subprocess(
                     self.get_command(),
                     env=env_copy,
                     log_to=os.path.join(self.step_dir, f"{macro}.get_bbox.log"),
-                    _script=os.path.join(get_script_dir(), "magic", "get_bbox.tcl"),
                 )
                 generated_metrics = subprocess_result["generated_metrics"]
 
@@ -442,10 +481,86 @@ class SpiceExtraction(MagicStep):
 
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
+        cif_scale = Decimal(open(os.path.join(self.step_dir, "cif_scale.txt")).read())
         feedback_path = os.path.join(self.step_dir, "feedback.txt")
-        feedback_string = open(feedback_path, encoding="utf8").read()
-        metrics_updates["magic__illegal_overlap__count"] = feedback_string.count(
-            "Illegal overlap"
-        )
-
+        try:
+            se_feedback, _ = DRCObject.from_magic_feedback(
+                open(feedback_path, encoding="utf8"),
+                cif_scale,
+                self.config["DESIGN_NAME"],
+            )
+            illegal_overlap_count = functools.reduce(
+                lambda a, b: a + len(b.bounding_boxes),
+                [
+                    v
+                    for v in se_feedback.violations.values()
+                    if "Illegal overlap" in v.description
+                ],
+                0,
+            )
+            with open(os.path.join(self.step_dir, "feedback.xml"), "wb") as f:
+                se_feedback.to_klayout_xml(f)
+            metrics_updates["magic__illegal_overlap__count"] = illegal_overlap_count
+        except ValueError as e:
+            self.warn(
+                f"Failed to convert SPICE extraction feedback to KLayout database format: {e}"
+            )
+            metrics_updates["magic__illegal_overlap__count"] = (
+                open(feedback_path, encoding="utf8").read().count("Illegal overlap")
+            )
         return views_updates, metrics_updates
+
+
+@Step.factory.register()
+class OpenGUI(MagicStep):
+    """
+    Opens the DEF view in the Magic GUI.
+    """
+
+    id = "Magic.OpenGUI"
+    name = "Open In GUI"
+
+    inputs = [DesignFormat.DEF]
+    outputs = []
+
+    config_vars = MagicStep.config_vars + [
+        Variable(
+            "MAGIC_GUI_USE_GDS",
+            bool,
+            "Whether to prioritize GDS (if found) when running this step.",
+            default=True,
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "open.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        env = self.prepare_env(env, state_in)
+        env = self._reroute_env(env)
+
+        if DesignFormat.GDS in state_in:
+            env["CURRENT_GDS"] = self.value_to_tcl(state_in[DesignFormat.GDS])
+
+        cmd = [
+            "magic",
+            "-rcfile",
+            self.config["MAGICRC"],
+            self.get_script_path(),
+        ]
+
+        # Not run_subprocess- need stdin, stdout, stderr to be accessible to the
+        # user normally
+        magic = subprocess.Popen(
+            cmd,
+            env=env,
+            cwd=self.step_dir,
+        )
+        try:
+            magic.wait()
+        except KeyboardInterrupt:
+            magic.send_signal(SIGKILL)
+
+        return {}, {}
