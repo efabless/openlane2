@@ -404,7 +404,7 @@ jobs:
               context: context,
               botUsername: "openlane-bot",
               botToken: "${{ secrets.GH_TOKEN }}",
-              comnparingDirectory: "current",
+              comparingDirectory: "current",
               againstBranch: "${{ github.base_ref }}",
             }).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
