@@ -35,7 +35,7 @@ function compareMetricsWithBranch({ comparingDirectory, againstBranch, verbosity
         throw new Error("Failed to create report: \n\n```\n" + child.stderr + "\n```");
     } else {
         result += "Metric comparisons are in beta. Please report bugs under the issues tab.\n---\n";
-        result += `> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke \`python3 -m openlane.common.metrics compare-remote ${allOpts.join(' ')}\`.\n\n` + child.stdout;
+        result += `> To create this report yourself, grab the metrics artifact from the CI run, extract them, and invoke \`python3 ${allOpts.join(' ')}\`.\n\n` + child.stdout;
     }
 
     return result.trim();
