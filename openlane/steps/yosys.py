@@ -291,11 +291,24 @@ class YosysStep(TclStep):
             Optional[Path],
             "An override to the custom DFF map file provided for the given SCL by Lighter.",
         ),
+        Variable(
+            "YOSYS_LOG_LEVEL",
+            Literal["ALL", "WARNING", "ERROR"],
+            "Which log level for Yosys. At WARNING or higher, the initialization splash is also disabled.",
+            default="ALL",
+        ),
     ]
 
     def get_command(self) -> List[str]:
         script_path = self.get_script_path()
-        return ["yosys", "-c", script_path]
+        cmd = ["yosys", "-c", script_path]
+        if self.config["YOSYS_LOG_LEVEL"] != "ALL":
+            cmd += ["-Q"]
+        if self.config["YOSYS_LOG_LEVEL"] == "WARNING":
+            cmd += ["-q"]
+        elif self.config["YOSYS_LOG_LEVEL"] == "ERROR":
+            cmd += ["-qq"]
+        return cmd
 
     @abstractmethod
     def get_script_path(self) -> str:
