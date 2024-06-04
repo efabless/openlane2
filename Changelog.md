@@ -13,6 +13,14 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.8
+
+## Steps
+
+* `Odb.DiodePortInsertion`, `Odb.DiodesOnPorts`
+  * Fixed bug where diodes were never inserted on outputs, and added unit tests
+    to that effect.
+
 # 2.0.7
 
 ## Misc Enhancements/Bugfixes

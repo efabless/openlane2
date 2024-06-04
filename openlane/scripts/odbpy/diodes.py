@@ -88,7 +88,7 @@ class DiodeInserter:
         # Nothing found
         return None
 
-    def net_from_pin(self, net, io_types=None):
+    def should_protect_io_net(self, net, io_types=None):
         for bt in net.getBTerms():
             if (io_types is None) or (bt.getIoType() in io_types):
                 return True
@@ -267,8 +267,8 @@ class DiodeInserter:
 
             # Is this an IO we need to protect
             io_protect = None
-            if self.net_from_pin(net, io_types=["INPUT", "OUTPUT"]):
-                io_protect = self.net_from_pin(net, io_types=self.port_protect)
+            if self.should_protect_io_net(net, io_types=["INPUT", "OUTPUT"]):
+                io_protect = self.should_protect_io_net(net, io_types=self.port_protect)
                 if io_protect:
                     self.debug(
                         f"[d] Forcing protection diode on I/O net {net.getConstName():s}"
@@ -291,8 +291,12 @@ class DiodeInserter:
             )
 
             # Scan all internal terminals
-            for iterm in net.getITerms():
-                if iterm.isInputSignal():
+            if len(net.getITerms()) == 0:
+                self.debug(
+                    f"[d] Skipping net {net.getConstName():s}: not connected to any instances"
+                )
+            else:
+                for iterm in net.getITerms():
                     self.insert_diode(net, iterm, src_pos)
 
 
