@@ -42,8 +42,8 @@
   bison,
   clang-tools_14,
   ioplace-parser,
-  rev ? "a515fc6cc97a7092efd51a28c1414e2fb4e53413",
-  sha256 ? "sha256-uZGqGhYg1ofyAd6aH94HS4sJNOJz6oWArHzUriPV3EQ=",
+  rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
+  sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
 }: let
   pyenv = python3.withPackages (p:
     with p; [
@@ -114,10 +114,6 @@ in
       clp
       cbc
       re2
-    ];
-
-    patches = [
-      ./patches/openroad/rmp_abc.patch
     ];
 
     nativeBuildInputs = [

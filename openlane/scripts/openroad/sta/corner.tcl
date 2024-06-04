@@ -142,7 +142,7 @@ puts "%OL_CREATE_REPORT skew.min.rpt"
 puts "\n==========================================================================="
 puts "Clock Skew (Hold)"
 puts "============================================================================"
-set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "min"] $sta_report_default_digits]
+set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "min" 1] $sta_report_default_digits]
 write_metric_num "clock__skew__worst_hold__corner:[$corner name]" $skew_corner
 
 puts "======================= [$corner name] Corner ===================================\n"
@@ -154,7 +154,7 @@ puts "%OL_CREATE_REPORT skew.max.rpt"
 puts "\n==========================================================================="
 puts "Clock Skew (Setup)"
 puts "============================================================================"
-set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "max"] $sta_report_default_digits]
+set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "max" 1] $sta_report_default_digits]
 
 write_metric_num "clock__skew__worst_setup__corner:[$corner name]" $skew_corner
 

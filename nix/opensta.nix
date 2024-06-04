@@ -24,8 +24,8 @@
   tcl,
   zlib,
   eigen,
-  rev ? "ee8d3d0fa23bfbc69f3e936ff884c3d30f5bfb59",
-  sha256 ? "sha256-ZLCXEmuSxGnht/ILLQSpOGHlJiDHo6gHUp+ZjV+6wxQ=",
+  rev ? "e01d3f163f483f233db00410b6515a767a6ca03b",
+  sha256 ? "sha256-0LbY5RcM+11oV3iPfAUd7hpyFPwCfCjnG0EE1LkXg5E=",
 }:
 clangStdenv.mkDerivation rec {
   name = "opensta";
