@@ -142,7 +142,7 @@ puts "%OL_CREATE_REPORT skew.min.rpt"
 puts "\n==========================================================================="
 puts "Clock Skew (Hold)"
 puts "============================================================================"
-set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "min" 1] $sta_report_default_digits]
+set skew_corner [worst_clock_skew -hold]
 write_metric_num "clock__skew__worst_hold__corner:[$corner name]" $skew_corner
 
 puts "======================= [$corner name] Corner ===================================\n"
@@ -154,8 +154,7 @@ puts "%OL_CREATE_REPORT skew.max.rpt"
 puts "\n==========================================================================="
 puts "Clock Skew (Setup)"
 puts "============================================================================"
-set skew_corner [sta::format_time [sta::worst_clk_skew_cmd "max" 1] $sta_report_default_digits]
-
+set skew_corner [worst_clock_skew -setup]
 write_metric_num "clock__skew__worst_setup__corner:[$corner name]" $skew_corner
 
 puts "======================= [$corner name] Corner ===================================\n"
@@ -167,7 +166,7 @@ puts "%OL_CREATE_REPORT ws.min.rpt"
 puts "\n==========================================================================="
 puts "Worst Slack (Hold)"
 puts "============================================================================"
-set ws [sta::format_time [sta::worst_slack_corner $corner "min"] $sta_report_default_digits]
+set ws [worst_slack -corner [$corner name] -min]
 write_metric_num "timing__hold__ws__corner:[$corner name]" $ws
 puts "[$corner name]: $ws"
 puts "%OL_END_REPORT"
@@ -177,7 +176,7 @@ puts "\n========================================================================
 puts "Worst Slack (Setup)"
 puts "============================================================================"
 
-set ws [sta::format_time [sta::worst_slack_corner $corner "max"] $sta_report_default_digits]
+set ws [worst_slack -corner [$corner name] -max]
 write_metric_num "timing__setup__ws__corner:[$corner name]" $ws
 puts "[$corner name]: $ws"
 puts "%OL_END_REPORT"
@@ -187,7 +186,7 @@ puts "\n========================================================================
 puts "Total Negative Slack (Hold)"
 puts "============================================================================"
 
-set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "min"] $sta_report_default_digits]
+set tns [total_negative_slack -corner [$corner name] -min]
 write_metric_num "timing__hold__tns__corner:[$corner name]" $tns
 puts "[$corner name]: $tns"
 puts "%OL_END_REPORT"
@@ -196,7 +195,7 @@ puts "%OL_CREATE_REPORT tns.max.rpt"
 puts "\n==========================================================================="
 puts "Total Negative Slack (Setup)"
 puts "============================================================================"
-set tns [sta::format_time [sta::total_negative_slack_corner_cmd $corner "max"] $sta_report_default_digits]
+set tns [total_negative_slack -corner [$corner name] -max]
 write_metric_num "timing__setup__tns__corner:[$corner name]" $tns
 puts "[$corner name]: $tns"
 puts "%OL_END_REPORT"
@@ -206,7 +205,7 @@ puts "\n========================================================================
 puts "Worst Negative Slack (Hold)"
 puts "============================================================================"
 
-set ws [sta::format_time [sta::worst_slack_corner $corner "min"] $sta_report_default_digits]
+set ws [worst_slack -corner [$corner name] -min]
 set wns 0
 if { $ws < 0 } {
     set wns $ws
@@ -220,7 +219,7 @@ puts "\n========================================================================
 puts "Worst Negative Slack (Setup)"
 puts "============================================================================"
 
-set ws [sta::format_time [sta::worst_slack_corner $corner "max"] $sta_report_default_digits]
+set ws [worst_slack -corner [$corner name] -max]
 set wns 0.0
 if { $ws < 0 } {
     set wns $ws
