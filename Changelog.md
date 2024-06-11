@@ -20,6 +20,11 @@
 * Fixed `--ef-save-views-to` saving to `signoff/<design>/openlane` instead of
   `signoff/<design>/openlane-signoff` (which makes less sense but is the
   established convention at Efabless.)
+  
+## Steps
+
+* `OpenROAD.GeneratePDN`
+  * Restored compatibility with some ancient OpenLane PDN config files.
 
 ## Tool Updates
 * Updated `ioplace_parser` to `0.2.0`
