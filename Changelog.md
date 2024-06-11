@@ -23,6 +23,10 @@
   
 ## Steps
 
+* `OpenROAD.*`
+  * Fixed environment contamination with deprecated variables that may be used
+    by user-supplied PDN or SDC files.
+
 * `OpenROAD.GeneratePDN`
   * Restored compatibility with some ancient OpenLane PDN config files.
 
