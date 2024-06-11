@@ -1129,7 +1129,6 @@ class GeneratePDN(OpenROADStep):
                 get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
             )
             info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
-        env["DESIGN_IS_CORE"] = "1" if self.config["FP_PDN_MULTILAYER"] else "0"
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         error_reports = glob(os.path.join(self.step_dir, "*-grid-errors.rpt"))

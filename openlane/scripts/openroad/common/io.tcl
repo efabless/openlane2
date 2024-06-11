@@ -59,6 +59,7 @@ proc read_current_sdc {} {
 
 proc read_pdn_cfg {} {
     # Deprecated Variables That May Still Be Used By User Files
+    set ::env(DESIGN_IS_CORE) $::env(FP_PDN_MULTILAYER)
     set ::env(FP_PDN_ENABLE_MACROS_GRID) $::env(PDN_CONNECT_MACROS_TO_GRID)
     set ::env(FP_PDN_RAILS_LAYER) $::env(FP_PDN_RAIL_LAYER)
     set ::env(FP_PDN_UPPER_LAYER) $::env(FP_PDN_HORIZONTAL_LAYER)
