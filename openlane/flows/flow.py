@@ -854,7 +854,7 @@ class Flow(ABC):
                     )
 
         signoff_folder = os.path.join(
-            path, "signoff", self.config["DESIGN_NAME"], "openlane"
+            path, "signoff", self.config["DESIGN_NAME"], "openlane-signoff"
         )
         mkdirp(signoff_folder)
 

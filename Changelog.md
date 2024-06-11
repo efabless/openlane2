@@ -13,6 +13,27 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.9
+
+## CLI
+
+* Fixed `--ef-save-views-to` saving to `signoff/<design>/openlane` instead of
+  `signoff/<design>/openlane-signoff` (which makes less sense but is the
+  established convention at Efabless.)
+  
+## Steps
+
+* `OpenROAD.*`
+  * Fixed environment contamination with deprecated variables that may be used
+    by user-supplied PDN or SDC files.
+
+* `OpenROAD.GeneratePDN`
+  * Restored compatibility with some ancient OpenLane PDN config files.
+
+## Tool Updates
+* Updated `ioplace_parser` to `0.2.0`
+  * Fixes regressions in pin regular expression parsing.
+
 # 2.0.8
 
 ## Steps

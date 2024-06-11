@@ -20,11 +20,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1713262631,
-        "narHash": "sha256-0Lt3DVImH3TpwUh7sDW/6Cxsrmo5DDG+SCuirBFquXs=",
+        "lastModified": 1717940678,
+        "narHash": "sha256-GxEmeujXSw8ey3KXhQpYHKlZu/wJmeX4eS1UO8nLQ44=",
         "owner": "efabless",
         "repo": "ioplace_parser",
-        "rev": "f1c163e8184fbce2676a19a1d28c3e6c0b5ddaf2",
+        "rev": "4849956df82b88f9290dc723b6da0ce91838a8e1",
         "type": "github"
       },
       "original": {
