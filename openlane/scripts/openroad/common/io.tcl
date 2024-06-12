@@ -34,6 +34,9 @@ proc read_current_sdc {} {
         puts "\[INFO] _SDC_IN not found. Not reading an SDC file."
         return
     }
+
+    # Compatibility Layer for Deprecated Variables That May Still Be Used By
+    # User Files
     set ::env(IO_PCT) [expr $::env(IO_DELAY_CONSTRAINT) / 100]
     set ::env(SYNTH_TIMING_DERATE) [expr $::env(TIME_DERATING_CONSTRAINT) / 100]
     set ::env(SYNTH_MAX_FANOUT) $::env(MAX_FANOUT_CONSTRAINT)
@@ -43,8 +46,8 @@ proc read_current_sdc {} {
     if { [info exists ::env(MAX_TRANSITION_CONSTRAINT)] } {
         set ::env(SYNTH_MAX_TRAN) $::env(MAX_TRANSITION_CONSTRAINT)
     }
-
     if { [env_var_used $::env(_SDC_IN) SYNTH_DRIVING_CELL_PIN] == 1 } {
+        set synth_driving_cell_bk $::env(SYNTH_DRIVING_CELL)
         set ::env(SYNTH_DRIVING_CELL_PIN) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 1]
         set ::env(SYNTH_DRIVING_CELL) [lindex [split $::env(SYNTH_DRIVING_CELL) "/"] 0]
     }
@@ -54,6 +57,44 @@ proc read_current_sdc {} {
         puts stderr $errmsg
         exit 1
     }
+
+    # Restore Environment
+    unset ::env(IO_PCT)
+    unset ::env(SYNTH_TIMING_DERATE)
+    unset ::env(SYNTH_MAX_FANOUT)
+    unset ::env(SYNTH_CLOCK_UNCERTAINTY)
+    unset ::env(SYNTH_CLOCK_TRANSITION)
+    unset ::env(SYNTH_CAP_LOAD)
+    if { [info exists ::env(SYNTH_MAX_TRAN)] } {
+        unset ::env(SYNTH_MAX_TRAN)
+    }
+    if { [info exists ::env(SYNTH_DRIVING_CELL_PIN)] } {
+        unset ::env(SYNTH_DRIVING_CELL_PIN)
+        set ::env(SYNTH_DRIVING_CELL) $synth_driving_cell_bk
+    }
+}
+
+proc read_pdn_cfg {} {
+
+    # Compatibility Layer for Deprecated Variables That May Still Be Used By
+    # User Files
+    set ::env(DESIGN_IS_CORE) $::env(FP_PDN_MULTILAYER)
+    set ::env(FP_PDN_ENABLE_MACROS_GRID) $::env(PDN_CONNECT_MACROS_TO_GRID)
+    set ::env(FP_PDN_RAILS_LAYER) $::env(FP_PDN_RAIL_LAYER)
+    set ::env(FP_PDN_UPPER_LAYER) $::env(FP_PDN_HORIZONTAL_LAYER)
+    set ::env(FP_PDN_LOWER_LAYER) $::env(FP_PDN_VERTICAL_LAYER)
+
+    if {[catch {source $::env(FP_PDN_CFG)} errmsg]} {
+        puts stderr $errmsg
+        exit 1
+    }
+
+    # Restore Environment
+    unset ::env(DESIGN_IS_CORE)
+    unset ::env(FP_PDN_ENABLE_MACROS_GRID)
+    unset ::env(FP_PDN_RAILS_LAYER)
+    unset ::env(FP_PDN_UPPER_LAYER)
+    unset ::env(FP_PDN_LOWER_LAYER)
 }
 
 

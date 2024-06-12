@@ -1129,7 +1129,6 @@ class GeneratePDN(OpenROADStep):
                 get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
             )
             info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
-        env["DESIGN_IS_CORE"] = "1" if self.config["FP_PDN_MULTILAYER"] else "0"
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         error_reports = glob(os.path.join(self.step_dir, "*-grid-errors.rpt"))
@@ -2100,6 +2099,12 @@ class RepairDesignPostGPL(ResizerStep):
             default=20,
             units="%",
             deprecated_names=["PL_RESIZER_MAX_CAP_MARGIN"],
+        ),
+        Variable(
+            "DESIGN_REPAIR_REMOVE_BUFFERS",
+            bool,
+            "Invokes OpenROAD's remove_buffers command to remove buffers from synthesis, which gives OpenROAD more flexibility when buffering nets.",
+            default=False,
         ),
     ]
 

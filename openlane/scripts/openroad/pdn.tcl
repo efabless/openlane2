@@ -18,10 +18,8 @@ read_current_odb
 source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
 
 # load the grid definitions
-if {[catch {source $::env(FP_PDN_CFG)} errmsg]} {
-    puts stderr $errmsg
-    exit 1
-}
+read_pdn_cfg
+
 set arg_list [list]
 if { $::env(FP_PDN_SKIPTRIM) } {
     lappend arg_list -skip_trim
