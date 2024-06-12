@@ -276,6 +276,8 @@ def main(
     for instance in instances:
         if instance.getMaster().getName() in ignore_modules:
             continue
+        if instance.getName().startswith("clkload"):  # TritonCTS dummy clock loads
+            continue
         instance_module = Module(instance)
         disconnected_pin_count += instance_module.disconnected_pin_count
         critical_disconnected_pin_count += (

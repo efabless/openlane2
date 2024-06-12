@@ -23,8 +23,9 @@
   bison,
   tcl,
   zlib,
-  rev ? "a7f34210b403fe399c170296d54258f10f92885f",
-  sha256 ? "sha256-2R+ox0kcjXX5Kc6dtH/OEOccU/m8FjW1qnb0kxM/ahE=",
+  eigen,
+  rev ? "e01d3f163f483f233db00410b6515a767a6ca03b",
+  sha256 ? "sha256-0LbY5RcM+11oV3iPfAUd7hpyFPwCfCjnG0EE1LkXg5E=",
 }:
 clangStdenv.mkDerivation rec {
   name = "opensta";
@@ -43,6 +44,7 @@ clangStdenv.mkDerivation rec {
   ];
 
   buildInputs = [
+    eigen
     tcl
     zlib
   ];

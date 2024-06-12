@@ -393,18 +393,20 @@ jobs:
         with:
           name: metrics
           path: current
-      - name: "[PRs] Compare to main and comment result (if the workflow has secrets access)"
+      - name: "[PRs] Compare to target branch and comment result (if the workflow has secrets access)"
         uses: actions/github-script@v6
         if: ${{ github.event_name == 'pull_request' }}
         with:
           github-token: ${{ secrets.GH_TOKEN }}
           script: |
-            require("./.github/scripts/post_metrics.js")(
-              github,
-              context,
-              "openlane-bot",
-              "${{ secrets.GH_TOKEN }}",
-            ).then(()=>{console.log("Done.");});
+            require("./.github/scripts/compare_metrics.js")({
+              github: github,
+              context: context,
+              botUsername: "openlane-bot",
+              botToken: "${{ secrets.GH_TOKEN }}",
+              comparingDirectory: "current",
+              againstBranch: "${{ github.base_ref }}",
+            }).then(()=>{console.log("Done.");});
       - name: "[Push] Upload Metrics"
         if: ${{ github.event_name == 'push' }} # && env.BRANCH_NAME == 'main' }}
         run: |

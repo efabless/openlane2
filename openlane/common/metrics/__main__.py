@@ -290,10 +290,16 @@ cli.add_command(compare_multiple)
     help="The repository storing metrics for --repo",
 )
 @cloup.option(
+    "-b",
+    "--branch",
+    default="main",
+    help="The branch to compare to",
+)
+@cloup.option(
     "-c",
     "--commit",
     default=None,
-    help="The commit of --repo to fetch the metrics for. By default, that's the latest commit in the main branch.",
+    help="The commit of --repo to fetch the metrics for. By default, that's the latest commit in the chosen branch.",
 )
 @cloup.option(
     "-t",
@@ -303,7 +309,7 @@ cli.add_command(compare_multiple)
 )
 @common_opts
 @cloup.argument("metric_folder", nargs=1)
-def compare_main(
+def compare_remote(
     filter_wildcards: Tuple[str, ...],
     table_verbosity: TableVerbosity,
     repo: str,
@@ -313,6 +319,7 @@ def compare_main(
     metric_folder: str,
     table_out: Optional[str],
     significant_figures: int,
+    branch: str,
 ):
     """
     Creates a small summary/report of the differences between a folder and
@@ -326,10 +333,12 @@ def compare_main(
 
     if commit is None:
         try:
-            result = session.get(f"https://api.github.com/repos/{repo}/branches/main")
+            result = session.get(
+                f"https://api.github.com/repos/{repo}/branches/{branch}"
+            )
         except httpx.HTTPStatusError as e:
             if e.response is not None and e.response.status_code == 404:
-                print(f"main branch of repo {repo} not found.", file=sys.stderr)
+                print(f"'{branch}' branch of repo {repo} not found.", file=sys.stderr)
             else:
                 print(
                     f"failed to get info from github API: {e.response.status_code}",
@@ -397,7 +406,8 @@ def compare_main(
         sys.exit(-1)
 
 
-cli.add_command(compare_main)
+cli.add_command(compare_remote)
+
 
 if __name__ == "__main__":
     cli()

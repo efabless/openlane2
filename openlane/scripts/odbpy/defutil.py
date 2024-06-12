@@ -182,6 +182,7 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
                         box.yMin(),
                         box.xMax(),
                         box.yMax(),
+                        template_pin.getPlacementStatus(),
                     )
                 )
 
@@ -245,9 +246,12 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
             if bterm.getSigType() not in ["POWER", "GROUND"]:
                 continue
             pin_name = bterm.getName()
-            pin_net = odb.dbNet.create(output_block, pin_name, True)
-            pin_net.setSpecial()
-            pin_net.setSigType(bterm.getSigType())
+            pin_net_name = bterm.getNet().getName()
+            pin_net = output_block.findNet(pin_net_name)
+            if pin_net is None:
+                pin_net = odb.dbNet.create(output_block, pin_net_name, True)
+                pin_net.setSpecial()
+                pin_net.setSigType(bterm.getSigType())
             pin_bterm = odb.dbBTerm.create(pin_net, pin_name)
             pin_bterm.setSigType(bterm.getSigType())
             output_bterms.append(pin_bterm)
@@ -322,7 +326,7 @@ def relocate_pins(db, input_lefs, template_def, permissive, copy_def_power=False
                 template_bterm_location_tuple[3],
                 template_bterm_location_tuple[4],
             )
-            output_new_bpin.setPlacementStatus("PLACED")
+            output_new_bpin.setPlacementStatus(template_bterm_location_tuple[5])
 
     if grid_errors:
         print(

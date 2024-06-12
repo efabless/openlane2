@@ -16,8 +16,9 @@
   abc-verifier,
   fetchFromGitHub,
   zlib,
-  rev ? "d3916ac0337d599b30aeaf94e82b13338530ced3",
-  sha256 ? "sha256-osJzeOb0bgvbPGJjcpcfQzwcRJTZh1DYJ7RpFgw1NKg=",
+  abc-namespace-name ? "abc",
+  rev ? "ef5389d31526003c2ebd7e6d6d6fe3848a20f0a2",
+  sha256 ? "sha256-7W66b1Toa9uEAKoijPujqQXVjxf1Ku4w2eP2Vk0ri8c=",
 }:
 abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   name = "openroad-abc";
@@ -36,6 +37,7 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   cmakeFlags = [
     "-DREADLINE_FOUND=FALSE"
     "-DUSE_SYSTEM_ZLIB:BOOL=ON"
+    "-DABC_USE_NAMESPACE=${abc-namespace-name}"
   ];
 
   buildInputs = [zlib];
@@ -54,6 +56,8 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     mkdir -p $header_dir
     cp ../src/$header $header_tgt
     done
+    
+    sed -Ei "/#\s*ifdef ABC_NAMESPACE/i#define ABC_NAMESPACE abc\n" $out/include/misc/util/abc_namespaces.h
   '';
 
   meta = with lib; {
