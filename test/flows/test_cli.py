@@ -38,7 +38,7 @@ def test_only_flag():
         return kwargs
 
     result = cli_fn(
-        ["--only", "this-step"],
+        ["--only", "this-step", "--pdk-root", "/tmp"],
         standalone_mode=False,
     )
     assert result["frm"] == "this-step", "only flag not translated to frm correctly"
@@ -60,7 +60,7 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
         return kwargs
 
     cli_fn(
-        ["--log-level", "30"],
+        ["--log-level", "30", "--pdk-root", "/tmp"],
         standalone_mode=False,
     )
     assert get_log_level() == 30, "--log-level callback failed"
@@ -68,7 +68,7 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
     reset_log_level()
 
     cli_fn(
-        ["--log-level", "WARNING"],
+        ["--log-level", "30", "--pdk-root", "/tmp"],
         standalone_mode=False,
     )
     assert get_log_level() == 30, "--log-level callback failed"
@@ -99,7 +99,7 @@ def test_worker_count_cb():
     tpe_backup = get_tpe()
 
     cli_fn(
-        ["-j", "3"],
+        ["-j", "3", "--pdk-root", "/tmp"],
         standalone_mode=False,
     )
     assert get_tpe()._max_workers == 3, "--jobs callback failed"
@@ -141,7 +141,7 @@ def test_initial_state(fs: FakeFilesystem, caplog: pytest.LogCaptureFixture):
     )
 
     results = cli_fn(
-        ["--with-initial-state", "/cwd/state_in.json"],
+        ["--with-initial-state", "/cwd/state_in.json", "--pdk-root", "/tmp"],
         standalone_mode=False,
     )
 

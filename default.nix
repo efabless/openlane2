@@ -22,7 +22,7 @@
   klayout-pymod,
   libparse,
   immutabledict,
-  magic,
+  magic-vlsi,
   netgen,
   opensta,
   openroad,
@@ -93,7 +93,7 @@ buildPythonPackage rec {
     openroad
     klayout
     netgen
-    magic
+    magic-vlsi
     verilog
     verilator
     tclFull

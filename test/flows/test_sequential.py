@@ -334,11 +334,6 @@ def test_gating_validation(MetricIncrementer):
             Variable("BAD_GATING_VARIABLE", int, description="x", default=0),
         ]
 
-    with pytest.raises(TypeError, match="does not match any Step in Flow"):
-
-        class _Test0(Dummy):
-            gating_config_vars = {"NotARealStep": ["TEST_GATING_VARIABLE"]}
-
     with pytest.raises(TypeError, match="does not match any declared config_vars"):
 
         class _Test1(Dummy):

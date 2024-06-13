@@ -24,9 +24,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     if "SYNTH_DRIVING_CELL_PIN" in new:
         del new["SYNTH_DRIVING_CELL"]
         del new["SYNTH_DRIVING_CELL_PIN"]
-        new[
-            "SYNTH_DRIVING_CELL"
-        ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+        new["SYNTH_DRIVING_CELL"] = (
+            f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+        )
 
     # 2. Migrate SYNTH_TIE{HI,LO}_CELL
     if "SYNTH_TIEHI_PORT" in new:
@@ -238,8 +238,8 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
         del new["KLAYOUT_DRC_TECH_SCRIPT"]
 
-        new[
-            "SYNTH_CLK_DRIVING_CELL"
-        ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+        new["SYNTH_CLK_DRIVING_CELL"] = (
+            f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+        )
 
     return new

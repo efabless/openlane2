@@ -12,7 +12,8 @@ about_pdks
 timing_corners
 timing_closure/index
 using_macros
+caravel/index
 writing_custom_flows
 writing_custom_steps
-caravel/index
+writing_plugins
 ```

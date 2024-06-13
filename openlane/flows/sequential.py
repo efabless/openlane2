@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import fnmatch
 from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
 
 from .flow import Flow, FlowException, FlowError
@@ -119,7 +120,6 @@ class SequentialFlow(Flow):
         if substitute := Substitute:
             for key, item in substitute.items():
                 self.__substitute_step(self, key, item)
-
             self.__normalize_step_ids(self)
 
         super().__init__(*args, **kwargs)
@@ -131,21 +131,32 @@ class SequentialFlow(Flow):
         with_step: Union[str, Type[Step], None],
     ):
         step_indices: List[int] = []
+        mode = "replace"
+        if id.startswith("+"):
+            id = id[1:]
+            mode = "append"
+            if with_step is None:
+                raise FlowException("Cannot prepend or append None.")
+        elif id.startswith("-"):
+            id = id[1:]
+            mode = "prepend"
+            if with_step is None:
+                raise FlowException("Cannot prepend or append None.")
+
         for i, step in enumerate(target.Steps):
             if (
                 step.id
                 != NotImplemented  # Will be validated later by initialization: ignore for now
-                and step.id.lower() == id.lower()
+                and fnmatch.fnmatch(step.id.lower(), id.lower())
             ):
                 step_indices.append(i)
-
         if len(step_indices) == 0:
             if with_step is None:
                 raise FlowException(
                     f"Could not remove '{id}': no steps with ID '{id}' found in flow"
                 )
             raise FlowException(
-                f"Could not substitute '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
+                f"Could not {mode} '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
             )
 
         if with_step is None:
@@ -157,12 +168,17 @@ class SequentialFlow(Flow):
             with_step_opt = Step.factory.get(with_step)
             if with_step_opt is None:
                 raise FlowException(
-                    f"Could not substitute '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
+                    f"Could not {mode} '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
                 )
             with_step = with_step_opt
 
         for i in step_indices:
-            target.Steps[i] = with_step
+            if mode == "replace":
+                target.Steps[i] = with_step
+            elif mode == "append":
+                target.Steps.insert(i + 1, with_step)
+            elif mode == "prepend":
+                target.Steps.insert(i, with_step)
 
     @staticmethod
     def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):

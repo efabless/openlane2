@@ -139,6 +139,7 @@ class Meta:
 
     version: int = 1
     flow: Union[None, str, List[str]] = None
+    substituting_steps: Union[None, Dict[str, Union[str, None]]] = None
     step: Union[None, str] = None
     openlane_version: Union[None, str] = __version__
 

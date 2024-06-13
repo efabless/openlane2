@@ -20,7 +20,7 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from typing import Sequence, Tuple, Type, Optional, List, Union
+from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
 
 from click import Parameter, pass_context, Path
 from cloup import (
@@ -76,12 +76,14 @@ def run(
             ctx.exit(1)
 
         flow_description: Optional[Union[str, List[str]]] = None
+        substitutions: Union[None, Dict[str, Union[str, None]]] = None
 
         for config_file in config_files:
-            if meta := Config.get_meta(config_file, flow_override=flow_name):
-                if flow_ids := meta.flow:
-                    if flow_description is None:
-                        flow_description = flow_ids
+            if meta := Config.get_meta(config_file):
+                if meta.flow is not None:
+                    flow_description = meta.flow
+                    if meta.substituting_steps is not None:
+                        substitutions = meta.substituting_steps
 
         if flow_name is not None:
             flow_description = flow_name
@@ -91,9 +93,7 @@ def run(
 
         TargetFlow: Type[Flow]
 
-        if not isinstance(flow_description, str):
-            TargetFlow = SequentialFlow.make(flow_description)
-        else:
+        if isinstance(flow_description, str):
             if FlowClass := Flow.factory.get(flow_description):
                 TargetFlow = FlowClass
             else:
@@ -101,15 +101,19 @@ def run(
                     f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
                 )
                 ctx.exit(1)
+        else:
+            TargetFlow = SequentialFlow.make(flow_description)
 
-        flow = TargetFlow(
-            config_files,
-            pdk_root=pdk_root,
-            pdk=pdk,
-            scl=scl,
-            config_override_strings=config_override_strings,
-            design_dir=design_dir,
-        )
+        kwargs: Dict[str, Any] = {
+            "pdk_root": pdk_root,
+            "pdk": pdk,
+            "scl": scl,
+            "config_override_strings": config_override_strings,
+            "design_dir": design_dir,
+        }
+        if issubclass(TargetFlow, SequentialFlow):
+            kwargs["Substitute"] = substitutions
+        flow = TargetFlow(config_files, **kwargs)
     except PassedDirectoryError as e:
         err(e)
         info(
@@ -197,16 +201,16 @@ def print_bare_version(
     ctx.exit(0)
 
 
-def run_example(
+def run_included_example(
     ctx: Context,
-    param: Parameter,
-    value: Union[str, bool],
+    smoke_test: bool,
+    example: Optional[str],
+    **kwargs,
 ):
-    if not value:
-        return
-
-    if isinstance(value, bool):
-        value = "spm"
+    assert smoke_test or example is not None
+    value = "spm"
+    if not smoke_test and example is not None:
+        value = example
 
     example_path = os.path.join(common.get_openlane_root(), "examples", value)
     if not os.path.isdir(example_path):
@@ -216,10 +220,24 @@ def run_example(
     status = 0
     final_path = os.path.join(os.getcwd(), value)
     cleanup = False
-    if param.name == "smoke_test":
+    if smoke_test:
         d = tempfile.mkdtemp("openlane2")
         final_path = os.path.join(d, "smoke_test_design")
         cleanup = True
+        kwargs.update(
+            flow_name=None,
+            scl=None,
+            tag=None,
+            last_run=False,
+            frm=None,
+            to=None,
+            reproducible=None,
+            skip=(),
+            with_initial_state=None,
+            config_override_strings=[],
+            _force_run_dir=None,
+            design_dir=None,
+        )
     try:
         if os.path.isdir(final_path):
             print(f"A directory named {value} already exists.", file=sys.stderr)
@@ -235,31 +253,19 @@ def run_example(
         if os.name == "posix":
             subprocess.check_call(["chmod", "-R", "755", final_path])
 
-        pdk_root = ctx.params.get("pdk_root")
         config_file = os.path.join(final_path, "config.json")
 
         # 3. Run
         run(
             ctx,
-            flow_name=None,
-            pdk_root=pdk_root,
-            pdk="sky130A",
-            scl=None,
             config_files=[config_file],
-            tag=None,
-            last_run=False,
-            frm=None,
-            to=None,
-            reproducible=None,
-            skip=(),
-            with_initial_state=None,
-            config_override_strings=[],
-            _force_run_dir=None,
-            design_dir=None,
+            **kwargs,
         )
-        info("Smoke test passed.")
+        if smoke_test:
+            info("Smoke test passed.")
     except KeyboardInterrupt:
-        info("Smoke test aborted.")
+        if smoke_test:
+            info("Smoke test aborted.")
         status = -1
     finally:
         try:
@@ -374,15 +380,13 @@ o = partial(option, show_default=True)
     ),
     o(
         "--smoke-test",
-        is_flag=True,  # Cannot be eager- PDK options need to be processed
+        is_flag=True,
         help="Runs a basic OpenLane smoke test, the results of which are temporary and discarded.",
-        callback=run_example,
     ),
     o(
         "--run-example",
-        default=None,  # Cannot be eager- PDK options need to be processed
+        default=None,
         help="Copies one of the OpenLane examples to the current working directory and runs it.",
-        callback=run_example,
     ),
     constraint=mutually_exclusive,
 )
@@ -406,6 +410,9 @@ def cli(ctx, /, **kwargs):
         run_kwargs = marshal.load(open(args[0], "rb"))
         run_kwargs.update(**{k: kwargs[k] for k in ["pdk_root", "pdk", "scl"]})
 
+    smoke_test = kwargs.pop("smoke_test", False)
+    example = kwargs.pop("run_example", None)
+
     for subcommand_flag in [
         "docker_tty",
         "docker_mounts",
@@ -417,7 +424,11 @@ def cli(ctx, /, **kwargs):
     ]:
         if subcommand_flag in run_kwargs:
             del run_kwargs[subcommand_flag]
-    run(ctx, **run_kwargs)
+    if smoke_test or example is not None:
+        run_kwargs.pop("config_files", None)
+        run_included_example(ctx, smoke_test, example, **run_kwargs)
+    else:
+        run(ctx, **run_kwargs)
     ctx.exit(0)
 
 

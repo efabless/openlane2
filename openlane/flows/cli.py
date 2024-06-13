@@ -344,7 +344,7 @@ def cloup_flow_opts(
                     ),
                     is_eager=True,
                     default=os.environ.pop("PDK_ROOT", None),
-                    help="Override volare PDK root folder. Required if Volare is not installed.",
+                    help="Override volare PDK root folder. Required if Volare is not installed, but a default value can also be set via the environment variable PDK_ROOT.",
                 ),
                 o(
                     "-p",

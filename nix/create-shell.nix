@@ -15,7 +15,6 @@
   extra-packages ? [],
   extra-python-packages ? [],
   openlane-plugins ? [],
-  numtide-devshell ? null,
 }: ({
   lib,
   openlane,
@@ -27,7 +26,7 @@
   coreutils,
   graphviz,
   python3,
-  mkShell,
+  devshell,
 }: let
   openlane-env = (
     python3.withPackages (pp:
@@ -58,29 +57,16 @@
     ++ openlane.includedTools
     ++ pluginIncludedTools;
 in
-  if numtide-devshell != null
-  then
-    numtide-devshell.mkShell {
-      devshell.packages = packages;
-      env = [
-        {
-          name = "PYTHONPATH";
-          value = "${openlane-env-sitepackages}";
-        }
-      ];
-      devshell.interactive.PS1 = {
-        text = ''PS1="${prompt}"'';
-      };
-      motd = "";
-    }
-  else
-    mkShell {
-      name = "openlane-shell";
-
-      propagatedBuildInputs = packages;
-
-      PYTHONPATH = "${openlane-env-sitepackages}"; # Allows venvs to work properly
-      shellHook = ''
-        export PS1="\n${prompt}";
-      '';
-    })
+  devshell.mkShell {
+    devshell.packages = packages;
+    env = [
+      {
+        name = "PYTHONPATH";
+        value = "${openlane-env-sitepackages}";
+      }
+    ];
+    devshell.interactive.PS1 = {
+      text = ''PS1="${prompt}"'';
+    };
+    motd = "";
+  })
