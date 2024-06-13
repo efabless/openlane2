@@ -2,7 +2,7 @@
 wheel
 
 # lint
-black>=23,<24
+black>=24.4.0,<25
 black[jupyter]
 flake8>=4
 flake8-no-implicit-concat==0.3.3
