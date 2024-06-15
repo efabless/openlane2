@@ -378,6 +378,17 @@ def eject(ctx, output, state_in, config, id):
     default=True,
 )
 @o(
+    "--pdk-root",
+    type=Path(
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    is_eager=True,
+    default=os.environ.pop("PDK_ROOT", None),
+    help="Use this folder as the PDK root, if creating a reproducible from a reproducible that does not include the PDK.",
+)
+@o(
     "--flatten/--no-flatten",
     type=bool,
     default=False,
@@ -404,6 +415,7 @@ def create_reproducible(
     state_in,
     include_pdk,
     flatten,
+    pdk_root,
 ):
     """
     Creates a filesystem-independent step reproducible.
@@ -442,7 +454,7 @@ def create_reproducible(
         if state_in is None:
             state_in = os.path.join(step_dir, "state_in.json")
 
-    step = load_step_from_inputs(ctx, id, config, state_in)
+    step = load_step_from_inputs(ctx, id, config, state_in, pdk_root)
     step.create_reproducible(output, include_pdk, flatten=flatten)
 
 
