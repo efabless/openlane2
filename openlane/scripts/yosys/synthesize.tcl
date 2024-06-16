@@ -66,10 +66,10 @@ if { [info exists ::env(VERILOG_FILES) ]} {
 }
 
 hierarchy -check -top $::env(DESIGN_NAME) -nokeep_prints -nokeep_asserts
+yosys rename -top $::env(DESIGN_NAME)
 select -module $::env(DESIGN_NAME)
 catch {show -format dot -prefix $::env(STEP_DIR)/hierarchy}
 select -clear
-yosys rename -top $::env(DESIGN_NAME)
 
 if { $::env(SYNTH_ELABORATE_ONLY) } {
     yosys_ol::ol_proc $report_dir
