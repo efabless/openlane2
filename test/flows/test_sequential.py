@@ -133,9 +133,19 @@ def test_substitution(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
     @Step.factory.register()
+    class FirstMetricIncrementer(MetricIncrementer):
+        id = "Test.FirstMetricIncrementer"
+        counter_name = "first_counter"
+
+    @Step.factory.register()
     class OtherMetricIncrementer(MetricIncrementer):
         id = "Test.OtherMetricIncrementer"
         counter_name = "other_counter"
+
+    @Step.factory.register()
+    class FinalMetricIncrementer(MetricIncrementer):
+        id = "Test.FinalMetricIncrementer"
+        counter_name = "final_counter"
 
     MyFlow = SequentialFlow.make(
         [
@@ -156,22 +166,72 @@ def test_substitution(MetricIncrementer):
         scl="dummy_scl",
         pdk_root="/pdk",
         Substitute={
+            "-Test.MetricIncrementer": FirstMetricIncrementer,
             "Test.MetricIncrementer": OtherMetricIncrementer,
             "Test.MetricIncrementer-1": "Test.OtherMetricIncrementer",
+            "+Test.MetricIncrementer-3": "Test.FinalMetricIncrementer",
         },
     )
 
     assert [step.id for step in flow.Steps] == [
+        "Test.FirstMetricIncrementer",
         "Test.OtherMetricIncrementer",
         "Test.OtherMetricIncrementer-1",
         "Test.MetricIncrementer-2",
         "Test.MetricIncrementer-3",
+        "Test.FinalMetricIncrementer",
     ], "SequentialFlow did not increment IDs properly for duplicate steps"
 
     state = flow.start()
-    assert (
-        state.metrics["other_counter"] == 2
-    ), "step substitution replaced other than exactly two step"
+    assert state.metrics == {
+        "first_counter": 1,
+        "other_counter": 2,
+        "counter": 2,
+        "final_counter": 1,
+    }, "step substitution execution returned unexpected metrics"
+
+
+@pytest.mark.usefixtures("_mock_conf_fs")
+@mock_variables([flow_module, sequential_flow_module, step_module])
+def test_substitute_none(MetricIncrementer):
+    from openlane.flows import SequentialFlow, FlowException
+
+    MyFlow = SequentialFlow.make(
+        [
+            "Test.MetricIncrementer",
+            "Test.MetricIncrementer",
+            "Test.MetricIncrementer",
+            "Test.MetricIncrementer",
+        ]
+    )
+
+    with pytest.raises(FlowException, match="Cannot prepend or append None"):
+        MyFlow(Substitute={"-Test.MetricIncrementer": None})
+
+    with pytest.raises(FlowException, match="Cannot prepend or append None"):
+        MyFlow(Substitute={"+Test.MetricIncrementer": None})
+
+    flow_with_removal = MyFlow(
+        {
+            "DESIGN_NAME": "WHATEVER",
+            "VERILOG_FILES": ["/cwd/src/a.v"],
+        },
+        design_dir="/cwd",
+        pdk="dummy",
+        scl="dummy_scl",
+        pdk_root="/pdk",
+        Substitute={
+            "Test.MetricIncrementer-1": None,
+        },
+    )
+    assert [step.id for step in flow_with_removal.Steps] == [
+        "Test.MetricIncrementer",
+        "Test.MetricIncrementer-2",
+        "Test.MetricIncrementer-3",
+    ], "Removal did not work as expected"
+
+    with pytest.raises(FlowException, match="no steps with ID"):
+        MyFlow(Substitute={"Test.MetricIncrementer-80": None})
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")
@@ -264,12 +324,12 @@ def test_flow_control(MetricIncrementer):
     )
     state = flow.start(
         frm="test.othermetricincrementer",
-        to="test.yetanothermetricincrementer",
-        skip=["test.anothermetricincrementer"],
+        to="test.lastmetricincrement*",
+        skip=["test.*another*"],
     )
     assert list(state.metrics.keys()) == [
         "other_counter",
-        "yet_another_counter",
+        "last_another_counter",
     ], "flow control did not yield the expected results"
 
 

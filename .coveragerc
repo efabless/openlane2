@@ -25,3 +25,4 @@ omit =
     */steps/yosys.py
     */steps/verilator.py
     */steps/cvc_rv.py
+    */steps/openroad_alerts.py

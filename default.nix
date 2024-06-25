@@ -13,6 +13,7 @@
 # limitations under the License.
 {
   lib,
+  system,
   clangStdenv,
   fetchFromGitHub,
   nix-gitignore,
@@ -52,7 +53,7 @@
   psutil,
   pytestCheckHook,
   pyfakefs,
-  system,
+  rapidfuzz,
 }:
 buildPythonPackage rec {
   name = "openlane";
@@ -117,6 +118,7 @@ buildPythonPackage rec {
       libparse
       psutil
       klayout-pymod
+      rapidfuzz
 
       # Ruby
       ruby

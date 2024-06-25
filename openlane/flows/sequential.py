@@ -15,7 +15,18 @@ from __future__ import annotations
 
 import os
 import fnmatch
-from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
+from typing import (
+    Iterable,
+    List,
+    Set,
+    Tuple,
+    Optional,
+    Type,
+    Dict,
+    Union,
+)
+
+from rapidfuzz import process, fuzz, utils
 
 from .flow import Flow, FlowException, FlowError
 from ..common import Filter
@@ -209,43 +220,56 @@ class SequentialFlow(Flow):
     ) -> Tuple[State, List[Step]]:
         debug(f"Starting run ▶ '{self.run_dir}'")
         step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}
-        skipped_ids = []
+        skipped_ids: List[str] = []
 
-        frm_resolved = None
-        if frm is not None:
-            if id := step_ids.get(frm.lower()):
-                frm_resolved = id
+        def resolve_step(matchable: Optional[str], multiple_ok: bool = False):
+            nonlocal step_ids
+            dangerous_fuzzy_matching = (
+                os.getenv(
+                    "_i_want_openlane_to_fuzzy_match_steps_and_im_willing_to_accept_the_risks",
+                    None,
+                )
+                == "1"
+            )
+            if matchable is None:
+                return None
+            ids = list(Filter([matchable.lower()]).filter(step_ids))
+            if len(ids) > 0:
+                if multiple_ok:
+                    return [step_ids[id] for id in ids]
+                if len(ids) > 1:
+                    raise FlowException(f"{matchable} matched multiple steps.")
+                if len(ids) == 1:
+                    return step_ids[ids[0]]
             else:
+                matchTuple = process.extractOne(
+                    matchable,
+                    step_ids,
+                    scorer=fuzz.partial_ratio,
+                    score_cutoff=80,
+                    processor=utils.default_process,
+                )
+                suggestion = ""
+                if matchTuple is not None:
+                    match, _, _ = matchTuple
+                    if dangerous_fuzzy_matching:
+                        return [match] if multiple_ok else match
+                    else:
+                        suggestion = f" Did you mean: '{match}'?"
                 raise FlowException(
-                    f"Failed to process start step '{frm}': no step with ID '{frm}' found in flow."
+                    f"Failed to process '{matchable}': no step(s) with ID '{matchable}' found in flow.{suggestion}"
                 )
 
-        to_resolved = None
-        if to is not None:
-            if id := step_ids.get(to.lower()):
-                to_resolved = id
-            else:
-                raise FlowException(
-                    f"Failed to process end step '{to}': no step with ID '{to}' found in flow."
-                )
+        frm_resolved = resolve_step(frm)
 
-        reproducible_resolved = None
-        if reproducible is not None:
-            if id := step_ids.get(reproducible.lower()):
-                reproducible_resolved = id
-            else:
-                raise FlowException(
-                    f"Failed to process reproducible step '{reproducible}': no step with ID '{reproducible}' found in flow."
-                )
+        to_resolved = resolve_step(to)
+
+        reproducible_resolved = resolve_step(reproducible)
 
         if skipped_steps := skip:
             for skipped_step in skipped_steps:
-                if id := step_ids.get(skipped_step.lower()):
-                    skipped_ids.append(id)
-                else:
-                    raise FlowException(
-                        f"Failed to process skipped step '{skipped_step}': no step with ID '{skipped_step}' found in flow."
-                    )
+                skipped_ids += resolve_step(skipped_step, multiple_ok=True)
+
         step_count = len(self.Steps)
         self.progress_bar.set_max_stage_count(step_count)
 
