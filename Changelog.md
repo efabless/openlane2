@@ -13,6 +13,13 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.10
+
+## Tool Updates
+* Relaxed `rich` version range to allow Rich 13.
+  * Matches Volare's version range and allows CACE and OpenLane 2 to be
+    installed in the same Python environment.
+
 # 2.0.9
 
 ## CLI
