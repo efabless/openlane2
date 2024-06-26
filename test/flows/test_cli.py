@@ -27,6 +27,7 @@ def test_cli_basic():
     with pytest.raises(SystemExit):
         cli_fn([])
 
+
 @pytest.mark.usefixtures("_chdir_tmp")
 def test_only_flag():
     import click
@@ -46,6 +47,7 @@ def test_only_flag():
     assert (
         "only" not in result
     ), "only flag not disposed of after translating to from and to"
+
 
 @pytest.mark.usefixtures("_chdir_tmp")
 def test_log_level_flag(caplog: pytest.LogCaptureFixture):
@@ -84,6 +86,7 @@ def test_log_level_flag(caplog: pytest.LogCaptureFixture):
         )
     caplog.clear()
 
+
 @pytest.mark.usefixtures("_chdir_tmp")
 def test_worker_count_cb():
     import click
@@ -105,6 +108,7 @@ def test_worker_count_cb():
     assert get_tpe()._max_workers == 3, "--jobs callback failed"
 
     set_tpe(tpe_backup)
+
 
 @pytest.mark.usefixtures("_chdir_tmp")
 def test_initial_state(fs: FakeFilesystem, caplog: pytest.LogCaptureFixture):

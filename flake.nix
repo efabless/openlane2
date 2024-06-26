@@ -87,7 +87,6 @@
             extra-packages = with pkgs; [
               jdupes
               alejandra
-              nbqa
             ];
             extra-python-packages = with pkgs.python3.pkgs; [
               pyfakefs
@@ -97,6 +96,8 @@
               pillow
               mdformat
               black
+              ipython
+              tokenize-rt
               flake8
               mypy
               types-deprecated

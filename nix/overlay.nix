@@ -9,10 +9,6 @@ new: old: {
     cmakeFlags = builtins.filter (flag: (!old.lib.strings.hasPrefix "-DSPDLOG_FMT_EXTERNAL" flag)) previousAttrs.cmakeFlags;
     doCheck = false;
   });
-  
-  nbqa = old.nbqa.overrideAttrs (finalAttrs: previousAttrs: {
-    disabledTestPaths = ["tests/*"]; # doCheck = false does NOTHING
-  });
 
   # Python packages
   python3 = old.python3.override {
