@@ -56,8 +56,8 @@
     src = fetchFromGitHub {
       owner = "YosysHQ";
       repo = "yosys";
-      rev = "543faed9c8cd7c33bbb407577d56e4b7444ba61c";
-      sha256 = "sha256-mzMBhnIEgToez6mGFOvO7zBA+rNivZ9OnLQsjBBDamA=";
+      rev = "0f9ee20ea2c9b377f9b28b862f77b197e6485e00";
+      sha256 = "sha256-gFg17sRAIF+61akeBHSxOU27meNV2/PRHRGMrXSjeMY=";
     };
 
     nativeBuildInputs = [pkg-config bison flex];
@@ -78,7 +78,6 @@
     };
 
     patches = [
-      ./patches/yosys/fix-clang-build.patch
       ./patches/yosys/plugin-search-dirs.patch
     ];
 
