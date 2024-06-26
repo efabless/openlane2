@@ -17,7 +17,6 @@
   clangStdenv,
   fetchFromGitHub,
   nix-gitignore,
-  buildPythonPackage,
   # Tools
   klayout,
   klayout-pymod,
@@ -27,6 +26,7 @@
   netgen,
   opensta,
   openroad,
+  ruby,
   surelog,
   tclFull,
   verilator,
@@ -39,8 +39,8 @@
   yosys-eqy,
   yosys-ghdl,
   yosys-f4pga-sdc,
-  # PIP
-  ruby,
+  # Python
+  buildPythonPackage,
   click,
   cloup,
   pyyaml,
@@ -52,94 +52,78 @@
   deprecated,
   psutil,
   pytestCheckHook,
+  pytest-xdist,
   pyfakefs,
   rapidfuzz,
-}:
-buildPythonPackage rec {
-  name = "openlane";
+  poetry-core,
+}: let
+  self = buildPythonPackage {
+    pname = "openlane";
+    version = builtins.head (builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' (builtins.readFile ./openlane/__version__.py));
 
-  version_file = builtins.readFile ./openlane/__version__.py;
-  version_list = builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' version_file;
-  version = builtins.head version_list;
+    src = nix-gitignore.gitignoreSourcePure ./.gitignore ./.;
 
-  src = [
-    ./Readme.md
-    ./setup.py
-    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n" ./openlane)
-    ./type_stubs
-    ./requirements.txt
-  ];
+    includedTools = [
+      (yosys.withPlugins ([
+          yosys-sby
+          yosys-eqy
+          yosys-lighter
+          yosys-synlig-sv
+          yosys-f4pga-sdc
+        ]
+        ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
+      opensta
+      openroad
+      klayout
+      netgen
+      magic-vlsi
+      verilog
+      verilator
+      tclFull
+      surelog
+    ];
 
-  unpackPhase = ''
-    echo $src
-    for file in $src; do
-      BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
-      cp -r $file $PWD/$BASENAME
-    done
-    ls -lah
-  '';
+    propagatedBuildInputs =
+      [
+        # Python
+        click
+        cloup
+        pyyaml
+        rich
+        requests
+        pcpp
+        volare
+        tkinter
+        lxml
+        deprecated
+        immutabledict
+        libparse
+        psutil
+        klayout-pymod
+        rapidfuzz
 
-  buildInputs = [];
-
-  includedTools = [
-    (yosys.withPlugins ([
-        yosys-sby
-        yosys-eqy
-        yosys-lighter
-        yosys-synlig-sv
-        yosys-f4pga-sdc
+        # Ruby
+        ruby
       ]
-      ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
-    opensta
-    openroad
-    klayout
-    netgen
-    magic-vlsi
-    verilog
-    verilator
-    tclFull
-    surelog
-  ];
+      ++ self.includedTools;
 
-  propagatedBuildInputs =
-    [
-      # Python
-      click
-      cloup
-      pyyaml
-      rich
-      requests
-      pcpp
-      volare
-      tkinter
-      lxml
-      deprecated
-      immutabledict
-      libparse
-      psutil
-      klayout-pymod
-      rapidfuzz
+    doCheck = true;
+    checkInputs = [pytestCheckHook pytest-xdist pyfakefs];
 
-      # Ruby
-      ruby
-    ]
-    ++ includedTools;
+    computed_PATH = lib.makeBinPath self.propagatedBuildInputs;
 
-  doCheck = false;
-  checkInputs = [pytestCheckHook pyfakefs];
+    # Make PATH available to OpenLane subprocesses
+    makeWrapperArgs = [
+      "--prefix PATH : ${self.computed_PATH}"
+    ];
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
-
-  # Make PATH available to OpenLane subprocesses
-  makeWrapperArgs = [
-    "--prefix PATH : ${computed_PATH}"
-  ];
-
-  meta = with lib; {
-    description = "Hardware design and implementation infrastructure library and ASIC flow";
-    homepage = "https://efabless.com/openlane";
-    mainProgram = "openlane";
-    license = licenses.asl20;
-    platforms = platforms.linux ++ platforms.darwin;
+    meta = with lib; {
+      description = "Hardware design and implementation infrastructure library and ASIC flow";
+      homepage = "https://efabless.com/openlane";
+      mainProgram = "openlane";
+      license = licenses.asl20;
+      platforms = platforms.linux ++ platforms.darwin;
+    };
   };
-}
+in
+  self

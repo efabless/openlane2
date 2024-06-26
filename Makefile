@@ -74,7 +74,7 @@ venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
-	@echo ">> Venv prepared. To install documentation dependencies, invoke './venv/bin/python3 -m pip install --upgrade -r requirements_docs.txt'"
+	@echo ">> Venv prepared."
 
 .PHONY: veryclean
 veryclean: clean

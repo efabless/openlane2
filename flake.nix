@@ -36,7 +36,7 @@
   inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
   outputs = {
-    self, 
+    self,
     nix-eda,
     libparse,
     ioplace-parser,
@@ -49,26 +49,30 @@
       (import ./nix/overlay.nix)
       (devshell.overlays.default)
     ];
-    
+
     # Helper functions
     createOpenLaneShell = import ./nix/create-shell.nix;
-    
-    # Outputs
-    packages = nix-eda.forAllSystems { current = self; withInputs = [nix-eda ioplace-parser libparse volare];} (util:
-      with util;
-        rec {
-          colab-env = callPackage ./nix/colab-env.nix {};
-          opensta = callPackage ./nix/opensta.nix {};
-          openroad-abc = callPackage ./nix/openroad-abc.nix {};
-          openroad = callPythonPackage ./nix/openroad.nix {};
-          openlane = callPythonPackage ./default.nix {};
-          sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
-          sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
-          default = openlane;
-        }
-        // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};}));
 
-    devShells = nix-eda.forAllSystems { withInputs = [self devshell nix-eda ioplace-parser libparse volare]; } (
+    # Outputs
+    packages =
+      nix-eda.forAllSystems {
+        current = self;
+        withInputs = [nix-eda ioplace-parser libparse volare];
+      } (util:
+        with util;
+          rec {
+            colab-env = callPackage ./nix/colab-env.nix {};
+            opensta = callPackage ./nix/opensta.nix {};
+            openroad-abc = callPackage ./nix/openroad-abc.nix {};
+            openroad = callPythonPackage ./nix/openroad.nix {};
+            openlane = callPythonPackage ./default.nix {};
+            sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+            sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+            default = openlane;
+          }
+          // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};}));
+
+    devShells = nix-eda.forAllSystems {withInputs = [self devshell nix-eda ioplace-parser libparse volare];} (
       util:
         with util; rec {
           default =
