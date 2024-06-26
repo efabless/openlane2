@@ -348,7 +348,7 @@ class Toolbox(object):
             if not isinstance(state_in, State):
                 raise TypeError("parameter state_in must be of type State")
 
-            with tempfile.TemporaryDirectory() as d:
+            with tempfile.TemporaryDirectory(prefix="openlane_klayout_tmp_") as d:
                 render_step = KLayout.Render(config, state_in, _config_quiet=True)
                 render_step.start(self, d)
                 return open(os.path.join(d, "out.png"), "rb").read()

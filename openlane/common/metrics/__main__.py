@@ -350,7 +350,7 @@ def compare_remote(
     url = f"https://github.com/{metric_repo}/tarball/commit-{commit}"
 
     try:
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory(prefix="openlane_metrics_tmpdir_") as d:
             bio_gz = BytesIO()
             with session.stream("GET", url) as r:
                 r.raise_for_status()
