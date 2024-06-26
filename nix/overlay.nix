@@ -14,16 +14,16 @@ new: old: {
   python3 = old.python3.override {
     packageOverrides = pFinalAttrs: pPreviousAttrs: {
       # Customized mdformat
-      mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
+      mdformat = pPreviousAttrs.mdformat.overridePythonAttrs (old: {
         patches = [
           ./patches/mdformat/donns_tweaks.patch
         ];
-        pytestCheckPhase = "true";
+        doCheck = false;
       });
   
-      # NBQA tests are broken under QEMU
-      nbqa = pPreviousAttrs.nbqa.overrideAttrs (finalAttrs: previousAttrs: {
-        pytestCheckPhase = "true";
+      # NBQA tests are broken under qemu
+      nbqa = pPreviousAttrs.nbqa.overridePythonAttrs (old: {
+        doCheck = false;
       });
     };
   };
