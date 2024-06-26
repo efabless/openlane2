@@ -106,7 +106,6 @@ class chdir(object):
 @pytest.fixture
 def _chdir_tmp(request: SubRequest):
     keep_tmp = request.config.getoption("--keep-tmp")
-    import tempfile
 
     if not keep_tmp:
         with tempfile.TemporaryDirectory(prefix="openlane_test_") as dir, chdir(dir):
