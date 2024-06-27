@@ -10,4 +10,4 @@ libparse>=0.3.1,<1
 psutil>=5.9.0
 httpx>=0.22.0, <0.28
 ioplace_parser~=0.2.0
-klayout>=0.28.17.post1,<0.29.0
+klayout>=0.28.17.post1,<=0.29.2
