@@ -28,7 +28,7 @@ jobs:
         run: |
           pip3 install poetry
           poetry config virtualenvs.create false
-          poetry install
+          sudo poetry install
       - name: Determine If Running Extended Test Set
         run: |
           export EVENT_NAME=${{ github.event_name }};
@@ -108,7 +108,7 @@ jobs:
         run: |
           pip3 install poetry
           poetry config virtualenvs.create false
-          poetry install
+          sudo poetry install
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
@@ -355,7 +355,7 @@ jobs:
         run: |
           pip3 install poetry
           poetry config virtualenvs.create false
-          poetry install
+          sudo poetry install
           volare enable --pdk ${{ matrix.design.pdk_family }} \
             --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
