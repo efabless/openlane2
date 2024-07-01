@@ -26,9 +26,9 @@ jobs:
       - uses: actions/checkout@v3
       - name: Python Dependencies
         run: |
-          pip3 install poetry
-          poetry config virtualenvs.create false
-          sudo poetry install
+          pip3 install poetry poetry-plugin-export
+          poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
+          pip3 install -r requirements_tmp.txt
       - name: Determine If Running Extended Test Set
         run: |
           export EVENT_NAME=${{ github.event_name }};
@@ -106,9 +106,9 @@ jobs:
       - name: Enable sky130 PDK
         if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
-          pip3 install poetry
-          poetry config virtualenvs.create false
-          sudo poetry install
+          pip3 install poetry poetry-plugin-export
+          poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
+          pip3 install -r requirements_tmp.txt
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
@@ -353,9 +353,9 @@ jobs:
       - name: Enable PDKs
         if: steps.cache-pdks.outputs.cache-hit != 'true'
         run: |
-          pip3 install poetry
-          poetry config virtualenvs.create false
-          sudo poetry install
+          pip3 install poetry poetry-plugin-export
+          poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
+          pip3 install -r requirements_tmp.txt
           volare enable --pdk ${{ matrix.design.pdk_family }} \
             --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
