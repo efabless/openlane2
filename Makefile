@@ -1,7 +1,7 @@
 all: dist
 .PHONY: dist
 dist: venv/manifest.txt
-	./venv/bin/python3 setup.py sdist bdist_wheel
+	./venv/bin/poetry build
 
 .PHONY: mount
 mount:
@@ -66,13 +66,13 @@ check-license: venv/manifest.txt
 		--requirements '/volume/requirements.frz.txt'
 
 venv: venv/manifest.txt
-venv/manifest.txt: ./requirements_dev.txt ./requirements.txt
+venv/manifest.txt: ./pyproject.toml
 	rm -rf venv
 	python3 -m venv ./venv
 	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade pip
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements_dev.txt
-	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r ./requirements.txt
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade wheel poetry poetry-plugin-export
+	PYTHONPATH= ./venv/bin/poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
+	PYTHONPATH= ./venv/bin/python3 -m pip install --upgrade -r requirements_tmp.txt
 	PYTHONPATH= ./venv/bin/python3 -m pip freeze > $@
 	@echo ">> Venv prepared."
 

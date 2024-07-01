@@ -21,7 +21,6 @@
   klayout,
   klayout-pymod,
   libparse,
-  immutabledict,
   magic-vlsi,
   netgen,
   opensta,
@@ -55,13 +54,19 @@
   pytest-xdist,
   pyfakefs,
   rapidfuzz,
+  ioplace-parser,
   poetry-core,
 }: let
   self = buildPythonPackage {
     pname = "openlane";
-    version = builtins.head (builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' (builtins.readFile ./openlane/__version__.py));
+    version = (builtins.fromTOML (builtins.readFile ./pyproject.toml)).tool.poetry.version;
+    format = "pyproject";
 
     src = nix-gitignore.gitignoreSourcePure ./.gitignore ./.;
+
+    nativeBuildInputs = [
+      poetry-core
+    ];
 
     includedTools = [
       (yosys.withPlugins ([
@@ -96,11 +101,11 @@
         tkinter
         lxml
         deprecated
-        immutabledict
         libparse
         psutil
         klayout-pymod
         rapidfuzz
+        ioplace-parser
 
         # Ruby
         ruby

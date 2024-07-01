@@ -104,6 +104,7 @@ in
       spdlog-internal-fmt
       libffi
       libsForQt5.qtbase
+      libsForQt5.qt5.qtcharts
       llvmPackages.openmp
 
       lemon-graph

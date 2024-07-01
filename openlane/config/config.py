@@ -34,8 +34,6 @@ from typing import (
     Set,
 )
 
-from immutabledict import immutabledict
-
 from .variable import Variable
 from .removals import removed_variables
 from .flow import pdk_variables, scl_variables, flow_common_variables
@@ -753,7 +751,7 @@ class Config(GenericImmutableDict[str, Any]):
     @lru_cache(1, True)
     def __get_pdk_raw(
         pdk_root: str, pdk: str, scl: Optional[str]
-    ) -> Tuple[immutabledict[str, Any], str, str]:
+    ) -> Tuple[GenericImmutableDict[str, Any], str, str]:
         pdk_config: GenericDict[str, Any] = GenericDict(
             {
                 SpecialKeys.pdk_root: pdk_root,
@@ -797,7 +795,7 @@ class Config(GenericImmutableDict[str, Any]):
             )
         )
 
-        return immutabledict(scl_env), pdkpath, scl
+        return GenericImmutableDict(scl_env), pdkpath, scl
 
     @staticmethod
     def __get_pdk_config(
