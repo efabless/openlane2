@@ -62,6 +62,12 @@ proc read_current_sdc {} {
     if { [info exists ::env(_PROPAGATE_ALL_CLOCKS)] && $::env(_PROPAGATE_ALL_CLOCKS) } {
         set should_propagate_clocks [expr ![string_in_file $::env(_SDC_IN) "set_propagated_clocks"]]
     }
+
+    if { $should_propagate_clocks } {
+        puts "\[INFO\] Propagating all clocks"
+        set_propagated_clock [all_clocks]
+    }
+
     # Restore Environment
     unset ::env(IO_PCT)
     unset ::env(SYNTH_TIMING_DERATE)
