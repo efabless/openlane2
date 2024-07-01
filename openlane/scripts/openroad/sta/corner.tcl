@@ -44,10 +44,6 @@ if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
 }
 read_spefs
 
-if { $::env(STEP_ID) != "OpenROAD.STAPrePNR"} {
-    set_propagated_clock [all_clocks]
-}
-
 set corner [lindex [sta::corners] 0]
 sta::set_cmd_corner $corner
 
@@ -328,6 +324,26 @@ write_metric_num "timing__setup_r2r__ws__corner:[$corner name]" $worst_r2r_setup
 write_metric_int "timing__setup_r2r_vio__count__corner:[$corner name]" $r2r_setup_vios
 puts "%OL_END_REPORT"
 
+puts "%OL_CREATE_REPORT unpropagated.rpt"
+
+foreach clock [all_clocks] {
+    if { ![get_property $clock propagated] } {
+        puts "[get_property $clock full_name]"
+    }
+}
+
+puts "%OL_END_REPORT"
+
+
+puts "%OL_CREATE_REPORT clock.rpt"
+
+foreach clock [all_clocks] {
+    report_clock_properties $clock
+    report_clock_latency -clock $clock
+    report_clock_min_period -clocks [get_property $clock name]
+}
+
+puts "%OL_END_REPORT"
 
 write_sdfs
 write_libs

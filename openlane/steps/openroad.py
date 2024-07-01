@@ -363,6 +363,11 @@ class STAMidPNR(OpenROADStep):
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "sta", "corner.tcl")
 
+    def prepare_env(self, env: Dict, state: State) -> Dict:
+        env = super().prepare_env(env, state)
+        env["_PROPAGATE_ALL_CLOCKS"] = "1"
+        return env
+
 
 class OpenSTAStep(OpenROADStep):
     @dataclass(frozen=True)
@@ -760,6 +765,7 @@ class STAPostPNR(STAPrePNR):
         env = super().prepare_env(env, state)
         if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
             env["_SDC_IN"] = signoff_sdc_file
+        env["_PROPAGATE_ALL_CLOCKS"] = "1"
         return env
 
     def filter_unannotated_report(

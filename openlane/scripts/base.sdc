@@ -71,3 +71,8 @@ set_clock_transition $::env(CLOCK_TRANSITION_CONSTRAINT) $clocks
 puts "\[INFO] Setting timing derate to: $::env(TIME_DERATING_CONSTRAINT)%"
 set_timing_derate -early [expr 1-[expr $::env(TIME_DERATING_CONSTRAINT) / 100]]
 set_timing_derate -late [expr 1+[expr $::env(TIME_DERATING_CONSTRAINT) / 100]]
+
+if { [info exists ::env(_PROPAGATE_ALL_CLOCKS)] && $::env(_PROPAGATE_ALL_CLOCKS) } {
+    puts "\[INFO] Propagating all clocks"
+    set_propagated_clock [all_clocks]
+}

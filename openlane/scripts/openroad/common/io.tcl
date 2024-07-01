@@ -31,7 +31,7 @@ proc env_var_used {file var} {
 
 proc read_current_sdc {} {
     if { ![info exists ::env(_SDC_IN)]} {
-        puts "\[INFO] _SDC_IN not found. Not reading an SDC file."
+        puts "\[INFO\] _SDC_IN not found. Not reading an SDC file."
         return
     }
 
@@ -58,6 +58,10 @@ proc read_current_sdc {} {
         exit 1
     }
 
+    set should_propagate_clocks 0
+    if { [info exists ::env(_PROPAGATE_ALL_CLOCKS)] && $::env(_PROPAGATE_ALL_CLOCKS) } {
+        set should_propagate_clocks [expr ![string_in_file $::env(_SDC_IN) "set_propagated_clocks"]]
+    }
     # Restore Environment
     unset ::env(IO_PCT)
     unset ::env(SYNTH_TIMING_DERATE)
