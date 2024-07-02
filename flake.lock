@@ -162,11 +162,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1715167549,
-        "narHash": "sha256-QzMKToqiDQzMjBM2TW1VGMUxSLj70Uk4IdJVjIdkd5c=",
+        "lastModified": 1719908402,
+        "narHash": "sha256-l6GtRmdLVqu8mS0YvOoHrc62rneFLfABCMJopTalon8=",
         "owner": "efabless",
         "repo": "volare",
-        "rev": "b72ce150b80f67278d4c6b025183fb3941cab993",
+        "rev": "0dea0d1acece68aafbf6263c6e2db7c7a58bf1b7",
         "type": "github"
       },
       "original": {
