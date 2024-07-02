@@ -56,7 +56,7 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     mkdir -p $header_dir
     cp ../src/$header $header_tgt
     done
-    
+
     sed -Ei "/#\s*ifdef ABC_NAMESPACE/i#define ABC_NAMESPACE abc\n" $out/include/misc/util/abc_namespaces.h
   '';
 

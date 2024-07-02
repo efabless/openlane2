@@ -20,7 +20,7 @@
   version ? "0.2.4",
   sha256 ? "sha256-LFW8PwoVwftQ8JINvv5ndfsmOhYrX3TgbCGfp/ywINM=",
 }:
-buildPythonPackage rec {
+buildPythonPackage {
   name = "sphinx-subfigure";
   inherit version;
   format = "pyproject";

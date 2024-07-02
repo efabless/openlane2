@@ -153,7 +153,7 @@ class NixInfo(StringRepresentable):
                     file=sys.stderr,
                 )
 
-            with tempfile.TemporaryDirectory("ol-env-rpt") as d:
+            with tempfile.TemporaryDirectory(prefix="openlane_env_report_") as d:
                 with open(os.path.join(d, "flake.nix"), "w") as f:
                     f.write("{}")
                 nix_command = subprocess.run(

@@ -27,7 +27,7 @@
   rev ? "e01d3f163f483f233db00410b6515a767a6ca03b",
   sha256 ? "sha256-0LbY5RcM+11oV3iPfAUd7hpyFPwCfCjnG0EE1LkXg5E=",
 }:
-clangStdenv.mkDerivation rec {
+clangStdenv.mkDerivation (finalAttrs: {
   name = "opensta";
   inherit rev;
 
@@ -51,14 +51,14 @@ clangStdenv.mkDerivation rec {
 
   # Files needed by OpenROAD when building with external OpenSTA
   postInstall = ''
-    for file in $(find ${src} | grep -v examples | grep -E "(\.tcl|\.i)\$"); do
-      relative_dir=$(dirname $(realpath --relative-to=${src} $file))
+    for file in $(find ${finalAttrs.src} | grep -v examples | grep -E "(\.tcl|\.i)\$"); do
+      relative_dir=$(dirname $(realpath --relative-to=${finalAttrs.src} $file))
       true_dir=$out/$relative_dir
       mkdir -p $true_dir
       cp $file $true_dir
     done
-    for file in $(find ${src} | grep -v examples | grep -E "(\.hh)\$"); do
-      relative_dir=$(dirname $(realpath --relative-to=${src} $file))
+    for file in $(find ${finalAttrs.src} | grep -v examples | grep -E "(\.hh)\$"); do
+      relative_dir=$(dirname $(realpath --relative-to=${finalAttrs.src} $file))
       true_dir=$out/include/$relative_dir
       mkdir -p $true_dir
       cp $file $true_dir
@@ -81,4 +81,4 @@ clangStdenv.mkDerivation rec {
     license = licenses.gpl3Plus;
     platforms = platforms.darwin ++ platforms.linux;
   };
-}
+})

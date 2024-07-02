@@ -26,12 +26,14 @@
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
+    devshell.url = github:numtide/devshell;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
   inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.ioplace-parser.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.volare.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
+  inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
   outputs = {
     self,
@@ -39,38 +41,38 @@
     libparse,
     ioplace-parser,
     volare,
+    devshell,
     ...
-  }: let
-    package-config = {
-      current = self;
-      withInputs = [nix-eda ioplace-parser libparse volare];
-      overlays = [(import ./nix/overlay.nix)];
-    };
-  in {
+  }: {
+    # Common
+    input-overlays = [
+      (import ./nix/overlay.nix)
+      (devshell.overlays.default)
+    ];
+
     # Helper functions
     createOpenLaneShell = import ./nix/create-shell.nix;
 
     # Outputs
-    packages = nix-eda.forAllSystems package-config (util:
-      with util;
-        rec {
-          # # Override Example
-          # magic = inputPkgs.magic.override {
-          #   rev = "291ba96285bcd7c2176f95229fc540bd88a25b88";
-          #   sha256 = "sha256-PE3mgjoe9kvEU/Ln++Dkpzag/7dAQBl7CBOxQJS/wk0=";
-          # };
-          colab-env = callPackage ./nix/colab-env.nix {};
-          opensta = callPackage ./nix/opensta.nix {};
-          openroad-abc = callPackage ./nix/openroad-abc.nix {};
-          openroad = callPythonPackage ./nix/openroad.nix {};
-          openlane = callPythonPackage ./default.nix {};
-          sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
-          sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
-          default = openlane;
-        }
-        // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};}));
+    packages =
+      nix-eda.forAllSystems {
+        current = self;
+        withInputs = [nix-eda ioplace-parser libparse volare];
+      } (util:
+        with util;
+          rec {
+            colab-env = callPackage ./nix/colab-env.nix {};
+            opensta = callPackage ./nix/opensta.nix {};
+            openroad-abc = callPackage ./nix/openroad-abc.nix {};
+            openroad = callPythonPackage ./nix/openroad.nix {};
+            openlane = callPythonPackage ./default.nix {};
+            sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+            sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+            default = openlane;
+          }
+          // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};}));
 
-    devShells = nix-eda.forAllSystems package-config (
+    devShells = nix-eda.forAllSystems {withInputs = [self devshell nix-eda ioplace-parser libparse volare];} (
       util:
         with util; rec {
           default =
@@ -85,7 +87,6 @@
             extra-packages = with pkgs; [
               jdupes
               alejandra
-              nbqa
             ];
             extra-python-packages = with pkgs.python3.pkgs; [
               pyfakefs
@@ -95,6 +96,8 @@
               pillow
               mdformat
               black
+              ipython
+              tokenize-rt
               flake8
               mypy
               types-deprecated
@@ -125,10 +128,10 @@
               myst-parser
               docstring-parser
               sphinx-copybutton
-              self.packages.${pkgs.system}.sphinx-tippy
               sphinxcontrib-spelling
               sphinxcontrib-bibtex
-              self.packages.${pkgs.system}.sphinx-subfigure
+              sphinx-tippy
+              sphinx-subfigure
             ];
           }) {};
         }

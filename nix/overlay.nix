@@ -10,14 +10,15 @@ new: old: {
     doCheck = false;
   });
 
-  # Formatter for the Changelog
+  # Python packages
   python3 = old.python3.override {
     packageOverrides = pFinalAttrs: pPreviousAttrs: {
-      mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
+      # Customized mdformat
+      mdformat = pPreviousAttrs.mdformat.overridePythonAttrs (old: {
         patches = [
           ./patches/mdformat/donns_tweaks.patch
         ];
-        pytestCheckPhase = "true";
+        doCheck = false;
       });
     };
   };

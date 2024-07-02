@@ -2292,6 +2292,25 @@ class ResizerTimingPostGRT(ResizerStep):
 
 
 @Step.factory.register()
+class DEFtoODB(OpenROADStep):
+    """
+    Converts a DEF view to an ODB view.
+
+    Useful if you have a custom step that manipulates the layout outside of
+    OpenROAD, but you would like to update the OpenROAD database.
+    """
+
+    id = "OpenROAD.DEFtoODB"
+    name = "DEF to OpenDB"
+
+    inputs = [DesignFormat.DEF]
+    outputs = [DesignFormat.ODB]
+
+    def get_script_path(self) -> str:
+        return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
+
+
+@Step.factory.register()
 class OpenGUI(Step):
     """
     Opens the ODB view in the OpenROAD GUI. Useful to inspect some parameters,
