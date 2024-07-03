@@ -25,7 +25,7 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from dataclasses import dataclass
-from concurrent.futures import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import (
     Any,
     List,
@@ -72,7 +72,6 @@ from ..common import (
     Path,
     TclUtils,
     get_script_dir,
-    get_tpe,
     mkdirp,
     aggregate_metrics,
     process_list_file,
@@ -545,6 +544,11 @@ class MultiCornerSTA(OpenSTAStep):
             Optional[List[Union[str, Path]]],
             "A variable that only exists for backwards compatibility with OpenLane <2.0.0 and should not be used by new designs.",
         ),
+        Variable(
+            "STA_THREADS",
+            Optional[int],
+            "The maximum number of STA corners to run in parallel. If unset, this will be equal to your machine's thread count.",
+        ),
     ]
 
     def get_script_path(self):
@@ -583,6 +587,10 @@ class MultiCornerSTA(OpenSTAStep):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
+        tpe = ThreadPoolExecutor(
+            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+        )
+
         futures: Dict[str, Future[MetricsUpdate]] = {}
         files_so_far: Dict[OpenSTAStep.CornerFileList, str] = {}
         corners_used: Set[str] = set()
@@ -604,7 +612,7 @@ class MultiCornerSTA(OpenSTAStep):
             corner_dir = os.path.join(self.step_dir, corner)
             mkdirp(corner_dir)
 
-            futures[corner] = get_tpe().submit(
+            futures[corner] = tpe.submit(
                 self.run_corner,
                 state_in,
                 current_env,
@@ -1644,6 +1652,11 @@ class RCX(OpenROADStep):
             "Map of corner patterns to OpenRCX extraction rules.",
             pdk=True,
         ),
+        Variable(
+            "STA_THREADS",
+            Optional[int],
+            "The maximum number of STA corners to run in parallel. If unset, this will be equal to your machine's thread count.",
+        ),
     ]
 
     inputs = [DesignFormat.DEF]
@@ -1711,9 +1724,13 @@ class RCX(OpenROADStep):
 
             return out
 
+        tpe = ThreadPoolExecutor(
+            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+        )
+
         futures: Dict[str, Future[str]] = {}
         for corner in self.config["RCX_RULESETS"]:
-            futures[corner] = get_tpe().submit(
+            futures[corner] = tpe.submit(
                 run_corner,
                 corner,
             )

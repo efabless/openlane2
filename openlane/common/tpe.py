@@ -23,6 +23,9 @@ def set_tpe(tpe: ThreadPoolExecutor):
     Allows replacing OpenLane's global ``ThreadPoolExecutor`` with a customized
     one.
 
+    It will be used inside steps, so use different TPEs inside steps to avoid
+    a deadlock.
+
     :param tpe: The replacement ThreadPoolExecutor
     """
     global TPE
@@ -31,7 +34,8 @@ def set_tpe(tpe: ThreadPoolExecutor):
 
 def get_tpe() -> ThreadPoolExecutor:
     """
-    :returns: OpenLane's global ``ThreadPoolExecutor``
+    :returns: OpenLane's global ``ThreadPoolExecutor``. This is used to run
+        steps, so do not use them inside steps to avoid a deadlock.
     """
     global TPE
     return TPE
