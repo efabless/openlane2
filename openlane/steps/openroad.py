@@ -72,7 +72,6 @@ from ..common import (
     Path,
     TclUtils,
     get_script_dir,
-    get_tpe,
     mkdirp,
     aggregate_metrics,
     process_list_file,
@@ -589,7 +588,7 @@ class MultiCornerSTA(OpenSTAStep):
         env = self.prepare_env(env, state_in)
 
         tpe = ThreadPoolExecutor(
-            max_workers=min(32, self.config["STA_THREADS"] or os.cpu_count() or 1)
+            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
         )
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
@@ -1653,6 +1652,11 @@ class RCX(OpenROADStep):
             "Map of corner patterns to OpenRCX extraction rules.",
             pdk=True,
         ),
+        Variable(
+            "STA_THREADS",
+            Optional[int],
+            "The maximum number of STA corners to run in parallel. If unset, this will be equal to your machine's thread count.",
+        ),
     ]
 
     inputs = [DesignFormat.DEF]
@@ -1720,9 +1724,13 @@ class RCX(OpenROADStep):
 
             return out
 
+        tpe = ThreadPoolExecutor(
+            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+        )
+
         futures: Dict[str, Future[str]] = {}
         for corner in self.config["RCX_RULESETS"]:
-            futures[corner] = get_tpe().submit(
+            futures[corner] = tpe.submit(
                 run_corner,
                 corner,
             )
