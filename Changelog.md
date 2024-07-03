@@ -13,6 +13,13 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.11
+
+## Misc Enhancements/Bugfixes
+
+* Fixed a deadlock in some situations because of `OpenROAD.STAPrePNR` using the
+  global thread-pool for OpenLane, which may be used to run the step itself.
+
 # 2.0.10
 
 ## Tool Updates
