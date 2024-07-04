@@ -13,6 +13,20 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.11
+
+## Misc Enhancements/Bugfixes
+
+* Fixed a deadlock in some situations because of `OpenROAD.STAPrePNR` using the
+  global thread-pool for OpenLane, which may be used to run the step itself.
+
+# 2.0.10
+
+## Tool Updates
+* Relaxed `rich` version range to allow Rich 13.
+  * Matches Volare's version range and allows CACE and OpenLane 2 to be
+    installed in the same Python environment.
+
 # 2.0.9
 
 ## CLI
