@@ -53,16 +53,6 @@ runs:
           .#devShells.${{ inputs.nix_system }}.default)
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20
-    - name: Unit/Step Tests
-      shell: ${{ inputs.shell }}
-      if: inputs.run_tests == 'true'
-      run: |
-        echo "#################################################################"
-        nix develop\
-          --option system ${{ inputs.nix_system }}\
-          --extra-platforms ${{ inputs.nix_system }}\
-          --accept-flake-config\
-          .#devShells.${{ inputs.nix_system }}.dev --command pytest --step-rx '.' -n auto
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       if: inputs.run_tests == 'true'
@@ -73,6 +63,16 @@ runs:
           --extra-platforms ${{ inputs.nix_system }}\
           --accept-flake-config\
           .#packages.${{ inputs.nix_system }}.openlane -- --smoke-test
+    - name: Unit/Step Tests
+      shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
+      run: |
+        echo "#################################################################"
+        nix develop\
+          --option system ${{ inputs.nix_system }}\
+          --extra-platforms ${{ inputs.nix_system }}\
+          --accept-flake-config\
+          .#devShells.${{ inputs.nix_system }}.dev --command pytest --step-rx '.' -n auto
     - name: Push to local cache
       shell: ${{ inputs.shell }}
       if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
