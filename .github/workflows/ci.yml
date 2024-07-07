@@ -366,6 +366,8 @@ jobs:
   upload_metrics:
     name: Upload Metrics
     runs-on: ubuntu-22.04
+    permissions:
+      pull-requests: write
     needs: [test]
     if: ${{ always() }}
     steps:

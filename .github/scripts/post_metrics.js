@@ -42,6 +42,7 @@ async function postOrUpdateComment(github, context, botUsername, body) {
 
     let found = null;
     for (let comment of allComments) {
+        console.log(comment.user.login)
         if (comment.body.includes(METRIC_REPORT_MARK) && comment.user.login == botUsername) {
             found = comment;
             break;
