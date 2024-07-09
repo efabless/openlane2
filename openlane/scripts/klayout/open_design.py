@@ -46,7 +46,11 @@ def open_design(input_lefs: Tuple[str, ...], lyt: str, lyp: str, lym: str, input
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Open design in KLayout")
     parser.add_argument(
-        "-l", "--input-lef", dest="input_lefs", nargs="+", help="KLayout .lef files"
+        "-l",
+        "--input-lef",
+        action="append",
+        dest="input_lefs",
+        help="KLayout .lef files",
     )
     parser.add_argument("-T", "--lyt", required=True, help="KLayout .lyt file")
     parser.add_argument("-P", "--lyp", required=True, help="KLayout .lyp file")
