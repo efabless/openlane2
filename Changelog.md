@@ -32,6 +32,10 @@
 
   * Renamed `KLAYOUT_PRIORITIZE_GDS` to `KLAYOUT_GUI_USE_GDS` to be consistent
     with the Magic steps.
+  * Script no longer relies on the `click` library as the internal Python
+    interpreter more often than not has trouble finding the site packages (and
+    indeed the site packages includes its own pya/klayout which is its own
+    headache.)
 
 * `Magic.*`
 
@@ -60,7 +64,6 @@
   * Updated Netgen setup file to equate cells inside macros where the GDS is
     generated with blackbox macro option
 
-
 * `Odb.ReportDisconnectedPins`
 
   * Disconnected dummy instances created during CTS, prefixed `clkload`, are now
@@ -82,7 +85,7 @@
     OpenROAD to remove synthesis buffers so there's more flexibility during
     design repair: see
     https://github.com/The-OpenROAD-Project/OpenROAD/blob/ad54bbe88b561d1c30451d8a3c85ad11c1692905/src/rsz/README.md?plain=1#L185
-    
+
 * `Yosys.*`
 
   * Added new variable `YOSYS_LOG_LEVEL`, which controls the verbosity of Yosys
@@ -101,17 +104,17 @@
 
 ## Tool Updates
 
-* All tool nix derivations now have `rev`/`version` and `sha256` as one of
-  their parameters, allowing them to be easily replaced with `.override`.
-    
+* All tool nix derivations now have `rev`/`version` and `sha256` as one of their
+  parameters, allowing them to be easily replaced with `.override`.
+
 * OpenLane 2 now uses [nix-eda](https://github.com/efabless/nix-eda) for some of
   its dependencies
 
   * `nixpkgs` -> `24.05`
   * `klayout` -> `0.29.1`
   * `magic` -> `8.3.483`/`291ba96`
-    * now uses tk with X11 on macOS, to prevent crashes when attempting to
-    use the GUI
+    * now uses tk with X11 on macOS, to prevent crashes when attempting to use
+      the GUI
   * `netgen` -> `bf67d3c`
   * `forAllSystems` built into `nix-eda`, now composes overlays for nixpkgs
     based on the `withInputs` field, allowing for easier overriding
@@ -190,7 +193,6 @@
 
 * Updated Usage/Writing Custom Flows to document step substitution
 
-
 # 2.0.11
 
 ## Misc Enhancements/Bugfixes
@@ -201,6 +203,7 @@
 # 2.0.10
 
 ## Tool Updates
+
 * Relaxed `rich` version range to allow Rich 13.
   * Matches Volare's version range and allows CACE and OpenLane 2 to be
     installed in the same Python environment.
