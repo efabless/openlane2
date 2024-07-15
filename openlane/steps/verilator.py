@@ -144,9 +144,11 @@ class Lint(Step):
             f.write("`verilator_config\n")
             f.write("lint_off -rule DECLFILENAME\n")
             f.write("lint_off -rule EOFNEWLINE\n")
+            f.write("lint_off -rule TIMESCALEMOD\n")
             for blackbox in blackboxes:
                 f.write(f'lint_off -rule UNDRIVEN -file "{blackbox}"\n')
                 f.write(f'lint_off -rule UNUSEDSIGNAL -file "{blackbox}"\n')
+                f.write(f'lint_off -rule TIMESCALEMOD -file "{blackbox}"\n')
 
         extra_args.append("--Wno-fatal")
 
