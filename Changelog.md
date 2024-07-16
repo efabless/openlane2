@@ -1,6 +1,6 @@
 <!--
-  * Using the modified version of mdformat from the shell.nix:
-  mdformat --wrap 80 --end-of-line lf Changelog.md
+  * Using my modified version of mdformat:
+  nix run .#mdformat -- --wrap 80 --end-of-line lf Changelog.md
 -->
 
 <!--
@@ -63,6 +63,15 @@
     when running LVS. Either `pnl` or `nl` or `vh` views are selected.
   * Updated Netgen setup file to equate cells inside macros where the GDS is
     generated with blackbox macro option
+
+* `Odb.ApplyDEFTemplate`: Thanks [@smunaut](https://github.com/smunaut)
+
+  * DEF template pin placement status (e.g. `PLACED`, `FIXED`) now always
+    propagated to work around PDN generation removing placed but unconnected
+    power pins.
+  * Fixed crashes when copying power pins from a template where the net name and
+    the power pin name may be different (or one net may be connected to multiple
+    power pins.)
 
 * `Odb.ReportDisconnectedPins`
 
@@ -143,6 +152,8 @@
 * Docker image creation now uses a Nix derivation based on that of the official
   Nix Docker image, which includes a full Nix installation in the image (so
   users may add tools and apps in the container at their leisure.)
+  
+* `mdformat` promoted from overlay to `packages`.
 
 ## Misc. Enhancements/Bugfixes
 
@@ -186,12 +197,16 @@
 
 ## Documentation
 
-* Created a new document on writing plugins
+* Created a new document on writing plugins.
 
 * Updated the architecture document to reflect changes and clarify some
   elements.
+  
+* Updated documentation of the `state` submodule.
 
 * Updated Usage/Writing Custom Flows to document step substitution
+
+* Fixed a number of broken links.
 
 # 2.0.11
 

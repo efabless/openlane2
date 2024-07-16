@@ -61,6 +61,12 @@
       } (util:
         with util;
           rec {
+            mdformat = pkgs.python3.pkgs.mdformat.overridePythonAttrs (old: {
+              patches = [
+                ./nix/patches/mdformat/donns_tweaks.patch
+              ];
+              doCheck = false;
+            });
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
             openroad-abc = callPackage ./nix/openroad-abc.nix {};

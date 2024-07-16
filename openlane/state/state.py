@@ -43,18 +43,37 @@ StateElement = Union[Path, List[Path], Dict[str, Union[Path, List[Path]]], None]
 
 class State(GenericImmutableDict[str, StateElement]):
     """
-    Basically, a dictionary from :class:`DesignFormat`s and values
-    of (nested dictionaries of) :class:`Path`.
+    Basically, a dictionary from :class:`DesignFormat`\s and values
+    of (nested dictionaries of) :class:`openlane.common.Path`\.
 
     The state is the only thing that can be altered by steps other than the
     filesystem.
 
-    :attr metrics: A dictionary that carries statistics about the design: area,
+    States are **immutable**. To construct a new state with some modifications,
+    you may do so as follows::
+
+        state_b = State(
+            copying=state_a,
+            overrides={
+                …
+            },
+            metrics=GenericImmutableDict(copying=state_a.metrics, overrides={
+                …
+            })
+        )
+
+    Though in the majority of cases, you do not have to construct States on your
+    own: after executing a Step, you only return your deltas and then the Flow
+    is responsible for the creation of a new Step object.
+
+    :param copying: A mutable or immutable mapping to use as the starting
+        value for this State.
+    :param overrides: A mutable or immutable mapping to override the starting
+        values with.
+    :param metrics: A dictionary that carries statistics about the design: area,
         wire length, et cetera, but also miscellaneous data, for example, whether
         it passed a certain check or not.
     """
-
-    metrics: GenericImmutableDict[str, Any]
 
     def __init__(
         self,
