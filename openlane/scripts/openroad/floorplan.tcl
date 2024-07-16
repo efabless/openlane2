@@ -97,7 +97,7 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
         set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
         set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
         odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
-        puts "\[INFO] Created obstruction at $::env(FP_OBSTRUCTIONS) (µm)"
+        puts "\[INFO] Created floorplan obstruction at $obstruction (µm)"
     }
 }
 
@@ -105,6 +105,18 @@ initialize_floorplan {*}$arg_list
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
+
+if { [info exists ::env(PL_OBSTRUCTIONS)] } {
+    foreach obstruction $::env(PL_OBSTRUCTIONS) {
+        set llx [expr int([expr [lindex $obstruction 0] * $::dbu])]
+        set lly [expr int([expr [lindex $obstruction 1] * $::dbu])]
+        set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
+        set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
+        set obstruction_o [odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury]
+        set _ [$obstruction_o setSoft]
+        puts "\[INFO] Created soft placement obstruction at $obstruction (µm)"
+    }
+}
 
 puts "\[INFO] Extracting DIE_AREA and CORE_AREA from the floorplan"
 set ::env(DIE_AREA) [list]

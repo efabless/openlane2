@@ -903,7 +903,13 @@ class Floorplan(OpenROADStep):
         Variable(
             "FP_OBSTRUCTIONS",
             Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
-            "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
+            "Obstructions applied at floorplanning stage. Placement sites are never generated at these locations, which guarantees that it will remain empty throughout the entire flow.",
+            units="µm",
+        ),
+        Variable(
+            "PL_OBSTRUCTIONS",
+            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            "Soft placement blockages applied at the floorplanning stage. Areas that are soft-blocked will not be used by the initial placer, however, later phases such as buffer insertion or clock tree synthesis are still allowed to place cells in this area.",
             units="µm",
         ),
         Variable(
