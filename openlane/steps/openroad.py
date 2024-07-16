@@ -907,7 +907,7 @@ class Floorplan(OpenROADStep):
             units="µm",
         ),
         Variable(
-            "PL_OBSTRUCTIONS",
+            "PL_SOFT_OBSTRUCTIONS",
             Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
             "Soft placement blockages applied at the floorplanning stage. Areas that are soft-blocked will not be used by the initial placer, however, later phases such as buffer insertion or clock tree synthesis are still allowed to place cells in this area.",
             units="µm",

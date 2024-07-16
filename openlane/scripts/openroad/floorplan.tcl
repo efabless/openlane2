@@ -106,8 +106,8 @@ initialize_floorplan {*}$arg_list
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"
 
-if { [info exists ::env(PL_OBSTRUCTIONS)] } {
-    foreach obstruction $::env(PL_OBSTRUCTIONS) {
+if { [info exists ::env(PL_SOFT_OBSTRUCTIONS)] } {
+    foreach obstruction $::env(PL_SOFT_OBSTRUCTIONS) {
         set llx [expr int([expr [lindex $obstruction 0] * $::dbu])]
         set lly [expr int([expr [lindex $obstruction 1] * $::dbu])]
         set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
