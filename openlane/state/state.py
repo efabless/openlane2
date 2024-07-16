@@ -43,8 +43,8 @@ StateElement = Union[Path, List[Path], Dict[str, Union[Path, List[Path]]], None]
 
 class State(GenericImmutableDict[str, StateElement]):
     """
-    Basically, a dictionary from :class:`DesignFormat`\s and values
-    of (nested dictionaries of) :class:`openlane.common.Path`\.
+    Basically, a dictionary from :class:`DesignFormat`\\s and values
+    of (nested dictionaries of) :class:`openlane.common.Path`\\.
 
     The state is the only thing that can be altered by steps other than the
     filesystem.

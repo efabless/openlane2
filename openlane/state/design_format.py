@@ -52,7 +52,7 @@ class DesignFormatObject:
 class DesignFormat(Enum):
     """
     An `enumeration <https://docs.python.org/3/library/enum.html>`_ of a number
-    of :class:`openlane.state.DesignFormatObject`\s representing the various
+    of :class:`openlane.state.DesignFormatObject`\\s representing the various
     possible text or binary representations (views) supported by OpenLane
     states.
 
