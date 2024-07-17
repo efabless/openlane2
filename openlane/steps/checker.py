@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import re
 from typing import ClassVar, Set, Tuple, List
 from decimal import Decimal
 from typing import Optional
@@ -21,6 +23,47 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepError, DeferredStepError
 from ..logging import info, debug, verbose
 from ..config import Variable
 from ..common import Filter, parse_metric_modifiers
+from ..state import DesignFormat
+
+
+@Step.factory.register()
+class NetlistAssignStatements(Step):
+    """
+    Raises a StepError if the Netlist has an ``assign`` statement in it.
+
+    ``assign`` statements are known to cause bugs in some PnR tools.
+    """
+
+    id = "Checker.NetlistAssignStatements"
+    name = "Netlist Assign Statement Checker"
+
+    inputs = [DesignFormat.NETLIST]
+    outputs = []
+
+    config_vars = [
+        Variable(
+            "ERROR_ON_NL_ASSIGN_STATEMENTS",
+            bool,
+            "Whether to emit an error or simply warn about the existence",
+            default=True,
+        )
+    ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        assign_rx = re.compile(r"^\s*\bassign\b")
+        netlist_in = str(state_in[DesignFormat.NETLIST])
+        emit_error = self.config["ERROR_ON_NL_ASSIGN_STATEMENTS"]
+        found = False
+        with open(netlist_in, "r", encoding="utf8") as f:
+            for i, line in enumerate(f, start=1):
+                if assign_rx.search(line) is not None:
+                    found = True
+                    (self.err if emit_error else self.warn)(
+                        f"{os.path.relpath(netlist_in)}:{i}: assign statement found in netlist"
+                    )
+        if found and self.config["ERROR_ON_NL_ASSIGN_STATEMENTS"]:
+            raise StepError("One or more assign statements found in the netlist.")
+        return {}, {}
 
 
 class MetricChecker(Step):
