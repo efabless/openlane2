@@ -30,6 +30,7 @@ failures_report.json
 abc.history
 slpp_all/
 */runs
+openlane/examples/*/runs
 
 # Testing
 .coverage

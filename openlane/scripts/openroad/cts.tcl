@@ -13,6 +13,7 @@
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 
 load_rsz_corners
 read_current_odb
@@ -72,11 +73,11 @@ source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 
 estimate_parasitics -placement
 
+report_design_area_metrics
+report_cell_count
+
 write_views
 
 puts "%OL_CREATE_REPORT cts.rpt"
 report_cts
 puts "%OL_END_REPORT"
-
-report_design_area_metrics
-

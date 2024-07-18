@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 read_current_odb
 
 tapcell\
@@ -21,7 +22,9 @@ tapcell\
     -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
 
+report_design_area_metrics
+report_cell_count
+
 write_views
 
-report_design_area_metrics
 

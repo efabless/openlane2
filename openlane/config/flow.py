@@ -481,6 +481,19 @@ option_variables = [
         deprecated_names=["BASE_SDC_FILE", "SDC_FILE"],
         default=Path(os.path.join(get_script_dir(), "base.sdc")),
     ),
+    Variable(
+        "CTS_ROOT_BUFFER",
+        str,
+        "Defines the cell inserted at the root of the clock tree. Used in CTS.",
+        pdk=True,
+    ),
+    Variable(
+        "CTS_CLK_BUFFERS",
+        List[str],
+        "Defines the list of clock buffers to be used in CTS.",
+        deprecated_names=["CTS_CLK_BUFFER_LIST"],
+        pdk=True,
+    ),
 ]
 
 flow_common_variables = pdk_variables + scl_variables + option_variables
