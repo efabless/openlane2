@@ -36,10 +36,6 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "design__instance__count__cts",
-    higher_is_better=False,
-)
-Metric(
     "design__instance__count__welltap",
     higher_is_better=False,
 )

@@ -26,5 +26,3 @@ report_design_area_metrics
 report_cell_count
 
 write_views
-
-

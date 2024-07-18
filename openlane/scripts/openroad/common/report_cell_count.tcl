@@ -31,9 +31,6 @@ proc report_cell_count {args} {
         if { [search_multi_pattern "[$master getName]" "$::env(WELLTAP_CELL)"] } {
             set tap_count [expr $tap_count + 1]
         }
-        if { [search_multi_pattern "[$master getName]" "$::env(CTS_CLK_BUFFERS) $::env(CTS_ROOT_BUFFER)"] } {
-            set cts_count [expr $cts_count + 1]
-        }
         if { [search_multi_pattern "[$master getName]" "$diode_pattern"] } {
             set diode_count [expr $diode_count + 1]
         }
@@ -44,7 +41,6 @@ proc report_cell_count {args} {
     write_metric_int "design__instance__count__welltap" $tap_count
     write_metric_int "design__instance__count__diode" $diode_count
     write_metric_int "design__instance__count__fill" $fill_count
-    write_metric_int "design__instance__count__cts" $cts_count
     write_metric_int "design__instance__count__decap" $decap_count
 }
 

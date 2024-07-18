@@ -2010,6 +2010,19 @@ class CTS(ResizerStep):
                 "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
             ),
             Variable(
+                "CTS_ROOT_BUFFER",
+                str,
+                "Defines the cell inserted at the root of the clock tree. Used in CTS.",
+                pdk=True,
+            ),
+            Variable(
+                "CTS_CLK_BUFFERS",
+                List[str],
+                "Defines the list of clock buffers to be used in CTS.",
+                deprecated_names=["CTS_CLK_BUFFER_LIST"],
+                pdk=True,
+            ),
+            Variable(
                 "CTS_MAX_CAP",
                 Optional[Decimal],
                 "Overrides the maximum capacitance CTS characterization will test. If omitted, the capacitance is extracted from the lib information of the buffers in CTS_CLK_BUFFERS.",

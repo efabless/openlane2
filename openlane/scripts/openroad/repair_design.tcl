@@ -66,7 +66,6 @@ unset_dont_touch_objects
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 
-
 report_design_area_metrics
 report_cell_count
 
