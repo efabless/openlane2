@@ -436,6 +436,8 @@ class Variable:
                     raw = raw.split(";")
                 else:
                     raw = raw.split()
+                if raw[-1] == "":
+                    raw.pop()  # Trailing commas
             else:
                 raise ValueError(
                     f"List provided for variable '{key_path}' is invalid: {value}"
