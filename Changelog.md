@@ -28,6 +28,12 @@
 
 ## Steps
 
+* Created `Checker.NetlistAssignStatements`
+
+  * Outputs warnings or errors (depending on `ERROR_ON_NL_ASSIGN_STATEMENTS`)
+    when `assign` statements are found in the netlist of the input state (assign
+    statements cause some issues with some tools)
+
 * `KLayout.OpenGUI`
 
   * Renamed `KLAYOUT_PRIORITIZE_GDS` to `KLAYOUT_GUI_USE_GDS` to be consistent
@@ -88,6 +94,10 @@
   * Useful for custom flows, where the DEF is modified but the ODB needs to be
     updated to reflect these modifications
 
+* `OpenROAD.Floorplan`
+
+  * Added soft placement obstructions via new variable `PL_SOFT_OBSTRUCTIONS`.
+
 * `OpenROAD.RepairDesignPostGPL`
 
   * Added new variable `DESIGN_REPAIR_REMOVE_BUFFERS`, which will instruct
@@ -101,6 +111,10 @@
     output
 
 * `Yosys.*Synthesis`
+
+  * Moved the `rename` of top module to before selecting it. This fixes a
+    problem DFFRAM where needed modules are optimised away and then synthesis
+    fails. (Thanks @donnie-j!)
 
   * Syntheses with `SYNTH_ELABORATE_ONLY` no longer report undriven nets as a
     check error (frequently for some top-level integrations, output pins are
@@ -152,7 +166,7 @@
 * Docker image creation now uses a Nix derivation based on that of the official
   Nix Docker image, which includes a full Nix installation in the image (so
   users may add tools and apps in the container at their leisure.)
-  
+
 * `mdformat` promoted from overlay to `packages`.
 
 ## Misc. Enhancements/Bugfixes
@@ -180,6 +194,11 @@
   * `GenericDictEncoder`: Fixed crash when attempting to dump a Decimal of
     infinite value
 
+* `openlane.common.config`
+
+  * Trailing commas are now permitted when converting from a string format
+    (which are necessary because of the ambiguity of lists of lists.)
+
 * `openlane.steps.DefaultOutputProcessor`
 
   * `%OL_METRICS_F` now uses Decimals instead of Floats
@@ -195,13 +214,16 @@
     rerouted to `_env.tcl`, instead being passed raw (to help with creating
     reproducibles)
 
+* Removed loop header genvar declaration from examples (limited compatibility
+  with some tools
+
 ## Documentation
 
 * Created a new document on writing plugins.
 
 * Updated the architecture document to reflect changes and clarify some
   elements.
-  
+
 * Updated documentation of the `state` submodule.
 
 * Updated Usage/Writing Custom Flows to document step substitution
