@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 read_pnr_libs
 read_lefs
 read_current_netlist
@@ -145,5 +146,8 @@ source $::env(TRACKS_INFO_FILE_PROCESSED)
 
 write_metric_str "design__die__bbox"  $::env(DIE_AREA)
 write_metric_str "design__core__bbox" $::env(CORE_AREA)
+
+report_cell_count
+report_design_area_metrics
 
 write_views

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 read_current_odb
 source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
@@ -27,5 +28,8 @@ source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -global_routing
+
+report_cell_count
+report_design_area_metrics
 
 write_views
