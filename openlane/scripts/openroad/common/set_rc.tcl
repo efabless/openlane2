@@ -35,9 +35,21 @@ if { [info exist ::env(LAYERS_RC)] } {
     }
 }
 
-if { [info exist ::env(DATA_WIRE_RC_LAYER)] } {
-    set_wire_rc -signal -layer $::env(DATA_WIRE_RC_LAYER)
+set layer_names [list]
+set layers [$::tech getLayers]
+foreach layer $layers {
+    if { [$layer getRoutingLevel] >= 1 } {
+        lappend layer_names [$layer getName]
+    }
+}
+
+if { [info exist ::env(SIGNAL_WIRE_RC_LAYER)] } {
+    set_wire_rc -signal -layer $::env(SIGNAL_WIRE_RC_LAYER)
+} else {
+    set_wire_rc -signal -layers "$layer_names"
 }
 if { [info exist ::env(CLOCK_WIRE_RC_LAYER)] } {
     set_wire_rc -clock -layer $::env(CLOCK_WIRE_RC_LAYER)
+} else {
+    set_wire_rc -clock -layers "$layer_names"
 }
