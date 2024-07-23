@@ -32,7 +32,6 @@ from cloup import (
     option,
     option_group,
     command,
-    Context,
 )
 from cloup.constraints import (
     mutually_exclusive,
