@@ -116,7 +116,7 @@ pdk_variables = [
     Variable(
         "CLOCK_WIRE_RC_LAYERS",
         Optional[List[str]],
-        "Override estimate parasitics for clock nets in earlier stages of the flow with those of this layer. If unset, tools should use the layers between RT_MIN_LAYER and RT_MAX_LAYER.",
+        "Sets estimated clock wire RC values to the average of these layers, grouped by their preferred routing direction. If unset, tools should use the layers between RT_MIN_LAYER and RT_MAX_LAYER.",
         pdk=True,
         deprecated_names=["CLOCK_WIRE_RC_LAYER"],
     ),
