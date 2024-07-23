@@ -37,19 +37,30 @@ if { [info exist ::env(LAYERS_RC)] } {
 
 set layer_names [list]
 set layers [$::tech getLayers]
+set adding 0
 foreach layer $layers {
     if { [$layer getRoutingLevel] >= 1 } {
-        lappend layer_names [$layer getName]
+        set name [$layer getName]
+        if {"$::env(RT_MIN_LAYER)" == "$name"} {
+            set adding 1
+        }
+        if { $adding } {
+            lappend layer_names $name
+        }
+
+        if {"$::env(RT_MAX_LAYER)" == "$name"} {
+            set adding 0
+        }
     }
 }
 
-if { [info exist ::env(SIGNAL_WIRE_RC_LAYER)] } {
-    set_wire_rc -signal -layer $::env(SIGNAL_WIRE_RC_LAYER)
-} else {
-    set_wire_rc -signal -layers "$layer_names"
+set signal_wire_rc_layers $layer_names
+set clock_wire_rc_layers $layer_names
+if { [info exist ::env(SIGNAL_WIRE_RC_LAYERS)] } {
+    set signal_wire_rc_layers $::env(SIGNAL_WIRE_RC_LAYERS)
 }
-if { [info exist ::env(CLOCK_WIRE_RC_LAYER)] } {
-    set_wire_rc -clock -layer $::env(CLOCK_WIRE_RC_LAYER)
-} else {
-    set_wire_rc -clock -layers "$layer_names"
+if { [info exist ::env(CLOCK_WIRE_RC_LAYERS)] } {
+    set clock_wire_rc_layers $::env(CLOCK_WIRE_RC_LAYERS)
 }
+set_wire_rc -signal -layers "$signal_wire_rc_layers"
+set_wire_rc -signal -layers "$clock_wire_rc_layers"
