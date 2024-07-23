@@ -71,7 +71,7 @@ class TclStep(Step):
         * If the value is numeric, it is converted to a string.
         * Otherwise, the value is passed to ``str()``.
         """
-        if is_dataclass(value):
+        if not isinstance(value, type) and is_dataclass(value):
             return TclStep.value_to_tcl(asdict(value))
         elif isinstance(value, Mapping):
             result = []
