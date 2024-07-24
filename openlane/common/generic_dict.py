@@ -51,7 +51,7 @@ class GenericDictEncoder(json.JSONEncoder):
             return o.to_raw_dict()
         elif isinstance(o, os.PathLike) or isinstance(o, UserString):
             return str(o)
-        elif dataclasses.is_dataclass(o):
+        elif not isinstance(o, type) and dataclasses.is_dataclass(o):
             return dataclasses.asdict(o)
         elif isinstance(o, Enum):
             return o.name
@@ -300,7 +300,7 @@ def copy_recursive(input, translator: Callable = idem):
             result = mapping_cls()
             for key, value in input.items():
                 result[key] = recursive(value, visit_stack)
-        elif dataclasses.is_dataclass(input):
+        elif dataclasses.is_dataclass(input) and not isinstance(input, type):
             replace = {}
             as_dict = dataclasses.asdict(input)
             for key, value in as_dict.items():

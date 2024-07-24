@@ -22,12 +22,16 @@ from textwrap import dedent
 from functools import partial
 from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
 
-from click import Parameter, pass_context, Path
+from click import (
+    Parameter,
+    Context,
+    Path,
+    pass_context,
+)
 from cloup import (
     option,
     option_group,
     command,
-    Context,
 )
 from cloup.constraints import (
     mutually_exclusive,
