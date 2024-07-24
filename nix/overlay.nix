@@ -10,14 +10,15 @@ new: old: {
     doCheck = false;
   });
 
-  # Formatter for the Changelog
+  # Python packages
   python3 = old.python3.override {
     packageOverrides = pFinalAttrs: pPreviousAttrs: {
-      mdformat = pPreviousAttrs.mdformat.overrideAttrs (finalAttrs: previousAttrs: {
+      # Customized mdformat
+      mdformat = pPreviousAttrs.mdformat.overridePythonAttrs (old: {
         patches = [
           ./patches/mdformat/donns_tweaks.patch
         ];
-        pytestCheckPhase = "true";
+        doCheck = false;
       });
     };
   };
@@ -53,15 +54,6 @@ new: old: {
         stdenv = old.gccStdenv;
       }
     else (old.jshon);
-
-  ## Cairo X11 on Mac
-  cairo =
-    if (old.stdenv.isDarwin)
-    then
-      (old.cairo.override {
-        x11Support = true;
-      })
-    else (old.cairo);
 
   ## Alligned alloc not available on the default SDK for x86_64-darwin (10.12!!)
   or-tools =

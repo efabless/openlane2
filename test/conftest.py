@@ -103,38 +103,15 @@ class chdir(object):
             raise exc_value
 
 
-class chdir_tmp(chdir):
-    def __init__(self):
-        self.__temp_dir = None
-        super().__init__(None)
-
-    def __enter__(self):
-        self.__temp_dir = tempfile.TemporaryDirectory()
-        self.path = self.__temp_dir.name
-        super().__enter__()
-        return self.path
-
-    @property
-    def temp_dir(self):
-        return self.path
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        super().__exit__(exc_type, exc_value, traceback)
-        self.__temp_dir.cleanup()
-        self.__temp_dir = None
-        self.path = None
-
-
 @pytest.fixture
 def _chdir_tmp(request: SubRequest):
     keep_tmp = request.config.getoption("--keep-tmp")
-    import tempfile
 
     if not keep_tmp:
-        with tempfile.TemporaryDirectory() as dir, chdir(dir):
+        with tempfile.TemporaryDirectory(prefix="openlane_test_") as dir, chdir(dir):
             yield
     else:
-        dir = tempfile.mkdtemp()
+        dir = tempfile.mkdtemp(prefix="openlane_test_")
         with chdir(dir):
             print(f"\nTMP: {dir}")
             yield

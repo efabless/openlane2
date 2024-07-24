@@ -153,7 +153,7 @@ class NixInfo(StringRepresentable):
                     file=sys.stderr,
                 )
 
-            with tempfile.TemporaryDirectory("ol-env-rpt") as d:
+            with tempfile.TemporaryDirectory(prefix="openlane_env_report_") as d:
                 with open(os.path.join(d, "flake.nix"), "w") as f:
                     f.write("{}")
                 nix_command = subprocess.run(
@@ -245,6 +245,8 @@ class OSInfo(StringRepresentable):
                 config = {}
                 for line in os_release.split("\n"):
                     if line.strip() == "":
+                        continue
+                    if line.strip().startswith("#"):
                         continue
                     key, value = line.split("=")
                     value = value.strip('"')

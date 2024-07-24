@@ -30,6 +30,10 @@ estimate_parasitics -placement
 
 
 # Buffer I/O
+if { $::env(DESIGN_REPAIR_REMOVE_BUFFERS) } {
+    remove_buffers
+}
+
 if { $::env(DESIGN_REPAIR_BUFFER_INPUT_PORTS) } {
     buffer_ports -inputs
 }

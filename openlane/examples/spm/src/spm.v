@@ -28,8 +28,9 @@ module spm #(parameter bits=32) (
     assign y = y_chain[bits];
 
     wire[bits-1:0] a_flip;
+    genvar i;
     generate 
-        for (genvar i = 0; i < bits; i = i + 1) begin : flip_block
+        for (i = 0; i < bits; i = i + 1) begin : flip_block
             assign a_flip[i] = a[bits - i - 1];
         end 
     endgenerate

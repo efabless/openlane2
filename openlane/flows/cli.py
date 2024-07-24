@@ -12,17 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from functools import partial
+from functools import partial, wraps
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 
 
-from click import Parameter, echo
+from click import (
+    Context,
+    Parameter,
+    echo,
+)
 from cloup import (
     option,
     argument,
     option_group,
-    Context,
     Choice,
     Path,
 )
@@ -32,7 +35,7 @@ from cloup.constraints import (
 from cloup.typing import Decorator
 
 from .flow import Flow
-from ..common import set_tpe, get_opdks_rev, cli
+from ..common import set_tpe, cli, get_opdks_rev
 from ..logging import set_log_level, verbose, err, options, LogLevels
 from ..state import State, InvalidState
 
@@ -112,61 +115,6 @@ def from_to_cb(
     return value
 
 
-def use_volare_cb(
-    ctx: Context,
-    param: Parameter,
-    value: bool,
-):
-    ctx.obj = ctx.obj or {}
-    ctx.obj["use_volare"] = value
-
-
-def pdk_scl_cb(
-    ctx: Context,
-    param: Parameter,
-    value: Optional[str],
-):
-    if param.name is None:
-        return
-
-    values = ctx.params.copy()
-    values[param.name] = value
-    if "pdk" in values and "scl" in values:
-        pdk = values["pdk"]
-        if ctx.obj and ctx.obj.get("use_volare"):
-            import volare
-
-            volare_home = volare.get_volare_home(values["pdk_root"])
-
-            include_libraries = ["default"]
-            if scl := values["scl"]:
-                include_libraries.append(scl)
-
-            pdk_family = None
-            if family := volare.Family.by_name.get(pdk):
-                ctx.params["pdk"] = family.default_variant
-                pdk_family = family.name
-                verbose(f"Resolved PDK variant {family.default_variant}.")
-            else:
-                for family in volare.Family.by_name.values():
-                    if pdk in family.variants:
-                        pdk_family = family.name
-                        break
-
-            if pdk_family is None:
-                err(f"Could not resolve the PDK '{ctx.params['pdk']}'.")
-                ctx.exit(1)
-
-            version = volare.fetch(
-                volare_home,
-                pdk_family,
-                get_opdks_rev(),
-                include_libraries=include_libraries,
-            )
-            ctx.params["pdk_root"] = version.get_dir(volare_home)
-    return value
-
-
 def condensed_cb(ctx: Context, param: Parameter, value: bool):
     if value:
         options.set_condensed_mode(True)
@@ -189,6 +137,7 @@ def cloup_flow_opts(
     jobs: bool = True,
     accept_config_files: bool = True,
     volare_by_default: bool = True,
+    volare_pdk_override: Optional[str] = None,
     _enable_debug_flags: bool = False,
 ) -> Decorator:
     """
@@ -233,7 +182,7 @@ def cloup_flow_opts(
     """
     o = partial(option, show_default=True)
 
-    def decorator(f):
+    def decorate(f):
         if config_options:
             f = option_group(
                 "Flow configuration options",
@@ -389,8 +338,6 @@ def cloup_flow_opts(
                     is_eager=True,
                     default=volare_by_default,
                     help="Automatically use Volare for PDK version installation and enablement. Set --manual if you want to use a custom PDK version.",
-                    expose_value=False,
-                    callback=use_volare_cb,
                 ),
                 o(
                     "--pdk-root",
@@ -400,7 +347,7 @@ def cloup_flow_opts(
                     ),
                     is_eager=True,
                     default=os.environ.pop("PDK_ROOT", None),
-                    help="Override volare PDK root folder. Required if Volare is not installed.",
+                    help="Override volare PDK root folder. Required if Volare is not installed, but a default value can also be set via the environment variable PDK_ROOT.",
                 ),
                 o(
                     "-p",
@@ -408,7 +355,6 @@ def cloup_flow_opts(
                     type=str,
                     default=os.environ.pop("PDK", "sky130A"),
                     help="The process design kit to use.",
-                    callback=pdk_scl_cb,
                 ),
                 o(
                     "-s",
@@ -416,7 +362,6 @@ def cloup_flow_opts(
                     type=str,
                     default=os.environ.pop("STD_CELL_LIBRARY", None),
                     help="The standard cell library to use. If None, the PDK's default standard cell library is used.",
-                    callback=pdk_scl_cb,
                 ),
             )(f)
         if jobs:
@@ -439,6 +384,58 @@ def cloup_flow_opts(
                     dir_okay=True,
                 ),
             )(f)
-        return f
+        if pdk_options:
 
-    return decorator
+            @wraps(f)
+            def pdk_resolve_wrapper(
+                *args,
+                pdk_root: Optional[str],
+                pdk: str,
+                scl: Optional[str],
+                use_volare: bool,
+                **kwargs,
+            ) -> str:
+                if not use_volare:
+                    if pdk_root is None:
+                        err("Argument --pdk-root must be present with --manual-pdk.")
+                        exit(1)
+                else:
+                    import volare
+
+                    opdks_rev = volare_pdk_override or get_opdks_rev()
+                    volare_home = volare.get_volare_home(pdk_root)
+
+                    include_libraries = ["default"]
+                    if scl is not None:
+                        include_libraries.append(scl)
+
+                    pdk_family = None
+                    if family := volare.Family.by_name.get(pdk):
+                        pdk = family.default_variant
+                        pdk_family = family.name
+                        verbose(f"Resolved PDK variant {family.default_variant}.")
+                    else:
+                        for family in volare.Family.by_name.values():
+                            if pdk in family.variants:
+                                pdk_family = family.name
+                                break
+
+                    if pdk_family is None:
+                        err(f"Could not resolve the PDK '{pdk}'.")
+                        exit(1)
+
+                    version = volare.fetch(
+                        volare_home,
+                        pdk_family,
+                        opdks_rev,
+                        include_libraries=include_libraries,
+                    )
+                    pdk_root = version.get_dir(volare_home)
+
+                return f(*args, pdk_root=pdk_root, pdk=pdk, scl=scl, **kwargs)
+
+            return pdk_resolve_wrapper
+        else:
+            return f
+
+    return decorate

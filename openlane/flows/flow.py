@@ -665,6 +665,7 @@ class Flow(ABC):
 
             return final_state
         finally:
+            self.progress_bar.end()
             for registered_handlers in handlers:
                 deregister_additional_handler(registered_handlers)
             if len(warning_handler.warnings):
@@ -854,7 +855,7 @@ class Flow(ABC):
                     )
 
         signoff_folder = os.path.join(
-            path, "signoff", self.config["DESIGN_NAME"], "openlane"
+            path, "signoff", self.config["DESIGN_NAME"], "openlane-signoff"
         )
         mkdirp(signoff_folder)
 

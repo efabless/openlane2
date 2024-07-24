@@ -171,11 +171,11 @@ class DefaultOutputProcessor(OutputProcessor[Dict[str, Any]]):
             self.current_rpt = None
         elif line.startswith(METRIC_LOCUS):
             command, name, value = line.split(" ", maxsplit=3)
-            metric_type: Union[Type[str], Type[int], Type[float]] = str
+            metric_type: Union[Type[str], Type[int], Type[Decimal]] = str
             if command.endswith("_I"):
                 metric_type = int
             elif command.endswith("_F"):
-                metric_type = float
+                metric_type = Decimal
             self.generated_metrics[name] = metric_type(value)
         elif self.current_rpt is not None:
             # No echo- the timing reports especially can be very large
@@ -961,7 +961,7 @@ class Step(ABC):
             return Path(target_relpath)
 
         # 1. Config
-        dumpable_config = copy_recursive(self.config, translator=visitor)
+        dumpable_config: dict = copy_recursive(self.config, translator=visitor)
         dumpable_config["meta"] = {
             "openlane_version": __version__,
             "step": self.__class__.get_implementation_id(),
@@ -969,16 +969,22 @@ class Step(ABC):
 
         del dumpable_config["DESIGN_DIR"]
 
-        del dumpable_config["PDK_ROOT"]
-        if flatten and include_pdk:
+        if include_pdk:
+            pdk_dirname = dumpable_config["PDK_ROOT"]
+            if flatten:
+                pdk_dirname = pdk_root_flat_dirname
+
             # So it's always the first one:
-            dumpable_config = {"PDK_ROOT": pdk_root_flat_dirname, **dumpable_config}
+            dumpable_config = {"PDK_ROOT": pdk_dirname, **dumpable_config}
+
         else:
-            # If not flattened; there's no explicit PDK root needed, as all
-            # the files are symlinked.
             # If not including the PDK, pdk_root is going to have to be
-            # passed to the config when running the reproducibkle.
-            pass
+            # passed to the config when running the reproducible.
+            del dumpable_config["PDK_ROOT"]
+
+        dumpable_config = {
+            k: dumpable_config[k] for k in sorted(dumpable_config)
+        }  # sort dict
 
         config_path = os.path.join(target_dir, "config.json")
         with open(config_path, "w") as f:

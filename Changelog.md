@@ -13,6 +13,63 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.0.11
+
+## Misc Enhancements/Bugfixes
+
+* Fixed a deadlock in some situations because of `OpenROAD.STAPrePNR` using the
+  global thread-pool for OpenLane, which may be used to run the step itself.
+
+# 2.0.10
+
+## Tool Updates
+* Relaxed `rich` version range to allow Rich 13.
+  * Matches Volare's version range and allows CACE and OpenLane 2 to be
+    installed in the same Python environment.
+
+# 2.0.9
+
+## CLI
+
+* Fixed `--ef-save-views-to` saving to `signoff/<design>/openlane` instead of
+  `signoff/<design>/openlane-signoff` (which makes less sense but is the
+  established convention at Efabless.)
+  
+## Steps
+
+* `OpenROAD.*`
+  * Fixed environment contamination with deprecated variables that may be used
+    by user-supplied PDN or SDC files.
+
+* `OpenROAD.GeneratePDN`
+  * Restored compatibility with some ancient OpenLane PDN config files.
+
+## Tool Updates
+* Updated `ioplace_parser` to `0.2.0`
+  * Fixes regressions in pin regular expression parsing.
+
+# 2.0.8
+
+## Steps
+
+* `Odb.DiodePortInsertion`, `Odb.DiodesOnPorts`
+  * Fixed bug where diodes were never inserted on outputs, and added unit tests
+    to that effect.
+
+# 2.0.7
+
+## Misc Enhancements/Bugfixes
+
+* Overhauled Tcl configuration loading code to fix a number of bugs that may
+  occur when a Tcl file sources another Tcl file, such as for TinyTapeout
+  configs (thanks @htfab)
+
+# 2.0.6
+
+## Misc. Enhancements/Bugfixes
+* Fixed a crash on Linux distributions where `/etc/lsb-release` includes
+  comments.
+
 # 2.0.5
 
 ## Misc. Enhancements/Bugfixes

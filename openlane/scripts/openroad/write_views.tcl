@@ -12,5 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read_current_odb
+if { [info exists ::env(CURRENT_ODB)] } {
+    read_current_odb
+} elseif { [info exists ::env(CURRENT_DEF)] } {
+    read_pnr_libs
+    read_lefs
+    read_def $::env(CURRENT_DEF)
+} else {
+    read_pnr_libs
+    read_lefs
+    read_current_netlist
+}
+
 write_views

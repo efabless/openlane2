@@ -29,7 +29,7 @@ logs/
 failures_report.json
 abc.history
 slpp_all/
-*/runs
+**/*/runs
 
 # Testing
 .coverage
@@ -38,3 +38,10 @@ htmlcov*/
 prof/
 sandbox/
 /designs
+node_modules/
+yarn.lock
+package.json
+
+# We're not using poetry2nix just yet
+poetry.lock
+requirements_tmp.txt

@@ -42,8 +42,8 @@
   bison,
   clang-tools_14,
   ioplace-parser,
-  rev ? "d423155d69de7f683a23f6916ead418a615ad4ad",
-  sha256 ? "sha256-RrJYdvzxD64TeNAlPs6G4BKxflpQO6ED78SqQVH7EUE=",
+  rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
+  sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
 }: let
   pyenv = python3.withPackages (p:
     with p; [
@@ -54,7 +54,7 @@
     ]);
   pyenv-sitepackages = "${pyenv}/${pyenv.sitePackages}";
 in
-  clangStdenv.mkDerivation rec {
+  clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -75,7 +75,7 @@ in
     ];
 
     cmakeFlags =
-      cmakeFlagsAll
+      finalAttrs.cmakeFlagsAll
       ++ [
         "-DUSE_SYSTEM_ABC:BOOL=ON"
         "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
@@ -104,6 +104,7 @@ in
       spdlog-internal-fmt
       libffi
       libsForQt5.qtbase
+      libsForQt5.qt5.qtcharts
       llvmPackages.openmp
 
       lemon-graph
@@ -114,10 +115,6 @@ in
       clp
       cbc
       re2
-    ];
-
-    patches = [
-      ./patches/openroad/antenna.patch
     ];
 
     nativeBuildInputs = [
@@ -132,7 +129,7 @@ in
     ];
 
     shellHook = ''
-      export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " cmakeFlagsAll}"
+      export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
     '';
 
     qtWrapperArgs = [
@@ -147,4 +144,4 @@ in
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  }
+  })
