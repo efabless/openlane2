@@ -109,14 +109,14 @@ pdk_variables = [
     Variable(
         "SIGNAL_WIRE_RC_LAYERS",
         Optional[List[str]],
-        "Sets estimated signal wire RC values to the average of these layers, grouped by their preferred routing direction. If unset, tools should use the layers between RT_MIN_LAYER and RT_MAX_LAYER.",
+        "Sets estimated signal wire RC values to the average of these layers'. If you provide more than two, the averages are grouped by preferred routing direction and you must provide at least one layer for each routing direction. If unset, tools should use the average of layers between RT_MIN_LAYER and RT_MAX_LAYER. This variable will be moved to the relevant step(s) in the next version of OpenLane.",
         pdk=True,
         deprecated_names=["WIRE_RC_LAYER", "DATA_WIRE_RC_LAYER"],
     ),
     Variable(
         "CLOCK_WIRE_RC_LAYERS",
         Optional[List[str]],
-        "Sets estimated clock wire RC values to the average of these layers, grouped by their preferred routing direction. If unset, tools should use the layers between RT_MIN_LAYER and RT_MAX_LAYER.",
+        "Sets estimated clock wire RC values to the average of these layers'. If you provide more than two, the averages are grouped by preferred routing direction and you must provide at least one layer for each routing direction. If unset, tools should use the average of layers between RT_MIN_LAYER and RT_MAX_LAYER. This variable will be moved to the relevant step(s) in the next version of OpenLane.",
         pdk=True,
         deprecated_names=["CLOCK_WIRE_RC_LAYER"],
     ),

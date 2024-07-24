@@ -62,5 +62,14 @@ if { [info exist ::env(SIGNAL_WIRE_RC_LAYERS)] } {
 if { [info exist ::env(CLOCK_WIRE_RC_LAYERS)] } {
     set clock_wire_rc_layers $::env(CLOCK_WIRE_RC_LAYERS)
 }
-set_wire_rc -signal -layers "$signal_wire_rc_layers"
-set_wire_rc -signal -layers "$clock_wire_rc_layers"
+if { [llength $signal_wire_rc_layers] > 1 } {
+    set_wire_rc -signal -layers "$signal_wire_rc_layers"
+} else {
+    set_wire_rc -signal -layer "$signal_wire_rc_layers"
+}
+
+if { [llength $clock_wire_rc_layers] > 1 } {
+    set_wire_rc -clock -layers "$clock_wire_rc_layers"
+} else {
+    set_wire_rc -clock -layer "$clock_wire_rc_layers"
+}
