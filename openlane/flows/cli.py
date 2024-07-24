@@ -17,12 +17,15 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 
 
-from click import Parameter, echo
+from click import (
+    Context,
+    Parameter,
+    echo,
+)
 from cloup import (
     option,
     argument,
     option_group,
-    Context,
     Choice,
     Path,
 )

@@ -86,6 +86,7 @@
       verilator
       tclFull
       surelog
+      ruby
     ];
 
     propagatedBuildInputs =
@@ -106,9 +107,6 @@
         klayout-pymod
         rapidfuzz
         ioplace-parser
-
-        # Ruby
-        ruby
       ]
       ++ self.includedTools;
 
