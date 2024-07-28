@@ -15,9 +15,6 @@ set_global_routing_layer_adjustment * $::env(GRT_ADJUSTMENT)
 
 set array [split $::env(GRT_LAYER_ADJUSTMENTS) " "]
 
-
-set ::tech [[::ord::get_db] getTech]
-
 set layer_names [list]
 set layers [$::tech getLayers]
 foreach layer $layers {

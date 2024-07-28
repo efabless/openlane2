@@ -16,13 +16,6 @@ read_pnr_libs
 read_lefs
 read_current_netlist
 
-set ::db [::ord::get_db]
-set ::chip [$::db getChip]
-set ::tech [$::db getTech]
-set ::block [$::chip getBlock]
-set ::dbu [$::tech getDbUnitsPerMicron]
-set ::libs [$::db getLibs]
-
 foreach lib $::libs {
     set current_sites [$lib getSites]
     foreach site $current_sites {
