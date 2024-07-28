@@ -388,11 +388,6 @@ class OpenSTAStep(OpenROADStep):
     def get_command(self) -> List[str]:
         return ["sta", "-no_splash", "-exit", self.get_script_path()]
 
-    def prepare_env(self, env: Dict, state: State) -> Dict:
-        env = super().prepare_env(env, state)
-        env["_OPENSTA"] = "1"
-        return env
-
     def layout_preview(self) -> Optional[str]:
         return None
 
