@@ -13,13 +13,7 @@ new: old: {
   # Python packages
   python3 = old.python3.override {
     packageOverrides = pFinalAttrs: pPreviousAttrs: {
-      # Customized mdformat
-      mdformat = pPreviousAttrs.mdformat.overridePythonAttrs (old: {
-        patches = [
-          ./patches/mdformat/donns_tweaks.patch
-        ];
-        doCheck = false;
-      });
+      #
     };
   };
 
