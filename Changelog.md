@@ -94,6 +94,13 @@
   * Useful for custom flows, where the DEF is modified but the ODB needs to be
     updated to reflect these modifications
 
+* `OpenROAD.*`
+
+  * OpenROAD scripts now set `set_wire_rc` for the average values of the layers
+    grouped by routing direction. All layers in the routing range are used if
+    either `SIGNAL_WIRE_RC_LAYERS` or `CLOCK_WIRE_RC_LAYERS` are null.
+  * Slight internal Tcl code reorganization.
+
 * `OpenROAD.Floorplan`
 
   * Added soft placement obstructions via new variable `PL_SOFT_OBSTRUCTIONS`.
@@ -214,8 +221,18 @@
     rerouted to `_env.tcl`, instead being passed raw (to help with creating
     reproducibles)
 
+* Universal flow configuration variable
+
+  * `DATA_WIRE_RC_LAYER` renamed to `SIGNAL_WIRE_RC_LAYERS`,
+    `CLOCK_WIRE_RC_LAYER` renamed to `CLOCK_WIRE_RC_LAYERS`, with translation
+    behavior and data type changed to `List[str]?`
+  * Universal PDK variables `SIGNAL_WIRE_RC_LAYERS`/`CLOCK_WIRE_RC_LAYERS` no
+    longer have default values for all PDKs (are null.)
+
+* Fixed new typing inconsistencies exposed by mypy.
+
 * Removed loop header genvar declaration from examples (limited compatibility
-  with some tools
+  with some tools)
 
 ## Documentation
 
