@@ -512,21 +512,16 @@ class SynthesisCommon(YosysStep):
         # https://github.com/The-OpenROAD-Project/OpenLane/commit/e6bc1ea5
         defparam_rx = re.compile(r"^\s*defparam\s+[\s\S]+$")
         defparams_found = False
+        nl_path = str(views_updates[DesignFormat.NETLIST])
         with tempfile.NamedTemporaryFile("w", delete=False) as nodefparams:
-            for line in open(views_updates[DesignFormat.NETLIST], "r"):
+            for line in open(nl_path, "r"):
                 if defparam_rx.match(line) is not None:
                     defparams_found = True
                 else:
                     nodefparams.write(line)
         if defparams_found:
-            shutil.move(
-                views_updates[DesignFormat.NETLIST],
-                f"{views_updates[DesignFormat.NETLIST]}-defparams",
-            )
-            shutil.move(
-                nodefparams.name,
-                views_updates[DesignFormat.NETLIST],
-            )
+            shutil.move(nl_path, f"{nl_path}-defparams")
+            shutil.move(nodefparams.name, nl_path)
         else:
             os.unlink(nodefparams.name)
 

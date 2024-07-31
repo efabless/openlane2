@@ -103,7 +103,7 @@ class Design(object):
                 print(
                     f"[ERROR] {sigtype} pin {module}/{pin_name} not found in the Verilog view: the LEF and Verilog views of the module may be mismatched."
                 )
-                print(f"(Note that power/ground buses are not currently supported.)")
+                print("(Note that power/ground buses are not currently supported.)")
                 exit(-1)
             connection_bits = connections[pin_name]
             if len(connection_bits) != 1:
@@ -252,7 +252,7 @@ class Design(object):
             )
             exit(-1)
         else:
-            print(f"[INFO] Successfully connected.")
+            print("[INFO] Successfully connected.")
 
 
 @click.command()
