@@ -97,11 +97,8 @@ class Design(object):
         connections = cells[cell_name]["connections"]
         for pin_name, sigtype in lef_pg_pins:
             if pin_name not in connections:
-                print(
-                    f"[ERROR] {sigtype} pin {module}/{pin_name} not found in the Verilog view: the LEF and Verilog views of the module may be mismatched."
-                )
-                print("(Note that power/ground buses are not currently supported.)")
-                exit(-1)
+                # Might simply not be connected yet-- ignore
+                continue
             connection_bits = connections[pin_name]
             if len(connection_bits) != 1:
                 print(
@@ -113,14 +110,6 @@ class Design(object):
             if connected_to_v not in self.nets_by_net_name:
                 # Not actually connected - continue
                 continue
-                ## Enforce connections
-                print(
-                    f"[ERROR] Could not find net {connected_to_v} connected to {sigtype} pin {module}/{pin_name}."
-                )
-                print(
-                    "(Ensure that the pin(s) in question are properly connected to power or ground.)"
-                )
-                exit(-1)
             (power_pins if sigtype == "POWER" else ground_pins)[
                 pin_name
             ] = connected_to_v

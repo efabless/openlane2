@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "opdks_rev=$(cat ./openlane/open_pdks_rev)" >> $GITHUB_OUTPUT
       - name: Cache sky130 PDK
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
@@ -53,7 +53,7 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Cache gf180mcu PDK
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
@@ -101,7 +101,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Cache sky130 PDK
         id: cache-sky130-pdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
@@ -132,7 +132,7 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Install Nix
         run: |
           sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
@@ -163,7 +163,7 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main # Using the DS Nix installer because it also sets up binfmt
       - name: Build with Nix
         uses: ./.github/actions/build_nix
@@ -173,7 +173,7 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           run_tests: "true"
-  build-mac:
+  build-darwin:
     strategy:
       matrix:
         system:
@@ -191,7 +191,7 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Install Nix
         run: |
           sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
@@ -206,7 +206,7 @@ jobs:
       # Volare than Linux.
       - name: Cache sky130 PDK
         id: cache-sky130-pdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
@@ -340,7 +340,7 @@ jobs:
           sudo tree /nix/store/*-openlane2 || true
       - name: Cache PDK
         id: cache-pdk
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}

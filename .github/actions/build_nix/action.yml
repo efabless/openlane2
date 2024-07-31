@@ -30,7 +30,7 @@ runs:
   steps:
     - id: cache
       name: Cache Derivation
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         key: ${{ inputs.local_cache_key }}-${{ inputs.nix_system }}
         path: /tmp/${{ inputs.local_cache_key }}
