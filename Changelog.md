@@ -14,6 +14,27 @@
 ## Documentation
 -->
 
+# 2.1.1
+
+## Steps
+
+* `Odb.SetPowerConnections`
+
+  * Internally reworked pin detection behavior so power pins are found in the
+    LEF first then matched in the Verilog, fixing a corner-cases where
+    unconnected buses would be candidates for power pins, then promptly cause a
+    crash as they only exist in the layout as separate pins.
+
+* `OpenROAD.IOPlacement`, `OpenROAD.GlobalPlacementSkipIO`
+
+  * `FP_IO_MODE` renamed to `FP_PPL_MODE`: translation behavior for OpenLane
+    1-style FP_IO_MODE with integers added behind deprecated name `FP_IO_MODE`.
+
+* `Yosys.*Synthesis`
+
+  * Restored filtering of `defparam` from output netlists to avoid surprisingly
+    still extant OpenSTA limitation.
+
 # 2.1.0: The "Customization and Control" Update
 
 ## CLI
