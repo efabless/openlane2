@@ -97,9 +97,6 @@ class Design(object):
         connections = cells[cell_name]["connections"]
         for pin_name, sigtype in lef_pg_pins:
             if pin_name not in connections:
-                # Not connected - continue
-                continue
-                ## Enforce connections
                 print(
                     f"[ERROR] {sigtype} pin {module}/{pin_name} not found in the Verilog view: the LEF and Verilog views of the module may be mismatched."
                 )
@@ -241,6 +238,7 @@ class Design(object):
             True,
         )
 
+        print(f"[INFO] Made {connected_items} connections.")
         if connected_items == 0:
             print(
                 f"[ERROR] add_global_connections failed to make any connections for '{inst_name}/{pin_name}' to {net_name}."
@@ -251,8 +249,6 @@ class Design(object):
                 f"[ERROR] add_global_connections somehow made {connected_items} connections for '{inst_name}/{pin_name}' to {net_name} -- please report this as a bug"
             )
             exit(-1)
-        else:
-            print("[INFO] Successfully connected.")
 
 
 @click.command()
