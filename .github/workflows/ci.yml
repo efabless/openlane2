@@ -178,7 +178,7 @@ jobs:
             { gha: macos-13, nix: "x86_64-darwin" },
             { gha: macos-14, nix: "aarch64-darwin" },
           ]
-    needs: lint
+    needs: [lint, prepare-test-matrices]
     runs-on: ${{ matrix.system.gha }}
     name: Build (Nix/${{ matrix.system.nix }})
     steps:
@@ -210,8 +210,10 @@ jobs:
       - name: Enable sky130 PDK
         if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          nix run github:efabless/volare -- enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          brew install dasel
+          python3 -m venv venv
+          ./venv/bin/python3 -m pip install "volare$(cat ./pyproject.toml | dasel -r toml 'tool.poetry.version' --pretty -w plain)""
+          ./venv/bin/volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
