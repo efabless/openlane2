@@ -212,7 +212,7 @@ jobs:
         run: |
           brew install dasel
           python3 -m venv venv
-          ./venv/bin/python3 -m pip install "volare$(cat ./pyproject.toml | dasel -r toml 'tool.poetry.version' --pretty -w plain)""
+          ./venv/bin/python3 -m pip install "volare$(cat ./pyproject.toml | dasel -r toml 'tool.poetry.version' --pretty -w plain)"
           ./venv/bin/volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Build with Nix
         uses: ./.github/actions/build_nix
