@@ -47,6 +47,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable sky130 PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
@@ -56,6 +57,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
@@ -103,6 +105,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable sky130 PDK
         if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
@@ -207,6 +210,7 @@ jobs:
         with:
           path: ${{ github.workspace }}/.volare-sky130
           key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable sky130 PDK
         if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
         run: |
@@ -334,15 +338,15 @@ jobs:
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 10
           sudo tree /nix/store/*-openlane2 || true
-      - name: Cache PDKs
-        id: cache-pdks
+      - name: Cache PDK
+        id: cache-pdk
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-
+          enableCrossOsArchive: true
       - name: Enable PDKs
-        if: steps.cache-pdks.outputs.cache-hit != 'true'
+        if: steps.cache-pdk.outputs.cache-hit != 'true'
         run: |
           pip3 install poetry poetry-plugin-export
           poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
