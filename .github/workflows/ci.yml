@@ -121,7 +121,7 @@ jobs:
   build-linux-amd64:
     needs: lint
     runs-on: ubuntu-22.04
-    name: Build (Nix on Linux/amd64)
+    name: Build (Nix/x86_64-linux)
     steps:
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
@@ -151,7 +151,7 @@ jobs:
   build-linux-aarch64:
     needs: lint
     runs-on: ubuntu-22.04
-    name: Build (Nix on Linux/aarch64)
+    name: Build (Nix/aarch64-linux)
     steps:
       - uses: docker/setup-qemu-action@v1
       - uses: actions/checkout@v3
@@ -170,12 +170,35 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           run_tests: "true"
-  build-mac-amd64:
+  build-mac:
+    strategy:
+      matrix:
+        system:
+          [
+            { gha: macos-13, nix: "x86_64-darwin" },
+            { gha: macos-14, nix: "aarch64-darwin" },
+          ]
     needs: lint
-    runs-on: macos-12
-    name: Build (Nix on macOS/amd64)
+    runs-on: ${{ matrix.system.gha }}
+    name: Build (Nix/${{ matrix.system.nix }})
     steps:
       - uses: actions/checkout@v3
+      # For some reason, GHA Macs are far more aggressively rate-limited with
+      # Volare than Linux.
+      - name: Cache sky130 PDK
+        id: cache-sky130-pdk
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/.volare-sky130
+          key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+      - name: Enable sky130 PDK
+        if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
+        run: |
+          pip3 install poetry poetry-plugin-export
+          poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
+          pip3 install -r requirements_tmp.txt
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
@@ -195,7 +218,7 @@ jobs:
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          nix_system: x86_64-darwin
+          nix_system: ${{ matrix.system.nix }}
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
