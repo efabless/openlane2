@@ -16,7 +16,6 @@ from functools import partial, wraps
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
 
-
 from click import (
     Context,
     Parameter,
@@ -35,7 +34,7 @@ from cloup.constraints import (
 from cloup.typing import Decorator
 
 from .flow import Flow
-from ..common import set_tpe, cli, get_opdks_rev
+from ..common import set_tpe, cli, get_opdks_rev, _get_process_limit
 from ..logging import set_log_level, verbose, err, options, LogLevels
 from ..state import State, InvalidState
 
@@ -369,7 +368,7 @@ def cloup_flow_opts(
                 "-j",
                 "--jobs",
                 type=int,
-                default=os.cpu_count(),
+                default=_get_process_limit(),
                 help="The maximum number of threads or processes that can be used by OpenLane.",
                 callback=set_worker_count_cb,
                 expose_value=False,

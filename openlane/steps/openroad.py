@@ -75,6 +75,7 @@ from ..common import (
     mkdirp,
     aggregate_metrics,
     process_list_file,
+    _get_process_limit,
 )
 
 EXAMPLE_INPUT = """
@@ -583,7 +584,7 @@ class MultiCornerSTA(OpenSTAStep):
         env = self.prepare_env(env, state_in)
 
         tpe = ThreadPoolExecutor(
-            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
         )
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
@@ -971,6 +972,21 @@ class Floorplan(OpenROADStep):
         return super().run(state_in, env=env, **kwargs)
 
 
+def _migrate_ppl_mode(migrated):
+    as_int = None
+    try:
+        as_int = int(migrated)
+    except ValueError:
+        pass
+    if as_int is not None:
+        if as_int < 0 or as_int > 2:
+            raise ValueError(
+                f"Legacy variable FP_IO_MODE can only either be 0 for matching or 1 for random_equidistant-- '{as_int}' is invalid.\nPlease see the documentation for the usage of the replacement variable, 'FP_PIN_MODE'."
+            )
+        return ["matching", "random_equidistant"][as_int]
+    return migrated
+
+
 @Step.factory.register()
 class IOPlacement(OpenROADStep):
     """
@@ -988,10 +1004,11 @@ class IOPlacement(OpenROADStep):
         + io_layer_variables
         + [
             Variable(
-                "FP_IO_MODE",
+                "FP_PPL_MODE",
                 Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
+                deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
@@ -1579,7 +1596,7 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        env["DRT_THREADS"] = env.get("DRT_THREADS", str(os.cpu_count() or 1))
+        env["DRT_THREADS"] = env.get("DRT_THREADS", str(_get_process_limit()))
         info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         return super().run(state_in, env=env, **kwargs)
 
@@ -1726,7 +1743,7 @@ class RCX(OpenROADStep):
             return out
 
         tpe = ThreadPoolExecutor(
-            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
         )
 
         futures: Dict[str, Future[str]] = {}
