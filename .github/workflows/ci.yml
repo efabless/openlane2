@@ -181,6 +181,7 @@ jobs:
             { gha: macos-13, nix: "x86_64-darwin" },
             { gha: macos-14, nix: "aarch64-darwin" },
           ]
+      fail-fast: false
     needs: [lint, prepare-test-matrices]
     runs-on: ${{ matrix.system.gha }}
     name: Build (Nix/${{ matrix.system.nix }})
