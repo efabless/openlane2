@@ -97,7 +97,7 @@ class Design(object):
         connections = cells[cell_name]["connections"]
         for pin_name, sigtype in lef_pg_pins:
             if pin_name not in connections:
-                # Might simply not be connected yet-- ignore
+                # Bad Verilog view-- error would break backcompat
                 continue
             connection_bits = connections[pin_name]
             if len(connection_bits) != 1:
@@ -107,23 +107,10 @@ class Design(object):
                 exit(-1)
             connection_bit = connection_bits[0]
             connected_to_v = self.verilog_net_name_by_bit[connection_bit]
-            if connected_to_v not in self.nets_by_net_name:
-                # Not actually connected - continue
-                continue
             (power_pins if sigtype == "POWER" else ground_pins)[
                 pin_name
             ] = connected_to_v
 
-        if len(power_pins) == 0:
-            print(
-                f"[ERROR] No power pins in {module} appear to be connected to valid nets in the powered netlist."
-            )
-            exit(-1)
-        if len(ground_pins) == 0:
-            print(
-                f"[ERROR] No ground pins in {module} appear to be connected to valid nets in the powered netlist."
-            )
-            exit(-1)
         return power_pins, ground_pins
 
     def extract_instances(self) -> List["Design.Instance"]:
