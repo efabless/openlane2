@@ -199,7 +199,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: artifact-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          path: ${{ env.HOME }}/.volare
+          path: /Users/runner/.volare
+      - run: ls /Users/runner/.volare
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
