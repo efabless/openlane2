@@ -120,7 +120,7 @@ jobs:
           ./venv/bin/coverage html
   build-linux-amd64:
     needs: lint
-    runs-on: ubuntu-22.04
+    runs-on: openlane-amd64-arc-runners
     name: Build (Nix on Linux/amd64)
     steps:
       - uses: actions/checkout@v3
@@ -233,7 +233,7 @@ jobs:
           shell: "zsh {0}"
           run_tests: "true"
   build-docker:
-    runs-on: ubuntu-22.04
+    runs-on: openlane-amd64-arc-runners
     strategy:
       matrix:
         arch: ["amd64", "aarch64"]
@@ -306,7 +306,7 @@ jobs:
           name: docker-image-${{ matrix.arch }}
           path: ${{ env.IMAGE_PATH }}
   test:
-    runs-on: ubuntu-22.04
+    runs-on: openlane-amd64-arc-runners
     needs: [build-linux-amd64, prepare-test-matrices]
     name: Test Design ${{ matrix.design.test_name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     strategy:
