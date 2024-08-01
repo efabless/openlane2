@@ -198,7 +198,7 @@ jobs:
       - name: Sky130 Artifact for Macs Because Cache is Broken
         uses: actions/download-artifact@v4
         with:
-          name: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          name: artifact-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           path: ${{ github.workspace }}/.volare
       - name: Build with Nix
         uses: ./.github/actions/build_nix
