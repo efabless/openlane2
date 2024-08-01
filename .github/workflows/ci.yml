@@ -125,8 +125,8 @@ jobs:
     steps:
       - name: Dependencies
         run: |
-          apt update
-          apt install -y git curl build-essential python3 python3-venv
+          sudo apt update
+          sudo apt install -y git curl build-essential python3 python3-venv
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
