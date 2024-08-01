@@ -172,6 +172,9 @@ jobs:
           init: none
           extra-conf: |
             sandbox = false
+      - name: Enable Nix Anarchy
+        run: |
+          sudo setuid u+s $(which nix)
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
