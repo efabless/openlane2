@@ -35,6 +35,19 @@
   * Restored filtering of `defparam` from output netlists to avoid surprisingly
     still extant OpenSTA limitation.
 
+## Testing
+
+* Added file to exclude step unit tests purely to speed-up turnaround time for
+  PRs (as sometimes a test would need to be deleted/temporarily disabled without
+  updating the submodule, see #475 for a similar situation)
+
+* Mac CI now uses an artifact of the PDK
+
+  * Unlike the Linux runners, Mac runners:
+    * Are disproportionately affected by rate-limiting: cannot pull from GitHub
+      using Volare
+    * Do not support caches created on Ubuntu, even with `enableCrossOsArchive`
+
 # 2.1.0: The "Customization and Control" Update
 
 ## CLI
