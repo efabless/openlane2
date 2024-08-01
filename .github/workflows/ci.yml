@@ -199,7 +199,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: artifact-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          path: ${{ github.workspace }}/.volare
+          path: ${{ env.HOME }}/.volare
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
