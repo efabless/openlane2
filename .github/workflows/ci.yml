@@ -123,6 +123,10 @@ jobs:
     runs-on: openlane-amd64-arc-runners
     name: Build (Nix on Linux/amd64)
     steps:
+      - name: Dependencies
+        run: |
+          apt update
+          apt install -y git curl build-essential python3 python3-venv
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
@@ -130,16 +134,7 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Install Nix
-        run: |
-          sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-          extra-experimental-features = nix-command flakes
-          extra-substituters = https://openlane.cachix.org
-          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
-          EXTRA_NIX_CONF
-
-          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-          echo "PATH=$PATH" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
