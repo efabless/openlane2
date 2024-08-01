@@ -104,11 +104,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Sky130 Artifact for Macs Because Cache is Broken
-        uses: actions/upload-artifact@v4
-        with:
-          name: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          path: ${{ github.workspace }}/.volare
       - name: Run Unit Tests
         run: |
           make venv
@@ -199,21 +194,12 @@ jobs:
           . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
           echo "PATH=$PATH" >> $GITHUB_ENV
       # For some reason, GHA Macs are far more aggressively rate-limited with
-      # Volare than Linux.
-      - name: Cache sky130 PDK
-        id: cache-sky130-pdk
-        uses: actions/cache@v4
+      # Volare than Linux and cross-OS caches are broken
+      - name: Sky130 Artifact for Macs Because Cache is Broken
+        uses: actions/download-artifact@v4
         with:
-          path: ${{ github.workspace }}/.volare-sky130
-          key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          enableCrossOsArchive: true
-      - name: Enable sky130 PDK
-        if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
-        run: |
-          brew install dasel
-          python3 -m venv venv
-          ./venv/bin/python3 -m pip install "volare$(cat ./pyproject.toml | dasel -r toml 'tool.poetry.dependencies.volare' --pretty -w plain)"
-          ./venv/bin/volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          name: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
+          path: ${{ github.workspace }}/.volare
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
