@@ -153,9 +153,13 @@ jobs:
     runs-on: openlane-aarch64-arc-runners
     name: Build (Nix on Linux/aarch64)
     steps:
-      - name: Self-hosted Runner Dependencies
+      - name: Self-hosted Runner Dependencies & Info
         run: |
+          sudo apt update
           sudo apt-get install -y git curl build-essential
+          curl -LO https://github.com/fastfetch-cli/fastfetch/releases/download/2.20.0/fastfetch-linux-aarch64.deb
+          sudo dpkg -i fastfetch-linux-aarch64.deb
+          fastfetch
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
