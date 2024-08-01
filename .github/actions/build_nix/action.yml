@@ -52,7 +52,7 @@ runs:
           --option substituters "$substituters"\
           .#devShells.${{ inputs.nix_system }}.default)
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
-        du -hs /nix/store/* | sort -h | tail -n 20
+        sudo du -hs /nix/store/* | sort -h | tail -n 20
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       if: inputs.run_tests == 'true'
