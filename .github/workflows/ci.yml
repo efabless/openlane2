@@ -172,9 +172,9 @@ jobs:
           init: none
           extra-conf: |
             sandbox = false
-      - name: Enable Nix Anarchy
+      - name: Change user for single-user installation of Nix
         run: |
-          sudo chmod u+s $(which nix)
+          sudo chown --recursive "runner" /nix
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
