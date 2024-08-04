@@ -184,6 +184,7 @@ jobs:
           extra-experimental-features = nix-command flakes
           extra-substituters = https://openlane.cachix.org
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+          access-tokens = github.com=${{ env.GITHUB_TOKEN }}
           EXTRA_NIX_CONF
 
           . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
