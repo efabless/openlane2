@@ -40,7 +40,7 @@ if {$::env(FP_IO_VTHICKNESS_MULT) != "" && $::env(FP_IO_HTHICKNESS_MULT) != ""} 
 }
 
 set arg_list [list]
-if { $::env(FP_IO_MODE) == "random_equidistant" } {
+if { $::env(FP_PPL_MODE) == "random_equidistant" } {
 	lappend arg_list -random
 }
 
@@ -48,7 +48,7 @@ if { [info exists ::env(FP_IO_MIN_DISTANCE)] } {
 	lappend arg_list -min_distance $::env(FP_IO_MIN_DISTANCE)
 }
 
-if { $::env(FP_IO_MODE) == "annealing" } {
+if { $::env(FP_PPL_MODE) == "annealing" } {
 	lappend arg_list -annealing
 }
 

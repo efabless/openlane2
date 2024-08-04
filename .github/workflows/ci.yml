@@ -43,23 +43,25 @@ jobs:
         run: |
           echo "opdks_rev=$(cat ./openlane/open_pdks_rev)" >> $GITHUB_OUTPUT
       - name: Cache sky130 PDK
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-sky130
+          path: ./.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable sky130 PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk sky130 --pdk-root ./.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Cache gf180mcu PDK
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-gf180mcu
+          path: ./.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk gf180mcu --pdk-root ./.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -97,31 +99,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache sky130 PDK
-        id: cache-sky130-pdk
-        uses: actions/cache@v3
-        with:
-          path: ${{ github.workspace }}/.volare-sky130
-          key: cache-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-      - name: Enable sky130 PDK
-        if: steps.cache-sky130-pdk.outputs.cache-hit != 'true'
-        run: |
-          pip3 install poetry poetry-plugin-export
-          poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
-          pip3 install -r requirements_tmp.txt
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
       - name: Run Unit Tests
         run: |
           make venv
 
-          ./venv/bin/coverage run -m pytest -n auto --pdk-root="${{ github.workspace }}/.volare-sky130"
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root="./.volare-sky130"
           ./venv/bin/coverage report
           ./venv/bin/coverage html
   build-linux-amd64:
     needs: lint
     runs-on: ubuntu-22.04
-    name: Build (Nix on Linux/amd64)
+    name: Build (Nix/x86_64-linux)
     steps:
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
@@ -129,7 +117,7 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Install Nix
         run: |
           sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
@@ -151,7 +139,7 @@ jobs:
   build-linux-aarch64:
     needs: lint
     runs-on: ubuntu-22.04
-    name: Build (Nix on Linux/aarch64)
+    name: Build (Nix/aarch64-linux)
     steps:
       - uses: docker/setup-qemu-action@v1
       - uses: actions/checkout@v3
@@ -160,7 +148,7 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main # Using the DS Nix installer because it also sets up binfmt
       - name: Build with Nix
         uses: ./.github/actions/build_nix
@@ -170,10 +158,18 @@ jobs:
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           run_tests: "true"
-  build-mac-amd64:
-    needs: lint
-    runs-on: macos-12
-    name: Build (Nix on macOS/amd64)
+  build-darwin:
+    strategy:
+      matrix:
+        system:
+          [
+            { gha: macos-13, nix: "x86_64-darwin" },
+            { gha: macos-14, nix: "aarch64-darwin" },
+          ]
+      fail-fast: false
+    needs: [lint, prepare-test-matrices]
+    runs-on: ${{ matrix.system.gha }}
+    name: Build (Nix/${{ matrix.system.nix }})
     steps:
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
@@ -181,57 +177,36 @@ jobs:
           git submodule update --init test/steps/all
       - name: Set up GITHUB_TOKEN
         run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
       - name: Install Nix
         run: |
           sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
           extra-experimental-features = nix-command flakes
           extra-substituters = https://openlane.cachix.org
           extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+          access-tokens = github.com=${{ env.GITHUB_TOKEN }}
           EXTRA_NIX_CONF
 
           . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
           echo "PATH=$PATH" >> $GITHUB_ENV
+      # For some reason, GHA Macs are far more aggressively rate-limited with
+      # Volare than Linux
+      - name: Cache sky130 PDK
+        uses: actions/cache@v4
+        with:
+          path: ./.volare-sky130
+          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          nix_system: x86_64-darwin
+          nix_system: ${{ matrix.system.nix }}
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
           run_tests: "true"
-  build-mac-aarch64:
-    needs: lint
-    runs-on: macos-14
-    name: Build (Nix on macOS/aarch64)
-    steps:
-      - uses: actions/checkout@v3
-      - name: Initialize Step Unit Test Submodule
-        run: |
-          git submodule update --init test/steps/all
-      - name: Set up GITHUB_TOKEN
-        run: |
-          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Install Nix
-        run: |
-          sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-          extra-experimental-features = nix-command flakes
-          extra-substituters = https://openlane.cachix.org
-          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
-          EXTRA_NIX_CONF
-
-          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-          echo "PATH=$PATH" >> $GITHUB_ENV
-      - name: Build with Nix
-        uses: ./.github/actions/build_nix
-        with:
-          nix_system: aarch64-darwin
-          local_cache_key: derivation-${{ github.run_id }}
-          cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-          cachix_token: "${{ secrets.CACHIX_TOKEN }}"
-          shell: "zsh {0}"
-          run_tests: "true"
+          pdk_root: ${{ github.workspace }}/.volare-sky130
   build-docker:
     runs-on: ubuntu-22.04
     strategy:
@@ -298,7 +273,7 @@ jobs:
           ./venv/bin/python3 -m openlane\
             --docker-no-tty\
             --dockerized\
-            --pdk-root ${{ github.workspace }}/.volare-sky130\
+            --pdk-root ./.volare-sky130\
             --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
@@ -343,21 +318,21 @@ jobs:
         run: |
           sudo du -hs /nix/store/* | sort -h | tail -n 10
           sudo tree /nix/store/*-openlane2 || true
-      - name: Cache PDKs
-        id: cache-pdks
-        uses: actions/cache@v3
+      - name: Cache PDK
+        id: cache-pdk
+        uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
+          path: ./.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-
+          enableCrossOsArchive: true
       - name: Enable PDKs
-        if: steps.cache-pdks.outputs.cache-hit != 'true'
+        if: steps.cache-pdk.outputs.cache-hit != 'true'
         run: |
           pip3 install poetry poetry-plugin-export
           poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
           pip3 install -r requirements_tmp.txt
           volare enable --pdk ${{ matrix.design.pdk_family }} \
-            --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
+            --pdk-root ./.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
 
       - name: Download IPM designs
@@ -379,7 +354,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ./.volare-${{ matrix.design.pdk_family }}\
               --condensed\
               ${{ matrix.design.config }}
           else
@@ -388,7 +363,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ./.volare-${{ matrix.design.pdk_family }}\
               --condensed
           fi
       - name: Upload Run Folder

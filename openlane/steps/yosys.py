@@ -16,6 +16,8 @@ import re
 import io
 import json
 import fnmatch
+import shutil
+import tempfile
 import textwrap
 import subprocess
 from decimal import Decimal
@@ -502,6 +504,27 @@ class SynthesisCommon(YosysStep):
         # )
 
         views_updates, metric_updates = super().run(state_in, env=env, **kwargs)
+
+        # The following is a naive workaround to OpenSTA not accepting defparams.
+        # It *should* be handled with a fix to the OpenSTA Verilog parser.
+        #
+        # This workaround was in OpenLane 1 and turns 4 this November! 🎂
+        # https://github.com/The-OpenROAD-Project/OpenLane/commit/e6bc1ea5
+        defparam_rx = re.compile(r"^\s*defparam\s+[\s\S]+$")
+        defparams_found = False
+        nl_path = str(views_updates[DesignFormat.NETLIST])
+        with tempfile.NamedTemporaryFile("w", delete=False) as nodefparams:
+            for line in open(nl_path, "r"):
+                if defparam_rx.match(line) is not None:
+                    defparams_found = True
+                    nodefparams.write(f"// removed: {line}")
+                else:
+                    nodefparams.write(line)
+        if defparams_found:
+            shutil.move(nl_path, f"{nl_path}-defparams")
+            shutil.move(nodefparams.name, nl_path)
+        else:
+            os.unlink(nodefparams.name)
 
         stats_file = os.path.join(self.step_dir, "reports", "stat.json")
         stats_str = open(stats_file).read()
