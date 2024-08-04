@@ -246,12 +246,16 @@ jobs:
           shell: "zsh {0}"
           run_tests: "true"
   build-docker:
-    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        arch: ["amd64", "aarch64"]
+        system:
+          [
+            { "nix": "x86_64-linux", "gha": "ubuntu-22.04" },
+            { "nix": "aarch64-linux", "gha": "openlane-aarch64-arc-runners" },
+          ]
     needs: [build-linux-amd64, build-linux-aarch64]
-    name: Build Docker Image (${{ matrix.arch }})
+    name: Build Docker Image (${{ matrix.system.nix }})
+    runs-on: ${{ matrix.system.gha }}
     steps:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -264,32 +268,23 @@ jobs:
           root-reserve-mb: 20480
       - name: Check out repo
         uses: actions/checkout@v3
-
       - uses: docker/setup-qemu-action@v1
-      - name: Set Nix System
-        run: |
-          nix_system=x86_64-linux
-          if [ "${{ matrix.arch }}" == "aarch64" ]; then
-            nix_system=aarch64-linux
-          fi
-          echo "NIX_SYSTEM=$nix_system" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
-          nix_system: ${{ env.NIX_SYSTEM }}
+          nix_system: ${{ matrix.system.nix }}
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-
       - name: Build Docker Image
         run: |
           IMAGE_PATH=$(nix build\
             --print-out-paths\
             --no-link\
             --accept-flake-config\
-            --option system ${{ env.NIX_SYSTEM }}\
-            --extra-platforms ${{ env.NIX_SYSTEM }}\
-            .#packages.${{ env.NIX_SYSTEM }}.openlane-docker)
+            --option system ${{ matrix.system.nix }}\
+            --extra-platforms ${{ matrix.system.nix }}\
+            .#packages.${{ matrix.system.nix }}.openlane-docker)
           echo "IMAGE_PATH=$IMAGE_PATH" >> $GITHUB_ENV
           cat $IMAGE_PATH | docker load
       - name: Set Up Python
@@ -303,11 +298,7 @@ jobs:
         run: |
           mkdir -p $HOME/.volare
           chmod -R 755 $HOME/.volare
-          if [ "${{ matrix.arch }}" == "aarch64" ]; then
-            export OPENLANE_IMAGE_OVERRIDE=openlane:tmp-aarch64-linux
-          elif [ "${{ matrix.arch }}" == "amd64" ]; then
-            export OPENLANE_IMAGE_OVERRIDE=openlane:tmp-x86_64-linux
-          fi
+          export OPENLANE_IMAGE_OVERRIDE=openlane:tmp-${{ matrix.system.nix }}
           ./venv/bin/python3 -m openlane\
             --docker-no-tty\
             --dockerized\
