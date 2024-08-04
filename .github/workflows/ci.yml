@@ -141,9 +141,9 @@ jobs:
     runs-on: openlane-aarch64-arc-runners
     name: Build (Nix/aarch64-linux)
     steps:
+      - uses: actions/checkout@v3
       - name: Self-hosted Nix Setup
         uses: ./.github/actions/selfhosted_nix_setup
-      - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
           git submodule update --init test/steps/all
@@ -279,11 +279,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
-      - name: Self-hosted Nix Setup
-        uses: ./.github/actions/selfhosted_nix_setup
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Self-hosted Nix Setup
+        uses: ./.github/actions/selfhosted_nix_setup
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
