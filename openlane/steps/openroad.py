@@ -1289,10 +1289,11 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
 
     config_vars = _GlobalPlacement.config_vars + [
         Variable(
-            "FP_IO_MODE",
+            "FP_PPL_MODE",
             Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
+            deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
         ),
         Variable(
             "FP_DEF_TEMPLATE",
