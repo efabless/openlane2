@@ -517,6 +517,7 @@ class SynthesisCommon(YosysStep):
             for line in open(nl_path, "r"):
                 if defparam_rx.match(line) is not None:
                     defparams_found = True
+                    nodefparams.write(f"// removed: {line}")
                 else:
                     nodefparams.write(line)
         if defparams_found:

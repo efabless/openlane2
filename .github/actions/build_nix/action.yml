@@ -28,7 +28,7 @@ inputs:
   pdk_root:
     description: "An optional override for the PDK root."
     required: false
-    default: "~/.volare"
+    default: "$HOME/.volare"
 runs:
   using: "composite"
   steps:
