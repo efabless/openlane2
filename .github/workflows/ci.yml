@@ -141,13 +141,8 @@ jobs:
     runs-on: openlane-aarch64-arc-runners
     name: Build (Nix/aarch64-linux)
     steps:
-      - name: Self-hosted Runner Dependencies & Info
-        run: |
-          sudo apt update
-          sudo apt-get install -y git curl build-essential
-          curl -LO https://github.com/fastfetch-cli/fastfetch/releases/download/2.20.0/fastfetch-linux-aarch64.deb
-          sudo dpkg -i fastfetch-linux-aarch64.deb
-          fastfetch
+      - name: Self-hosted Nix Setup
+        uses: ./.github/actions/selfhosted_nix_setup
       - uses: actions/checkout@v3
       - name: Initialize Step Unit Test Submodule
         run: |
@@ -155,14 +150,6 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - uses: DeterminateSystems/nix-installer-action@main
-        with:
-          init: none
-          extra-conf: |
-            sandbox = false
-      - name: Change user for single-user installation of Nix
-        run: |
-          sudo chown --recursive "runner" /nix
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -223,10 +210,9 @@ jobs:
   build-docker:
     strategy:
       matrix:
-        system:
-          [
+        system: [
             { "nix": "x86_64-linux", "gha": "ubuntu-22.04" },
-            { "nix": "aarch64-linux", "gha": "openlane-aarch64-arc-runners" },
+            { "nix": "aarch64-linux", "gha": "ubuntu-22.04" }, # Building Docker images in k8s is a goddamn nightmare
           ]
     needs: [build-linux-amd64, build-linux-aarch64]
     name: Build Docker Image (${{ matrix.system.nix }})
@@ -269,7 +255,8 @@ jobs:
       - name: Install Dependencies
         run: make venv
       # Do not cache the PDK. We want to test the typical Docker flow here.
-      - name: Smoke-Test Docker Image
+      - name: Smoke-Test Docker Image (x86-64 only)
+        if: ${{ matrix.system.nix == 'x86_64-linux' }}
         run: |
           mkdir -p $HOME/.volare
           chmod -R 755 $HOME/.volare
@@ -285,43 +272,24 @@ jobs:
           name: docker-image-${{ matrix.arch }}
           path: ${{ env.IMAGE_PATH }}
   test:
-    runs-on: ubuntu-22.04
+    runs-on: openlane-aarch64-arc-runners
     needs: [build-linux-amd64, prepare-test-matrices]
     name: Test Design ${{ matrix.design.test_name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-haskell: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
-          root-reserve-mb: 20480
+      - name: Self-hosted Nix Setup
+        uses: ./.github/actions/selfhosted_nix_setup
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Check if Git
-        run: |
-          git status || true
-          tree .git || true
-
-      - uses: DeterminateSystems/nix-installer-action@main
-
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: x86_64-linux
           local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
-
-      - name: Check Nix
-        run: |
-          sudo du -hs /nix/store/* | sort -h | tail -n 10
-          sudo tree /nix/store/*-openlane2 || true
       - name: Cache PDK
         id: cache-pdk
         uses: actions/cache@v4
@@ -338,7 +306,6 @@ jobs:
           volare enable --pdk ${{ matrix.design.pdk_family }} \
             --pdk-root ./.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-
       - name: Download IPM designs
         id: download-ipm-design
         if: matrix.design.ipm_version != 'None'
@@ -346,7 +313,6 @@ jobs:
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
           python3 -m pip install git+https://github.com/efabless/IPM
           ipm install --ip-root $(realpath $IP_ROOT) --ipm-root ~/.ipm --version ${{ matrix.design.ipm_version }} ${{ matrix.design.name }}
-
       - name: Run Test
         run: |
           if test ${{matrix.design.script}} = "None"
@@ -376,7 +342,6 @@ jobs:
         with:
           name: ${{ matrix.design.test_name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_dir }}
-
       - name: Fetch Metrics
         if: ${{ always() }}
         run: |
