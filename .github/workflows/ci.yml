@@ -45,28 +45,23 @@ jobs:
       - name: Cache sky130 PDK
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-sky130
+          path: ./.volare-sky130
           key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
           enableCrossOsArchive: true
       - name: Enable sky130 PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk sky130 --pdk-root ${{ github.workspace }}/.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
+          volare enable --pdk sky130 --pdk-root ./.volare-sky130 ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Cache gf180mcu PDK
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-gf180mcu
+          path: ./.volare-gf180mcu
           key: cache-gf180mcu-pdk-${{ steps.set-rev.outputs.opdks_rev }}
           enableCrossOsArchive: true
       - name: Enable gf180mcu PDK
         run: |
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          volare enable --pdk gf180mcu --pdk-root ${{ github.workspace }}/.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
-      - name: Sky130 Artifact for Macs Because Cache is Broken
-        uses: actions/upload-artifact@v4
-        with:
-          name: artifact-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
-          path: ${{ github.workspace }}/.volare-sky130
+          volare enable --pdk gf180mcu --pdk-root ./.volare-gf180mcu ${{ steps.set-rev.outputs.opdks_rev }}
       - name: Download IPM
         run: |
           python3 -m pip install git+https://github.com/efabless/IPM
@@ -108,7 +103,7 @@ jobs:
         run: |
           make venv
 
-          ./venv/bin/coverage run -m pytest -n auto --pdk-root="${{ github.workspace }}/.volare-sky130"
+          ./venv/bin/coverage run -m pytest -n auto --pdk-root="./.volare-sky130"
           ./venv/bin/coverage report
           ./venv/bin/coverage html
   build-linux-amd64:
@@ -194,13 +189,13 @@ jobs:
           . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
           echo "PATH=$PATH" >> $GITHUB_ENV
       # For some reason, GHA Macs are far more aggressively rate-limited with
-      # Volare than Linux and cross-OS caches are broken
-      - name: Sky130 Artifact for Macs Because Cache is Broken
-        uses: actions/download-artifact@v4
+      # Volare than Linux
+      - name: Cache sky130 PDK
+        uses: actions/cache@v4
         with:
-          name: artifact-sky130-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
-          path: /Users/runner/.volare
-      - run: ls /Users/runner/.volare
+          path: ./.volare-sky130
+          key: cache-sky130-pdk-${{ steps.set-rev.outputs.opdks_rev }}
+          enableCrossOsArchive: true
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -210,6 +205,7 @@ jobs:
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
           run_tests: "true"
+          pdk_root: ./.volare-sky130
   build-docker:
     runs-on: ubuntu-22.04
     strategy:
@@ -276,7 +272,7 @@ jobs:
           ./venv/bin/python3 -m openlane\
             --docker-no-tty\
             --dockerized\
-            --pdk-root ${{ github.workspace }}/.volare-sky130\
+            --pdk-root ./.volare-sky130\
             --smoke-test
       - name: Upload Docker Artifact
         uses: actions/upload-artifact@v3
@@ -325,7 +321,7 @@ jobs:
         id: cache-pdk
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}
+          path: ./.volare-${{ matrix.design.pdk_family }}
           key: cache-${{ matrix.design.pdk_family }}-pdk-${{ needs.prepare-test-matrices.outputs.opdks_rev }}
           enableCrossOsArchive: true
       - name: Enable PDKs
@@ -335,7 +331,7 @@ jobs:
           poetry export --with dev --without-hashes --format=requirements.txt --output=requirements_tmp.txt
           pip3 install -r requirements_tmp.txt
           volare enable --pdk ${{ matrix.design.pdk_family }} \
-            --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }} \
+            --pdk-root ./.volare-${{ matrix.design.pdk_family }} \
             ${{ needs.prepare-test-matrices.outputs.opdks_rev }}
 
       - name: Download IPM designs
@@ -357,7 +353,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ./.volare-${{ matrix.design.pdk_family }}\
               --condensed\
               ${{ matrix.design.config }}
           else
@@ -366,7 +362,7 @@ jobs:
               --run-tag ${{ matrix.design.pdk }}-${{ matrix.design.scl }}\
               --pdk ${{ matrix.design.pdk }}\
               --scl ${{ matrix.design.scl }}\
-              --pdk-root ${{ github.workspace }}/.volare-${{ matrix.design.pdk_family }}\
+              --pdk-root ./.volare-${{ matrix.design.pdk_family }}\
               --condensed
           fi
       - name: Upload Run Folder
