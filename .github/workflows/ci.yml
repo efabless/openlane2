@@ -205,7 +205,7 @@ jobs:
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
           run_tests: "true"
-          pdk_root: ./.volare-sky130
+          pdk_root: ${{ github.workspace }}/.volare-sky130
   build-docker:
     runs-on: ubuntu-22.04
     strategy:

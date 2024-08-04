@@ -77,7 +77,7 @@ runs:
           --extra-platforms ${{ inputs.nix_system }}\
           --accept-flake-config\
           .#devShells.${{ inputs.nix_system }}.dev --command\
-          pytest --step-rx '.' -n auto --pdk-root ${{ inputs.pdk_root }}
+          pytest --step-rx '.' --pdk-root="${{ inputs.pdk_root }}" -n auto
     - name: Push to local cache
       shell: ${{ inputs.shell }}
       if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
