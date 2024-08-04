@@ -142,7 +142,6 @@ jobs:
     name: Build (Nix/aarch64-linux)
     steps:
       - name: Self-hosted Runner Dependencies & Info
-        shell: ${{ inputs.shell }}
         run: |
           sudo apt-get update
           sudo apt-get install -y git curl build-essential
@@ -159,7 +158,6 @@ jobs:
           extra-conf: |
             sandbox = false
       - name: Change user for single-user installation of Nix
-        shell: ${{ inputs.shell }}
         run: |
           sudo chown --recursive "runner" /nix
       - uses: actions/checkout@v3
@@ -298,7 +296,6 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare-test-matrices.outputs.design_matrix) }}
     steps:
       - name: Self-hosted Runner Dependencies & Info
-        shell: ${{ inputs.shell }}
         run: |
           sudo apt-get update
           sudo apt-get install -y git curl build-essential
@@ -315,7 +312,6 @@ jobs:
           extra-conf: |
             sandbox = false
       - name: Change user for single-user installation of Nix
-        shell: ${{ inputs.shell }}
         run: |
           sudo chown --recursive "runner" /nix
       - uses: actions/checkout@v3
