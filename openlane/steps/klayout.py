@@ -26,7 +26,7 @@ from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 from ..config import Variable
 from ..logging import info
 from ..state import DesignFormat, State
-from ..common import Path, get_script_dir, mkdirp
+from ..common import Path, get_script_dir, mkdirp, _get_process_limit
 
 
 class KLayoutStep(Step):
@@ -296,7 +296,7 @@ class XOR(KLayoutStep):
         if tile_size := self.config["KLAYOUT_XOR_TILE_SIZE"]:
             tile_size_options += ["--tile-size", str(tile_size)]
 
-        thread_count = self.config["KLAYOUT_XOR_THREADS"] or os.cpu_count() or 1
+        thread_count = self.config["KLAYOUT_XOR_THREADS"] or _get_process_limit()
         info(f"Running XOR with {thread_count} threads…")
 
         subprocess_result = self.run_subprocess(
@@ -371,7 +371,7 @@ class DRC(KLayoutStep):
         ).lower()
         offgrid = str(self.config["KLAYOUT_DRC_OPTIONS"]["offgrid"]).lower()
         seal = str(self.config["KLAYOUT_DRC_OPTIONS"]["seal"]).lower()
-        threads = self.config["KLAYOUT_DRC_THREADS"] or (str(os.cpu_count()) or "1")
+        threads = self.config["KLAYOUT_DRC_THREADS"] or _get_process_limit()
         info(f"Running KLayout DRC with {threads} threads…")
 
         input_view = state_in[DesignFormat.GDS]
