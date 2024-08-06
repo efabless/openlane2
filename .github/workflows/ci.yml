@@ -288,7 +288,7 @@ jobs:
           name: docker-image-${{ matrix.arch }}
           path: ${{ env.IMAGE_PATH }}
   test:
-    runs-on: openlane-aarch64-arc-runners
+    runs-on: openlane-amd64-arc-runners
     needs: [build-linux-amd64, prepare-test-matrices]
     name: Test Design ${{ matrix.design.test_name }} (${{ matrix.design.pdk }}/${{matrix.design.scl}})
     strategy:
