@@ -65,13 +65,11 @@ def main(scls, use_json, test_sets):
                 script_filename = design.get("script")
                 if script_filename:
                     script = os.path.join(
-                        ol_dir, "test", "designs", design_name, script_filename
+                        "test", "designs", design_name, script_filename
                     )
-            config_file = os.path.join(
-                ol_dir, "test", "designs", design_name, config_filename
-            )
+            config_file = os.path.join("test", "designs", design_name, config_filename)
             run_dir = os.path.join(
-                ol_dir, "test", "designs", design_name, "runs", f"{pdk}-{scl}"
+                "test", "designs", design_name, "runs", f"{pdk}-{scl}"
             )
             pdk_family = None
             if family := volare.Family.by_name.get(pdk):
