@@ -1,3 +1,9 @@
+<p align="center">
+    <a href="https://github.com/The-OpenROAD-Project/OpenLane">
+        <img src="./docs/_static/support_banner.svg" style="width: 70%;overflow: visible" alt="Banner explaining that OpenLane 2.0 is not the primary supported option for hardening Caravel User Project-based designs targeting chipIgnite"/>
+    </a>
+</p>
+
 <h1 align="center">OpenLane</h1>
 <p align="center">
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"/></a>
@@ -25,14 +31,6 @@ started. You can discuss OpenLane 2 in the
 [#openlane-2](https://open-source-silicon.slack.com/archives/C05M85Q5GCF)
 channel of the
 [Efabless Open Source Silicon Slack](https://invite.skywater.tools).
-
-> OpenLane 2 is generally available for educators and for those implementing
-> complex chips requiring custom implementation steps for which OpenLane 1 is
-> not sufficiently flexible.
->
-> If you're looking to implement a project for the OpenMPW or chipIgnite
-> shuttles, we recommend
-> [OpenLane 1](https://github.com/The-OpenROAD-Project/OpenLane) at this time.
 
 ```python
 from openlane.flows import Flow
