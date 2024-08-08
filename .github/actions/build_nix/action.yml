@@ -25,6 +25,10 @@ inputs:
     description: Whether to run unit tests and the smoke test
     required: false
     default: "false"
+  pdk_root:
+    description: "An optional override for the PDK root."
+    required: false
+    default: "$HOME/.volare"
 runs:
   using: "composite"
   steps:
@@ -53,16 +57,6 @@ runs:
           .#devShells.${{ inputs.nix_system }}.default)
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20
-    - name: Unit/Step Tests
-      shell: ${{ inputs.shell }}
-      if: inputs.run_tests == 'true'
-      run: |
-        echo "#################################################################"
-        nix develop\
-          --option system ${{ inputs.nix_system }}\
-          --extra-platforms ${{ inputs.nix_system }}\
-          --accept-flake-config\
-          .#devShells.${{ inputs.nix_system }}.dev --command pytest --step-rx '.' -n auto
     - name: Smoke Test
       shell: ${{ inputs.shell }}
       if: inputs.run_tests == 'true'
@@ -72,7 +66,18 @@ runs:
           --option system ${{ inputs.nix_system }}\
           --extra-platforms ${{ inputs.nix_system }}\
           --accept-flake-config\
-          .#packages.${{ inputs.nix_system }}.openlane -- --smoke-test
+          .#packages.${{ inputs.nix_system }}.openlane -- --pdk-root ${{ inputs.pdk_root }} --smoke-test
+    - name: Unit/Step Tests
+      shell: ${{ inputs.shell }}
+      if: inputs.run_tests == 'true'
+      run: |
+        echo "#################################################################"
+        nix develop\
+          --option system ${{ inputs.nix_system }}\
+          --extra-platforms ${{ inputs.nix_system }}\
+          --accept-flake-config\
+          .#devShells.${{ inputs.nix_system }}.dev --command\
+          pytest --step-rx '.' --pdk-root="${{ inputs.pdk_root }}" -n auto
     - name: Push to local cache
       shell: ${{ inputs.shell }}
       if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
@@ -85,6 +90,6 @@ runs:
       if: ${{ inputs.cachix_token != '' }}
       run: |
         echo "#################################################################"
-        nix-env -iA cachix -f https://cachix.org/api/v1/install
+        nix profile install cachix
         cachix authtoken ${{ inputs.cachix_token }}
         cachix push ${{ inputs.cachix_cache }} ${{ steps.build.outputs.out-path }}

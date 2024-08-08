@@ -14,8 +14,41 @@ This defines many of the terms used and enumerates strictures mentioned in this 
 
 ### In Configuration Files
 
-If your custom sequential flow entirely relies on built-in steps, you can actually specify
-a flow entirely in the `config.json` file, with no API access needed:
+#### By Substituting Steps
+
+If you're constructing a flow that is largely based on another flow, albeit
+with some substitutions or removals, you may declare your base flow and
+substitutions as follows:
+
+```json
+{
+  "meta": {
+    "version": 2,
+    "flow": "Classic",
+    "substituting_steps": {
+      "OpenROAD.STAMidPNR*": null,
+      "Magic.DRC": "KLayout.DRC",
+    }
+  }
+}
+```
+
+This replaces `Magic.DRC` with *another* `KLayout.DRC` step (which is
+useless but this is just for demonstration); and removes all steps starting
+with `OpenROAD.STAMidPNR` from the `Classic` flow.
+
+Instead of replacing, you can also emplace steps before or after steps. Simply
+put a `-` before the target step ID to place before, and a `+` to place after.
+
+Substitutions are more useful if you have custom steps registered in
+[OpenLane Plugins](./plugins.md).
+
+(config-by-listing-steps)=
+#### By Listing Steps
+
+If your custom sequential flow entirely relies on built-in steps, you can
+actually specify a flow entirely in the `config.json` file, with no API access
+needed:
 
 ```json
 {
@@ -44,9 +77,12 @@ a flow entirely in the `config.json` file, with no API access needed:
 
 ### Using the API
 
+#### By Listing Steps
+
 You'll need to import the `Flow` class as well as any steps you intend to use.
 
-An equivalent flow to the one above would look like this:
+An equivalent flow to the one in {ref}`config-by-listing-steps` would look
+something like this:
 
 ```python
 from openlane.flows import SequentialFlow
@@ -157,9 +193,9 @@ Classic - Stage 17 - CTS ━━━━━━━━━━━━━━━━━╺�
 
 The Flow object has methods to manage this progress bar:
 
-* {py:meth}`openlane.flows.Flow.set_max_stage_count`
-* {py:meth}`openlane.flows.Flow.start_stage`
-* {py:meth}`openlane.flows.Flow.end_stage`.
+* {py:meth}`openlane.flows.Flow.progress_bar.set_max_stage_count`
+* {py:meth}`openlane.flows.Flow.progress_bar.start_stage`
+* {py:meth}`openlane.flows.Flow.progress_bar.end_stage`.
 
 They are to be called from inside the `run` method. In Sequential Flows,
 {math}`|Steps| = |Stages| = n`, but in custom flows, stages can incorporate any

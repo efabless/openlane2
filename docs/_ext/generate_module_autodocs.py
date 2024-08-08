@@ -159,9 +159,9 @@ def generate_docs_for_module(
 
 def generate_module_docs(app: Sphinx, conf: Config):
     try:
-        generate_module_autodocs_conf: List[
-            Tuple[str, str]
-        ] = conf.generate_module_autodocs
+        generate_module_autodocs_conf: List[Tuple[str, str]] = (
+            conf.generate_module_autodocs
+        )
 
         conf_py_path: str = conf._raw_config["__file__"]
         doc_root_dir: str = os.path.dirname(conf_py_path)

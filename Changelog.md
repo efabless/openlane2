@@ -1,6 +1,6 @@
 <!--
-  * Using the modified version of mdformat from the shell.nix:
-  mdformat --wrap 80 --end-of-line lf Changelog.md
+  * Using my modified version of mdformat:
+  nix run .#mdformat -- --wrap 80 --end-of-line lf Changelog.md
 -->
 
 <!--
@@ -13,6 +13,289 @@
 ## API Breaks
 ## Documentation
 -->
+
+# 2.1.1
+
+## Steps
+
+* `Odb.SetPowerConnections`
+
+  * Internally reworked pin detection behavior so power pins are found in the
+    LEF first then matched in the Verilog, fixing a corner-cases where
+    unconnected buses would be candidates for power pins, then promptly cause a
+    crash as they only exist in the layout as separate pins.
+
+* `OpenROAD.IOPlacement`, `OpenROAD.GlobalPlacementSkipIO`
+
+  * `FP_IO_MODE` renamed to `FP_PPL_MODE`: translation behavior for OpenLane
+    1-style FP_IO_MODE with integers added behind deprecated name `FP_IO_MODE`.
+
+* `Yosys.*Synthesis`
+
+  * Restored filtering of `defparam` from output netlists to avoid surprisingly
+    still extant OpenSTA limitation.
+
+## Testing
+
+* Added file to exclude step unit tests purely to speed-up turnaround time for
+  PRs (as sometimes a test would need to be deleted/temporarily disabled without
+  updating the submodule, see #475 for a similar situation)
+
+* Mac CI now uses an artifact of the PDK
+
+  * Unlike the Linux runners, Mac runners:
+    * Are disproportionately affected by rate-limiting: cannot pull from GitHub
+      using Volare
+    * Do not support caches created on Ubuntu, even with `enableCrossOsArchive`
+
+# 2.1.0: The "Customization and Control" Update
+
+## CLI
+
+* Overhauled how the PDK commandline options work, using a decorator instead of
+  doing everything in a callback
+* `--smoke-test/--run-example` are now no longer callbacks, and `--run-example`
+  now supports more options (e.g. another PDK, another flow, etc.)
+* Docker subprocesses
+  * Are now always run interactively and can be interrupted.
+  * Are now run using `execlp`, replacing the Python interpreter altogether
+
+## Steps
+
+* Created `Checker.NetlistAssignStatements`
+
+  * Outputs warnings or errors (depending on `ERROR_ON_NL_ASSIGN_STATEMENTS`)
+    when `assign` statements are found in the netlist of the input state (assign
+    statements cause some issues with some tools)
+
+* `KLayout.OpenGUI`
+
+  * Renamed `KLAYOUT_PRIORITIZE_GDS` to `KLAYOUT_GUI_USE_GDS` to be consistent
+    with the Magic steps.
+  * Script no longer relies on the `click` library as the internal Python
+    interpreter more often than not has trouble finding the site packages (and
+    indeed the site packages includes its own pya/klayout which is its own
+    headache.)
+
+* `Magic.*`
+
+  * All steps now use a new processor,
+    `openlane.steps.magic.MagicOutputProcessor`, to capture and count errors
+  * Fixed `magicrc` being `abspath`'d before command invocation (breaks
+    reproducibles)
+  * `_MAGIC_SCRIPT` is now set in `prepare_env` instead of `run_subprocess` (so
+    it can be intercepted for reproducibles)
+
+* New step, `Magic.OpenGUI`, which opens either DEF files or GDS files in magic
+
+* `Magic.SpiceExtraction`:
+
+  * A `feedback.xml` is now created, with the contents being the SPICE
+    Extraction feedback in the KLayout marker database format
+  * Created `MAGIC_EXT_ABSTRACT_CELLS`: a list of regular expressions that are
+    matched against the design's cells names what are abstracted (black-boxed)
+    during extraction.
+
+* `Netgen.LVS`:
+
+  * Added `LVS_FLATTEN_CELLS`: A list of cells to flatten in LVS.
+  * Added `LVS_INCLUDE_MARCOS_NETLIST`. If enabled macros' netlist are loaded
+    when running LVS. Either `pnl` or `nl` or `vh` views are selected.
+  * Updated Netgen setup file to equate cells inside macros where the GDS is
+    generated with blackbox macro option
+
+* `Odb.ApplyDEFTemplate`: Thanks [@smunaut](https://github.com/smunaut)
+
+  * DEF template pin placement status (e.g. `PLACED`, `FIXED`) now always
+    propagated to work around PDN generation removing placed but unconnected
+    power pins.
+  * Fixed crashes when copying power pins from a template where the net name and
+    the power pin name may be different (or one net may be connected to multiple
+    power pins.)
+
+* `Odb.ReportDisconnectedPins`
+
+  * Disconnected dummy instances created during CTS, prefixed `clkload`, are now
+    ignored.
+
+* `Odb.SetPowerConnections`
+
+  * **Internal**: Restructure `power_utils.py` to provide better error messages
+    and use dictionaries instead of oddball iterator-based filtering
+
+* Created `OpenROAD.DEFtoODB`
+
+  * Useful for custom flows, where the DEF is modified but the ODB needs to be
+    updated to reflect these modifications
+
+* `OpenROAD.*`
+
+  * OpenROAD scripts now set `set_wire_rc` for the average values of the layers
+    grouped by routing direction. All layers in the routing range are used if
+    either `SIGNAL_WIRE_RC_LAYERS` or `CLOCK_WIRE_RC_LAYERS` are null.
+  * Slight internal Tcl code reorganization.
+
+* `OpenROAD.Floorplan`
+
+  * Added soft placement obstructions via new variable `PL_SOFT_OBSTRUCTIONS`.
+
+* `OpenROAD.RepairDesignPostGPL`
+
+  * Added new variable `DESIGN_REPAIR_REMOVE_BUFFERS`, which will instruct
+    OpenROAD to remove synthesis buffers so there's more flexibility during
+    design repair: see
+    https://github.com/The-OpenROAD-Project/OpenROAD/blob/ad54bbe88b561d1c30451d8a3c85ad11c1692905/src/rsz/README.md?plain=1#L185
+
+* `Yosys.*`
+
+  * Added new variable `YOSYS_LOG_LEVEL`, which controls the verbosity of Yosys
+    output
+
+* `Yosys.*Synthesis`
+
+  * Moved the `rename` of top module to before selecting it. This fixes a
+    problem DFFRAM where needed modules are optimised away and then synthesis
+    fails. (Thanks @donnie-j!)
+
+  * Syntheses with `SYNTH_ELABORATE_ONLY` no longer report undriven nets as a
+    check error (frequently for some top-level integrations, output pins are
+    left undriven entirely to save space.)
+
+## Flows
+
+* Created new mono-step flow, `OpenInMagic`, which runs `Magic.OpenGUI`
+* `VHDLClassic` is now based on `Classic` with appropriate `Substitutions
+
+## Tool Updates
+
+* All tool nix derivations now have `rev`/`version` and `sha256` as one of their
+  parameters, allowing them to be easily replaced with `.override`.
+
+* OpenLane 2 now uses [nix-eda](https://github.com/efabless/nix-eda) for some of
+  its dependencies
+
+  * `nixpkgs` -> `24.05`
+  * `klayout` -> `0.29.1`
+  * `magic` -> `8.3.483`/`291ba96`
+    * now uses tk with X11 on macOS, to prevent crashes when attempting to use
+      the GUI
+  * `netgen` -> `bf67d3c`
+  * `forAllSystems` built into `nix-eda`, now composes overlays for nixpkgs
+    based on the `withInputs` field, allowing for easier overriding
+
+* `volare` -> `0.18.1`
+
+* `ioplace_parser` -> `0.3.0`
+
+* `openroad` -> `b16bda7`
+
+  * Removed OpenLane-specific patch for querying existence of antenna
+    information
+  * `openroad-abc` -> `ef5389d`
+    * `ABC_USE_NAMESPACE` now set, value also injected into header files
+  * `opensta` -> `e01d3f1`
+
+* Python build tool changed from `setuptools` to `poetry`, which properly
+  verifies that all version ranges are within constraints
+
+  * Updated wrong Python package version ranges that all happen to work
+
+* Nix devshells now use [numtide/devshell](https://github.com/numtide/devshell),
+  which creates an executable to enter the environment, allowing for easy
+  repacking
+
+* Docker image creation now uses a Nix derivation based on that of the official
+  Nix Docker image, which includes a full Nix installation in the image (so
+  users may add tools and apps in the container at their leisure.)
+
+* `mdformat` promoted from overlay to `packages`.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.flows.SequentialFlow`
+
+  * Substitutions can now
+    * be done at the class level by assigning to `Substitutions`
+    * be done in `config.json` files using a dictionary in the field
+      `.meta.substituting_steps`
+    * emplace steps before or after existing steps, e.g. `+STEP`, `-STEP`
+  * Step names for `from`, `to`, `skip` and `only` are now fuzzy-matched using
+    `rapidfuzz` to give suggestions in error messages
+    * If the environment variable
+      `_i_want_openlane_to_fuzzy_match_steps_and_im_willing_to_accept_the_risks`
+      is set to `1`, the suggestions are used automatically (not recommended)
+  * Gating config vars are now simply removed if they do not target a valid step
+    (so removed steps in a substituted flow do not cause a FlowException)
+
+* `openlane.common`
+
+  * `DRC`: Work around a weird macOS-only bug where boxes in exported KLayout
+    marker databases would not function properly: see
+    https://github.com/KLayout/klayout/issues/1550
+  * `GenericDictEncoder`: Fixed crash when attempting to dump a Decimal of
+    infinite value
+
+* `openlane.common.config`
+
+  * Trailing commas are now permitted when converting from a string format
+    (which are necessary because of the ambiguity of lists of lists.)
+
+* `openlane.steps.DefaultOutputProcessor`
+
+  * `%OL_METRICS_F` now uses Decimals instead of Floats
+
+* `openlane.steps.Step.create_reproducible`
+
+  * `PDK_ROOT` now included if the PDK is included but not flattened so Magic
+    steps can work
+
+* `openlane.steps.TclStep`
+
+  * **Internal**: Internal environment variables prefixed with `_` are no longer
+    rerouted to `_env.tcl`, instead being passed raw (to help with creating
+    reproducibles)
+
+* Universal flow configuration variable
+
+  * `DATA_WIRE_RC_LAYER` renamed to `SIGNAL_WIRE_RC_LAYERS`,
+    `CLOCK_WIRE_RC_LAYER` renamed to `CLOCK_WIRE_RC_LAYERS`, with translation
+    behavior and data type changed to `List[str]?`
+  * Universal PDK variables `SIGNAL_WIRE_RC_LAYERS`/`CLOCK_WIRE_RC_LAYERS` no
+    longer have default values for all PDKs (are null.)
+
+* Fixed new typing inconsistencies exposed by mypy.
+
+* Removed loop header genvar declaration from examples (limited compatibility
+  with some tools)
+
+## Documentation
+
+* Created a new document on writing plugins.
+
+* Updated the architecture document to reflect changes and clarify some
+  elements.
+
+* Updated documentation of the `state` submodule.
+
+* Updated Usage/Writing Custom Flows to document step substitution
+
+* Fixed a number of broken links.
+
+# 2.0.11
+
+## Misc Enhancements/Bugfixes
+
+* Fixed a deadlock in some situations because of `OpenROAD.STAPrePNR` using the
+  global thread-pool for OpenLane, which may be used to run the step itself.
+
+# 2.0.10
+
+## Tool Updates
+
+* Relaxed `rich` version range to allow Rich 13.
+  * Matches Volare's version range and allows CACE and OpenLane 2 to be
+    installed in the same Python environment.
+
 # 2.0.9
 
 ## CLI
@@ -20,17 +303,20 @@
 * Fixed `--ef-save-views-to` saving to `signoff/<design>/openlane` instead of
   `signoff/<design>/openlane-signoff` (which makes less sense but is the
   established convention at Efabless.)
-  
+
 ## Steps
 
 * `OpenROAD.*`
+
   * Fixed environment contamination with deprecated variables that may be used
     by user-supplied PDN or SDC files.
 
 * `OpenROAD.GeneratePDN`
+
   * Restored compatibility with some ancient OpenLane PDN config files.
 
 ## Tool Updates
+
 * Updated `ioplace_parser` to `0.2.0`
   * Fixes regressions in pin regular expression parsing.
 
@@ -53,35 +339,43 @@
 # 2.0.6
 
 ## Misc. Enhancements/Bugfixes
+
 * Fixed a crash on Linux distributions where `/etc/lsb-release` includes
   comments.
 
 # 2.0.5
 
 ## Misc. Enhancements/Bugfixes
+
 * The flow warning summary now only shows the first instance of any warning
-  emitted, instead showing two numbers for identical warnings in other steps
-  and for similar warnings (e.g. same OpenROAD code.)
+  emitted, instead showing two numbers for identical warnings in other steps and
+  for similar warnings (e.g. same OpenROAD code.)
 
 # 2.0.4
 
 ## Steps
+
 * `Odb.SetPowerConnections`
+
   * Fixed bug where instances with special characters in their name and power
     pins are not equal to those of the SCL would not get connected.
   * Added assertion that exactly one pin is connected for every operation.
-  
+
 * `Yosys.GenerateJSONHeader`
+
   * Netlist is now flattened so `Odb.SetPowerConnections` can properly set pins
     for nested macros with power pin names not equal to those of the SCL.
 
 # 2.0.3
 
 ## Tool Updates
+
 * Updated OpenROAD to `d423155`, OpenSTA to `a7f3421`
-  * Addresses an [antenna repair bug](https://github.com/efabless/openlane2/issues/459)
+  * Addresses an
+    [antenna repair bug](https://github.com/efabless/openlane2/issues/459)
 
 ## Testing
+
 * Updated a number of unit tests to reflect new OpenROAD error codes.
 * Fixed failing design integration tests.
 
@@ -90,7 +384,7 @@
 ## Steps
 
 * `Odb.ReportDisconnectedPins`
-  * Fixed table not being written to step directory 
+  * Fixed table not being written to step directory
   * Fixed bug where table widths were not being set properly
   * Fixed bug where pins with `USE SIGNAL` would be considered power pins
 
@@ -99,10 +393,10 @@
 ## Steps
 
 * `OpenROAD.*`
- * Fixed alert about unmatched regexes in `PDN_MACRO_CONNECTIONS` not being
-   properly marked as an `[ERROR]`.
- * Fixed crash when steps that generate OpenROAD alerts that are suppressed by
-   the flow experience a non-zero exit.  
+* Fixed alert about unmatched regexes in `PDN_MACRO_CONNECTIONS` not being
+  properly marked as an `[ERROR]`.
+* Fixed crash when steps that generate OpenROAD alerts that are suppressed by
+  the flow experience a non-zero exit.
 
 # 2.0.0
 
@@ -113,29 +407,36 @@
 # 2.0.0rc3
 
 ## CLI
+
 * Resolved bug causing nonexistent mounted volumes to be created as root when
   using a non-rootless container engine with `--dockerized`.
 * Fixed issue where PIP versions of OpenLane would not be able to copy examples
   properly.
 * Environment detection scripts no longer use `nix-info`, saving time.
 
-
 ## Steps
+
 * `OpenROAD.STAPrePnR`
-  * Now performs multicorner STA pre-PnR according to `STA_CORNERS`;
-    although if two corners have identical file lists the latter corner is
-    skipped
-  * Internally rearranged class structure so STA pre and post PnR share as
-    much code as possible
+
+  * Now performs multicorner STA pre-PnR according to `STA_CORNERS`; although if
+    two corners have identical file lists the latter corner is skipped
+  * Internally rearranged class structure so STA pre and post PnR share as much
+    code as possible
 
 * `Yosys.*`
-  * Fixes a bug where synthesis checks were not passed properly when `SYNTH_ELABORATE_ONLY` is true. 
+
+  * Fixes a bug where synthesis checks were not passed properly when
+    `SYNTH_ELABORATE_ONLY` is true.
   * **Internal**:
-    * Created new namespace, `yosys_ol`, to encapsulate a number of reusable functions for modularity and readability
-    * Created two new functions `ol_proc` and `ol_synth`; to encapsulate our modified `synth` and `proc` instead of them being strewn across `synthesize.tcl`
+    * Created new namespace, `yosys_ol`, to encapsulate a number of reusable
+      functions for modularity and readability
+    * Created two new functions `ol_proc` and `ol_synth`; to encapsulate our
+      modified `synth` and `proc` instead of them being strewn across
+      `synthesize.tcl`
     * ABC script construction moved to standalone file
 
 ## Misc
+
 * `openlane.steps`
   * `Step`
     * `.start()` no longer prints logs at the beginning as it may not

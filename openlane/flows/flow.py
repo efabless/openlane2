@@ -665,6 +665,7 @@ class Flow(ABC):
 
             return final_state
         finally:
+            self.progress_bar.end()
             for registered_handlers in handlers:
                 deregister_additional_handler(registered_handlers)
             if len(warning_handler.warnings):

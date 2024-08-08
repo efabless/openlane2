@@ -23,7 +23,7 @@
   version ? "0.4.1",
   sha256 ? "sha256-nENglralwhDIJnPJp092mZqXXl+hB5rnJYqFM050H3k=",
 }:
-buildPythonPackage rec {
+buildPythonPackage {
   name = "sphinx-tippy";
   inherit version;
   format = "pyproject";

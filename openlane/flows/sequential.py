@@ -14,7 +14,19 @@
 from __future__ import annotations
 
 import os
-from typing import Iterable, List, Set, Tuple, Optional, Type, Dict, Union
+import fnmatch
+from typing import (
+    Iterable,
+    List,
+    Set,
+    Tuple,
+    Optional,
+    Type,
+    Dict,
+    Union,
+)
+
+from rapidfuzz import process, fuzz, utils
 
 from .flow import Flow, FlowException, FlowError
 from ..common import Filter
@@ -57,9 +69,17 @@ class SequentialFlow(Flow):
         a specific ID to execute.
     """
 
+    Substitutions: Optional[Dict[str, Union[str, Type[Step], None]]] = None
     gating_config_vars: Dict[str, List[str]] = {}
 
     def __init_subclass__(Self, scm_type=None, name=None, **kwargs):
+        Self.Steps = Self.Steps.copy()  # Break global reference
+        Self.config_vars = Self.config_vars.copy()
+        Self.gating_config_vars = Self.gating_config_vars.copy()
+        if substitute := Self.Substitutions:
+            for key, item in substitute.items():
+                Self.__substitute_step(Self, key, item)
+
         Self.__normalize_step_ids(Self)
 
         # Validate Gating Config Vars
@@ -74,9 +94,7 @@ class SequentialFlow(Flow):
         for id, variable_names in Self.gating_config_vars.items():
             matching_steps = list(Filter([id]).filter(step_id_set))
             if id not in step_id_set and len(matching_steps) < 1:
-                raise TypeError(
-                    f"Gated Step '{id}' does not match any Step in Flow '{Self.__qualname__}'"
-                )
+                continue
             for var_name in variable_names:
                 if var_name not in variables_by_name:
                     raise TypeError(
@@ -102,6 +120,77 @@ class SequentialFlow(Flow):
 
         return CustomSequentialFlow
 
+    def __init__(
+        self,
+        *args,
+        Substitute: Optional[Dict[str, Union[str, Type[Step], None]]] = None,
+        **kwargs,
+    ):
+        self.Steps = self.Steps.copy()  # Break global reference
+
+        if substitute := Substitute:
+            for key, item in substitute.items():
+                self.__substitute_step(self, key, item)
+            self.__normalize_step_ids(self)
+
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def __substitute_step(
+        target: Union[SequentialFlow, Type[SequentialFlow]],
+        id: str,
+        with_step: Union[str, Type[Step], None],
+    ):
+        step_indices: List[int] = []
+        mode = "replace"
+        if id.startswith("+"):
+            id = id[1:]
+            mode = "append"
+            if with_step is None:
+                raise FlowException("Cannot prepend or append None.")
+        elif id.startswith("-"):
+            id = id[1:]
+            mode = "prepend"
+            if with_step is None:
+                raise FlowException("Cannot prepend or append None.")
+
+        for i, step in enumerate(target.Steps):
+            if (
+                step.id
+                != NotImplemented  # Will be validated later by initialization: ignore for now
+                and fnmatch.fnmatch(step.id.lower(), id.lower())
+            ):
+                step_indices.append(i)
+        if len(step_indices) == 0:
+            if with_step is None:
+                raise FlowException(
+                    f"Could not remove '{id}': no steps with ID '{id}' found in flow"
+                )
+            raise FlowException(
+                f"Could not {mode} '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
+            )
+
+        if with_step is None:
+            for index in reversed(step_indices):
+                del target.Steps[index]
+            return
+
+        if isinstance(with_step, str):
+            with_step_opt = Step.factory.get(with_step)
+            if with_step_opt is None:
+                raise FlowException(
+                    f"Could not {mode} '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
+                )
+            with_step = with_step_opt
+
+        for i in step_indices:
+            if mode == "replace":
+                target.Steps[i] = with_step
+            elif mode == "append":
+                target.Steps.insert(i + 1, with_step)
+            elif mode == "prepend":
+                target.Steps.insert(i, with_step)
+
     @staticmethod
     def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):
         ids_used: Set[str] = set()
@@ -120,52 +209,6 @@ class SequentialFlow(Flow):
                 target.Steps[i] = step.with_id(id)
             ids_used.add(id)
 
-    def __init__(
-        self,
-        *args,
-        Substitute: Optional[Dict[str, Union[str, Type[Step]]]] = None,
-        **kwargs,
-    ):
-        self.Steps = self.Steps.copy()  # Break global reference
-
-        if substitute := Substitute:
-            for key, item in substitute.items():
-                self.__substitute_step(key, item)
-
-            self.__normalize_step_ids(self)
-
-        super().__init__(*args, **kwargs)
-
-    def __substitute_step(
-        self,
-        id: str,
-        with_step: Union[str, Type[Step]],
-    ):
-        step_indices: List[int] = []
-        for i, step in enumerate(self.Steps):
-            if (
-                step.id
-                != NotImplemented  # Will be validated later by initialization: ignore for now
-                and step.id.lower() == id.lower()
-            ):
-                step_indices.append(i)
-
-        if len(step_indices) == 0:
-            raise FlowException(
-                f"Could not substitute '{id}' with '{with_step}': no steps with ID '{id}' found in flow."
-            )
-
-        if isinstance(with_step, str):
-            with_step_opt = Step.factory.get(with_step)
-            if with_step_opt is None:
-                raise FlowException(
-                    f"Could not substitute '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
-                )
-            with_step = with_step_opt
-
-        for i in step_indices:
-            self.Steps[i] = with_step
-
     def run(
         self,
         initial_state: State,
@@ -177,43 +220,56 @@ class SequentialFlow(Flow):
     ) -> Tuple[State, List[Step]]:
         debug(f"Starting run ▶ '{self.run_dir}'")
         step_ids = {cls.id.lower(): cls.id for cls in reversed(self.Steps)}
-        skipped_ids = []
+        skipped_ids: List[str] = []
 
-        frm_resolved = None
-        if frm is not None:
-            if id := step_ids.get(frm.lower()):
-                frm_resolved = id
+        def resolve_step(matchable: Optional[str], multiple_ok: bool = False):
+            nonlocal step_ids
+            dangerous_fuzzy_matching = (
+                os.getenv(
+                    "_i_want_openlane_to_fuzzy_match_steps_and_im_willing_to_accept_the_risks",
+                    None,
+                )
+                == "1"
+            )
+            if matchable is None:
+                return None
+            ids = list(Filter([matchable.lower()]).filter(step_ids))
+            if len(ids) > 0:
+                if multiple_ok:
+                    return [step_ids[id] for id in ids]
+                if len(ids) > 1:
+                    raise FlowException(f"{matchable} matched multiple steps.")
+                if len(ids) == 1:
+                    return step_ids[ids[0]]
             else:
+                matchTuple = process.extractOne(
+                    matchable,
+                    step_ids,
+                    scorer=fuzz.partial_ratio,
+                    score_cutoff=80,
+                    processor=utils.default_process,
+                )
+                suggestion = ""
+                if matchTuple is not None:
+                    match, _, _ = matchTuple
+                    if dangerous_fuzzy_matching:
+                        return [match] if multiple_ok else match
+                    else:
+                        suggestion = f" Did you mean: '{match}'?"
                 raise FlowException(
-                    f"Failed to process start step '{frm}': no step with ID '{frm}' found in flow."
+                    f"Failed to process '{matchable}': no step(s) with ID '{matchable}' found in flow.{suggestion}"
                 )
 
-        to_resolved = None
-        if to is not None:
-            if id := step_ids.get(to.lower()):
-                to_resolved = id
-            else:
-                raise FlowException(
-                    f"Failed to process end step '{to}': no step with ID '{to}' found in flow."
-                )
+        frm_resolved = resolve_step(frm)
 
-        reproducible_resolved = None
-        if reproducible is not None:
-            if id := step_ids.get(reproducible.lower()):
-                reproducible_resolved = id
-            else:
-                raise FlowException(
-                    f"Failed to process reproducible step '{reproducible}': no step with ID '{reproducible}' found in flow."
-                )
+        to_resolved = resolve_step(to)
+
+        reproducible_resolved = resolve_step(reproducible)
 
         if skipped_steps := skip:
             for skipped_step in skipped_steps:
-                if id := step_ids.get(skipped_step.lower()):
-                    skipped_ids.append(id)
-                else:
-                    raise FlowException(
-                        f"Failed to process skipped step '{skipped_step}': no step with ID '{skipped_step}' found in flow."
-                    )
+                skipped_ids += resolve_step(skipped_step, multiple_ok=True)
+
         step_count = len(self.Steps)
         self.progress_bar.set_max_stage_count(step_count)
 

@@ -1,5 +1,27 @@
 {
   "nodes": {
+    "devshell": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nix-eda",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1717408969,
+        "narHash": "sha256-Q0OEFqe35fZbbRPPRdrjTUUChKVhhWXz3T9ZSKmaoVY=",
+        "owner": "numtide",
+        "repo": "devshell",
+        "rev": "1ebbe68d57457c8cae98145410b164b5477761f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "devshell",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "locked": {
         "narHash": "sha256-kvjfFW7WAETZlt09AgDn1MrtKzP7t90Vf7vypd3OL1U=",
@@ -13,6 +35,24 @@
         "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
       }
     },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1701680307,
+        "narHash": "sha256-kAuep2h5ajznlPMD9rnQyffWG8EM/C73lejGofXvdM8=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "4022d587cbbfd70fe950c1e2083a02621806a725",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "ioplace-parser": {
       "inputs": {
         "nixpkgs": [
@@ -21,11 +61,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1717940678,
-        "narHash": "sha256-GxEmeujXSw8ey3KXhQpYHKlZu/wJmeX4eS1UO8nLQ44=",
+        "lastModified": 1719837045,
+        "narHash": "sha256-ya2KEXKAIn8oYUi9G9TaUcQAEfGkbENCgXF/V0d/kws=",
         "owner": "efabless",
         "repo": "ioplace_parser",
-        "rev": "4849956df82b88f9290dc723b6da0ce91838a8e1",
+        "rev": "570fd3e352926f57e6eecbb8bd3892a5dec375b7",
         "type": "github"
       },
       "original": {
@@ -60,11 +100,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1715762084,
-        "narHash": "sha256-ho3bgzv4DnahsMrMIYIk8dVIyp35+oEzCx18p27BmSc=",
+        "lastModified": 1719830786,
+        "narHash": "sha256-meVPi2d6TI44FjuqQc57Ve3UV1GP12uDVrRfHcACBdg=",
         "owner": "efabless",
         "repo": "nix-eda",
-        "rev": "facd74ff9583bc876b608aaa17e6fa6ab7a7ba7b",
+        "rev": "8fd46e08259a761d5078c6c3b8b19dd58bb69e75",
         "type": "github"
       },
       "original": {
@@ -75,26 +115,43 @@
     },
     "nixpkgs": {
       "locked": {
-        "narHash": "sha256-C36QmoJd5tdQ5R9MC1jM7fBkZW9zBUqbUCsgwS6j4QU=",
+        "lastModified": 1717144377,
+        "narHash": "sha256-F/TKWETwB5RaR8owkPPi+SPJh83AQsm6KrQAlJ8v/uA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "c1be43e8e837b8dbee2b3665a007e761680f0c3d",
+        "rev": "805a384895c696f802a9bf5bf4720f37385df547",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
-        "ref": "nixos-23.11",
+        "ref": "nixos-24.05",
         "repo": "nixpkgs",
         "type": "github"
       }
     },
     "root": {
       "inputs": {
+        "devshell": "devshell",
         "flake-compat": "flake-compat",
         "ioplace-parser": "ioplace-parser",
         "libparse": "libparse",
         "nix-eda": "nix-eda",
         "volare": "volare"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     },
     "volare": {
@@ -105,11 +162,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1715167549,
-        "narHash": "sha256-QzMKToqiDQzMjBM2TW1VGMUxSLj70Uk4IdJVjIdkd5c=",
+        "lastModified": 1719908402,
+        "narHash": "sha256-l6GtRmdLVqu8mS0YvOoHrc62rneFLfABCMJopTalon8=",
         "owner": "efabless",
         "repo": "volare",
-        "rev": "b72ce150b80f67278d4c6b025183fb3941cab993",
+        "rev": "0dea0d1acece68aafbf6263c6e2db7c7a58bf1b7",
         "type": "github"
       },
       "original": {

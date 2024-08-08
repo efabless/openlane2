@@ -25,7 +25,7 @@ from decimal import Decimal
 from base64 import b64encode
 from abc import abstractmethod
 from dataclasses import dataclass
-from concurrent.futures import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import (
     Any,
     List,
@@ -72,10 +72,10 @@ from ..common import (
     Path,
     TclUtils,
     get_script_dir,
-    get_tpe,
     mkdirp,
     aggregate_metrics,
     process_list_file,
+    _get_process_limit,
 )
 
 EXAMPLE_INPUT = """
@@ -394,11 +394,6 @@ class OpenSTAStep(OpenROADStep):
     def get_command(self) -> List[str]:
         return ["sta", "-no_splash", "-exit", self.get_script_path()]
 
-    def prepare_env(self, env: Dict, state: State) -> Dict:
-        env = super().prepare_env(env, state)
-        env["_OPENSTA"] = "1"
-        return env
-
     def layout_preview(self) -> Optional[str]:
         return None
 
@@ -550,6 +545,11 @@ class MultiCornerSTA(OpenSTAStep):
             Optional[List[Union[str, Path]]],
             "A variable that only exists for backwards compatibility with OpenLane <2.0.0 and should not be used by new designs.",
         ),
+        Variable(
+            "STA_THREADS",
+            Optional[int],
+            "The maximum number of STA corners to run in parallel. If unset, this will be equal to your machine's thread count.",
+        ),
     ]
 
     def get_script_path(self):
@@ -588,6 +588,10 @@ class MultiCornerSTA(OpenSTAStep):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
+        tpe = ThreadPoolExecutor(
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
+        )
+
         futures: Dict[str, Future[MetricsUpdate]] = {}
         files_so_far: Dict[OpenSTAStep.CornerFileList, str] = {}
         corners_used: Set[str] = set()
@@ -609,7 +613,7 @@ class MultiCornerSTA(OpenSTAStep):
             corner_dir = os.path.join(self.step_dir, corner)
             mkdirp(corner_dir)
 
-            futures[corner] = get_tpe().submit(
+            futures[corner] = tpe.submit(
                 self.run_corner,
                 state_in,
                 current_env,
@@ -901,7 +905,13 @@ class Floorplan(OpenROADStep):
         Variable(
             "FP_OBSTRUCTIONS",
             Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
-            "Obstructions applied at floorplanning stage. These affect row generation and hence affects cells placement.",
+            "Obstructions applied at floorplanning stage. Placement sites are never generated at these locations, which guarantees that it will remain empty throughout the entire flow.",
+            units="µm",
+        ),
+        Variable(
+            "PL_SOFT_OBSTRUCTIONS",
+            Optional[List[Tuple[Decimal, Decimal, Decimal, Decimal]]],
+            "Soft placement blockages applied at the floorplanning stage. Areas that are soft-blocked will not be used by the initial placer, however, later phases such as buffer insertion or clock tree synthesis are still allowed to place cells in this area.",
             units="µm",
         ),
         Variable(
@@ -968,6 +978,21 @@ class Floorplan(OpenROADStep):
         return super().run(state_in, env=env, **kwargs)
 
 
+def _migrate_ppl_mode(migrated):
+    as_int = None
+    try:
+        as_int = int(migrated)
+    except ValueError:
+        pass
+    if as_int is not None:
+        if as_int < 0 or as_int > 2:
+            raise ValueError(
+                f"Legacy variable FP_IO_MODE can only either be 0 for matching or 1 for random_equidistant-- '{as_int}' is invalid.\nPlease see the documentation for the usage of the replacement variable, 'FP_PIN_MODE'."
+            )
+        return ["matching", "random_equidistant"][as_int]
+    return migrated
+
+
 @Step.factory.register()
 class IOPlacement(OpenROADStep):
     """
@@ -985,10 +1010,11 @@ class IOPlacement(OpenROADStep):
         + io_layer_variables
         + [
             Variable(
-                "FP_IO_MODE",
+                "FP_PPL_MODE",
                 Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
+                deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
@@ -1269,10 +1295,11 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
 
     config_vars = _GlobalPlacement.config_vars + [
         Variable(
-            "FP_IO_MODE",
+            "FP_PPL_MODE",
             Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
+            deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
         ),
         Variable(
             "FP_DEF_TEMPLATE",
@@ -1576,7 +1603,7 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        env["DRT_THREADS"] = env.get("DRT_THREADS", str(os.cpu_count() or 1))
+        env["DRT_THREADS"] = env.get("DRT_THREADS", str(_get_process_limit()))
         info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         return super().run(state_in, env=env, **kwargs)
 
@@ -1650,6 +1677,11 @@ class RCX(OpenROADStep):
             "Map of corner patterns to OpenRCX extraction rules.",
             pdk=True,
         ),
+        Variable(
+            "STA_THREADS",
+            Optional[int],
+            "The maximum number of STA corners to run in parallel. If unset, this will be equal to your machine's thread count.",
+        ),
     ]
 
     inputs = [DesignFormat.DEF]
@@ -1717,9 +1749,13 @@ class RCX(OpenROADStep):
 
             return out
 
+        tpe = ThreadPoolExecutor(
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
+        )
+
         futures: Dict[str, Future[str]] = {}
         for corner in self.config["RCX_RULESETS"]:
-            futures[corner] = get_tpe().submit(
+            futures[corner] = tpe.submit(
                 run_corner,
                 corner,
             )
@@ -2295,6 +2331,25 @@ class ResizerTimingPostGRT(ResizerStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "rsz_timing_postgrt.tcl")
+
+
+@Step.factory.register()
+class DEFtoODB(OpenROADStep):
+    """
+    Converts a DEF view to an ODB view.
+
+    Useful if you have a custom step that manipulates the layout outside of
+    OpenROAD, but you would like to update the OpenROAD database.
+    """
+
+    id = "OpenROAD.DEFtoODB"
+    name = "DEF to OpenDB"
+
+    inputs = [DesignFormat.DEF]
+    outputs = [DesignFormat.ODB]
+
+    def get_script_path(self) -> str:
+        return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
 
 
 @Step.factory.register()

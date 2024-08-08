@@ -13,19 +13,19 @@
 # limitations under the License.
 {
   lib,
+  system,
   clangStdenv,
   fetchFromGitHub,
   nix-gitignore,
-  buildPythonPackage,
   # Tools
   klayout,
   klayout-pymod,
   libparse,
-  immutabledict,
-  magic,
+  magic-vlsi,
   netgen,
   opensta,
   openroad,
+  ruby,
   surelog,
   tclFull,
   verilator,
@@ -38,8 +38,8 @@
   yosys-eqy,
   yosys-ghdl,
   yosys-f4pga-sdc,
-  # PIP
-  ruby,
+  # Python
+  buildPythonPackage,
   click,
   cloup,
   pyyaml,
@@ -51,93 +51,82 @@
   deprecated,
   psutil,
   pytestCheckHook,
+  pytest-xdist,
   pyfakefs,
-  system,
-}:
-buildPythonPackage rec {
-  name = "openlane";
+  rapidfuzz,
+  ioplace-parser,
+  poetry-core,
+}: let
+  self = buildPythonPackage {
+    pname = "openlane";
+    version = (builtins.fromTOML (builtins.readFile ./pyproject.toml)).tool.poetry.version;
+    format = "pyproject";
 
-  version_file = builtins.readFile ./openlane/__version__.py;
-  version_list = builtins.match ''.+''\n__version__ = "([^"]+)"''\n.+''$'' version_file;
-  version = builtins.head version_list;
+    src = nix-gitignore.gitignoreSourcePure ./.gitignore ./.;
 
-  src = [
-    ./Readme.md
-    ./setup.py
-    (nix-gitignore.gitignoreSourcePure "__pycache__\nruns/\n" ./openlane)
-    ./type_stubs
-    ./requirements.txt
-  ];
+    nativeBuildInputs = [
+      poetry-core
+    ];
 
-  unpackPhase = ''
-    echo $src
-    for file in $src; do
-      BASENAME=$(python3 -c "import os; print('$file'.split('-', maxsplit=1)[1], end='$EMPTY')")
-      cp -r $file $PWD/$BASENAME
-    done
-    ls -lah
-  '';
-
-  buildInputs = [];
-
-  includedTools = [
-    (yosys.withPlugins ([
-        yosys-sby
-        yosys-eqy
-        yosys-lighter
-        yosys-synlig-sv
-        yosys-f4pga-sdc
-      ]
-      ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
-    opensta
-    openroad
-    klayout
-    netgen
-    magic
-    verilog
-    verilator
-    tclFull
-    surelog
-  ];
-
-  propagatedBuildInputs =
-    [
-      # Python
-      click
-      cloup
-      pyyaml
-      rich
-      requests
-      pcpp
-      volare
-      tkinter
-      lxml
-      deprecated
-      immutabledict
-      libparse
-      psutil
-      klayout-pymod
-
-      # Ruby
+    includedTools = [
+      (yosys.withPlugins ([
+          yosys-sby
+          yosys-eqy
+          yosys-lighter
+          yosys-synlig-sv
+          yosys-f4pga-sdc
+        ]
+        ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
+      opensta
+      openroad
+      klayout
+      netgen
+      magic-vlsi
+      verilog
+      verilator
+      tclFull
+      surelog
       ruby
-    ]
-    ++ includedTools;
+    ];
 
-  doCheck = false;
-  checkInputs = [pytestCheckHook pyfakefs];
+    propagatedBuildInputs =
+      [
+        # Python
+        click
+        cloup
+        pyyaml
+        rich
+        requests
+        pcpp
+        volare
+        tkinter
+        lxml
+        deprecated
+        libparse
+        psutil
+        klayout-pymod
+        rapidfuzz
+        ioplace-parser
+      ]
+      ++ self.includedTools;
 
-  computed_PATH = lib.makeBinPath propagatedBuildInputs;
+    doCheck = true;
+    checkInputs = [pytestCheckHook pytest-xdist pyfakefs];
 
-  # Make PATH available to OpenLane subprocesses
-  makeWrapperArgs = [
-    "--prefix PATH : ${computed_PATH}"
-  ];
+    computed_PATH = lib.makeBinPath self.propagatedBuildInputs;
 
-  meta = with lib; {
-    description = "Hardware design and implementation infrastructure library and ASIC flow";
-    homepage = "https://efabless.com/openlane";
-    mainProgram = "openlane";
-    license = licenses.asl20;
-    platforms = platforms.linux ++ platforms.darwin;
+    # Make PATH available to OpenLane subprocesses
+    makeWrapperArgs = [
+      "--prefix PATH : ${self.computed_PATH}"
+    ];
+
+    meta = with lib; {
+      description = "Hardware design and implementation infrastructure library and ASIC flow";
+      homepage = "https://efabless.com/openlane";
+      mainProgram = "openlane";
+      license = licenses.asl20;
+      platforms = platforms.linux ++ platforms.darwin;
+    };
   };
-}
+in
+  self
