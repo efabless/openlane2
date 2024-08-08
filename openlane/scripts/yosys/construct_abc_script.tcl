@@ -78,8 +78,8 @@ namespace eval yosys_ol {
         set strategy_parts [split $strategy]
 
         proc malformed_strategy {strategy} {
-            log -stderr "\[ERROR] Misformatted SYNTH_STRATEGY (\"$strategy\")."
-            log -stderr "\[ERROR] Correct format is \"DELAY 0-[expr [llength $yosys_ol::delay_scripts]-1]|AREA 0-[expr [llength $yosys_ol::area_scripts]-1]\"."
+            log -stderr "\[ERROR\] Misformatted SYNTH_STRATEGY (\"$strategy\")."
+            log -stderr "\[ERROR\] Correct format is \"DELAY 0-[expr [llength $yosys_ol::delay_scripts]-1]|AREA 0-[expr [llength $yosys_ol::area_scripts]-1]\"."
             exit 1
         }
 
@@ -91,17 +91,17 @@ namespace eval yosys_ol {
         set strategy_type_idx [lindex $strategy_parts 1]
 
         if { $strategy_type != "AREA" && $strategy_type != "DELAY" } {
-            log -stderr "\[ERROR] AREA|DELAY tokens not found. ($strategy_type)"
+            log -stderr "\[ERROR\] AREA|DELAY tokens not found. ($strategy_type)"
             malformed_strategy $strategy
         }
 
         if { $strategy_type == "DELAY" && $strategy_type_idx >= [llength $yosys_ol::delay_scripts] } {
-            log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
+            log -stderr "\[ERROR\] strategy index ($strategy_type_idx) is too high."
             malformed_strategy $strategy
         }
 
         if { $strategy_type == "AREA" && $strategy_type_idx >= [llength $yosys_ol::area_scripts] } {
-            log -stderr "\[ERROR] strategy index ($strategy_type_idx) is too high."
+            log -stderr "\[ERROR\] strategy index ($strategy_type_idx) is too high."
             malformed_strategy $strategy
         }
 

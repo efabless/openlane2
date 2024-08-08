@@ -48,7 +48,7 @@ if { [info exists ::env(EXTRA_SITES)] } {
     }
 }
 
-puts "\[INFO] Using $::env(FP_SIZING) sizing for the floorplan."
+puts "\[INFO\] Using $::env(FP_SIZING) sizing for the floorplan."
 
 if {$::env(FP_SIZING) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
@@ -72,7 +72,7 @@ if {$::env(FP_SIZING) == "absolute"} {
             puts stderr "Invalid core area string '$::env(CORE_AREA)'."
             exit -1
         }
-        puts "\[INFO] Using the set CORE_AREA; ignoring core margin parameters"
+        puts "\[INFO\] Using the set CORE_AREA; ignoring core margin parameters"
     }
 
     lappend arg_list -die_area $::env(DIE_AREA)
@@ -90,7 +90,7 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
         set urx [expr int([expr [lindex $obstruction 2] * $::dbu])]
         set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
         odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury
-        puts "\[INFO] Created floorplan obstruction at $obstruction (µm)"
+        puts "\[INFO\] Created floorplan obstruction at $obstruction (µm)"
     }
 }
 
@@ -107,11 +107,11 @@ if { [info exists ::env(PL_SOFT_OBSTRUCTIONS)] } {
         set ury [expr int([expr [lindex $obstruction 3] * $::dbu])]
         set obstruction_o [odb::dbBlockage_create [ord::get_db_block] $llx $lly $urx $ury]
         set _ [$obstruction_o setSoft]
-        puts "\[INFO] Created soft placement obstruction at $obstruction (µm)"
+        puts "\[INFO\] Created soft placement obstruction at $obstruction (µm)"
     }
 }
 
-puts "\[INFO] Extracting DIE_AREA and CORE_AREA from the floorplan"
+puts "\[INFO\] Extracting DIE_AREA and CORE_AREA from the floorplan"
 set ::env(DIE_AREA) [list]
 set ::env(CORE_AREA) [list]
 
@@ -131,8 +131,8 @@ foreach coord $core_area {
     lappend ::env(CORE_AREA) [expr {1.0 * $coord / $::dbu}]
 }
 
-puts "\[INFO] Floorplanned on a die area of $::env(DIE_AREA) (µm)."
-puts "\[INFO] Floorplanned on a core area of $::env(CORE_AREA) (µm)."
+puts "\[INFO\] Floorplanned on a die area of $::env(DIE_AREA) (µm)."
+puts "\[INFO\] Floorplanned on a core area of $::env(CORE_AREA) (µm)."
 
 source $::env(TRACKS_INFO_FILE_PROCESSED)
 

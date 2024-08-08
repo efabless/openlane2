@@ -100,24 +100,24 @@ if { [info exists ::env(SYNTH_TRISTATE_MAP)] } {
 }
 set adder_type $::env(SYNTH_ADDER_TYPE)
 if { !($adder_type in [list "YOSYS" "FA" "RCA" "CSA"]) } {
-    log -stderr "\[ERROR] Misformatted SYNTH_ADDER_TYPE (\"$::env(SYNTH_ADDER_TYPE)\")."
-    log -stderr "\[ERROR] Correct format is \"YOSYS|FA|RCA|CSA\"."
+    log -stderr "\[ERROR\] Misformatted SYNTH_ADDER_TYPE (\"$::env(SYNTH_ADDER_TYPE)\")."
+    log -stderr "\[ERROR\] Correct format is \"YOSYS|FA|RCA|CSA\"."
     exit 1
 }
 if { $adder_type == "RCA"} {
     if { [info exists ::env(SYNTH_RCA_MAP)] } {
-        log "\[INFO] Applying ripple carry adder mapping from '$::env(RIPPLE_CARRY_ADDER_MAP)'..."
+        log "\[INFO\] Applying ripple carry adder mapping from '$::env(RIPPLE_CARRY_ADDER_MAP)'..."
         techmap -map $::env(RIPPLE_CARRY_ADDER_MAP)
     }
 } elseif { $adder_type == "CSA"} {
     if { [info exists ::env(SYNTH_CSA_MAP)] } {
-        log "\[INFO] Applying carry-select adder mapping from '$::env(SYNTH_CSA_MAP)'..."
+        log "\[INFO\] Applying carry-select adder mapping from '$::env(SYNTH_CSA_MAP)'..."
         techmap -map $::env(SYNTH_CSA_MAP)
     }
 } elseif { $adder_type == "FA"} {
     if { [info exists ::env(SYNTH_FA_MAP)] } {
         set fa_map true
-        log "\[INFO] Applying carry-select adder mapping from '$::env(SYNTH_FA_MAP)'..."
+        log "\[INFO\] Applying carry-select adder mapping from '$::env(SYNTH_FA_MAP)'..."
     }
 }
 
@@ -141,21 +141,21 @@ tee -o "$report_dir/pre_techmap.log" stat {*}$lib_args
 # Techmaps
 if { $tbuf_map } {
     log {mapping tbuf}
-    log "\[INFO] Applying tri-state buffer mapping from '$::env(SYNTH_TRISTATE_MAP)'..."
+    log "\[INFO\] Applying tri-state buffer mapping from '$::env(SYNTH_TRISTATE_MAP)'..."
     techmap -map $::env(SYNTH_TRISTATE_MAP)
     simplemap
 }
 if { $fa_map } {
-    log "\[INFO] Applying full-adder mapping from '$::env(SYNTH_FA_MAP)'..."
+    log "\[INFO\] Applying full-adder mapping from '$::env(SYNTH_FA_MAP)'..."
     techmap -map $::env(SYNTH_FA_MAP)
 }
 if { [info exists ::env(SYNTH_LATCH_MAP)] } {
-    log "\[INFO] Applying latch mapping from '$::env(SYNTH_LATCH_MAP)'..."
+    log "\[INFO\] Applying latch mapping from '$::env(SYNTH_LATCH_MAP)'..."
     techmap -map $::env(SYNTH_LATCH_MAP)
     simplemap
 }
 if { [info exists ::env(SYNTH_EXTRA_MAPPING_FILE)] } {
-    log "\[INFO] Applying extra mappings from '$::env(SYNTH_EXTRA_MAPPING_FILE)'..."
+    log "\[INFO\] Applying extra mappings from '$::env(SYNTH_EXTRA_MAPPING_FILE)'..."
     techmap -map $::env(SYNTH_EXTRA_MAPPING_FILE)
 }
 
