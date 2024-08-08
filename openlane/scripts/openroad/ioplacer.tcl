@@ -55,7 +55,7 @@ if { $::env(FP_IO_MODE) == "annealing" } {
 set HMETAL $::env(FP_IO_HLAYER)
 set VMETAL $::env(FP_IO_VLAYER)
 
-puts "\[INFO] place_pins args: $arg_list"
+puts "\[INFO\] place_pins args: $arg_list"
 place_pins {*}$arg_list \
 	-random_seed 42 \
 	-hor_layers $HMETAL \

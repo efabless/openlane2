@@ -39,7 +39,7 @@ if { [info exists ::env(MAGIC_EXT_ABSTRACT_CELLS)] } {
             }
         }
         if { $matched == 0 } {
-            puts "\[WARNING] Failed to match the experssion '$expression' with cells in the design"
+            puts "\[WARNING\] Failed to match the experssion '$expression' with cells in the design"
         }
     }
     foreach cell $matching_cells {
