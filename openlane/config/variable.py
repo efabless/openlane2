@@ -73,11 +73,11 @@ class Orientation(str, Enum):
 @dataclass
 class Instance:
     """
-    Location information for an instance of a Macro.
+    Location information for an instance of a cell or macro.
 
-    :param location: The physical co-ordinates of the Macro's origin. Leave
+    :param location: The physical co-ordinates of the object's origin. Leave
         empty for automatic placement.
-    :param orientation: The orientation of the macro's placement. 'N'/'R0' by default.
+    :param orientation: The orientation of the object's placement. 'N'/'R0' by default.
     """
 
     location: Optional[Tuple[Decimal, Decimal]]
@@ -549,7 +549,7 @@ class Variable:
             raw = value
             if not isinstance(raw, dict):
                 raise ValueError(
-                    f"Value provided for deserializable path {validating_type} at '{key_path}' is not a dictionary."
+                    f"Value provided for deserializable class {validating_type} at '{key_path}' is not a dictionary."
                 )
             raw = value.copy()
             kwargs_dict = {}

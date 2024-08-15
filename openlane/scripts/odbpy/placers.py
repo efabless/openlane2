@@ -13,7 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
+from decimal import Decimal
+
 from reader import click_odb, click
+
+
+@click.group
+def cli():
+    pass
+
 
 LEF2OA_MAP = {
     "N": "R0",
@@ -52,7 +60,7 @@ def gridify(n, f):
     help="A flag to signal whether the placement should be fixed or not",
 )
 @click_odb
-def manual_macro_place(reader, config, fixed):
+def manual_macro_placement(reader, config, fixed):
     """
     Places macros in positions and orientations specified by a config file
     """
@@ -71,8 +79,8 @@ def manual_macro_place(reader, config, fixed):
             name, x, y, orientation = line
             macro_data = [
                 name,
-                int(float(x) * db_units_per_micron),
-                int(float(y) * db_units_per_micron),
+                int(Decimal(x) * db_units_per_micron),
+                int(Decimal(y) * db_units_per_micron),
                 orientation,
             ]
             name_escaped = reader.escape_verilog_name(name)
@@ -112,5 +120,43 @@ def manual_macro_place(reader, config, fixed):
     print(f"Successfully placed {macros_cnt} instances.")
 
 
+cli.add_command(manual_macro_placement)
+
+
+@click.command()
+@click_odb
+def manual_global_placement(reader):
+    db_units_per_micron = reader.block.getDbUnitsPerMicron()
+
+    data = reader.config["MANUAL_GLOBAL_PLACEMENTS"]
+    not_found = []
+    for instance, info in data.items():
+        name_escaped = reader.escape_verilog_name(instance)
+        x, y = info["location"]
+        orientation = lef_rot_to_oa_rot(info["orientation"])
+        found = False
+        for inst in reader.block.getInsts():
+            if inst.getName() == name_escaped:
+                found = True
+                x_dbu = int(x * db_units_per_micron)
+                y_dbu = int(y * db_units_per_micron)
+                inst.setOrient(lef_rot_to_oa_rot(orientation))
+                inst.setLocation(x_dbu, y_dbu)
+                inst.setPlacementStatus("PLACED")
+                break
+        if not found:
+            not_found.append(instance)
+
+    if len(not_found):
+        print(
+            "[ERROR] One or more instances not found. Make sure you use their Verilog and not their LEF names."
+        )
+        for instance in not_found:
+            print(f"* {instance}")
+        exit(1)
+
+
+cli.add_command(manual_global_placement)
+
 if __name__ == "__main__":
-    manual_macro_place()
+    cli()
