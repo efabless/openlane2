@@ -118,16 +118,12 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Install Nix
-        run: |
-          sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-          extra-experimental-features = nix-command flakes
-          extra-substituters = https://openlane.cachix.org
-          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
-          EXTRA_NIX_CONF
-
-          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-          echo "PATH=$PATH" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
+            extra-substituters = https://openlane.cachix.org
+            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -149,7 +145,12 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - uses: DeterminateSystems/nix-installer-action@main # Using the DS Nix installer because it also sets up binfmt
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
+            extra-substituters = https://openlane.cachix.org
+            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
@@ -178,17 +179,12 @@ jobs:
       - name: Set up GITHUB_TOKEN
         run: |
           echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
-      - name: Install Nix
-        run: |
-          sh <(curl -L https://nixos.org/nix/install) --yes --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-          extra-experimental-features = nix-command flakes
-          extra-substituters = https://openlane.cachix.org
-          extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
-          access-tokens = github.com=${{ env.GITHUB_TOKEN }}
-          EXTRA_NIX_CONF
-
-          . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
-          echo "PATH=$PATH" >> $GITHUB_ENV
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
+            extra-substituters = https://openlane.cachix.org
+            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
       # For some reason, GHA Macs are far more aggressively rate-limited with
       # Volare than Linux
       - name: Cache sky130 PDK
