@@ -42,7 +42,8 @@ runs:
       name: Build
       shell: ${{ inputs.shell }}
       run: |
-        if [ '${{ inputs.local_cache_key }}' = '' ]; then
+        substituters='https://${{ inputs.cachix_cache }}.cachix.org https://cache.nixos.org'
+        if [ '${{ inputs.local_cache_key }}' != '' ]; then
           substituters="file:///tmp/${{ inputs.local_cache_key }} $substituters"
         fi
         echo "#################################################################"
