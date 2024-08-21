@@ -124,11 +124,11 @@ jobs:
             access-tokens = github.com=${{ env.GITHUB_TOKEN }}
             extra-substituters = https://openlane.cachix.org
             extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: x86_64-linux
-          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           run_tests: "true"
@@ -151,11 +151,11 @@ jobs:
             access-tokens = github.com=${{ env.GITHUB_TOKEN }}
             extra-substituters = https://openlane.cachix.org
             extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: aarch64-linux
-          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           run_tests: "true"
@@ -185,6 +185,7 @@ jobs:
             access-tokens = github.com=${{ env.GITHUB_TOKEN }}
             extra-substituters = https://openlane.cachix.org
             extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       # For some reason, GHA Macs are far more aggressively rate-limited with
       # Volare than Linux
       - name: Cache sky130 PDK
@@ -197,7 +198,6 @@ jobs:
         uses: ./.github/actions/build_nix
         with:
           nix_system: ${{ matrix.system.nix }}
-          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
           cachix_token: "${{ secrets.CACHIX_TOKEN }}"
           shell: "zsh {0}"
@@ -232,11 +232,11 @@ jobs:
           fi
           echo "NIX_SYSTEM=$nix_system" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: ${{ env.NIX_SYSTEM }}
-          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
 
       - name: Build Docker Image
@@ -300,14 +300,12 @@ jobs:
         run: |
           git status || true
           tree .git || true
-
       - uses: DeterminateSystems/nix-installer-action@main
-
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
         with:
           nix_system: x86_64-linux
-          local_cache_key: derivation-${{ github.run_id }}
           cachix_cache: ${{ vars.CACHIX_CACHE || 'openlane' }}
 
       - name: Check Nix
