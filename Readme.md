@@ -68,7 +68,7 @@ timeline
   Signoff (Timing)
     : Parasitics Extraction / OpenROAD
     : Multi-corner Static Timing Analysis / OpenSTA
-    : Multi-corner Static Timing Analysis / PrimeTime (with proprietary plugin)
+    : SI-Enabled Multi-corner Static Timing Analysis / PrimeTime (with proprietary plugin)
   Signoff (Physical)
     : GDSII Stream-Out / Magic
     : GDSII Stream-Out / KLayout
@@ -159,7 +159,7 @@ If you use OpenLane in your research, please cite the following paper.
   doi={}}
 ```
 
-## License
+## License and Information
 
 [The Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt).
 
