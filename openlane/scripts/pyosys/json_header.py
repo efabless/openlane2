@@ -1,0 +1,68 @@
+# Copyright 2020-2024 Efabless Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import json
+import argparse
+from ys_common import ys
+
+
+def json_header(
+    output,
+    config_in,
+    extra_in,
+):
+    config = json.load(open(config_in))
+    extra = json.load(open(extra_in))
+
+    blackbox_models = extra["blackbox_models"]
+
+    d = ys.Design()
+    d.add_blackbox_models(blackbox_models)
+    d.read_verilog_files(
+        config["VERILOG_FILES"],
+        top=config["DESIGN_NAME"],
+        synth_parameters=config["SYNTH_PARAMETERS"] or [],
+        includes=config["VERILOG_INCLUDE_DIRS"] or [],
+        defines=(config["VERILOG_DEFINES"] or [])
+        + [
+            f"PDK_{config['PDK']}",
+            f"SCL_{config['STD_CELL_LIBRARY']}",
+            "__openlane__",
+            "__pnr__",
+        ]
+        + [config["VERILOG_POWER_DEFINE"]],
+        use_synlig=config["USE_SYNLIG"],
+        synlig_defer=config["SYNLIG_DEFER"],
+    )
+    d.run_pass(
+        "hierarchy",
+        "-check",
+        "-top",
+        config["DESIGN_NAME"],
+        "-nokeep_prints",
+        "-nokeep_asserts",
+    )
+    d.run_pass("rename", "-top", config["DESIGN_NAME"])
+    d.run_pass("proc")
+    d.run_pass("flatten")
+    d.run_pass("opt_clean", "-purge")
+    d.run_pass("json", "-o", output)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--output", required=True)
+    ap.add_argument("--config-in", required=True)
+    ap.add_argument("--extra-in", required=True)
+
+    json_header(**ap.parse_args().__dict__)

@@ -22,7 +22,7 @@
   };
 
   inputs = {
-    nix-eda.url = github:efabless/nix-eda;
+    nix-eda.url = github:efabless/nix-eda/python_cleanup;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
@@ -70,7 +70,9 @@
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
             openroad-abc = callPackage ./nix/openroad-abc.nix {};
-            openroad = callPythonPackage ./nix/openroad.nix {};
+            openroad = callPythonPackage ./nix/openroad.nix {
+              inherit (nix-eda) buildPythonEnvForInterpreter;
+            };
             openlane = callPythonPackage ./default.nix {};
             sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
             sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
