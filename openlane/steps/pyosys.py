@@ -426,13 +426,13 @@ class SynthesisCommon(VerilogStep):
         Variable(
             "SYNTH_ABC_USE_MFS3",
             bool,
-            "Experimental and unstable; attempts a SAT-based remapping in all area and delay strategies before 'retime', which may improve PPA results but may also crash.",
+            "Experimental: attempts a SAT-based remapping in all area and delay strategies before 'retime', which may improve PPA results.",
             default=False,
         ),
         Variable(
             "SYNTH_ABC_AREA_USE_NF",
             bool,
-            "Experimental and unstable; uses the &nf delay-based mapper with a very high value instead of the amap area mapper, which may be better at recovering area.",
+            "Experimental: uses the &nf delay-based mapper with a very high value instead of the amap area mapper, which may be better in some scenarios at recovering area.",
             default=False,
         ),
         Variable(

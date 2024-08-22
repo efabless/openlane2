@@ -60,7 +60,7 @@ class ABCScriptCreator:
         self.map_new_area = "amap -m -Q 0.1 -F 20 -A 20 -C 5000"
 
         if config["SYNTH_ABC_AREA_USE_NF"]:
-            self.map_new_area = "&nf -R 1000"
+            self.map_new_area = "&get -n; &nf -R 1000; &put"
 
         self.max_fanout = config["MAX_FANOUT_CONSTRAINT"]
         self.max_transition = (
