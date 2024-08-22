@@ -44,7 +44,7 @@ body:
         You also need to upload some files so we can reproduce your issue.
 
         If a step fails, you can create a reproducible by going
-        into the step directory, then typing `openlane.steps create-reproducible -d .`
+        into the step directory, then typing `openlane.steps create-reproducible`
 
         A new directory called `reproducible` should be created. Zip or tarball
         that directory then upload by clicking and dragging the file to
