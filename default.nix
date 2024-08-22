@@ -64,7 +64,7 @@
           yosys-synlig-sv
           yosys-f4pga-sdc
         ]
-        ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]));
+        ++ lib.optionals (builtins.elem system ["x86_64-linux" "x86_64-darwin"]) [yosys-ghdl]));
   openroad-env =
     (openroad.withPythonPackages(ps: with ps; [
       click

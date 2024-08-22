@@ -29,6 +29,7 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
+import sys
 import json
 import shutil
 import argparse
@@ -55,13 +56,14 @@ def openlane_proc(d: ys.Design, report_dir: str):
     d.run_pass("opt_expr")  # Optimize expressions
 
 
-def openlane_synth(d, top, flatten, report_dir):
+def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("hierarchy", "-check", "-top", top, "-nokeep_prints", "-nokeep_asserts")
     openlane_proc(d, report_dir)
 
     if flatten:
         d.run_pass("flatten")  # Flatten the design hierarchy
-        d.run_pass("opt_expr")  # Optimize expressions again
+
+    d.run_pass("opt_expr")  # Optimize expressions again
 
     d.run_pass("opt_clean")  # Clean up after optimization
 
@@ -72,7 +74,9 @@ def openlane_synth(d, top, flatten, report_dir):
     d.run_pass("wreduce")  # Reduce logic using algebraic rewriting
     d.run_pass("peepopt")  # Perform local peephole optimization
     d.run_pass("opt_clean")  # Clean up after optimization
-    d.run_pass("alumacc")  # Optimize arithmetic logic units
+    if booth:
+        d.run_pass("booth")
+    d.run_pass("alumacc")  # Optimize arithmetic logic unitsb
     d.run_pass("share")  # Share logic across the design
     d.run_pass("opt")  # More logic optimization
 
@@ -90,7 +94,9 @@ def openlane_synth(d, top, flatten, report_dir):
     d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
     d.run_pass("opt", "-fast")  # More fast optimization
 
-    d.run_pass("abc", "-fast")  # Run ABC with fast settings
+    d.run_pass(
+        "abc", "-fast", *(["-dff"] if abc_dff else [])
+    )  # Run ABC with fast settings
     d.run_pass("opt", "-fast")  # MORE fast optimization
 
     # Checks and Stats
@@ -108,6 +114,14 @@ def synthesize(
     config = json.load(open(config_in))
     extra = json.load(open(extra_in))
 
+    includes = config.get("VERILOG_INCLUDE_DIRS") or []
+    defines = (config.get("VERILOG_DEFINES") or []) + [
+        f"PDK_{config['PDK']}",
+        f"SCL_{config['STD_CELL_LIBRARY']}",
+        "__openlane__",
+        "__pnr__",
+    ]
+
     blackbox_models = extra["blackbox_models"]
     libs = extra["libs_synth"]
 
@@ -117,7 +131,7 @@ def synthesize(
     report_dir = os.path.join(step_dir, "reports")
     os.makedirs(report_dir, exist_ok=True)
 
-    d.add_blackbox_models(blackbox_models)
+    d.add_blackbox_models(blackbox_models, includes=includes, defines=defines)
 
     clock_period = config["CLOCK_PERIOD"] * 1000  # ns -> ps
 
@@ -130,21 +144,26 @@ def synthesize(
 
     print(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
 
-    d.read_verilog_files(
-        config["VERILOG_FILES"],
-        top=config["DESIGN_NAME"],
-        synth_parameters=config["SYNTH_PARAMETERS"] or [],
-        includes=config["VERILOG_INCLUDE_DIRS"] or [],
-        defines=(config["VERILOG_DEFINES"] or [])
-        + [
-            f"PDK_{config['PDK']}",
-            f"SCL_{config['STD_CELL_LIBRARY']}",
-            "__openlane__",
-            "__pnr__",
-        ],
-        use_synlig=config["USE_SYNLIG"],
-        synlig_defer=config["SYNLIG_DEFER"],
-    )
+    if verilog_files := config.get("VERILOG_FILES"):
+        d.read_verilog_files(
+            verilog_files,
+            top=config["DESIGN_NAME"],
+            synth_parameters=config["SYNTH_PARAMETERS"] or [],
+            includes=includes,
+            defines=defines,
+            use_synlig=config["USE_SYNLIG"],
+            synlig_defer=config["SYNLIG_DEFER"],
+        )
+    elif vhdl_files := config.get("VHDL_FILES"):
+        d.run_pass("plugin", "-i", "ghdl")
+        d.run_pass("ghdl", *vhdl_files, "-e", config["DESIGN_NAME"])
+    else:
+        print(
+            f"Script called inappropriately: config must include either VERILOG_FILES or VHDL_FILES.",
+            file=sys.stderr,
+        )
+        exit(1)
+
     d.run_pass(
         "hierarchy",
         "-check",
@@ -204,7 +223,14 @@ def synthesize(
         d.run_pass("plugin", "-i", "lighter")
         d.run_pass("reg_clock_gating", "-map", mapping)
 
-    openlane_synth(d, config["DESIGN_NAME"], not config["SYNTH_NO_FLAT"], report_dir)
+    openlane_synth(
+        d,
+        config["DESIGN_NAME"],
+        not config["SYNTH_NO_FLAT"],
+        report_dir,
+        booth=config["SYNTH_MUL_BOOTH"],
+        abc_dff=config["SYNTH_ABC_DFF"],
+    )
 
     d.run_pass("delete", "/t:$print")
     d.run_pass("delete", "/t:$assert")
@@ -324,7 +350,11 @@ def synthesize(
 
         shutil.copy(output, f"{output}.hierarchy.nl.v")
         d_flat.run_pass("read_verilog", "-sv", output)
-        d_flat.run_pass("synth", "-flatten")
+        d_flat.run_pass(
+            "synth",
+            "-flatten",
+            *(["-booth"] if config["SYNTH_MUL_BOOTH"] else []),
+        )
         run_strategy(d_flat)
 
 

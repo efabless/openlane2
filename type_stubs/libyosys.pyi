@@ -15,7 +15,13 @@ class Design:
         use_synlig: bool = False,
         synlig_defer: bool = False,
     ): ...
-    def add_blackbox_models(self, models: Iterable[str]): ...
+    def add_blackbox_models(
+        self,
+        models: Iterable[str],
+        *,
+        includes: Iterable[str],
+        defines: Iterable[str],
+    ): ...
 
 class Pass:
     @staticmethod

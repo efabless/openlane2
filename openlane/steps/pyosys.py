@@ -490,6 +490,12 @@ class SynthesisCommon(VerilogStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
+        Variable(
+            "SYNTH_MUL_BOOTH",
+            bool,
+            "Runs the booth pass as part of synthesis: See https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/booth.html",
+            default=False,
+        ),
         # Variable(
         #     "SYNTH_SDC_FILE",
         #     Optional[Path],

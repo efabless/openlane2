@@ -26,21 +26,27 @@ def json_header(
 
     blackbox_models = extra["blackbox_models"]
 
+    includes = config["VERILOG_INCLUDE_DIRS"] or []
+    defines = (config["VERILOG_DEFINES"] or []) + [
+        f"PDK_{config['PDK']}",
+        f"SCL_{config['STD_CELL_LIBRARY']}",
+        "__openlane__",
+        "__pnr__",
+        config["VERILOG_POWER_DEFINE"],
+    ]
+
     d = ys.Design()
-    d.add_blackbox_models(blackbox_models)
+    d.add_blackbox_models(
+        blackbox_models,
+        includes=includes,
+        defines=defines,
+    )
     d.read_verilog_files(
         config["VERILOG_FILES"],
         top=config["DESIGN_NAME"],
         synth_parameters=config["SYNTH_PARAMETERS"] or [],
-        includes=config["VERILOG_INCLUDE_DIRS"] or [],
-        defines=(config["VERILOG_DEFINES"] or [])
-        + [
-            f"PDK_{config['PDK']}",
-            f"SCL_{config['STD_CELL_LIBRARY']}",
-            "__openlane__",
-            "__pnr__",
-        ]
-        + [config["VERILOG_POWER_DEFINE"]],
+        includes=includes,
+        defines=defines,
         use_synlig=config["USE_SYNLIG"],
         synlig_defer=config["SYNLIG_DEFER"],
     )

@@ -102,10 +102,21 @@ def _Design_read_verilog_files(
 ys.Design.read_verilog_files = _Design_read_verilog_files  # type: ignore
 
 
-def _Design_add_blackbox_models(self, models: Iterable[str]):
+def _Design_add_blackbox_models(
+    self,
+    models: Iterable[str],
+    *,
+    includes: Iterable[str],
+    defines: Iterable[str],
+):
+    include_args = [f"-I{dir}" for dir in includes]
+    define_args = [f"-D{define}" for define in defines]
+
     for model in models:
         if model.endswith(".v") or model.endswith(".sv"):
-            self.run_pass("read_verilog", "-sv", "-lib", model)
+            self.run_pass(
+                "read_verilog", "-sv", "-lib", *include_args, *define_args, model
+            )
         elif model.endswith(".lib"):
             self.run_pass(
                 "read_liberty",
