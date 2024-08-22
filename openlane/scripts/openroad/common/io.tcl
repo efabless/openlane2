@@ -58,6 +58,24 @@ proc read_current_sdc {} {
         exit 1
     }
 
+    if { ![string_in_file $::env(_SDC_IN) "set_propagated_clock"] && ![string_in_file $::env(_SDC_IN) "unset_propagated_clock"] } {
+        if { $::env(OPENLANE_SDC_IDEAL_CLOCKS) == "1" } {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- unpropagating all clocks."
+            unset_propagated_clock [all_clocks]
+        } else {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- propagating all clocks."
+            set_propagated_clock [all_clocks]
+        }
+    }
+
+    set should_propagate_clocks 0
+    if { [info exists ::env(_PROPAGATE_ALL_CLOCKS)] && $::env(_PROPAGATE_ALL_CLOCKS) } {
+        set should_propagate_clocks [expr ![string_in_file $::env(_SDC_IN) "set_propagated_clocks"]]
+    }
+
+    if { $should_propagate_clocks } {
+    }
+
     # Restore Environment
     unset ::env(IO_PCT)
     unset ::env(SYNTH_TIMING_DERATE)

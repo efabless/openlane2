@@ -708,6 +708,11 @@ class STAPrePNR(MultiCornerSTA):
     name = "STA (Pre-PnR)"
     long_name = "Static Timing Analysis (Pre-PnR)"
 
+    def prepare_env(self, env: Dict, state: State) -> Dict:
+        env = super().prepare_env(env, state)
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "1"
+        return env
+
     def run_corner(
         self, state_in: State, current_env: Dict[str, Any], corner: str, corner_dir: str
     ) -> Dict[str, Any]:
@@ -764,6 +769,7 @@ class STAPostPNR(STAPrePNR):
         env = super().prepare_env(env, state)
         if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
             env["_SDC_IN"] = signoff_sdc_file
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "0"
         return env
 
     def filter_unannotated_report(
