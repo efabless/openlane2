@@ -159,7 +159,7 @@ def synthesize(
         d.run_pass("ghdl", *vhdl_files, "-e", config["DESIGN_NAME"])
     else:
         print(
-            f"Script called inappropriately: config must include either VERILOG_FILES or VHDL_FILES.",
+            "Script called inappropriately: config must include either VERILOG_FILES or VHDL_FILES.",
             file=sys.stderr,
         )
         exit(1)
