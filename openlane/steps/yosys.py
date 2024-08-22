@@ -467,11 +467,11 @@ class SynthesisCommon(YosysStep):
             default=True,
             deprecated_names=["SYNTH_FLAT_TOP"],
         ),
-        Variable(
-            "SYNTH_SDC_FILE",
-            Optional[Path],
-            "Specifies the SDC file to be read prior to PnR steps.",
-        ),
+        # Variable(
+        #     "SYNTH_SDC_FILE",
+        #     Optional[Path],
+        #     "Specifies the SDC file to be read prior to PnR steps.",
+        # ),
     ]
 
     def get_script_path(self):
