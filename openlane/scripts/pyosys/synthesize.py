@@ -51,15 +51,18 @@ def openlane_proc(d: ys.Design, report_dir: str):
     d.run_pass("proc_dff")  # Analyze flip-flops within procedures
     d.run_pass("proc_memwr")  # Analyze memory writes within procedures
     d.run_pass("proc_clean")  # Clean up after procedure processing
+    d.tee("check", o=os.path.join(report_dir, "pre_synth_chk.rpt"))
+    d.run_pass("opt_expr")  # Optimize expressions
 
 
 def openlane_synth(d, top, flatten, report_dir):
+    d.run_pass("hierarchy", "-check", "-top", top, "-nokeep_prints", "-nokeep_asserts")
     openlane_proc(d, report_dir)
 
     if flatten:
         d.run_pass("flatten")  # Flatten the design hierarchy
+        d.run_pass("opt_expr")  # Optimize expressions again
 
-    d.run_pass("opt_expr")  # Optimize expressions
     d.run_pass("opt_clean")  # Clean up after optimization
 
     # Perform various logic optimization passes
@@ -87,20 +90,13 @@ def openlane_synth(d, top, flatten, report_dir):
     d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
     d.run_pass("opt", "-fast")  # More fast optimization
 
-    # Utilize the ABC logic synthesis tool for further optimization
     d.run_pass("abc", "-fast")  # Run ABC with fast settings
+    d.run_pass("opt", "-fast")  # MORE fast optimization
 
-    # Additional optimization after ABC
-    d.run_pass("opt", "-fast")  # Fast optimization
-
-    # Check design hierarchy again
-    d.run_pass("hierarchy", "-check", "-nokeep_prints", "-nokeep_asserts")
-
-    # Generate design statistics
-    d.run_pass("stat")  # Calculate design statistics
-
-    # Perform design rule checking
-    d.run_pass("check")  # Check for design rule violations
+    # Checks and Stats
+    d.run_pass("hierarchy", "-check", "-top", top, "-nokeep_prints", "-nokeep_asserts")
+    d.run_pass("check")
+    d.run_pass("stat")
 
 
 def synthesize(
