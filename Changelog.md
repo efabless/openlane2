@@ -14,6 +14,16 @@
 ## Documentation
 -->
 
+# 2.1.2
+
+## Steps
+
+* `OpenROAD.*`
+
+  * Fixed an issue where the validation for `PDN_MACRO_CONNECTIONS` would
+    partially match net names, unlike OpenROAD itself
+  * Internal string escaping consistency
+
 # 2.1.1
 
 ## Steps

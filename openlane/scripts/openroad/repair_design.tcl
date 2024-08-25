@@ -43,7 +43,7 @@ if { $::env(DESIGN_REPAIR_BUFFER_OUTPUT_PORTS) } {
 }
 
 # Repair Design
-repair_design\
+repair_design -verbose \
     -max_wire_length $::env(DESIGN_REPAIR_MAX_WIRE_LENGTH) \
     -slew_margin $::env(DESIGN_REPAIR_MAX_SLEW_PCT) \
     -cap_margin $::env(DESIGN_REPAIR_MAX_CAP_PCT)

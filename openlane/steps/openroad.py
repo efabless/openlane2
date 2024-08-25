@@ -2330,7 +2330,7 @@ class ResizerTimingPostGRT(ResizerStep):
         Variable(
             "GRT_RESIZER_RUN_GRT",
             bool,
-            "Enables running GRT before and after running resizer",
+            "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
         ),
     ]
