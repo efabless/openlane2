@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 from typing import Iterable, List, Union
 
 try:
@@ -113,7 +114,7 @@ def _Design_add_blackbox_models(
     define_args = [f"-D{define}" for define in defines]
 
     for model in models:
-        if model.endswith(".v") or model.endswith(".sv"):
+        if model.endswith(".v") or model.endswith(".sv") or model.endswith(".vh"):
             self.run_pass(
                 "read_verilog", "-sv", "-lib", *include_args, *define_args, model
             )
@@ -128,8 +129,11 @@ def _Design_add_blackbox_models(
             )
         else:
             print(
-                f"[ERROR] Black-box model '{model}' has an unrecognized file extension."
+                f"[ERROR] Black-box model '{model}' has an unrecognized file extension.",
+                file=sys.stderr,
             )
+            sys.stderr.flush()
+            exit(-1)
 
 
 ys.Design.add_blackbox_models = _Design_add_blackbox_models  # type: ignore
