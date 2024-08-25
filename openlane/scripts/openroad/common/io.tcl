@@ -31,7 +31,7 @@ proc env_var_used {file var} {
 
 proc read_current_sdc {} {
     if { ![info exists ::env(_SDC_IN)]} {
-        puts "\[INFO] _SDC_IN not found. Not reading an SDC file."
+        puts "\[INFO\] _SDC_IN not found. Not reading an SDC file."
         return
     }
 
