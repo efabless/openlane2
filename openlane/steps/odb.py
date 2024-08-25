@@ -880,6 +880,7 @@ class ManualGlobalPlacement(OdbpyStep):
         return ["manual-global-placement"]
 
     def get_command(self) -> List[str]:
+        assert self.config_path is not None, "get_command called before start()"
         return super().get_command() + ["--step-config", self.config_path]
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
