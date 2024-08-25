@@ -232,8 +232,8 @@ def synthesize(
         abc_dff=config["SYNTH_ABC_DFF"],
     )
 
-    d.run_pass("delete", "/t:$print")
-    d.run_pass("delete", "/t:$assert")
+    d.run_pass("delete", "t:$print")
+    d.run_pass("delete", "t:$assert")
 
     try:
         d.run_pass(
