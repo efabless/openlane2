@@ -17,10 +17,6 @@ inputs:
     description: "The nix platform string to build for"
     required: true
     default: "x86_64-linux"
-  local_cache_key:
-    description: Key to use for the cache
-    required: false
-    default: ""
   run_tests:
     description: Whether to run unit tests and the smoke test
     required: false
@@ -32,20 +28,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - id: cache
-      name: Cache Derivation
-      uses: actions/cache@v3
-      with:
-        key: ${{ inputs.local_cache_key }}-${{ inputs.nix_system }}
-        path: /tmp/${{ inputs.local_cache_key }}
     - id: Build
       name: Build
       shell: ${{ inputs.shell }}
       run: |
-        substituters='https://${{ inputs.cachix_cache }}.cachix.org https://cache.nixos.org'
-        if [ '${{ inputs.local_cache_key }}' = '' ]; then
-          substituters="file:///tmp/${{ inputs.local_cache_key }} $substituters"
-        fi
         echo "#################################################################"
         outPath=$(nix build\
           --print-out-paths\
@@ -53,7 +39,6 @@ runs:
           --accept-flake-config\
           --option system ${{ inputs.nix_system }}\
           --extra-platforms ${{ inputs.nix_system }}\
-          --option substituters "$substituters"\
           .#devShells.${{ inputs.nix_system }}.default)
         echo "out-path=$outPath" >> $GITHUB_OUTPUT
         sudo du -hs /nix/store/* | sort -h | tail -n 20
@@ -78,13 +63,6 @@ runs:
           --accept-flake-config\
           .#devShells.${{ inputs.nix_system }}.dev --command\
           pytest --step-rx '.' --pdk-root="${{ inputs.pdk_root }}" -n auto
-    - name: Push to local cache
-      shell: ${{ inputs.shell }}
-      if: inputs.local_cache_key != '' && steps.cache.outputs.cache-hit != 'true'
-      run: |
-        nix copy\
-          --to 'file:///tmp/${{ inputs.local_cache_key }}?compression=zstd&parallel-compression=true'\
-          ${{ steps.build.outputs.out-path }}
     - name: Install + Push to Cachix
       shell: ${{ inputs.shell }}
       if: ${{ inputs.cachix_token != '' }}
