@@ -32,7 +32,7 @@ source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 estimate_parasitics -global_routing
 
 # Repair design
-repair_design -verbose \
+log_cmd repair_design -verbose \
     -max_wire_length $::env(GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH) \
     -slew_margin $::env(GRT_DESIGN_REPAIR_MAX_SLEW_PCT) \
     -cap_margin $::env(GRT_DESIGN_REPAIR_MAX_CAP_PCT)

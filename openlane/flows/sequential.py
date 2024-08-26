@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import json
 import os
 import fnmatch
 from typing import (
@@ -29,7 +30,8 @@ from typing import (
 from rapidfuzz import process, fuzz, utils
 
 from .flow import Flow, FlowException, FlowError
-from ..common import Filter
+from ..config import Macro
+from ..common import Filter, GenericDictEncoder
 from ..state import State
 from ..logging import info, success, debug
 from ..steps import (
@@ -334,11 +336,6 @@ class SequentialFlow(Flow):
 
             if to_resolved and to_resolved == step.id:
                 executing = False
-        if len(deferred_errors) != 0:
-            raise FlowError(
-                "One or more deferred errors were encountered:\n"
-                + "\n".join(deferred_errors)
-            )
 
         assert self.run_dir is not None
         debug(f"Run concluded ▶ '{self.run_dir}'")
@@ -347,5 +344,10 @@ class SequentialFlow(Flow):
             current_state.save_snapshot(final_views_path)
         except Exception as e:
             raise FlowException(f"Failed to save final views: {e}")
+        if len(deferred_errors) != 0:
+            raise FlowError(
+                "One or more deferred errors were encountered:\n"
+                + "\n".join(deferred_errors)
+            )
         success("Flow complete.")
         return (current_state, step_list)

@@ -226,7 +226,7 @@ def synthesize(
     openlane_synth(
         d,
         config["DESIGN_NAME"],
-        not config["SYNTH_NO_FLAT"],
+        config["SYNTH_HIERARCHY_MODE"] == "flatten",
         report_dir,
         booth=config["SYNTH_MUL_BOOTH"],
         abc_dff=config["SYNTH_ABC_DFF"],
@@ -343,7 +343,7 @@ def synthesize(
 
     run_strategy(d)
 
-    if config["SYNTH_NO_FLAT"]:
+    if config["SYNTH_HIERARCHY_MODE"] == "deferred_flatten":
         # Resynthesize, flattening
         d_flat = ys.Design()
         d_flat.add_blackbox_models(blackbox_models)

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Efabless Corporation
+# Copyright 2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-read_lefs "RCX_LEF"
-read_def $::env(CURRENT_DEF)
+read_current_odb
 
+set ::insts [$::block getInsts]
 
-set_propagated_clock [all_clocks]
-
-set rcx_flags ""
-if { !$::env(RCX_MERGE_VIA_WIRE_RES) } {
-    set rcx_flags "-no_merge_via_res"
+foreach inst $::insts {
+    $inst setPlacementStatus "NONE"
 }
 
-# RCX
-puts "Using RCX ruleset '$::env(RCX_RULESET)'…"
-define_process_corner -ext_model_index 0 CURRENT_CORNER
-log_cmd extract_parasitics $rcx_flags\
-    -ext_model_file $::env(RCX_RULESET)\
-    -lef_res
 write_views
