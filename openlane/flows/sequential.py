@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import json
 import os
 import fnmatch
 from typing import (
@@ -30,8 +29,7 @@ from typing import (
 from rapidfuzz import process, fuzz, utils
 
 from .flow import Flow, FlowException, FlowError
-from ..config import Macro
-from ..common import Filter, GenericDictEncoder
+from ..common import Filter
 from ..state import State
 from ..logging import info, success, debug
 from ..steps import (
