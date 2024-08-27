@@ -869,7 +869,7 @@ class ManualGlobalPlacement(OdbpyStep):
         Variable(
             "MANUAL_GLOBAL_PLACEMENTS",
             Optional[Dict[str, Instance]],
-            description="A dictionary of instances to their suggested global placement location.",
+            description="A dictionary of instances to their global (non-legalized and unfixed) placement location.",
         )
     ]
 
