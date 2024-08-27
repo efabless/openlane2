@@ -43,12 +43,11 @@
   flex,
   bison,
   clang-tools_14,
-  ioplace-parser,
   buildEnv,
   makeBinaryWrapper,
   buildPythonEnvForInterpreter,
-  rev ? "49a497abf0011b2631ce7caab8b78bd1f9d67662",
-  sha256 ? "sha256-3o+iT+9X8/EIf4c/+FLp6GRxPGmM5kWMwK7beyICRL0=",
+  rev ? "6b5937db431d2fa1023d3865f21ccd9b65781492",
+  sha256 ? "sha256-rpv3WkOahFFkW4g+8tRiPBfBFcLwJIqK/hTgWv2tkow=",
 }: let self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
@@ -65,7 +64,6 @@
       "-DTCL_HEADER=${tcl}/include/tcl.h"
       "-DUSE_SYSTEM_BOOST:BOOL=ON"
       "-DENABLE_TESTS:BOOL=OFF"
-      "-DVERBOSE=1"
     ];
 
     cmakeFlags =

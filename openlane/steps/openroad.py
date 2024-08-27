@@ -1071,7 +1071,7 @@ class IOPlacement(OpenROADStep):
 @Step.factory.register()
 class TapEndcapInsertion(OpenROADStep):
     """
-    Places well TAP cells across a floorplan, as well as end-cap cells at the
+    Places welltap cells across a floorplan, as well as endcap cells at the
     edges of the floorplan.
     """
 
@@ -1103,6 +1103,13 @@ class TapEndcapInsertion(OpenROADStep):
 
 @Step.factory.register()
 class UnplaceAll(OpenROADStep):
+    """
+    Sets placement status of *all* instances to NONE.
+
+    Useful in flows where a preliminary placement is needed as a pre-requisite
+    to something else but that placement must be discarded.
+    """
+
     id = "OpenROAD.UnplaceAll"
     name = "Unplace All"
 
@@ -1333,6 +1340,20 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
 
 @Step.factory.register()
 class HierarchicalMacroPlacer(OpenROADStep):
+    """
+    Uses the *Hier-RTLMP* automatic macro placer in OpenROAD to place any
+    unplaced macros.
+
+    This placer is aimed at complex top-level IP integrations where hierarchy
+    information from the register-transfer level could be leveraged.
+
+    This requires the netlist to keep hierarchy information. OpenLane 2's
+    Classic flow does not do so by default, see ``Yosys.Synthesis``'s
+    documentation on how to alter that.
+
+    See this paper for more info: https://arxiv.org/pdf/2304.11761
+    """
+
     id = "OpenROAD.HierarchicalMacroPlacer"
     name = "Hierarchical Macro Placement"
 
