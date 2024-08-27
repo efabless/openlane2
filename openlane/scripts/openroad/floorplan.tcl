@@ -53,7 +53,7 @@ puts "\[INFO\] Using $::env(FP_SIZING) sizing for the floorplan."
 if {$::env(FP_SIZING) == "absolute"} {
     if { [llength $::env(DIE_AREA)] != 4 } {
         puts stderr "Invalid die area string '$::env(DIE_AREA)'."
-        exit -1
+        exit_unless_gui 1
     }
     if { ! [info exists ::env(CORE_AREA)] } {
         set die_ll_x [lindex $::env(DIE_AREA) 0]
@@ -70,7 +70,7 @@ if {$::env(FP_SIZING) == "absolute"} {
     } else {
         if { [llength $::env(CORE_AREA)] != 4 } {
             puts stderr "Invalid core area string '$::env(CORE_AREA)'."
-            exit -1
+            exit_unless_gui 1
         }
         puts "\[INFO\] Using the set CORE_AREA; ignoring core margin parameters"
     }
@@ -94,7 +94,7 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
     }
 }
 
-initialize_floorplan {*}$arg_list
+log_cmd initialize_floorplan {*}$arg_list
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
 insert_tiecells $::env(SYNTH_TIEHI_CELL) -prefix "TIE_ONE_"

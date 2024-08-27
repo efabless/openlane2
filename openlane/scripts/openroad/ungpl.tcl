@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-yosys -import
-source $::env(SCRIPTS_DIR)/yosys/common.tcl
+source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
+read_current_odb
 
-source $::env(_DEPS_SCRIPT)
+set ::insts [$::block getInsts]
 
-yosys_ol::read_verilog_files $::env(DESIGN_NAME)
-hierarchy -check -top $::env(DESIGN_NAME) -nokeep_prints -nokeep_asserts
-yosys rename -top $::env(DESIGN_NAME)
-yosys proc
-flatten
-opt_clean -purge
-json -o $::env(SAVE_JSON_HEADER)
+foreach inst $::insts {
+    $inst setPlacementStatus "NONE"
+}
+
+write_views
