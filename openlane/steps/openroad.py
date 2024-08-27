@@ -702,7 +702,7 @@ class STAPrePNR(MultiCornerSTA):
 
     If timing information is not available for a Macro, the macro in question
     will be black-boxed.
-    
+
     During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
     exposed to SDC files with a value of `1`. We encourage PNR SDC files to use
     ideal clocks at this stage based on this variable's existence and value.
@@ -752,7 +752,7 @@ class STAPostPNR(STAPrePNR):
     Performs multi-corner `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
     using OpenSTA on the post-PnR Verilog netlist, with extracted parasitics for
     both the top-level module and any associated macros.
-    
+
     During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
     exposed to SDC files with a value of `0`. We encourage PNR SDC files to use
     propagated clocks at this stage based on this variable's existence and value.
