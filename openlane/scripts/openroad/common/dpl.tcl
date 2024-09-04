@@ -15,8 +15,9 @@ source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
 remove_fillers
 
-detailed_placement\
-    -max_displacement [subst { $::env(PL_MAX_DISPLACEMENT_X) $::env(PL_MAX_DISPLACEMENT_Y) }]
+detailed_placement
+
+improve_placement  -max_displacement "5 1"
 
 if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
     optimize_mirroring
