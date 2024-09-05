@@ -31,7 +31,7 @@ if { [info exists ::env(VSRC_LOC_FILES)] } {
     }
     puts "%OL_END_REPORT"
 } else {
-    puts "\[INFO] Using voltage extracted from lib ($::env(LIB_VOLTAGE)V) for power nets and 0V for ground nets…"
+    puts "\[INFO\] Using voltage extracted from lib ($::env(LIB_VOLTAGE)V) for power nets and 0V for ground nets…"
     puts "%OL_CREATE_REPORT irdrop.rpt"
     foreach net "$::env(VDD_NETS)" {
         set arg_list [list]
