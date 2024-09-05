@@ -78,6 +78,7 @@ clangStdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "Gate-level static timing verifier";
     homepage = "https://parallaxsw.com";
+    mainProgram = "sta";
     license = licenses.gpl3Plus;
     platforms = platforms.darwin ++ platforms.linux;
   };
