@@ -14,7 +14,7 @@
 ## Documentation
 -->
 
-# 2.1.3
+# 2.1.4
 
 ## Steps
 
@@ -27,7 +27,29 @@
     regardless the information in the SDC file.
   * For backwards compatibility, `STAPrePNR` unsets all propagated clocks and
     the rest set all propagated clocks IF the SDC file lacks the strings
-    `set_propagated_clock` or `unset_propagated_clock`.
+    `set_propagated_clock` or `unset_propagated_clock`.    
+
+# 2.1.3
+
+## Tool Updates
+
+* Bundled an downgraded OpenSTA bundled with OpenLane to work around critical
+  bug for hierarchical static timing analysis:
+  https://github.com/parallaxsw/OpenSTA/issues/82
+  * Version of OpenSTA linked against OpenROAD unchanged.
+
+## Testing
+
+* CI now uses DeterminateSystems Nix Installer for all Nix installations as well
+  as the Magic Nix Cache Action instead of the nonfunctional attempt at local
+  file-based substituters
+
+## Documentation
+
+* Installation documents now use the less-brittle Determinate Systems Nix
+  installer, as well as adding warnings about the `apt` version of Nix.
+
+* Added an OpenROAD Flow Scripts-inspired Diagram to the Readme.
 
 # 2.1.2
 
