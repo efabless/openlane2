@@ -335,15 +335,15 @@ foreach clock [all_clocks] {
 puts "%OL_END_REPORT"
 
 
-puts "%OL_CREATE_REPORT clock.rpt"
+# puts "%OL_CREATE_REPORT clock.rpt"
 
-foreach clock [all_clocks] {
-    report_clock_properties $clock
-    report_clock_latency -clock $clock
-    report_clock_min_period -clocks [get_property $clock name]
-}
+# foreach clock [all_clocks] {
+#     report_clock_properties $clock
+#     report_clock_latency -clock $clock
+#     report_clock_min_period -clocks [get_property $clock name]
+# }
 
-puts "%OL_END_REPORT"
+# puts "%OL_END_REPORT"
 
 write_sdfs
 write_libs
