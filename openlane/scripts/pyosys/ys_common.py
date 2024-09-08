@@ -94,7 +94,7 @@ def _Design_read_verilog_files(
     else:
         for file in files:
             self.run_pass(
-                "read_verilog", "-noautowire", "-sv", *include_args, *define_args, file
+                "read_verilog", "-defer", "-noautowire", "-sv", *include_args, *define_args, file,
             )
         for param, value in chparams.items():
             self.run_pass("chparam", "-set", param, value, top)
