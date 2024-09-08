@@ -437,6 +437,12 @@ class Step(ABC):
 
         If :meth:`start` is called again, the reference is destroyed.
 
+    :ivar config_path:
+        Path to the last step-specific `config.json` generated while running
+        this step object, if it exists.
+
+        If :meth:`start` is called again, the path will be replaced.
+
     :ivar toolbox:
         The last :class:`Toolbox` used while running this step object, if it
         exists.
@@ -461,6 +467,7 @@ class Step(ABC):
     state_out: Optional[State] = None
     start_time: Optional[float] = None
     end_time: Optional[float] = None
+    config_path: Optional[str] = None
 
     # These are mutable class variables. However, they will only be used
     # when steps are run outside of a Flow, pretty much.
@@ -1091,7 +1098,8 @@ class Step(ABC):
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
             f.write(state_in_result.dumps())
 
-        with open(os.path.join(self.step_dir, "config.json"), "w") as f:
+        self.config_path = os.path.join(self.step_dir, "config.json")
+        with open(self.config_path, "w") as f:
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
