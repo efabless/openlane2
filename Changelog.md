@@ -14,6 +14,21 @@
 ## Documentation
 -->
 
+# 2.1.4
+
+## Steps
+
+* `OpenROAD.STA*PNR`
+  * New environment variable made accessible to SDC files used during
+    Multi-Corner STA steps, `OPENLANE_SDC_IDEAL_CLOCKS`, set to `1` for pre-PnR.
+    Band-aid until the SDC situation is properly discussed and addressed (in a
+    potentially breaking change.)
+  * Fixed issue where the clock was always propagated after `STAPrePNR`
+    regardless the information in the SDC file.
+  * For backwards compatibility, `STAPrePNR` unsets all propagated clocks and
+    the rest set all propagated clocks IF the SDC file lacks the strings
+    `set_propagated_clock` or `unset_propagated_clock`.    
+
 # 2.1.3
 
 ## Tool Updates
