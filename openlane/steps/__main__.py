@@ -447,13 +447,15 @@ def create_reproducible(
 
 
 @command(formatter_settings=formatter_settings, hidden=True)
-@argument(
-    "step_dir",
+@o(
+    "-d",
+    "--step-dir",
     type=Path(
         exists=False,
         file_okay=False,
         dir_okay=True,
     ),
+    help="The step directory from which to create the test. If provided, --config and the input state can be omitted, and vice versa.",
     default=None,
 )
 @o(
@@ -465,8 +467,20 @@ def create_reproducible(
     ),
     default=None,
 )
+@argument(
+    "step_dir_arg",
+    type=Path(
+        exists=False,
+        file_okay=False,
+        dir_okay=True,
+    ),
+    default=None,
+    required=False,
+    nargs=1,
+)
 @pass_context
-def create_test(ctx, step_dir, output):
+def create_test(ctx, step_dir, step_dir_arg, output):
+    step_dir = step_dir or step_dir_arg or os.getcwd()
     config = os.path.join(step_dir, "config.json")
     state_in = os.path.join(step_dir, "state_in.json")
     if output is None:

@@ -470,7 +470,7 @@ class SynthesisCommon(YosysStep):
         # Variable(
         #     "SYNTH_SDC_FILE",
         #     Optional[Path],
-        #     "Specifies the SDC file read during all Synthesis steps",
+        #     "Specifies the SDC file to be read prior to PnR steps.",
         # ),
     ]
 

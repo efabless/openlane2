@@ -121,9 +121,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
-            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
-            extra-substituters = https://openlane.cachix.org
-            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
@@ -148,9 +146,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
-            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
-            extra-substituters = https://openlane.cachix.org
-            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
@@ -182,9 +178,7 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
-            access-tokens = github.com=${{ env.GITHUB_TOKEN }}
-            extra-substituters = https://openlane.cachix.org
-            extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: DeterminateSystems/magic-nix-cache-action@main
       # For some reason, GHA Macs are far more aggressively rate-limited with
       # Volare than Linux
@@ -232,6 +226,9 @@ jobs:
           fi
           echo "NIX_SYSTEM=$nix_system" >> $GITHUB_ENV
       - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix
@@ -301,6 +298,9 @@ jobs:
           git status || true
           tree .git || true
       - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Build with Nix
         uses: ./.github/actions/build_nix

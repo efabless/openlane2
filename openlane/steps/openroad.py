@@ -702,11 +702,20 @@ class STAPrePNR(MultiCornerSTA):
 
     If timing information is not available for a Macro, the macro in question
     will be black-boxed.
+
+    During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
+    exposed to SDC files with a value of `1`. We encourage PNR SDC files to use
+    ideal clocks at this stage based on this variable's existence and value.
     """
 
     id = "OpenROAD.STAPrePNR"
     name = "STA (Pre-PnR)"
     long_name = "Static Timing Analysis (Pre-PnR)"
+
+    def prepare_env(self, env: Dict, state: State) -> Dict:
+        env = super().prepare_env(env, state)
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "1"
+        return env
 
     def run_corner(
         self, state_in: State, current_env: Dict[str, Any], corner: str, corner_dir: str
@@ -743,6 +752,10 @@ class STAPostPNR(STAPrePNR):
     Performs multi-corner `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
     using OpenSTA on the post-PnR Verilog netlist, with extracted parasitics for
     both the top-level module and any associated macros.
+
+    During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
+    exposed to SDC files with a value of `0`. We encourage PNR SDC files to use
+    propagated clocks at this stage based on this variable's existence and value.
     """
 
     id = "OpenROAD.STAPostPNR"
@@ -764,6 +777,7 @@ class STAPostPNR(STAPrePNR):
         env = super().prepare_env(env, state)
         if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
             env["_SDC_IN"] = signoff_sdc_file
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "0"
         return env
 
     def filter_unannotated_report(
