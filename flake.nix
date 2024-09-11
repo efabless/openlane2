@@ -22,7 +22,7 @@
   };
 
   inputs = {
-    nix-eda.url = github:efabless/nix-eda/python_cleanup;
+    nix-eda.url = github:efabless/nix-eda;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
@@ -80,6 +80,14 @@
             openlane = callPythonPackage ./default.nix {};
             sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
             sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+            
+            # TEMPORARY: Until https://github.com/YosysHQ/yosys/pull/4553 is merged
+            yosys = pkgs.yosys.overrideAttrs(new: old: {
+              patches = old.patches ++ [
+                ./nix/patches/yosys/4553.patch
+              ];
+            });
+            
             default = openlane;
           }
           // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};}));
