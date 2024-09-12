@@ -19,7 +19,6 @@
   nix-gitignore,
   # Tools
   klayout,
-  klayout-pymod,
   libparse,
   magic-vlsi,
   netgen,
@@ -57,6 +56,21 @@
   ioplace-parser,
   poetry-core,
 }: let
+  yosys-env = yosys.withPlugins ([
+      yosys-sby
+      yosys-eqy
+      yosys-lighter
+      yosys-synlig-sv
+      yosys-f4pga-sdc
+    ]
+    ++ lib.optionals (builtins.elem system ["x86_64-linux" "x86_64-darwin"]) [yosys-ghdl]);
+  openroad-env = openroad.withPythonPackages (ps:
+    with ps; [
+      click
+      rich
+      pyyaml
+      ioplace-parser
+    ]);
   self = buildPythonPackage {
     pname = "openlane";
     version = (builtins.fromTOML (builtins.readFile ./pyproject.toml)).tool.poetry.version;
@@ -69,16 +83,9 @@
     ];
 
     includedTools = [
-      (yosys.withPlugins ([
-          yosys-sby
-          yosys-eqy
-          yosys-lighter
-          yosys-synlig-sv
-          yosys-f4pga-sdc
-        ]
-        ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
       opensta-stable
-      openroad
+      yosys-env
+      openroad-env
       klayout
       netgen
       magic-vlsi
@@ -104,7 +111,7 @@
         deprecated
         libparse
         psutil
-        klayout-pymod
+        klayout.pymod
         rapidfuzz
         ioplace-parser
       ]
