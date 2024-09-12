@@ -257,13 +257,8 @@ class PyosysStep(Step):
         return cmd
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        kwargs, env = self.extract_env(kwargs)
-
-        env["PYTHONPATH"] = os.path.join(get_script_dir(), "pyosys")
-
         cmd = self.get_command(state_in)
-
-        subprocess_result = super().run_subprocess(cmd, env=env, **kwargs)
+        subprocess_result = super().run_subprocess(cmd, **kwargs)
         return {}, subprocess_result["generated_metrics"]
 
 

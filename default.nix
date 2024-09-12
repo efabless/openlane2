@@ -56,22 +56,21 @@
   ioplace-parser,
   poetry-core,
 }: let
-  yosys-env = 
-      (yosys.withPlugins ([
-          yosys-sby
-          yosys-eqy
-          yosys-lighter
-          yosys-synlig-sv
-          yosys-f4pga-sdc
-        ]
-        ++ lib.optionals (builtins.elem system ["x86_64-linux" "x86_64-darwin"]) [yosys-ghdl]));
-  openroad-env =
-    (openroad.withPythonPackages(ps: with ps; [
+  yosys-env = yosys.withPlugins ([
+      yosys-sby
+      yosys-eqy
+      yosys-lighter
+      yosys-synlig-sv
+      yosys-f4pga-sdc
+    ]
+    ++ lib.optionals (builtins.elem system ["x86_64-linux" "x86_64-darwin"]) [yosys-ghdl]);
+  openroad-env = openroad.withPythonPackages (ps:
+    with ps; [
       click
       rich
       pyyaml
       ioplace-parser
-    ]));
+    ]);
   self = buildPythonPackage {
     pname = "openlane";
     version = (builtins.fromTOML (builtins.readFile ./pyproject.toml)).tool.poetry.version;

@@ -47,7 +47,8 @@
   buildPythonEnvForInterpreter,
   rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
   sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
-}: let self = clangStdenv.mkDerivation (finalAttrs: {
+}: let
+  self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -124,7 +125,7 @@
     shellHook = ''
       export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
     '';
-    
+
     passthru = {
       inherit python3;
       withPythonPackages = buildPythonEnvForInterpreter {
@@ -143,4 +144,6 @@
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  }); in self
+  });
+in
+  self
