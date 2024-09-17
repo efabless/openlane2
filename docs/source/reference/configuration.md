@@ -2,16 +2,16 @@
 
 Unless the design uses the API directly, each OpenLane-compatible design must
 come with a configuration file. These configuration files can be written in one
-of two grammars: JSON or Tcl.
+of three grammars: JSON, YAML or Tcl.
 
-Tcl offers more flexibility at the detriment of security, while JSON is more
-straightforward at the cost of flexibility. While Tcl allows you to do all
-manner of computation on your variables, JSON has a limited expression engine
-that will be detailed later in this document. Nevertheless, for security (and
-future-proofing), we recommend you use either the JSON format or write Python
-scripts using the API.
+Tcl offers more flexibility at the detriment of security, while Tcl/JSON are
+more straightforward at the cost of flexibility. While Tcl allows you to do all
+manner of computation on your variables, YAML/JSON have a limited expression
+engine that will be detailed later in this document. Nevertheless, for security
+(and future-proofing), we recommend you use either the YAML/JSON format or write
+Python scripts using the API.
 
-The folder containing your `config.tcl`/`config.json` is known as the **Design
+The folder containing your `config.{tcl/yml/yaml/json}` is known as the **Design
 Directory** -- though the design directory can also be set explicitly over the
 command-line using `--design-dir`. The design directory is special in that paths
 in the JSON configuration files can be resolved relative to this directory and
@@ -24,17 +24,17 @@ enabling you to do complex pre-processing far beyond the capacity of either
 JSON or Tcl files. You can still use `ref::` and such like JSON files though.
 ```
 
-## JSON
+## JSON/YAML
 
-The JSON files are simple key-value pairs.
+The JSON and YAML files are simple key-value pairs.
 
 <a name="scalars"></a>
 
 The values can be scalars (strings, numbers, Booleans, and `null`s), lists or
 dictionaries, subject to validation.
 
-All files must be ECMA404-compliant, i.e., pure JSON with no extensions such as
-comments or the new elements introduced in [JSON5](https://json5.org/).
+All JSON files must be ECMA404-compliant, i.e., pure JSON with no extensions
+such as comments or the new elements introduced in [JSON5](https://json5.org/).
 
 An minimal demonstrative configuration file would look as follows:
 
@@ -49,23 +49,43 @@ An minimal demonstrative configuration file would look as follows:
     "FP_CORE_UTIL": 40,
     "PL_TARGET_DENSITY_PCT": "expr::($FP_CORE_UTIL + 10.0)",
     "scl::sky130_fd_sc_hd": {
-      "CLOCK_PERIOD": 15
+      "CLOCK_PERIOD": 15.0
     }
   }
 }
 ```
 
+All YAML files must conform to the
+[YAML 1.2 specification](https://yaml.org/spec/1.2.2/). Scalar types are deduced
+according to the
+[YAML 1.2 Core Schema](https://yaml.org/spec/1.2.2/#103-core-schema).
+
+An minimal demonstrative configuration file would look as follows:
+
+```yml
+DESIGN_NAME: spm
+VERILOG_FILES: dir::src/*.v
+CLOCK_PORT: clk
+CLOCK_PERIOD: 100
+pdk::sky130A:
+  MAX_FANOUT_CONSTRAINT: 6
+  FP_CORE_UTIL: 40
+  PL_TARGET_DENSITY_PCT: expr::($FP_CORE_UTIL + 10.0)
+  scl::sky130_fd_sc_hd:
+    CLOCK_PERIOD: 15.0
+```
+
 ### Pre-processing
 
-The JSON files are pre-processed at runtime. Features include conditional
+JSON/YAML files are pre-processed at runtime. Features include conditional
 execution, a way to reference the design directory, other variables, and a basic
 numeric expression engine.
 
 #### Conditional Execution
 
-The JSON configuration files support conditional execution based on PDK or
-standard cell library (or, by nesting as shown above, a combination thereof.)
-You can do this using the `pdk::` or `scl::` key prefixes.
+The configuration files support conditional execution based on PDK or standard
+cell library (or, by nesting as shown above, a combination thereof.) You can do
+this using the `pdk::` or `scl::` key prefixes.
 
 The value for this key would be a `dict` that is only evaluated if the PDK or
 SCL matches those in the key, i.e., for `pdk::sky130A` as shown above, this
@@ -135,9 +155,9 @@ reference a variable that is declared after the current expression.
 > it is declared, but the latter is OK, where the value will be "vdd gnd" as
 > well.
 
-Do note that unlike Tcl config files, environment variables (other than
-`DESIGN_DIR`, `PDK`, `PDKPATH`, `STD_CELL_LIBRARY`) are not exposed to
-`config.json` by default.
+Do note that unlike Tcl config files, environment variablesare not exposed to
+`config.{yml/yaml/json}` by default. You only have access to four specific
+variables: `DESIGN_DIR`, `PDK`, `PDKPATH`, and `STD_CELL_LIBRARY`.
 
 If the files you choose lie **inside** the design directory, a different prefix,
 `refg::`, supports non-recursive globs, i.e., you can use an asterisk as a
@@ -150,8 +170,8 @@ wildcard to pick multiple files in a specific folder.
   * If no elements were found, the glob string is returned verbatim as a single
     element in array.
 
-As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with `.v`
-in the `src` folder inside the design directory.
+As shown below, `refg::$DESIGN_DIR/src/*.v` would find all files ending with
+`.v` in the `src` folder inside the design directory.
 
 ```json
 {

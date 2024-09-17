@@ -82,7 +82,8 @@
               };
               sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
               sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
-              
+              yamlcore = callPythonPackage ./nix/yamlcore.nix {};
+
               # ---
               openlane = callPythonPackage ./default.nix {};
               default = self.openlane;

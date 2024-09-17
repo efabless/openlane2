@@ -25,6 +25,7 @@ httpx = ">=0.22.0,<0.28"
 klayout = ">=0.29.0,<0.30.0"
 rapidfuzz = ">=3.9.0,<4"
 ioplace-parser = "0.3.0"
+yamlcore = "^0.0.2"
 
 
 [tool.poetry.dev-dependencies]
