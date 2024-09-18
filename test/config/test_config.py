@@ -220,12 +220,15 @@ def test_tcl_config():
 @pytest.mark.usefixtures("_mock_conf_fs")
 @mock_variables()
 def test_multiconf():
-    from openlane.config import Config
+    from openlane.config import Config, Meta
 
     with open("/cwd/config1.yaml", "w") as f:
         f.write(
             """
             DESIGN_NAME: spm
+            meta:
+                version: 1
+                flow: EEEEEEE
             """
         )
     with open("/cwd/config2.json", "w") as f:
@@ -250,7 +253,28 @@ def test_multiconf():
         pdk_root="/pdk",
     )
 
-    assert cfg["GRT_REPAIR_ANTENNAS"] is False, "override strings handled properly"
+    assert cfg == Config(
+        {
+            "DESIGN_DIR": "/cwd",
+            "DESIGN_NAME": "spm",
+            "PDK_ROOT": "/pdk",
+            "PDK": "dummy",
+            "STD_CELL_LIBRARY": "dummy_scl",
+            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "EXAMPLE_PDK_VAR": Decimal("10"),
+            "GRT_REPAIR_ANTENNAS": False,
+            "RUN_HEURISTIC_DIODE_INSERTION": False,
+            "DIODE_ON_PORTS": "none",
+            "MACROS": None,
+            "TECH_LEFS": {
+                "nom_*": Path(
+                    "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
+                )
+            },
+            "DEFAULT_CORNER": "nom_tt_025C_1v80",
+        },
+        meta=Meta(version=2, flow="Whatever"),
+    ), "Generated configuration does not match expected value"
 
 
 @pytest.mark.usefixtures("_mock_conf_fs")

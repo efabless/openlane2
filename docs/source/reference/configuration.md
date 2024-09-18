@@ -4,7 +4,7 @@ Unless the design uses the API directly, each OpenLane-compatible design must
 come with a configuration file. These configuration files can be written in one
 of three grammars: JSON, YAML or Tcl.
 
-Tcl offers more flexibility at the detriment of security, while Tcl/JSON are
+Tcl offers more flexibility at the detriment of security, while YAML/JSON are
 more straightforward at the cost of flexibility. While Tcl allows you to do all
 manner of computation on your variables, YAML/JSON have a limited expression
 engine that will be detailed later in this document. Nevertheless, for security
@@ -155,7 +155,7 @@ reference a variable that is declared after the current expression.
 > it is declared, but the latter is OK, where the value will be "vdd gnd" as
 > well.
 
-Do note that unlike Tcl config files, environment variablesare not exposed to
+Do note that unlike Tcl config files, environment variables are not exposed to
 `config.{yml/yaml/json}` by default. You only have access to four specific
 variables: `DESIGN_DIR`, `PDK`, `PDKPATH`, and `STD_CELL_LIBRARY`.
 
