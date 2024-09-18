@@ -20,6 +20,8 @@
   opensta,
   boost183,
   eigen,
+  cudd,
+  ninja,
   tcl,
   python3,
   readline,
@@ -41,20 +43,12 @@
   flex,
   bison,
   clang-tools_14,
-  ioplace-parser,
-  rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
-  sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
-}: let
-  pyenv = python3.withPackages (p:
-    with p; [
-      click
-      rich
-      pyyaml
-      ioplace-parser
-    ]);
-  pyenv-sitepackages = "${pyenv}/${pyenv.sitePackages}";
-in
-  clangStdenv.mkDerivation (finalAttrs: {
+  buildEnv,
+  makeBinaryWrapper,
+  buildPythonEnvForInterpreter,
+  rev ? "b061a21c943fadaca8f972a73f802eca15449935",
+  sha256 ? "sha256-VRJEfCPml1nDZ4AINjKfyrxBKofMf9TjytPFfVIFRTY=",
+}: let self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -69,9 +63,7 @@ in
       "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
       "-DTCL_HEADER=${tcl}/include/tcl.h"
       "-DUSE_SYSTEM_BOOST:BOOL=ON"
-      "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
       "-DENABLE_TESTS:BOOL=OFF"
-      "-DVERBOSE=1"
     ];
 
     cmakeFlags =
@@ -80,25 +72,25 @@ in
         "-DUSE_SYSTEM_ABC:BOOL=ON"
         "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
         "-DOPENSTA_HOME=${opensta}"
+        "-DCMAKE_CXX_FLAGS=-I${eigen}/include/eigen3"
         "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
       ];
 
     preConfigure = ''
       sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake
       patchShebangs ./etc/find_messages.py
-
-      sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
-      sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
+      
       sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-      sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
+      sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
     '';
 
     buildInputs = [
       openroad-abc
       boost183
       eigen
+      cudd
       tcl
-      pyenv
+      python3
       readline
       tclreadline
       spdlog-internal-fmt
@@ -121,6 +113,7 @@ in
       swig4
       pkg-config
       cmake
+      ninja
       gnumake
       flex
       bison
@@ -131,10 +124,16 @@ in
     shellHook = ''
       export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
     '';
-
-    qtWrapperArgs = [
-      "--prefix PYTHONPATH : ${pyenv-sitepackages}"
-    ];
+    
+    passthru = {
+      inherit python3;
+      withPythonPackages = buildPythonEnvForInterpreter {
+        target = self;
+        inherit lib;
+        inherit buildEnv;
+        inherit makeBinaryWrapper;
+      };
+    };
 
     meta = with lib; {
       description = "OpenROAD's unified application implementing an RTL-to-GDS flow";
@@ -144,4 +143,4 @@ in
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  })
+  }); in self

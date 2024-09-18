@@ -69,12 +69,10 @@
             });
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
-            opensta-stable = callPackage ./nix/opensta.nix {
-              rev = "cc9eb1f12a0d5030aebc1f1428e4300480e30b40";
-              sha256 = "sha256-/ShPD4xWq3lkN0Z3uONKm7i9eqbT+IU41UF7yIvDJy4=";
-            };
             openroad-abc = callPackage ./nix/openroad-abc.nix {};
-            openroad = callPythonPackage ./nix/openroad.nix {};
+            openroad = callPythonPackage ./nix/openroad.nix {
+              inherit (nix-eda) buildPythonEnvForInterpreter;
+            };
             openlane = callPythonPackage ./default.nix {};
             sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
             sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};

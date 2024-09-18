@@ -23,7 +23,7 @@
   libparse,
   magic-vlsi,
   netgen,
-  opensta-stable,
+  opensta,
   openroad,
   ruby,
   surelog,
@@ -77,7 +77,7 @@
           yosys-f4pga-sdc
         ]
         ++ lib.optionals (system == "x86_64-linux") [yosys-ghdl]))
-      opensta-stable
+      opensta
       openroad
       klayout
       netgen
