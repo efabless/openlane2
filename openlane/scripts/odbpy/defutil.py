@@ -531,7 +531,7 @@ def remove_obstructions(reader, input_lefs, obstructions):
     dbu = reader.tech.getDbUnitsPerMicron()
 
     def to_microns(x):
-        return int(x / dbu)
+        return round(x / dbu, 3)
 
     for odb_obstruction in reader.block.getObstructions():
         bbox = odb_obstruction.getBBox()
