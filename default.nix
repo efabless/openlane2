@@ -19,7 +19,6 @@
   nix-gitignore,
   # Tools
   klayout,
-  klayout-pymod,
   libparse,
   magic-vlsi,
   netgen,
@@ -104,7 +103,7 @@
         deprecated
         libparse
         psutil
-        klayout-pymod
+        klayout.pymod
         rapidfuzz
         ioplace-parser
       ]
