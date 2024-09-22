@@ -42,6 +42,7 @@
   click,
   cloup,
   pyyaml,
+  yamlcore,
   rich,
   requests,
   pcpp,
@@ -102,6 +103,7 @@
         click
         cloup
         pyyaml
+        yamlcore
         rich
         requests
         pcpp
