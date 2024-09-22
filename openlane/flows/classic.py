@@ -117,6 +117,7 @@ class Classic(SequentialFlow):
         Checker.MaxSlewViolations,
         Checker.MaxCapViolations,
         Misc.ReportManufacturability,
+        OpenROAD.WriteViews,
     ]
 
     config_vars = [

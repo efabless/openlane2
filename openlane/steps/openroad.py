@@ -1940,6 +1940,15 @@ class WriteViews(OpenROADStep):
         DesignFormat.OPENROAD_LEF,
     ]
 
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS",
+            bool,
+            description="Generates cover obstructions (obstructions over the entire layer) for each layer where shapes are present",
+            default=False,
+        )
+    ]
+
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
 
