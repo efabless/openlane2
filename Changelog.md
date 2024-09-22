@@ -14,6 +14,14 @@
 ## Documentation
 -->
 
+# 2.1.6
+
+## Steps
+
+* `Yosys.Synthesis`
+  
+  * Fixed bug where `hilomap` command was invoked incorrectly (thanks @htfab!)
+
 # 2.1.5
 
 ## Steps

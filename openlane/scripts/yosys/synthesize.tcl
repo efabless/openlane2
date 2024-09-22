@@ -180,7 +180,7 @@ proc run_strategy {output script strategy_name {postfix_with_strategy 0}} {
 
     setundef -zero
 
-    hilomap -hicell $::env(SYNTH_TIEHI_CELL) -locell $::env(SYNTH_TIELO_CELL)
+    hilomap -hicell {*}[split $::env(SYNTH_TIEHI_CELL) "/"] -locell {*}[split $::env(SYNTH_TIELO_CELL) "/"]
 
     if { $::env(SYNTH_SPLITNETS) } {
         splitnets
