@@ -14,6 +14,16 @@
 ## Documentation
 -->
 
+# 2.1.7
+
+## Steps
+
+* `Odb.Remove*Obstructions`
+
+  * Rework obstruction matching code to not use IEEE 754 in any capacity
+  * Fixed bug where non-integral obstructions would not be matched correctly
+    (thanks @urish!)
+
 # 2.1.6
 
 ## Steps
