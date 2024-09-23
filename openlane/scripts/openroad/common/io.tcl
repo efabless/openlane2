@@ -368,6 +368,7 @@ proc write_views {args} {
         puts "Writing LEF to '$::env(SAVE_OPENROAD_LEF)'…"
         set arg_list [list]
         if {$::env(OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS)} {
+            lappend arg_list -bloat_occupied_layers
         }
         write_abstract_lef {*}$arg_list $::env(SAVE_OPENROAD_LEF)
     }
