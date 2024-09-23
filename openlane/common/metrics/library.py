@@ -51,6 +51,18 @@ Metric(
     "design__instance__count__diode",
     higher_is_better=False,
 )
+Metric(
+    "design__instance__count__buffer",
+    higher_is_better=False,
+)
+Metric(
+    "design__instance__count__inverter",
+    higher_is_better=False,
+)
+Metric(
+    "design__instance__count__memory_cell",
+    higher_is_better=False,
+)
 
 # Power
 Metric(
@@ -121,6 +133,7 @@ Metric(
     higher_is_better=False,
     critical=True,
 )
+
 Metric(
     "timing__setup_r2r_vio__count",
     aggregator=sum_aggregator,
