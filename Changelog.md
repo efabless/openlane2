@@ -17,7 +17,7 @@
 
 ## Steps
 
-* `OpenROAD.MultiCornerSTA`:
+* `OpenROAD.MultiCornerSTA`
 
   * Fix a bug in STA metrics where paths with exactly zero slack are counted as violations
  
