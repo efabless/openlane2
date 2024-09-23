@@ -13,14 +13,16 @@
 ## API Breaks
 ## Documentation
 -->
+
 # 2.1.8
 
 ## Steps
 
-* `OpenROAD.MultiCornerSTA`
+* `OpenROAD.STA*PnR`
 
-  * Fix a bug in STA metrics where paths with exactly zero slack are counted as violations
- 
+  * Fixed a bug in STA metrics where paths with exactly zero slack are counted
+    as violations
+
 # 2.1.7
 
 ## Steps
@@ -36,7 +38,7 @@
 ## Steps
 
 * `Yosys.Synthesis`
-  
+
   * Fixed bug where `hilomap` command was invoked incorrectly (thanks @htfab!)
 
 # 2.1.5
