@@ -14,7 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-set ::block [[[::ord::get_db] getChip] getBlock]
 set ::insts [$::block getInsts]
 
 set placement_needed 0
@@ -27,9 +26,9 @@ foreach inst $::insts {
 }
 
 if { !$placement_needed } {
-	puts stderr "\[WARNING] All instances are FIXED/FIRM."
-	puts stderr "\[WARNING] No need to perform global placement."
-	puts stderr "\[WARNING] Skipping…"
+	puts stderr "\[WARNING\] All instances are FIXED/FIRM."
+	puts stderr "\[WARNING\] No need to perform global placement."
+	puts stderr "\[WARNING\] Skipping…"
 	write_views
 	exit 0
 }
@@ -73,7 +72,6 @@ lappend arg_list -pad_right $cell_pad_side
 lappend arg_list -pad_left $cell_pad_side
 lappend arg_list -init_wirelength_coef $::env(PL_WIRE_LENGTH_COEF)
 
-puts "{*}$arg_list"
 global_placement {*}$arg_list
 
 

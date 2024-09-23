@@ -31,7 +31,7 @@ proc env_var_used {file var} {
 
 proc read_current_sdc {} {
     if { ![info exists ::env(_SDC_IN)]} {
-        puts "\[INFO] _SDC_IN not found. Not reading an SDC file."
+        puts "\[INFO\] _SDC_IN not found. Not reading an SDC file."
         return
     }
 
@@ -56,6 +56,16 @@ proc read_current_sdc {} {
     if {[catch {read_sdc $::env(_SDC_IN)} errmsg]} {
         puts stderr $errmsg
         exit 1
+    }
+
+    if { ![string_in_file $::env(_SDC_IN) "set_propagated_clock"] && ![string_in_file $::env(_SDC_IN) "unset_propagated_clock"] } {
+        if { [info exists ::env(OPENLANE_SDC_IDEAL_CLOCKS)] && $::env(OPENLANE_SDC_IDEAL_CLOCKS) } {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- unpropagating all clocks."
+            unset_propagated_clock [all_clocks]
+        } else {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- propagating all clocks."
+            set_propagated_clock [all_clocks]
+        }
     }
 
     # Restore Environment
@@ -119,9 +129,16 @@ proc read_current_netlist {args} {
 
     puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
     link_design $::env(DESIGN_NAME)
+    if { [namespace exists ::ord] } {
+        set ::db [::ord::get_db]
+        set ::chip [$::db getChip]
+        set ::tech [$::db getTech]
+        set ::block [$::chip getBlock]
+        set ::dbu [$::tech getDbUnitsPerMicron]
+        set ::libs [$::db getLibs]
+    }
 
     read_current_sdc
-
 }
 
 proc read_timing_info {args} {
@@ -288,6 +305,13 @@ proc read_current_odb {args} {
         exit 1
     }
 
+    set ::db [::ord::get_db]
+    set ::chip [$::db getChip]
+    set ::tech [$::db getTech]
+    set ::block [$::chip getBlock]
+    set ::dbu [$::tech getDbUnitsPerMicron]
+    set ::libs [$::db getLibs]
+
     # Read supporting views (if applicable)
     read_pnr_libs
     read_current_sdc
@@ -415,7 +439,20 @@ proc max {a b} {
 
 set ::metric_count 0
 set ::metrics_file ""
-if { [info exists ::env(_OPENSTA)] && $::env(_OPENSTA) } {
+if { [namespace exists utl] } {
+    proc write_metric_str {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric $metric $value
+    }
+    proc write_metric_int {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric_int $metric $value
+    }
+    proc write_metric_num {metric value} {
+        puts "Writing metric $metric: $value"
+        utl::metric_float $metric $value
+    }
+} else {
     proc write_metric_num {metric value} {
         if { $value == 1e30 } {
             set value inf
@@ -429,18 +466,5 @@ if { [info exists ::env(_OPENSTA)] && $::env(_OPENSTA) } {
     }
     proc write_metric_str {metric value} {
         puts "%OL_METRIC $metric $value"
-    }
-} else {
-    proc write_metric_str {metric value} {
-        puts "Writing metric $metric: $value"
-        utl::metric $metric $value
-    }
-    proc write_metric_int {metric value} {
-        puts "Writing metric $metric: $value"
-        utl::metric_int $metric $value
-    }
-    proc write_metric_num {metric value} {
-        puts "Writing metric $metric: $value"
-        utl::metric_float $metric $value
     }
 }

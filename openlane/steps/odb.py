@@ -19,7 +19,7 @@ from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
-from typing import List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 
 from .common_variables import io_layer_variables
@@ -38,7 +38,7 @@ from .step import (
     DefaultOutputProcessor,
 )
 from ..logging import info, verbose
-from ..config import Variable, Macro
+from ..config import Variable, Macro, Instance
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
 
@@ -266,8 +266,12 @@ class ApplyDEFTemplate(OdbpyStep):
 @Step.factory.register()
 class SetPowerConnections(OdbpyStep):
     """
-    Uses JSON netlist and module information in Odb to add global power connections
-    for macros in a design.
+    Uses JSON netlist and module information in Odb to add global power
+    connections for macros at the top level of a design.
+
+    If the JSON netlist is hierarchical (e.g. by using a keep hierarchy
+    attribute) this Step emits a warning and does not attempt to connect any
+    macros instantiated within submodules.
     """
 
     id = "Odb.SetPowerConnections"
@@ -357,7 +361,10 @@ class ManualMacroPlacement(OdbpyStep):
     ]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "manual_macro_place.py")
+        return os.path.join(get_script_dir(), "odbpy", "placers.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["manual-macro-placement"]
 
     def get_command(self) -> List[str]:
         return super().get_command() + [
@@ -886,3 +893,40 @@ class CountCells(OdbpyStep):
         command.append("--buffer-list")
         command.append(self.get_buffer_list_file())
         return command
+
+
+class ManualGlobalPlacement(OdbpyStep):
+    """
+    This is an step to override the placement of one or more instances at
+    user-specified locations.
+
+    Alternatively, if this is a custom design with a few cells, this can be used
+    in place of the global placement entirely.
+    """
+
+    id = "Odb.ManualGlobalPlacement"
+    name = "Manual Global Placement"
+
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "MANUAL_GLOBAL_PLACEMENTS",
+            Optional[Dict[str, Instance]],
+            description="A dictionary of instances to their global (non-legalized and unfixed) placement location.",
+        )
+    ]
+
+    def get_script_path(self) -> str:
+        return os.path.join(get_script_dir(), "odbpy", "placers.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["manual-global-placement"]
+
+    def get_command(self) -> List[str]:
+        assert self.config_path is not None, "get_command called before start()"
+        return super().get_command() + ["--step-config", self.config_path]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["MANUAL_GLOBAL_PLACEMENTS"] is None:
+            info("'MANUAL_GLOBAL_PLACEMENTS' not set, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)

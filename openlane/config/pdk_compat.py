@@ -74,7 +74,108 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     if "TECH_LEF_MAX" in new:
         del new["TECH_LEF_MAX"]
 
-    # 6. Timing Corners
+    # 7. RC
+    if "SYNTH_CAP_LOAD" in config:
+        new["OUTPUT_CAP_LOAD"] = config["SYNTH_CAP_LOAD"]
+        del new["SYNTH_CAP_LOAD"]
+
+    if "DATA_WIRE_RC_LAYER" in config:
+        del new["DATA_WIRE_RC_LAYER"]
+
+    if "CLOCK_WIRE_RC_LAYER" in config:
+        del new["CLOCK_WIRE_RC_LAYER"]
+
+    # 8. Implicit Open PDK Dependencies
+    if "CELL_VERILOG_MODELS" not in config:
+        model_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*.v",
+        )
+        new["CELL_VERILOG_MODELS"] = sorted(
+            [path for path in glob(model_glob) if "_blackbox" not in path]
+        )
+
+    if "CELL_BB_VERILOG_MODELS" not in config:
+        bb_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "verilog",
+            "*__blackbox*.v",
+        )
+
+        if blackbox_models := glob(bb_glob):
+            new["CELL_BB_VERILOG_MODELS"] = sorted(blackbox_models)
+
+    if "CELL_SPICE_MODELS" not in config:
+        spice_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "spice",
+            "*.spice",
+        )
+        new["CELL_SPICE_MODELS"] = sorted(glob(spice_glob))
+
+    if "CELL_MAGS" not in config:
+        mag_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "mag",
+            "*.mag",
+        )
+        new["CELL_MAGS"] = sorted(glob(mag_glob))
+
+    if "CELL_MAGLEFS" not in config:
+        maglef_glob = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.ref",
+            config["STD_CELL_LIBRARY"],
+            "maglef",
+            "*.mag",
+        )
+        new["CELL_MAGLEFS"] = sorted(glob(maglef_glob))
+
+    if "MAGIC_PDK_SETUP" not in config:
+        new["MAGIC_PDK_SETUP"] = os.path.join(
+            config["PDK_ROOT"],
+            config["PDK"],
+            "libs.tech",
+            "magic",
+            f"{config['PDK']}.tcl",
+        )
+
+    # x1. Disconnected Modules (sky130)
+    if new["PDK"].startswith("sky130"):
+        new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
+
+    # x2. Invalid Variables (gf180mcu)
+    if new["PDK"].startswith("gf180mcu"):
+        del new["GPIO_PADS_LEF"]
+        del new["GPIO_PADS_VERILOG"]
+
+        del new["CARRY_SELECT_ADDER_MAP"]
+        del new["FULL_ADDER_MAP"]
+        del new["RIPPLE_CARRY_ADDER_MAP"]
+        del new["SYNTH_LATCH_MAP"]
+        del new["TRISTATE_BUFFER_MAP"]
+
+        del new["KLAYOUT_DRC_TECH_SCRIPT"]
+
+        new["SYNTH_CLK_DRIVING_CELL"] = (
+            f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
+        )
+
+    # x3. Timing Corners
     lib_sta: Dict[str, List[str]] = {}
     ws = re.compile(r"\s+")
 
@@ -94,7 +195,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         corner = f"*_{pvt}"
         lib_sta[corner] = lib_list
 
-    if "LIB" not in config:
+    if (
+        new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu")
+    ) and "LIB" not in config:
         process_sta("LIB_SYNTH")
         process_sta("LIB_SLOWEST")
         process_sta("LIB_FASTEST")
@@ -127,11 +230,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
         new["LIB"] = lib_sta
 
-    # 7. capacitance and such
-    if "SYNTH_CAP_LOAD" in config:
-        new["OUTPUT_CAP_LOAD"] = config["SYNTH_CAP_LOAD"]
-        del new["SYNTH_CAP_LOAD"]
-
+    # x4. Constraints (sky130/gf180mcu)
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         new["MAX_FANOUT_CONSTRAINT"] = 10
         new["CLOCK_UNCERTAINTY_CONSTRAINT"] = 0.25
@@ -142,104 +241,14 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
         new["FP_IO_HLENGTH"] = 4
         new["FP_IO_VLENGTH"] = 4
 
-    # 8. "Implicit" Paths
-    if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
-        model_glob = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.ref",
-            config["STD_CELL_LIBRARY"],
-            "verilog",
-            "*.v",
-        )
-        new["CELL_VERILOG_MODELS"] = sorted(
-            [path for path in glob(model_glob) if "_blackbox" not in path]
-        )
-
-        bb_glob = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.ref",
-            config["STD_CELL_LIBRARY"],
-            "verilog",
-            "*__blackbox*.v",
-        )
-
-        if blackbox_models := glob(bb_glob):
-            new["CELL_BB_VERILOG_MODELS"] = sorted(blackbox_models)
-
-        spice_glob = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.ref",
-            config["STD_CELL_LIBRARY"],
-            "spice",
-            "*.spice",
-        )
-        new["CELL_SPICE_MODELS"] = sorted(glob(spice_glob))
-
-        mag_glob = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.ref",
-            config["STD_CELL_LIBRARY"],
-            "mag",
-            "*.mag",
-        )
-        new["CELL_MAGS"] = sorted(glob(mag_glob))
-
-        maglef_glob = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.ref",
-            config["STD_CELL_LIBRARY"],
-            "maglef",
-            "*.mag",
-        )
-        new["CELL_MAGLEFS"] = sorted(glob(maglef_glob))
-
-        new["MAGIC_PDK_SETUP"] = os.path.join(
-            config["PDK_ROOT"],
-            config["PDK"],
-            "libs.tech",
-            "magic",
-            f"{config['PDK']}.tcl",
-        )
-
-    # 9. Primary Signoff Tool
+    # x5. Primary Signoff Tool
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
         new["PRIMARY_GDSII_STREAMOUT_TOOL"] = "magic"
 
-    # 10. CVC
-    if "CVC_SCRIPTS_DIR" in config:
-        new["CVCRC"] = os.path.join(config["CVC_SCRIPTS_DIR"], "cvcrc")
-        new["CVC_MODELS"] = os.path.join(config["CVC_SCRIPTS_DIR"], "models")
-
-    # 11. Heuristic Antenna Threshold
+    # x6. Heuristic Antenna Thresholds
     if new["PDK"].startswith("sky130"):
         new["HEURISTIC_ANTENNA_THRESHOLD"] = 90
     elif new["PDK"].startswith("gf180mcu"):
         new["HEURISTIC_ANTENNA_THRESHOLD"] = 130
-
-    # x1. Disconnected Modules (sky130)
-    if new["PDK"].startswith("sky130"):
-        new["IGNORE_DISCONNECTED_MODULES"] = "sky130_fd_sc_hd__conb_1"
-
-    # x2. Invalid Variables (gf180mcu)
-    if new["PDK"].startswith("gf180mcu"):
-        del new["GPIO_PADS_LEF"]
-        del new["GPIO_PADS_VERILOG"]
-
-        del new["CARRY_SELECT_ADDER_MAP"]
-        del new["FULL_ADDER_MAP"]
-        del new["RIPPLE_CARRY_ADDER_MAP"]
-        del new["SYNTH_LATCH_MAP"]
-        del new["TRISTATE_BUFFER_MAP"]
-
-        del new["KLAYOUT_DRC_TECH_SCRIPT"]
-
-        new["SYNTH_CLK_DRIVING_CELL"] = (
-            f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
-        )
 
     return new

@@ -15,14 +15,21 @@ runs:
       shell: bash
       run: echo "NEW_TAG=NO_NEW_TAG" >> $GITHUB_ENV
 
+    - name: Check if publishing branch
+      shell: bash
+      run: |
+        if [[ "$BRANCH_NAME" == "main" || "$BRANCH_NAME" == version* ]]; then
+          echo "PUBLISHING_BRANCH=1" >> $GITHUB_ENV
+        fi
+
     - name: Check for new version
-      if: ${{ github.event_name == 'push' && env.BRANCH_NAME == 'main' }}
+      if: ${{ github.event_name == 'push' && env.PUBLISHING_BRANCH == '1' }}
       shell: bash
       run: |
         python3 ./.github/scripts/generate_tag.py
 
     - name: Publish
-      if: ${{ github.event_name == 'push' && env.BRANCH_NAME == 'main' && env.NEW_TAG != 'NO_NEW_TAG' }}
+      if: ${{ github.event_name == 'push' && env.PUBLISHING_BRANCH == '1' && env.NEW_TAG != 'NO_NEW_TAG' }}
       shell: bash
       run: |
         echo "PUBLISH=1" >> $GITHUB_ENV

@@ -25,7 +25,7 @@ proc load_rsz_corners {args} {
     }
 
     if { $i == "0" } {
-        puts stderr "\[WARNING] No resizer-specific timing information read."
+        puts stderr "\[WARNING\] No resizer-specific timing information read."
         return
     }
 
@@ -53,9 +53,7 @@ proc load_rsz_corners {args} {
 proc set_dont_touch_objects {args} {
     set rx $::env(RSZ_DONT_TOUCH_RX)
     if { $rx != {^$} } {
-        variable odb_block [[[::ord::get_db] getChip] getBlock]
-
-        set odb_nets [odb::dbBlock_getNets $::odb_block]
+        set odb_nets [$::block getNets]
         foreach net $odb_nets {
             set net_name [odb::dbNet_getName $net]
             if { [regexp "$rx" $net_name full] } {
@@ -64,7 +62,7 @@ proc set_dont_touch_objects {args} {
             }
         }
 
-        set odb_insts [odb::dbBlock_getInsts $::odb_block]
+        set odb_insts [$::block getInsts]
         foreach inst $odb_insts {
             set inst_name [odb::dbInst_getName $inst]
             if { [regexp "$rx" $inst_name full] } {
@@ -82,9 +80,7 @@ proc set_dont_touch_objects {args} {
 proc unset_dont_touch_objects {args} {
     set rx $::env(RSZ_DONT_TOUCH_RX)
     if { $rx != {^$} } {
-        variable odb_block [[[::ord::get_db] getChip] getBlock]
-
-        set odb_nets [odb::dbBlock_getNets $::odb_block]
+        set odb_nets [$::block getNets]
         foreach net $odb_nets {
             set net_name [odb::dbNet_getName $net]
             if { [regexp "$rx" $net_name full] } {
@@ -92,7 +88,7 @@ proc unset_dont_touch_objects {args} {
             }
         }
 
-        set odb_insts [odb::dbBlock_getInsts $::odb_block]
+        set odb_insts [$::block getInsts]
         foreach inst $odb_insts {
             set inst_name [odb::dbInst_getName $inst]
             if { [regexp "$rx" $inst_name full] } {

@@ -42,19 +42,13 @@
   bison,
   clang-tools_14,
   ioplace-parser,
+  buildEnv,
+  makeBinaryWrapper,
+  buildPythonEnvForInterpreter,
   rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
   sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
 }: let
-  pyenv = python3.withPackages (p:
-    with p; [
-      click
-      rich
-      pyyaml
-      ioplace-parser
-    ]);
-  pyenv-sitepackages = "${pyenv}/${pyenv.sitePackages}";
-in
-  clangStdenv.mkDerivation (finalAttrs: {
+  self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -98,7 +92,7 @@ in
       boost183
       eigen
       tcl
-      pyenv
+      python3
       readline
       tclreadline
       spdlog-internal-fmt
@@ -132,9 +126,15 @@ in
       export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
     '';
 
-    qtWrapperArgs = [
-      "--prefix PYTHONPATH : ${pyenv-sitepackages}"
-    ];
+    passthru = {
+      inherit python3;
+      withPythonPackages = buildPythonEnvForInterpreter {
+        target = self;
+        inherit lib;
+        inherit buildEnv;
+        inherit makeBinaryWrapper;
+      };
+    };
 
     meta = with lib; {
       description = "OpenROAD's unified application implementing an RTL-to-GDS flow";
@@ -144,4 +144,6 @@ in
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  })
+  });
+in
+  self

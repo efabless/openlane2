@@ -40,7 +40,7 @@ if {  [info exist ::env(EXTRA_GDS_FILES)] } {
 		# maglefs reserve the original names
 		file rename $::env(STEP_DIR)/$design_name.mag $::env(STEP_DIR)/$design_name.full.mag
 
-		puts "\[INFO] Saved mag view from $gds_file under $::env(STEP_DIR)"
+		puts "\[INFO\] Saved mag view from $gds_file under $::env(STEP_DIR)"
 	}
 }
 

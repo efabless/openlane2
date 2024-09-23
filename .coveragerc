@@ -22,6 +22,7 @@ omit =
     */steps/netgen.py
     */steps/odb.py
     */steps/openroad.py
+    */steps/pyosys.py
     */steps/yosys.py
     */steps/verilator.py
     */steps/cvc_rv.py

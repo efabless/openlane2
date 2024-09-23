@@ -33,7 +33,7 @@ class Design(object):
     @dataclass
     class Instance:
         name: str
-        module: str
+        module_name: str
         power_connections: Dict[str, str]
         ground_connections: Dict[str, str]
 
@@ -41,14 +41,20 @@ class Design(object):
         self.reader = reader
         self.design_name = reader.block.getName()
         self.yosys_dict = yosys_dict
-        self.yosys_design_object = yosys_dict["modules"][self.design_name]
 
         self.pins_by_module_name: Dict[str, Dict[str, odb.dbMTerm]] = {}
-        self.net_name_by_bit: Dict[int, str] = functools.reduce(
-            lambda a, b: {**a, **{bit: b[0] for bit in b[1]["bits"]}},
-            self.yosys_design_object["netnames"].items(),
-            {},
-        )
+        self.verilog_net_names_by_bit_by_module: Dict[str, Dict[int, str]] = {}
+        self.nets_by_net_name = {net.getName(): net for net in reader.block.getNets()}
+
+    def get_verilog_net_name_by_bit(self, top_module: str, target_bit: int):
+        yosys_design_object = self.yosys_dict["modules"][top_module]
+        if top_module not in self.verilog_net_names_by_bit_by_module:
+            self.verilog_net_names_by_bit_by_module[top_module] = functools.reduce(
+                lambda a, b: {**a, **{bit: b[0] for bit in b[1]["bits"]}},
+                yosys_design_object["netnames"].items(),
+                {},
+            )
+        return self.verilog_net_names_by_bit_by_module[top_module][target_bit]
 
     def get_pins(self, module_name: str) -> Dict[str, odb.dbMTerm]:
         if module_name not in self.pins_by_module_name:
@@ -82,68 +88,79 @@ class Design(object):
 
         return module_pins[pin_name].getSigType() == "GROUND"
 
-    def is_bus(self, pin_connections: List) -> bool:
-        return len(pin_connections) > 1
+    def extract_pg_pins(self, top_module: str, cell_name: str) -> dict:
+        yosys_design_object = self.yosys_dict["modules"][top_module]
+        cells = yosys_design_object["cells"]
+        module_name = cells[cell_name]["type"]
+        master = self.reader.db.findMaster(module_name)
+        if master is None:
+            print(
+                f"[ERROR] Could not find master for cell type '{module_name}' in the database."
+            )
+            exit(-1)
 
-    def extract_power_pins(self, cell_name: str) -> dict:
-        cells = self.yosys_design_object["cells"]
-        module = cells[cell_name]["type"]
-        non_bus_pins = {
-            pin_name: cells[cell_name]["connections"][pin_name]
-            for pin_name in cells[cell_name]["connections"].keys()
-            if not self.is_bus(cells[cell_name]["connections"][pin_name])
-        }
-        power_pins = {
-            pin_name: non_bus_pins[pin_name]
-            for pin_name in non_bus_pins.keys()
-            if self.is_power(module, pin_name)
-        }
-        for pin_name in power_pins.keys():
-            connection_bits = power_pins[pin_name]
-            assert len(connection_bits) == 1, "Power connection has more than one net"
-            connection_bit = connection_bits[0]
-            power_pins[pin_name] = self.net_name_by_bit[connection_bit]
+        lef_pg_pins = []
+        for pin in master.getMTerms():
+            if pin.getSigType() in ["POWER", "GROUND"]:
+                lef_pg_pins.append((pin.getName(), pin.getSigType()))
 
-        return power_pins
-
-    def extract_ground_pins(self, cell_name: str) -> dict:
-        cells = self.yosys_design_object["cells"]
-        module = cells[cell_name]["type"]
+        power_pins = {}
+        ground_pins = {}
         connections = cells[cell_name]["connections"]
-        non_bus_pins = {
-            pin_name: connections[pin_name]
-            for pin_name in connections.keys()
-            if not self.is_bus(connections[pin_name])
-        }
-        ground_pins = {
-            pin_name: non_bus_pins[pin_name]
-            for pin_name in non_bus_pins.keys()
-            if self.is_ground(module, pin_name)
-        }
-        for pin_name in ground_pins.keys():
-            connection_bits = ground_pins[pin_name]
-            assert len(connection_bits) == 1, "Ground connection has more than one net"
+        for pin_name, sigtype in lef_pg_pins:
+            if pin_name not in connections:
+                # Bad Verilog view-- error would break backcompat
+                continue
+            connection_bits = connections[pin_name]
+            if len(connection_bits) != 1:
+                print(
+                    f"[ERROR] Unexpectedly found more than one bit connected to {sigtype} pin {module_name}/{pin_name}."
+                )
+                exit(-1)
             connection_bit = connection_bits[0]
-            ground_pins[pin_name] = self.net_name_by_bit[connection_bit]
+            connected_to_v = self.get_verilog_net_name_by_bit(
+                top_module,
+                connection_bit,
+            )
+            (power_pins if sigtype == "POWER" else ground_pins)[
+                pin_name
+            ] = connected_to_v
 
-        return ground_pins
+        return power_pins, ground_pins
 
-    def extract_instances(self) -> List["Design.Instance"]:
+    def extract_instances(
+        self,
+        top_module: str,
+        prefix: str = "",
+    ) -> List["Design.Instance"]:
+        yosys_design_object = self.yosys_dict["modules"][top_module]
         instances = []
-        cells = self.yosys_design_object["cells"]
+        cells = yosys_design_object["cells"]
         for cell_name in cells.keys():
-            module = cells[cell_name]["type"]
-            if module.startswith("$"):
+            module_name = cells[cell_name]["type"]
+            if module_name.startswith("$"):
                 # yosys primitive
                 continue
-            power_pins = self.extract_power_pins(cell_name)
-            ground_pins = self.extract_ground_pins(cell_name)
+            if module_name in self.yosys_dict["modules"]:
+                print(
+                    f"[WARNING] Macros inside hierarchical netlists are not currently supported in OpenLane: skipping submodule '{cell_name}' of type '{module_name}'."
+                )
+                continue
+                # sub_instances = self.extract_instances(
+                #     self.yosys_dict["modules"][module_name],
+                #     prefix=prefix + f"{cell_name}/",
+                # )
+                # instances += sub_instances
+            power_pins, ground_pins = self.extract_pg_pins(
+                top_module,
+                cell_name,
+            )
             instances.append(
                 Design.Instance(
-                    name=cell_name,
+                    name=prefix + cell_name,
                     ground_connections=ground_pins,
                     power_connections=power_pins,
-                    module=module,
+                    module_name=module_name,
                 )
             )
 
@@ -217,7 +234,9 @@ class Design(object):
                 term.getInst().getName() == inst_def_name
                 and term.getMTerm().getName() == pin_def_name
             ):
-                print(f"{inst_name}/{pin_name} is already connected to {net.getName()}")
+                print(
+                    f"[INFO] {inst_name}/{pin_name} is already connected to {net.getName()} in the layout."
+                )
                 return
 
         connected_items = design.getBlock().addGlobalConnect(
@@ -227,8 +246,8 @@ class Design(object):
             net,
             True,
         )
-        print(f"Made {connected_items} connections.")
 
+        print(f"[INFO] Made {connected_items} connections.")
         if connected_items == 0:
             print(
                 f"[ERROR] add_global_connections failed to make any connections for '{inst_name}/{pin_name}' to {net_name}."
@@ -236,7 +255,7 @@ class Design(object):
             exit(-1)
         elif connected_items > 1:
             print(
-                f"[ERROR] add_global_connections somehow made multiple connections for '{inst_name}/{pin_name}' to {net_name} -- please report this as a bug"
+                f"[ERROR] add_global_connections somehow made {connected_items} connections for '{inst_name}/{pin_name}' to {net_name} -- please report this as a bug"
             )
             exit(-1)
 
@@ -258,7 +277,7 @@ def set_power_connections(input_json, reader: OdbReader):
     yosys_dict = json.loads(design_str)
 
     design = Design(reader, yosys_dict)
-    macro_instances = design.extract_instances()
+    macro_instances = design.extract_instances(design.design_name)
     for instance in macro_instances:
         for pin in instance.power_connections.keys():
             net_name = instance.power_connections[pin]

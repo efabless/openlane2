@@ -14,7 +14,7 @@
 
 # Power nets
 proc set_global_connections {} {
-    puts "\[INFO] Setting global connections..."
+    puts "\[INFO\] Setting global connections..."
     if { [info exists ::env(PDN_ENABLE_GLOBAL_CONNECTIONS) ] } {
         if { $::env(PDN_ENABLE_GLOBAL_CONNECTIONS) == 1 } {
             foreach power_pin $::env(SCL_POWER_PINS) {
@@ -50,13 +50,13 @@ proc set_global_connections {} {
 
             set matched 0
             foreach cell [[ord::get_db_block] getInsts] {
-                if { [regexp "\^$instance_name" [$cell getName]] } {
+                if { [regexp "\^$instance_name\$" [$cell getName]] } {
                     set matched 1
                     puts "$instance_name matched with [$cell getName]"
                 }
             }
             if { $matched != 1 } {
-                puts "\[ERROR] No match found for regular expression '$instance_name' defined in PDN_MACRO_CONNECTIONS."
+                puts "\[ERROR\] No match found for regular expression '$instance_name' defined in PDN_MACRO_CONNECTIONS."
                 exit 1
             }
 

@@ -154,7 +154,7 @@ would be declared as:
   }
 ```
 
-```{admonition} On Instance Names
+````{admonition} On Instance Names
 :class: tip
 
 Instance names should match the name as instantiated in Verilog, i.e.,
@@ -163,7 +163,53 @@ without escaping any characters for layout formats.
 For example, if you instantiate an array of macros `spm spm_inst[1:0]`,
 the first instance's name should be `spm_inst[0]`, not
 `spm_inst\[0\]` or similar.
+
+---
+
+If your macros are within other instances, the names get a bit more complicated
+depending on whether you flatten the hierarchy during synthesis or not. It is
+the designer's responsibility to use either notation in the Instances dictionary
+depending on which hierarchy mode is utilized. 
+
+**Hierarchy flattened during Synthesis (default, recommended)**
+
+When flattening the hierarchy, Yosys will rename instances to use the dot
+notation, i.e, the name of an instance inside another instance will be
+`instance_a.instance_b`. Note that they are the names of instances and not
+the names of modules.
+
+**Hierarchy maintainted during Synthesis**
+
+Using macros with hierarchy is maintained during Synthesis is
+**currently unsupported** in OpenLane, as the netlist is flattened upon moving
+into OpenROAD as its hierarchical support is rather experimental. This will be
+remedied in a future update to OpenLane.
+
+In the meantime, if you do choose to keep the hierarchy after Synthesis
+regardless by using the attribute `(* keep_hierarchy = "TRUE" *)`, you're on
+your own, but here are a couple tips.
+* Naming will fall upon OpenROAD, which use the `/` notation regardless of your
+  technology LEF's divider characters property, i.e., `instance_a/instance_b`.
+  Note once again that are the names of instances and not the names of modules.
+* The power and ground pins of the macro must match that of the standard cell
+  library as `Odb.SetPowerConnections` won't work for these macros.
+  
+**Please do not do this:**
+
+Please do not use any of these characters in instance names by using the `\`
+prefix, as the example below shows:
+
+* `/` 
+* `[]`
+* `:`
+
+Using these is considered **undefined behavior** and the flow will likely crash
+because of assumptions about the hierarchy involving these characters.
+
+```verilog
+CellType \instance/name (…);
 ```
+````
 
 ## STA
 

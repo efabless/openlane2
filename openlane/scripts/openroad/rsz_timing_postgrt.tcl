@@ -26,15 +26,19 @@ set_dont_touch_objects
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
 # (Re-)GRT and Estimate Parasitics
+# Temporarily always enabled: https://github.com/The-OpenROAD-Project/OpenROAD/issues/5590
+#if { $::env(GRT_RESIZER_RUN_GRT) } {
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+# }
 estimate_parasitics -global_routing
 
 # Resize
-repair_timing -setup \
+repair_timing -verbose -setup \
     -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN) \
     -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
 
 set arg_list [list]
+lappend arg_list -verbose
 lappend arg_list -hold
 lappend arg_list -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
 lappend arg_list -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
@@ -50,7 +54,9 @@ repair_timing {*}$arg_list
 # Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 unset_dont_touch_objects
-source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+if { $::env(GRT_RESIZER_RUN_GRT) } {
+    source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+}
 
 report_design_area_metrics
 report_cell_count

@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import sys
+import glob
 import shutil
 import marshal
 import tempfile
@@ -22,12 +23,16 @@ from textwrap import dedent
 from functools import partial
 from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
 
-from click import Parameter, pass_context, Path
+from click import (
+    Parameter,
+    Context,
+    Path,
+    pass_context,
+)
 from cloup import (
     option,
     option_group,
     command,
-    Context,
 )
 from cloup.constraints import (
     mutually_exclusive,
@@ -45,8 +50,8 @@ from .logging import (
 from . import common
 from .container import run_in_container
 from .plugins import discovered_plugins
-from .config import Config, InvalidConfig, PassedDirectoryError
 from .common.cli import formatter_settings
+from .config import Config, InvalidConfig, PassedDirectoryError
 from .flows import Flow, SequentialFlow, FlowException, FlowError, cloup_flow_opts
 
 
@@ -253,7 +258,7 @@ def run_included_example(
         if os.name == "posix":
             subprocess.check_call(["chmod", "-R", "755", final_path])
 
-        config_file = os.path.join(final_path, "config.json")
+        config_file = glob.glob(os.path.join(final_path, "config.*"))[0]
 
         # 3. Run
         run(

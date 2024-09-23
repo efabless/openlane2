@@ -49,6 +49,7 @@ class Classic(SequentialFlow):
         Yosys.Synthesis,
         Checker.YosysUnmappedCells,
         Checker.YosysSynthChecks,
+        Checker.NetlistAssignStatements,
         OpenROAD.CheckSDCFiles,
         OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
@@ -71,6 +72,7 @@ class Classic(SequentialFlow):
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
+        Odb.ManualGlobalPlacement,
         OpenROAD.DetailedPlacement,
         OpenROAD.CTS,
         OpenROAD.STAMidPNR,
@@ -313,14 +315,12 @@ class Classic(SequentialFlow):
 class VHDLClassic(Classic):
     """
     A variant of Classic that accepts VHDL files for Synthesis instead of
-    Verilog files (and disables Verilog linting/equivalence steps.)
+    Verilog files (and removes Verilog linting/equivalence steps.)
     """
 
     Substitutions = {
         "Verilator.Lint": None,
-        "Checker.LintTimingConstructs": None,
-        "Checker.LintErrors": None,
-        "Checker.LintWarnings": None,
+        "Checker.Lint*": None,
         "Yosys.JsonHeader": None,
         "Yosys.Synthesis": Yosys.VHDLSynthesis,
         "Odb.SetPowerConnections": None,

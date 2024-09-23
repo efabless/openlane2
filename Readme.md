@@ -1,3 +1,9 @@
+<p align="center">
+    <a href="https://github.com/The-OpenROAD-Project/OpenLane">
+        <img src="./docs/_static/support_banner.svg" style="width: 70%;overflow: visible" alt="Banner explaining that OpenLane 2.0 is not the primary supported option for hardening Caravel User Project-based designs targeting chipIgnite"/>
+    </a>
+</p>
+
 <h1 align="center">OpenLane</h1>
 <p align="center">
     <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"/></a>
@@ -26,31 +32,52 @@ started. You can discuss OpenLane 2 in the
 channel of the
 [Efabless Open Source Silicon Slack](https://invite.skywater.tools).
 
-> OpenLane 2 is generally available for educators and for those implementing
-> complex chips requiring custom implementation steps for which OpenLane 1 is
-> not sufficiently flexible.
->
-> If you're looking to implement a project for the OpenMPW or chipIgnite
-> shuttles, we recommend
-> [OpenLane 1](https://github.com/The-OpenROAD-Project/OpenLane) at this time.
-
-```python
-from openlane.flows import Flow
-
-Classic = Flow.factory.get("Classic")
-
-flow = Classic(
-    {
-        "PDK": "sky130A",
-        "DESIGN_NAME": "spm",
-        "VERILOG_FILES": ["./src/spm.v"],
-        "CLOCK_PORT": "clk",
-        "CLOCK_PERIOD": 10,
-    },
-    design_dir=".",
-)
-
-flow.start()
+```mermaid
+timeline
+  title The OpenLane Infrastructure
+  RTL to Netlist
+    : Linting / Verilator
+    : Power Distribution Network Hierarchy / Yosys
+    : Synthesis / Yosys
+    : Synthesis / Design Compiler (with proprietary plugin)
+    : Multi-corner Netlist STA / OpenSTA
+  Floorplanning
+    : Floorplan Initialization / OpenROAD
+    : Manual Macro Placement / OpenDB
+    : Tap/Endcap Insertion / OpenROAD
+    : PDN Generation / OpenROAD
+  Placement
+    : Pin Placement (from config file) / OpenROAD, OpenDB
+    : Pin Placement (Random/Matching/Annealing) / OpenROAD
+    : Pin Placement (from template DEF) / OpenDB
+    : Global Placement / OpenROAD
+    : Resizer Design Repair (Post-GPL) / OpenROAD
+    : Detailed Placement / OpenROAD
+  Clock Tree Synthesis
+    : Clock-Tree Synthesis / OpenROAD
+    : Resizer Timing Repair (Post-CTS) / OpenROAD
+  Routing
+    : Global Routing / OpenROAD
+    : Resizer Design Repair (Post-GRT) / OpenROAD
+    : Diode Insertion on Ports / OpenDB
+    : Heuristic Diode Insertion / OpenDB
+    : Antenna Repair / OpenROAD
+    : Resizer Timing Repair (Post-GRT) / OpenROAD
+    : Detailed Routing / OpenROAD
+    : Row Filling / OpenROAD
+  Signoff (Timing)
+    : Parasitics Extraction / OpenROAD
+    : Multi-corner Static Timing Analysis / OpenSTA
+    : SI-Enabled Multi-corner Static Timing Analysis / PrimeTime (with proprietary plugin)
+  Signoff (Physical)
+    : GDSII Stream-Out / Magic
+    : GDSII Stream-Out / KLayout
+    : Magic vs. KLayout Stream XOR / KLayout
+    : Design Rule Checks / Magic
+    : Design Rule Checks / KLayout
+    : Spice Extraction / Magic
+    : Layout vs. Schematic / Netgen
+    : Equivalence Check (Alpha) / Yosys EQY
 ```
 
 ## Try it out
@@ -85,14 +112,17 @@ in the docs for more info.
 Do note you'll need to add `--dockerized` right after `openlane` in most CLI
 invocations.
 
-### Python-only Installation (Advanced)
+### Python-only Installation (Advanced, Not Recommended)
 
-You'll need to bring your own compiled utilities, but otherwise, simply install
-OpenLane as follows:
+**You'll need to bring your own compiled utilities**, but otherwise, simply
+install OpenLane as follows:
 
 ```sh
 python3 -m pip install --upgrade openlane
 ```
+
+Python-only installations are presently unsupported and entirely at your own
+risk.
 
 ## Usage
 
@@ -129,7 +159,7 @@ If you use OpenLane in your research, please cite the following paper.
   doi={}}
 ```
 
-## License
+## License and Information
 
 [The Apache License, version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt).
 

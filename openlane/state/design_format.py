@@ -18,6 +18,26 @@ from typing import Dict, Optional
 
 @dataclass
 class DesignFormatObject:
+    """
+    Metadata about the various possible text or binary representations (views)
+    of any design.
+
+    For example, ``DesignFormat.NETLIST.value`` has the metadata for Netlist
+    views.
+
+    :param id: A lowercase alphanumeric identifier for the design format.
+        Some IDs in OpenLane 2.X use dashes. This is an inconsistency that will
+        be addressed in the next major version of OpenLane as it would be a
+        breaking change.
+    :param extension: The file extension for designs saved in this format.
+    :param name: A human-readable name for this design format.
+    :param folder_override: The subdirectory when
+        :meth:`openlane.state.State.save_snapshot` is called on a state. If
+        unset, the value for ``id`` will be used.
+    :param multiple: Whether this view may have multiple files (typically, files
+        that are different across multiple corners or similar.)
+    """
+
     id: str
     extension: str
     name: str
@@ -31,7 +51,13 @@ class DesignFormatObject:
 
 class DesignFormat(Enum):
     """
-    A list of design formats that may be kept in the state object.
+    An `enumeration <https://docs.python.org/3/library/enum.html>`_ of a number
+    of :class:`openlane.state.DesignFormatObject`\\s representing the various
+    possible text or binary representations (views) supported by OpenLane
+    states.
+
+    Members of this enumeration are used as the keys of
+    :class:`openlane.state.State` objects.
     """
 
     NETLIST: DesignFormatObject = DesignFormatObject(

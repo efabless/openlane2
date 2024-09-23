@@ -75,6 +75,7 @@ from ..common import (
     mkdirp,
     aggregate_metrics,
     process_list_file,
+    _get_process_limit,
 )
 
 EXAMPLE_INPUT = """
@@ -388,11 +389,6 @@ class OpenSTAStep(OpenROADStep):
     def get_command(self) -> List[str]:
         return ["sta", "-no_splash", "-exit", self.get_script_path()]
 
-    def prepare_env(self, env: Dict, state: State) -> Dict:
-        env = super().prepare_env(env, state)
-        env["_OPENSTA"] = "1"
-        return env
-
     def layout_preview(self) -> Optional[str]:
         return None
 
@@ -588,7 +584,7 @@ class MultiCornerSTA(OpenSTAStep):
         env = self.prepare_env(env, state_in)
 
         tpe = ThreadPoolExecutor(
-            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
         )
 
         futures: Dict[str, Future[MetricsUpdate]] = {}
@@ -706,11 +702,20 @@ class STAPrePNR(MultiCornerSTA):
 
     If timing information is not available for a Macro, the macro in question
     will be black-boxed.
+
+    During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
+    exposed to SDC files with a value of `1`. We encourage PNR SDC files to use
+    ideal clocks at this stage based on this variable's existence and value.
     """
 
     id = "OpenROAD.STAPrePNR"
     name = "STA (Pre-PnR)"
     long_name = "Static Timing Analysis (Pre-PnR)"
+
+    def prepare_env(self, env: Dict, state: State) -> Dict:
+        env = super().prepare_env(env, state)
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "1"
+        return env
 
     def run_corner(
         self, state_in: State, current_env: Dict[str, Any], corner: str, corner_dir: str
@@ -747,6 +752,10 @@ class STAPostPNR(STAPrePNR):
     Performs multi-corner `Static Timing Analysis <https://en.wikipedia.org/wiki/Static_timing_analysis>`_
     using OpenSTA on the post-PnR Verilog netlist, with extracted parasitics for
     both the top-level module and any associated macros.
+
+    During this step, the special variable `OPENLANE_SDC_IDEAL_CLOCKS` is
+    exposed to SDC files with a value of `0`. We encourage PNR SDC files to use
+    propagated clocks at this stage based on this variable's existence and value.
     """
 
     id = "OpenROAD.STAPostPNR"
@@ -768,6 +777,7 @@ class STAPostPNR(STAPrePNR):
         env = super().prepare_env(env, state)
         if signoff_sdc_file := self.config["SIGNOFF_SDC_FILE"]:
             env["_SDC_IN"] = signoff_sdc_file
+        env["OPENLANE_SDC_IDEAL_CLOCKS"] = "0"
         return env
 
     def filter_unannotated_report(
@@ -976,6 +986,21 @@ class Floorplan(OpenROADStep):
         return super().run(state_in, env=env, **kwargs)
 
 
+def _migrate_ppl_mode(migrated):
+    as_int = None
+    try:
+        as_int = int(migrated)
+    except ValueError:
+        pass
+    if as_int is not None:
+        if as_int < 0 or as_int > 2:
+            raise ValueError(
+                f"Legacy variable FP_IO_MODE can only either be 0 for matching or 1 for random_equidistant-- '{as_int}' is invalid.\nPlease see the documentation for the usage of the replacement variable, 'FP_PIN_MODE'."
+            )
+        return ["matching", "random_equidistant"][as_int]
+    return migrated
+
+
 @Step.factory.register()
 class IOPlacement(OpenROADStep):
     """
@@ -993,10 +1018,11 @@ class IOPlacement(OpenROADStep):
         + io_layer_variables
         + [
             Variable(
-                "FP_IO_MODE",
+                "FP_PPL_MODE",
                 Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
+                deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
             ),
             Variable(
                 "FP_IO_MIN_DISTANCE",
@@ -1277,10 +1303,11 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
 
     config_vars = _GlobalPlacement.config_vars + [
         Variable(
-            "FP_IO_MODE",
+            "FP_PPL_MODE",
             Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
+            deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
         ),
         Variable(
             "FP_DEF_TEMPLATE",
@@ -1584,7 +1611,7 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        env["DRT_THREADS"] = env.get("DRT_THREADS", str(os.cpu_count() or 1))
+        env["DRT_THREADS"] = env.get("DRT_THREADS", str(_get_process_limit()))
         info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         return super().run(state_in, env=env, **kwargs)
 
@@ -1731,7 +1758,7 @@ class RCX(OpenROADStep):
             return out
 
         tpe = ThreadPoolExecutor(
-            max_workers=self.config["STA_THREADS"] or os.cpu_count() or 1
+            max_workers=self.config["STA_THREADS"] or _get_process_limit()
         )
 
         futures: Dict[str, Future[str]] = {}
@@ -2156,6 +2183,12 @@ class RepairDesignPostGRT(ResizerStep):
 
     config_vars = ResizerStep.config_vars + [
         Variable(
+            "GRT_DESIGN_REPAIR_RUN_GRT",
+            bool,
+            "Enables running GRT before and after running resizer",
+            default=True,
+        ),
+        Variable(
             "GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH",
             Decimal,
             "Specifies the maximum wire length cap used by resizer to insert buffers during post-grt design repair. If set to 0, no buffers will be inserted.",
@@ -2306,6 +2339,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "GRT_RESIZER_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_RUN_GRT",
+            bool,
+            "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
         ),
     ]

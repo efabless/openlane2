@@ -36,9 +36,9 @@ if { [info exists ::env(CTS_MAX_SLEW)] } {
 }
 configure_cts_characterization {*}$cts_characterization_args
 
-puts "\[INFO] Performing clock tree synthesis…"
-puts "\[INFO] Looking for the following net(s): $::env(CLOCK_NET)"
-puts "\[INFO] Running Clock Tree Synthesis…"
+puts "\[INFO\] Performing clock tree synthesis…"
+puts "\[INFO\] Looking for the following net(s): $::env(CLOCK_NET)"
+puts "\[INFO\] Running Clock Tree Synthesis…"
 
 set arg_list [list]
 
@@ -61,7 +61,7 @@ clock_tree_synthesis {*}$arg_list
 set_propagated_clock [all_clocks]
 
 estimate_parasitics -placement
-puts "\[INFO] Repairing long wires on clock nets…"
+puts "\[INFO\] Repairing long wires on clock nets…"
 # CTS leaves a long wire from the pad to the clock tree root.
 repair_clock_nets -max_wire_length $::env(CTS_CLK_MAX_WIRE_LENGTH)
 

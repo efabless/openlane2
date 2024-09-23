@@ -29,7 +29,7 @@ set_cmd_units\
 
 set sta_report_default_digits 6
 
-if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
+if { [namespace exists ::ord] } {
     read_current_odb
     source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
@@ -43,10 +43,6 @@ if { ![info exists ::env(_OPENSTA)] || !$::env(_OPENSTA) } {
     read_timing_info
 }
 read_spefs
-
-if { $::env(STEP_ID) != "OpenROAD.STAPrePNR"} {
-    set_propagated_clock [all_clocks]
-}
 
 set corner [lindex [sta::corners] 0]
 sta::set_cmd_corner $corner
@@ -269,6 +265,11 @@ foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_hold_vios
     if { "$kind" == "reg-reg" } {
@@ -283,6 +284,11 @@ foreach path $hold_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
 
@@ -297,6 +303,11 @@ foreach path $setup_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_setup_vios
     if { "$kind" == "reg-reg" } {
@@ -311,6 +322,11 @@ foreach path $setup_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
@@ -339,6 +355,7 @@ foreach clock [all_clocks] {
 puts "%OL_END_REPORT"
 
 
+<<<<<<< HEAD
 puts "%OL_CREATE_REPORT clock.rpt"
 
 foreach clock [all_clocks] {

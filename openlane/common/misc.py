@@ -370,3 +370,7 @@ def process_list_file(from_file: AnyPath) -> List[str]:
             continue
         excluded_cells.append(line)
     return excluded_cells
+
+
+def _get_process_limit() -> int:
+    return int(os.getenv("_OPENLANE_MAX_CORES", os.cpu_count() or 1))

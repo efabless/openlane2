@@ -45,6 +45,11 @@ Windows 10 is up-to-date.
 
 ## Installing Nix
 
+```{warning}
+Do **not** install Nix using `apt`. The version of Nix offered by `apt` is more
+often than not severely out-of-date and may cause issues.
+```
+
 To install Nix, you first need to install `curl`:
 
 ```console
@@ -54,11 +59,10 @@ $ sudo apt-get install -y curl
 Then install Nix by running the following command:
 
 ```console 
-$ sh <(curl -L https://nixos.org/nix/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
-extra-experimental-features = nix-command flakes
-extra-substituters = https://openlane.cachix.org
-extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
-EXTRA_NIX_CONF
+$ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix/pr/1145 | sh -s -- install --no-confirm --extra-conf "
+    extra-substituters = https://openlane.cachix.org
+    extra-trusted-public-keys = openlane.cachix.org-1:qqdwh+QMNGmZAuyeQJTH9ErW57OWSvdtuwfBKdS254E=
+"
 ```
 
 Enter your password if prompted. This should take around 5 minutes.

@@ -13,14 +13,15 @@
 # limitations under the License.
 # flake8: noqa E402
 import odb
-import json
 from openroad import Tech, Design
 
 import re
 import sys
+import json
 import locale
 import inspect
 import functools
+from decimal import Decimal
 from fnmatch import fnmatch
 from typing import Callable, Dict
 
@@ -68,7 +69,10 @@ class OdbReader(object):
 
         self.config = None
         if "config_path" in kwargs and kwargs["config_path"] is not None:
-            self.config = json.load(open(kwargs["config_path"], encoding="utf8"))
+            self.config = json.load(
+                open(kwargs["config_path"], encoding="utf8"),
+                parse_float=Decimal,
+            )
 
         self.db = self.ord_tech.getDB()
         self.tech = self.db.getTech()
@@ -86,8 +90,8 @@ class OdbReader(object):
             self.instances = self.block.getInsts()
 
         busbitchars = re.escape("[]")  # TODO: Get alternatives from LEF parser
-        dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
-        self.escape_verilog_rx = re.compile(rf"([{dividerchar + busbitchars}])")
+        # dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
+        self.escape_verilog_rx = re.compile(rf"([{busbitchars}])")
 
     def add_lef(self, new_lef):
         self.ord_tech.readLef(new_lef)

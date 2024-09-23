@@ -47,6 +47,19 @@ from ..common import GenericDict, Path, is_string, zip_first, Number, slugify
 # VType = Union[Scalar, List[Scalar]]
 
 
+class MissingRequiredVariable(ValueError):
+    def __init__(self, variable: "Variable", pdk: bool = False) -> None:
+        self.variable = variable
+        if self.variable.pdk:
+            super().__init__(
+                f"Required PDK variable '{self.variable.name}' did not get a specified value. This PDK may be incompatible with your flow."
+            )
+        else:
+            super().__init__(
+                f"Required variable '{self.variable.name}' did not get a specified value."
+            )
+
+
 class Orientation(str, Enum):
     N = "N"
     FN = "FN"
@@ -73,11 +86,11 @@ class Orientation(str, Enum):
 @dataclass
 class Instance:
     """
-    Location information for an instance of a Macro.
+    Location information for an instance of a cell or macro.
 
-    :param location: The physical co-ordinates of the Macro's origin. Leave
+    :param location: The physical co-ordinates of the object's origin. Leave
         empty for automatic placement.
-    :param orientation: The orientation of the macro's placement. 'N'/'R0' by default.
+    :param orientation: The orientation of the object's placement. 'N'/'R0' by default.
     """
 
     location: Optional[Tuple[Decimal, Decimal]]
@@ -382,6 +395,7 @@ class Variable:
         default: Any = None,
         explicitly_specified: bool = True,
         permissive_typing: bool = False,
+        depth: int = 0,
     ):
         if value is None:
             if explicitly_specified:
@@ -401,16 +415,13 @@ class Variable:
                         value=default,
                         validating_type=validating_type,
                         permissive_typing=permissive_typing,
+                        depth=depth + 1,
                     )
                 elif not is_optional(validating_type):
-                    if self.pdk:
-                        raise ValueError(
-                            f"Required PDK variable '{key_path}' did not get a specified value. This PDK may be incompatible with your flow."
-                        )
+                    if depth == 0:
+                        raise MissingRequiredVariable(self, self.pdk)
                     else:
-                        raise ValueError(
-                            f"Required variable '{key_path}' did not get a specified value."
-                        )
+                        raise ValueError(f"'{key_path}' must be non-null.")
                 else:
                     return None
 
@@ -458,6 +469,7 @@ class Variable:
                         value=item,
                         validating_type=value_type,
                         permissive_typing=permissive_typing,
+                        depth=depth + 1,
                     )
                 )
 
@@ -501,12 +513,14 @@ class Variable:
                     value=key,
                     validating_type=key_type,
                     permissive_typing=permissive_typing,
+                    depth=depth + 1,
                 )
                 value_validated = self.__process(
                     key_path=f"{key_path}.{key_validated}",
                     value=val,
                     validating_type=value_type,
                     permissive_typing=permissive_typing,
+                    depth=depth + 1,
                 )
                 processed[key_validated] = value_validated
 
@@ -521,6 +535,7 @@ class Variable:
                         value=value,
                         validating_type=arg,
                         permissive_typing=permissive_typing,
+                        depth=depth + 1,
                     )
                     if final_value is not None:
                         return final_value
@@ -549,7 +564,7 @@ class Variable:
             raw = value
             if not isinstance(raw, dict):
                 raise ValueError(
-                    f"Value provided for deserializable path {validating_type} at '{key_path}' is not a dictionary."
+                    f"Value provided for deserializable class {validating_type} at '{key_path}' is not a dictionary."
                 )
             raw = value.copy()
             kwargs_dict = {}
@@ -575,6 +590,7 @@ class Variable:
                     default=field_default,
                     validating_type=subtype,
                     permissive_typing=permissive_typing,
+                    depth=depth + 1,
                 )
                 kwargs_dict[key] = value__processed
                 if explicitly_specified:
