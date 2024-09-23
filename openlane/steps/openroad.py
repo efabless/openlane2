@@ -1945,7 +1945,7 @@ class WriteViews(OpenROADStep):
             "OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS",
             bool,
             description="Generates cover obstructions (obstructions over the entire layer) for each layer where shapes are present",
-            default=False,
+            default=True,
         )
     ]
 
