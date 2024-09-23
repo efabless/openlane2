@@ -15,7 +15,6 @@ proc report_cell_count {args} {
     set cell_count_total 0
     set fill_count 0
     set tap_count 0
-    set decap_count 0
     set diode_count 0
     set cts_count 0
     set buffer_count 0
@@ -25,18 +24,15 @@ proc report_cell_count {args} {
     set diode_pattern [lindex [split "$::env(DIODE_CELL)" "/"] 0]
 
     foreach inst [$block getInsts] {
-        set master_name [[$inst getMaster] getName]
         set opensta_instance [get_cells [$inst getName]] ;# exposes different apis
-        if { [search_multi_pattern "$master_name" "$::env(DECAP_CELL)"] } {
-            set decap_count [expr $decap_count + 1]
-        }
-        if { [search_multi_pattern "$master_name" "$::env(FILL_CELL)"] } {
+        set types [split [[$inst getMaster] getType] _]
+        if { "CORE" in $types && "SPACER" in $types } {
             set fill_count [expr $fill_count + 1]
         }
-        if { [search_multi_pattern "$master_name" "$::env(WELLTAP_CELL)"] } {
+        if { "CORE" in $types && "WELLTAP" in $types } {
             set tap_count [expr $tap_count + 1]
         }
-        if { [search_multi_pattern "$master_name" "$diode_pattern"] } {
+        if { "CORE" in $types && "ANTENNACELL" in $types } {
             set diode_count [expr $diode_count + 1]
         }
         if { [get_property $opensta_instance is_buffer] } {
@@ -58,7 +54,6 @@ proc report_cell_count {args} {
     write_metric_int "design__instance__count__welltap" $tap_count
     write_metric_int "design__instance__count__diode" $diode_count
     write_metric_int "design__instance__count__fill" $fill_count
-    write_metric_int "design__instance__count__decap" $decap_count
     write_metric_int "design__instance__count__buffer" $buffer_count
     write_metric_int "design__instance__count__inverter" $inverter_count
     write_metric_int "design__instance__count__memory_cell" $memory_cell_count

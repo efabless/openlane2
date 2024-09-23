@@ -40,10 +40,6 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "design__instance__count__decap",
-    higher_is_better=False,
-)
-Metric(
     "design__instance__count__fill",
     higher_is_better=False,
 )

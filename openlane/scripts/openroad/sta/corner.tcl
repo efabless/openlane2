@@ -355,7 +355,6 @@ foreach clock [all_clocks] {
 puts "%OL_END_REPORT"
 
 
-<<<<<<< HEAD
 puts "%OL_CREATE_REPORT clock.rpt"
 
 foreach clock [all_clocks] {

@@ -22,10 +22,12 @@
   flex,
   bison,
   tcl,
+  tclreadline,
+  cudd,
   zlib,
   eigen,
-  rev ? "e01d3f163f483f233db00410b6515a767a6ca03b",
-  sha256 ? "sha256-0LbY5RcM+11oV3iPfAUd7hpyFPwCfCjnG0EE1LkXg5E=",
+  rev ? "20925bb00965c1199c45aca0318c2baeb4042c5a",
+  sha256 ? "sha256-gWAN+d6ioxQtxtgeq3vR+Zgq3nYRyn/u104L/xqumuY=",
 }:
 clangStdenv.mkDerivation (finalAttrs: {
   name = "opensta";
@@ -44,6 +46,8 @@ clangStdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
+    cudd
+    tclreadline
     eigen
     tcl
     zlib
