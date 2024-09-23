@@ -265,6 +265,11 @@ foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_hold_vios
     if { "$kind" == "reg-reg" } {
@@ -279,6 +284,11 @@ foreach path $hold_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
 
@@ -293,6 +303,11 @@ foreach path $setup_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_setup_vios
     if { "$kind" == "reg-reg" } {
@@ -307,6 +322,11 @@ foreach path $setup_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]

@@ -265,8 +265,12 @@ class ApplyDEFTemplate(OdbpyStep):
 @Step.factory.register()
 class SetPowerConnections(OdbpyStep):
     """
-    Uses JSON netlist and module information in Odb to add global power connections
-    for macros in a design.
+    Uses JSON netlist and module information in Odb to add global power
+    connections for macros at the top level of a design.
+
+    If the JSON netlist is hierarchical (e.g. by using a keep hierarchy
+    attribute) this Step emits a warning and does not attempt to connect any
+    macros instantiated within submodules.
     """
 
     id = "Odb.SetPowerConnections"

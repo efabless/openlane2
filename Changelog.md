@@ -14,6 +14,50 @@
 ## Documentation
 -->
 
+# 2.1.8
+
+## Steps
+
+* `OpenROAD.STA*PnR`
+
+  * Fixed a bug in STA metrics where paths with exactly zero slack are counted
+    as violations
+
+# 2.1.7
+
+## Steps
+
+* `Odb.Remove*Obstructions`
+
+  * Rework obstruction matching code to not use IEEE 754 in any capacity
+  * Fixed bug where non-integral obstructions would not be matched correctly
+    (thanks @urish!)
+
+# 2.1.6
+
+## Steps
+
+* `Yosys.Synthesis`
+
+  * Fixed bug where `hilomap` command was invoked incorrectly (thanks @htfab!)
+
+# 2.1.5
+
+## Steps
+
+* `Odb.SetPowerConnections`
+
+  * Fixed an issue introduced in `2.1.1` where modules that are defined as part
+    of hierarchical netlists would be considered macros and then cause a crash
+    when they are inevitably not found in the design database.
+    * Explicitly mention that macros that are not on the top level will not be
+      connected, and emit warnings if a hierarchical netlist is detected.
+
+## Documentation
+
+* Updated macro documentation to further clarify how instances should be named
+  and how names should be added to the configuration.
+
 # 2.1.4
 
 ## Steps
@@ -27,7 +71,7 @@
     regardless the information in the SDC file.
   * For backwards compatibility, `STAPrePNR` unsets all propagated clocks and
     the rest set all propagated clocks IF the SDC file lacks the strings
-    `set_propagated_clock` or `unset_propagated_clock`.    
+    `set_propagated_clock` or `unset_propagated_clock`.
 
 # 2.1.3
 

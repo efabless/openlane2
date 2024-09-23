@@ -303,9 +303,9 @@ def synthesize(
         d.run_pass(
             "hilomap",
             "-hicell",
-            config["SYNTH_TIEHI_CELL"],
+            *config["SYNTH_TIEHI_CELL"].split("/"),
             "-locell",
-            config["SYNTH_TIELO_CELL"],
+            *config["SYNTH_TIELO_CELL"].split("/"),
         )
 
         if config["SYNTH_SPLITNETS"]:
