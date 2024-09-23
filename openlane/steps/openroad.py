@@ -2192,6 +2192,12 @@ class RepairDesignPostGRT(ResizerStep):
 
     config_vars = ResizerStep.config_vars + [
         Variable(
+            "GRT_DESIGN_REPAIR_RUN_GRT",
+            bool,
+            "Enables running GRT before and after running resizer",
+            default=True,
+        ),
+        Variable(
             "GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH",
             Decimal,
             "Specifies the maximum wire length cap used by resizer to insert buffers during post-grt design repair. If set to 0, no buffers will be inserted.",
@@ -2342,6 +2348,12 @@ class ResizerTimingPostGRT(ResizerStep):
             "GRT_RESIZER_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_RUN_GRT",
+            bool,
+            "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
         ),
     ]

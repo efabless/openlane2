@@ -29,11 +29,12 @@ source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 
 # Resize
-repair_timing -setup \
+repair_timing -verbose -setup \
     -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN) \
     -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PCT)
 
 set arg_list [list]
+lappend arg_list -verbose
 lappend arg_list -hold
 lappend arg_list -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
 lappend arg_list -hold_margin $::env(PL_RESIZER_HOLD_SLACK_MARGIN)

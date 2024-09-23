@@ -25,11 +25,14 @@ set_dont_touch_objects
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 
 # (Re-)GRT and Estimate Parasitics
+# Temporarily always enabled: https://github.com/The-OpenROAD-Project/OpenROAD/issues/5590
+#if { $::env(GRT_DESIGN_REPAIR_RUN_GRT) } {
 source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+#}
 estimate_parasitics -global_routing
 
 # Repair design
-repair_design\
+repair_design -verbose \
     -max_wire_length $::env(GRT_DESIGN_REPAIR_MAX_WIRE_LENGTH) \
     -slew_margin $::env(GRT_DESIGN_REPAIR_MAX_SLEW_PCT) \
     -cap_margin $::env(GRT_DESIGN_REPAIR_MAX_CAP_PCT)
@@ -37,7 +40,9 @@ repair_design\
 # Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
 unset_dont_touch_objects
-source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+if { $::env(GRT_DESIGN_REPAIR_RUN_GRT) } {
+    source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
+}
 
 write_views
 

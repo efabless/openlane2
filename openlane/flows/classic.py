@@ -72,6 +72,7 @@ class Classic(SequentialFlow):
         Checker.PowerGridViolations,
         OpenROAD.STAMidPNR,
         OpenROAD.RepairDesignPostGPL,
+        Odb.ManualGlobalPlacement,
         OpenROAD.DetailedPlacement,
         OpenROAD.CTS,
         OpenROAD.STAMidPNR,
