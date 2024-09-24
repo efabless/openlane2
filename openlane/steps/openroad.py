@@ -1997,7 +1997,7 @@ class RMP(OpenROADStep):
             "RMP_TARGET",
             Literal["timing", "area"],
             description="In area mode, the focus is area reduction, and timing may degrade. In delay mode, delay is likely reduced, but the area may increase",
-            default="timing",
+            default="area",
         ),
         Variable(
             "RMP_SLACK_THRESHOLD",
