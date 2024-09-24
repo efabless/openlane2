@@ -54,6 +54,7 @@ class Classic(SequentialFlow):
         OpenROAD.CheckMacroInstances,
         OpenROAD.STAPrePNR,
         OpenROAD.Floorplan,
+        OpenROAD.RMP,
         Odb.CheckMacroAntennaProperties,
         Odb.SetPowerConnections,
         Odb.ManualMacroPlacement,

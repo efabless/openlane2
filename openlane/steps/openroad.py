@@ -1983,6 +1983,50 @@ class ResizerStep(OpenROADStep):
 
 
 @Step.factory.register()
+class RMP(OpenROADStep):
+    id = "OpenROAD.RMP"
+    name = "Restructure RMP"
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "RMP_CORNER",
+            Optional[str],
+            description="IPVT corner to use during restructure. If unspecified, the value for `DEFAULT_CORNER` from the PDK will be used.",
+        ),
+        Variable(
+            "RMP_TARGET",
+            Literal["timing", "area"],
+            description="In area mode, the focus is area reduction, and timing may degrade. In delay mode, delay is likely reduced, but the area may increase",
+            default="timing",
+        ),
+        Variable(
+            "RMP_SLACK_THRESHOLD",
+            Optional[Decimal],
+            description="Specifies a (setup) timing slack value below which timing paths need to be analyzed for restructuring",
+        ),
+        Variable(
+            "RMP_DEPTH_THRESHOLD",
+            Optional[int],
+            description="Specifies the path depth above which a timing path would be considered for restructuring",
+        ),
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "restructure.tcl")
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+        lib_list = self.toolbox.filter_views(
+            self.config, self.config["LIB"], timing_corner=self.config.get("RMP_CORNER")
+        )
+        env["_RMP_LIB"] = TclStep.value_to_tcl(lib_list)
+        env["_RMP_ABC_LOG"] = TclStep.value_to_tcl(
+            os.path.join(self.step_dir, "abc.log")
+        )
+        return super().run(state_in, env=env, **kwargs)
+
+
+@Step.factory.register()
 class CTS(ResizerStep):
     """
     Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
