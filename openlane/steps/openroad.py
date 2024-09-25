@@ -2019,7 +2019,16 @@ class RMP(OpenROADStep):
         lib_list = self.toolbox.filter_views(
             self.config, self.config["LIB"], timing_corner=self.config.get("RMP_CORNER")
         )
-        env["_RMP_LIB"] = TclStep.value_to_tcl(lib_list)
+
+
+        excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
+        excluded_cells.update(process_list_file(self.config["SYNTH_EXCLUDED_CELL_FILE"]))
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
+        trimmed_lib = self.toolbox.remove_cells_from_lib(
+            frozenset([str(lib) for lib in lib_list]),
+            excluded_cells=frozenset(excluded_cells),
+        )
+        env["_RMP_LIB"] = TclStep.value_to_tcl(trimmed_lib)
         env["_RMP_ABC_LOG"] = TclStep.value_to_tcl(
             os.path.join(self.step_dir, "abc.log")
         )
