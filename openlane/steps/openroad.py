@@ -2020,9 +2020,11 @@ class RMP(OpenROADStep):
             self.config, self.config["LIB"], timing_corner=self.config.get("RMP_CORNER")
         )
 
-        excluded_cells: Set[str] = set(
+        excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
+        excluded_cells.update(
             process_list_file(self.config["SYNTH_EXCLUDED_CELL_FILE"])
         )
+        excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
         trimmed_lib = self.toolbox.remove_cells_from_lib(
             frozenset([str(lib) for lib in lib_list]),
             excluded_cells=frozenset(excluded_cells),
