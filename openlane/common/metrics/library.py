@@ -32,31 +32,12 @@ Metric(
     higher_is_better=False,
 )
 Metric(
-    "design__instance__count__total",
+    "design__instance__count__macros",
     higher_is_better=False,
 )
 Metric(
-    "design__instance__count__welltap",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__fill",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__diode",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__buffer",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__inverter",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__memory_cell",
+    "design__instance__count__stdcell",
+    aggregator=sum_aggregator,
     higher_is_better=False,
 )
 
