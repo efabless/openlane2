@@ -37,6 +37,7 @@ from typing import (
     Union,
 )
 
+
 import yaml
 import rich
 import rich.table
@@ -686,9 +687,11 @@ class MultiCornerSTA(OpenSTAStep):
 
         if not options.get_condensed_mode():
             console.print(table)
-        with open(os.path.join(self.step_dir, "summary.rpt"), "w") as f:
-            table.width = 160
-            rich.print(table, file=f)
+        file_console = rich.console.Console(
+            file=open(os.path.join(self.step_dir, "summary.rpt"), "w", encoding="utf8"),
+            width=160,
+        )
+        file_console.print(table)
 
         return {}, metric_updates_with_aggregates
 
@@ -1482,9 +1485,10 @@ class CheckAntennas(OpenROADStep):
 
         if not options.get_condensed_mode() and len(violations):
             console.print(table)
-        with open(output_file, "w") as f:
-            table.width = 80
-            rich.print(table, file=f)
+        file_console = rich.console.Console(
+            file=open(output_file, "w", encoding="utf8"), width=160
+        )
+        file_console.print(table)
 
     def __get_antenna_nets(self, report: io.TextIOWrapper) -> int:
         pattern = re.compile(r"Net:\s*(\w+)")
@@ -1938,6 +1942,15 @@ class WriteViews(OpenROADStep):
         DesignFormat.POWERED_NETLIST_SDF_FRIENDLY,
         DesignFormat.POWERED_NETLIST_NO_PHYSICAL_CELLS,
         DesignFormat.OPENROAD_LEF,
+    ]
+
+    config_vars = OpenROADStep.config_vars + [
+        Variable(
+            "OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS",
+            bool,
+            description="Generates cover obstructions (obstructions over the entire layer) for each layer where shapes are present",
+            default=True,
+        )
     ]
 
     def get_script_path(self):
