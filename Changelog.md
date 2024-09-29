@@ -14,6 +14,91 @@
 ## Documentation
 -->
 
+# 2.2.0
+
+## Steps
+
+* Created `Odb.ManualGlobalPlacement`
+
+  * Can create a global placement for instances. Intended for
+    manually-instantiated buffers that require a certain regional placement or
+    similar.
+  * Uses new variable `MANUAL_GLOBAL_PLACEMENTS`, a mapping from instance names
+    to the `Instance` class.
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Added `GRT_RESIZER_RUN_GRT` to control whether global routing is re-run
+    after this step, which is usually required but may be redundant in some
+    custom flows.
+
+* `OpenROAD.RepairDesignPostGRT`
+
+  * Added `GRT_DESIGN_REPAIR_RUN_GRT` to control whether global routing is
+    re-run after this step, which is usually required but may be redundant in
+    some custom flows.
+
+* `OpenROAD.WriteViews`
+
+  * Added `OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS` with a default value of `true`
+
+* `Yosys.*Synthesis`
+
+  * ABC scripts used now created dynamically and dumped as a `.abc` file into
+    the step directory.
+  * Implemented many of the
+    [suggestions by @ravenslofty](https://github.com/efabless/openlane2/issues/524)
+    from YosysHQ, some behind flags:
+    * `SYNTH_ABC_DFF`: Adds `-dff` to `abc` invocations (except the ones inside
+      `synth`)
+    * `SYNTH_ABC_BOOTH`: Activates the
+      [`booth`](https://yosyshq.readthedocs.io/projects/yosys/en/0.44/cmd/booth.html)
+      pass as part of `synth`
+    * `SYNTH_ABC_USE_MFS3`: Uses `mfs3` in all strategies before retime
+    * `SYNTH_ABC_AREA_USE_NF`: Attempts delay-based mapping with a really high
+      delay value instead of area-based mapping.
+
+* `Yosys.JsonHeader`, `Yosys.*Synthesis`
+
+  * **Internal**: * Steps are no longer `TclStep`s: rewritten in Python and now
+    use `libyosys`. While there are no functional changes, this enhances the
+    codebase's consistency and helps avoid tokenization-related security issues.
+
+## Flows
+
+* `Classic`
+  * Emplaced `Odb.ManualGlobalPlacement` immediately preceding
+    `OpenROAD.DetailedPlacement`.
+
+## Tool Updates
+
+* Updated `nix-eda`
+  * `klayout` -> `0.29.4`
+  * `magic` -> `8.3.489`
+  * `netgen` -> `1.5.278`
+  * `yosys` -> `0.44` (+ `-y` patch)
+  * OpenROAD now used with new `withPythonPackages` features to use Python
+    packages specifically for the OpenROAD environment
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.config.Config`
+  * YAML 1.2 configuration files now accepted using `.yaml` or `.yml`
+    extensions, with the same featureset as JSON files.
+  * The first configuration (file/dict) supplied no longer needs to be a
+    complete configuration so long as any required variables are supplied in
+    later configurations. Missing variables are only checked on the complete
+    configuration.
+  * Internally reworked how config files and command-line overrides are parsed.
+* Fixed bug with deprecated variable translations of
+  `{CLOCK,SIGNAL}_WIRE_RC_LAYERS`.
+
+## Documentation
+
+* Added info on YAML configuration files.
+* Documentation for `Instance` dataclass generalized to include instances of
+  cells and not macros.
+
 # 2.1.9
 
 ## Steps
