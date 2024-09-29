@@ -859,6 +859,18 @@ class HeuristicDiodeInsertion(CompositeStep):
 
 @Step.factory.register()
 class CellFrequencyTables(OdbpyStep):
+    """
+    Creates a number of tables to show the cell frequencies by:
+
+    - Cells
+    - Buffer cells only
+    - Cell Function*
+    - Standard Cell Library*
+
+    * These tables only return meaningful info with PDKs distributed in the
+      Open_PDKs format, i.e., all cells are named ``{scl}__{cell_fn}_{size}``.
+    """
+
     id = "Odb.CellFrequencyTables"
     name = "Generate Cell Frequency Tables"
 

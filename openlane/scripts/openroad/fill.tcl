@@ -26,8 +26,5 @@ foreach {pattern} $::env(FILL_CELL) {
 puts $fill_list
 filler_placement $fill_list
 
-report_cell_count
-report_design_area_metrics
-
 write_views
 
