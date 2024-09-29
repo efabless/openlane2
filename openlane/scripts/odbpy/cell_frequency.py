@@ -14,19 +14,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import re
 
 from collections import Counter
-from reader import click, click_odb, OdbReader, Table, rich
+from reader import click, click_odb, OdbReader
 
-
-def fill_table(frequency: dict, table: Table):
-    sorted_freq = {k: frequency[k] for k in sorted(frequency)}
-    for key, value in sorted_freq.items():
-        table.add_row(key, str(value))
+import rich
+from rich.table import Table
+from rich.console import Console
 
 
 @click.command()
+@click.option(
+    "--out-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory to output tables to",
+)
 @click.option(
     "--buffer-list",
     type=click.Path(file_okay=True, dir_okay=False),
@@ -34,74 +39,71 @@ def fill_table(frequency: dict, table: Table):
 )
 @click_odb
 def main(
+    out_dir,
     buffer_list,
     reader: OdbReader,
 ):
     db = reader.db
     block = db.getChip().getBlock()
 
-    pattern = r"^(\S+)__(\S+)_+\d+"
+    pattern = r"^(\S+)__(\S+)_\d+"
     compiled_pattern = re.compile(pattern)
 
     cell_frequency_table = Table(
         "Cell",
         "Count",
-        title="Cell Count",
+        title="Cells by Master",
     )
-    std_cell_library_table = Table(
+    scl_table = Table(
         "SCL",
         "Count",
-        title="SCL Count",
+        title="Cells by SCL",
     )
-    cell_type_table = Table(
-        "Cell Type", "Count", title="SCL Type Count", title_justify="center"
+    cell_fn_table = Table(
+        "Cell Function",
+        "Count",
+        title="Cells by Function",
+        title_justify="center",
     )
     buffer_table = Table(
         "Buffer",
         "Count",
-        title="Buffer Count",
+        title="Buffers by Cell Master",
     )
 
-    cell_frequency = {}
-    std_cell_library_freq = {}
-    cell_type_frequency = {}
     cells = [instance.getMaster().getName() for instance in block.getInsts()]
     buffers = open(buffer_list).read().split()
     buffer_frequency = Counter([cell for cell in cells if cell in buffers])
     cell_frequency = Counter(cells)
+    scl_frequency = Counter()
+    cell_fn_frequency = Counter()
 
     for cell in cell_frequency.keys():
-        result = compiled_pattern.findall(cell)
-        if result:
-            std_cell_library, cell_type = result[0]
-            cell_type_key = f"{std_cell_library}__{cell_type}"
-            if std_cell_library_freq.get(std_cell_library) is not None:
-                std_cell_library_freq[std_cell_library] += int(cell_frequency[cell])
-            else:
-                std_cell_library_freq[std_cell_library] = int(cell_frequency[cell])
+        if match := compiled_pattern.search(cell):
+            scl, cell_type = match[1], match[2]
+            cell_type_key = f"{scl}__{cell_type}"
+            scl_frequency[scl] += cell_frequency[cell]
+            cell_fn_frequency[cell_type_key] += cell_frequency[cell]
 
-            if cell_type_frequency.get(cell_type_key) is not None:
-                cell_type_frequency[cell_type_key] += int(cell_frequency[cell])
-            else:
-                cell_type_frequency[cell_type_key] = int(cell_frequency[cell])
+    console = Console()
+    for table, frequency, name in [
+        (cell_frequency_table, cell_frequency, "cell"),
+        (cell_fn_table, cell_fn_frequency, "cell_function"),
+        (scl_table, scl_frequency, "by_scl"),
+        (buffer_table, buffer_frequency, "buffers"),
+    ]:
+        freqs = sorted(frequency.items(), key=lambda x: x[1], reverse=True)
+        for key, value in freqs:
+            table.add_row(key, str(value))
 
-    fill_table(
-        {k: cell_type_frequency[k] for k in sorted(cell_type_frequency)},
-        cell_type_table,
-    )
-    fill_table({k: buffer_frequency[k] for k in sorted(buffer_frequency)}, buffer_table)
-    fill_table(
-        {k: cell_frequency[k] for k in sorted(cell_frequency)}, cell_frequency_table
-    )
-    fill_table(
-        {k: std_cell_library_freq[k] for k in sorted(std_cell_library_freq)},
-        std_cell_library_table,
-    )
+        table.min_width = console.width
+        console.print(table)
 
-    rich.print(cell_frequency_table)
-    rich.print(cell_type_table)
-    rich.print(std_cell_library_table)
-    rich.print(buffer_table)
+        full_table_path = os.path.join(out_dir, f"{name}.rpt")
+        table.min_width = 160
+        with open(full_table_path, "w") as f:
+            file_console = rich.console.Console(file=f, width=160)
+            file_console.print(table)
 
 
 if __name__ == "__main__":

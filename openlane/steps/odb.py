@@ -858,9 +858,9 @@ class HeuristicDiodeInsertion(CompositeStep):
 
 
 @Step.factory.register()
-class CountCells(OdbpyStep):
-    id = "Odb.CountCells"
-    name = "Count Cells"
+class CellFrequencyTables(OdbpyStep):
+    id = "Odb.CellFrequencyTables"
+    name = "Generate Cell Frequency Tables"
 
     def get_script_path(self):
         return os.path.join(
@@ -892,6 +892,8 @@ class CountCells(OdbpyStep):
         command = super().get_command()
         command.append("--buffer-list")
         command.append(self.get_buffer_list_file())
+        command.append("--out-dir")
+        command.append(self.step_dir)
         return command
 
 

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
-source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 read_current_odb
 source $::env(SCRIPTS_DIR)/openroad/common/dpl_cell_pad.tcl
 
