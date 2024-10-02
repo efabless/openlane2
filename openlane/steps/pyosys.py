@@ -239,7 +239,7 @@ class PyosysStep(Step):
         ),
         Variable(
             "SYNTH_CORNER",
-            str,
+            Optional[str],
             "IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
             pdk=True,
         ),
@@ -278,7 +278,7 @@ class VerilogStep(PyosysStep):
 
         blackbox_models = []
         scl_lib_list = self.toolbox.filter_views(
-            self.config, self.config["LIB"], self.config["SYNTH_CORNER"]
+            self.config, self.config["LIB"], self.config.get("SYNTH_CORNER")
         )
         if self.power_defines and self.config["CELL_VERILOG_MODELS"] is not None:
             blackbox_models.extend(
