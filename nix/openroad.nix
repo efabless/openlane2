@@ -46,8 +46,8 @@
   buildEnv,
   makeBinaryWrapper,
   buildPythonEnvForInterpreter,
-  rev ? "bbe940134bddf836894bfd1fe02153f4a38f8ae5",
-  sha256 ? "sha256-1K64FRoYFmD1seGTxLJoLakOiDCM3BgKljE8/bkjw9Q=",
+  rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
+  sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
 }: let
   self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";

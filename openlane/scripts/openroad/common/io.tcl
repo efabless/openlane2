@@ -13,7 +13,6 @@
 # limitations under the License.
 source $::env(_TCL_ENV_IN)
 source $::env(SCRIPTS_DIR)/openroad/common/set_global_connections.tcl
-source $::env(SCRIPTS_DIR)/openroad/common/report_cell_count.tcl
 
 proc string_in_file {file_path substring} {
     set f [open $file_path r]
@@ -332,7 +331,7 @@ proc write_views {args} {
 
     puts "Updating metrics…"
     report_design_area_metrics
-    report_cell_count
+    report_cell_usage
 
     if { [info exists ::env(SAVE_ODB)] } {
         puts "Writing OpenROAD database to '$::env(SAVE_ODB)'…"
