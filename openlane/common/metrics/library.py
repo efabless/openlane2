@@ -27,19 +27,6 @@ Metric(
     "design__instance__area",
     higher_is_better=False,
 )
-Metric(
-    "design__instance__count",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__macros",
-    higher_is_better=False,
-)
-Metric(
-    "design__instance__count__stdcell",
-    aggregator=sum_aggregator,
-    higher_is_better=False,
-)
 
 # Power
 Metric(
