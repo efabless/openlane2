@@ -31,6 +31,7 @@ Metric(
     "design__instance__count",
     higher_is_better=False,
 )
+
 # Power
 Metric(
     "ir__drop__avg",
@@ -100,7 +101,6 @@ Metric(
     higher_is_better=False,
     critical=True,
 )
-
 Metric(
     "timing__setup_r2r_vio__count",
     aggregator=sum_aggregator,
