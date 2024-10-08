@@ -67,6 +67,7 @@ def run(
     frm: Optional[str],
     to: Optional[str],
     skip: Tuple[str, ...],
+    overwrite: bool,
     reproducible: Optional[str],
     with_initial_state: Optional[State],
     config_override_strings: List[str],
@@ -152,6 +153,7 @@ def run(
             with_initial_state=with_initial_state,
             reproducible=reproducible,
             _force_run_dir=_force_run_dir,
+            overwrite=overwrite,
         )
     except FlowException as e:
         err(f"The flow has encountered an unexpected error:\n{e}")

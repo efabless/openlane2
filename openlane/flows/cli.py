@@ -204,6 +204,12 @@ def cloup_flow_opts(
             )(f)
         if run_options:
             f = o(
+                "--overwrite",
+                is_flag=True,
+                default=False,
+                help="Overwrite run, if exists.",
+            )(f)
+            f = o(
                 "-i",
                 "--with-initial-state",
                 type=Path(
