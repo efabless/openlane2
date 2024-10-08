@@ -347,7 +347,7 @@ puts "%OL_END_REPORT"
 puts "%OL_CREATE_REPORT unpropagated.rpt"
 
 foreach clock [all_clocks] {
-    if { ![get_property $clock propagated] } {
+    if { ![get_property $clock is_propagated] } {
         puts "[get_property $clock full_name]"
     }
 }
@@ -355,15 +355,46 @@ foreach clock [all_clocks] {
 puts "%OL_END_REPORT"
 
 
-# puts "%OL_CREATE_REPORT clock.rpt"
+puts "%OL_CREATE_REPORT clock.rpt"
 
-# foreach clock [all_clocks] {
-#     report_clock_properties $clock
-#     report_clock_latency -clock $clock
-#     report_clock_min_period -clocks [get_property $clock name]
-# }
+foreach clock [all_clocks] {
+    set source_names ""
+    set is_generated "no"
+    set is_virtual "no"
+    set is_propagated "no"
+    foreach source [get_property $clock sources] {
+        set source_names "[get_property $source full_name] $source_names"
+    }
+    if { [get_property $clock is_generated] } {
+        set is_generated "yes"
+    }
+    if { [get_property $clock is_virtual] } {
+        set is_virtual "yes"
+    }
+    if { [get_property $clock is_propagated] } {
+        set is_virtual "yes"
+    }
+    puts "Clock: [get_property $clock name]"
+    puts "Sources: $source_names"
+    puts "Generated: $is_generated"
+    puts "Virtual: $is_virtual"
+    puts "Propagated: $is_propagated"
+    puts "Period: [get_property $clock period]"
+    puts "\n==========================================================================="
+    puts "report_clock_properties"
+    puts "============================================================================"
+    report_clock_properties $clock
+    puts "\n==========================================================================="
+    puts "report_clock_latency"
+    puts "============================================================================"
+    report_clock_latency -clock $clock
+    puts "\n==========================================================================="
+    puts "report_clock_min_period"
+    puts "============================================================================"
+    report_clock_min_period -clocks [get_property $clock name]
+}
 
-# puts "%OL_END_REPORT"
+puts "%OL_END_REPORT"
 
 write_sdfs
 write_libs

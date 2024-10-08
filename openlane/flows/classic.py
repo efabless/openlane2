@@ -96,6 +96,7 @@ class Classic(SequentialFlow):
         Odb.ReportWireLength,
         Checker.WireLength,
         OpenROAD.FillInsertion,
+        Odb.CellFrequencyTables,
         OpenROAD.RCX,
         OpenROAD.STAPostPNR,
         OpenROAD.IRDropReport,

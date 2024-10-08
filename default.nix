@@ -22,7 +22,7 @@
   libparse,
   magic-vlsi,
   netgen,
-  opensta-stable,
+  opensta,
   openroad,
   ruby,
   surelog,
@@ -84,7 +84,7 @@
     ];
 
     includedTools = [
-      opensta-stable
+      opensta
       yosys-env
       openroad-env
       klayout
