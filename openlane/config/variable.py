@@ -718,7 +718,7 @@ class Variable:
         return identifier
 
     def __hash__(self) -> int:
-        return hash((self.name, self.type, self.default))
+        return hash((self.name, str(self.type), str(self.default)))
 
     def __eq__(self, rhs: object) -> bool:
         if not isinstance(rhs, Variable):
