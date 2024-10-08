@@ -89,7 +89,7 @@ def main(
         (scl_table, scl_frequency, "by_scl"),
         (buffer_table, buffer_frequency, "buffers"),
     ]:
-        freqs = sorted(frequency.items(), key=lambda x: x[1], reverse=True)
+        freqs = sorted(frequency.items(), key=lambda x: x[0])
         for key, value in freqs:
             table.add_row(key, str(value))
 
