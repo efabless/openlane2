@@ -7,7 +7,7 @@
 
 ## General
 
-(faq-whats-openlane=)
+(faq-whats-openlane)=
 
 ### What is OpenLane?
 

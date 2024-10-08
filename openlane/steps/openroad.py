@@ -211,11 +211,6 @@ class OpenROADStep(TclStep):
             Optional[Path],
             "Specifies the SDC file used during all implementation (PnR) steps",
         ),
-        Variable(
-            "FP_DEF_TEMPLATE",
-            Optional[Path],
-            "Points to the DEF file to be used as a template.",
-        ),
     ]
 
     @abstractmethod

@@ -419,14 +419,14 @@ class Flow(ABC):
 
                 #### Flow-specific Configuration Variables
 
-                | Variable Name | Type | Description | Default | Units |
-                | - | - | - | - | - |
+                | Variable Name | Type | Description | Default | Units | Deprecated Names |
+                | - | - | - | - | - | - |
                 """
             )
             for var in flow_config_vars:
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.__name__)}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.__name__)}}}{pdk_superscript} | {var.type_repr_md()} | {var.desc_repr_md()} | `{var.default}` | {units} | {'<br>'.join(var.get_deprecated_names_md())} |\n"
             result += "\n"
 
         if len(Self.Steps):

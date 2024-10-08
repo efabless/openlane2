@@ -381,6 +381,14 @@ class Variable:
             return repr_type(self.type).replace("｜", "｜<br />")
         return repr_type(self.type)
 
+    def get_deprecated_names_md(self) -> List[str]:
+        deprecated_names_md = []
+        for deprecated_name in self.deprecated_names:
+            if not isinstance(deprecated_name, str):
+                deprecated_name, _ = deprecated_name
+            deprecated_names_md.append(f"`{deprecated_name}`")
+        return deprecated_names_md
+
     def desc_repr_md(self) -> str:  # pragma: no cover
         """
         :returns: The description, but with newlines escaped for Markdown.
