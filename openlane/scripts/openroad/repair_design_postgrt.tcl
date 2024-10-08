@@ -44,7 +44,5 @@ if { $::env(GRT_DESIGN_REPAIR_RUN_GRT) } {
     source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 }
 
+
 write_views
-
-report_design_area_metrics
-

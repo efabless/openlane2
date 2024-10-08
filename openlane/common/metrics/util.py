@@ -59,7 +59,7 @@ def parse_metric_modifiers(metric_name: str) -> Tuple[str, Mapping[str, str]]:
     while ":" in mn_mut[-1]:
         key, value = mn_mut.pop().split(":", maxsplit=1)
         modifiers[key] = value
-    return "__".join(mn_mut), modifiers
+    return "__".join(mn_mut), {k: modifiers[k] for k in reversed(modifiers)}
 
 
 def aggregate_metrics(
@@ -85,25 +85,29 @@ def aggregate_metrics(
     aggregated: Dict[str, Any] = {}
     for name, value in input.items():
         metric_name, modifiers = parse_metric_modifiers(name)
-        if len(modifiers) != 1:
+        if len(modifiers) < 1:
             # No modifiers = final aggregate, don't double-represent in sums
-            # >1 modifiers = n-level nesting, not supported atm
             continue
 
-        modifier = list(modifiers.keys())[0]
-
+        modifier_names = list(modifiers.keys())
         dont_aggregate: Iterable[str] = []
         entry = aggregator_by_metric.get(metric_name)
         if isinstance(entry, Metric):
             dont_aggregate = entry.dont_aggregate or []
             entry = entry.aggregator
+
         if entry is None:
             continue
-        if modifier in dont_aggregate:
+
+        if len(set(modifier_names).intersection(set(dont_aggregate))):
             continue
-        start, aggregator = entry
-        current = aggregated.get(metric_name) or start
-        aggregated[metric_name] = aggregator([current, value])
+
+        metric_name_so_far = metric_name
+        for modifier in modifier_names:
+            start, aggregation_fn = entry
+            current = aggregated.get(metric_name_so_far) or start
+            aggregated[metric_name_so_far] = aggregation_fn([current, value])
+            metric_name_so_far += f"__{modifier}:{modifiers[modifier]}"
 
     final_values = dict(input)
     final_values.update(aggregated)

@@ -28,6 +28,7 @@ from .openroad_alerts import (
     OpenROADOutputProcessor,
 )
 from .openroad import DetailedPlacement, GlobalRouting
+from .tclstep import TclStep
 from .step import (
     ViewsUpdate,
     MetricsUpdate,
@@ -857,6 +858,57 @@ class HeuristicDiodeInsertion(CompositeStep):
 
 
 @Step.factory.register()
+class CellFrequencyTables(OdbpyStep):
+    """
+    Creates a number of tables to show the cell frequencies by:
+
+    - Cells
+    - Buffer cells only
+    - Cell Function*
+    - Standard Cell Library*
+
+    * These tables only return meaningful info with PDKs distributed in the
+      Open_PDKs format, i.e., all cells are named ``{scl}__{cell_fn}_{size}``.
+    """
+
+    id = "Odb.CellFrequencyTables"
+    name = "Generate Cell Frequency Tables"
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "cell_frequency.py",
+        )
+
+    def get_buffer_list_file(self):
+        return os.path.join(self.step_dir, "buffer_list.txt")
+
+    def get_buffer_list_script(self):
+        return os.path.join(get_script_dir(), "openroad", "buffer_list.tcl")
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        env_copy = env.copy()
+        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
+        env_copy["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
+        super().run_subprocess(
+            ["openroad", "-no_splash", "-exit", self.get_buffer_list_script()],
+            env=env_copy,
+            log_to=self.get_buffer_list_file(),
+        )
+        return super().run(state_in, env=env, **kwargs)
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        command.append("--buffer-list")
+        command.append(self.get_buffer_list_file())
+        command.append("--out-dir")
+        command.append(self.step_dir)
+        return command
+
+
 class ManualGlobalPlacement(OdbpyStep):
     """
     This is an step to override the placement of one or more instances at

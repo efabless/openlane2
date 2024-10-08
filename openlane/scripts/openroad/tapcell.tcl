@@ -21,7 +21,5 @@ tapcell\
     -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
 
+
 write_views
-
-report_design_area_metrics
-
