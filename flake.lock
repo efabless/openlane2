@@ -100,16 +100,15 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1726132101,
-        "narHash": "sha256-XklZsWbAmhuCwlGSJ5qB5RS06mkhtyyTwHFY2SZAn7E=",
+        "lastModified": 1728469407,
+        "narHash": "sha256-hdft8u3U5jotXXywvX9+NT31xNlWrBrehVSULJ4JUEc=",
         "owner": "efabless",
         "repo": "nix-eda",
-        "rev": "ef5639cc9bbee574316e3b2b4610149912564f76",
+        "rev": "ff3ca8916690b2eb97223e581a702bbc868d5802",
         "type": "github"
       },
       "original": {
         "owner": "efabless",
-        "ref": "yosys_python_flag",
         "repo": "nix-eda",
         "type": "github"
       }

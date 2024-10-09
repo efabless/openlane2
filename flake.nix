@@ -22,9 +22,7 @@
   };
 
   inputs = {
-    # TEMPORARY: Until https://github.com/YosysHQ/yosys/pull/4553 is merged
-    ## DO NOT MERGE TO main WHILE WE'RE STILL ON A BRANCH OF NIX-EDA
-    nix-eda.url = github:efabless/nix-eda/yosys_python_flag;
+    nix-eda.url = github:efabless/nix-eda;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;

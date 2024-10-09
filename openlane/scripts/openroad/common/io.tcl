@@ -318,6 +318,35 @@ proc read_current_odb {args} {
     set_dont_use_cells
 }
 
+proc _populate_cells_by_class {} {
+    if { [info exists ::_cells_by_class(non_core)] } {
+        return
+    }
+
+    set ::_cells_by_class(non_core) [list]
+    set ::_cells_by_class(non_timing) [list]
+    foreach lib $::libs {
+        foreach master [$lib getMasters] {
+            if { "[$master getType]" != "CORE" || "[$master getType]" != "BLOCK" } {
+                lappend ::_cells_by_class(non_core) [$master getName]
+                if { "[$master getType]" != "CORE_ANTENNACELL" } {
+                    lappend ::_cells_by_class(non_timing) [$master getName]
+                }
+            }
+        }
+    }
+}
+
+proc get_timing_excluded_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(non_timing)
+}
+
+proc get_non_core_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(non_core)
+}
+
 proc write_views {args} {
     # This script will attempt to write views based on existing "SAVE_"
     # environment variables. If the SAVE_ variable exists, the script will
@@ -341,26 +370,32 @@ proc write_views {args} {
         write_verilog $::env(SAVE_NETLIST)
     }
 
+    if { [info exists ::env(SAVE_NETLIST_NO_PHYSICAL_CELLS)] } {
+        puts "Writing logical netlist to '$::env(SAVE_NETLIST_NO_PHYSICAL_CELLS)'…"
+        puts "Excluding: [get_non_core_cells]"
+        write_verilog -remove_cells "[get_non_core_cells]"\
+            $::env(SAVE_NETLIST_NO_PHYSICAL_CELLS)
+    }
+
     if { [info exists ::env(SAVE_POWERED_NETLIST)] } {
         puts "Writing powered netlist to '$::env(SAVE_POWERED_NETLIST)'…"
         write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
     }
 
     if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
-        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
-        puts "Excluding $exclude_cells"
+        puts "Writing timing powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
+        puts "Excluding: [get_timing_excluded_cells]"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
+            -remove_cells "[get_timing_excluded_cells]"\
             $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
     }
 
     if { [info exists ::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)] } {
         set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofilldiode powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)'…"
-        puts "Excluding $exclude_cells"
+        puts "Writing logical powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)'…"
+        puts "Excluding: [get_non_core_cells]"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
+            -remove_cells "[get_non_core_cells]"\
             $::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)
     }
 

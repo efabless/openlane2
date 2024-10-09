@@ -65,6 +65,12 @@ class DesignFormat(Enum):
         "nl.v",
         "Verilog Netlist",
     )
+    NETLIST_NO_PHYSICAL_CELLS: DesignFormatObject = DesignFormatObject(
+        "nl-npc",
+        "nl-npc.v",
+        "Logical Verilog Netlist",
+        folder_override="nl",
+    )
     POWERED_NETLIST: DesignFormatObject = DesignFormatObject(
         "pnl",
         "pnl.v",
@@ -73,13 +79,13 @@ class DesignFormat(Enum):
     POWERED_NETLIST_SDF_FRIENDLY: DesignFormatObject = DesignFormatObject(
         "pnl-sdf-friendly",
         "pnl-sdf.v",
-        "Powered Verilog Netlist For SDF Simulation (Without Fill Cells)",
+        "Timing Verilog Netlist (No Physical Cells Except Diodes)",
         folder_override="pnl",
     )
     POWERED_NETLIST_NO_PHYSICAL_CELLS: DesignFormatObject = DesignFormatObject(
         "pnl-npc",
         "pnl-npc.v",
-        "Powered Verilog Netlist Without Physical Cells (Fill Cells and Diode Cells)",
+        "Powered Logical Verilog Netlist",
         folder_override="pnl",
     )
 

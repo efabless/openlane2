@@ -63,6 +63,7 @@ from .common_variables import (
     grt_variables,
     routing_layer_variables,
 )
+from .yosys import _run_eqy
 
 from ..config import Variable, Macro
 from ..config.flow import option_variables
@@ -180,6 +181,7 @@ class OpenROADStep(TclStep):
         DesignFormat.SDC,
         DesignFormat.NETLIST,
         DesignFormat.POWERED_NETLIST,
+        DesignFormat.NETLIST_NO_PHYSICAL_CELLS,
     ]
 
     output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
@@ -1979,7 +1981,22 @@ class ResizerStep(OpenROADStep):
             debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 
-        return super().run(state_in, env=env, **kwargs)
+        views, metrics = super().run(state_in, env=env, **kwargs)
+
+        if self.config.get("RSZ_LEC"):
+            try:
+                info("Verifying equivalence with EQY…")
+                _run_eqy(
+                    self,
+                    state_in,
+                    against_netlist=str(views[DesignFormat.NETLIST_NO_PHYSICAL_CELLS]),
+                )
+            except subprocess.CalledProcessError:
+                raise StepException(
+                    "OpenROAD resizing step emitted logically non-equivalent circuit: Yosys EQY reports a non-zero exit.\nPlease report this as a bug."
+                )
+
+        return views, metrics
 
 
 @Step.factory.register()

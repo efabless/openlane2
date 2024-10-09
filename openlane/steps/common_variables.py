@@ -320,6 +320,12 @@ grt_variables = routing_layer_variables + [
 
 rsz_variables = dpl_variables + [
     Variable(
+        "RSZ_LEC",
+        bool,
+        "Experimental: attempts to formally prove the equivalence of the circuit before and after resizing if the EQY utility is installed (and supported by the PDK.)",
+        default=False,
+    ),
+    Variable(
         "RSZ_DONT_TOUCH_RX",
         str,
         'A single regular expression designating nets or instances as "don\'t touch" by design repairs or resizer optimizations.',
