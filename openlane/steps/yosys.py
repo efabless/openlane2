@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import io
 import os
+import shutil
 import textwrap
 import subprocess
 from abc import abstractmethod
@@ -246,13 +248,150 @@ class YosysStep(TclStep):
         return super().run(state_in, env=env, **kwargs)
 
 
+def _mk_eqy_script(
+    step,
+    fp: io.TextIOWrapper,
+    processed_pdk: str,
+    state: State,
+    against_netlist: Optional[str] = None,
+):
+    def p(*args, **kwargs):
+        print(*args, **kwargs, file=fp)
+
+    p("[script]")
+    p(_generate_read_deps(step.config, step.toolbox, tcl=False))
+    p("blackbox")
+    p("")
+
+    # Gold
+    p("[gold]")
+    if against_netlist is not None:
+        # against previous netlist
+        p(
+            f"read_verilog -formal -sv {processed_pdk} {state[DesignFormat.NETLIST_NO_PHYSICAL_CELLS]}",
+        )
+    else:
+        # against RTL
+        p(
+            "read_verilog -formal -sv",
+            end=" ",
+        )
+        for file in step.config["VERILOG_FILES"]:
+            p(
+                f"{file}",
+                end=" ",
+            )
+    p("")
+
+    # Gate
+    p("[gate]")
+    if after := against_netlist:
+        p(
+            f"read_verilog -formal -sv {processed_pdk} {after}",
+        )
+    else:
+        p(
+            f"read_verilog -formal -sv {processed_pdk} {state[DesignFormat.NETLIST_NO_PHYSICAL_CELLS]}",
+        )
+
+    # Script
+    p("[script]")
+    p(f"hierarchy -top {step.config['DESIGN_NAME']}")
+    p("proc")
+    p(f"prep -top {step.config['DESIGN_NAME']} -flatten")
+    p("memory -nomap")
+    p("async2sync")
+    p("")
+
+    # Write
+    for mode in ["gold", "gate"]:
+        p(f"[{mode}]")
+        p(f"write_verilog {step.step_dir}/{mode}.v")
+
+    # Strats
+    p(
+        textwrap.dedent(
+            """
+            [strategy sat]
+            use sat
+            depth 5
+            
+            [strategy bitwuzla]
+            use sby
+            depth 2
+            engine smtbmc bitwuzla
+            
+            [strategy pdr]
+            use sby
+            engine abc pdr -rfi
+            """
+        )
+    )
+
+
+def _run_eqy(
+    step: Step,
+    state: State,
+    against_netlist: Optional[str] = None,
+    silent: bool = False,
+):
+    processed_pdk = os.path.join(step.step_dir, "formal_pdk.v")
+
+    if shutil.which("eqy") is None:
+        info("EQY is not installed. Skipping…")
+        return {}
+
+    if step.config["PDK"].startswith("sky130A"):
+        subprocess.check_call(
+            [
+                "eqy.formal_pdk_proc",
+                "--output",
+                processed_pdk,
+            ]
+            + [str(model) for model in step.config["CELL_VERILOG_MODELS"]]
+        )
+    elif step.config.get("EQY_FORCE_ACCEPT_PDK"):
+        subprocess.check_call(
+            ["iverilog", "-E", "-o", processed_pdk, "-DFUNCTIONAL"]
+            + [str(model) for model in step.config["CELL_VERILOG_MODELS"]]
+        )
+    else:
+        info(f"PDK {step.config['PDK']} is not supported by EQY. Skipping…")
+        return {}
+
+    eqy_script_path = os.path.join(step.step_dir, f"{step.config['DESIGN_NAME']}.eqy")
+
+    with open(eqy_script_path, "w", encoding="utf8") as f:
+        if eqy_script := step.config.get("EQY_SCRIPT"):
+            for line in open(eqy_script, "r", encoding="utf8"):
+                f.write(line)
+        else:
+            _mk_eqy_script(
+                step,
+                f,
+                processed_pdk,
+                state,
+                against_netlist=against_netlist,
+            )
+    work_dir = os.path.join(step.step_dir, "scratch")
+
+    subprocess_result = step.run_subprocess(
+        ["eqy", "-f", eqy_script_path, "-d", work_dir],
+        log_to=os.path.join(step.step_dir, "eqy.log"),
+        silent=silent,
+    )
+
+    os.unlink(os.path.join(work_dir, "partition.log"))  # Grows into the 10s of GBs
+
+    return subprocess_result["generated_metrics"]
+
+
 @Step.factory.register()
 class EQY(Step):
     id = "Yosys.EQY"
     name = "Equivalence Check"
-    long_name = "RTL/Netlist Equivalence Check"
 
-    inputs = [DesignFormat.NETLIST]
+    inputs = [DesignFormat.NETLIST_NO_PHYSICAL_CELLS]
     outputs = []
 
     config_vars = (
@@ -279,93 +418,4 @@ class EQY(Step):
     )
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        processed_pdk = os.path.join(self.step_dir, "formal_pdk.v")
-
-        if self.config["PDK"].startswith("sky130A"):
-            subprocess.check_call(
-                [
-                    "eqy.formal_pdk_proc",
-                    "--output",
-                    processed_pdk,
-                ]
-                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
-            )
-        elif self.config["EQY_FORCE_ACCEPT_PDK"]:
-            subprocess.check_call(
-                ["iverilog", "-E", "-o", processed_pdk, "-DFUNCTIONAL"]
-                + [str(model) for model in self.config["CELL_VERILOG_MODELS"]]
-            )
-        else:
-            info(
-                f"PDK {self.config['PDK']} is not supported by the EQY step. Skipping…"
-            )
-            return {}, {}
-
-        eqy_script_path = os.path.join(
-            self.step_dir, f"{self.config['DESIGN_NAME']}.eqy"
-        )
-
-        with open(eqy_script_path, "w", encoding="utf8") as f:
-            if eqy_script := self.config["EQY_SCRIPT"]:
-                for line in open(eqy_script, "r", encoding="utf8"):
-                    f.write(line)
-            else:
-                script = textwrap.dedent(
-                    """
-                    [script]
-                    {dep_commands}
-                    blackbox
-
-                    [gold]
-                    read_verilog -formal -sv {files}
-
-                    [gate]
-                    read_verilog -formal -sv {processed_pdk} {nl}
-
-                    [script]
-                    hierarchy -top {design_name}
-                    proc
-                    prep -top {design_name} -flatten
-
-                    memory -nomap
-                    async2sync
-
-                    [gold]
-                    write_verilog {step_dir}/gold.v
-                    
-                    [gate]
-                    write_verilog {step_dir}/gate.v
-
-                    [strategy sat]
-                    use sat
-                    depth 5
-
-                    [strategy pdr]
-                    use sby
-                    engine abc pdr -rfi
-
-                    [strategy bitwuzla]
-                    use sby
-                    depth 2
-                    engine smtbmc bitwuzla
-                    """
-                ).format(
-                    design_name=self.config["DESIGN_NAME"],
-                    dep_commands=_generate_read_deps(
-                        self.config, self.toolbox, tcl=False
-                    ),
-                    files=TclUtils.join(
-                        [str(file) for file in self.config["VERILOG_FILES"]]
-                    ),
-                    nl=state_in[DesignFormat.NETLIST],
-                    processed_pdk=processed_pdk,
-                    step_dir=self.step_dir,
-                )
-                f.write(script)
-        work_dir = os.path.join(self.step_dir, "scratch")
-
-        subprocess_result = self.run_subprocess(
-            ["eqy", "-f", eqy_script_path, "-d", work_dir]
-        )
-
-        return {}, subprocess_result["generated_metrics"]
+        return {}, _run_eqy(self, state_in, None)

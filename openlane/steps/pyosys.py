@@ -362,7 +362,7 @@ class JsonHeader(VerilogStep):
 
 class SynthesisCommon(VerilogStep):
     inputs = []  # The input RTL is part of the configuration
-    outputs = [DesignFormat.NETLIST]
+    outputs = [DesignFormat.NETLIST, DesignFormat.NETLIST_NO_PHYSICAL_CELLS]
 
     config_vars = PyosysStep.config_vars + [
         Variable(
@@ -562,6 +562,7 @@ class SynthesisCommon(VerilogStep):
             )
 
         view_updates[DesignFormat.NETLIST] = Path(out_file)
+        view_updates[DesignFormat.NETLIST_NO_PHYSICAL_CELLS] = Path(out_file)
 
         return view_updates, metric_updates
 
