@@ -14,6 +14,20 @@
 ## Documentation
 -->
 
+# 2.1.9
+
+## Steps
+
+* `OpenROAD.CheckAntennas`
+  * Fixed table being printed to file with wrong width
+* `OpenROAD.STA*PnR`
+  * Fixed table being printed to file with wrong width
+
+## Flows
+
+* `SynthesisExploration`
+  * Fixed table being printed to file with wrong width
+
 # 2.1.8
 
 ## Steps
