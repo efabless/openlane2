@@ -398,36 +398,28 @@ def io_place(
 
     print("Block boundaries:", BLOCK_LL_X, BLOCK_LL_Y, BLOCK_UR_X, BLOCK_UR_Y)
 
-    origin, count, h_step = reader.block.findTrackGrid(H_LAYER).getGridPatternY(0)
+    origin, count, h_step = reader.block.findTrackGrid(H_LAYER).getGridPatternX(0)
     print(f"Horizontal Tracks Origin: {origin}, Count: {count}, Step: {h_step}")
     h_tracks = grid_to_tracks(origin, count, h_step)
 
-    origin, count, v_step = reader.block.findTrackGrid(V_LAYER).getGridPatternX(0)
+    origin, count, v_step = reader.block.findTrackGrid(V_LAYER).getGridPatternY(0)
     print(f"Vertical Tracks Origin: {origin}, Count: {count}, Step: {v_step}")
     v_tracks = grid_to_tracks(origin, count, v_step)
 
     pin_tracks = {}
     for side in pin_placement:
+        min_distance = info_by_side[side].min_distance * micron_in_units
         if side in ["N", "S"]:
-            min_distance = info_by_side[side].min_distance * micron_in_units
+            pin_tracks[side] = [
+                h_tracks[i]
+                for i in range(len(h_tracks))
+                if (i % (math.ceil(min_distance / h_step))) == 0
+            ]
+        elif side in ["W", "E"]:
             pin_tracks[side] = [
                 v_tracks[i]
                 for i in range(len(v_tracks))
                 if (i % (math.ceil(min_distance / v_step))) == 0
-            ]
-        elif side in ["W", "E"]:
-            pin_tracks[side] = [
-                h_tracks[i]
-                for i in range(len(h_tracks))
-                if (
-                    i
-                    % (
-                        math.ceil(
-                            info_by_side[side].min_distance * micron_in_units / h_step
-                        )
-                    )
-                )
-                == 0
             ]
 
     # reversals (including randomly-assigned pins, if needed)
