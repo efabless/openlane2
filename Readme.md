@@ -135,7 +135,7 @@ python3 -m openlane --pdk-root <path/to/pdk> </path/to/config.json>
 To start with, you can try:
 
 ```sh
-python3 -m openlane --pdk-root $HOME/.volare ./designs/spm/config.json
+python3 -m openlane --pdk-root $HOME/.volare ./test/designs/spm/config.json
 ```
 
 ## Publication
