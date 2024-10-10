@@ -679,7 +679,7 @@ class Step(ABC):
                 #### Configuration Variables
 
                 | Variable Name | Type | Description | Default | Units | Deprecated Names |
-                | - | - | - | - | - |
+                | - | - | - | - | - | - |
                 """
             )
             for var in set(Self.config_vars):
