@@ -381,6 +381,14 @@ class Variable:
             return repr_type(self.type).replace("｜", "｜<br />")
         return repr_type(self.type)
 
+    def get_deprecated_names_md(self) -> List[str]:
+        deprecated_names_md = []
+        for deprecated_name in self.deprecated_names:
+            if not isinstance(deprecated_name, str):
+                deprecated_name, _ = deprecated_name
+            deprecated_names_md.append(f"`{deprecated_name}`")
+        return deprecated_names_md
+
     def desc_repr_md(self) -> str:  # pragma: no cover
         """
         :returns: The description, but with newlines escaped for Markdown.
@@ -710,7 +718,7 @@ class Variable:
         return identifier
 
     def __hash__(self) -> int:
-        return hash((self.name, self.type, self.default))
+        return hash((self.name, str(self.type), str(self.default)))
 
     def __eq__(self, rhs: object) -> bool:
         if not isinstance(rhs, Variable):
