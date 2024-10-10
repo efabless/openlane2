@@ -43,9 +43,11 @@
   clang-tools_14,
   buildEnv,
   makeBinaryWrapper,
-  buildPythonEnvForInterpreter,
   rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
   sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  # environments,
+  openroad,
+  buildPythonEnvForInterpreter,
 }: let
   self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
@@ -131,7 +133,7 @@
     passthru = {
       inherit python3;
       withPythonPackages = buildPythonEnvForInterpreter {
-        target = self;
+        target = openroad;
         inherit lib;
         inherit buildEnv;
         inherit makeBinaryWrapper;
