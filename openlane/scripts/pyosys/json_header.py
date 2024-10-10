@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-import argparse
 
 import click
 
 from ys_common import ys
 
+
 @click.command()
-@click.option('--output', type=click.Path(exists=False, dir_okay=False), 
-required=True)
-@click.option('--config-in', type=click.Path(exists=True, dir_okay=False), required=True)
-@click.option('--extra-in', type=click.Path(exists=True, dir_okay=False), required=True)
+@click.option("--output", type=click.Path(exists=False, dir_okay=False), required=True)
+@click.option(
+    "--config-in", type=click.Path(exists=True, dir_okay=False), required=True
+)
+@click.option("--extra-in", type=click.Path(exists=True, dir_okay=False), required=True)
 def json_header(
     output,
     config_in,

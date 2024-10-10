@@ -32,7 +32,6 @@ import os
 import sys
 import json
 import shutil
-import argparse
 
 import click
 
@@ -106,11 +105,12 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("check")
     d.run_pass("stat")
 
+
 @click.command()
-@click.option('--output', type=click.Path(exists=False, dir_okay=False), required=True)
-@click.option('--config-in', type=click.Path(exists=True), required=True)
-@click.option('--extra-in', type=click.Path(exists=True), required=True)
-@click.option('--lighter-dff-map', type=click.Path(exists=True), required=False)
+@click.option("--output", type=click.Path(exists=False, dir_okay=False), required=True)
+@click.option("--config-in", type=click.Path(exists=True), required=True)
+@click.option("--extra-in", type=click.Path(exists=True), required=True)
+@click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
 def synthesize(
     output,
     config_in,

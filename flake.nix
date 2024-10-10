@@ -68,7 +68,7 @@
           nix-eda.composePythonOverlay (pkgs': pkgs: pypkgs': pypkgs: let
             callPythonPackage = lib.callPackageWith (pkgs' // pkgs'.python3.pkgs);
           in {
-            mdformat = pkgs.python3.pkgs.mdformat.overridePythonAttrs (old: {
+            mdformat = pypkgs.mdformat.overridePythonAttrs (old: {
               patches = [
                 ./nix/patches/mdformat/donns_tweaks.patch
               ];
