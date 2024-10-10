@@ -31,12 +31,7 @@
   verilog,
   volare,
   yosys,
-  yosys-synlig-sv,
-  yosys-lighter,
-  yosys-sby,
-  yosys-eqy,
-  yosys-ghdl,
-  yosys-f4pga-sdc,
+  yosysFull,
   # Python
   buildPythonPackage,
   click,
@@ -57,14 +52,9 @@
   ioplace-parser,
   poetry-core,
 }: let
-  yosys-env = yosys.withPlugins ([
-      yosys-sby
-      yosys-eqy
-      yosys-lighter
-      yosys-synlig-sv
-      yosys-f4pga-sdc
-    ]
-    ++ lib.optionals (builtins.elem system ["x86_64-linux" "x86_64-darwin"]) [yosys-ghdl]);
+  yosys-env = (yosys.withPythonPackages.override { target = yosysFull; }) (ps: with ps; [
+    click
+  ]);
   openroad-env = openroad.withPythonPackages (ps:
     with ps; [
       click
