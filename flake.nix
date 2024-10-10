@@ -22,9 +22,7 @@
   };
 
   inputs = {
-    # TEMPORARY: Until https://github.com/YosysHQ/yosys/pull/4553 is merged
-    ## DO NOT MERGE TO main WHILE WE'RE STILL ON A BRANCH OF NIX-EDA
-    nix-eda.url = github:efabless/nix-eda/yosys_python_flag;
+    nix-eda.url = github:efabless/nix-eda/composable_overlays;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
@@ -45,53 +43,77 @@
     volare,
     devshell,
     ...
-  }: {
+  }: let
+    nixpkgs = nix-eda.inputs.nixpkgs;
+    lib = nixpkgs.lib;
+  in {
     # Common
-    input-overlays = [
-      (import ./nix/overlay.nix)
-      (devshell.overlays.default)
-    ];
+    overlays = {
+      default = lib.composeManyExtensions [
+        (import ./nix/overlay.nix)
+        (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
+        (
+          pkgs': pkgs: let
+            callPackage = lib.callPackageWith pkgs';
+          in
+            {
+              colab-env = callPackage ./nix/colab-env.nix {};
+              opensta = callPackage ./nix/opensta.nix {};
+              openroad-abc = callPackage ./nix/openroad-abc.nix {};
+              openroad = callPackage ./nix/openroad.nix {
+                inherit (nix-eda) buildPythonEnvForInterpreter;
+              };
+            }
+            // (lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};})
+        )
+        (
+          nix-eda.composePythonOverlay (pkgs': pkgs: pypkgs': pypkgs: let
+            callPythonPackage = lib.callPackageWith (pkgs' // pkgs'.python3.pkgs);
+          in {
+            mdformat = pkgs.python3.pkgs.mdformat.overridePythonAttrs (old: {
+              patches = [
+                ./nix/patches/mdformat/donns_tweaks.patch
+              ];
+              doCheck = false;
+            });
+            sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+            sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+            yamlcore = callPythonPackage ./nix/yamlcore.nix {};
+
+            # ---
+            openlane = callPythonPackage ./default.nix {};
+          })
+        )
+      ];
+    };
 
     # Helper functions
     createOpenLaneShell = import ./nix/create-shell.nix;
 
-    # Outputs
-    packages =
-      nix-eda.forAllSystems {
-        current = self;
-        withInputs = [nix-eda ioplace-parser libparse volare];
-      } (
-        util: let
-          self = with util;
-            {
-              mdformat = pkgs.python3.pkgs.mdformat.overridePythonAttrs (old: {
-                patches = [
-                  ./nix/patches/mdformat/donns_tweaks.patch
-                ];
-                doCheck = false;
-              });
-              colab-env = callPackage ./nix/colab-env.nix {};
-              opensta = callPackage ./nix/opensta.nix {};
-              openroad-abc = callPackage ./nix/openroad-abc.nix {};
-              openroad = callPythonPackage ./nix/openroad.nix {
-                inherit (nix-eda) buildPythonEnvForInterpreter;
-              };
-              sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
-              sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
-              yamlcore = callPythonPackage ./nix/yamlcore.nix {};
+    # Packages
+    legacyPackages = nix-eda.forAllSystems (
+      system:
+        import nix-eda.inputs.nixpkgs {
+          inherit system;
+          overlays = [devshell.overlays.default nix-eda.overlays.default self.overlays.default];
+        }
+    );
 
-              # ---
-              openlane = callPythonPackage ./default.nix {};
-              default = self.openlane;
-            }
-            // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};});
-        in
-          self
-      );
+    packages = nix-eda.forAllSystems (
+      system: {
+        inherit (self.legacyPackages."${system}") colab-env opensta openroad-abc openroad;
+        inherit (self.legacyPackages."${system}".python3.pkgs) openlane;
+        default = self.legacyPackages."${system}".python3.pkgs.openlane;
+      }
+    );
 
-    devShells = nix-eda.forAllSystems {withInputs = [self devshell nix-eda ioplace-parser libparse volare];} (
-      util:
-        with util; rec {
+    # devshells
+
+    devShells = nix-eda.forAllSystems (
+        system: let
+          pkgs = self.legacyPackages."${system}";
+          callPackage = lib.callPackageWith (pkgs // { inherit (self.legacyPackages."${system}".python3.pkgs) openlane; });
+        in {
           default =
             callPackage (self.createOpenLaneShell {
               }) {};

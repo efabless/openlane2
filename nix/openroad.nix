@@ -37,12 +37,10 @@
   re2,
   swig4,
   pkg-config,
-  cmake,
   gnumake,
   flex,
   bison,
   clang-tools_14,
-  ioplace-parser,
   buildEnv,
   makeBinaryWrapper,
   buildPythonEnvForInterpreter,
@@ -118,7 +116,7 @@
     nativeBuildInputs = [
       swig4
       pkg-config
-      cmake
+      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
       gnumake
       flex
       bison
