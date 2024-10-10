@@ -37,17 +37,17 @@
   re2,
   swig4,
   pkg-config,
-  cmake,
   gnumake,
   flex,
   bison,
   clang-tools_14,
-  ioplace-parser,
   buildEnv,
   makeBinaryWrapper,
-  buildPythonEnvForInterpreter,
   rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
   sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  # environments,
+  openroad,
+  buildPythonEnvForInterpreter,
 }: let
   self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
@@ -118,7 +118,7 @@
     nativeBuildInputs = [
       swig4
       pkg-config
-      cmake
+      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
       gnumake
       flex
       bison
@@ -133,7 +133,7 @@
     passthru = {
       inherit python3;
       withPythonPackages = buildPythonEnvForInterpreter {
-        target = self;
+        target = openroad;
         inherit lib;
         inherit buildEnv;
         inherit makeBinaryWrapper;

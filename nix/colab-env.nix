@@ -13,11 +13,10 @@
 # limitations under the License.
 {
   system,
-  openlane,
   python3,
   symlinkJoin,
 }:
 symlinkJoin {
   name = "openlane-colab-env";
-  paths = openlane.includedTools;
+  paths = python3.pkgs.openlane.includedTools;
 }

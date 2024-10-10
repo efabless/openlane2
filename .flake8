@@ -20,5 +20,6 @@ exclude =
     test/designs/*.py,
     examples,
     sandbox/
+    test/,
 per-file-ignores =
     */__init__.py:F401

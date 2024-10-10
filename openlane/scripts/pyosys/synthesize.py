@@ -32,7 +32,8 @@ import os
 import sys
 import json
 import shutil
-import argparse
+
+import click
 
 from ys_common import ys
 from construct_abc_script import ABCScriptCreator
@@ -105,6 +106,11 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("stat")
 
 
+@click.command()
+@click.option("--output", type=click.Path(exists=False, dir_okay=False), required=True)
+@click.option("--config-in", type=click.Path(exists=True), required=True)
+@click.option("--extra-in", type=click.Path(exists=True), required=True)
+@click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
 def synthesize(
     output,
     config_in,
@@ -359,10 +365,4 @@ def synthesize(
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--output", required=True)
-    ap.add_argument("--config-in", required=True)
-    ap.add_argument("--extra-in", required=True)
-    ap.add_argument("--lighter-dff-map", required=False)
-
-    synthesize(**ap.parse_args().__dict__)
+    synthesize()
