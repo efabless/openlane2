@@ -400,6 +400,7 @@ o = partial(option, show_default=True)
 @cloup_flow_opts(
     _enable_debug_flags=True,
     sequential_flow_reproducible=True,
+    enable_overwrite_flag=True
 )
 @pass_context
 def cli(ctx, /, **kwargs):

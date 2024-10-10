@@ -138,6 +138,7 @@ def cloup_flow_opts(
     volare_by_default: bool = True,
     volare_pdk_override: Optional[str] = None,
     _enable_debug_flags: bool = False,
+    enable_overwrite_flag: bool = False,
 ) -> Decorator:
     """
     Creates a wrapper that appends a number of OpenLane flow-related flags to a
@@ -204,12 +205,6 @@ def cloup_flow_opts(
             )(f)
         if run_options:
             f = o(
-                "--overwrite",
-                is_flag=True,
-                default=False,
-                help="Overwrite run, if exists.",
-            )(f)
-            f = o(
                 "-i",
                 "--with-initial-state",
                 type=Path(
@@ -232,6 +227,13 @@ def cloup_flow_opts(
                 default=None,
                 help="The top-level directory for your design that configuration objects may resolve paths relative to.",
             )(f)
+            if enable_overwrite_flag:
+                f = o(
+                    "--overwrite",
+                    is_flag=True,
+                    default=False,
+                    help="Overwrite run, if exists.",
+                )(f)
             if _enable_debug_flags:
                 f = option_group(
                     "Debug flags",
