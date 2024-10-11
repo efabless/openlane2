@@ -52,9 +52,10 @@
   ioplace-parser,
   poetry-core,
 }: let
-  yosys-env = (yosys.withPythonPackages.override { target = yosysFull; }) (ps: with ps; [
-    click
-  ]);
+  yosys-env = (yosys.withPythonPackages.override {target = yosysFull;}) (ps:
+    with ps; [
+      click
+    ]);
   openroad-env = openroad.withPythonPackages (ps:
     with ps; [
       click

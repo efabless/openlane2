@@ -55,14 +55,12 @@
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
-          in
-            {
-              colab-env = callPackage ./nix/colab-env.nix {};
-              opensta = callPackage ./nix/opensta.nix {};
-              openroad-abc = callPackage ./nix/openroad-abc.nix {};
-              openroad = callPackage ./nix/openroad.nix {};
-            }
-            // (lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};})
+          in {
+            colab-env = callPackage ./nix/colab-env.nix {};
+            opensta = callPackage ./nix/opensta.nix {};
+            openroad-abc = callPackage ./nix/openroad-abc.nix {};
+            openroad = callPackage ./nix/openroad.nix {};
+          }
         )
         (
           nix-eda.composePythonOverlay (pkgs': pkgs: pypkgs': pypkgs: let
@@ -82,6 +80,16 @@
             openlane = callPythonPackage ./default.nix {};
           })
         )
+        (pkgs': pkgs: let
+          callPackage = lib.callPackageWith pkgs';
+        in
+          {}
+          // lib.optionalAttrs pkgs.stdenv.isLinux {
+            openlane-docker = callPackage ./nix/docker.nix {
+              createDockerImage = nix-eda.createDockerImage;
+              openlane = pkgs'.python3.pkgs.openlane;
+            };
+          })
       ];
     };
 
@@ -108,70 +116,70 @@
     # devshells
 
     devShells = nix-eda.forAllSystems (
-        system: let
-          pkgs = self.legacyPackages."${system}";
-          callPackage = lib.callPackageWith (pkgs // { inherit (self.legacyPackages."${system}".python3.pkgs) openlane; });
-        in {
-          default =
-            callPackage (self.createOpenLaneShell {
-              }) {};
-          notebook = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jupyter
-            ];
-          }) {};
-          dev = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jdupes
-              alejandra
-            ];
-            extra-python-packages = with pkgs.python3.pkgs; [
-              pyfakefs
-              pytest
-              pytest-xdist
-              pytest-cov
-              pillow
-              mdformat
-              black
-              ipython
-              tokenize-rt
-              flake8
-              mypy
-              types-deprecated
-              types-pyyaml
-              types-psutil
-              lxml-stubs
-            ];
-          }) {};
-          docs = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jdupes
-              alejandra
-              imagemagick
-              nodejs.pkgs.nodemon
-            ];
-            extra-python-packages = with pkgs.python3.pkgs; [
-              pyfakefs
-              pytest
-              pytest-xdist
-              pillow
-              mdformat
-              furo
-              docutils
-              sphinx
-              sphinx-autobuild
-              sphinx-autodoc-typehints
-              sphinx-design
-              myst-parser
-              docstring-parser
-              sphinx-copybutton
-              sphinxcontrib-spelling
-              sphinxcontrib-bibtex
-              sphinx-tippy
-              sphinx-subfigure
-            ];
-          }) {};
-        }
+      system: let
+        pkgs = self.legacyPackages."${system}";
+        callPackage = lib.callPackageWith (pkgs // {inherit (self.legacyPackages."${system}".python3.pkgs) openlane;});
+      in {
+        default =
+          callPackage (self.createOpenLaneShell {
+            }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
+        dev = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pytest-cov
+            pillow
+            mdformat
+            black
+            ipython
+            tokenize-rt
+            flake8
+            mypy
+            types-deprecated
+            types-pyyaml
+            types-psutil
+            lxml-stubs
+          ];
+        }) {};
+        docs = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+            imagemagick
+            nodejs.pkgs.nodemon
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pillow
+            mdformat
+            furo
+            docutils
+            sphinx
+            sphinx-autobuild
+            sphinx-autodoc-typehints
+            sphinx-design
+            myst-parser
+            docstring-parser
+            sphinx-copybutton
+            sphinxcontrib-spelling
+            sphinxcontrib-bibtex
+            sphinx-tippy
+            sphinx-subfigure
+          ];
+        }) {};
+      }
     );
   };
 }
