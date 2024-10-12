@@ -106,11 +106,15 @@
     );
 
     packages = nix-eda.forAllSystems (
-      system: {
-        inherit (self.legacyPackages."${system}") colab-env opensta openroad-abc openroad;
-        inherit (self.legacyPackages."${system}".python3.pkgs) openlane;
-        default = self.legacyPackages."${system}".python3.pkgs.openlane;
-      }
+      system:
+        {
+          inherit (self.legacyPackages."${system}") colab-env opensta openroad-abc openroad;
+          inherit (self.legacyPackages."${system}".python3.pkgs) openlane;
+          default = self.legacyPackages."${system}".python3.pkgs.openlane;
+        }
+        // lib.optionalAttrs pkgs.stdenv.isLinux {
+          inherit (self.legacyPackages."${system}") openlane-docker;
+        }
     );
 
     # devshells
