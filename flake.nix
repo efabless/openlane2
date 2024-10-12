@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
+  description = "open-source infrastructure for implementing chip design flows";
+  
   nixConfig = {
     extra-substituters = [
       "https://openlane.cachix.org"
@@ -106,14 +108,15 @@
     );
 
     packages = nix-eda.forAllSystems (
-      system:
-        {
-          inherit (self.legacyPackages."${system}") colab-env opensta openroad-abc openroad;
-          inherit (self.legacyPackages."${system}".python3.pkgs) openlane;
-          default = self.legacyPackages."${system}".python3.pkgs.openlane;
+      system: let
+        pkgs = (self.legacyPackages."${system}");
+        in {
+          inherit (pkgs) colab-env opensta openroad-abc openroad;
+          inherit (pkgs.python3.pkgs) openlane;
+          default = pkgs.python3.pkgs.openlane;
         }
         // lib.optionalAttrs pkgs.stdenv.isLinux {
-          inherit (self.legacyPackages."${system}") openlane-docker;
+          inherit (pkgs) openlane-docker;
         }
     );
 
