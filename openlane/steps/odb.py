@@ -909,6 +909,7 @@ class CellFrequencyTables(OdbpyStep):
         return command
 
 
+@Step.factory.register()
 class ManualGlobalPlacement(OdbpyStep):
     """
     This is an step to override the placement of one or more instances at
