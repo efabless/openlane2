@@ -436,7 +436,7 @@ class Variable:
                     raw = raw.split(";")
                 else:
                     raw = raw.split()
-                if raw[-1] == "":
+                if len(raw) and raw[-1] == "":
                     raw.pop()  # Trailing commas
             else:
                 raise ValueError(

@@ -15,6 +15,7 @@ build/
 dist/
 requirements.frz.txt
 openlane_ipynb/
+requirements_tmp.txt
 
 # Nix
 result
@@ -41,7 +42,3 @@ sandbox/
 node_modules/
 yarn.lock
 package.json
-
-# We're not using poetry2nix just yet
-poetry.lock
-requirements_tmp.txt
