@@ -127,6 +127,8 @@
         pkgs = self.legacyPackages."${system}";
         callPackage = lib.callPackageWith (pkgs // {inherit (self.legacyPackages."${system}".python3.pkgs) openlane;});
       in {
+        # These devShells are rather unorthodox for Nix devShells in that they
+        # include the package itself. For a proper devShell, try .#dev.
         default =
           callPackage (self.createOpenLaneShell {
             }) {};
@@ -135,6 +137,7 @@
             jupyter
           ];
         }) {};
+        # Normal devShells
         dev = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
             jdupes
@@ -157,6 +160,7 @@
             types-psutil
             lxml-stubs
           ];
+          include-openlane = false;
         }) {};
         docs = callPackage (self.createOpenLaneShell {
           extra-packages = with pkgs; [
@@ -185,6 +189,7 @@
             sphinx-tippy
             sphinx-subfigure
           ];
+          include-openlane = false;
         }) {};
       }
     );
