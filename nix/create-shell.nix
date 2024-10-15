@@ -32,7 +32,7 @@
   openlane-env = (
     python3.withPackages (pp:
       with pp;
-        lib.optional include-openlane openlane
+        if include-openlane then openlane else openlane.propagatedBuildInputs
         ++ extra-python-packages
         ++ openlane-plugins)
   );
