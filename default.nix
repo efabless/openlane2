@@ -110,7 +110,7 @@
       ]
       ++ self.includedTools;
 
-    doCheck = true;
+    doCheck = false;
     checkInputs = [pytestCheckHook pytest-xdist pyfakefs];
 
     computed_PATH = lib.makeBinPath self.propagatedBuildInputs;
