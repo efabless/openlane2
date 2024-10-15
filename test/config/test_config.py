@@ -55,6 +55,7 @@ def test_dict_config():
                 )
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
+            "RANDOM_ARRAY": None,
         },
         meta=Meta(version=2, flow=None),
     )
@@ -107,6 +108,7 @@ def test_json_config():
                 )
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
+            "RANDOM_ARRAY": None,
         },
         meta=Meta(version=2, flow="Whatever"),
     ), "Generated configuration does not match expected value"
@@ -179,8 +181,11 @@ def test_tcl_config():
             set ::env(DESIGN_NAME) "whatever"
             set ::env(VERILOG_FILES) "\\
                 /cwd/src/a.v\\
-                    /cwd/src/b.v\\
+                /cwd/src/b.v\\
             "
+                    
+            set ::env(RANDOM_ARRAY) ""
+            
             # cant test glob because of the mock filesystem
             """
         )
@@ -212,6 +217,7 @@ def test_tcl_config():
                 )
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
+            "RANDOM_ARRAY": [],
         },
         meta=Meta(version=1, flow=None),
     ), "Generated configuration does not match expected value"
@@ -333,6 +339,7 @@ def test_mixed_configs():
                 )
             },
             "DEFAULT_CORNER": "whatever",
+            "RANDOM_ARRAY": None,
         },
         meta=Meta(version=2, flow="Whatever"),
     ), "Generated configuration does not match expected value"
