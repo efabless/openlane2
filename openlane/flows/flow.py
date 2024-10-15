@@ -571,6 +571,7 @@ class Flow(ABC):
             if len(entries) == 0:
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
             elif overwrite:
+                verbose(f"Removing '{self.run_dir}'…")
                 shutil.rmtree(self.run_dir)
                 raise FileNotFoundError(self.run_dir)  # Treat as non-existent directory
 

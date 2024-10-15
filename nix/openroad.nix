@@ -20,6 +20,7 @@
   opensta,
   boost183,
   eigen,
+  cudd,
   tcl,
   python3,
   readline,
@@ -36,17 +37,17 @@
   re2,
   swig4,
   pkg-config,
-  cmake,
   gnumake,
   flex,
   bison,
   clang-tools_14,
-  ioplace-parser,
   buildEnv,
   makeBinaryWrapper,
+  rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
+  sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  # environments,
+  openroad,
   buildPythonEnvForInterpreter,
-  rev ? "b16bda7e82721d10566ff7e2b68f1ff0be9f9e38",
-  sha256 ? "sha256-+JGyX81Km2XidptA3k1Y5ZPwv+4Ed39LCsPfIHWd6ac=",
 }: let
   self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
@@ -73,6 +74,7 @@
       ++ [
         "-DUSE_SYSTEM_ABC:BOOL=ON"
         "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
+        "-DCMAKE_CXX_FLAGS=-I${eigen}/include/eigen3"
         "-DOPENSTA_HOME=${opensta}"
         "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
       ];
@@ -85,12 +87,14 @@
       sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
       sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
+      sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
     '';
 
     buildInputs = [
       openroad-abc
       boost183
       eigen
+      cudd
       tcl
       python3
       readline
@@ -114,7 +118,7 @@
     nativeBuildInputs = [
       swig4
       pkg-config
-      cmake
+      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
       gnumake
       flex
       bison
@@ -129,7 +133,7 @@
     passthru = {
       inherit python3;
       withPythonPackages = buildPythonEnvForInterpreter {
-        target = self;
+        target = openroad;
         inherit lib;
         inherit buildEnv;
         inherit makeBinaryWrapper;
