@@ -15,6 +15,7 @@
   extra-packages ? [],
   extra-python-packages ? [],
   openlane-plugins ? [],
+  include-openlane ? true
 }: ({
   lib,
   openlane,
@@ -31,9 +32,7 @@
   openlane-env = (
     python3.withPackages (pp:
       with pp;
-        [
-          openlane
-        ]
+        if include-openlane then [openlane] else openlane.propagatedBuildInputs
         ++ extra-python-packages
         ++ openlane-plugins)
   );

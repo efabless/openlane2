@@ -10,13 +10,6 @@ new: old: {
     doCheck = false;
   });
 
-  # Python packages
-  python3 = old.python3.override {
-    packageOverrides = pFinalAttrs: pPreviousAttrs: {
-      #
-    };
-  };
-
   # Platform-specific
   ## Undeclared Platform
   clp =
