@@ -1706,6 +1706,17 @@ files = [
 ]
 
 [[package]]
+name = "yamlcore"
+version = "0.0.2"
+description = "YAML 1.2 Support for PyYAML"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "yamlcore-0.0.2-py3-none-any.whl", hash = "sha256:497006b7e7fccfaae564a40754eaf07969532321e21c8b77774dfd24492a6611"},
+    {file = "yamlcore-0.0.2.tar.gz", hash = "sha256:8b2eb9541cbe16af97b12cbdc36fab92a8c6f58fc898bd68651e959e7d8e926f"},
+]
+
+[[package]]
 name = "zstandard"
 version = "0.23.0"
 description = "Zstandard bindings for Python"
@@ -1820,4 +1831,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4"
-content-hash = "b004d384f723e0896f3c32d42891a844ecf6d6ae0891a89e6645c9a1751e6666"
+content-hash = "d1ffe75eef125b098322583ba0c97a90041e55fa2a601c9c020eab14625272d4"
