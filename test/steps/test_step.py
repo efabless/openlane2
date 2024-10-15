@@ -334,6 +334,7 @@ def test_run_subprocess(mock_run):
             "nom_*": "/pdk/dummy/libs.ref/techlef/dummy_scl/dummy_tech_lef.tlef"
         },
         "DEFAULT_CORNER": "nom_tt_025C_1v80",
+        "RANDOM_ARRAY": None,
     }
     step = StepTest(
         config=Config(config_dict),

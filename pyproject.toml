@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openlane"
-version = "2.1.9"
+version = "2.1.10"
 description = "An infrastructure for implementing chip design flows"
 authors = ["Efabless Corporation and Contributors <donn@efabless.com>"]
 readme = "Readme.md"
@@ -36,7 +36,7 @@ flake8 = ">=4"
 flake8-no-implicit-concat = "0.3.3"
 flake8-pytest-style = "*"
 
-mypy = "*"
+mypy = ">=1.9.0,<1.10.0"
 lxml-stubs = "*"
 types-urllib3 = "*"
 types-typed-ast = "*"
