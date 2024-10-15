@@ -19,7 +19,7 @@ exclude =
     venv/,
     test/designs/*.py,
     examples,
-    sandbox/
+    sandbox/,
     test/,
 per-file-ignores =
     */__init__.py:F401
