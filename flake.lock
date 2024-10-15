@@ -82,16 +82,15 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1728553920,
-        "narHash": "sha256-lERCQJtqgqCWc3j0XwshG/g0SWoONYd9cG+f4W/5Pjk=",
+        "lastModified": 1728905391,
+        "narHash": "sha256-iox9yGNG4MwSKhQuwegLcDW6wVGzfdBPrh8SrhSLA8c=",
         "owner": "efabless",
         "repo": "nix-eda",
-        "rev": "b5f32ff5a9ca84bf8369d80212cce0d2d59990a6",
+        "rev": "0814aa6c1c7d556aa08212cc875063cff62cb9b0",
         "type": "github"
       },
       "original": {
         "owner": "efabless",
-        "ref": "composable_overlays",
         "repo": "nix-eda",
         "type": "github"
       }
