@@ -161,6 +161,7 @@ def test_yaml_config():
                 )
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
+            "RANDOM_ARRAY": None,
         },
         meta=Meta(version=2, flow="Whatever"),
     ), "Generated configuration does not match expected value"
@@ -278,6 +279,7 @@ def test_multiconf():
                 )
             },
             "DEFAULT_CORNER": "nom_tt_025C_1v80",
+            "RANDOM_ARRAY": None,
         },
         meta=Meta(version=2, flow="Whatever"),
     ), "Generated configuration does not match expected value"
