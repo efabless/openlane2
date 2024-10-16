@@ -145,6 +145,11 @@ MOCK_PDK_VARS = [
         default="nom_tt_025C_1v80",
         pdk=True,
     ),
+    Variable(
+        "RANDOM_ARRAY",
+        Optional[List[str]],
+        description="x",
+    ),
 ]
 MOCK_FLOW_VARS = [
     Variable(

@@ -86,8 +86,8 @@ class OdbReader(object):
             self.instances = self.block.getInsts()
 
         busbitchars = re.escape("[]")  # TODO: Get alternatives from LEF parser
-        dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
-        self.escape_verilog_rx = re.compile(rf"([{dividerchar + busbitchars}])")
+        # dividerchar = re.escape("/")  # TODO: Get alternatives from LEF parser
+        self.escape_verilog_rx = re.compile(rf"([{busbitchars}])")
 
     def add_lef(self, new_lef):
         self.ord_tech.readLef(new_lef)

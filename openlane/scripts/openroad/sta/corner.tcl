@@ -44,10 +44,6 @@ if { [namespace exists ::ord] } {
 }
 read_spefs
 
-if { $::env(STEP_ID) != "OpenROAD.STAPrePNR"} {
-    set_propagated_clock [all_clocks]
-}
-
 set corner [lindex [sta::corners] 0]
 sta::set_cmd_corner $corner
 
@@ -269,6 +265,11 @@ foreach path $hold_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_hold_vios
     if { "$kind" == "reg-reg" } {
@@ -283,6 +284,11 @@ foreach path $hold_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
 
@@ -297,6 +303,11 @@ foreach path $setup_violating_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     incr total_setup_vios
     if { "$kind" == "reg-reg" } {
@@ -311,6 +322,11 @@ foreach path $setup_paths {
     set start_pin [get_property $path startpoint]
     set end_pin [get_property $path endpoint]
     set kind "[get_path_kind $start_pin $end_pin]"
+    set slack [get_property $path slack]
+
+    if { $slack >= 0 } {
+        continue
+    }
 
     if { "$kind" == "reg-reg" } {
         set slack [get_property $path slack]
@@ -328,6 +344,26 @@ write_metric_num "timing__setup_r2r__ws__corner:[$corner name]" $worst_r2r_setup
 write_metric_int "timing__setup_r2r_vio__count__corner:[$corner name]" $r2r_setup_vios
 puts "%OL_END_REPORT"
 
+puts "%OL_CREATE_REPORT unpropagated.rpt"
+
+foreach clock [all_clocks] {
+    if { ![get_property $clock propagated] } {
+        puts "[get_property $clock full_name]"
+    }
+}
+
+puts "%OL_END_REPORT"
+
+
+# puts "%OL_CREATE_REPORT clock.rpt"
+
+# foreach clock [all_clocks] {
+#     report_clock_properties $clock
+#     report_clock_latency -clock $clock
+#     report_clock_min_period -clocks [get_property $clock name]
+# }
+
+# puts "%OL_END_REPORT"
 
 write_sdfs
 write_libs

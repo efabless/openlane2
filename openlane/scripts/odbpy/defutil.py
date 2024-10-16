@@ -17,6 +17,7 @@ import odb
 import os
 import re
 import sys
+from decimal import Decimal
 
 from reader import click_odb, click
 from typing import Tuple, List
@@ -456,7 +457,7 @@ def replace_instance_prefixes(original_prefix, new_prefix, reader):
 cli.add_command(replace_instance_prefixes)
 
 
-def parse_obstructions(obstructions):
+def parse_obstructions(obstructions) -> List[Tuple[str, List[int]]]:
     RE_NUMBER = r"[\-]?[0-9]+(\.[0-9]+)?"
     RE_OBS = (
         r"(?P<layer>\S+)\s+"
@@ -483,7 +484,7 @@ def parse_obstructions(obstructions):
             sys.exit(FORMAT_ERROR)
         else:
             layer = m.group("layer")
-            bbox = [float(x) for x in m.group("bbox").split()]
+            bbox = [Decimal(x) for x in m.group("bbox").split()]
             obs_list.append((layer, bbox))
 
     return obs_list
@@ -526,12 +527,8 @@ cli.add_command(add_obstructions)
 )
 @click_odb
 def remove_obstructions(reader, input_lefs, obstructions):
-    obs_list = parse_obstructions(obstructions)
+    dbu: int = reader.tech.getDbUnitsPerMicron()
     existing_obstructions: List[Tuple[str, List[int], odb.dbObstruction]] = []
-    dbu = reader.tech.getDbUnitsPerMicron()
-
-    def to_microns(x):
-        return int(x / dbu)
 
     for odb_obstruction in reader.block.getObstructions():
         bbox = odb_obstruction.getBBox()
@@ -539,28 +536,28 @@ def remove_obstructions(reader, input_lefs, obstructions):
             (
                 bbox.getTechLayer().getName(),
                 [
-                    to_microns(bbox.xMin()),
-                    to_microns(bbox.yMin()),
-                    to_microns(bbox.xMax()),
-                    to_microns(bbox.yMax()),
+                    bbox.xMin(),
+                    bbox.yMin(),
+                    bbox.xMax(),
+                    bbox.yMax(),
                 ],
                 odb_obstruction,
             )
         )
 
-    for obs in obs_list:
-        layer = obs[0]
-        bbox = obs[1]
-        bbox = [int(x * dbu) for x in bbox]
+    for obs in parse_obstructions(obstructions):
+        layer, bbox = obs
+        bbox = [int(x * dbu) for x in bbox]  # To dbus
         found = False
         if reader.tech.findLayer(layer) is None:
             print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
             sys.exit(METAL_LAYER_ERROR)
         for odb_obstruction in existing_obstructions:
-            if odb_obstruction[0:2] == obs:
+            odb_layer, odb_bbox, odb_obj = odb_obstruction
+            if (odb_layer, odb_bbox) == (layer, bbox):
                 print(f"Removing obstruction on {layer} at {bbox} (DBU)…")
                 found = True
-                odb.dbObstruction_destroy(odb_obstruction[2])
+                odb.dbObstruction_destroy(odb_obj)
             if found:
                 break
         if not found:
