@@ -635,3 +635,4 @@ class HoldViolations(TimingViolations):
     violation_type = "hold"
 
     metric_name = "timing__hold_vio__count"
+    corner_override = ["*"]
