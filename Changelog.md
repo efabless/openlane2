@@ -118,6 +118,8 @@
     OpenLane, and needing OpenLane to pass tests to run these shells makes no
     sense.
 
+* `open_pdks` -> `0fe599b`
+
 ## Misc. Enhancements/Bugfixes
 
 * `openlane.common.metrics`
