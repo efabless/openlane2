@@ -1999,6 +1999,7 @@ class CutRows(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
 
 
+@Step.factory.register()
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design
@@ -2023,6 +2024,22 @@ class WriteViews(OpenROADStep):
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "write_views.tcl")
+
+
+@Step.factory.register()
+class WriteAbstractLEF(OpenROADStep):
+    """
+    Write Abstract LEF view of an ODB design
+    """
+
+    id = "OpenROAD.WriteAbstractLEF"
+    name = "Write Abstract LEF"
+    outputs = [
+        DesignFormat.LEF
+    ]
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "write_abstract_lef.tcl")
 
 
 # Resizer Steps
