@@ -98,20 +98,46 @@
 * Added info on YAML configuration files.
 * Documentation for `Instance` dataclass generalized to include instances of
   cells and not macros.
+# 2.1.11
+
+## Steps
+
+* `OpenROAD.STA*PnR`
+
+  * Fixed `timing__*_r2r__ws__corner` metrics reporting the wrong value
+
+# 2.1.10
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.config.Variable`
+
+  * Fixed an issue when strict type-checking is disabled where empty strings
+    would crash iterable objects.
+
+## Tool Updates
+
+* Fixed mypy to 1.9.0 to match NixOS 24.05.
+
+* Checked `poetry.lock` into version control to improve reproducibility.
 
 # 2.1.9
 
 ## Steps
 
 * `OpenROAD.CheckAntennas`
-  * Fixed table being printed to file with wrong width
+
+  * Fixed table being printed to file with wrong width.
+
 * `OpenROAD.STA*PnR`
-  * Fixed table being printed to file with wrong width
+
+  * Fixed table being printed to file with wrong width.
 
 ## Flows
 
 * `SynthesisExploration`
-  * Fixed table being printed to file with wrong width
+
+  * Fixed table being printed to file with wrong width.
 
 # 2.1.8
 
@@ -120,7 +146,7 @@
 * `OpenROAD.STA*PnR`
 
   * Fixed a bug in STA metrics where paths with exactly zero slack are counted
-    as violations
+    as violations.
 
 # 2.1.7
 

@@ -36,7 +36,7 @@ flake8 = ">=4"
 flake8-no-implicit-concat = "0.3.3"
 flake8-pytest-style = "*"
 
-mypy = "*"
+mypy = ">=1.9.0,<1.10.0"
 lxml-stubs = "*"
 types-urllib3 = "*"
 types-typed-ast = "*"
