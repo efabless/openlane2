@@ -31,6 +31,19 @@
   * Uses new variable `MANUAL_GLOBAL_PLACEMENTS`, a mapping from instance names
     to the `Instance` class.
 
+* Created `Odb.CellFrequencyTables`
+
+  * Creates a number of tables to show the cell frequencies by:
+    * Cells
+    * Buffer cells only
+    * Cell Function
+    * SCL
+
+* `OpenROAD.*`
+
+  * All steps that modify views now update design cell metrics using OpenROAD's
+    `report_design_area_metrics`
+
 * `OpenROAD.ResizerTimingPostGRT`
 
   * Added `GRT_RESIZER_RUN_GRT` to control whether global routing is re-run
@@ -42,6 +55,11 @@
   * Added `GRT_DESIGN_REPAIR_RUN_GRT` to control whether global routing is
     re-run after this step, which is usually required but may be redundant in
     some custom flows.
+
+* `OpenROAD.STA*`
+
+  * New report `clock.rpt` created with information about each clock in a
+    specific domain
 
 * `OpenROAD.WriteViews`
 
@@ -74,8 +92,14 @@
 * `Classic`
   * Emplaced `Odb.ManualGlobalPlacement` immediately preceding
     `OpenROAD.DetailedPlacement`.
+  * Emplaced `Odb.CellFrequencyTables` after `OpenROAD.FillInsertion`
 
 ## Tool Updates
+
+* OpenROAD -> `bbe940134bddf836894bfd1fe02153f4a38f8ae5`
+
+  * OpenSTA -> `20925bb00965c1199c45aca0318c2baeb4042c5a`
+  * Removed "stable" version of OpenSTA
 
 * Updated nix-eda to `0814aa6`: more orthodox approach to managing dependencies
   by overlaying them on top of nixpkgs, which fixes an occasional "repeated
@@ -96,6 +120,8 @@
 
 ## Misc. Enhancements/Bugfixes
 
+* `openlane.common.metrics`
+  * `aggregate_metrics()`: Added support for aggregation of N-modifier levels
 * `openlane.config.Config`
   * YAML 1.2 configuration files now accepted using `.yaml` or `.yml`
     extensions, with the same featureset as JSON files.
