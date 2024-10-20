@@ -16,6 +16,11 @@
 
 # 2.2.0
 
+## CLI
+
+* Exposed Flow.start(overwrite=) as `--overwrite`, which removes a run directory
+  before running the flow (if it exists)
+
 ## Steps
 
 * Created `Odb.ManualGlobalPlacement`
@@ -72,13 +77,22 @@
 
 ## Tool Updates
 
-* Updated `nix-eda`
+* Updated nix-eda to `0814aa6`: more orthodox approach to managing dependencies
+  by overlaying them on top of nixpkgs, which fixes an occasional "repeated
+  allocation" issue and helps make override behavior more consistent.
+
+  * Yosys and first-party plugins -> `0.46`
   * `klayout` -> `0.29.4`
   * `magic` -> `8.3.489`
   * `netgen` -> `1.5.278`
-  * `yosys` -> `0.44` (+ `-y` patch)
   * OpenROAD now used with new `withPythonPackages` features to use Python
     packages specifically for the OpenROAD environment
+
+* OpenLane itself no longer included in `devShells.*.dev`, `devShells.*.docs`
+
+  * These shells are intended to be actual dev shells, i.e. used to develop
+    OpenLane, and needing OpenLane to pass tests to run these shells makes no
+    sense.
 
 ## Misc. Enhancements/Bugfixes
 
@@ -98,6 +112,7 @@
 * Added info on YAML configuration files.
 * Documentation for `Instance` dataclass generalized to include instances of
   cells and not macros.
+
 # 2.1.11
 
 ## Steps
