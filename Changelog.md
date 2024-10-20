@@ -14,6 +14,14 @@
 ## Documentation
 -->
 
+# 2.1.11
+
+## Steps
+
+* `OpenROAD.STA*PnR`
+
+  * Fixed `timing__*_r2r__ws__corner` metrics reporting the wrong value
+
 # 2.1.10
 
 ## Misc. Enhancements/Bugfixes
