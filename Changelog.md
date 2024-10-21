@@ -2601,3 +2601,12 @@ parameterized cells.
   architecture.
 * Added transparent Dockerization using `--dockerized` commandline argument,
   with images also built using Nix.
+
+# Dev
+
+## Steps
+
+* `Checker.HoldViolations`
+
+  * Change default value of `HOLD_VIOLATION_CORNERS` to `['*']` causing error
+  on hold violations on all corners
