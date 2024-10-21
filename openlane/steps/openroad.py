@@ -2016,6 +2016,7 @@ class CTS(ResizerStep):
                 "CTS_BALANCE_LEVELS",
                 Optional[bool],
                 "Attempts to keep a similar number of levels in the clock tree across non-register cells (e.g., clock-gate or inverter).",
+                default=True,
             ),
             Variable(
                 "CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT",
@@ -2029,6 +2030,7 @@ class CTS(ResizerStep):
                 Optional[bool],
                 "Enables obstruction-aware buffering such that clock buffers are not placed on top of blockages or hard macros. "
                 + "This option may reduce legalizer displacement, leading to better latency, skew or timing QoR.",
+                default=True,
             ),
             Variable(
                 "CTS_SINK_CLUSTERING_SIZE",
