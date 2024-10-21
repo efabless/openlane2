@@ -118,7 +118,7 @@
     OpenLane, and needing OpenLane to pass tests to run these shells makes no
     sense.
 
-* `open_pdks` -> `0fe599b`
+* Open PDKs -> `0fe599b` (Recommended for chipIgnite 2409/2411+ shuttles)
 
 ## Misc. Enhancements/Bugfixes
 
