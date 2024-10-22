@@ -174,7 +174,7 @@ class OpenROADStep(TclStep):
     config_vars = [
         Variable(
             "PNR_CORNERS",
-            List[str],
+            Optional[List[str]],
             "A list of fully-qualified IPVT corners to use. Can be overriden by some steps",
             pdk=True,
         ),
