@@ -219,6 +219,34 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
                 "nom_ss_100C_1v60",
                 "nom_ff_n40C_1v95",
             ]
+            ## correlateRC.py gcd,ibex,aes,jpeg,chameleon,riscv32i,chameleon_hier
+            ## cap units pf/um
+            # set_layer_rc -layer li1 -capacitance 1.499e-04 -resistance 7.176e-02
+            # set_layer_rc -layer met1 -capacitance 1.72375E-04 -resistance 8.929e-04
+            # set_layer_rc -layer met2 -capacitance 1.36233E-04 -resistance 8.929e-04
+            # set_layer_rc -layer met3 -capacitance 2.14962E-04 -resistance 1.567e-04
+            # set_layer_rc -layer met4 -capacitance 1.48128E-04 -resistance 1.567e-04
+            # set_layer_rc -layer met5 -capacitance 1.54087E-04 -resistance 1.781e-05
+            ## end correlate
+            #
+            # set_layer_rc -via mcon -resistance 9.249146E-3
+            # set_layer_rc -via via -resistance 4.5E-3
+            # set_layer_rc -via via2 -resistance 3.368786E-3
+            # set_layer_rc -via via3 -resistance 0.376635E-3
+            # set_layer_rc -via via4 -resistance 0.00580E-3
+            #
+            # set_wire_rc -signal -layer met1
+            # set_wire_rc -clock -layer met3
+            new["LAYERS_RC"] = {
+                "*": {
+                    "li1": {"res": 7.176e-02, "cap": 1.499e-04},
+                    "met1": {"res": 8.929e-04, "cap": 1.72375e-04},
+                    "met2": {"res": 8.929e-04, "cap": 1.36233e-04},
+                    "met3": {"res": 1.567e-04, "cap": 2.14962e-04},
+                    "met4": {"res": 1.567e-04, "cap": 1.54087e-04},
+                    "met5": {"res": 1.781e-05, "cap": 1.54087e-04},
+                }
+            }
         elif new["PDK"].startswith("gf180mcu"):
             new["STA_CORNERS"] = [
                 "nom_tt_025C_5v00",

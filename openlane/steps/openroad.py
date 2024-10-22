@@ -32,37 +32,18 @@ import rich
 import rich.table
 import yaml
 
-from ..common import (
-    Path,
-    TclUtils,
-    _get_process_limit,
-    aggregate_metrics,
-    get_script_dir,
-    mkdirp,
-    process_list_file,
-)
+from ..common import (Path, Filter, TclUtils, _get_process_limit, aggregate_metrics,
+                      get_script_dir, mkdirp, process_list_file)
 from ..config import Macro, Variable
 from ..config.flow import option_variables
 from ..logging import console, debug, info, options, verbose
 from ..state import DesignFormat, State
-from .common_variables import (
-    dpl_variables,
-    grt_variables,
-    io_layer_variables,
-    pdn_variables,
-    routing_layer_variables,
-    rsz_variables,
-)
+from .common_variables import (dpl_variables, grt_variables,
+                               io_layer_variables, pdn_variables,
+                               routing_layer_variables, rsz_variables)
 from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
-from .step import (
-    CompositeStep,
-    DefaultOutputProcessor,
-    MetricsUpdate,
-    Step,
-    StepError,
-    StepException,
-    ViewsUpdate,
-)
+from .step import (CompositeStep, DefaultOutputProcessor, MetricsUpdate, Step,
+                   StepError, StepException, ViewsUpdate)
 from .tclstep import TclStep
 
 EXAMPLE_INPUT = """
@@ -179,6 +160,12 @@ class OpenROADStep(TclStep):
             pdk=True,
         ),
         Variable(
+            "LAYERS_RC",
+            Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
+            "Test",
+            pdk=True,
+        ),
+        Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
             bool,
             "Enables the connection of macros to the top level power grid.",
@@ -279,6 +266,16 @@ class OpenROADStep(TclStep):
         if "check" in kwargs:
             check = kwargs.pop("check")
 
+        layers_rc = self.config["LAYERS_RC"]
+        for corner_wildcard, metal_layers in layers_rc.items():
+            print(corner_wildcard, corners)
+            for corner in Filter(corner_wildcard).filter(corners):
+                for layer, rc in metal_layers.items():
+                    res = rc["res"]
+                    cap = rc["cap"]
+                    print(f"{corner} {layer} {res} {cap}")
+
+        exit()
         command = self.get_command()
 
         subprocess_result = self.run_subprocess(

@@ -240,10 +240,6 @@ proc read_spefs {} {
 }
 
 proc read_pnr_libs {args} {
-    if { [get_libs -quiet *] != {} } {
-        exit 1
-    }
-
     set i "0"
     set tc_key "_LIB_CORNER_$i"
     while { [info exists ::env($tc_key)] } {
