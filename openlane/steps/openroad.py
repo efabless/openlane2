@@ -254,7 +254,7 @@ class OpenROADStep(TclStep):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
-        corners: List[str] = self.config["PNR_CORNERS"]
+        corners: List[str] = self.config["PNR_CORNERS"] or self.config["STA_CORNERS"]
 
         if "corners" in kwargs:
             corners = kwargs.pop("corners")
