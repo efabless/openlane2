@@ -240,31 +240,44 @@ proc read_spefs {} {
 }
 
 proc read_pnr_libs {args} {
-    # _PNR_LIBS contains all libs and extra libs but with known-bad cells
-    # excluded, so OpenROAD can use cells by functionality and come up
-    # with a valid design.
-
-    # If there are ANY libs already read- just leave
     if { [get_libs -quiet *] != {} } {
+        exit 1
+    }
+
+    set i "0"
+    set tc_key "_LIB_CORNER_$i"
+    while { [info exists ::env($tc_key)] } {
+        set corner_name [lindex $::env($tc_key) 0]
+        set corner_libs [lreplace $::env($tc_key) 0 0]
+
+        set corner($corner_name) $corner_libs
+
+        incr i
+        set tc_key "_LIB_CORNER_$i"
+    }
+
+    if { $i == "0" } {
+        puts stderr "\[WARNING\] No resizer-specific timing information read."
         return
     }
 
-    define_corners $::env(DEFAULT_CORNER)
+    define_corners {*}[array name corner]
 
-    foreach lib $::env(_PNR_LIBS) {
-        puts "Reading library file at '$lib'…"
-        read_liberty $lib
-    }
-    if { [info exists ::env(_MACRO_LIBS) ] } {
-        foreach macro_lib $::env(_MACRO_LIBS) {
-            puts "Reading macro library file at '$macro_lib'…"
-            read_liberty $macro_lib
+    foreach corner_name [array name corner] {
+        puts "Reading timing models for corner $corner_name…"
+
+        set corner_models $corner($corner_name)
+        foreach model $corner_models {
+            puts "Reading timing library for the '$corner_name' corner at '$model'…"
+            read_liberty -corner $corner_name $model
         }
-    }
-    if { [info exists ::env(EXTRA_LIBS) ] } {
-        foreach extra_lib $::env(EXTRA_LIBS) {
-            puts "Reading extra library file at '$extra_lib'…"
-            read_liberty $extra_lib
+
+        if { [info exists ::env(EXTRA_LIBS) ] } {
+            puts "Reading explicitly-specified extra libs for $corner_name…"
+            foreach extra_lib $::env(EXTRA_LIBS) {
+                puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
+                read_liberty -corner $corner_name $extra_lib
+            }
         }
     }
 }
@@ -302,6 +315,7 @@ proc read_current_odb {args} {
         keys {}\
         flags {}
 
+    read_pnr_libs
     puts "Reading OpenROAD database at '$::env(CURRENT_ODB)'…"
     if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
         puts stderr $errmsg
@@ -311,7 +325,6 @@ proc read_current_odb {args} {
     set_global_vars
 
     # Read supporting views (if applicable)
-    read_pnr_libs
     read_current_sdc
     set_dont_use_cells
 }

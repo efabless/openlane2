@@ -14,7 +14,7 @@
 import os
 import re
 from glob import glob
-from typing import Any, List, Mapping, Dict
+from typing import Any, Dict, List, Mapping
 
 
 def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
@@ -214,6 +214,11 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
                 "max_ss_100C_1v60",
                 "max_ff_n40C_1v95",
             ]
+            new["PNR_CORNERS"] = [
+                "nom_tt_025C_1v80",
+                "nom_ss_100C_1v60",
+                "nom_ff_n40C_1v95",
+            ]
         elif new["PDK"].startswith("gf180mcu"):
             new["STA_CORNERS"] = [
                 "nom_tt_025C_5v00",
@@ -225,6 +230,11 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
                 "max_tt_025C_5v00",
                 "max_ss_125C_4v50",
                 "max_ff_n40C_5v50",
+            ]
+            new["PNR_CORNERS"] = [
+                "nom_tt_025C_5v00",
+                "nom_ss_125C_4v50",
+                "nom_ff_n40C_5v50",
             ]
 
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
