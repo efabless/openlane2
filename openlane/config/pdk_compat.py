@@ -238,13 +238,52 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             # set_wire_rc -signal -layer met1
             # set_wire_rc -clock -layer met3
             new["LAYERS_RC"] = {
-                "*": {
+                "*tt*": {
                     "li1": {"res": 7.176e-02, "cap": 1.499e-04},
                     "met1": {"res": 8.929e-04, "cap": 1.72375e-04},
                     "met2": {"res": 8.929e-04, "cap": 1.36233e-04},
                     "met3": {"res": 1.567e-04, "cap": 2.14962e-04},
                     "met4": {"res": 1.567e-04, "cap": 1.54087e-04},
                     "met5": {"res": 1.781e-05, "cap": 1.54087e-04},
+                },
+                "*ff*": {
+                    "li1": {"res": 0.050232, "cap": 0.00010493},
+                    "met1": {"res": 0.0006250299999999999, "cap": 0.0001206625},
+                    "met2": {"res": 0.0006250299999999999, "cap": 9.53631e-05},
+                    "met3": {
+                        "res": 0.00010968999999999999,
+                        "cap": 0.00015047339999999998,
+                    },
+                    "met4": {
+                        "res": 0.00010968999999999999,
+                        "cap": 0.00010786089999999998,
+                    },
+                    "met5": {"res": 1.2467e-05, "cap": 0.00010786089999999998},
+                },
+                "*ss*": {
+                    "li1": {"res": 0.09328800000000001, "cap": 0.00019487},
+                    "met1": {"res": 0.00116077, "cap": 0.00022408750000000002},
+                    "met2": {"res": 0.00116077, "cap": 0.0001771029},
+                    "met3": {"res": 0.00020370999999999999, "cap": 0.0002794506},
+                    "met4": {
+                        "res": 0.00020370999999999999,
+                        "cap": 0.00020031309999999998,
+                    },
+                    "met5": {"res": 2.3153e-05, "cap": 0.00020031309999999998},
+                },
+            }
+            # set_layer_rc -via mcon -resistance 9.249146E-3
+            # set_layer_rc -via via -resistance 4.5E-3
+            # set_layer_rc -via via2 -resistance 3.368786E-3
+            # set_layer_rc -via via3 -resistance 0.376635E-3
+            # set_layer_rc -via via4 -resistance 0.00580E-3
+            new["VIAS_RC"] = {
+                "*": {
+                    "mcon": {"res": 7.176e-02},
+                    "via": {"res": 8.929e-04},
+                    "via2": {"res": 8.929e-04},
+                    "via3": {"res": 1.567e-04},
+                    "via4": {"res": 1.567e-04},
                 }
             }
         elif new["PDK"].startswith("gf180mcu"):

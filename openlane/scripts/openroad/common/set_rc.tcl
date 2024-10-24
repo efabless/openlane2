@@ -14,25 +14,41 @@
 
 # Resistance/Capacitance Overrides
 # Via resistance
-puts "\[INFO\] Setting RC values…"
-if { [info exist ::env(VIAS_RC)] } {
-    set vias_rc [split $::env(VIAS_RC) ","]
-    foreach via_rc $vias_rc {
-        set layer_name [lindex $via_rc 0]
-        set resistance [lindex $via_rc 1]
-        set_layer_rc -via $layer_name -resistance $resistance
-    }
+
+set i "0"
+set tc_key "_LAYER_RC_$i"
+while { [info exists ::env($tc_key)] } {
+    # [$corner] + [layer] + [str(round(res, 8))] + [str(round(cap, 8))]
+    set corner_name [lindex $::env($tc_key) 0]
+    set layer_name [lindex $::env($tc_key) 1]
+    set res_value [lindex $::env($tc_key) 2]
+    set cap_value [lindex $::env($tc_key) 3]
+    
+    puts "\[INFO\] Setting $layer_name $corner_name to res $res_value and cap $cap_value"
+    set_layer_rc \
+        -layer $layer_name\
+        -capacitance $cap_value\
+        -resistance $res_value
+
+    incr i
+    set tc_key "_LAYER_RC_$i"
 }
 
-# Metal resistance and capacitence
-if { [info exist ::env(LAYERS_RC)] } {
-    set layers_rc [split $::env(LAYERS_RC) ","]
-    foreach layer_rc $layers_rc {
-        set layer_name [lindex $layer_rc 0]
-        set capacitance [lindex $layer_rc 1]
-        set resistance [lindex $layer_rc 2]
-        set_layer_rc -layer $layer_name -capacitance $capacitance -resistance $resistance
-    }
+set i "0"
+set tc_key "_VIA_RC_$i"
+while { [info exists ::env($tc_key)] } {
+    set corner_name [lindex $::env($tc_key) 0]
+    set via_name [lindex $::env($tc_key) 1]
+    set res_value [lindex $::env($tc_key) 2]
+    
+    puts "\[INFO\] Setting $via_name $corner_name to res $res_value"
+    set_layer_rc \
+        -via $via_name\
+        -resistance $res_value\
+        -corner $corner_name
+
+    incr i
+    set tc_key "_VIA_RC_$i"
 }
 
 set layer_names [list]
@@ -62,14 +78,20 @@ if { [info exist ::env(SIGNAL_WIRE_RC_LAYERS)] } {
 if { [info exist ::env(CLOCK_WIRE_RC_LAYERS)] } {
     set clock_wire_rc_layers $::env(CLOCK_WIRE_RC_LAYERS)
 }
-if { [llength $signal_wire_rc_layers] > 1 } {
-    set_wire_rc -signal -layers "$signal_wire_rc_layers"
-} else {
-    set_wire_rc -signal -layer "$signal_wire_rc_layers"
+foreach corner [sta::corners] {
+    if { [llength $signal_wire_rc_layers] > 1 } {
+        puts "set_wire_rc -signal -layers signal_wire_rc_layers-corner [$corner name]"
+        set_wire_rc -signal -layers "$signal_wire_rc_layers" -corner [$corner name]
+    } else {
+        puts "set_wire_rc -signal -layer $signal_wire_rc_layers -corner [$corner name]"
+        set_wire_rc -signal -layer "$signal_wire_rc_layers" -corner [$corner name]
+    }
+    if { [llength $clock_wire_rc_layers] > 1 } {
+        puts "set_wire_rc -clock -layers $clock_wire_rc_layers -corner [$corner name]"
+        set_wire_rc -clock -layers "$clock_wire_rc_layers" -corner [$corner name]
+    } else {
+        puts "set_wire_rc -clock -layer $clock_wire_rc_layers -corner [$corner name]"
+        set_wire_rc -clock -layer "$clock_wire_rc_layers" -corner [$corner name]
+    }
 }
 
-if { [llength $clock_wire_rc_layers] > 1 } {
-    set_wire_rc -clock -layers "$clock_wire_rc_layers"
-} else {
-    set_wire_rc -clock -layer "$clock_wire_rc_layers"
-}

@@ -19,8 +19,16 @@ import re
 import typing
 import unicodedata
 from math import inf
-from typing import (Any, Generator, Iterable, List, Optional, SupportsFloat,
-                    TypeVar, Union)
+from typing import (
+    Any,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    SupportsFloat,
+    TypeVar,
+    Union,
+)
 
 import httpx
 

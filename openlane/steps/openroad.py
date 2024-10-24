@@ -32,18 +32,38 @@ import rich
 import rich.table
 import yaml
 
-from ..common import (Path, Filter, TclUtils, _get_process_limit, aggregate_metrics,
-                      get_script_dir, mkdirp, process_list_file)
+from ..common import (
+    Path,
+    Filter,
+    TclUtils,
+    _get_process_limit,
+    aggregate_metrics,
+    get_script_dir,
+    mkdirp,
+    process_list_file,
+)
 from ..config import Macro, Variable
 from ..config.flow import option_variables
 from ..logging import console, debug, info, options, verbose
 from ..state import DesignFormat, State
-from .common_variables import (dpl_variables, grt_variables,
-                               io_layer_variables, pdn_variables,
-                               routing_layer_variables, rsz_variables)
+from .common_variables import (
+    dpl_variables,
+    grt_variables,
+    io_layer_variables,
+    pdn_variables,
+    routing_layer_variables,
+    rsz_variables,
+)
 from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
-from .step import (CompositeStep, DefaultOutputProcessor, MetricsUpdate, Step,
-                   StepError, StepException, ViewsUpdate)
+from .step import (
+    CompositeStep,
+    DefaultOutputProcessor,
+    MetricsUpdate,
+    Step,
+    StepError,
+    StepException,
+    ViewsUpdate,
+)
 from .tclstep import TclStep
 
 EXAMPLE_INPUT = """
@@ -166,6 +186,12 @@ class OpenROADStep(TclStep):
             pdk=True,
         ),
         Variable(
+            "VIAS_RC",
+            Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
+            "Test",
+            pdk=True,
+        ),
+        Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
             bool,
             "Enables the connection of macros to the top level power grid.",
@@ -249,6 +275,7 @@ class OpenROADStep(TclStep):
 
         lib_set_set = set()
         count = 0
+        lib_corners = []
         for corner in corners:
             _, libs, _, _ = self.toolbox.get_timing_files_categorized(
                 self.config, corner
@@ -257,6 +284,7 @@ class OpenROADStep(TclStep):
             if lib_set in lib_set_set:
                 debug(f"Liberty files for '{corner}' already accounted for- skipped")
                 continue
+            lib_corners.append(corner)
             lib_set_set.add(lib_set)
             env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
             debug(f"Liberty files for '{corner}' added: {libs}")
@@ -267,15 +295,28 @@ class OpenROADStep(TclStep):
             check = kwargs.pop("check")
 
         layers_rc = self.config["LAYERS_RC"]
+        count = 0
         for corner_wildcard, metal_layers in layers_rc.items():
-            print(corner_wildcard, corners)
-            for corner in Filter(corner_wildcard).filter(corners):
+            for corner in Filter([corner_wildcard]).filter(lib_corners):
                 for layer, rc in metal_layers.items():
                     res = rc["res"]
                     cap = rc["cap"]
-                    print(f"{corner} {layer} {res} {cap}")
+                    env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
+                        [corner] + [layer] + [str(round(res, 8))] + [str(round(cap, 8))]
+                    )
+                    count += 1
 
-        exit()
+        vias_rc = self.config["VIAS_RC"]
+        count = 0
+        for corner_wildcard, metal_layers in vias_rc.items():
+            for corner in Filter(corner_wildcard).filter(lib_corners):
+                for via, rc in metal_layers.items():
+                    res = rc["res"]
+                    env[f"_VIA_RC_{count}"] = TclStep.value_to_tcl(
+                        [corner] + [via] + [str(round(res, 8))]
+                    )
+                    count += 1
+
         command = self.get_command()
 
         subprocess_result = self.run_subprocess(
