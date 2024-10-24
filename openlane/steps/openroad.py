@@ -11,73 +11,60 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
 import io
+import json
 import os
 import re
-import json
-import tempfile
-import functools
 import subprocess
-from enum import Enum
-from math import inf
-from glob import glob
-from decimal import Decimal
-from base64 import b64encode
+import tempfile
 from abc import abstractmethod
-from dataclasses import dataclass
+from base64 import b64encode
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import (
-    Any,
-    List,
-    Dict,
-    Literal,
-    Set,
-    Tuple,
-    Optional,
-    Union,
-)
+from dataclasses import dataclass
+from decimal import Decimal
+from enum import Enum
+from glob import glob
+from math import inf
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
 
-
-import yaml
 import rich
 import rich.table
+import yaml
 
+from ..common import (
+    Path,
+    Filter,
+    TclUtils,
+    _get_process_limit,
+    aggregate_metrics,
+    get_script_dir,
+    mkdirp,
+    process_list_file,
+)
+from ..config import Macro, Variable
+from ..config.flow import option_variables
+from ..logging import console, debug, info, options, verbose
+from ..state import DesignFormat, State
+from .common_variables import (
+    dpl_variables,
+    grt_variables,
+    io_layer_variables,
+    pdn_variables,
+    routing_layer_variables,
+    rsz_variables,
+)
+from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
 from .step import (
     CompositeStep,
     DefaultOutputProcessor,
-    StepError,
-    ViewsUpdate,
     MetricsUpdate,
     Step,
+    StepError,
     StepException,
-)
-from .openroad_alerts import (
-    OpenROADAlert,
-    OpenROADOutputProcessor,
+    ViewsUpdate,
 )
 from .tclstep import TclStep
-from .common_variables import (
-    io_layer_variables,
-    pdn_variables,
-    rsz_variables,
-    dpl_variables,
-    grt_variables,
-    routing_layer_variables,
-)
-
-from ..config import Variable, Macro
-from ..config.flow import option_variables
-from ..state import State, DesignFormat
-from ..logging import debug, info, verbose, console, options
-from ..common import (
-    Path,
-    TclUtils,
-    get_script_dir,
-    mkdirp,
-    aggregate_metrics,
-    process_list_file,
-    _get_process_limit,
-)
 
 EXAMPLE_INPUT = """
 li1 X 0.23 0.46
@@ -187,6 +174,24 @@ class OpenROADStep(TclStep):
 
     config_vars = [
         Variable(
+            "PNR_CORNERS",
+            Optional[List[str]],
+            "A list of fully-qualified IPVT corners to use. Can be overriden by some steps",
+            pdk=True,
+        ),
+        Variable(
+            "LAYERS_RC",
+            Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
+            "Test",
+            pdk=True,
+        ),
+        Variable(
+            "VIAS_RC",
+            Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
+            "Test",
+            pdk=True,
+        ),
+        Variable(
             "PDN_CONNECT_MACROS_TO_GRID",
             bool,
             "Enables the connection of macros to the top level power grid.",
@@ -242,10 +247,6 @@ class OpenROADStep(TclStep):
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
         env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
-        env["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
-        env["_MACRO_LIBS"] = TclStep.value_to_tcl(
-            self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
-        )
 
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
         excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
@@ -257,9 +258,8 @@ class OpenROADStep(TclStep):
         """
         The `run()` override for the OpenROADStep class handles two things:
 
-        1. Before the `super()` call: It creates a version of the lib file
-        minus cells that are known bad (i.e. those that fail DRC) and pass it on
-        in the environment variable `_PNR_LIBS`.
+        1. Before the `super()` call: Process _LIB_CORNER_<i> for liberty/corner
+        pairs.
 
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
@@ -267,9 +267,60 @@ class OpenROADStep(TclStep):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
+        corners: List[str] = self.config["PNR_CORNERS"] or self.config["STA_CORNERS"]
+
+        if "corners" in kwargs:
+            corners = kwargs.pop("corners")
+            debug(f"Corners Override {corners}")
+
+        lib_set_set = set()
+        count = 0
+        lib_corners = []
+        for corner in corners:
+            _, libs, _, _ = self.toolbox.get_timing_files_categorized(
+                self.config, corner
+            )
+            lib_set = frozenset(libs)
+            if lib_set in lib_set_set:
+                debug(f"Liberty files for '{corner}' already accounted for- skipped")
+                continue
+            lib_corners.append(corner)
+            lib_set_set.add(lib_set)
+            env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
+            debug(f"Liberty files for '{corner}' added: {libs}")
+            count += 1
+
         check = False
         if "check" in kwargs:
             check = kwargs.pop("check")
+
+        layers_rc = self.config["LAYERS_RC"]
+        if layers_rc is not None:
+            count = 0
+            for corner_wildcard, metal_layers in layers_rc.items():
+                for corner in Filter([corner_wildcard]).filter(lib_corners):
+                    for layer, rc in metal_layers.items():
+                        res = rc["res"]
+                        cap = rc["cap"]
+                        env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
+                            [corner]
+                            + [layer]
+                            + [str(round(res, 8))]
+                            + [str(round(cap, 8))]
+                        )
+                        count += 1
+
+        vias_rc = self.config["VIAS_RC"]
+        if vias_rc is not None:
+            count = 0
+            for corner_wildcard, metal_layers in vias_rc.items():
+                for corner in Filter(corner_wildcard).filter(lib_corners):
+                    for via, rc in metal_layers.items():
+                        res = rc["res"]
+                        env[f"_VIA_RC_{count}"] = TclStep.value_to_tcl(
+                            [corner] + [via] + [str(round(res, 8))]
+                        )
+                        count += 1
 
         command = self.get_command()
 
@@ -1970,33 +2021,16 @@ class ResizerStep(OpenROADStep):
         **kwargs,
     ) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-
-        corners_key: str = "RSZ_CORNERS"
-
-        if "corners_key" in kwargs:
-            corners_key = kwargs.pop("corners_key")
-
-        corners = self.config[corners_key] or self.config["STA_CORNERS"]
-        lib_set_set = set()
-        count = 0
-        for corner in corners:
-            _, libs, _, _ = self.toolbox.get_timing_files_categorized(
-                self.config, corner
-            )
-            lib_set = frozenset(libs)
-            if lib_set in lib_set_set:
-                debug(f"Liberty files for '{corner}' already accounted for- skipped")
-                continue
-            lib_set_set.add(lib_set)
-            env[f"RSZ_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
-            debug(f"Liberty files for '{corner}' added: {libs}")
-            count += 1
-
-        return super().run(state_in, env=env, **kwargs)
+        return super().run(
+            state_in,
+            corners=self.config["RSZ_CORNERS"] or self.config["STA_CORNERS"],
+            env=env,
+            **kwargs,
+        )
 
 
 @Step.factory.register()
-class CTS(ResizerStep):
+class CTS(OpenROADStep):
     """
     Creates a `Clock tree <https://en.wikipedia.org/wiki/Clock_signal#Distribution>`_
     for an ODB file with detailed-placed cells, using reasonably accurate resistance
@@ -2095,7 +2129,10 @@ class CTS(ResizerStep):
                 return {}, {}
 
         views_updates, metrics_updates = super().run(
-            state_in, corners_key="CTS_CORNERS", env=env, **kwargs
+            state_in,
+            corners=self.config["CTS_CORNERS"] or self.config["STA_CORNERS"],
+            env=env,
+            **kwargs,
         )
 
         return views_updates, metrics_updates
