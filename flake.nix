@@ -125,7 +125,7 @@
     devShells = nix-eda.forAllSystems (
       system: let
         pkgs = self.legacyPackages."${system}";
-        callPackage = lib.callPackageWith (pkgs // {inherit (self.legacyPackages."${system}".python3.pkgs) openlane;});
+        callPackage = lib.callPackageWith pkgs;
       in {
         # These devShells are rather unorthodox for Nix devShells in that they
         # include the package itself. For a proper devShell, try .#dev.

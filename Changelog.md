@@ -14,6 +14,15 @@
 ## Documentation
 -->
 
+# 2.2.1
+
+This patch has no functional changes to OpenLane proper.
+
+## Tool Updates
+* `flake.createOpenLaneShell` now gets OpenLane from `python3.pkgs`.
+* Fixed issue with `flake.createOpenLaneShell` where plugins would not get
+  included due to an operator precedence issue.
+
 # 2.2.0
 
 ## CLI
