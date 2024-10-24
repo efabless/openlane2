@@ -295,27 +295,32 @@ class OpenROADStep(TclStep):
             check = kwargs.pop("check")
 
         layers_rc = self.config["LAYERS_RC"]
-        count = 0
-        for corner_wildcard, metal_layers in layers_rc.items():
-            for corner in Filter([corner_wildcard]).filter(lib_corners):
-                for layer, rc in metal_layers.items():
-                    res = rc["res"]
-                    cap = rc["cap"]
-                    env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
-                        [corner] + [layer] + [str(round(res, 8))] + [str(round(cap, 8))]
-                    )
-                    count += 1
+        if layers_rc is not None:
+            count = 0
+            for corner_wildcard, metal_layers in layers_rc.items():
+                for corner in Filter([corner_wildcard]).filter(lib_corners):
+                    for layer, rc in metal_layers.items():
+                        res = rc["res"]
+                        cap = rc["cap"]
+                        env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
+                            [corner]
+                            + [layer]
+                            + [str(round(res, 8))]
+                            + [str(round(cap, 8))]
+                        )
+                        count += 1
 
         vias_rc = self.config["VIAS_RC"]
-        count = 0
-        for corner_wildcard, metal_layers in vias_rc.items():
-            for corner in Filter(corner_wildcard).filter(lib_corners):
-                for via, rc in metal_layers.items():
-                    res = rc["res"]
-                    env[f"_VIA_RC_{count}"] = TclStep.value_to_tcl(
-                        [corner] + [via] + [str(round(res, 8))]
-                    )
-                    count += 1
+        if vias_rc is not None:
+            count = 0
+            for corner_wildcard, metal_layers in vias_rc.items():
+                for corner in Filter(corner_wildcard).filter(lib_corners):
+                    for via, rc in metal_layers.items():
+                        res = rc["res"]
+                        env[f"_VIA_RC_{count}"] = TclStep.value_to_tcl(
+                            [corner] + [via] + [str(round(res, 8))]
+                        )
+                        count += 1
 
         command = self.get_command()
 
