@@ -14,6 +14,18 @@
 ## Documentation
 -->
 
+# 2.2.2
+
+## Steps
+
+* `Odb.*`
+  * Fixed OpenROAD dropping user-set `PYTHONPATH` values.
+  
+## Tool Updates
+
+* Use `NIX_PYTHONPATH` instead of `PYTHONPATH` in Docker and devshells
+  to avoid collisions with user-set `PYTHONPATH` variables.
+
 # 2.2.1
 
 This patch has no functional changes to OpenLane proper.
