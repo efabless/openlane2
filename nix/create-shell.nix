@@ -59,7 +59,7 @@ in
     devshell.packages = packages;
     env = [
       {
-        name = "PYTHONPATH";
+        name = "NIX_PYTHONPATH";
         value = "${openlane-env-sitepackages}";
       }
     ];
