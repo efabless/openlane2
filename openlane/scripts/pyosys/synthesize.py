@@ -86,11 +86,15 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("opt_clean")  # Clean up after memory analysis
 
     # Perform more aggressive optimization with faster runtime
-    d.run_pass("opt", "-fast", "-full")  # Fast and comprehensive optimization
+    d.run_pass(
+        "opt", "-fast", "-mux_undef", "-mux_bool", "-fine"
+    )  # Fast and comprehensive optimization
 
     # Technology mapping
     d.run_pass("memory_map")  # Map memories to standard cells
-    d.run_pass("opt", "-full")  # More optimization after memory mapping
+    d.run_pass(
+        "opt", "-mux_undef", "-mux_bool", "-fine"
+    )  # More optimization after memory mapping
     d.run_pass("techmap")  # Map logic to standard cells from the technology library
     d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
     d.run_pass("opt", "-fast")  # More fast optimization
@@ -203,10 +207,14 @@ def synthesize(
         d.tee("stat", "-json", *lib_arguments, o=os.path.join(report_dir, "stat.json"))
         d.tee("stat", *lib_arguments, o=os.path.join(report_dir, "stat.rpt"))
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
             "-noattr",
-            "-noexpr",
+            *noattr_flag,
             "-nohex",
             "-nodec",
             "-defparam",
@@ -305,7 +313,10 @@ def synthesize(
             *(["-dff"] if config["SYNTH_ABC_DFF"] else []),
         )
 
-        d.run_pass("setundef", "-zero")
+        if value := config.get("SYNTH_SET_UNDEFINED"):
+            flag = "zero" if value == "low" else "high"
+            d.run_pass("setundef", flag)
+
         d.run_pass(
             "hilomap",
             "-hicell",
@@ -336,9 +347,13 @@ def synthesize(
             #     sc_mcu7t5v0__and3_1_A3_Z_gf180mcu_fd_sc_mcu7t5v0__buf_1_I_Z
             d.run_pass("autoname")
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
-            "-noattr",
+            *noattr_flag,
             "-noexpr",
             "-nohex",
             "-nodec",

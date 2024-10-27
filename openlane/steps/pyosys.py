@@ -491,6 +491,18 @@ class SynthesisCommon(VerilogStep):
             "Runs the booth pass as part of synthesis: See https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/booth.html",
             default=False,
         ),
+        Variable(
+            "SYNTH_TIE_UNDEFINED",
+            Optional[Literal["high", "low"]],
+            "Whether to tie undefined values low or high. Explicitly provide null if you wish to simply leave them undriven.",
+            default="high",
+        ),
+        Variable(
+            "SYNTH_WRITE_NOATTR",
+            bool,
+            "If true, Verilog-2001 attributes are omitted from output netlists. Some utilities do not support attributes.",
+            default=True,
+        ),
         # Variable(
         #     "SYNTH_SDC_FILE",
         #     Optional[Path],
