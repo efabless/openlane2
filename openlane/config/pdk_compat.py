@@ -24,9 +24,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     if "SYNTH_DRIVING_CELL_PIN" in new:
         del new["SYNTH_DRIVING_CELL"]
         del new["SYNTH_DRIVING_CELL_PIN"]
-        new["SYNTH_DRIVING_CELL"] = (
-            f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
-        )
+        new[
+            "SYNTH_DRIVING_CELL"
+        ] = f"{config['SYNTH_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
 
     # 2. Migrate SYNTH_TIE{HI,LO}_CELL
     if "SYNTH_TIEHI_PORT" in new:
@@ -171,9 +171,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
         del new["KLAYOUT_DRC_TECH_SCRIPT"]
 
-        new["SYNTH_CLK_DRIVING_CELL"] = (
-            f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
-        )
+        new[
+            "SYNTH_CLK_DRIVING_CELL"
+        ] = f"{config['SYNTH_CLK_DRIVING_CELL']}/{config['SYNTH_DRIVING_CELL_PIN']}"
 
     # x3. Timing Corners
     lib_sta: Dict[str, List[str]] = {}
@@ -279,11 +279,11 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             # set_layer_rc -via via4 -resistance 0.00580E-3
             new["VIAS_RC"] = {
                 "*": {
-                    "mcon": {"res": 7.176e-02},
-                    "via": {"res": 8.929e-04},
-                    "via2": {"res": 8.929e-04},
-                    "via3": {"res": 1.567e-04},
-                    "via4": {"res": 1.567e-04},
+                    "mcon": {"res": 9.249146},
+                    "via": {"res": 4.5},
+                    "via2": {"res": 3.368786},
+                    "via3": {"res": 0.376635},
+                    "via4": {"res": 0.00580},
                 }
             }
         elif new["PDK"].startswith("gf180mcu"):

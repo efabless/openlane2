@@ -17,6 +17,30 @@
 
 set i "0"
 set tc_key "_LAYER_RC_$i"
+if { ![info exists ::env($tc_key)] } {
+    puts "\[INFO\] Using default RC values from the technology for metal layers"
+    set res_unit [sta::unit_scale resistance] 
+    set cap_unit [sta::unit_scale capacitance]
+
+    foreach layer [$::tech getLayers] {
+        if { [$layer getType] == "ROUTING" } {
+            set layer_name [$layer getName]
+
+            lassign [rsz::dblayer_wire_rc $layer] layer_wire_res_ohm_m layer_wire_cap_farad_m
+            set layer_wire_res_unit_microns [expr $layer_wire_res_ohm_m * 1e-6 / $res_unit]
+            set layer_wire_cap_unit_microns [expr $layer_wire_cap_farad_m * 1e-6 / $cap_unit]
+
+            foreach corner [sta::corners] {
+                set_layer_rc \
+                    -layer $layer_name\
+                    -capacitance $layer_wire_cap_unit_microns\
+                    -corner [$corner name]\
+                    -resistance $layer_wire_res_unit_microns
+            }
+        }
+    }
+}
+
 while { [info exists ::env($tc_key)] } {
     # [$corner] + [layer] + [str(round(res, 8))] + [str(round(cap, 8))]
     set corner_name [lindex $::env($tc_key) 0]
@@ -28,14 +52,33 @@ while { [info exists ::env($tc_key)] } {
     set_layer_rc \
         -layer $layer_name\
         -capacitance $cap_value\
+        -corner $corner_name\
         -resistance $res_value
 
     incr i
     set tc_key "_LAYER_RC_$i"
 }
 
+
 set i "0"
 set tc_key "_VIA_RC_$i"
+
+if { ![info exists ::env($tc_key)] } {
+    puts "\[INFO\] Using default RC values from the technology for vias"
+
+    foreach layer [$::tech getLayers] {
+        if { [$layer getType] == "CUT" } {
+            set layer_name [$layer getName]
+            set res [$layer getResistance]
+            foreach corner [sta::corners] {
+                set_layer_rc \
+                    -corner [$corner name]\
+                    -resistance $res\
+                    -via $layer_name
+            }
+        }
+    }
+}
 while { [info exists ::env($tc_key)] } {
     set corner_name [lindex $::env($tc_key) 0]
     set via_name [lindex $::env($tc_key) 1]
@@ -94,4 +137,3 @@ foreach corner [sta::corners] {
         set_wire_rc -clock -layer "$clock_wire_rc_layers" -corner [$corner name]
     }
 }
-
