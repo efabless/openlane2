@@ -14,6 +14,12 @@
 ## Documentation
 -->
 
+# 2.2.3
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed incorrect error message when subtituting a step with one that has a nonexistent ID.
+
 # 2.2.2
 
 ## Steps
