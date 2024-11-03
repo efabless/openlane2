@@ -44,7 +44,7 @@ class Lint(Step):
         ),
         Variable(
             "VERILOG_POWER_DEFINE",
-            str,
+            Optional[str],
             "Specifies the name of the define used to guard power and ground connections in the input RTL.",
             deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
             default="USE_POWER_PINS",
