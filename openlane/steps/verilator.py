@@ -128,11 +128,10 @@ class Lint(Step):
             f"SCL_{self.config['STD_CELL_LIBRARY']}",
             "__openlane__",
             "__pnr__",
-        ] + (
-            []
-            if self.config.get("VERILOG_POWER_DEFINE") is None
-            else [self.config.get("VERILOG_POWER_DEFINE")]
-        )
+        ]
+        if verilog_power_define := self.config.get("VERILOG_POWER_DEFINE"):
+            defines += [verilog_power_define]
+
         defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
         if len(model_list):
