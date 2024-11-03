@@ -124,12 +124,15 @@ class Lint(Step):
                     model_set.add(str_model)
                     model_list.append(str_model)
         defines = [
-            self.config["VERILOG_POWER_DEFINE"],
             f"PDK_{self.config['PDK']}",
             f"SCL_{self.config['STD_CELL_LIBRARY']}",
             "__openlane__",
             "__pnr__",
-        ]
+        ] + (
+            []
+            if self.config.get("VERILOG_POWER_DEFINE") is None
+            else [self.config.get("VERILOG_POWER_DEFINE")]
+        )
         defines += self.config["LINTER_DEFINES"] or self.config["VERILOG_DEFINES"] or []
 
         if len(model_list):

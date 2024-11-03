@@ -14,6 +14,19 @@
 ## Documentation
 -->
 
+# 2.2.4
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed undefining variables in configuration files being ignored.
+* Restored `VERILOG_POWER_DEFINE` as an optional variable.
+
+## Steps
+
+* `Yosys.JsonHeader`, `Verilator.Lint`, `Odb.WriteVerilogHeader`
+
+  * Handled undefined `VERILOG_POWER_DEFINE`.
+
 # 2.2.3
 
 ## Misc. Enhancements/Bugfixes
@@ -25,6 +38,7 @@
 ## Steps
 
 * `Odb.*`
+
   * Fixed OpenROAD dropping user-set `PYTHONPATH` values.
   
 ## Tool Updates
