@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2020-2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,9 +29,19 @@ source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
 estimate_parasitics -placement
 
 # Resize
-repair_timing -verbose -setup \
-    -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN) \
-    -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PCT)
+set arg_list [list]
+lappend arg_list -verbose
+lappend arg_list -setup
+lappend arg_list -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
+lappend arg_list -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PCT)
+append_if_not_flag arg_list PL_RESIZER_SETUP_BUFFERING -skip_buffering
+append_if_not_flag arg_list PL_RESIZER_SETUP_BUFFER_REMOVAL -skip_buffer_removal
+append_if_not_flag arg_list PL_RESIZER_SETUP_GATE_CLONING -skip_gate_cloning
+append_if_exists_argument arg_list PL_RESIZER_SETUP_REPAIR_TNS_PCT -repair_tns
+append_if_exists_argument arg_list PL_RESIZER_SETUP_MAX_UTIL_PCT -max_utilization
+
+repair_timing {*}$arg_list
+puts "{*}$arg_list"
 
 set arg_list [list]
 lappend arg_list -verbose
@@ -39,13 +49,11 @@ lappend arg_list -hold
 lappend arg_list -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
 lappend arg_list -hold_margin $::env(PL_RESIZER_HOLD_SLACK_MARGIN)
 lappend arg_list -max_buffer_percent $::env(PL_RESIZER_HOLD_MAX_BUFFER_PCT)
-if { $::env(PL_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
-    lappend arg_list -allow_setup_violations
-}
-if { $::env(PL_RESIZER_GATE_CLONING) != 1 } {
-    lappend arg_list -skip_gate_cloning
-}
+append_if_flag arg_list PL_RESIZER_ALLOW_SETUP_VIOS -allow_setup_violations
+append_if_exists_argument arg_list PL_RESIZER_HOLD_REPAIR_TNS_PCT -repair_tns
+append_if_exists_argument arg_list PL_RESIZER_HOLD_MAX_UTIL_PCT -max_utilization
 repair_timing {*}$arg_list
+puts "{*}$arg_list"
 
 # Legalize
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
