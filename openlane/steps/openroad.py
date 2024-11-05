@@ -2169,6 +2169,11 @@ class RepairDesignPostGPL(ResizerStep):
             "Invokes OpenROAD's remove_buffers command to remove buffers from synthesis, which gives OpenROAD more flexibility when buffering nets.",
             default=False,
         ),
+        Variable(
+            "DESIGN_REPAIR_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during design repair.",
+        ),
     ]
 
     def get_script_path(self):
@@ -2224,6 +2229,12 @@ class RepairDesignPostGRT(ResizerStep):
             default=10,
             units="%",
             deprecated_names=["GLB_RESIZER_MAX_CAP_MARGIN"],
+        ),
+        Variable(
+            "GRT_DESIGN_REPAIR_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during design post-grt repair.",
+            units="%",
         ),
     ]
 
