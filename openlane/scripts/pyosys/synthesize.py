@@ -213,7 +213,6 @@ def synthesize(
 
         d.run_pass(
             "write_verilog",
-            "-noattr",
             *noattr_flag,
             "-nohex",
             "-nodec",
