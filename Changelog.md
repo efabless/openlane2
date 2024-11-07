@@ -14,6 +14,13 @@
 ## Documentation
 -->
 
+# 2.2.4
+
+## Misc. Enhancements/Bugfixes
+
+* `yosys-sby`: Overlaid new hash for `yosys-0.46` tag because of a tag update
+  upstream.
+
 # 2.2.3
 
 ## Misc. Enhancements/Bugfixes
