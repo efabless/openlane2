@@ -1240,6 +1240,12 @@ class _GlobalPlacement(OpenROADStep):
                 units="sites",
                 pdk=True,
             ),
+            Variable(
+                "PL_ROUTABILITY_MAX_DENSITY_PCT",
+                Optional[Decimal],
+                "Upper bound for placement density in routability mode.",
+                units="%",
+            ),
         ]
     )
 
