@@ -14,24 +14,35 @@
 ## Documentation
 -->
 
-# 2.2.4
-
-## Misc. Enhancements/Bugfixes
-
-* Fixed undefining variables in configuration files being ignored.
-* Restored `VERILOG_POWER_DEFINE` as an optional variable.
+# 2.2.5
 
 ## Steps
 
 * `Yosys.JsonHeader`, `Verilator.Lint`, `Odb.WriteVerilogHeader`
 
-  * Handled undefined `VERILOG_POWER_DEFINE`.
+  * Fixed `VERILOG_POWER_DEFINE` not being optional which was an unintentional
+    break from OpenLane 1.
+
+    * Default value is still `USE_POWER_PINS`, but it can be explicitly unset.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.config`: Fixed issue where preprocessor would ignore explicitly-set
+  null values in configuration files.
+
+# 2.2.4
+
+## Tool Updates
+
+* `yosys-sby`: Overlaid new hash for `yosys-0.46` tag because of a tag update
+  upstream.
 
 # 2.2.3
 
 ## Misc. Enhancements/Bugfixes
 
-* Fixed incorrect error message when subtituting a step with one that has a nonexistent ID.
+* Fixed incorrect error message when subtituting a step with one that has a
+  nonexistent ID.
 
 # 2.2.2
 
@@ -40,17 +51,18 @@
 * `Odb.*`
 
   * Fixed OpenROAD dropping user-set `PYTHONPATH` values.
-  
+
 ## Tool Updates
 
-* Use `NIX_PYTHONPATH` instead of `PYTHONPATH` in Docker and devshells
-  to avoid collisions with user-set `PYTHONPATH` variables.
+* Use `NIX_PYTHONPATH` instead of `PYTHONPATH` in Docker and devshells to avoid
+  collisions with user-set `PYTHONPATH` variables.
 
 # 2.2.1
 
 This patch has no functional changes to OpenLane proper.
 
 ## Tool Updates
+
 * `flake.createOpenLaneShell` now gets OpenLane from `python3.pkgs`.
 * Fixed issue with `flake.createOpenLaneShell` where plugins would not get
   included due to an operator precedence issue.
