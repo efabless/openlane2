@@ -35,13 +35,20 @@ def json_header(
     blackbox_models = extra["blackbox_models"]
 
     includes = config["VERILOG_INCLUDE_DIRS"] or []
-    defines = (config["VERILOG_DEFINES"] or []) + [
-        f"PDK_{config['PDK']}",
-        f"SCL_{config['STD_CELL_LIBRARY']}",
-        "__openlane__",
-        "__pnr__",
-        config["VERILOG_POWER_DEFINE"],
-    ]
+    defines = (
+        (config["VERILOG_DEFINES"] or [])
+        + [
+            f"PDK_{config['PDK']}",
+            f"SCL_{config['STD_CELL_LIBRARY']}",
+            "__openlane__",
+            "__pnr__",
+        ]
+        + (
+            []
+            if config.get("VERILOG_POWER_DEFINE") is None
+            else [config.get("VERILOG_POWER_DEFINE")]
+        )
+    )
 
     d = ys.Design()
     d.add_blackbox_models(
