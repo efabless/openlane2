@@ -13,6 +13,13 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.2.6
+
+## Steps
+
+* `OpenROAD.WriteViews`
+
+  * Allowed step to be used in flows.
 
 # 2.2.5
 
