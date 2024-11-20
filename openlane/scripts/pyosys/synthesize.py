@@ -115,11 +115,13 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
 @click.option("--config-in", type=click.Path(exists=True), required=True)
 @click.option("--extra-in", type=click.Path(exists=True), required=True)
 @click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
+@click.argument("inputs", nargs=-1)
 def synthesize(
     output,
     config_in,
     extra_in,
     lighter_dff_map,
+    inputs,
 ):
     config = json.load(open(config_in))
     extra = json.load(open(extra_in))
@@ -154,7 +156,17 @@ def synthesize(
 
     ys.log(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
 
-    if verilog_files := config.get("VERILOG_FILES"):
+    if len(inputs):
+        d.read_verilog_files(
+            inputs,
+            top=config["DESIGN_NAME"],
+            synth_parameters=[],
+            includes=includes,
+            defines=defines,
+            use_synlig=False,
+            synlig_defer=False,
+        )
+    elif verilog_files := config.get("VERILOG_FILES"):
         d.read_verilog_files(
             verilog_files,
             top=config["DESIGN_NAME"],
