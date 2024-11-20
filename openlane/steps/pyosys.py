@@ -450,10 +450,16 @@ class SynthesisCommon(VerilogStep):
             default=False,
         ),
         Variable(
-            "SYNTH_NO_FLAT",
-            bool,
-            "A flag that disables flattening the hierarchy during synthesis, only flattening it after synthesis, mapping and optimizations.",
-            default=False,
+            "SYNTH_HIERARCHY_MODE",
+            Literal["flatten", "deferred_flatten", "keep"],
+            "Affects how hierarchy is maintained throughout and after synthesis. 'flatten' flattens it during and after synthesis. 'deferred_flatten' flattens it after synthesis. 'keep' never flattens it.",
+            default="flatten",
+            deprecated_names=[
+                (
+                    "SYNTH_NO_FLAT",
+                    lambda x: "deferred_flatten" if x else "flatten",
+                )
+            ],
         ),
         Variable(
             "SYNTH_SHARE_RESOURCES",
