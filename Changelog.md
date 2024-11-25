@@ -14,6 +14,20 @@
 ## Documentation
 -->
 
+# 2.2.6
+
+## Steps
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
+  of setup fixing.
+
+* `OpenROAD.ResizerTimingPostCTS`
+
+  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
+  of setup fixing.
+
 # 2.2.5
 
 ## Steps
