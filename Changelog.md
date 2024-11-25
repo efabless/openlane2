@@ -19,7 +19,7 @@
 
 * `OpenROAD.WriteViews`
 
-  * Allowed step to be used in flows.
+  * Fixed step not being registered to factory object.
 
 # 2.2.6
 
