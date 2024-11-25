@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openlane"
-version = "2.2.2"
+version = "2.2.5"
 description = "An infrastructure for implementing chip design flows"
 authors = ["Efabless Corporation and Contributors <donn@efabless.com>"]
 readme = "Readme.md"

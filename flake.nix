@@ -54,6 +54,9 @@
       default = lib.composeManyExtensions [
         (import ./nix/overlay.nix)
         (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
+        (pkgs': pkgs: {
+          yosys-sby = (pkgs.yosys-sby.override { sha256 = "sha256-Il2pXw2doaoZrVme2p0dSUUa8dCQtJJrmYitn1MkTD4="; });
+        })
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';

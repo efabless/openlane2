@@ -309,7 +309,7 @@ class WriteVerilogHeader(OdbpyStep):
     config_vars = OdbpyStep.config_vars + [
         Variable(
             "VERILOG_POWER_DEFINE",
-            str,
+            Optional[str],
             "Specifies the name of the define used to guard power and ground connections in the output Verilog header.",
             deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
             default="USE_POWER_PINS",
@@ -324,14 +324,20 @@ class WriteVerilogHeader(OdbpyStep):
 
     def get_command(self) -> List[str]:
         state_in = self.state_in.result()
-        return super().get_command() + [
+        command = super().get_command() + [
             "--output-vh",
             os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh"),
             "--input-json",
             str(state_in[DesignFormat.JSON_HEADER]),
-            "--power-define",
-            self.config["VERILOG_POWER_DEFINE"],
         ]
+        if self.config.get("VERILOG_POWER_DEFINE") is not None:
+            command += ["--power-define", self.config["VERILOG_POWER_DEFINE"]]
+        else:
+            self.warn(
+                "VERILOG_POWER_DEFINE undefined. Verilog Header will not include power ports."
+            )
+
+        return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
