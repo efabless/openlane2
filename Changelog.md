@@ -13,6 +13,13 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.2.7
+
+## Steps
+
+* `OpenROAD.WriteViews`
+
+  * Fixed step not being registered to factory object.
 
 # 2.2.6
 
