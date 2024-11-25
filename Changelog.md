@@ -13,7 +13,7 @@
 ## API Breaks
 ## Documentation
 -->
-# 2.2.6
+# 2.2.7
 
 ## Steps
 
