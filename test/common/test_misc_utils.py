@@ -92,7 +92,7 @@ def test_slugify():
 
 
 def test_magic_drc():
-    from openlane.common import DRC, Violation
+    from openlane.common import DRC, Violation, BoundingBox
 
     drc_object, count = DRC.from_magic(io.StringIO(MAGIC_EXAMPLE))
     violations = {
@@ -100,19 +100,19 @@ def test_magic_drc():
             rules=[("LU", "3")],
             description="P-diff distance to N-tap must be < 15.0um (LU.3)",
             bounding_boxes=[
-                (
+                BoundingBox(
                     Decimal("17.990"),
                     Decimal("21.995"),
                     Decimal("18.265"),
                     Decimal("22.995"),
                 ),
-                (
+                BoundingBox(
                     Decimal("20.905"),
                     Decimal("22.935"),
                     Decimal("21.575"),
                     Decimal("22.995"),
                 ),
-                (
+                BoundingBox(
                     Decimal("18.535"),
                     Decimal("21.995"),
                     Decimal("18.795"),
@@ -171,62 +171,62 @@ def test_magic_drc_exceptions():
 
 
 def test_magic_feedback():
-    from openlane.common import DRC, Violation
+    from openlane.common import DRC, Violation, BoundingBox
 
     expected_violations = {
         "obsm4-metal4.ILLEGAL_OVERLAP": Violation(
             rules=[("obsm4-metal4", "ILLEGAL_OVERLAP")],
             description="Illegal overlap between obsm4 and metal4 (types do not connect)",
             bounding_boxes=[
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4449.70"),
                     Decimal("11153.80"),
                     Decimal("4458.80"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4437.90"),
                     Decimal("11139.90"),
                     Decimal("4449.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11151.70"),
                     Decimal("4437.90"),
                     Decimal("11153.80"),
                     Decimal("4449.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4433.70"),
                     Decimal("11153.80"),
                     Decimal("4437.90"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4421.90"),
                     Decimal("11139.90"),
                     Decimal("4433.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11151.70"),
                     Decimal("4421.90"),
                     Decimal("11153.80"),
                     Decimal("4433.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4417.70"),
                     Decimal("11153.80"),
                     Decimal("4421.90"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11137.80"),
                     Decimal("4412.80"),
                     Decimal("11139.90"),
                     Decimal("4417.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11151.70"),
                     Decimal("4412.80"),
                     Decimal("11153.80"),
@@ -238,19 +238,19 @@ def test_magic_feedback():
             rules=[("obsm4-via4", "ILLEGAL_OVERLAP")],
             description="Illegal overlap between obsm4 and via4 (types do not connect)",
             bounding_boxes=[
-                (
+                BoundingBox(
                     Decimal("11139.90"),
                     Decimal("4437.90"),
                     Decimal("11151.70"),
                     Decimal("4449.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11139.90"),
                     Decimal("4421.90"),
                     Decimal("11151.70"),
                     Decimal("4433.70"),
                 ),
-                (
+                BoundingBox(
                     Decimal("11139.90"),
                     Decimal("4412.80"),
                     Decimal("11151.70"),
@@ -262,31 +262,31 @@ def test_magic_feedback():
             rules=[("UNKNOWN", "UNKNOWN2")],
             description="device missing 1 terminal;\n connecting remainder to node VGND",
             bounding_boxes=[
-                (
+                BoundingBox(
                     Decimal("8232.15"),
                     Decimal("8080.15"),
                     Decimal("8238.05"),
                     Decimal("8085.65"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8204.55"),
                     Decimal("8080.15"),
                     Decimal("8224.25"),
                     Decimal("8085.65"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8186.15"),
                     Decimal("8035.95"),
                     Decimal("8215.05"),
                     Decimal("8041.45"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8149.35"),
                     Decimal("8080.15"),
                     Decimal("8196.65"),
                     Decimal("8085.65"),
                 ),
-                (
+                BoundingBox(
                     Decimal("393.75"),
                     Decimal("8025.75"),
                     Decimal("404.25"),
@@ -298,31 +298,31 @@ def test_magic_feedback():
             rules=[("UNKNOWN", "UNKNOWN3")],
             description="device missing 1 terminal;\n connecting remainder to node VPWR",
             bounding_boxes=[
-                (
+                BoundingBox(
                     Decimal("8232.15"),
                     Decimal("8063.15"),
                     Decimal("8238.05"),
                     Decimal("8071.85"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8204.55"),
                     Decimal("8063.15"),
                     Decimal("8224.25"),
                     Decimal("8071.85"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8186.15"),
                     Decimal("8049.75"),
                     Decimal("8215.05"),
                     Decimal("8058.45"),
                 ),
-                (
+                BoundingBox(
                     Decimal("8149.35"),
                     Decimal("8063.15"),
                     Decimal("8196.65"),
                     Decimal("8071.85"),
                 ),
-                (
+                BoundingBox(
                     Decimal("393.75"),
                     Decimal("8008.75"),
                     Decimal("404.25"),
