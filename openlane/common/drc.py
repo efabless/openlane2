@@ -18,27 +18,20 @@ import shlex
 from enum import IntEnum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Union
 
 
-@dataclass
-class BoundingBox:
-    llx: Decimal
-    lly: Decimal
-    urx: Decimal
-    ury: Decimal
-
-
-@dataclass
-class BoundingBoxWithDescription(BoundingBox):
-    description: Optional[str] = None
+BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
+BoundingBoxWithDescription = Tuple[Decimal, Decimal, Decimal, Decimal, str]  # microns
 
 
 @dataclass
 class Violation:
     rules: List[Tuple[str, str]]  # (layer, rule)
     description: str
-    bounding_boxes: List[BoundingBox] = field(default_factory=list)
+    bounding_boxes: List[Union[BoundingBox, BoundingBoxWithDescription]] = field(
+        default_factory=list
+    )
 
     @property
     def layer(self) -> str:
@@ -107,7 +100,7 @@ class DRC:
                 ury = bbox_match.group("ury")
                 layer = bbox_match.group("layer")
                 bbox_count += 1
-                bounding_box = BoundingBoxWithDescription(
+                bounding_box = (
                     Decimal(llx),
                     Decimal(lly),
                     Decimal(urx),
@@ -197,7 +190,7 @@ class DRC:
                         f"invalid bounding box at line {i}: bounding box has {len(coord_list)}/4 elements"
                     )
 
-                bounding_box = BoundingBox(
+                bounding_box = (
                     coord_list[0],
                     coord_list[1],
                     coord_list[2],
@@ -227,7 +220,7 @@ class DRC:
                         "Invalid syntax: 'box' command has less than 4 arguments"
                     )
                 lx, ly, ux, uy = components[0:4]
-                last_bounding_box = BoundingBox(
+                last_bounding_box = (
                     Decimal(lx) * cif_scale,
                     Decimal(ly) * cif_scale,
                     Decimal(ux) * cif_scale,
@@ -312,13 +305,9 @@ class DRC:
                                 xf.write(cell, category, visited, multiplicity)
                                 with xf.element("values"):
                                     value = ET.Element("value")
-                                    value.text = f"polygon: ({bounding_box.llx},{bounding_box.lly};{bounding_box.urx},{bounding_box.lly};{bounding_box.urx},{bounding_box.ury};{bounding_box.llx},{bounding_box.ury})"
+                                    value.text = f"polygon: ({bounding_box[0]},{bounding_box[1]};{bounding_box[2]},{bounding_box[1]};{bounding_box[2]},{bounding_box[3]};{bounding_box[0]},{bounding_box[3]})"
                                     xf.write(value)
-                                    if isinstance(
-                                        bounding_box, BoundingBoxWithDescription
-                                    ):
+                                    if len(bounding_box) == 5:
                                         value = ET.Element("value")
-                                        value.text = (
-                                            f"text: '{bounding_box.description}'"
-                                        )
+                                        value.text = f"text: '{bounding_box[4]}'"
                                         xf.write(value)
