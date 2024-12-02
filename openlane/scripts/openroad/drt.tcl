@@ -26,7 +26,7 @@ if { [info exists ::env(DRT_MAX_LAYER)] } {
     set max_layer $::env(DRT_MAX_LAYER)
 }
 
-detailed_route\
+log_cmd detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
     -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\

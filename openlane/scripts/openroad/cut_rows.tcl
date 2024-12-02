@@ -14,10 +14,29 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-cut_rows\
+log_cmd cut_rows\
     -endcap_master $::env(ENDCAP_CELL)\
     -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
     -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
+
+# Prune really short rows (<25 sites) so the PDN doesn't scream and complain
+## Replace with https://github.com/The-OpenROAD-Project/OpenROAD/issues/5648 when this is available
+foreach lib $::libs {
+    set current_sites [$lib getSites]
+    foreach site $current_sites {
+        set name [$site getName]
+        set ::sites($name) $site
+    }
+}
+
+set ::default_site $::sites($::env(PLACE_SITE))
+foreach row [$::block getRows] {
+    set bbox [$row getBBox]
+    set site_count [expr ([$bbox xMax] - [$bbox xMin]) / [$::default_site getWidth]]
+    if { $site_count < 25 } {
+        odb::dbRow_destroy $row
+    }
+}
 
 write_views
 
