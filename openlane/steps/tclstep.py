@@ -162,10 +162,10 @@ class TclStep(Step):
             env[key] = TclStep.value_to_tcl(state[input])
 
         for output in self.outputs:
-            if output.value.multiple:
+            if output.multiple:
                 # Too step-specific.
                 continue
-            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.extension}"
             env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
 
         return env

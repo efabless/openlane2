@@ -171,6 +171,13 @@ verilog_rtl_cfg_vars = [
     ),
 ]
 
+DesignFormat(
+    "json_h",
+    "h.json",
+    "Design JSON Header File",
+    "JSON_HEADER",
+).register()
+
 
 class PyosysStep(Step):
     config_vars = [
@@ -346,14 +353,14 @@ class JsonHeader(VerilogStep):
     def get_command(self, state_in: State) -> List[str]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.extension}",
         )
         return super().get_command(state_in) + ["--output", out_file]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.extension}",
         )
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         views_updates[DesignFormat.JSON_HEADER] = Path(out_file)
@@ -504,7 +511,7 @@ class SynthesisCommon(VerilogStep):
     def get_command(self, state_in: State) -> List[str]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.extension}",
         )
         cmd = super().get_command(state_in)
         if self.config["USE_LIGHTER"]:
@@ -529,7 +536,7 @@ class SynthesisCommon(VerilogStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.extension}",
         )
 
         view_updates, metric_updates = super().run(state_in, **kwargs)

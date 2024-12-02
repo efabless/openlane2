@@ -53,7 +53,7 @@ from ..config import (
     Variable,
     universal_flow_config_variables,
 )
-from ..state import DesignFormat, DesignFormatObject, State, InvalidState, StateElement
+from ..state import DesignFormat, State, InvalidState, StateElement
 from ..common import (
     GenericDict,
     GenericImmutableDict,
@@ -733,7 +733,7 @@ class Step(ABC):
                 continue
 
             if state_in.get(id) != value:
-                df = DesignFormat.by_id(id)
+                df = DesignFormat.factory.get(id)
                 assert df is not None
                 views_updated.append(df.value.name)
 
@@ -996,14 +996,14 @@ class Step(ABC):
 
         # 2. State
         state_in: GenericDict[str, Any] = self.state_in.result().copy_mut()
-        for format in DesignFormat:
-            assert isinstance(format.value, DesignFormatObject)  # type checker shut up
+        for format_id in state_in:
+            format = DesignFormat.factory.get(format_id)
             if format not in self.__class__.inputs and not (
                 format == DesignFormat.DEF
                 and DesignFormat.ODB
                 in self.__class__.inputs  # hack to write tests a bit more easily
             ):
-                state_in[format.value.id] = None
+                state_in[format.id] = None
         state_in["metrics"] = self.state_in.result().metrics.copy_mut()
         dumpable_state = copy_recursive(state_in, translator=visitor)
         state_path = os.path.join(target_dir, "state_in.json")
@@ -1537,7 +1537,7 @@ class CompositeStep(Step):
         for key in state:
             if (
                 state_in.get(key) != state.get(key)
-                and DesignFormat.by_id(key) in self.outputs
+                and DesignFormat.factory.get(key) in self.outputs
             ):
                 views_updates[key] = state[key]
         for key in state.metrics:

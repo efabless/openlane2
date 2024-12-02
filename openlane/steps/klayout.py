@@ -29,6 +29,14 @@ from ..state import DesignFormat, State
 from ..common import Path, get_script_dir, mkdirp, _get_process_limit
 
 
+DesignFormat(
+    "klayout_gds",
+    "klayout.gds",
+    "GDSII Stream (KLayout)",
+    "KLAYOUT_GDS",
+).register()
+
+
 class KLayoutStep(Step):
     config_vars = [
         Variable(
@@ -193,7 +201,7 @@ class StreamOut(KLayoutStep):
 
         klayout_gds_out = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.KLAYOUT_GDS.extension}",
         )
         kwargs, env = self.extract_env(kwargs)
 
@@ -205,7 +213,7 @@ class StreamOut(KLayoutStep):
                     "klayout",
                     "stream_out.py",
                 ),
-                state_in[DesignFormat.DEF.value.id],
+                state_in[DesignFormat.DEF.id],
                 "--output",
                 abspath(klayout_gds_out),
                 "--top",
