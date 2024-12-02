@@ -79,62 +79,53 @@ class SynthesisExploration(Flow):
 
         options.set_condensed_mode(True)
 
-        for nf in [True, False]:
-            for strategy in [
-                "AREA 0",
-                "AREA 1",
-                "AREA 2",
-                "AREA 3",
-                "DELAY 0",
-                "DELAY 1",
-                "DELAY 2",
-                "DELAY 3",
-                "DELAY 4",
-            ]:
-                config = self.config.copy(
-                    SYNTH_ABC_AREA_USE_NF=nf,
-                    SYNTH_STRATEGY=strategy,
-                )
+        for strategy in [
+            "AREA 0",
+            "AREA 1",
+            "AREA 2",
+            "AREA 3",
+            "DELAY 0",
+            "DELAY 1",
+            "DELAY 2",
+            "DELAY 3",
+            "DELAY 4",
+        ]:
+            config = self.config.copy(SYNTH_STRATEGY=strategy)
 
-                synth_step = Yosys.Synthesis(
-                    config,
-                    id=f"synthesis-{strategy}"
-                    + ("-nf" if config["SYNTH_ABC_AREA_USE_NF"] else ""),
-                    state_in=initial_state,
-                )
-                synth_future = self.start_step_async(synth_step)
-                step_list.append(synth_step)
+            synth_step = Yosys.Synthesis(
+                config,
+                id=f"synthesis-{strategy}",
+                state_in=initial_state,
+            )
+            synth_future = self.start_step_async(synth_step)
+            step_list.append(synth_step)
 
-                sdc_step = OpenROAD.CheckSDCFiles(
-                    config,
-                    id=f"sdc-{strategy}"
-                    + ("-nf" if config["SYNTH_ABC_AREA_USE_NF"] else ""),
-                    state_in=synth_future,
-                )
-                sdc_future = self.start_step_async(sdc_step)
-                step_list.append(sdc_step)
+            sdc_step = OpenROAD.CheckSDCFiles(
+                config,
+                id=f"sdc-{strategy}",
+                state_in=synth_future,
+            )
+            sdc_future = self.start_step_async(sdc_step)
+            step_list.append(sdc_step)
 
-                sta_step = OpenROAD.STAPrePNR(
-                    config,
-                    state_in=sdc_future,
-                    id=f"sta-{strategy}"
-                    + ("-nf" if config["SYNTH_ABC_AREA_USE_NF"] else ""),
-                )
+            sta_step = OpenROAD.STAPrePNR(
+                config,
+                state_in=sdc_future,
+                id=f"sta-{strategy}",
+            )
 
-                step_list.append(sta_step)
-                sta_future = self.start_step_async(sta_step)
+            step_list.append(sta_step)
+            sta_future = self.start_step_async(sta_step)
 
-                synth_futures.append((config, sta_future))
+            synth_futures.append((config, sta_future))
 
         results: Dict[str, Optional[Tuple[Decimal, Decimal, Decimal, Decimal]]] = {}
         for config, future in synth_futures:
-            header = config["SYNTH_STRATEGY"] + (
-                "-nf" if config["SYNTH_ABC_AREA_USE_NF"] else ""
-            )
-            results[header] = None
+            strategy = config["SYNTH_STRATEGY"]
+            results[strategy] = None
             try:
                 state = future.result()
-                results[header] = (
+                results[strategy] = (
                     state.metrics["design__instance__count"],
                     state.metrics["design__instance__area"],
                     state.metrics["timing__setup__ws"],
