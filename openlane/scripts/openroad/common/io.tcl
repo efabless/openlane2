@@ -481,6 +481,25 @@ proc exit_unless_gui {{status 0}} {
     }
 }
 
+proc find_unfixed_macros {} {
+    set macros [list]
+
+    foreach inst [$::block getInsts] {
+        set inst_master [$inst getMaster]
+
+        # BLOCK means MACRO cells
+        if { ![string match [$inst_master getType] "BLOCK"] } {
+            continue
+        }
+
+        if { [$inst isFixed] } {
+            continue
+        }
+
+        lappend macros $inst
+    }
+    return $macros
+}
 
 # Code below adapted from OpenROAD Flow Scripts under the following license:
 #
@@ -517,24 +536,3 @@ proc log_cmd {cmd args} {
     puts "+ $cmd [join $args " "]"
     $cmd {*}$args
 }
-
-proc find_unfixed_macros {} {
-    set macros [list]
-
-    foreach inst [$::block getInsts] {
-        set inst_master [$inst getMaster]
-
-        # BLOCK means MACRO cells
-        if { ![string match [$inst_master getType] "BLOCK"] } {
-            continue
-        }
-
-        if { [$inst isFixed] } {
-            continue
-        }
-
-        lappend macros $inst
-    }
-    return $macros
-}
-
