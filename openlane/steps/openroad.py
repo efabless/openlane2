@@ -1925,10 +1925,11 @@ class CutRows(OpenROADStep):
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
         Variable(
-            "FP_ROW_MINIMUM_SITES",
-            Optional[int],
-            "If specified, removes rows that, after cutting, has a width < FP_ROW_MINIMUM_SITES * the width of PLACE_SITE. This helps avoid isolated islets of cells during placement.",
+            "FP_PRUNE_THRESHOLD",
+            Optional[Decimal],
+            'If specified, all rows smaller in width than this value will be removed. This helps avoid "islets" of cells that are hard to route and connect to PDNs.',
             pdk=True,
+            units="µm",
         ),
     ]
 
