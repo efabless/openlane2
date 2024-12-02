@@ -1240,6 +1240,12 @@ class _GlobalPlacement(OpenROADStep):
                 units="sites",
                 pdk=True,
             ),
+            Variable(
+                "PL_ROUTABILITY_MAX_DENSITY_PCT",
+                Optional[Decimal],
+                "Upper bound for placement density in routability mode.",
+                units="%",
+            ),
         ]
     )
 
@@ -2170,6 +2176,11 @@ class RepairDesignPostGPL(ResizerStep):
             "Invokes OpenROAD's remove_buffers command to remove buffers from synthesis, which gives OpenROAD more flexibility when buffering nets.",
             default=False,
         ),
+        Variable(
+            "DESIGN_REPAIR_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during design repair.",
+        ),
     ]
 
     def get_script_path(self):
@@ -2225,6 +2236,12 @@ class RepairDesignPostGRT(ResizerStep):
             default=10,
             units="%",
             deprecated_names=["GLB_RESIZER_MAX_CAP_MARGIN"],
+        ),
+        Variable(
+            "GRT_DESIGN_REPAIR_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during design post-grt repair.",
+            units="%",
         ),
     ]
 
@@ -2283,10 +2300,47 @@ class ResizerTimingPostCTS(ResizerStep):
             default=False,
         ),
         Variable(
-            "PL_RESIZER_GATE_CLONING",
+            "PL_RESIZER_SETUP_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
             default=True,
+            deprecated_names=["PL_RESIZER_GATE_CLONING"],
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_BUFFERING",
+            bool,
+            "Rebuffering and load splitting during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_BUFFER_REMOVAL",
+            bool,
+            "Buffer removal transform during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during hold fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during hold fixing.",
+            units="%",
         ),
     ]
 
@@ -2350,16 +2404,53 @@ class ResizerTimingPostGRT(ResizerStep):
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
         ),
         Variable(
-            "GRT_RESIZER_GATE_CLONING",
+            "GRT_RESIZER_SETUP_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
             default=True,
+            deprecated_names=["GRT_RESIZER_GATE_CLONING"],
         ),
         Variable(
             "GRT_RESIZER_RUN_GRT",
             bool,
             "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_BUFFERING",
+            bool,
+            "Rebuffering and load splitting during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_BUFFER_REMOVAL",
+            bool,
+            "Buffer removal transform during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during hold fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during hold fixing.",
+            units="%",
         ),
     ]
 

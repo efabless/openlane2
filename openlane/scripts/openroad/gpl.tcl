@@ -66,12 +66,17 @@ if { [info exists ::env(PL_MAX_PHI_COEFFICIENT)] } {
 	lappend arg_list -max_phi_coef $::env(PL_MAX_PHI_COEFFICIENT)
 }
 
+if { [info exists ::env(PL_ROUTABILITY_MAX_DENSITY_PCT)] } {
+	lappend arg_list -routability_max_density $::env(PL_ROUTABILITY_MAX_DENSITY_PCT)
+}
+
 set cell_pad_side [expr $::env(GPL_CELL_PADDING) / 2]
 
 lappend arg_list -pad_right $cell_pad_side
 lappend arg_list -pad_left $cell_pad_side
 lappend arg_list -init_wirelength_coef $::env(PL_WIRE_LENGTH_COEF)
 
+puts "\[INFO\] args: $arg_list"
 global_placement {*}$arg_list
 
 
