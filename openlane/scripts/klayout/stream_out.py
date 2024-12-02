@@ -77,6 +77,10 @@ import click
     required=True,
     help="KLayout .map (LEF/DEF layer map) file",
 )
+@click.option(
+    "--isosub",
+    "isosub",
+)
 @click.option("-w", "--with-gds-file", "input_gds_files", multiple=True, default=[])
 @click.option("-s", "--seal-gds-file", "seal_gds", default=None)
 @click.option(
@@ -100,6 +104,7 @@ def stream_out(
     seal_gds: Optional[str],
     design_name: str,
     input: str,
+    isosub: str,
 ):  # Load technology file
     try:
         tech = pya.Technology()
@@ -165,6 +170,13 @@ def stream_out(
 
         # Write out the GDS
         print(f"[INFO] Writing out GDS '{output}'…")
+        if isosub is not None:
+            top_cell_bbox = top_only_layout.top_cell().bbox()
+            isosub_layer = top_only_layout.layer(
+                int(isosub.split(";")[0]), int(isosub.split(";")[1])
+            )
+            top_only_layout.top_cell().shapes(isosub_layer).insert(top_cell_bbox)
+            print("[INFO] Added isosub")
         top_only_layout.write(output)
         print("[INFO] Done.")
     except Exception as e:
