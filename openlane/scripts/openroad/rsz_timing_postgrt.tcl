@@ -44,7 +44,6 @@ append_if_exists_argument arg_list GRT_RESIZER_SETUP_REPAIR_TNS_PCT -repair_tns
 append_if_exists_argument arg_list GRT_RESIZER_SETUP_MAX_UTIL_PCT -max_utilization
 
 repair_timing {*}$arg_list
-puts "{*}$arg_list"
 
 set arg_list [list]
 lappend arg_list -verbose
@@ -55,8 +54,8 @@ lappend arg_list -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
 append_if_flag arg_list GRT_RESIZER_ALLOW_SETUP_VIOS -allow_setup_violations
 append_if_exists_argument arg_list GRT_RESIZER_HOLD_REPAIR_TNS_PCT -repair_tns
 append_if_exists_argument arg_list GRT_RESIZER_HOLD_MAX_UTIL_PCT -max_utilization
+
 repair_timing {*}$arg_list
-puts "{*}$arg_list"
 #
 # Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl

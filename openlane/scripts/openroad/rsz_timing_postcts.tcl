@@ -41,7 +41,6 @@ append_if_exists_argument arg_list PL_RESIZER_SETUP_REPAIR_TNS_PCT -repair_tns
 append_if_exists_argument arg_list PL_RESIZER_SETUP_MAX_UTIL_PCT -max_utilization
 
 repair_timing {*}$arg_list
-puts "{*}$arg_list"
 
 set arg_list [list]
 lappend arg_list -verbose

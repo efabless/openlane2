@@ -1937,6 +1937,7 @@ class CutRows(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
 
 
+@Step.factory.register()
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design
