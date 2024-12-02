@@ -33,7 +33,7 @@ class Design(object):
     @dataclass
     class Instance:
         name: str
-        module: str
+        module_name: str
         power_connections: Dict[str, str]
         ground_connections: Dict[str, str]
 
@@ -41,15 +41,20 @@ class Design(object):
         self.reader = reader
         self.design_name = reader.block.getName()
         self.yosys_dict = yosys_dict
-        self.yosys_design_object = yosys_dict["modules"][self.design_name]
 
         self.pins_by_module_name: Dict[str, Dict[str, odb.dbMTerm]] = {}
-        self.verilog_net_name_by_bit: Dict[int, str] = functools.reduce(
-            lambda a, b: {**a, **{bit: b[0] for bit in b[1]["bits"]}},
-            self.yosys_design_object["netnames"].items(),
-            {},
-        )
+        self.verilog_net_names_by_bit_by_module: Dict[str, Dict[int, str]] = {}
         self.nets_by_net_name = {net.getName(): net for net in reader.block.getNets()}
+
+    def get_verilog_net_name_by_bit(self, top_module: str, target_bit: int):
+        yosys_design_object = self.yosys_dict["modules"][top_module]
+        if top_module not in self.verilog_net_names_by_bit_by_module:
+            self.verilog_net_names_by_bit_by_module[top_module] = functools.reduce(
+                lambda a, b: {**a, **{bit: b[0] for bit in b[1]["bits"]}},
+                yosys_design_object["netnames"].items(),
+                {},
+            )
+        return self.verilog_net_names_by_bit_by_module[top_module][target_bit]
 
     def get_pins(self, module_name: str) -> Dict[str, odb.dbMTerm]:
         if module_name not in self.pins_by_module_name:
@@ -83,10 +88,17 @@ class Design(object):
 
         return module_pins[pin_name].getSigType() == "GROUND"
 
-    def extract_pg_pins(self, cell_name: str) -> dict:
-        cells = self.yosys_design_object["cells"]
-        module = cells[cell_name]["type"]
-        master = self.reader.db.findMaster(module)
+    def extract_pg_pins(self, top_module: str, cell_name: str) -> dict:
+        yosys_design_object = self.yosys_dict["modules"][top_module]
+        cells = yosys_design_object["cells"]
+        module_name = cells[cell_name]["type"]
+        master = self.reader.db.findMaster(module_name)
+        if master is None:
+            print(
+                f"[ERROR] Could not find master for cell type '{module_name}' in the database."
+            )
+            exit(-1)
+
         lef_pg_pins = []
         for pin in master.getMTerms():
             if pin.getSigType() in ["POWER", "GROUND"]:
@@ -102,32 +114,53 @@ class Design(object):
             connection_bits = connections[pin_name]
             if len(connection_bits) != 1:
                 print(
-                    f"[ERROR] Unexpectedly found more than one bit connected to {sigtype} pin {module}/{pin_name}."
+                    f"[ERROR] Unexpectedly found more than one bit connected to {sigtype} pin {module_name}/{pin_name}."
                 )
                 exit(-1)
             connection_bit = connection_bits[0]
-            connected_to_v = self.verilog_net_name_by_bit[connection_bit]
+            connected_to_v = self.get_verilog_net_name_by_bit(
+                top_module,
+                connection_bit,
+            )
             (power_pins if sigtype == "POWER" else ground_pins)[
                 pin_name
             ] = connected_to_v
 
         return power_pins, ground_pins
 
-    def extract_instances(self) -> List["Design.Instance"]:
+    def extract_instances(
+        self,
+        top_module: str,
+        prefix: str = "",
+    ) -> List["Design.Instance"]:
+        yosys_design_object = self.yosys_dict["modules"][top_module]
         instances = []
-        cells = self.yosys_design_object["cells"]
+        cells = yosys_design_object["cells"]
         for cell_name in cells.keys():
-            module = cells[cell_name]["type"]
-            if module.startswith("$"):
+            module_name = cells[cell_name]["type"]
+            if module_name.startswith("$"):
                 # yosys primitive
                 continue
-            power_pins, ground_pins = self.extract_pg_pins(cell_name)
+            if module_name in self.yosys_dict["modules"]:
+                print(
+                    f"[WARNING] Macros inside hierarchical netlists are not currently supported in OpenLane: skipping submodule '{cell_name}' of type '{module_name}'."
+                )
+                continue
+                # sub_instances = self.extract_instances(
+                #     self.yosys_dict["modules"][module_name],
+                #     prefix=prefix + f"{cell_name}/",
+                # )
+                # instances += sub_instances
+            power_pins, ground_pins = self.extract_pg_pins(
+                top_module,
+                cell_name,
+            )
             instances.append(
                 Design.Instance(
-                    name=cell_name,
+                    name=prefix + cell_name,
                     ground_connections=ground_pins,
                     power_connections=power_pins,
-                    module=module,
+                    module_name=module_name,
                 )
             )
 
@@ -244,7 +277,7 @@ def set_power_connections(input_json, reader: OdbReader):
     yosys_dict = json.loads(design_str)
 
     design = Design(reader, yosys_dict)
-    macro_instances = design.extract_instances()
+    macro_instances = design.extract_instances(design.design_name)
     for instance in macro_instances:
         for pin in instance.power_connections.keys():
             net_name = instance.power_connections[pin]
@@ -289,13 +322,13 @@ cli.add_command(set_power_connections)
 @click.option(
     "--power-define",
     type=str,
-    required=True,
+    required=False,
 )
 @click_odb
 def write_verilog_header(
     output_vh: str,
     input_json: str,
-    power_define: str,
+    power_define: Optional[str],
     reader: OdbReader,
 ):
     input_dict = json.load(open(input_json))
@@ -340,13 +373,14 @@ def write_verilog_header(
         # Write module
         print("// Auto-generated by OpenLane", file=f)
         print(f"module {design_name}(", file=f)
-        print(f"`ifdef {power_define}", file=f)
         last_pos = f.tell()
-        for decl in pg_decls:
-            print(f"  {decl}", file=f, end="")
-            last_pos = f.tell()
-            print(",", file=f)
-        print("`endif", file=f)
+        if power_define is not None:
+            print(f"`ifdef {power_define}", file=f)
+            for decl in pg_decls:
+                print(f"  {decl}", file=f, end="")
+                last_pos = f.tell()
+                print(",", file=f)
+            print("`endif", file=f)
         for decl in signal_decls:
             print(f"  {decl}", file=f, end="")
             last_pos = f.tell()

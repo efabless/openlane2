@@ -21,7 +21,6 @@
   boost183,
   eigen,
   cudd,
-  ninja,
   tcl,
   python3,
   readline,
@@ -38,17 +37,19 @@
   re2,
   swig4,
   pkg-config,
-  cmake,
   gnumake,
   flex,
   bison,
   clang-tools_14,
   buildEnv,
   makeBinaryWrapper,
+  rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
+  sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  # environments,
+  openroad,
   buildPythonEnvForInterpreter,
-  rev ? "6b5937db431d2fa1023d3865f21ccd9b65781492",
-  sha256 ? "sha256-rpv3WkOahFFkW4g+8tRiPBfBFcLwJIqK/hTgWv2tkow=",
-}: let self = clangStdenv.mkDerivation (finalAttrs: {
+}: let
+  self = clangStdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -63,7 +64,9 @@
       "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
       "-DTCL_HEADER=${tcl}/include/tcl.h"
       "-DUSE_SYSTEM_BOOST:BOOL=ON"
+      "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
       "-DENABLE_TESTS:BOOL=OFF"
+      "-DVERBOSE=1"
     ];
 
     cmakeFlags =
@@ -71,16 +74,19 @@
       ++ [
         "-DUSE_SYSTEM_ABC:BOOL=ON"
         "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
-        "-DOPENSTA_HOME=${opensta}"
         "-DCMAKE_CXX_FLAGS=-I${eigen}/include/eigen3"
+        "-DOPENSTA_HOME=${opensta}"
         "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
       ];
 
     preConfigure = ''
       sed -i "s/GITDIR-NOTFOUND/${rev}/" ./cmake/GetGitRevisionDescription.cmake
       patchShebangs ./etc/find_messages.py
-      
+
+      sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
+      sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
+      sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
       sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
     '';
 
@@ -112,8 +118,7 @@
     nativeBuildInputs = [
       swig4
       pkg-config
-      cmake
-      ninja
+      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
       gnumake
       flex
       bison
@@ -124,11 +129,11 @@
     shellHook = ''
       export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
     '';
-    
+
     passthru = {
       inherit python3;
       withPythonPackages = buildPythonEnvForInterpreter {
-        target = self;
+        target = openroad;
         inherit lib;
         inherit buildEnv;
         inherit makeBinaryWrapper;
@@ -143,4 +148,6 @@
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  }); in self
+  });
+in
+  self

@@ -179,7 +179,7 @@ class SequentialFlow(Flow):
             with_step_opt = Step.factory.get(with_step)
             if with_step_opt is None:
                 raise FlowException(
-                    f"Could not {mode} '{step.id}' with '{with_step}': no replacement step with ID '{with_step}' found."
+                    f"Could not {mode} '{id}' with '{with_step}': no replacement step with ID '{with_step}' found."
                 )
             with_step = with_step_opt
 

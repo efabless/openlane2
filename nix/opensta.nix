@@ -23,11 +23,11 @@
   bison,
   tcl,
   tclreadline,
-  zlib,
   cudd,
+  zlib,
   eigen,
-  rev ? "aafee90f8a21bf7867cef2e159929440cf45b2e5",
-  sha256 ? "sha256-omFHcgUpZZfyA1vuF/6/cuAhG1ToSm0z35/dQ0QwUUc=",
+  rev ? "b5f3a02b33b8ae1739ace8a329fde94434711dd6",
+  sha256 ? "sha256-s9Qn8Hkxuzvx7sZdaa/RX8X4Rp4w/kTVdnrmsRvC8wo=",
 }:
 clangStdenv.mkDerivation (finalAttrs: {
   name = "opensta";
@@ -46,10 +46,10 @@ clangStdenv.mkDerivation (finalAttrs: {
   ];
 
   buildInputs = [
+    cudd
+    tclreadline
     eigen
     tcl
-    tclreadline
-    cudd
     zlib
   ];
 
@@ -82,6 +82,7 @@ clangStdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "Gate-level static timing verifier";
     homepage = "https://parallaxsw.com";
+    mainProgram = "sta";
     license = licenses.gpl3Plus;
     platforms = platforms.darwin ++ platforms.linux;
   };

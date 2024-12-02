@@ -32,7 +32,8 @@ import os
 import sys
 import json
 import shutil
-import argparse
+
+import click
 
 from ys_common import ys
 from construct_abc_script import ABCScriptCreator
@@ -105,6 +106,11 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("stat")
 
 
+@click.command()
+@click.option("--output", type=click.Path(exists=False, dir_okay=False), required=True)
+@click.option("--config-in", type=click.Path(exists=True), required=True)
+@click.option("--extra-in", type=click.Path(exists=True), required=True)
+@click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
 def synthesize(
     output,
     config_in,
@@ -142,7 +148,7 @@ def synthesize(
         print(f"set_driving_cell {config['SYNTH_DRIVING_CELL']}", file=f)
         print(f"set_load {config['OUTPUT_CAP_LOAD']}", file=f)
 
-    print(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
+    ys.log(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
 
     if verilog_files := config.get("VERILOG_FILES"):
         d.read_verilog_files(
@@ -215,18 +221,18 @@ def synthesize(
     adder_type = config["SYNTH_ADDER_TYPE"]
     if adder_type not in ["YOSYS", "FA"]:
         if mapping := config[f"SYNTH_{adder_type}_MAP"]:
-            print(f"[INFO] Applying {adder_type} mapping from '{mapping}'…")
+            ys.log(f"[INFO] Applying {adder_type} mapping from '{mapping}'…")
             d.run_pass("techmap", "-map", mapping)
 
     if mapping := lighter_dff_map:
-        print(f"Using Lighter with mapping '{mapping}'…")
+        ys.log(f"[INFO] Using Lighter with mapping '{mapping}'…")
         d.run_pass("plugin", "-i", "lighter")
         d.run_pass("reg_clock_gating", "-map", mapping)
 
     openlane_synth(
         d,
         config["DESIGN_NAME"],
-        config["SYNTH_HIERARCHY_MODE"] == "flatten",
+        not config["SYNTH_NO_FLAT"],
         report_dir,
         booth=config["SYNTH_MUL_BOOTH"],
         abc_dff=config["SYNTH_ABC_DFF"],
@@ -255,19 +261,19 @@ def synthesize(
     d.tee("stat", *lib_arguments, o=os.path.join(report_dir, "pre_techmap.rpt"))
 
     if tristate_mapping := config["SYNTH_TRISTATE_MAP"]:
-        print(f"[INFO] Applying tri-state buffer mapping from '{tristate_mapping}'…")
+        ys.log(f"[INFO] Applying tri-state buffer mapping from '{tristate_mapping}'…")
         d.run_pass("techmap", "-map", tristate_mapping)
         d.run_pass("simplemap")
     if fa_mapping := config["SYNTH_FA_MAP"]:
         if adder_type == "FA":
-            print(f"[INFO] Applying full-adder mapping from '{fa_mapping}'…")
+            ys.log(f"[INFO] Applying full-adder mapping from '{fa_mapping}'…")
             d.run_pass("techmap", "-map", fa_mapping)
     if latch_mapping := config["SYNTH_LATCH_MAP"]:
-        print(f"[INFO] Applying latch mapping from '{latch_mapping}'…")
+        ys.log(f"[INFO] Applying latch mapping from '{latch_mapping}'…")
         d.run_pass("techmap", "-map", latch_mapping)
         d.run_pass("simplemap")
     if extra_mapping := config["SYNTH_EXTRA_MAPPING_FILE"]:
-        print(f"[INFO] Applying extra mappings from '{extra_mapping}'…")
+        ys.log(f"[INFO] Applying extra mappings from '{extra_mapping}'…")
         d.run_pass("techmap", "-map", extra_mapping)
 
     dfflibmap_args = []
@@ -285,7 +291,7 @@ def synthesize(
             step_dir,
             config["SYNTH_STRATEGY"],
         )
-        print(f"[INFO] Using generated ABC script '{abc_script}'…")
+        ys.log(f"[INFO] Using generated ABC script '{abc_script}'…")
         d.run_pass(
             "abc",
             "-script",
@@ -303,9 +309,9 @@ def synthesize(
         d.run_pass(
             "hilomap",
             "-hicell",
-            config["SYNTH_TIEHI_CELL"],
+            *config["SYNTH_TIEHI_CELL"].split("/"),
             "-locell",
-            config["SYNTH_TIELO_CELL"],
+            *config["SYNTH_TIELO_CELL"].split("/"),
         )
 
         if config["SYNTH_SPLITNETS"]:
@@ -343,7 +349,7 @@ def synthesize(
 
     run_strategy(d)
 
-    if config["SYNTH_HIERARCHY_MODE"] == "deferred_flatten":
+    if config["SYNTH_NO_FLAT"]:
         # Resynthesize, flattening
         d_flat = ys.Design()
         d_flat.add_blackbox_models(blackbox_models)
@@ -359,10 +365,4 @@ def synthesize(
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--output", required=True)
-    ap.add_argument("--config-in", required=True)
-    ap.add_argument("--extra-in", required=True)
-    ap.add_argument("--lighter-dff-map", required=False)
-
-    synthesize(**ap.parse_args().__dict__)
+    synthesize()

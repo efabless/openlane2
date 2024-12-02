@@ -437,6 +437,12 @@ class Step(ABC):
 
         If :meth:`start` is called again, the reference is destroyed.
 
+    :ivar config_path:
+        Path to the last step-specific `config.json` generated while running
+        this step object, if it exists.
+
+        If :meth:`start` is called again, the path will be replaced.
+
     :ivar toolbox:
         The last :class:`Toolbox` used while running this step object, if it
         exists.
@@ -461,6 +467,7 @@ class Step(ABC):
     state_out: Optional[State] = None
     start_time: Optional[float] = None
     end_time: Optional[float] = None
+    config_path: Optional[str] = None
 
     # These are mutable class variables. However, they will only be used
     # when steps are run outside of a Flow, pretty much.
@@ -1029,8 +1036,22 @@ class Step(ABC):
             )
         if hasattr(os, "chmod"):
             os.chmod(script_path, 0o755)
+        hyperlinks = (
+            os.getenv(
+                "_i_want_openlane_to_hyperlink_things_for_some_reason",
+                None,
+            )
+            == "1"
+        )
+        link_start = ""
+        link_end = ""
+        if hyperlinks:
+            link_start = f"[link=file://{os.path.abspath(target_dir)}]"
+            link_end = "[/link]"
 
-        info(f"Reproducible created at: '{os.path.relpath(target_dir)}'")
+        info(
+            f"Reproducible created at: {link_start}'{os.path.relpath(target_dir)}'{link_end}"
+        )
 
     @final
     def start(
@@ -1085,13 +1106,29 @@ class Step(ABC):
         if not logging.options.get_condensed_mode():
             rule(f"{self.long_name}")
 
-        verbose(f"Running '{self.id}'…")
+        hyperlinks = (
+            os.getenv(
+                "_i_want_openlane_to_hyperlink_things_for_some_reason",
+                None,
+            )
+            == "1"
+        )
+        link_start = ""
+        link_end = ""
+        if hyperlinks:
+            link_start = f"[link=file://{os.path.abspath(self.step_dir)}]"
+            link_end = "[/link]"
+
+        verbose(
+            f"Running '{self.id}' at {link_start}'{os.path.relpath(self.step_dir)}'{link_end}…"
+        )
 
         mkdirp(self.step_dir)
         with open(os.path.join(self.step_dir, "state_in.json"), "w") as f:
             f.write(state_in_result.dumps())
 
-        with open(os.path.join(self.step_dir, "config.json"), "w") as f:
+        self.config_path = os.path.join(self.step_dir, "config.json")
+        with open(self.config_path, "w") as f:
             config_mut = self.config.to_raw_dict()
             config_mut["meta"] = {
                 "openlane_version": __version__,
@@ -1265,8 +1302,21 @@ class Step(ABC):
         for cls in output_processing:
             output_processors.append(cls(self, report_dir, silent))
 
+        hyperlinks = (
+            os.getenv(
+                "_i_want_openlane_to_hyperlink_things_for_some_reason",
+                None,
+            )
+            == "1"
+        )
+        link_start = ""
+        link_end = ""
+        if hyperlinks:
+            link_start = f"[link=file://{os.path.abspath(log_path)}]"
+            link_end = "[/link]"
+
         verbose(
-            f"Logging subprocess to [repr.filename]'{os.path.relpath(log_path)}'[/repr.filename]…"
+            f"Logging subprocess to [repr.filename]{link_start}'{os.path.relpath(log_path)}'{link_end}[/repr.filename]…"
         )
         process = _popen_callable(
             cmd_str,
@@ -1319,7 +1369,9 @@ class Step(ABC):
                     self.err(
                         f"Last {len(line_buffer)} line(s):\n" + escape(concatenated)
                     )
-                self.err(f"Full log file: '{os.path.relpath(log_path)}'")
+                self.err(
+                    f"Full log file: {link_start}'{os.path.relpath(log_path)}'{link_end}"
+                )
             raise subprocess.CalledProcessError(returncode, process.args)
 
         return result

@@ -10,25 +10,6 @@ new: old: {
     doCheck = false;
   });
 
-  # Python packages
-  python3 = old.python3.override {
-    packageOverrides = pFinalAttrs: pPreviousAttrs: {
-      #
-    };
-  };
-
-  ## Alligned alloc not available on the default SDK for x86_64-darwin (10.12!!)
-  or-tools = (old.or-tools.override {
-    stdenv = if old.stdenv.isDarwin then (old.overrideSDK old.stdenv "11.0") else old.stdenv;
-  }).overrideAttrs(finalAttrs: previousAttrs: {
-    # Based on https://github.com/google/or-tools/commit/af44f98dbeb905656b5a9fc664b5fdcffcbe1f60
-    # Stops CMake going haywire on reconfigures
-    postPatch = previousAttrs.postPatch + ''
-      sed -Ei.bak 's/(NOT\s+\w+_FOUND\s+AND\s+)+//' cmake/ortoolsConfig.cmake.in
-      sed -Ei.bak 's/NOT absl_FOUND/NOT TARGET absl::base/' cmake/ortoolsConfig.cmake.in
-    '';
-  });
-
   # Platform-specific
   ## Undeclared Platform
   clp =
@@ -60,4 +41,13 @@ new: old: {
         stdenv = old.gccStdenv;
       }
     else (old.jshon);
+
+  ## Alligned alloc not available on the default SDK for x86_64-darwin (10.12!!)
+  or-tools =
+    if old.system == "x86_64-darwin"
+    then
+      (old.or-tools.override {
+        stdenv = old.overrideSDK old.stdenv "11.0";
+      })
+    else (old.or-tools);
 }

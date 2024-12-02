@@ -19,7 +19,7 @@ from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
-from typing import List, Literal, Optional, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 
 from .common_variables import io_layer_variables
@@ -28,6 +28,7 @@ from .openroad_alerts import (
     OpenROADOutputProcessor,
 )
 from .openroad import DetailedPlacement, GlobalRouting
+from .tclstep import TclStep
 from .step import (
     ViewsUpdate,
     MetricsUpdate,
@@ -37,7 +38,7 @@ from .step import (
     DefaultOutputProcessor,
 )
 from ..logging import info, verbose
-from ..config import Variable, Macro
+from ..config import Variable, Macro, Instance
 from ..state import State, DesignFormat
 from ..common import Path, get_script_dir
 
@@ -82,7 +83,9 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        env["PYTHONPATH"] = os.path.join(get_script_dir(), "odbpy")
+        env["PYTHONPATH"] = (
+            f'{os.path.join(get_script_dir(), "odbpy")}:{env.get("PYTHONPATH")}'
+        )
 
         subprocess_result = self.run_subprocess(
             command,
@@ -265,8 +268,12 @@ class ApplyDEFTemplate(OdbpyStep):
 @Step.factory.register()
 class SetPowerConnections(OdbpyStep):
     """
-    Uses JSON netlist and module information in Odb to add global power connections
-    for macros in a design.
+    Uses JSON netlist and module information in Odb to add global power
+    connections for macros at the top level of a design.
+
+    If the JSON netlist is hierarchical (e.g. by using a keep hierarchy
+    attribute) this Step emits a warning and does not attempt to connect any
+    macros instantiated within submodules.
     """
 
     id = "Odb.SetPowerConnections"
@@ -302,7 +309,7 @@ class WriteVerilogHeader(OdbpyStep):
     config_vars = OdbpyStep.config_vars + [
         Variable(
             "VERILOG_POWER_DEFINE",
-            str,
+            Optional[str],
             "Specifies the name of the define used to guard power and ground connections in the output Verilog header.",
             deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
             default="USE_POWER_PINS",
@@ -317,14 +324,20 @@ class WriteVerilogHeader(OdbpyStep):
 
     def get_command(self) -> List[str]:
         state_in = self.state_in.result()
-        return super().get_command() + [
+        command = super().get_command() + [
             "--output-vh",
             os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh"),
             "--input-json",
             str(state_in[DesignFormat.JSON_HEADER]),
-            "--power-define",
-            self.config["VERILOG_POWER_DEFINE"],
         ]
+        if self.config.get("VERILOG_POWER_DEFINE") is not None:
+            command += ["--power-define", self.config["VERILOG_POWER_DEFINE"]]
+        else:
+            self.warn(
+                "VERILOG_POWER_DEFINE undefined. Verilog Header will not include power ports."
+            )
+
+        return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
@@ -356,7 +369,10 @@ class ManualMacroPlacement(OdbpyStep):
     ]
 
     def get_script_path(self):
-        return os.path.join(get_script_dir(), "odbpy", "manual_macro_place.py")
+        return os.path.join(get_script_dir(), "odbpy", "placers.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["manual-macro-placement"]
 
     def get_command(self) -> List[str]:
         return super().get_command() + [
@@ -847,3 +863,93 @@ class HeuristicDiodeInsertion(CompositeStep):
         DetailedPlacement,
         GlobalRouting,
     ]
+
+
+@Step.factory.register()
+class CellFrequencyTables(OdbpyStep):
+    """
+    Creates a number of tables to show the cell frequencies by:
+
+    - Cells
+    - Buffer cells only
+    - Cell Function*
+    - Standard Cell Library*
+
+    * These tables only return meaningful info with PDKs distributed in the
+      Open_PDKs format, i.e., all cells are named ``{scl}__{cell_fn}_{size}``.
+    """
+
+    id = "Odb.CellFrequencyTables"
+    name = "Generate Cell Frequency Tables"
+
+    def get_script_path(self):
+        return os.path.join(
+            get_script_dir(),
+            "odbpy",
+            "cell_frequency.py",
+        )
+
+    def get_buffer_list_file(self):
+        return os.path.join(self.step_dir, "buffer_list.txt")
+
+    def get_buffer_list_script(self):
+        return os.path.join(get_script_dir(), "openroad", "buffer_list.tcl")
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        kwargs, env = self.extract_env(kwargs)
+
+        env_copy = env.copy()
+        lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
+        env_copy["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
+        super().run_subprocess(
+            ["openroad", "-no_splash", "-exit", self.get_buffer_list_script()],
+            env=env_copy,
+            log_to=self.get_buffer_list_file(),
+        )
+        return super().run(state_in, env=env, **kwargs)
+
+    def get_command(self) -> List[str]:
+        command = super().get_command()
+        command.append("--buffer-list")
+        command.append(self.get_buffer_list_file())
+        command.append("--out-dir")
+        command.append(self.step_dir)
+        return command
+
+
+@Step.factory.register()
+class ManualGlobalPlacement(OdbpyStep):
+    """
+    This is an step to override the placement of one or more instances at
+    user-specified locations.
+
+    Alternatively, if this is a custom design with a few cells, this can be used
+    in place of the global placement entirely.
+    """
+
+    id = "Odb.ManualGlobalPlacement"
+    name = "Manual Global Placement"
+
+    config_vars = OdbpyStep.config_vars + [
+        Variable(
+            "MANUAL_GLOBAL_PLACEMENTS",
+            Optional[Dict[str, Instance]],
+            description="A dictionary of instances to their global (non-legalized and unfixed) placement location.",
+        )
+    ]
+
+    def get_script_path(self) -> str:
+        return os.path.join(get_script_dir(), "odbpy", "placers.py")
+
+    def get_subcommand(self) -> List[str]:
+        return ["manual-global-placement"]
+
+    def get_command(self) -> List[str]:
+        assert self.config_path is not None, "get_command called before start()"
+        return super().get_command() + ["--step-config", self.config_path]
+
+    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["MANUAL_GLOBAL_PLACEMENTS"] is None:
+            info("'MANUAL_GLOBAL_PLACEMENTS' not set, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)

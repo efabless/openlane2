@@ -14,6 +14,7 @@
 import os
 import json
 import yaml
+from yamlcore import CCoreLoader
 import dataclasses
 from glob import glob
 from decimal import Decimal
@@ -34,7 +35,7 @@ from typing import (
     Set,
 )
 
-from .variable import Variable
+from .variable import Variable, MissingRequiredVariable
 from .removals import removed_variables
 from .flow import pdk_variables, scl_variables, flow_common_variables
 from .pdk_compat import migrate_old_config
@@ -53,10 +54,36 @@ AnyConfig = Union[AnyPath, Mapping[str, Any]]
 AnyConfigs = Union[AnyConfig, Sequence[AnyConfig]]
 
 
+class _OpenLaneYAMLLoader(CCoreLoader):
+    def construct_yaml_float(self, node: yaml.ScalarNode) -> Decimal:  # type: ignore
+        value = str(self.construct_scalar(node))
+        value = value.replace("_", "").lower()
+        sign = +1
+        if value[0] == "-":
+            sign = -1
+        if value[0] in "+-":
+            value = value[1:]
+        if value == ".inf":
+            return sign * Decimal("Infinity")
+        elif value == ".nan":
+            return Decimal("nan")
+        else:
+            return sign * Decimal(value)
+
+    def __init__(self, stream) -> None:
+        super().__init__(stream)
+        self.add_constructor(
+            "tag:yaml.org,2002:float",
+            constructor=_OpenLaneYAMLLoader.construct_yaml_float,
+        )
+        # print(list(self.yaml_implicit_resolvers.keys()))
+        # del self.yaml_implicit_resolvers["tag:yaml.org,2002:float"]
+
+
 class UnknownExtensionError(ValueError):
     """
     When a passed configuration file has an unrecognized extension, i.e.,
-    not .json or .tcl.
+    not .json, .yml/.yaml or .tcl.
     """
 
     def __init__(self, config: AnyPath) -> None:
@@ -79,12 +106,14 @@ class PassedDirectoryError(ValueError):
         )
 
 
-def _validate_config_file(config: AnyPath) -> Literal["json", "tcl"]:
+def _validate_config_file(config: AnyPath) -> Literal["json", "tcl", "yaml"]:
     config = str(config)
     if config.endswith(".tcl"):
         return "tcl"
     elif config.endswith(".json"):
         return "json"
+    elif config.endswith(".yml") or config.endswith(".yaml"):
+        return "yaml"
     elif os.path.isdir(config):
         raise PassedDirectoryError(config)
     else:
@@ -276,7 +305,6 @@ class Config(GenericImmutableDict[str, Any]):
 
         processed, design_warnings, design_errors = Config.__process_variable_list(
             mutable,
-            [],
             config_vars,
             removed_variables,
             on_unknown_key=None,
@@ -312,15 +340,22 @@ class Config(GenericImmutableDict[str, Any]):
         :param config_in: A configuration object or file.
         :returns: Either a Meta object, or if the file is invalid, None.
         """
-        default_meta_version = 2 if isinstance(config_in, Mapping) else 1
+        default_meta_version = 2
 
         if is_string(config_in):
             config_in = str(config_in)
             validated_type = _validate_config_file(config_in)
             if validated_type == "tcl":
-                return Meta(version=1)
+                default_meta_version = 1
+                return Meta(version=default_meta_version)
             elif validated_type == "json":
+                default_meta_version = 1
                 config_in = json.load(open(config_in, encoding="utf8"))
+            elif validated_type == "yaml":
+                config_in = yaml.load(
+                    open(config_in, encoding="utf8"),
+                    Loader=_OpenLaneYAMLLoader,
+                )
 
         assert not isinstance(config_in, str)
         assert not isinstance(config_in, os.PathLike)
@@ -384,7 +419,6 @@ class Config(GenericImmutableDict[str, Any]):
 
         processed, design_warnings, design_errors = Config.__process_variable_list(
             raw,
-            [],
             flow_common_variables,
             removed_variables,
             on_unknown_key="error",
@@ -494,13 +528,12 @@ class Config(GenericImmutableDict[str, Any]):
                     identifier = os.path.relpath(str(config_validated))
                 raise InvalidConfig(identifier, [], [f"'meta' object is invalid: {e}"])
 
-            assert meta is not None
-
             mapping = None
             if isinstance(config_validated, Mapping):
                 mapping = config_validated
             elif isinstance(config_validated, str):
-                if config_validated.endswith(".tcl"):
+                validated_type = _validate_config_file(config_validated)
+                if validated_type == "tcl":
                     mapping = Self.__mapping_from_tcl(
                         config_validated,
                         design_dir,
@@ -508,12 +541,19 @@ class Config(GenericImmutableDict[str, Any]):
                         pdk=pdk,
                         scl=scl,
                     )
-                else:
+                elif validated_type == "json":
                     mapping = json.load(
-                        open(config_validated, encoding="utf8"), parse_float=Decimal
+                        open(config_validated, encoding="utf8"),
+                        parse_float=Decimal,
+                    )
+                elif validated_type == "yaml":
+                    mapping = yaml.load(
+                        open(config_validated, encoding="utf8"),
+                        Loader=_OpenLaneYAMLLoader,
                     )
 
             assert mapping is not None, "Invalid validated config"
+
             mutable = config_obj.copy_mut()
             mutable.update_reorder(mapping)
             config_obj = Self.__load_dict(
@@ -523,10 +563,33 @@ class Config(GenericImmutableDict[str, Any]):
                 pdk_root=pdk_root,
                 pdk=pdk,
                 scl=scl,
-                config_override_strings=(config_override_strings or []),
                 meta=meta,
+                permissive_typing=meta.version < 2,
+                missing_ok=True,
                 _load_pdk_configs=_load_pdk_configs,
             )
+
+            _load_pdk_configs = False  # one time's enough
+
+        # Final signoff + override strings
+        config_override_strings = config_override_strings or []
+        mutable = config_obj.copy_mut()
+        for string in config_override_strings:
+            key, value = string.split("=", 1)
+            mutable[key] = value
+
+        config_obj = Self.__load_dict(
+            mutable,
+            design_dir,
+            flow_config_vars=flow_config_vars,
+            pdk_root=pdk_root,
+            pdk=pdk,
+            scl=scl,
+            meta=config_obj.meta,  # carry forward
+            missing_ok=False,  # must all exist
+            permissive_typing=True,  # so we can parse things from the commandline
+            _load_pdk_configs=False,  # one time's enough
+        )
 
         return (config_obj, design_dir)
 
@@ -565,11 +628,12 @@ class Config(GenericImmutableDict[str, Any]):
         flow_config_vars: Sequence[Variable],
         *,
         meta: Meta,
-        config_override_strings: Sequence[str],  # Unused, kept for API consistency
         pdk_root: Optional[str] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
+        permissive_typing: bool = False,
+        missing_ok: bool = False,
         _load_pdk_configs: bool = True,
     ) -> "Config":
         raw = dict(mapping_in)
@@ -584,12 +648,6 @@ class Config(GenericImmutableDict[str, Any]):
                 flow_pdk_vars.append(variable)
             else:
                 flow_option_vars.append(variable)
-
-        override_keys = set()
-        for string in config_override_strings:
-            key, value = string.split("=", 1)
-            raw[key] = value
-            override_keys.add(key)
 
         mutable = GenericDict(
             preprocess_dict(
@@ -640,24 +698,13 @@ class Config(GenericImmutableDict[str, Any]):
             )
         )
 
-        permissive_variables = list(flow_config_vars)
-        strict_variables = []
-        on_unknown_key: Union[Literal["error", "warn"], None] = "warn"
-        if meta.version >= 2:
-            permissive_variables = []
-            for variable in flow_config_vars:
-                if variable.name in override_keys:
-                    permissive_variables.append(variable)
-                    continue
-                strict_variables.append(variable)
-            on_unknown_key = "error"
-
         processed, design_warnings, design_errors = Config.__process_variable_list(
             mutable,
-            permissive_variables,
-            strict_variables,
+            list(flow_config_vars),
             removed_variables,
-            on_unknown_key=on_unknown_key,
+            missing_ok=missing_ok,
+            permissive_typing=permissive_typing,
+            on_unknown_key="warn" if permissive_typing else "error",
         )
 
         if len(design_errors) != 0:
@@ -817,8 +864,8 @@ class Config(GenericImmutableDict[str, Any]):
         processed, pdk_warnings, pdk_errors = Config.__process_variable_list(
             raw,
             flow_pdk_vars,
-            [],
             on_unknown_key=None,
+            permissive_typing=True,
         )
 
         if len(pdk_errors) != 0:
@@ -840,10 +887,11 @@ class Config(GenericImmutableDict[str, Any]):
     def __process_variable_list(
         mutable: GenericDict[str, Any],
         variables: Sequence["Variable"],
-        strict_variables: Sequence["Variable"],
         removed: Optional[Mapping[str, str]] = None,
         *,
         on_unknown_key: Union[Literal["error", "warn"], None] = "warn",
+        permissive_typing: bool = False,
+        missing_ok: bool = False,
     ) -> Tuple[GenericDict[str, Any], List[str], List[str]]:
         """
         Verifies a configuration object against a list of variables, returning
@@ -900,27 +948,14 @@ class Config(GenericImmutableDict[str, Any]):
                     mutable_config=mutable,
                     warning_list_ref=warnings,
                     values_so_far=final,
-                    permissive_typing=True,
+                    permissive_typing=permissive_typing,
                 )
                 if key is not None:
                     del mutable[key]
                 final[variable.name] = value_processed
-            except ValueError as e:
-                errors.append(str(e))
-            if variable.name in mutable:
-                del mutable[variable.name]
-
-        for variable in strict_variables:
-            try:
-                key, value_processed = variable.compile(
-                    mutable_config=mutable,
-                    warning_list_ref=warnings,
-                    values_so_far=final,
-                    permissive_typing=False,
-                )
-                if key is not None:
-                    del mutable[key]
-                final[variable.name] = value_processed
+            except MissingRequiredVariable as e:
+                if not missing_ok:
+                    errors.append(str(e))
             except ValueError as e:
                 errors.append(str(e))
             if variable.name in mutable:

@@ -1,4 +1,4 @@
-# Copyright 2022 Efabless Corporation
+# Copyright 2022-2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,17 @@ proc env_var_used {file var} {
     return [string_in_file $file "\$::env($var)"]
 }
 
+proc set_global_vars {} {
+    if { [namespace exists ::ord] } {
+        set ::db [::ord::get_db]
+        set ::chip [$::db getChip]
+        set ::tech [$::db getTech]
+        set ::block [$::chip getBlock]
+        set ::dbu [$::tech getDbUnitsPerMicron]
+        set ::libs [$::db getLibs]
+    }
+}
+
 proc read_current_sdc {} {
     if { ![info exists ::env(_SDC_IN)]} {
         puts "\[INFO\] _SDC_IN not found. Not reading an SDC file."
@@ -56,6 +67,16 @@ proc read_current_sdc {} {
     if {[catch {read_sdc $::env(_SDC_IN)} errmsg]} {
         puts stderr $errmsg
         exit 1
+    }
+
+    if { ![string_in_file $::env(_SDC_IN) "set_propagated_clock"] && ![string_in_file $::env(_SDC_IN) "unset_propagated_clock"] } {
+        if { [info exists ::env(OPENLANE_SDC_IDEAL_CLOCKS)] && $::env(OPENLANE_SDC_IDEAL_CLOCKS) } {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- unpropagating all clocks."
+            unset_propagated_clock [all_clocks]
+        } else {
+            puts "\[INFO\] No information on clock propagation in input SDC file-- propagating all clocks."
+            set_propagated_clock [all_clocks]
+        }
     }
 
     # Restore Environment
@@ -119,15 +140,7 @@ proc read_current_netlist {args} {
 
     puts "Linking design '$::env(DESIGN_NAME)' from netlist…"
     link_design $::env(DESIGN_NAME)
-    if { [namespace exists ::ord] } {
-        set ::db [::ord::get_db]
-        set ::chip [$::db getChip]
-        set ::tech [$::db getTech]
-        set ::block [$::chip getBlock]
-        set ::dbu [$::tech getDbUnitsPerMicron]
-        set ::libs [$::db getLibs]
-    }
-
+    set_global_vars
     read_current_sdc
 }
 
@@ -295,12 +308,7 @@ proc read_current_odb {args} {
         exit 1
     }
 
-    set ::db [::ord::get_db]
-    set ::chip [$::db getChip]
-    set ::tech [$::db getTech]
-    set ::block [$::chip getBlock]
-    set ::dbu [$::tech getDbUnitsPerMicron]
-    set ::libs [$::db getLibs]
+    set_global_vars
 
     # Read supporting views (if applicable)
     read_pnr_libs
@@ -320,6 +328,10 @@ proc write_views {args} {
     source $::env(SCRIPTS_DIR)/openroad/common/set_power_nets.tcl
     puts "Setting global connections for newly added cells…"
     set_global_connections
+
+    puts "Updating metrics…"
+    report_design_area_metrics
+    report_cell_usage
 
     if { [info exists ::env(SAVE_ODB)] } {
         puts "Writing OpenROAD database to '$::env(SAVE_ODB)'…"
@@ -356,7 +368,11 @@ proc write_views {args} {
 
     if { [info exists ::env(SAVE_OPENROAD_LEF)] } {
         puts "Writing LEF to '$::env(SAVE_OPENROAD_LEF)'…"
-        write_abstract_lef $::env(SAVE_OPENROAD_LEF)
+        set arg_list [list]
+        if {$::env(OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS)} {
+            lappend arg_list -bloat_occupied_layers
+        }
+        write_abstract_lef {*}$arg_list $::env(SAVE_OPENROAD_LEF)
     }
 
     if { [info exists ::env(SAVE_DEF)] } {

@@ -42,7 +42,7 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_POWER_DEFINE",
-        str,
+        Optional[str],
         "Specifies the name of the define used to guard power and ground connections in the input RTL.",
         deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
         default="USE_POWER_PINS",
@@ -142,7 +142,7 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_POWER_DEFINE",
-        str,
+        Optional[str],
         "Specifies the name of the define used to guard power and ground connections in the input RTL.",
         deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
         default="USE_POWER_PINS",
@@ -253,17 +253,12 @@ class PyosysStep(Step):
         elif self.config["YOSYS_LOG_LEVEL"] == "ERROR":
             cmd += ["-qq"]
         cmd += ["--"]
-        cmd += ["--config", os.path.join(self.step_dir, "config.json")]
+        cmd += ["--config-in", os.path.join(self.step_dir, "config.json")]
         return cmd
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        kwargs, env = self.extract_env(kwargs)
-
-        env["PYTHONPATH"] = os.path.join(get_script_dir(), "pyosys")
-
         cmd = self.get_command(state_in)
-
-        subprocess_result = super().run_subprocess(cmd, env=env, **kwargs)
+        subprocess_result = super().run_subprocess(cmd, **kwargs)
         return {}, subprocess_result["generated_metrics"]
 
 
@@ -455,16 +450,10 @@ class SynthesisCommon(VerilogStep):
             default=False,
         ),
         Variable(
-            "SYNTH_HIERARCHY_MODE",
-            Literal["flatten", "deferred_flatten", "keep"],
-            "Affects how hierarchy is maintained throughout and after synthesis. 'flatten' flattens it during and after synthesis. 'deferred_flatten' flattens it after synthesis. 'keep' never flattens it.",
-            default="flatten",
-            deprecated_names=[
-                (
-                    "SYNTH_NO_FLAT",
-                    lambda x: "deferred_flatten" if x else "flatten",
-                )
-            ],
+            "SYNTH_NO_FLAT",
+            bool,
+            "A flag that disables flattening the hierarchy during synthesis, only flattening it after synthesis, mapping and optimizations.",
+            default=False,
         ),
         Variable(
             "SYNTH_SHARE_RESOURCES",

@@ -21,8 +21,10 @@ except ImportError:
         from pyosys import libyosys as ys
     except ImportError:
         print(
-            "Could not find pyosys in 'PYTHONPATH'-- make sure Yosys is compiled with ENABLE_PYTHON set to 1."
+            "Could not find pyosys in 'PYTHONPATH'-- make sure Yosys is compiled with ENABLE_PYTHON set to 1.",
+            file=sys.stderr,
         )
+        exit(-1)
 
 
 def _Design_run_pass(self, *command):
@@ -94,7 +96,13 @@ def _Design_read_verilog_files(
     else:
         for file in files:
             self.run_pass(
-                "read_verilog", "-noautowire", "-sv", *include_args, *define_args, file
+                "read_verilog",
+                "-defer",
+                "-noautowire",
+                "-sv",
+                *include_args,
+                *define_args,
+                file,
             )
         for param, value in chparams.items():
             self.run_pass("chparam", "-set", param, value, top)

@@ -172,9 +172,11 @@ class SynthesisExploration(Flow):
 
         console.print(table)
         assert self.run_dir is not None
-        with open(os.path.join(self.run_dir, "summary.rpt"), "w") as f:
-            table.width = 160
-            rich.print(table, file=f)
+        file_console = rich.console.Console(
+            file=open(os.path.join(self.run_dir, "summary.rpt"), "w", encoding="utf8"),
+            width=160,
+        )
+        file_console.print(table)
 
         success("Flow complete.")
         return (initial_state, step_list)

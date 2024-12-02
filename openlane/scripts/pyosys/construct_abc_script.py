@@ -41,11 +41,11 @@ class ABCScriptCreator:
         self.resyn2 = f"{self.b}; {self.rw}; {self.rf}; {self.b}; {self.rw}; {self.rwz}; {self.b}; {self.rfz}; {self.rwz}; {self.b}"
         self.share = f"strash; multi -m; {self.resyn2}"
         self.resyn2a = f"{self.b};{self.rw};{self.b};{self.rw};{self.rwz};{self.b};{self.rwz};{self.b}"
-        self.resyn3 = "balance;resub;resub -K 6;balance;resub -z;resub -z -K 6;balance;resub -z -K 5;balance"
+        self.resyn3 = f"{self.b}; resub; resub -K 6; {self.b};resub -z;resub -z -K 6; {self.b};resub -z -K 5; {self.b}"
         self.resyn2rs = f"{self.b};{self.rs_K} 6;{self.rw};{self.rs_K} 6 -N 2;{self.rf};{self.rs_K} 8;{self.rw};{self.rs_K} 10;{self.rwz};{self.rs_K} 10 -N 2;{self.b} {self.rs_K} 12;{self.rfz};{self.rs_K} 12 -N 2;{self.rwz};{self.b}"
 
         self.choice = f"fraig_store; {self.resyn2}; fraig_store; {self.resyn2}; fraig_store; fraig_restore"
-        self.choice2 = f"fraig_store; balance; fraig_store; {self.resyn2}; fraig_store; {self.resyn2}; fraig_store; {self.resyn2}; fraig_store; fraig_restore"
+        self.choice2 = f"fraig_store; {self.b}; fraig_store; {self.resyn2}; fraig_store; {self.resyn2}; fraig_store; {self.resyn2}; fraig_store; fraig_restore"
 
         self.area_mfs3 = ""
         self.delay_mfs3 = ""
@@ -106,7 +106,7 @@ class ABCScriptCreator:
             print("&dch", file=f)
             print("&nf", file=f)
 
-            for _ in range(7):
+            for _ in range(5):
                 repeated_sequence(f)
 
             print("&put", file=f)
@@ -132,9 +132,9 @@ class ABCScriptCreator:
                 print(self.retime_dly, file=f)
             print("scleanup", file=f)
 
-            if strategy == "AREA 4":
+            if strategy in ["AREA 4", "DELAY 2"]:
                 print(self.choice, file=f)
-            else:
+            elif strategy != "DELAY 0":
                 print(self.choice2, file=f)
             if strategy.startswith("AREA ") or strategy == "DELAY 3":
                 print(self.map_new_area, file=f)
@@ -142,7 +142,7 @@ class ABCScriptCreator:
                 print(self.map_old_dly, file=f)
 
             # Area Recovery
-            if strategy in ["AREA 0", "AREA 1"]:
+            if strategy in ["AREA 1", "AREA 2"]:
                 print(self.choice2, file=f)
                 print(self.map_new_area, file=f)
             elif strategy in ["DELAY 1"]:
