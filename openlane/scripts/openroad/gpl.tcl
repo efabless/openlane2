@@ -26,9 +26,9 @@ foreach inst $::insts {
 }
 
 if { !$placement_needed } {
-	puts stderr "\[INFO\] All instances are FIXED/FIRM."
-	puts stderr "\[INFO\] No need to perform global placement."
-	puts stderr "\[INFO\] Skipping…"
+	puts "\[INFO\] All instances are FIXED/FIRM."
+	puts "\[INFO\] No need to perform global placement."
+	puts "\[INFO\] Skipping…"
 	write_views
 	exit_unless_gui
 }

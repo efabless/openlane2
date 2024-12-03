@@ -1107,7 +1107,7 @@ class TapEndcapInsertion(OpenROADStep):
         Variable(
             "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros.",
+            "Specify the vertical halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
@@ -1919,7 +1919,7 @@ class CutRows(OpenROADStep):
         Variable(
             "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros.",
+            "Specify the vertical halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
