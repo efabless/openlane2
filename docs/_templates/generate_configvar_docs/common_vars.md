@@ -12,8 +12,8 @@ can freely override these values.
 optional and behave accordingly.
 ```
 
-| Variable Name | Type | Description | Default | Units |
-| - | - | - | - | - |
+| Variable Name | Type | Description | Default | Units | Deprecated Names |
+| - | - | - | - | - | - |
 %for var in option_variables:
-| [`${var.name}`]{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} |
+| [`${var.name}`]{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)} | ${var.desc_repr_md()} | `${var.default}` | ${var.units or ""} | ${var.get_deprecated_names_md()|join("<br>")} |
 %endfor
