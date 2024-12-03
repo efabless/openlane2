@@ -313,7 +313,7 @@ class State(GenericImmutableDict[str, StateElement]):
 
             key_content = id
             if format := DesignFormat.factory.get(id):
-                key_content = format.value.id
+                key_content = format.id
 
             value_content = str(value)
             if isinstance(value, Mapping):

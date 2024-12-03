@@ -661,7 +661,7 @@ class Step(ABC):
             for input, output in zip_longest(Self.inputs, Self.outputs):
                 input_str = ""
                 if input is not None:
-                    input_str = f"{input.value.name} (.{input.value.extension})"
+                    input_str = f"{input.full_name} (.{input.extension})"
 
                 output_str = ""
                 if output is not None:
@@ -669,7 +669,7 @@ class Step(ABC):
                         raise StepException(
                             f"Output '{output}' is not a valid DesignFormat enum object."
                         )
-                    output_str = f"{output.value.name} (.{output.value.extension})"
+                    output_str = f"{output.full_name} (.{output.extension})"
                 result += f"| {input_str} | {output_str} |\n"
 
         if len(Self.config_vars):
@@ -735,7 +735,7 @@ class Step(ABC):
             if state_in.get(id) != value:
                 df = DesignFormat.factory.get(id)
                 assert df is not None
-                views_updated.append(df.value.name)
+                views_updated.append(df.full_name)
 
         if len(views_updated):
             result += "#### Views updated:\n"

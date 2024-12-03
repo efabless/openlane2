@@ -210,7 +210,7 @@ class TclStep(Step):
 
         overrides: ViewsUpdate = {}
         for output in self.outputs:
-            if output.value.multiple:
+            if output.multiple:
                 # Too step-specific.
                 continue
             path = Path(env[f"SAVE_{output.name}"])
