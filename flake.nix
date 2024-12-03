@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {
+  description = "open-source infrastructure for implementing chip design flows";
+  
   nixConfig = {
     extra-substituters = [
       "https://openlane.cachix.org"
@@ -22,9 +24,7 @@
   };
 
   inputs = {
-    # TEMPORARY: Until https://github.com/YosysHQ/yosys/pull/4553 is merged
-    ## DO NOT MERGE TO main WHILE WE'RE STILL ON A BRANCH OF NIX-EDA
-    nix-eda.url = github:efabless/nix-eda/yosys_python_flag;
+    nix-eda.url = github:efabless/nix-eda;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
@@ -45,113 +45,156 @@
     volare,
     devshell,
     ...
-  }: {
+  }: let
+    nixpkgs = nix-eda.inputs.nixpkgs;
+    lib = nixpkgs.lib;
+  in {
     # Common
-    input-overlays = [
-      (import ./nix/overlay.nix)
-      (devshell.overlays.default)
-    ];
+    overlays = {
+      default = lib.composeManyExtensions [
+        (import ./nix/overlay.nix)
+        (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
+        (pkgs': pkgs: {
+          yosys-sby = (pkgs.yosys-sby.override { sha256 = "sha256-Il2pXw2doaoZrVme2p0dSUUa8dCQtJJrmYitn1MkTD4="; });
+        })
+        (
+          pkgs': pkgs: let
+            callPackage = lib.callPackageWith pkgs';
+          in {
+            colab-env = callPackage ./nix/colab-env.nix {};
+            opensta = callPackage ./nix/opensta.nix {};
+            openroad-abc = callPackage ./nix/openroad-abc.nix {};
+            openroad = callPackage ./nix/openroad.nix {};
+          }
+        )
+        (
+          nix-eda.composePythonOverlay (pkgs': pkgs: pypkgs': pypkgs: let
+            callPythonPackage = lib.callPackageWith (pkgs' // pkgs'.python3.pkgs);
+          in {
+            mdformat = pypkgs.mdformat.overridePythonAttrs (old: {
+              patches = [
+                ./nix/patches/mdformat/donns_tweaks.patch
+              ];
+              doCheck = false;
+            });
+            sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
+            sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
+            yamlcore = callPythonPackage ./nix/yamlcore.nix {};
+
+            # ---
+            openlane = callPythonPackage ./default.nix {};
+          })
+        )
+        (pkgs': pkgs: let
+          callPackage = lib.callPackageWith pkgs';
+        in
+          {}
+          // lib.optionalAttrs pkgs.stdenv.isLinux {
+            openlane-docker = callPackage ./nix/docker.nix {
+              createDockerImage = nix-eda.createDockerImage;
+              openlane = pkgs'.python3.pkgs.openlane;
+            };
+          })
+      ];
+    };
 
     # Helper functions
     createOpenLaneShell = import ./nix/create-shell.nix;
 
-    # Outputs
-    packages =
-      nix-eda.forAllSystems {
-        current = self;
-        withInputs = [nix-eda ioplace-parser libparse volare];
-      } (
-        util: let
-          self = with util;
-            {
-              mdformat = pkgs.python3.pkgs.mdformat.overridePythonAttrs (old: {
-                patches = [
-                  ./nix/patches/mdformat/donns_tweaks.patch
-                ];
-                doCheck = false;
-              });
-              colab-env = callPackage ./nix/colab-env.nix {};
-              opensta = callPackage ./nix/opensta.nix {};
-              openroad-abc = callPackage ./nix/openroad-abc.nix {};
-              openroad = callPythonPackage ./nix/openroad.nix {
-                inherit (nix-eda) buildPythonEnvForInterpreter;
-              };
-              sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
-              sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
-              yamlcore = callPythonPackage ./nix/yamlcore.nix {};
-
-              # ---
-              openlane = callPythonPackage ./default.nix {};
-              default = self.openlane;
-            }
-            // (pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {openlane-docker = callPackage ./nix/docker.nix {createDockerImage = nix-eda.createDockerImage;};});
-        in
-          self
-      );
-
-    devShells = nix-eda.forAllSystems {withInputs = [self devshell nix-eda ioplace-parser libparse volare];} (
-      util:
-        with util; rec {
-          default =
-            callPackage (self.createOpenLaneShell {
-              }) {};
-          notebook = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jupyter
-            ];
-          }) {};
-          dev = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jdupes
-              alejandra
-            ];
-            extra-python-packages = with pkgs.python3.pkgs; [
-              pyfakefs
-              pytest
-              pytest-xdist
-              pytest-cov
-              pillow
-              mdformat
-              black
-              ipython
-              tokenize-rt
-              flake8
-              mypy
-              types-deprecated
-              types-pyyaml
-              types-psutil
-              lxml-stubs
-            ];
-          }) {};
-          docs = callPackage (self.createOpenLaneShell {
-            extra-packages = with pkgs; [
-              jdupes
-              alejandra
-              imagemagick
-              nodejs.pkgs.nodemon
-            ];
-            extra-python-packages = with pkgs.python3.pkgs; [
-              pyfakefs
-              pytest
-              pytest-xdist
-              pillow
-              mdformat
-              furo
-              docutils
-              sphinx
-              sphinx-autobuild
-              sphinx-autodoc-typehints
-              sphinx-design
-              myst-parser
-              docstring-parser
-              sphinx-copybutton
-              sphinxcontrib-spelling
-              sphinxcontrib-bibtex
-              sphinx-tippy
-              sphinx-subfigure
-            ];
-          }) {};
+    # Packages
+    legacyPackages = nix-eda.forAllSystems (
+      system:
+        import nix-eda.inputs.nixpkgs {
+          inherit system;
+          overlays = [devshell.overlays.default nix-eda.overlays.default self.overlays.default];
         }
+    );
+
+    packages = nix-eda.forAllSystems (
+      system: let
+        pkgs = (self.legacyPackages."${system}");
+        in {
+          inherit (pkgs) colab-env opensta openroad-abc openroad;
+          inherit (pkgs.python3.pkgs) openlane;
+          default = pkgs.python3.pkgs.openlane;
+        }
+        // lib.optionalAttrs pkgs.stdenv.isLinux {
+          inherit (pkgs) openlane-docker;
+        }
+    );
+
+    # devshells
+
+    devShells = nix-eda.forAllSystems (
+      system: let
+        pkgs = self.legacyPackages."${system}";
+        callPackage = lib.callPackageWith pkgs;
+      in {
+        # These devShells are rather unorthodox for Nix devShells in that they
+        # include the package itself. For a proper devShell, try .#dev.
+        default =
+          callPackage (self.createOpenLaneShell {
+            }) {};
+        notebook = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jupyter
+          ];
+        }) {};
+        # Normal devShells
+        dev = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pytest-cov
+            pillow
+            mdformat
+            black
+            ipython
+            tokenize-rt
+            flake8
+            mypy
+            types-deprecated
+            types-pyyaml
+            types-psutil
+            lxml-stubs
+          ];
+          include-openlane = false;
+        }) {};
+        docs = callPackage (self.createOpenLaneShell {
+          extra-packages = with pkgs; [
+            jdupes
+            alejandra
+            imagemagick
+            nodejs.pkgs.nodemon
+          ];
+          extra-python-packages = with pkgs.python3.pkgs; [
+            pyfakefs
+            pytest
+            pytest-xdist
+            pillow
+            mdformat
+            furo
+            docutils
+            sphinx
+            sphinx-autobuild
+            sphinx-autodoc-typehints
+            sphinx-design
+            myst-parser
+            docstring-parser
+            sphinx-copybutton
+            sphinxcontrib-spelling
+            sphinxcontrib-bibtex
+            sphinx-tippy
+            sphinx-subfigure
+          ];
+          include-openlane = false;
+        }) {};
+      }
     );
   };
 }

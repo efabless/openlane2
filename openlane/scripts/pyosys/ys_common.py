@@ -21,8 +21,10 @@ except ImportError:
         from pyosys import libyosys as ys
     except ImportError:
         print(
-            "Could not find pyosys in 'PYTHONPATH'-- make sure Yosys is compiled with ENABLE_PYTHON set to 1."
+            "Could not find pyosys in 'PYTHONPATH'-- make sure Yosys is compiled with ENABLE_PYTHON set to 1.",
+            file=sys.stderr,
         )
+        exit(-1)
 
 
 def _Design_run_pass(self, *command):

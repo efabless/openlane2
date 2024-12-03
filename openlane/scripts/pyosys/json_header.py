@@ -12,10 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
-import argparse
+
+import click
+
 from ys_common import ys
 
 
+@click.command()
+@click.option("--output", type=click.Path(exists=False, dir_okay=False), required=True)
+@click.option(
+    "--config-in", type=click.Path(exists=True, dir_okay=False), required=True
+)
+@click.option("--extra-in", type=click.Path(exists=True, dir_okay=False), required=True)
 def json_header(
     output,
     config_in,
@@ -27,13 +35,20 @@ def json_header(
     blackbox_models = extra["blackbox_models"]
 
     includes = config["VERILOG_INCLUDE_DIRS"] or []
-    defines = (config["VERILOG_DEFINES"] or []) + [
-        f"PDK_{config['PDK']}",
-        f"SCL_{config['STD_CELL_LIBRARY']}",
-        "__openlane__",
-        "__pnr__",
-        config["VERILOG_POWER_DEFINE"],
-    ]
+    defines = (
+        (config["VERILOG_DEFINES"] or [])
+        + [
+            f"PDK_{config['PDK']}",
+            f"SCL_{config['STD_CELL_LIBRARY']}",
+            "__openlane__",
+            "__pnr__",
+        ]
+        + (
+            []
+            if config.get("VERILOG_POWER_DEFINE") is None
+            else [config.get("VERILOG_POWER_DEFINE")]
+        )
+    )
 
     d = ys.Design()
     d.add_blackbox_models(
@@ -66,9 +81,4 @@ def json_header(
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--output", required=True)
-    ap.add_argument("--config-in", required=True)
-    ap.add_argument("--extra-in", required=True)
-
-    json_header(**ap.parse_args().__dict__)
+    json_header()
