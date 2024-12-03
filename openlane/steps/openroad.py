@@ -1620,6 +1620,40 @@ class DetailedRouting(OpenROADStep):
         return super().run(state_in, env=env, **kwargs)
 
 
+class _DiodeInsertionPostDRT(OpenROADStep):
+    id = "DiodeInsertion"
+
+    config_vars = (
+        OpenROADStep.config_vars
+        + dpl_variables
+        + grt_variables
+        + [
+            Variable(
+                "DRT_ANTENNA_MARGIN",
+                int,
+                "The margin to over fix antenna violations.",
+                default=10,
+                units="%",
+            ),
+        ]
+    )
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "antenna_repair_post_drt.tcl")
+
+
+@Step.factory.register()
+class RepairAntennasPostDRT(CompositeStep):
+    """
+    Similar to `OpenROAD.RepairAntennas`, but runs after detailed routing.
+    """
+
+    id = "OpenROAD.RepairAntennasPostDRT"
+    name = "Antenna Repair Post Detailed Routing"
+
+    Steps = [_DiodeInsertionPostDRT, DetailedRouting, CheckAntennas]
+
+
 @Step.factory.register()
 class LayoutSTA(OpenROADStep):
     """
