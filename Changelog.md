@@ -13,6 +13,14 @@
 ## API Breaks
 ## Documentation
 -->
+# 2.2.8
+
+## Steps
+
+* `Checker.*Violations`
+
+  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable
+
 # 2.2.7
 
 ## Steps
