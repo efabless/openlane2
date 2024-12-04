@@ -86,11 +86,15 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("opt_clean")  # Clean up after memory analysis
 
     # Perform more aggressive optimization with faster runtime
-    d.run_pass("opt", "-fast", "-full")  # Fast and comprehensive optimization
+    d.run_pass(
+        "opt", "-fast", "-mux_undef", "-mux_bool", "-fine"
+    )  # Fast and comprehensive optimization
 
     # Technology mapping
     d.run_pass("memory_map")  # Map memories to standard cells
-    d.run_pass("opt", "-full")  # More optimization after memory mapping
+    d.run_pass(
+        "opt", "-mux_undef", "-mux_bool", "-fine"
+    )  # More optimization after memory mapping
     d.run_pass("techmap")  # Map logic to standard cells from the technology library
     d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
     d.run_pass("opt", "-fast")  # More fast optimization
@@ -111,11 +115,13 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
 @click.option("--config-in", type=click.Path(exists=True), required=True)
 @click.option("--extra-in", type=click.Path(exists=True), required=True)
 @click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
+@click.argument("inputs", nargs=-1)
 def synthesize(
     output,
     config_in,
     extra_in,
     lighter_dff_map,
+    inputs,
 ):
     config = json.load(open(config_in))
     extra = json.load(open(extra_in))
@@ -150,7 +156,17 @@ def synthesize(
 
     ys.log(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
 
-    if verilog_files := config.get("VERILOG_FILES"):
+    if len(inputs):
+        d.read_verilog_files(
+            inputs,
+            top=config["DESIGN_NAME"],
+            synth_parameters=[],
+            includes=includes,
+            defines=defines,
+            use_synlig=False,
+            synlig_defer=False,
+        )
+    elif verilog_files := config.get("VERILOG_FILES"):
         d.read_verilog_files(
             verilog_files,
             top=config["DESIGN_NAME"],
@@ -203,10 +219,13 @@ def synthesize(
         d.tee("stat", "-json", *lib_arguments, o=os.path.join(report_dir, "stat.json"))
         d.tee("stat", *lib_arguments, o=os.path.join(report_dir, "stat.rpt"))
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
-            "-noattr",
-            "-noexpr",
+            *noattr_flag,
             "-nohex",
             "-nodec",
             "-defparam",
@@ -232,7 +251,7 @@ def synthesize(
     openlane_synth(
         d,
         config["DESIGN_NAME"],
-        not config["SYNTH_NO_FLAT"],
+        config["SYNTH_HIERARCHY_MODE"] == "flatten",
         report_dir,
         booth=config["SYNTH_MUL_BOOTH"],
         abc_dff=config["SYNTH_ABC_DFF"],
@@ -305,7 +324,10 @@ def synthesize(
             *(["-dff"] if config["SYNTH_ABC_DFF"] else []),
         )
 
-        d.run_pass("setundef", "-zero")
+        if value := config.get("SYNTH_SET_UNDEFINED"):
+            flag = "zero" if value == "low" else "high"
+            d.run_pass("setundef", flag)
+
         d.run_pass(
             "hilomap",
             "-hicell",
@@ -336,9 +358,13 @@ def synthesize(
             #     sc_mcu7t5v0__and3_1_A3_Z_gf180mcu_fd_sc_mcu7t5v0__buf_1_I_Z
             d.run_pass("autoname")
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
-            "-noattr",
+            *noattr_flag,
             "-noexpr",
             "-nohex",
             "-nodec",
@@ -349,7 +375,7 @@ def synthesize(
 
     run_strategy(d)
 
-    if config["SYNTH_NO_FLAT"]:
+    if config["SYNTH_HIERARCHY_MODE"] == "deferred_flatten":
         # Resynthesize, flattening
         d_flat = ys.Design()
         d_flat.add_blackbox_models(blackbox_models)
