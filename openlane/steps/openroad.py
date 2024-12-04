@@ -1287,6 +1287,11 @@ class GlobalPlacement(_GlobalPlacement):
             "Specifies whether the placer should use routability driven placement.",
             default=True,
         ),
+        Variable(
+            "PL_ROUTABILITY_OVERFLOW_THRESHOLD",
+            Optional[Decimal],
+            "Sets overflow threshold for routability mode.",
+        ),
     ]
 
 
