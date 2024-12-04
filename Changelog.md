@@ -13,13 +13,24 @@
 ## API Breaks
 ## Documentation
 -->
+
+# 2.2.9
+
+## Steps
+
+* `Yosys.JsonHeader`, `Yosys.Synthesis`
+
+  * Fixed `VERILOG_INCLUDE_DIRS` being a list of strings instead of a list of
+    `Path`s.
+
 # 2.2.8
 
 ## Steps
 
 * `Checker.*Violations`
 
-  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable
+  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable to avoid breaking PDKs
+    without `tt` in corner names.
 
 # 2.2.7
 
@@ -35,13 +46,13 @@
 
 * `OpenROAD.ResizerTimingPostGRT`
 
-  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
-  of setup fixing.
+  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
 
 * `OpenROAD.ResizerTimingPostCTS`
 
-  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
-  of setup fixing.
+  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
 
 # 2.2.5
 

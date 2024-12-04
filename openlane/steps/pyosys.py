@@ -28,44 +28,6 @@ from ..state import State, DesignFormat
 from ..logging import debug, verbose
 from ..common import Path, get_script_dir, process_list_file
 
-verilog_rtl_cfg_vars = [
-    Variable(
-        "VERILOG_FILES",
-        List[Path],
-        "The paths of the design's Verilog files.",
-    ),
-    Variable(
-        "VERILOG_DEFINES",
-        Optional[List[str]],
-        "Preprocessor defines for input Verilog files.",
-        deprecated_names=["SYNTH_DEFINES"],
-    ),
-    Variable(
-        "VERILOG_POWER_DEFINE",
-        Optional[str],
-        "Specifies the name of the define used to guard power and ground connections in the input RTL.",
-        deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
-        default="USE_POWER_PINS",
-    ),
-    Variable(
-        "VERILOG_INCLUDE_DIRS",
-        Optional[List[str]],
-        "Specifies the Verilog `include` directories.",
-    ),
-    Variable(
-        "USE_SYNLIG",
-        bool,
-        "Use the Synlig plugin to process files, which has better SystemVerilog parsing capabilities but may not be compatible with all Yosys commands and attributes.",
-        default=False,
-    ),
-    Variable(
-        "SYNLIG_DEFER",
-        bool,
-        "Uses -defer flag when reading files the Synlig plugin, which may improve performance by reading each file separately, but is experimental.",
-        default=False,
-    ),
-]
-
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
 yosys_cell_rx = r"cell\s+\S+\s+\((\S+)\)"
@@ -149,7 +111,7 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_INCLUDE_DIRS",
-        Optional[List[str]],
+        Optional[List[Path]],
         "Specifies the Verilog `include` directories.",
     ),
     Variable(
