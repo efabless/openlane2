@@ -14,7 +14,7 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-tapcell\
+log_cmd tapcell\
     -distance $::env(FP_TAPCELL_DIST)\
     -tapcell_master "$::env(WELLTAP_CELL)"\
     -endcap_master "$::env(ENDCAP_CELL)"\

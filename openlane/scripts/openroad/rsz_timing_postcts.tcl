@@ -37,7 +37,7 @@ lappend arg_list -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PCT)
 if { $::env(PL_RESIZER_GATE_CLONING) != 1 } {
     lappend arg_list -skip_gate_cloning
 }
-repair_timing {*}$arg_list
+log_cmd repair_timing {*}$arg_list
 
 set arg_list [list]
 lappend arg_list -verbose
@@ -48,7 +48,7 @@ lappend arg_list -max_buffer_percent $::env(PL_RESIZER_HOLD_MAX_BUFFER_PCT)
 if { $::env(PL_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
     lappend arg_list -allow_setup_violations
 }
-repair_timing {*}$arg_list
+log_cmd repair_timing {*}$arg_list
 
 # Legalize
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl

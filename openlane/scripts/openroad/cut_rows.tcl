@@ -14,10 +14,27 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-cut_rows\
-    -endcap_master $::env(ENDCAP_CELL)\
-    -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
-    -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
+set arg_list [list]
+lappend arg_list -endcap_master $::env(ENDCAP_CELL)
+lappend arg_list -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)
+lappend arg_list -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
+if { [info exists ::env(FP_PRUNE_THRESHOLD)] } {
+    lappend arg_list -row_min_width $::env(FP_PRUNE_THRESHOLD)
+}
+log_cmd cut_rows {*}$arg_list
+
+# # verify -row_min_width worked
+# if { [info exists ::env(FP_PRUNE_THRESHOLD)] } {
+#     foreach row [$::block getRows] {
+#         set bbox [$row getBBox]
+#         set width [expr ([$bbox xMax] - [$bbox xMin])]
+#         set width_um [expr $width / $::dbu]
+#         if { $width < $::env(FP_PRUNE_THRESHOLD) } {
+#             exit -1
+#             # odb::dbRow_destroy $row
+#         }
+#     }
+# }
 
 write_views
 
