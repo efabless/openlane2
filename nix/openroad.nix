@@ -13,19 +13,19 @@
 # limitations under the License.
 {
   lib,
-  clangStdenv,
+  llvmPackages_17,
   fetchFromGitHub,
   openroad-abc,
   libsForQt5,
   opensta,
-  boost183,
+  boost186,
   eigen,
   cudd,
   tcl,
   python3,
   readline,
   tclreadline,
-  spdlog-internal-fmt,
+  spdlog,
   libffi,
   llvmPackages,
   lemon-graph,
@@ -40,16 +40,19 @@
   gnumake,
   flex,
   bison,
-  clang-tools_14,
   buildEnv,
   makeBinaryWrapper,
-  rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
-  sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  cmake,
+  ninja,
+  git,
+  rev ? "1d610077e69607c430ffedd0dc6034c6af701a39",
+  sha256 ? "sha256-jkyugDqA5I54Xozdf6xbajCmghNt3rF0srzGMzcKxQ8=",
   # environments,
   openroad,
   buildPythonEnvForInterpreter,
 }: let
-  self = clangStdenv.mkDerivation (finalAttrs: {
+  stdenv = llvmPackages_17.stdenv;
+  self = stdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -59,9 +62,11 @@
       inherit rev;
       inherit sha256;
     };
+    
+    patches = [ ./patches/openroad/patches.diff ];
 
     cmakeFlagsAll = [
-      "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
+      "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
       "-DTCL_HEADER=${tcl}/include/tcl.h"
       "-DUSE_SYSTEM_BOOST:BOOL=ON"
       "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
@@ -86,20 +91,19 @@
       sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-      sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
       sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
     '';
 
     buildInputs = [
       openroad-abc
-      boost183
+      boost186
       eigen
       cudd
       tcl
       python3
       readline
       tclreadline
-      spdlog-internal-fmt
+      spdlog
       libffi
       libsForQt5.qtbase
       libsForQt5.qt5.qtcharts
@@ -118,16 +122,19 @@
     nativeBuildInputs = [
       swig4
       pkg-config
-      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
+      cmake
       gnumake
       flex
       bison
+      ninja
       libsForQt5.wrapQtAppsHook
-      clang-tools_14
+      llvmPackages_17.clang-tools
     ];
 
     shellHook = ''
-      export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
+      alias ord-format-changed="${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format"; 
+      alias ord-cmake-debug="cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g" -G Ninja $cmakeFlags .."
+      alias ord-cmake-release="cmake -DCMAKE_BUILD_TYPE=Release -G Ninja $cmakeFlags .."
     '';
 
     passthru = {

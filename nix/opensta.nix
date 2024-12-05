@@ -26,8 +26,8 @@
   cudd,
   zlib,
   eigen,
-  rev ? "b5f3a02b33b8ae1739ace8a329fde94434711dd6",
-  sha256 ? "sha256-s9Qn8Hkxuzvx7sZdaa/RX8X4Rp4w/kTVdnrmsRvC8wo=",
+  rev ? "aa598a2f14c5c142e90391a69988523505e7db3d",
+  sha256 ? "sha256-vrOZ7fHp3g5eylL4o6IKuBXug8iz58xgF6Zaf9LYnHg=",
 }:
 clangStdenv.mkDerivation (finalAttrs: {
   name = "opensta";

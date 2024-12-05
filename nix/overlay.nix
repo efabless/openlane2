@@ -4,12 +4,6 @@ new: old: {
     postPatch = "sed -i 's/register //' lemon/random.h";
   });
 
-  # Version mismatch causes OpenROAD to fail otherwise
-  spdlog-internal-fmt = old.spdlog.overrideAttrs (finalAttrs: previousAttrs: {
-    cmakeFlags = builtins.filter (flag: (!old.lib.strings.hasPrefix "-DSPDLOG_FMT_EXTERNAL" flag)) previousAttrs.cmakeFlags;
-    doCheck = false;
-  });
-
   # Platform-specific
   ## Undeclared Platform
   clp =
