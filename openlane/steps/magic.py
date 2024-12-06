@@ -37,6 +37,22 @@ from ..config import Variable
 from ..common import get_script_dir, DRC as DRCObject, Path, mkdirp
 
 
+DesignFormat(
+    "mag",
+    "mag",
+    "Magic VLSI View",
+    "MAG",
+).register()
+
+
+DesignFormat(
+    "mag_gds",
+    "magic.gds",
+    "GDSII Stream (Magic)",
+    "MAG_GDS",
+).register()
+
+
 class MagicOutputProcessor(OutputProcessor):
     _error_patterns = [
         re.compile(rx)
@@ -192,7 +208,7 @@ class MagicStep(TclStep):
 
         views_updates: ViewsUpdate = {}
         for output in self.outputs:
-            if output.value.multiple:
+            if output.multiple:
                 # Too step-specific.
                 continue
             path = Path(env[f"SAVE_{output.name}"])

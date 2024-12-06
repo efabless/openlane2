@@ -133,8 +133,8 @@ def test_empty():
     state = State(test_dict, metrics=test_metrics)
 
     assert state.metrics == test_metrics
-    for format in DesignFormat:
-        assert state[format.value.id] is None, "new state has non-none value"
+    for item in state:
+        assert state[item] is None, "new state has non-none value"
 
 
 def test_path_fail_exists():

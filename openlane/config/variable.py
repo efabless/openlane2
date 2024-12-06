@@ -160,7 +160,7 @@ class Macro:
         self, df: DesignFormat
     ) -> Union[None, Path, List[Path], Dict[str, List[Path]]]:
         try:
-            return getattr(self, df.value.id)
+            return getattr(self, df.id)
         except AttributeError:
             return None
 
