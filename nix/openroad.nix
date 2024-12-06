@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2023-2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@
   libffi,
   llvmPackages,
   lemon-graph,
-  or-tools,
+  or-tools_9_11,
   glpk,
   zlib,
   clp,
@@ -52,7 +52,8 @@
   buildPythonEnvForInterpreter,
 }: let
   stdenv = llvmPackages_17.stdenv;
-  self = stdenv.mkDerivation (finalAttrs: {
+in
+  stdenv.mkDerivation (finalAttrs: {
     name = "openroad";
     inherit rev;
 
@@ -62,8 +63,8 @@
       inherit rev;
       inherit sha256;
     };
-    
-    patches = [ ./patches/openroad/patches.diff ];
+
+    patches = [./patches/openroad/patches.diff];
 
     cmakeFlagsAll = [
       "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
@@ -110,13 +111,13 @@
       llvmPackages.openmp
 
       lemon-graph
-      or-tools
       opensta
       glpk
       zlib
       clp
       cbc
-      re2
+
+      or-tools_9_11
     ];
 
     nativeBuildInputs = [
@@ -132,7 +133,7 @@
     ];
 
     shellHook = ''
-      alias ord-format-changed="${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format"; 
+      alias ord-format-changed="${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format";
       alias ord-cmake-debug="cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g" -G Ninja $cmakeFlags .."
       alias ord-cmake-release="cmake -DCMAKE_BUILD_TYPE=Release -G Ninja $cmakeFlags .."
     '';
@@ -155,6 +156,4 @@
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  });
-in
-  self
+  })

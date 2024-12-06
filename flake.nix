@@ -13,7 +13,7 @@
 # limitations under the License.
 {
   description = "open-source infrastructure for implementing chip design flows";
-  
+
   nixConfig = {
     extra-substituters = [
       "https://openlane.cachix.org"
@@ -54,13 +54,17 @@
       default = lib.composeManyExtensions [
         (import ./nix/overlay.nix)
         (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
-        (pkgs': pkgs: {
-          yosys-sby = (pkgs.yosys-sby.override { sha256 = "sha256-Il2pXw2doaoZrVme2p0dSUUa8dCQtJJrmYitn1MkTD4="; });
-        })
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
           in {
+            or-tools_9_11 = callPackage ./nix/or-tools_9_11.nix {
+              inherit (pkgs'.darwin) DarwinTools;
+              clangStdenv =
+                if pkgs'.system == "x86_64-darwin"
+                then (pkgs'.overrideSDK pkgs'.clangStdenv "11.0")
+                else pkgs'.clangStdenv;
+            };
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
             openroad-abc = callPackage ./nix/openroad-abc.nix {};
@@ -112,8 +116,9 @@
 
     packages = nix-eda.forAllSystems (
       system: let
-        pkgs = (self.legacyPackages."${system}");
-        in {
+        pkgs = self.legacyPackages."${system}";
+      in
+        {
           inherit (pkgs) colab-env opensta openroad-abc openroad;
           inherit (pkgs.python3.pkgs) openlane;
           default = pkgs.python3.pkgs.openlane;
