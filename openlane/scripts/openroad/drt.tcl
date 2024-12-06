@@ -29,7 +29,7 @@ if { [info exists ::env(DRT_MAX_LAYER)] } {
 detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
-    -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\
+    -output_drc $::env(_DRC_REPORT_PATH)\
     -droute_end_iter $::env(DRT_OPT_ITERS)\
     -or_seed 42\
     -verbose 1
