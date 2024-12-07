@@ -352,7 +352,7 @@ def synthesize(
     if config["SYNTH_NO_FLAT"]:
         # Resynthesize, flattening
         d_flat = ys.Design()
-        d_flat.add_blackbox_models(blackbox_models)
+        d_flat.add_blackbox_models(blackbox_models, includes=includes, defines=defines)
 
         shutil.copy(output, f"{output}.hierarchy.nl.v")
         d_flat.run_pass("read_verilog", "-sv", output)
