@@ -15,7 +15,7 @@
   extra-packages ? [],
   extra-python-packages ? [],
   openlane-plugins ? [],
-  include-openlane ? true
+  include-openlane ? true,
 }: ({
   lib,
   git,
@@ -31,9 +31,13 @@
   openlane = python3.pkgs.openlane;
   openlane-env = (
     python3.withPackages (pp:
-        (if include-openlane then [openlane] else openlane.propagatedBuildInputs)
-        ++ extra-python-packages
-        ++ openlane-plugins)
+      (
+        if include-openlane
+        then [openlane]
+        else openlane.propagatedBuildInputs
+      )
+      ++ extra-python-packages
+      ++ openlane-plugins)
   );
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);

@@ -1,0 +1,61 @@
+diff --git a/src/drt/src/dr/FlexGridGraph_maze.cpp b/src/drt/src/dr/FlexGridGraph_maze.cpp
+index b3298cc9a..0da5e2322 100644
+--- a/src/drt/src/dr/FlexGridGraph_maze.cpp
++++ b/src/drt/src/dr/FlexGridGraph_maze.cpp
+@@ -58,7 +58,7 @@ void FlexGridGraph::printExpansion(const FlexWavefrontGrid& currGrid,
+       pt,
+       currGrid.getCost(),
+       currGrid.getPathCost(),
+-      currGrid.getLastDir(),
++      int(currGrid.getLastDir()),
+       currGrid.getCost() - currGrid.getPathCost(),
+       gridX,
+       gridY);
+diff --git a/src/gui/src/tclCmdInputWidget.h b/src/gui/src/tclCmdInputWidget.h
+index 86372b22c..94a89601d 100644
+--- a/src/gui/src/tclCmdInputWidget.h
++++ b/src/gui/src/tclCmdInputWidget.h
+@@ -33,6 +33,10 @@
+ #pragma once
+ 
+ #include <tcl.h>
++// Workaround for https://github.com/swig/swig/issues/2887
++#ifndef TCL_SIZE_MAX
++using Tcl_Size = int;
++#endif
+ 
+ #include <QCompleter>
+ #include <QMenu>
+diff --git a/src/odb/src/db/dbMarker.cpp b/src/odb/src/db/dbMarker.cpp
+index f3e1fc96b..d0a12673c 100644
+--- a/src/odb/src/db/dbMarker.cpp
++++ b/src/odb/src/db/dbMarker.cpp
+@@ -506,8 +506,10 @@ void _dbMarker::fromPTree(const _dbMarkerCategory::PropertyTree& tree)
+       } else if (shape_type.value() == "polygon") {
+         shapes_.emplace_back(Polygon(pts));
+       } else {
+-        getLogger()->warn(
+-            utl::ODB, 256, "Unable to find shape of violation: {}", shape_type);
++        getLogger()->warn(utl::ODB,
++                          256,
++                          "Unable to find shape of violation: {}",
++                          shape_type.value());
+       }
+     }
+   }
+@@ -561,7 +563,7 @@ void _dbMarker::fromPTree(const _dbMarkerCategory::PropertyTree& tree)
+           src_found = true;
+         } else {
+           getLogger()->warn(
+-              utl::ODB, 262, "Unable to find bterm: {}", src_name);
++              utl::ODB, 262, "Unable to find bterm: {}", src_name.value());
+         }
+       } else if (src_type.value() == "obstruction") {
+         src_found = marker->addObstructionFromBlock(block);
+@@ -889,4 +891,4 @@ dbOStream& operator<<(dbOStream& stream, const _dbMarker::ShapeType& obj)
+ 
+ // User Code End dbMarkerPublicMethods
+ }  // namespace odb
+-   // Generator Code End Cpp
+\ No newline at end of file
++   // Generator Code End Cpp
