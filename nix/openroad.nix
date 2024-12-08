@@ -46,6 +46,7 @@
   ninja,
   git,
   rev ? "1d610077e69607c430ffedd0dc6034c6af701a39",
+  rev-date ? "2024-12-05",
   sha256 ? "sha256-jkyugDqA5I54Xozdf6xbajCmghNt3rF0srzGMzcKxQ8=",
   # environments,
   openroad,
@@ -54,8 +55,8 @@
   stdenv = llvmPackages_17.stdenv;
 in
   stdenv.mkDerivation (finalAttrs: {
-    name = "openroad";
-    inherit rev;
+    pname = "openroad";
+    version = rev-date;
 
     src = fetchFromGitHub {
       owner = "The-OpenROAD-Project";

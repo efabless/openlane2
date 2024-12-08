@@ -49,13 +49,14 @@
   pkg-config,
   protobuf,
   re2,
-  clangStdenv,
+  stdenv,
   swig,
   unzip,
   zlib,
   highs,
 }:
-clangStdenv.mkDerivation (finalAttrs: {
+# can't use clang on linux: https://github.com/abseil/abseil-cpp/issues/1747
+stdenv.mkDerivation (finalAttrs: {
   pname = "or-tools";
   version = "9.11";
 
@@ -68,8 +69,9 @@ clangStdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags =
     [
-      "-DBUILD_DEPS=OFF"
-      "-DBUILD_absl=OFF"
+      "-DBUILD_DEPS:BOOL=OFF"
+      "-DBUILD_SAMPLES:BOOL=OFF"
+      "-DBUILD_EXAMPLES:BOOL=OFF"
       "-DCMAKE_INSTALL_BINDIR=bin"
       "-DCMAKE_INSTALL_INCLUDEDIR=include"
       "-DCMAKE_INSTALL_LIBDIR=lib"
@@ -77,7 +79,7 @@ clangStdenv.mkDerivation (finalAttrs: {
       "-DUSE_SCIP=OFF"
       "-DPROTOC_PRG=${protobuf}/bin/protoc"
     ]
-    ++ lib.optionals clangStdenv.hostPlatform.isDarwin ["-DCMAKE_MACOSX_RPATH=OFF"];
+    ++ lib.optionals stdenv.hostPlatform.isDarwin ["-DCMAKE_MACOSX_RPATH=OFF"];
 
   strictDeps = true;
 
@@ -89,7 +91,7 @@ clangStdenv.mkDerivation (finalAttrs: {
       swig
       unzip
     ]
-    ++ lib.optionals clangStdenv.hostPlatform.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       DarwinTools
     ];
 

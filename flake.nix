@@ -60,10 +60,10 @@
           in {
             or-tools_9_11 = callPackage ./nix/or-tools_9_11.nix {
               inherit (pkgs'.darwin) DarwinTools;
-              clangStdenv =
+              stdenv =
                 if pkgs'.system == "x86_64-darwin"
-                then (pkgs'.overrideSDK pkgs'.clangStdenv "11.0")
-                else pkgs'.clangStdenv;
+                then (pkgs'.overrideSDK pkgs'.stdenv "11.0")
+                else pkgs'.stdenv;
             };
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
