@@ -11,36 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import os
 import re
-import json
 import shutil
-from math import inf
+from abc import abstractmethod
 from decimal import Decimal
 from functools import reduce
-from abc import abstractmethod
+from math import inf
 from typing import Dict, List, Literal, Optional, Tuple
 
-
+from ..common import Path, get_script_dir
+from ..config import Instance, Macro, Variable
+from ..logging import info, verbose
+from ..state import DesignFormat, State
 from .common_variables import io_layer_variables
-from .openroad_alerts import (
-    OpenROADAlert,
-    OpenROADOutputProcessor,
-)
 from .openroad import DetailedPlacement, GlobalRouting
-from .tclstep import TclStep
+from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
 from .step import (
-    ViewsUpdate,
+    CompositeStep,
+    DefaultOutputProcessor,
     MetricsUpdate,
     Step,
     StepException,
-    CompositeStep,
-    DefaultOutputProcessor,
+    ViewsUpdate,
 )
-from ..logging import info, verbose
-from ..config import Variable, Macro, Instance
-from ..state import State, DesignFormat
-from ..common import Path, get_script_dir
+from .tclstep import TclStep
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
