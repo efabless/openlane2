@@ -15,6 +15,7 @@ import io
 import os
 import re
 import json
+import textwrap
 import tempfile
 import functools
 import subprocess
@@ -1128,9 +1129,9 @@ def get_psm_error_count(rpt: io.TextIOWrapper) -> int:
             vio_type = line[len(VIO_TYPE_PFX) :].strip()
             sio.write(f"- type: {vio_type}\n")
         elif "bbox = " in line:
-            sio.write(line.replace("bbox = ", "- bbox ="))
+            sio.write(f"    {textwrap.dedent(line.replace('bbox = ', '- bbox ='))}")
         else:
-            sio.write(line)
+            sio.write(f"  {textwrap.dedent(line)}")
 
     sio.seek(0)
     violations = yaml.load(sio, Loader=yaml.SafeLoader) or []
@@ -1286,6 +1287,11 @@ class GlobalPlacement(_GlobalPlacement):
             bool,
             "Specifies whether the placer should use routability driven placement.",
             default=True,
+        ),
+        Variable(
+            "PL_ROUTABILITY_OVERFLOW_THRESHOLD",
+            Optional[Decimal],
+            "Sets overflow threshold for routability mode.",
         ),
     ]
 
@@ -1931,7 +1937,6 @@ class CutRows(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "cut_rows.tcl")
 
 
-@Step.factory.register()
 class WriteViews(OpenROADStep):
     """
     Write various layout views of an ODB design

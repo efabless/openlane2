@@ -47,6 +47,9 @@ if { [info exists ::env(PL_ROUTABILITY_DRIVEN)] && $::env(PL_ROUTABILITY_DRIVEN)
 	set_macro_extension $::env(GRT_MACRO_EXTENSION)
 	source $::env(SCRIPTS_DIR)/openroad/common/set_layer_adjustments.tcl
 	lappend arg_list -routability_driven
+	if { [info exists ::env(PL_ROUTABILITY_OVERFLOW_THRESHOLD)] } {
+		lappend arg_list -routability_check_overflow $::env(PL_ROUTABILITY_OVERFLOW_THRESHOLD)
+	}
 }
 
 if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
@@ -72,6 +75,7 @@ lappend arg_list -pad_right $cell_pad_side
 lappend arg_list -pad_left $cell_pad_side
 lappend arg_list -init_wirelength_coef $::env(PL_WIRE_LENGTH_COEF)
 
+puts "+ global_placement $arg_list"
 global_placement {*}$arg_list
 
 

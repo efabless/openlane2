@@ -139,6 +139,7 @@ def cloup_flow_opts(
     volare_pdk_override: Optional[str] = None,
     _enable_debug_flags: bool = False,
     enable_overwrite_flag: bool = False,
+    enable_initial_state_element: bool = False,
 ) -> Decorator:
     """
     Creates a wrapper that appends a number of OpenLane flow-related flags to a
@@ -214,7 +215,7 @@ def cloup_flow_opts(
                 ),
                 default=None,
                 callback=initial_state_cb,
-                help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used if available.",
+                help="Use this JSON file as an initial state. If this is not specified, the latest `state_out.json` of the run directory will be used. If none exist, an empty initial state is created.",
             )(f)
             f = o(
                 "--design-dir",
@@ -380,6 +381,15 @@ def cloup_flow_opts(
                 help="The maximum number of threads or processes that can be used by OpenLane.",
                 callback=set_worker_count_cb,
                 expose_value=False,
+            )(f)
+        if enable_initial_state_element:
+            f = o(
+                "-e",
+                "--initial-state-element-override",
+                type=str,
+                multiple=True,
+                default=(),
+                help="Elements to override in the used initial state in the format DESIGN_FORMAT_ID=PATH",
             )(f)
         if accept_config_files:
             f = argument(
