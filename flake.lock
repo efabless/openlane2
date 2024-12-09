@@ -37,17 +37,16 @@
     },
     "ioplace-parser": {
       "inputs": {
-        "nixpkgs": [
-          "nix-eda",
-          "nixpkgs"
+        "nix-eda": [
+          "nix-eda"
         ]
       },
       "locked": {
-        "lastModified": 1719837045,
-        "narHash": "sha256-ya2KEXKAIn8oYUi9G9TaUcQAEfGkbENCgXF/V0d/kws=",
+        "lastModified": 1730973673,
+        "narHash": "sha256-F7jux5RLKTFEcXEQ2mRIH83zlSAT+uffYsf/XnKgoiU=",
         "owner": "efabless",
         "repo": "ioplace_parser",
-        "rev": "570fd3e352926f57e6eecbb8bd3892a5dec375b7",
+        "rev": "e31eb8553caba31c08416d89e31b6aec58002755",
         "type": "github"
       },
       "original": {
@@ -82,11 +81,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1728905391,
-        "narHash": "sha256-iox9yGNG4MwSKhQuwegLcDW6wVGzfdBPrh8SrhSLA8c=",
+        "lastModified": 1730973643,
+        "narHash": "sha256-8ZeUxluUbUD3IF0thq4Alioy3JaEVR0AY5+7PuFypBE=",
         "owner": "efabless",
         "repo": "nix-eda",
-        "rev": "0814aa6c1c7d556aa08212cc875063cff62cb9b0",
+        "rev": "1f8771758e26ad96da4947ed1b17e3942f978cfa",
         "type": "github"
       },
       "original": {
@@ -129,11 +128,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1724178650,
-        "narHash": "sha256-p+Li/z3l7ShRSIKUrxVK+7uGhSvqPE7jOW4FA4k3SIw=",
+        "lastModified": 1728904439,
+        "narHash": "sha256-e6QXMol9kbrJplYamSDfz+X/BDhgP66rHmjkeIZlaNI=",
         "owner": "efabless",
         "repo": "volare",
-        "rev": "0090420799258d29adca54c8951d38bb8b605aeb",
+        "rev": "7458169adc63dfac4ecfcb1c967972c6d8cd888f",
         "type": "github"
       },
       "original": {
