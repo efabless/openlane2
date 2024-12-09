@@ -463,7 +463,7 @@ class SynthesisCommon(VerilogStep):
             "SYNTH_TIE_UNDEFINED",
             Optional[Literal["high", "low"]],
             "Whether to tie undefined values low or high. Explicitly provide null if you wish to simply leave them undriven.",
-            default="high",
+            default="low",
         ),
         Variable(
             "SYNTH_WRITE_NOATTR",
