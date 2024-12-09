@@ -14,6 +14,7 @@
 {
   extra-packages ? [],
   extra-python-packages ? [],
+  extra-env ? [],
   openlane-plugins ? [],
   include-openlane ? true,
 }: ({
@@ -66,7 +67,7 @@ in
         name = "NIX_PYTHONPATH";
         value = "${openlane-env-sitepackages}";
       }
-    ];
+    ] ++ extra-env;
     devshell.interactive.PS1 = {
       text = ''PS1="${prompt}"'';
     };
