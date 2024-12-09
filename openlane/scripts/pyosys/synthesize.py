@@ -57,7 +57,9 @@ def openlane_proc(d: ys.Design, report_dir: str):
     d.run_pass("opt_expr")  # Optimize expressions
 
 
-def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
+def openlane_synth(
+    d, top, flatten, report_dir, *, booth=False, abc_dff=False, undriven=True
+):
     d.run_pass("hierarchy", "-check", "-top", top, "-nokeep_prints", "-nokeep_asserts")
     openlane_proc(d, report_dir)
 
@@ -86,15 +88,26 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("opt_clean")  # Clean up after memory analysis
 
     # Perform more aggressive optimization with faster runtime
-    d.run_pass(
-        "opt", "-fast", "-mux_undef", "-mux_bool", "-fine"
-    )  # Fast and comprehensive optimization
+    # Fast and comprehensive optimization
+    if undriven:
+        d.run_pass("opt", "-fast", "-full")
+    else:
+        d.run_pass("opt", "-fast", "-mux_undef", "-mux_bool", "-fine")
 
     # Technology mapping
     d.run_pass("memory_map")  # Map memories to standard cells
-    d.run_pass(
-        "opt", "-mux_undef", "-mux_bool", "-fine"
-    )  # More optimization after memory mapping
+    d.run_pass("opt_muxtree")
+    d.run_pass("opt_reduce", "-fine", "-full")
+    d.run_pass("opt_merge", "-share_all")
+    d.run_pass("opt_share")
+    d.run_pass("opt_dff")
+    d.run_pass("opt_clean")
+    if undriven:
+        d.run_pass("opt", "-fast", "-full")
+    else:
+        d.run_pass(
+            "opt_expr", "-mux_undef", "-mux_bool", "-fine"
+        )  # More optimization after memory mapping
     d.run_pass("techmap")  # Map logic to standard cells from the technology library
     d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
     d.run_pass("opt", "-fast")  # More fast optimization
@@ -255,6 +268,7 @@ def synthesize(
         report_dir,
         booth=config["SYNTH_MUL_BOOTH"],
         abc_dff=config["SYNTH_ABC_DFF"],
+        undriven=config.get("SYNTH_TIE_UNDEFINED") is not None,
     )
 
     d.run_pass("delete", "t:$print")
@@ -324,8 +338,8 @@ def synthesize(
             *(["-dff"] if config["SYNTH_ABC_DFF"] else []),
         )
 
-        if value := config.get("SYNTH_SET_UNDEFINED"):
-            flag = "zero" if value == "low" else "high"
+        if value := config.get("SYNTH_TIE_UNDEFINED"):
+            flag = "-zero" if value == "low" else "-one"
             d.run_pass("setundef", flag)
 
         d.run_pass(
