@@ -45,9 +45,9 @@
   cmake,
   ninja,
   git,
-  rev ? "1d610077e69607c430ffedd0dc6034c6af701a39",
-  rev-date ? "2024-12-05",
-  sha256 ? "sha256-jkyugDqA5I54Xozdf6xbajCmghNt3rF0srzGMzcKxQ8=",
+  rev ? "87af90f72f3f9be1fdfa1d886f0dd8d8b8f34694",
+  rev-date ? "2024-12-08",
+  sha256 ? "sha256-GS8DLpAtC5gJfQeP+YOCImVXaAPQNzVbdDjdiB7Aovc=",
   # environments,
   openroad,
   buildPythonEnvForInterpreter,
@@ -65,7 +65,6 @@ in
       inherit sha256;
     };
 
-    patches = [./patches/openroad/patches.diff];
 
     cmakeFlagsAll = [
       "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
