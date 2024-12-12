@@ -54,6 +54,9 @@
       default = lib.composeManyExtensions [
         (import ./nix/overlay.nix)
         (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
+        (pkgs': pkgs: {
+          yosys-sby = (pkgs.yosys-sby.override { sha256 = "sha256-Il2pXw2doaoZrVme2p0dSUUa8dCQtJJrmYitn1MkTD4="; });
+        })
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
@@ -125,7 +128,7 @@
     devShells = nix-eda.forAllSystems (
       system: let
         pkgs = self.legacyPackages."${system}";
-        callPackage = lib.callPackageWith (pkgs // {inherit (self.legacyPackages."${system}".python3.pkgs) openlane;});
+        callPackage = lib.callPackageWith pkgs;
       in {
         # These devShells are rather unorthodox for Nix devShells in that they
         # include the package itself. For a proper devShell, try .#dev.

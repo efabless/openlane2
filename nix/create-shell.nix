@@ -18,7 +18,6 @@
   include-openlane ? true
 }: ({
   lib,
-  openlane,
   git,
   zsh,
   delta,
@@ -29,10 +28,10 @@
   python3,
   devshell,
 }: let
+  openlane = python3.pkgs.openlane;
   openlane-env = (
     python3.withPackages (pp:
-      with pp;
-        if include-openlane then [openlane] else openlane.propagatedBuildInputs
+        (if include-openlane then [openlane] else openlane.propagatedBuildInputs)
         ++ extra-python-packages
         ++ openlane-plugins)
   );
@@ -60,7 +59,7 @@ in
     devshell.packages = packages;
     env = [
       {
-        name = "PYTHONPATH";
+        name = "NIX_PYTHONPATH";
         value = "${openlane-env-sitepackages}";
       }
     ];

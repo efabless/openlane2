@@ -72,7 +72,7 @@ in
       "LC_ALL=C.UTF-8"
       "LC_CTYPE=C.UTF-8"
       "EDITOR=nvim"
-      "PYTHONPATH=${openlane-env-sitepackages}"
+      "NIX_PYTHONPATH=${openlane-env-sitepackages}"
       "TMPDIR=/tmp"
     ];
     image-config-extra-path = [

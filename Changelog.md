@@ -14,6 +14,234 @@
 ## Documentation
 -->
 
+# 2.2.9
+
+## Steps
+
+* `Yosys.JsonHeader`, `Yosys.Synthesis`
+
+  * Fixed `VERILOG_INCLUDE_DIRS` being a list of strings instead of a list of
+    `Path`s.
+
+# 2.2.8
+
+## Steps
+
+* `Checker.*Violations`
+
+  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable to avoid breaking PDKs
+    without `tt` in corner names.
+
+# 2.2.7
+
+## Steps
+
+* `OpenROAD.WriteViews`
+
+  * Fixed step not being registered to factory object.
+
+# 2.2.6
+
+## Steps
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
+
+* `OpenROAD.ResizerTimingPostCTS`
+
+  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
+
+# 2.2.5
+
+## Steps
+
+* `Yosys.JsonHeader`, `Verilator.Lint`, `Odb.WriteVerilogHeader`
+
+  * Fixed `VERILOG_POWER_DEFINE` not being optional which was an unintentional
+    break from OpenLane 1.
+
+    * Default value is still `USE_POWER_PINS`, but it can be explicitly unset.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.config`: Fixed issue where preprocessor would ignore explicitly-set
+  null values in configuration files.
+
+# 2.2.4
+
+## Tool Updates
+
+* `yosys-sby`: Overlaid new hash for `yosys-0.46` tag because of a tag update
+  upstream.
+
+# 2.2.3
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed incorrect error message when subtituting a step with one that has a
+  nonexistent ID.
+
+# 2.2.2
+
+## Steps
+
+* `Odb.*`
+
+  * Fixed OpenROAD dropping user-set `PYTHONPATH` values.
+
+## Tool Updates
+
+* Use `NIX_PYTHONPATH` instead of `PYTHONPATH` in Docker and devshells to avoid
+  collisions with user-set `PYTHONPATH` variables.
+
+# 2.2.1
+
+This patch has no functional changes to OpenLane proper.
+
+## Tool Updates
+
+* `flake.createOpenLaneShell` now gets OpenLane from `python3.pkgs`.
+* Fixed issue with `flake.createOpenLaneShell` where plugins would not get
+  included due to an operator precedence issue.
+
+# 2.2.0
+
+## CLI
+
+* Exposed Flow.start(overwrite=) as `--overwrite`, which removes a run directory
+  before running the flow (if it exists)
+
+## Steps
+
+* Created `Odb.ManualGlobalPlacement`
+
+  * Can create a global placement for instances. Intended for
+    manually-instantiated buffers that require a certain regional placement or
+    similar.
+  * Uses new variable `MANUAL_GLOBAL_PLACEMENTS`, a mapping from instance names
+    to the `Instance` class.
+
+* Created `Odb.CellFrequencyTables`
+
+  * Creates a number of tables to show the cell frequencies by:
+    * Cells
+    * Buffer cells only
+    * Cell Function
+    * SCL
+
+* `OpenROAD.*`
+
+  * All steps that modify views now update design cell metrics using OpenROAD's
+    `report_design_area_metrics`
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Added `GRT_RESIZER_RUN_GRT` to control whether global routing is re-run
+    after this step, which is usually required but may be redundant in some
+    custom flows.
+
+* `OpenROAD.RepairDesignPostGRT`
+
+  * Added `GRT_DESIGN_REPAIR_RUN_GRT` to control whether global routing is
+    re-run after this step, which is usually required but may be redundant in
+    some custom flows.
+
+* `OpenROAD.STA*`
+
+  * New report `clock.rpt` created with information about each clock in a
+    specific domain
+
+* `OpenROAD.WriteViews`
+
+  * Added `OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS` with a default value of `true`
+
+* `Yosys.*Synthesis`
+
+  * ABC scripts used now created dynamically and dumped as a `.abc` file into
+    the step directory.
+  * Implemented many of the
+    [suggestions by @ravenslofty](https://github.com/efabless/openlane2/issues/524)
+    from YosysHQ, some behind flags:
+    * `SYNTH_ABC_DFF`: Adds `-dff` to `abc` invocations (except the ones inside
+      `synth`)
+    * `SYNTH_ABC_BOOTH`: Activates the
+      [`booth`](https://yosyshq.readthedocs.io/projects/yosys/en/0.44/cmd/booth.html)
+      pass as part of `synth`
+    * `SYNTH_ABC_USE_MFS3`: Uses `mfs3` in all strategies before retime
+    * `SYNTH_ABC_AREA_USE_NF`: Attempts delay-based mapping with a really high
+      delay value instead of area-based mapping.
+
+* `Yosys.JsonHeader`, `Yosys.*Synthesis`
+
+  * **Internal**: * Steps are no longer `TclStep`s: rewritten in Python and now
+    use `libyosys`. While there are no functional changes, this enhances the
+    codebase's consistency and helps avoid tokenization-related security issues.
+
+## Flows
+
+* `Classic`
+  * Emplaced `Odb.ManualGlobalPlacement` immediately preceding
+    `OpenROAD.DetailedPlacement`.
+  * Emplaced `Odb.CellFrequencyTables` after `OpenROAD.FillInsertion`
+
+## Tool Updates
+
+* OpenROAD -> `bbe940134bddf836894bfd1fe02153f4a38f8ae5`
+
+  * OpenSTA -> `20925bb00965c1199c45aca0318c2baeb4042c5a`
+  * Removed "stable" version of OpenSTA
+
+* Updated nix-eda to `0814aa6`: more orthodox approach to managing dependencies
+  by overlaying them on top of nixpkgs, which fixes an occasional "repeated
+  allocation" issue and helps make override behavior more consistent.
+
+  * Yosys and first-party plugins -> `0.46`
+  * `klayout` -> `0.29.4`
+  * `magic` -> `8.3.489`
+  * `netgen` -> `1.5.278`
+  * OpenROAD now used with new `withPythonPackages` features to use Python
+    packages specifically for the OpenROAD environment
+
+* OpenLane itself no longer included in `devShells.*.dev`, `devShells.*.docs`
+
+  * These shells are intended to be actual dev shells, i.e. used to develop
+    OpenLane, and needing OpenLane to pass tests to run these shells makes no
+    sense.
+
+* Open PDKs -> `0fe599b` (Recommended for chipIgnite 2409/2411+ shuttles)
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.common.metrics`
+  * `aggregate_metrics()`: Added support for aggregation of N-modifier levels
+* `openlane.config.Config`
+  * YAML 1.2 configuration files now accepted using `.yaml` or `.yml`
+    extensions, with the same featureset as JSON files.
+  * The first configuration (file/dict) supplied no longer needs to be a
+    complete configuration so long as any required variables are supplied in
+    later configurations. Missing variables are only checked on the complete
+    configuration.
+  * Internally reworked how config files and command-line overrides are parsed.
+* Fixed bug with deprecated variable translations of
+  `{CLOCK,SIGNAL}_WIRE_RC_LAYERS`.
+
+## Documentation
+
+* Added info on YAML configuration files.
+* Documentation for `Instance` dataclass generalized to include instances of
+  cells and not macros.
+
+# 2.1.11
+
+## Steps
+
+* `OpenROAD.STA*PnR`
+
+  * Fixed `timing__*_r2r__ws__corner` metrics reporting the wrong value
+
 # 2.1.10
 
 ## Misc. Enhancements/Bugfixes
