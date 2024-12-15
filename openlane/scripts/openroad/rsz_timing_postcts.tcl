@@ -32,19 +32,19 @@ estimate_parasitics -placement
 set setup_args [list]
 lappend setup_args -verbose
 lappend setup_args -setup
-lappend setup_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
-lappend setup_args -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
-if { $::env(GRT_RESIZER_GATE_CLONING) != 1 } {
+lappend setup_args -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
+lappend setup_args -max_buffer_percent $::env(PL_RESIZER_SETUP_MAX_BUFFER_PCT)
+if { $::env(PL_RESIZER_GATE_CLONING) != 1 } {
     lappend setup_args -skip_gate_cloning
 }
 
 set hold_args [list]
 lappend hold_args -verbose
 lappend hold_args -hold
-lappend hold_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
-lappend hold_args -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
-lappend hold_args -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
-if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
+lappend hold_args -setup_margin $::env(PL_RESIZER_SETUP_SLACK_MARGIN)
+lappend hold_args -hold_margin $::env(PL_RESIZER_HOLD_SLACK_MARGIN)
+lappend hold_args -max_buffer_percent $::env(PL_RESIZER_HOLD_MAX_BUFFER_PCT)
+if { $::env(PL_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
     lappend hold_args -allow_setup_violations
 }
 
