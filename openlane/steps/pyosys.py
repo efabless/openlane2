@@ -175,7 +175,7 @@ DesignFormat(
     "json_h",
     "h.json",
     "Design JSON Header File",
-    "JSON_HEADER",
+    alts=["JSON_HEADER"],
 ).register()
 
 

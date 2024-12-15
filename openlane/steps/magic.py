@@ -41,7 +41,7 @@ DesignFormat(
     "mag",
     "mag",
     "Magic VLSI View",
-    "MAG",
+    alts=["MAG"],
 ).register()
 
 
@@ -49,7 +49,7 @@ DesignFormat(
     "mag_gds",
     "magic.gds",
     "GDSII Stream (Magic)",
-    "MAG_GDS",
+    alts=["MAG_GDS"],
 ).register()
 
 
@@ -211,7 +211,7 @@ class MagicStep(TclStep):
             if output.multiple:
                 # Too step-specific.
                 continue
-            path = Path(env[f"SAVE_{output.name}"])
+            path = Path(env[f"SAVE_{output.id.upper()}"])
             if not path.exists():
                 continue
             views_updates[output] = path

@@ -33,7 +33,7 @@ DesignFormat(
     "klayout_gds",
     "klayout.gds",
     "GDSII Stream (KLayout)",
-    "KLAYOUT_GDS",
+    alts=["KLAYOUT_GDS"],
 ).register()
 
 
@@ -157,7 +157,7 @@ class Render(KLayoutStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         input_view = state_in[DesignFormat.DEF]
-        if gds := state_in[DesignFormat.GDS]:
+        if gds := state_in.get(DesignFormat.GDS):
             input_view = gds
 
         assert isinstance(input_view, Path)

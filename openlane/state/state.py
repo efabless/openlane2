@@ -117,8 +117,6 @@ class State(GenericImmutableDict[str, StateElement]):
         if isinstance(key, DesignFormat):
             id: str = key.id
             key = id
-            if key not in self:
-                return None
         return super().__getitem__(key)
 
     def __setitem__(self, key: Union[DesignFormat, str], item: StateElement):

@@ -125,14 +125,14 @@ proc read_current_netlist {args} {
         flags {-powered}
 
     if { [info exists flags(-powered)] } {
-        puts "Reading top-level powered netlist at '$::env(CURRENT_POWERED_NETLIST)'…"
-        if {[catch {read_verilog $::env(CURRENT_POWERED_NETLIST)} errmsg]} {
+        puts "Reading top-level powered netlist at '$::env(CURRENT_PNL)'…"
+        if {[catch {read_verilog $::env(CURRENT_PNL)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
     } else {
-        puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
-        if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+        puts "Reading top-level netlist at '$::env(CURRENT_NL)'…"
+        if {[catch {read_verilog $::env(CURRENT_NL)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -338,26 +338,26 @@ proc write_views {args} {
         write_db $::env(SAVE_ODB)
     }
 
-    if { [info exists ::env(SAVE_NETLIST)] } {
-        puts "Writing netlist to '$::env(SAVE_NETLIST)'…"
-        write_verilog $::env(SAVE_NETLIST)
+    if { [info exists ::env(SAVE_NL)] } {
+        puts "Writing netlist to '$::env(SAVE_NL)'…"
+        write_verilog $::env(SAVE_NL)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST)] } {
-        puts "Writing powered netlist to '$::env(SAVE_POWERED_NETLIST)'…"
-        write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
+    if { [info exists ::env(SAVE_PNL)] } {
+        puts "Writing powered netlist to '$::env(SAVE_PNL)'…"
+        write_verilog -include_pwr_gnd $::env(SAVE_PNL)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
+    if { [info exists ::env(SAVE_SDF_PNL)] } {
         set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
+        puts "Writing nofill powered netlist to '$::env(SAVE_SDF_PNL)'…"
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \
             -remove_cells "$exclude_cells"\
             $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
     }
 
-    if { [info exists ::env(SAVE_LOGICAL_POWERED_NETLIST)] } {
+    if { [info exists ::env(SAVE_LOGICAL_PNL)] } {
         set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
         puts "Writing nofilldiode powered netlist to '$::env(SAVE_LOGICAL_POWERED_NETLIST)'…"
         puts "Excluding $exclude_cells"

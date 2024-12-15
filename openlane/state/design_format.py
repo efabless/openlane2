@@ -34,15 +34,15 @@ class DesignFormat(metaclass=DFMetaclass):
     Metadata about the various possible text or binary representations (views)
     of any design.
 
-    For example, ``DesignFormat.NETLIST.value`` has the metadata for Netlist
-    views.
+    For example, ``DesignFormat.nl`` has the metadata for Netlist views.
 
-    :param id: A lowercase alphanumeric identifier for the design format.
-        Some IDs in OpenLane 2.X use dashes. This is an inconsistency that will
-        be addressed in the next major version of OpenLane as it would be a
-        breaking change.
+    :param id: A lowercase alphanumeric/underscore identifier for the design
+        format.
     :param extension: The file extension for designs saved in this format.
-    :param name: A human-readable name for this design format.
+    :param full_name: A human-readable name for this design format.
+    :param alts: A list of alternate ids used to access the DesignFormat by
+        the subscript operator. Includes its OpenLane <3.0.0 enumeration name
+        for limited backwards compatibility.
     :param folder_override: The subdirectory when
         :meth:`openlane.state.State.save_snapshot` is called on a state. If
         unset, the value for ``id`` will be used.
@@ -53,7 +53,6 @@ class DesignFormat(metaclass=DFMetaclass):
     id: str
     extension: str
     full_name: str
-    name: str
     alts: List[str] = field(default_factory=list)
     folder_override: Optional[str] = None
     multiple: bool = False
@@ -70,6 +69,15 @@ class DesignFormat(metaclass=DFMetaclass):
     )
     def value(self) -> DesignFormat:
         return self
+
+    @property
+    @deprecated(
+        ".name has been removed because it's redundant, use .id",
+        version="3.0.0",
+        action="once",
+    )
+    def name(self) -> str:
+        return self.id
 
     def register(self):
         self.__class__.factory.register(self)
@@ -108,7 +116,6 @@ class DesignFormat(metaclass=DFMetaclass):
             :attr:`DesignFormat.alts` attributes.
             """
             Self._registry[df.id] = df
-            Self._registry[df.name] = df
             for alt in df.alts:
                 Self._registry[alt] = df
             return df
@@ -138,30 +145,29 @@ DesignFormat(
     "nl",
     "nl.v",
     "Verilog Netlist",
-    "NETLIST",
+    alts=["NETLIST"],
 ).register()
 
 DesignFormat(
     "pnl",
     "pnl.v",
     "Powered Verilog Netlist",
-    "POWERED_NETLIST",
+    alts=["POWERED_NETLIST"],
 ).register()
 
 DesignFormat(
     "sdf_pnl",
     "sdf_pnl.v",
     "Powered Verilog Netlist for SDF Simulation (No Fills)",
-    "POWERED_NETLIST_SDF_FRIENDLY",
+    alts=["SDF_FRIENDLY_POWERED_NETLIST"],
     folder_override="pnl",
-    alts=["pnl-sdf"],
 ).register()
 
 DesignFormat(
-    "npc_pnl",
-    "npc_pnl.v",
+    "logical_pnl",
+    "logical_pnl.v",
     "Logical cell-only Powered Verilog Netlist",
-    "LOGICAL_POWERED_NETLIST",
+    alts=["LOGICAL_POWERED_NETLIST"],
     folder_override="pnl",
 ).register()
 
@@ -169,28 +175,28 @@ DesignFormat(
     "def",
     "def",
     "Design Exchange Format",
-    "DEF",
+    alts=["def_", "DEF"],
 ).register()
 
 DesignFormat(
     "lef",
     "lef",
     "Library Exchange Format",
-    "LEF",
+    alts=["LEF"],
 ).register()
 
 DesignFormat(
     "sdc",
     "sdc",
     "Design Constraints",
-    "SDC",
+    alts=["SDC"],
 ).register()
 
 DesignFormat(
     "sdf",
     "sdf",
     "Standard Delay Format",
-    "SDF",
+    alts=["SDF"],
     multiple=True,
 ).register()
 
@@ -198,7 +204,7 @@ DesignFormat(
     "spef",
     "spef",
     "Standard Parasitics Extraction Format",
-    "SPEF",
+    alts=["SPEF"],
     multiple=True,  # nom, min, max, ...
 ).register()
 
@@ -206,7 +212,7 @@ DesignFormat(
     "lib",
     "lib",
     "LIB Timing Library Format",
-    "LIB",
+    alts=["LIB"],
     multiple=True,
 ).register()
 
@@ -214,19 +220,19 @@ DesignFormat(
     "spice",
     "spice",
     "Simulation Program with Integrated Circuit Emphasis",
-    "SPICE",
+    alts=["SPICE"],
 ).register()
 
 DesignFormat(
     "gds",
     "gds",
     "GDSII Stream",
-    "GDS",
+    alts=["GDS"],
 ).register()
 
 DesignFormat(
     "vh",
     "vh",
     "Verilog Header",
-    "VERILOG_HEADER",
+    alts=["VERILOG_HEADER"],
 ).register()

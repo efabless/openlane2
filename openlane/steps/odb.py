@@ -123,7 +123,7 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+        if (design_lef := self.state_in.result().get(DesignFormat.LEF)) and (
             DesignFormat.LEF in self.inputs
         ):
             lefs.append("--design-lef")

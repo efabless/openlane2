@@ -158,7 +158,7 @@ class TclStep(Step):
             env[element] = TclStep.value_to_tcl(value)
 
         for input in self.inputs:
-            key = f"CURRENT_{input.name}"
+            key = f"CURRENT_{input.id.upper()}"
             env[key] = TclStep.value_to_tcl(state[input])
 
         for output in self.outputs:
@@ -166,7 +166,7 @@ class TclStep(Step):
                 # Too step-specific.
                 continue
             filename = f"{self.config['DESIGN_NAME']}.{output.extension}"
-            env[f"SAVE_{output.name}"] = os.path.join(self.step_dir, filename)
+            env[f"SAVE_{output.id.upper()}"] = os.path.join(self.step_dir, filename)
 
         return env
 
@@ -213,7 +213,7 @@ class TclStep(Step):
             if output.multiple:
                 # Too step-specific.
                 continue
-            path = Path(env[f"SAVE_{output.name}"])
+            path = Path(env[f"SAVE_{output.id.upper()}"])
             if not path.exists():
                 continue
             overrides[output] = path

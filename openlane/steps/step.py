@@ -1143,7 +1143,7 @@ class Step(ABC):
             value = state_in_result[input]
             if value is None:
                 raise StepException(
-                    f"{type(self).__name__}: missing required input '{input.name}'"
+                    f"{type(self).__name__}: missing required input '{input.id}'"
                 ) from None
 
         try:
