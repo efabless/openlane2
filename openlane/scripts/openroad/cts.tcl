@@ -59,6 +59,9 @@ if { [info exists ::env(CTS_OBSTRUCTION_AWARE)] && $::env(CTS_OBSTRUCTION_AWARE)
 if { [info exists ::env(CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT)] } {
     lappend arg_list -sink_buffer_max_cap_derate [expr $::env(CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT) / 100.0]
 }
+if { [info exists ::env(CTS_DELAY_BUFFER_DERATE_PCT)] } {
+    lappend arg_list -delay_buffer_derate [expr $::env(CTS_DELAY_BUFFER_DERATE_PCT) / 100]
+}
 if { [info exists ::env(CTS_BALANCE_LEVELS)] && $::env(CTS_BALANCE_LEVELS) } {
     lappend arg_list -balance_levels
 }

@@ -2026,6 +2026,13 @@ class CTS(ResizerStep):
                 units="%",
             ),
             Variable(
+                "CTS_DELAY_BUFFER_DERATE_PCT",
+                Optional[Decimal],
+                "This option balances latencies between macro cells and registers by inserting delay buffers"
+                + "The value of 100 means all needed delay buffers are inserted",
+                units="%",
+            ),
+            Variable(
                 "CTS_OBSTRUCTION_AWARE",
                 Optional[bool],
                 "Enables obstruction-aware buffering such that clock buffers are not placed on top of blockages or hard macros. "
