@@ -354,16 +354,16 @@ proc write_views {args} {
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \
             -remove_cells "$exclude_cells"\
-            $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
+            $::env(SAVE_SDF_PNL)
     }
 
     if { [info exists ::env(SAVE_LOGICAL_PNL)] } {
         set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofilldiode powered netlist to '$::env(SAVE_LOGICAL_POWERED_NETLIST)'…"
+        puts "Writing nofilldiode powered netlist to '$::env(SAVE_LOGICAL_PNL)'…"
         puts "Excluding $exclude_cells"
         write_verilog -include_pwr_gnd \
             -remove_cells "$exclude_cells"\
-            $::env(SAVE_LOGICAL_POWERED_NETLIST)
+            $::env(SAVE_LOGICAL_PNL)
     }
 
     if { [info exists ::env(SAVE_OPENROAD_LEF)] } {

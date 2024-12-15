@@ -126,15 +126,15 @@ def test_copy():
 
 
 def test_empty():
-    from openlane.state import DesignFormat, State
+    from openlane.state import State
 
     test_dict = {}
     test_metrics = {}
     state = State(test_dict, metrics=test_metrics)
 
     assert state.metrics == test_metrics
-    for item in state:
-        assert state[item] is None, "new state has non-none value"
+
+    assert len(state) == 0, "New empty state has entries"
 
 
 def test_path_fail_exists():
