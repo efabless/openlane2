@@ -53,7 +53,7 @@ from ..config import (
     Variable,
     universal_flow_config_variables,
 )
-from ..state import DesignFormat, DesignFormatObject, State, InvalidState, StateElement
+from ..state import DesignFormat, State, InvalidState, StateElement
 from ..common import (
     GenericDict,
     GenericImmutableDict,
@@ -661,7 +661,7 @@ class Step(ABC):
             for input, output in zip_longest(Self.inputs, Self.outputs):
                 input_str = ""
                 if input is not None:
-                    input_str = f"{input.value.name} (.{input.value.extension})"
+                    input_str = f"{input.full_name} (.{input.extension})"
 
                 output_str = ""
                 if output is not None:
@@ -669,7 +669,7 @@ class Step(ABC):
                         raise StepException(
                             f"Output '{output}' is not a valid DesignFormat enum object."
                         )
-                    output_str = f"{output.value.name} (.{output.value.extension})"
+                    output_str = f"{output.full_name} (.{output.extension})"
                 result += f"| {input_str} | {output_str} |\n"
 
         if len(Self.config_vars):
@@ -733,9 +733,9 @@ class Step(ABC):
                 continue
 
             if state_in.get(id) != value:
-                df = DesignFormat.by_id(id)
+                df = DesignFormat.factory.get(id)
                 assert df is not None
-                views_updated.append(df.value.name)
+                views_updated.append(df.full_name)
 
         if len(views_updated):
             result += "#### Views updated:\n"
@@ -996,14 +996,14 @@ class Step(ABC):
 
         # 2. State
         state_in: GenericDict[str, Any] = self.state_in.result().copy_mut()
-        for format in DesignFormat:
-            assert isinstance(format.value, DesignFormatObject)  # type checker shut up
+        for format_id in state_in:
+            format = DesignFormat.factory.get(format_id)
             if format not in self.__class__.inputs and not (
                 format == DesignFormat.DEF
                 and DesignFormat.ODB
                 in self.__class__.inputs  # hack to write tests a bit more easily
             ):
-                state_in[format.value.id] = None
+                state_in[format.id] = None
         state_in["metrics"] = self.state_in.result().metrics.copy_mut()
         dumpable_state = copy_recursive(state_in, translator=visitor)
         state_path = os.path.join(target_dir, "state_in.json")
@@ -1143,7 +1143,7 @@ class Step(ABC):
             value = state_in_result[input]
             if value is None:
                 raise StepException(
-                    f"{type(self).__name__}: missing required input '{input.name}'"
+                    f"{type(self).__name__}: missing required input '{input.id}'"
                 ) from None
 
         try:
@@ -1537,7 +1537,7 @@ class CompositeStep(Step):
         for key in state:
             if (
                 state_in.get(key) != state.get(key)
-                and DesignFormat.by_id(key) in self.outputs
+                and DesignFormat.factory.get(key) in self.outputs
             ):
                 views_updates[key] = state[key]
         for key in state.metrics:
