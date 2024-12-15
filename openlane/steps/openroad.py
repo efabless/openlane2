@@ -2028,6 +2028,32 @@ class CTS(ResizerStep):
         OpenROADStep.config_vars
         + dpl_variables
         + [
+            # sink_buffer_max_cap_derate
+            Variable(
+                "CTS_BALANCE_LEVELS",
+                Optional[bool],
+                "Attempts to keep a similar number of levels in the clock tree across non-register cells (e.g., clock-gate or inverter).",
+            ),
+            Variable(
+                "CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT",
+                Optional[Decimal],
+                "Controls automatic buffer selection. To favor strong(weak) drive strength buffers use a small(large) value."
+                + "The value of 100 means no derating of max cap limit",
+                units="%",
+            ),
+            Variable(
+                "CTS_DELAY_BUFFER_DERATE_PCT",
+                Optional[Decimal],
+                "This option balances latencies between macro cells and registers by inserting delay buffers"
+                + "The value of 100 means all needed delay buffers are inserted",
+                units="%",
+            ),
+            Variable(
+                "CTS_OBSTRUCTION_AWARE",
+                Optional[bool],
+                "Enables obstruction-aware buffering such that clock buffers are not placed on top of blockages or hard macros. "
+                + "This option may reduce legalizer displacement, leading to better latency, skew or timing QoR.",
+            ),
             Variable(
                 "CTS_SINK_CLUSTERING_SIZE",
                 int,
