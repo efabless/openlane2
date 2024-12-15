@@ -23,6 +23,43 @@
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
 
+## Misc Enhancements/Bugfixes
+
+* `openlane.state`
+  * `DesignFormat`
+    * Now a dataclass encapsulating the information about the DesignFormat
+      directly.
+    * `.factory` is a factory for retrieval of DesignFormats by ID
+      * `DesignFormats` may be registered to the factory using `.register()`
+      * Registrations for previously included `DesignFormat`s now moved to
+        appropriate files.
+        * Renamed `POWERED_NETLIST_NO_PHYSICAL_CELLS` to
+          `LOGICAL_POWERED_NETLIST`
+        * Renamed `POWERED_NETLIST_SDF_FRIENDLY` to
+          `SDF_FRIENDLY_POWERED_NETLIST`
+  * `State`
+    * States initialized with keys that have values that are `None` now remove
+      said keys.
+
+## API Breaks
+
+* `openlane.steps`
+
+  * `TclStep` now uses the IDs uppercased for `CURRENT_` and `SAVE_`.
+
+* `openlane.state`
+
+  * `State` no longer includes all `DesignFormat`s as guaranteed keys and `.get`
+    must be used to avoide `KeyErrors`
+  * `DesignFormat` is no longer an enumeration and is not iterable. However, to
+    avoid massive codebase changes, you can still access `DesignFormat`s
+    registered to the factory using the dot notation (e.g.
+    `DesignFormat.NETLIST`), using either their `id` or any of their `alts`.
+  * Removed `DesignFormatObject`: the DesignFormat class itself is now a
+    dataclass incorporating these fields, except `name`, which has been renamed
+    to `full_name`. The enumeration's name has been added to `alts`, while
+    `.name` is now an alias for `.id`.
+
 # 2.2.9
 
 ## Steps
