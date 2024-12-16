@@ -22,8 +22,19 @@
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+  
+## Tool Updates
 
-## Misc Enhancements/Bugfixes
+* Updated nix-eda
+   * Updated nixpkgs to nixos-24.11 (@ `3c53b4b`)
+   * Updated KLayout to `0.29.9`
+   * Updated Magic to `8.3.503`
+   * Updated Netgen to `1.5.287`
+* Updated ioplace-parser to`0.4.0`
+* Updated OpenROAD to `1d61007`
+  * Updated OpenSTA to `aa598a2`
+
+## Misc. Enhancements/Bugfixes
 
 * `openlane.state`
   * `DesignFormat`
