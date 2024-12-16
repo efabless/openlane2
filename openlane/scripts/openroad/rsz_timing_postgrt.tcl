@@ -32,26 +32,32 @@ source $::env(SCRIPTS_DIR)/openroad/common/grt.tcl
 estimate_parasitics -global_routing
 
 # Resize
-set arg_list [list]
-lappend arg_list -verbose
-lappend arg_list -setup
-lappend arg_list -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
-lappend arg_list -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
+set setup_args [list]
+lappend setup_args -verbose
+lappend setup_args -setup
+lappend setup_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
+lappend setup_args -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
 if { $::env(GRT_RESIZER_GATE_CLONING) != 1 } {
-    lappend arg_list -skip_gate_cloning
+    lappend setup_args -skip_gate_cloning
 }
-repair_timing {*}$arg_list
 
-set arg_list [list]
-lappend arg_list -verbose
-lappend arg_list -hold
-lappend arg_list -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
-lappend arg_list -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
-lappend arg_list -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
+set hold_args [list]
+lappend hold_args -verbose
+lappend hold_args -hold
+lappend hold_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
+lappend hold_args -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
+lappend hold_args -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
 if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
-    lappend arg_list -allow_setup_violations
+    lappend hold_args -allow_setup_violations
 }
-repair_timing {*}$arg_list
+
+if { $::env(GRT_RESIZER_FIX_HOLD_FIRST) == 1 } {
+    repair_timing {*}$hold_args
+    repair_timing {*}$setup_args
+} else {
+    repair_timing {*}$setup_args
+    repair_timing {*}$hold_args
+}
 
 # Re-DPL and GRT
 source $::env(SCRIPTS_DIR)/openroad/common/dpl.tcl
