@@ -56,7 +56,7 @@ if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
 	lappend arg_list -skip_initial_place
 }
 
-if { $::env(STEP_ID) == "OpenROAD.GlobalPlacementSkipIO" } {
+if { [info exists ::env(__PL_SKIP_IO)] && $::env(__PL_SKIP_IO) == "1" } {
 	lappend arg_list -skip_io
 }
 

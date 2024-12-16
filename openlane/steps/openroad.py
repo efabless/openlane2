@@ -1373,6 +1373,7 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
                 f"I/O pins to be placed from {self.config['FP_PIN_ORDER_CFG']}. Returning state unaltered…"
             )
             return {}, {}
+        env["__PL_SKIP_IO"] = "1"
         return super().run(state_in, env=env, **kwargs)
 
 
