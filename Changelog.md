@@ -13,6 +13,101 @@
 ## API Breaks
 ## Documentation
 -->
+
+# Dev
+
+## Steps
+
+* `OpenROAD.CTS`
+  * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
+  * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
+  * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+
+## Misc Enhancements/Bugfixes
+
+* `openlane.state`
+  * `DesignFormat`
+    * Now a dataclass encapsulating the information about the DesignFormat
+      directly.
+    * `.factory` is a factory for retrieval of DesignFormats by ID
+      * `DesignFormats` may be registered to the factory using `.register()`
+      * Registrations for previously included `DesignFormat`s now moved to
+        appropriate files.
+        * Renamed `POWERED_NETLIST_NO_PHYSICAL_CELLS` to
+          `LOGICAL_POWERED_NETLIST`
+        * Renamed `POWERED_NETLIST_SDF_FRIENDLY` to
+          `SDF_FRIENDLY_POWERED_NETLIST`
+  * `State`
+    * States initialized with keys that have values that are `None` now remove
+      said keys.
+
+## API Breaks
+
+* `openlane.steps`
+
+  * `TclStep` now uses the IDs uppercased for `CURRENT_` and `SAVE_`.
+
+* `openlane.state`
+
+  * `State` no longer includes all `DesignFormat`s as guaranteed keys and `.get`
+    must be used to avoide `KeyErrors`
+  * `DesignFormat` is no longer an enumeration and is not iterable. However, to
+    avoid massive codebase changes, you can still access `DesignFormat`s
+    registered to the factory using the dot notation (e.g.
+    `DesignFormat.NETLIST`), using either their `id` or any of their `alts`.
+  * Removed `DesignFormatObject`: the DesignFormat class itself is now a
+    dataclass incorporating these fields, except `name`, which has been renamed
+    to `full_name`. The enumeration's name has been added to `alts`, while
+    `.name` is now an alias for `.id`.
+
+# 2.3.0
+
+## Steps
+
+* `OpenROAD.GlobalPlacement`
+
+  * Exposed `-routability_check_overflow` argument as new variable
+    `PL_ROUTABILITY_OVERFLOW_THRESHOLD`.
+
+* `Yosys.*Synthesis`
+
+  * Created new variable `SYNTH_HIERARCHY_MODE`, replacing `SYNTH_NO_FLAT`.
+    There are three options, `flatten`, `deferred_flatten` and `keep`. The first
+    two correspond to `SYNTH_NO_FLAT` being false and true respectively. The
+    third keeps the hierarchy in the final netlist.
+  * Created new variable `SYNTH_TIE_UNDEFINED` to customize whether undefined
+    and undriven values are tied low, high, or left as-is.
+  * Created new variable `SYNTH_WRITE_NOATTR` to allow attributes to be
+    propagated to the final netlist.
+
+* Created `Yosys.Resynthesis`
+
+  * Like `Yosys.Synthesis`, but uses the current input state netlist as an input
+    instead of RTL files
+
+## CLI
+
+* Added new option: `-e`/`--initial-state-element-override`: allows an element
+  in the initial state to be overridden straight from the commandline.
+
+# 2.2.9
+
+## Steps
+
+* `Yosys.JsonHeader`, `Yosys.Synthesis`
+
+  * Fixed `VERILOG_INCLUDE_DIRS` being a list of strings instead of a list of
+    `Path`s.
+
+# 2.2.8
+
+## Steps
+
+* `Checker.*Violations`
+
+  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable to avoid breaking PDKs
+    without `tt` in corner names.
+
 # 2.2.7
 
 ## Steps
@@ -27,13 +122,13 @@
 
 * `OpenROAD.ResizerTimingPostGRT`
 
-  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
-  of setup fixing.
+  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
 
 * `OpenROAD.ResizerTimingPostCTS`
 
-  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead 
-  of setup fixing.
+  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
 
 # 2.2.5
 

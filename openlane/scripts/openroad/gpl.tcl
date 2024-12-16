@@ -47,6 +47,9 @@ if { [info exists ::env(PL_ROUTABILITY_DRIVEN)] && $::env(PL_ROUTABILITY_DRIVEN)
 	set_macro_extension $::env(GRT_MACRO_EXTENSION)
 	source $::env(SCRIPTS_DIR)/openroad/common/set_layer_adjustments.tcl
 	lappend arg_list -routability_driven
+	if { [info exists ::env(PL_ROUTABILITY_OVERFLOW_THRESHOLD)] } {
+		lappend arg_list -routability_check_overflow $::env(PL_ROUTABILITY_OVERFLOW_THRESHOLD)
+	}
 }
 
 if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
