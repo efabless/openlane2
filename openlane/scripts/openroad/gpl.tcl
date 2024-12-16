@@ -26,11 +26,11 @@ foreach inst $::insts {
 }
 
 if { !$placement_needed } {
-	puts stderr "\[WARNING\] All instances are FIXED/FIRM."
-	puts stderr "\[WARNING\] No need to perform global placement."
-	puts stderr "\[WARNING\] Skipping…"
+	puts "\[INFO\] All instances are FIXED/FIRM."
+	puts "\[INFO\] No need to perform global placement."
+	puts "\[INFO\] Skipping…"
 	write_views
-	exit 0
+	exit_unless_gui
 }
 
 set arg_list [list]
@@ -56,8 +56,7 @@ if { $::env(PL_SKIP_INITIAL_PLACEMENT) } {
 	lappend arg_list -skip_initial_place
 }
 
-
-if { [info exists ::env(__PL_SKIP_IO)] } {
+if { [info exists ::env(__PL_SKIP_IO)] && $::env(__PL_SKIP_IO) == "1" } {
 	lappend arg_list -skip_io
 }
 
@@ -75,8 +74,7 @@ lappend arg_list -pad_right $cell_pad_side
 lappend arg_list -pad_left $cell_pad_side
 lappend arg_list -init_wirelength_coef $::env(PL_WIRE_LENGTH_COEF)
 
-puts "+ global_placement $arg_list"
-global_placement {*}$arg_list
+log_cmd global_placement {*}$arg_list
 
 
 source $::env(SCRIPTS_DIR)/openroad/common/set_rc.tcl
