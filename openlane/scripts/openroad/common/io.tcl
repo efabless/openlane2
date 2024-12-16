@@ -501,6 +501,26 @@ proc find_unfixed_macros {} {
     return $macros
 }
 
+proc append_if_exists_argument {list_arg glob_variable_name option} {
+    upvar $list_arg local_array
+    if [info exists ::env($glob_variable_name) ] {
+        lappend local_array $option $::env($glob_variable_name)
+    }
+}
+
+proc append_if_flag {list_arg glob_variable_name flag} {
+    upvar $list_arg local_array
+    if { [info exists ::env($glob_variable_name)] && $::env($glob_variable_name) } {
+        lappend local_array $flag
+    }
+}
+proc append_if_not_flag {list_arg glob_variable_name flag} {
+    upvar $list_arg local_array
+    if { [info exists ::env($glob_variable_name)] && !$::env($glob_variable_name) } {
+        lappend local_array $flag
+    }
+}
+
 # Code below adapted from OpenROAD Flow Scripts under the following license:
 #
 # BSD 3-Clause License

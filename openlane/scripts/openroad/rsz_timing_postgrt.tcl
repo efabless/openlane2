@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2020-2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,9 +37,11 @@ lappend setup_args -verbose
 lappend setup_args -setup
 lappend setup_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
 lappend setup_args -max_buffer_percent $::env(GRT_RESIZER_SETUP_MAX_BUFFER_PCT)
-if { $::env(GRT_RESIZER_GATE_CLONING) != 1 } {
-    lappend setup_args -skip_gate_cloning
-}
+append_if_not_flag setup_args GRT_RESIZER_SETUP_BUFFERING -skip_buffering
+append_if_not_flag setup_args GRT_RESIZER_SETUP_BUFFER_REMOVAL -skip_buffer_removal
+append_if_not_flag setup_args GRT_RESIZER_SETUP_GATE_CLONING -skip_gate_cloning
+append_if_exists_argument setup_args GRT_RESIZER_SETUP_REPAIR_TNS_PCT -repair_tns
+append_if_exists_argument setup_args GRT_RESIZER_SETUP_MAX_UTIL_PCT -max_utilization
 
 set hold_args [list]
 lappend hold_args -verbose
@@ -47,9 +49,9 @@ lappend hold_args -hold
 lappend hold_args -setup_margin $::env(GRT_RESIZER_SETUP_SLACK_MARGIN)
 lappend hold_args -hold_margin $::env(GRT_RESIZER_HOLD_SLACK_MARGIN)
 lappend hold_args -max_buffer_percent $::env(GRT_RESIZER_HOLD_MAX_BUFFER_PCT)
-if { $::env(GRT_RESIZER_ALLOW_SETUP_VIOS) == 1 } {
-    lappend hold_args -allow_setup_violations
-}
+append_if_flag hold_args GRT_RESIZER_ALLOW_SETUP_VIOS -allow_setup_violations
+append_if_exists_argument hold_args GRT_RESIZER_HOLD_REPAIR_TNS_PCT -repair_tns
+append_if_exists_argument hold_args GRT_RESIZER_HOLD_MAX_UTIL_PCT -max_utilization
 
 if { $::env(GRT_RESIZER_FIX_HOLD_FIRST) == 1 } {
     log_cmd repair_timing {*}$hold_args
