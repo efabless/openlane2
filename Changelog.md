@@ -60,6 +60,36 @@
     to `full_name`. The enumeration's name has been added to `alts`, while
     `.name` is now an alias for `.id`.
 
+# 2.3.0
+
+## Steps
+
+* `OpenROAD.GlobalPlacement`
+
+  * Exposed `-routability_check_overflow` argument as new variable
+    `PL_ROUTABILITY_OVERFLOW_THRESHOLD`.
+
+* `Yosys.*Synthesis`
+
+  * Created new variable `SYNTH_HIERARCHY_MODE`, replacing `SYNTH_NO_FLAT`.
+    There are three options, `flatten`, `deferred_flatten` and `keep`. The first
+    two correspond to `SYNTH_NO_FLAT` being false and true respectively. The
+    third keeps the hierarchy in the final netlist.
+  * Created new variable `SYNTH_TIE_UNDEFINED` to customize whether undefined
+    and undriven values are tied low, high, or left as-is.
+  * Created new variable `SYNTH_WRITE_NOATTR` to allow attributes to be
+    propagated to the final netlist.
+
+* Created `Yosys.Resynthesis`
+
+  * Like `Yosys.Synthesis`, but uses the current input state netlist as an input
+    instead of RTL files
+
+## CLI
+
+* Added new option: `-e`/`--initial-state-element-override`: allows an element
+  in the initial state to be overridden straight from the commandline.
+
 # 2.2.9
 
 ## Steps

@@ -33,7 +33,7 @@
   };
 
   inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
-  inputs.ioplace-parser.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
+  inputs.ioplace-parser.inputs.nix-eda.follows = "nix-eda";
   inputs.volare.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
