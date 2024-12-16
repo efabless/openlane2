@@ -1140,7 +1140,7 @@ class Step(ABC):
         self.start_time = time.time()
 
         for input in self.inputs:
-            value = state_in_result[input]
+            value = state_in_result.get(input.id)
             if value is None:
                 raise StepException(
                     f"{type(self).__name__}: missing required input '{input.id}'"
