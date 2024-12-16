@@ -1287,6 +1287,11 @@ class GlobalPlacement(_GlobalPlacement):
             "Specifies whether the placer should use routability driven placement.",
             default=True,
         ),
+        Variable(
+            "PL_ROUTABILITY_OVERFLOW_THRESHOLD",
+            Optional[Decimal],
+            "Sets overflow threshold for routability mode.",
+        ),
     ]
 
 
@@ -2288,6 +2293,12 @@ class ResizerTimingPostCTS(ResizerStep):
             "Enables gate cloning when attempting to fix setup violations",
             default=True,
         ),
+        Variable(
+            "PL_RESIZER_FIX_HOLD_FIRST",
+            bool,
+            "Experimental: attempt to fix hold violations before setup violations, which may lead to better timing results.",
+            default=False,
+        ),
     ]
 
     def get_script_path(self):
@@ -2360,6 +2371,12 @@ class ResizerTimingPostGRT(ResizerStep):
             bool,
             "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_FIX_HOLD_FIRST",
+            bool,
+            "Experimental: attempt to fix hold violations before setup violations, which may lead to better timing results.",
+            default=False,
         ),
     ]
 
