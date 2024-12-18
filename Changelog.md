@@ -14,6 +14,13 @@
 ## Documentation
 -->
 
+# 2.3.1
+
+## Tool Updates
+
+* KLayout now compiled with `-qt-binding`, which increases distribution size but
+  allows for more features.
+
 # 2.3.0
 
 ## Steps
