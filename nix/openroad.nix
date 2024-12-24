@@ -47,9 +47,9 @@
   git,
   gtest,
   # environments,
-  rev ? "8dcca2271f408793f6f53360151162465412b805",
+  rev ? "245cca5a2d742cbbea9636c8d0f4455ab8a237f6",
   rev-date ? "2024-12-24",
-  sha256 ? "sha256-Z2h2ddoWyaVgUf77S/NixQgLCUvhJL1jTy3S9Lghqzw=",
+  sha256 ? "sha256-rjwdqeCKHuDqe6X5NUETQGlUiExWFMTKsQMZ0y4rXOY=",
   openroad,
   buildPythonEnvForInterpreter,
 }: let
