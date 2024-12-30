@@ -39,6 +39,12 @@ from ..steps import (
     DeferredStepError,
 )
 
+Substitution = Union[str, Type[Step], None]
+SubstitutionsObject = Union[
+    Dict[str, Substitution],
+    List[Tuple[str, Substitution]],
+]
+
 
 class SequentialFlow(Flow):
     """
@@ -67,20 +73,53 @@ class SequentialFlow(Flow):
     :cvar gating_config_vars: A mapping from step ID (wildcards) to lists of
         Boolean variable names. All Boolean variables must be True for a step with
         a specific ID to execute.
+
+    :cvar Substitutions: Consumed by the subclass initializer - allows for a
+        quick interface where steps can be removed, replaced, appended or
+        prepended. After subclass intialization, it is set to ``None``, and
+        a new subclass must be created to modify substitutions further.
+
+        The list of substitutions may be specified as either a dictionary
+        or a list of tuples: while the former is more terse, the latter is
+        allows using the same key more than once.
+
+        The substitutions are mappings from Step IDs or objects to Step IDs,
+        objects, or ``None``. In case of ``None``, the step in question is
+        removed.
+
+        In case the key is specified as a string, you may add ``-`` as a prefix
+        to the Step ID to indicate you want to insert a step before the step
+        in question, and similary ``+`` indicates you want to insert a step
+        after the step in question. You may not prepend or append ``None``.
+
+        Step IDs are made unique after every substitution, i.e., whenever the
+        substitution occurs, the first instance of a Step in a sequential flow
+        shall have its ID unadulterated, while the next instance will have
+        ``-1``, the one after ``-2``, etc. If ``-1`` is removed, the previous
+        ``-2`` shall become ``-1``, for example.
     """
 
-    Substitutions: Optional[Dict[str, Union[str, Type[Step], None]]] = None
+    Substitutions: Optional[SubstitutionsObject] = None
     gating_config_vars: Dict[str, List[str]] = {}
+
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ):
+        self.Steps = self.Steps.copy()  # Break global reference
+        super().__init__(*args, **kwargs)
+
+    # ---
 
     def __init_subclass__(Self, scm_type=None, name=None, **kwargs):
         Self.Steps = Self.Steps.copy()  # Break global reference
         Self.config_vars = Self.config_vars.copy()
         Self.gating_config_vars = Self.gating_config_vars.copy()
-        if substitute := Self.Substitutions:
-            for key, item in substitute.items():
-                Self.__substitute_step(Self, key, item)
-
         Self.__normalize_step_ids(Self)
+        if Self.Substitutions:
+            Self.__substitute_in_place(Self, Self.Substitutions)
+            Self.Substitutions = None
 
         # Validate Gating Config Vars
         variables_by_name = {}
@@ -120,20 +159,31 @@ class SequentialFlow(Flow):
 
         return CustomSequentialFlow
 
-    def __init__(
-        self,
-        *args,
-        Substitute: Optional[Dict[str, Union[str, Type[Step], None]]] = None,
-        **kwargs,
+    @classmethod
+    def Substitute(Self, Substitutions: SubstitutionsObject) -> Type[SequentialFlow]:
+        """
+        Convenience method to quickly subclass a sequential flow and add
+        Substitutions to it.
+
+        The new flow shall be named ``{previous_flow_name}'``.
+
+        :param Substitutions: The substitutions to use for the new subclass.
+        """
+        return type(Self.__name__ + "'", (Self,), {"Substitutions": Substitutions})
+
+    @staticmethod
+    def __substitute_in_place(
+        target: Type[SequentialFlow],
+        Substitutions: Optional[SubstitutionsObject],
     ):
-        self.Steps = self.Steps.copy()  # Break global reference
-
-        if substitute := Substitute:
-            for key, item in substitute.items():
-                self.__substitute_step(self, key, item)
-            self.__normalize_step_ids(self)
-
-        super().__init__(*args, **kwargs)
+        if Substitutions is None:
+            return Substitutions
+        if isinstance(Substitutions, dict):
+            for key, item in Substitutions.items():
+                target.__substitute_step(target, key, item)
+        else:
+            for key, item in Substitutions:
+                target.__substitute_step(target, key, item)
 
     @staticmethod
     def __substitute_step(
@@ -173,23 +223,23 @@ class SequentialFlow(Flow):
         if with_step is None:
             for index in reversed(step_indices):
                 del target.Steps[index]
-            return
+        else:
+            if isinstance(with_step, str):
+                with_step_opt = Step.factory.get(with_step)
+                if with_step_opt is None:
+                    raise FlowException(
+                        f"Could not {mode} '{id}' with '{with_step}': no replacement step with ID '{with_step}' found."
+                    )
+                with_step = with_step_opt
 
-        if isinstance(with_step, str):
-            with_step_opt = Step.factory.get(with_step)
-            if with_step_opt is None:
-                raise FlowException(
-                    f"Could not {mode} '{id}' with '{with_step}': no replacement step with ID '{with_step}' found."
-                )
-            with_step = with_step_opt
-
-        for i in step_indices:
-            if mode == "replace":
-                target.Steps[i] = with_step
-            elif mode == "append":
-                target.Steps.insert(i + 1, with_step)
-            elif mode == "prepend":
-                target.Steps.insert(i, with_step)
+            for i in step_indices:
+                if mode == "replace":
+                    target.Steps[i] = with_step
+                elif mode == "append":
+                    target.Steps.insert(i + 1, with_step)
+                elif mode == "prepend":
+                    target.Steps.insert(i, with_step)
+        target.__normalize_step_ids(target)
 
     @staticmethod
     def __normalize_step_ids(target: Union[SequentialFlow, Type[SequentialFlow]]):
@@ -197,14 +247,15 @@ class SequentialFlow(Flow):
 
         for i, step in enumerate(target.Steps):
             counter = 0
-            id = step.id
+            imp_id = step.get_implementation_id()
+            id = imp_id
             if (
                 id == NotImplemented
             ):  # Will be validated later by initialization: ignore for now
                 continue
             while id in ids_used:
                 counter += 1
-                id = f"{step.id}-{counter}"
+                id = f"{imp_id}-{counter}"
             if id != step.id:
                 target.Steps[i] = step.with_id(id)
             ids_used.add(id)
