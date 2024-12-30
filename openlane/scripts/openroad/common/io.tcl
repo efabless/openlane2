@@ -316,6 +316,35 @@ proc read_current_odb {args} {
     set_dont_use_cells
 }
 
+proc _populate_cells_by_class {} {
+    if { [info exists ::_cells_by_class(non_core)] } {
+        return
+    }
+
+    set ::_cells_by_class(non_core) [list]
+    set ::_cells_by_class(non_timing) [list]
+    foreach lib $::libs {
+        foreach master [$lib getMasters] {
+            if { "[$master getType]" != "CORE" || "[$master getType]" != "BLOCK" } {
+                lappend ::_cells_by_class(non_core) [$master getName]
+                if { "[$master getType]" != "CORE_ANTENNACELL" } {
+                    lappend ::_cells_by_class(non_timing) [$master getName]
+                }
+            }
+        }
+    }
+}
+
+proc get_timing_excluded_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(non_timing)
+}
+
+proc get_non_core_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(non_core)
+}
+
 proc write_views {args} {
     # This script will attempt to write views based on existing "SAVE_"
     # environment variables. If the SAVE_ variable exists, the script will
@@ -349,20 +378,16 @@ proc write_views {args} {
     }
 
     if { [info exists ::env(SAVE_SDF_PNL)] } {
-        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_SDF_PNL)'…"
-        puts "Excluding $exclude_cells"
+        puts "Writing timing powered netlist to '$::env(SAVE_SDF_PNL)'…"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
+            -remove_cells "[get_timing_excluded_cells]"\
             $::env(SAVE_SDF_PNL)
     }
 
     if { [info exists ::env(SAVE_LOGICAL_PNL)] } {
-        set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofilldiode powered netlist to '$::env(SAVE_LOGICAL_PNL)'…"
-        puts "Excluding $exclude_cells"
+        puts "Writing logic-only powered netlist to '$::env(SAVE_LOGICAL_PNL)'…"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
+            -remove_cells "[get_non_core_cells]"\
             $::env(SAVE_LOGICAL_PNL)
     }
 
