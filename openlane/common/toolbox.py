@@ -39,7 +39,7 @@ import libparse
 from deprecated.sphinx import deprecated
 
 
-from .misc import mkdirp
+from .misc import mkdirp, gzopen
 from .types import Path
 from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
@@ -388,9 +388,9 @@ class Toolbox(object):
         excluded_cells_filter = Filter(excluded_cells)
 
         for file in input_lib_files:
-            input_lib_stream = open(file)
-            out_filename = f"{uuid.uuid4().hex}.lib"
-            out_path = os.path.join(self.tmp_dir, out_filename)
+            input_lib_stream = gzopen(file)
+            # can't be gzip -- abc cannot read gzipped lib files
+            out_path = os.path.join(self.tmp_dir, f"{uuid.uuid4().hex}.lib")
 
             state = State.initial
             brace_count = 0
