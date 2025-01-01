@@ -14,7 +14,7 @@
 ## Documentation
 -->
 
-# Dev
+# 3.0.0
 
 ## Steps
 
