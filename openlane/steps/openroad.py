@@ -1634,7 +1634,7 @@ class DetailedRouting(OpenROADStep):
         Variable(
             "DRT_SAVE_SNAPSHOTS",
             bool,
-            "Saves an odb snapshot of the layout each routing iteration",
+            "This is an experimental variable. Saves an odb snapshot of the layout each routing iteration. This generates multiple odb files increasing disk usage.",
             default=False,
         ),
         Variable(
