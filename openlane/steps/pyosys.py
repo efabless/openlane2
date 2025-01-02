@@ -28,44 +28,6 @@ from ..state import State, DesignFormat
 from ..logging import debug, verbose
 from ..common import Path, get_script_dir, process_list_file
 
-verilog_rtl_cfg_vars = [
-    Variable(
-        "VERILOG_FILES",
-        List[Path],
-        "The paths of the design's Verilog files.",
-    ),
-    Variable(
-        "VERILOG_DEFINES",
-        Optional[List[str]],
-        "Preprocessor defines for input Verilog files.",
-        deprecated_names=["SYNTH_DEFINES"],
-    ),
-    Variable(
-        "VERILOG_POWER_DEFINE",
-        Optional[str],
-        "Specifies the name of the define used to guard power and ground connections in the input RTL.",
-        deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
-        default="USE_POWER_PINS",
-    ),
-    Variable(
-        "VERILOG_INCLUDE_DIRS",
-        Optional[List[str]],
-        "Specifies the Verilog `include` directories.",
-    ),
-    Variable(
-        "USE_SYNLIG",
-        bool,
-        "Use the Synlig plugin to process files, which has better SystemVerilog parsing capabilities but may not be compatible with all Yosys commands and attributes.",
-        default=False,
-    ),
-    Variable(
-        "SYNLIG_DEFER",
-        bool,
-        "Uses -defer flag when reading files the Synlig plugin, which may improve performance by reading each file separately, but is experimental.",
-        default=False,
-    ),
-]
-
 starts_with_whitespace = re.compile(r"^\s+.+$")
 
 yosys_cell_rx = r"cell\s+\S+\s+\((\S+)\)"
@@ -149,7 +111,7 @@ verilog_rtl_cfg_vars = [
     ),
     Variable(
         "VERILOG_INCLUDE_DIRS",
-        Optional[List[str]],
+        Optional[List[Path]],
         "Specifies the Verilog `include` directories.",
     ),
     Variable(
@@ -170,6 +132,13 @@ verilog_rtl_cfg_vars = [
         default=False,
     ),
 ]
+
+DesignFormat(
+    "json_h",
+    "h.json",
+    "Design JSON Header File",
+    alts=["JSON_HEADER"],
+).register()
 
 
 class PyosysStep(Step):
@@ -346,14 +315,14 @@ class JsonHeader(VerilogStep):
     def get_command(self, state_in: State) -> List[str]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.extension}",
         )
         return super().get_command(state_in) + ["--output", out_file]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.JSON_HEADER.extension}",
         )
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         views_updates[DesignFormat.JSON_HEADER] = Path(out_file)
@@ -450,10 +419,16 @@ class SynthesisCommon(VerilogStep):
             default=False,
         ),
         Variable(
-            "SYNTH_NO_FLAT",
-            bool,
-            "A flag that disables flattening the hierarchy during synthesis, only flattening it after synthesis, mapping and optimizations.",
-            default=False,
+            "SYNTH_HIERARCHY_MODE",
+            Literal["flatten", "deferred_flatten", "keep"],
+            "Affects how hierarchy is maintained throughout and after synthesis. 'flatten' flattens it during and after synthesis. 'deferred_flatten' flattens it after synthesis. 'keep' never flattens it.",
+            default="flatten",
+            deprecated_names=[
+                (
+                    "SYNTH_NO_FLAT",
+                    lambda x: "deferred_flatten" if x else "flatten",
+                )
+            ],
         ),
         Variable(
             "SYNTH_SHARE_RESOURCES",
@@ -491,6 +466,18 @@ class SynthesisCommon(VerilogStep):
             "Runs the booth pass as part of synthesis: See https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/booth.html",
             default=False,
         ),
+        Variable(
+            "SYNTH_TIE_UNDEFINED",
+            Optional[Literal["high", "low"]],
+            "Whether to tie undefined values low or high. Explicitly provide null if you wish to simply leave them undriven.",
+            default="low",
+        ),
+        Variable(
+            "SYNTH_WRITE_NOATTR",
+            bool,
+            "If true, Verilog-2001 attributes are omitted from output netlists. Some utilities do not support attributes.",
+            default=True,
+        ),
         # Variable(
         #     "SYNTH_SDC_FILE",
         #     Optional[Path],
@@ -504,7 +491,7 @@ class SynthesisCommon(VerilogStep):
     def get_command(self, state_in: State) -> List[str]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.extension}",
         )
         cmd = super().get_command(state_in)
         if self.config["USE_LIGHTER"]:
@@ -529,7 +516,7 @@ class SynthesisCommon(VerilogStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         out_file = os.path.join(
             self.step_dir,
-            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.value.extension}",
+            f"{self.config['DESIGN_NAME']}.{DesignFormat.NETLIST.extension}",
         )
 
         view_updates, metric_updates = super().run(state_in, **kwargs)
@@ -583,6 +570,30 @@ class Synthesis(SynthesisCommon):
     name = "Synthesis"
 
     config_vars = SynthesisCommon.config_vars + verilog_rtl_cfg_vars
+
+
+@Step.factory.register()
+class Resynthesis(SynthesisCommon):
+    """
+    Like ``Synthesis``, but operates on the input netlist instead of RTL files.
+    Useful to process/elaborate on netlists generated by tools other than Yosys.
+
+    Some metrics will also be extracted and updated, namely:
+
+    * ``design__instance__count``
+    * ``design__instance_unmapped__count``
+    * ``design__instance__area``
+    """
+
+    id = "Yosys.Resynthesis"
+    name = "Resynthesis"
+
+    config_vars = SynthesisCommon.config_vars
+
+    inputs = [DesignFormat.NETLIST]
+
+    def get_command(self, state_in):
+        return super().get_command(state_in) + [state_in[DesignFormat.NETLIST]]
 
 
 @Step.factory.register()

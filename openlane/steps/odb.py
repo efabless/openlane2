@@ -69,9 +69,9 @@ class OdbpyStep(Step):
         views_updates: ViewsUpdate = {}
         command = self.get_command()
         for output in automatic_outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.extension}"
             file_path = os.path.join(self.step_dir, filename)
-            command.append(f"--output-{output.value.id}")
+            command.append(f"--output-{output.id}")
             command.append(file_path)
             views_updates[output] = Path(file_path)
 
@@ -119,7 +119,7 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+        if (design_lef := self.state_in.result().get(DesignFormat.LEF)) and (
             DesignFormat.LEF in self.inputs
         ):
             lefs.append("--design-lef")

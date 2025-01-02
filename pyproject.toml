@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openlane"
-version = "2.2.4"
+version = "3.0.0.dev6"
 description = "An infrastructure for implementing chip design flows"
 authors = ["Efabless Corporation and Contributors <donn@efabless.com>"]
 readme = "Readme.md"
@@ -24,7 +24,7 @@ psutil = ">=5.9.0"
 httpx = ">=0.22.0,<0.28"
 klayout = ">=0.29.0,<0.30.0"
 rapidfuzz = ">=3.9.0,<4"
-ioplace-parser = "0.3.0"
+ioplace-parser = "0.4.0"
 yamlcore = "^0.0.2"
 
 
