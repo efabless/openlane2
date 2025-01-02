@@ -209,7 +209,7 @@ class PyosysStep(Step):
         Variable(
             "SYNTH_CORNER",
             Optional[str],
-            "IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+            "A fully qualified IPVT corner to use during synthesis. If unspecified, the value for `DEFAULT_CORNER` from the PDK will be used.",
             pdk=True,
         ),
     ]

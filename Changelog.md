@@ -18,6 +18,9 @@
 
 ## Steps
 
+* `Yosys.*`
+  * Added `SYNTH_CORNER`
+
 * `OpenROAD.CTS`
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
