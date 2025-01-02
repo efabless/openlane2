@@ -230,6 +230,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             new["SYNTH_CORNER"] = "*_ss_125C_4v50"
 
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
+        new["TIMING_VIOLATION_CORNERS"] = ["*tt*"]
         new["LIB"] = lib_sta
 
     # x4. Constraints (sky130/gf180mcu)
