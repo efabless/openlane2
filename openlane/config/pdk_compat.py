@@ -216,8 +216,8 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             ]
             new["PNR_CORNERS"] = [
                 "nom_tt_025C_1v80",
-                "nom_ss_100C_1v60",
-                "nom_ff_n40C_1v95",
+                # "nom_ss_100C_1v60",
+                # "nom_ff_n40C_1v95",
             ]
             ## correlateRC.py gcd,ibex,aes,jpeg,chameleon,riscv32i,chameleon_hier
             ## cap units pf/um
@@ -300,8 +300,8 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             ]
             new["PNR_CORNERS"] = [
                 "nom_tt_025C_5v00",
-                "nom_ss_125C_4v50",
-                "nom_ff_n40C_5v50",
+                # "nom_ss_125C_4v50",
+                # "nom_ff_n40C_5v50",
             ]
 
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
