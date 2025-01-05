@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#  Parts of this file adapted from https://github.com/YosysHQ/yosys/blob/master/techlibs/common/synth.cc
+#  Parts of this file adapted from:
+#
+#    * https://github.com/YosysHQ/yosys/blob/master/techlibs/common/synth.cc
+#    * https://github.com/YosysHQ/yosys/blob/master/passes/opt/opt.cc
 #
 #  Copyright (C) 2012  Claire Xenia Wolf <claire@yosyshq.com>
 #
@@ -57,7 +60,91 @@ def openlane_proc(d: ys.Design, report_dir: str):
     d.run_pass("opt_expr")  # Optimize expressions
 
 
-def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
+def openlane_opt(
+    d,
+    fast=False,
+    mux_undef=False,
+    mux_bool=False,
+    undriven=False,
+    fine=False,
+    purge=False,
+    noclkinv=False,
+    keepdc=False,
+    share_all=False,
+    nodffe=False,
+    nosdff=False,
+    sat=False,
+    opt_share=False,
+    noff=False,
+):
+    expr_args = []
+    merge_args = []
+    reduce_args = []
+    clean_args = []
+    dff_args = []
+    if purge:
+        clean_args.append("-purge")
+    if mux_undef:
+        expr_args.append("-mux_undef")
+    if mux_bool:
+        expr_args.append("-mux_bool")
+    if undriven:
+        expr_args.append("-undriven")
+    if fine:
+        expr_args.append("-fine")
+        reduce_args.append("-fine")
+    if noclkinv:
+        expr_args.append("-noclkinv")
+    if keepdc:
+        expr_args.append("-keepdc")
+        dff_args.append("-keepdc")
+        merge_args.append("-keepdc")
+    if nodffe:
+        dff_args.append("-nodffe")
+    if nosdff:
+        dff_args.append("-nosdff")
+    if sat:
+        dff_args.append("-sat")
+    if share_all:
+        merge_args.append("-share_all")
+    if fast:
+        while True:
+            d.run_pass("opt_expr", *expr_args)
+            d.run_pass("opt_merge", *merge_args)
+            d.scratchpad_unset("opt.did_something")
+            if not noff:
+                d.run_pass("opt_dff", *dff_args)
+            if not d.scratchpad_get_bool("opt.did_something"):
+                break
+            d.run_pass("opt_clean", *clean_args)
+            ys.log_header(d, "Rerunning OPT passes (Removed registers in this run.)")
+        d.run_pass("opt_clean", *clean_args)
+    else:
+        d.run_pass("opt_expr", *expr_args)
+        d.run_pass("opt_merge", "-nomux", *merge_args)
+        while True:
+            d.scratchpad_unset("opt.did_something")
+            d.run_pass("opt_muxtree")
+            d.run_pass("opt_reduce", *reduce_args)
+            d.run_pass("opt_merge", *merge_args)
+            if opt_share:
+                d.run_pass("opt_share")
+            if not noff:
+                d.run_pass("opt_dff", *dff_args)
+            d.run_pass("opt_clean", *clean_args)
+            d.run_pass("opt_expr", *expr_args)
+            if not d.scratchpad_get_bool("opt.did_something"):
+                break
+            ys.log_header(d, "Rerunning OPT passes. (Maybe there is more to do…)")
+
+    d.optimize()
+    d.sort()
+    d.check()
+
+
+def openlane_synth(
+    d, top, flatten, report_dir, *, booth=False, abc_dff=False, undriven=True
+):
     d.run_pass("hierarchy", "-check", "-top", top, "-nokeep_prints", "-nokeep_asserts")
     openlane_proc(d, report_dir)
 
@@ -69,9 +156,9 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
     d.run_pass("opt_clean")  # Clean up after optimization
 
     # Perform various logic optimization passes
-    d.run_pass("opt", "-nodffe", "-nosdff")  # Optimize logic excluding flip-flops
+    openlane_opt(d, nodffe=True, nosdff=True)
     d.run_pass("fsm")  # Identify and optimize finite state machines
-    d.run_pass("opt")  # Additional logic optimization
+    openlane_opt(d)
     d.run_pass("wreduce")  # Reduce logic using algebraic rewriting
     d.run_pass("peepopt")  # Perform local peephole optimization
     d.run_pass("opt_clean")  # Clean up after optimization
@@ -79,21 +166,38 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
         d.run_pass("booth")
     d.run_pass("alumacc")  # Optimize arithmetic logic unitsb
     d.run_pass("share")  # Share logic across the design
-    d.run_pass("opt")  # More logic optimization
+    openlane_opt(d)
 
     # Memory optimization
     d.run_pass("memory", "-nomap")  # Analyze memories but don't map them yet
     d.run_pass("opt_clean")  # Clean up after memory analysis
 
     # Perform more aggressive optimization with faster runtime
-    d.run_pass("opt", "-fast", "-full")  # Fast and comprehensive optimization
+    openlane_opt(
+        d,
+        fast=True,
+        opt_share=True,  # affects opt_share
+        mux_undef=True,  # affects opt_expr
+        mux_bool=True,  # affects opt_expr
+        undriven=undriven,  # affects opt_expr
+        fine=True,  # affects opt_expr, opt_reduce
+    )
 
     # Technology mapping
     d.run_pass("memory_map")  # Map memories to standard cells
-    d.run_pass("opt", "-full")  # More optimization after memory mapping
-    d.run_pass("techmap")  # Map logic to standard cells from the technology library
-    d.run_pass("opt", "-fast")  # Fast optimization after technology mapping
-    d.run_pass("opt", "-fast")  # More fast optimization
+    openlane_opt(
+        d,
+        opt_share=True,  # affects opt_share
+        mux_undef=True,  # affects opt_expr
+        mux_bool=True,  # affects opt_expr
+        undriven=undriven,  # affects opt_expr
+        fine=True,  # affects opt_expr, opt_reduce
+    )
+    d.run_pass("techmap")
+
+    # Couple more fast opt iterations
+    openlane_opt(d, fast=True)
+    openlane_opt(d, fast=True)
 
     d.run_pass(
         "abc", "-fast", *(["-dff"] if abc_dff else [])
@@ -111,11 +215,13 @@ def openlane_synth(d, top, flatten, report_dir, *, booth=False, abc_dff=False):
 @click.option("--config-in", type=click.Path(exists=True), required=True)
 @click.option("--extra-in", type=click.Path(exists=True), required=True)
 @click.option("--lighter-dff-map", type=click.Path(exists=True), required=False)
+@click.argument("inputs", nargs=-1)
 def synthesize(
     output,
     config_in,
     extra_in,
     lighter_dff_map,
+    inputs,
 ):
     config = json.load(open(config_in))
     extra = json.load(open(extra_in))
@@ -150,7 +256,17 @@ def synthesize(
 
     ys.log(f"[INFO] Using SDC file '{sdc_path}' for ABC…")
 
-    if verilog_files := config.get("VERILOG_FILES"):
+    if len(inputs):
+        d.read_verilog_files(
+            inputs,
+            top=config["DESIGN_NAME"],
+            synth_parameters=[],
+            includes=includes,
+            defines=defines,
+            use_synlig=False,
+            synlig_defer=False,
+        )
+    elif verilog_files := config.get("VERILOG_FILES"):
         d.read_verilog_files(
             verilog_files,
             top=config["DESIGN_NAME"],
@@ -203,10 +319,13 @@ def synthesize(
         d.tee("stat", "-json", *lib_arguments, o=os.path.join(report_dir, "stat.json"))
         d.tee("stat", *lib_arguments, o=os.path.join(report_dir, "stat.rpt"))
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
-            "-noattr",
-            "-noexpr",
+            *noattr_flag,
             "-nohex",
             "-nodec",
             "-defparam",
@@ -232,10 +351,11 @@ def synthesize(
     openlane_synth(
         d,
         config["DESIGN_NAME"],
-        not config["SYNTH_NO_FLAT"],
+        config["SYNTH_HIERARCHY_MODE"] == "flatten",
         report_dir,
         booth=config["SYNTH_MUL_BOOTH"],
         abc_dff=config["SYNTH_ABC_DFF"],
+        undriven=config.get("SYNTH_TIE_UNDEFINED") is not None,
     )
 
     d.run_pass("delete", "t:$print")
@@ -305,7 +425,10 @@ def synthesize(
             *(["-dff"] if config["SYNTH_ABC_DFF"] else []),
         )
 
-        d.run_pass("setundef", "-zero")
+        if value := config.get("SYNTH_TIE_UNDEFINED"):
+            flag = "-zero" if value == "low" else "-one"
+            d.run_pass("setundef", flag)
+
         d.run_pass(
             "hilomap",
             "-hicell",
@@ -336,9 +459,13 @@ def synthesize(
             #     sc_mcu7t5v0__and3_1_A3_Z_gf180mcu_fd_sc_mcu7t5v0__buf_1_I_Z
             d.run_pass("autoname")
 
+        noattr_flag = []
+        if config["SYNTH_WRITE_NOATTR"]:
+            noattr_flag.append("-noattr")
+
         d.run_pass(
             "write_verilog",
-            "-noattr",
+            *noattr_flag,
             "-noexpr",
             "-nohex",
             "-nodec",
@@ -349,10 +476,10 @@ def synthesize(
 
     run_strategy(d)
 
-    if config["SYNTH_NO_FLAT"]:
+    if config["SYNTH_HIERARCHY_MODE"] == "deferred_flatten":
         # Resynthesize, flattening
         d_flat = ys.Design()
-        d_flat.add_blackbox_models(blackbox_models)
+        d_flat.add_blackbox_models(blackbox_models, includes=includes, defines=defines)
 
         shutil.copy(output, f"{output}.hierarchy.nl.v")
         d_flat.run_pass("read_verilog", "-sv", output)
