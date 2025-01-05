@@ -173,7 +173,7 @@ class CheckSDCFiles(Step):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         default_sdc_file = [
-            var for var in option_variables if var.name == "FALLBACK_SDC_FILE"
+            var for var in option_variables if var.name == "FALLBACK_SDC"
         ][0]
         assert default_sdc_file is not None
 
@@ -258,7 +258,7 @@ class OpenROADStep(TclStep):
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
-        env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC"]
         env["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
         env["_MACRO_LIBS"] = TclStep.value_to_tcl(
             self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
@@ -912,6 +912,13 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_TRACKS_INFO",
+            Path,
+            "A path to the a classic OpenROAD `.tracks` file. Used by the floorplanner to generate tracks.",
+            deprecated_names=["TRACKS_INFO_FILE"],
+            pdk=True,
+        ),
+        Variable(
             "FP_SIZING",
             Literal["absolute", "relative"],
             "Sizing mode for floorplanning",
@@ -1128,6 +1135,13 @@ class TapEndcapInsertion(OpenROADStep):
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+        Variable(
+            "FP_TAPCELL_DIST",
+            Decimal,
+            "The distance between tap cell columns.",
+            units="µm",
+            pdk=True,
         ),
     ]
 

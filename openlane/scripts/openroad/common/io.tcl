@@ -317,16 +317,42 @@ proc read_current_odb {args} {
 }
 
 proc _populate_cells_by_class {} {
-    if { [info exists ::_cells_by_class(non_core)] } {
+    if { [info exists ::_cells_by_class(physical)] } {
         return
     }
 
-    set ::_cells_by_class(non_core) [list]
+    set ::_cells_by_class(physical) [list]
     set ::_cells_by_class(non_timing) [list]
+    set _comment_ {
+        We naïvely assume anything not in these four classes is not a physical
+        cell. This may not be comprehensive, but is good enough.
+
+        CORE just means a macro used in the core area (i.e. a standard cell.)
+
+        Thing is, it has a lot of subclasses for physical cells:
+
+        `FEEDTHRU`,`SPACER`,`ANTENNACELL`,`WELLTAP`
+
+        Only `TIEHIGH`, `TIELOW` are for logical cells. Thus, the inclusion
+        list allows them as well. `BLOCKS` are macros, which we cannot discern
+        whether they have a logical function or not, so we include them
+        regardless.
+
+        We do make one exception for `ANTENNACELL`s. These are not counted as
+        logical cells but they are not exempt from the so-called SDF-friendly
+        netlist as they do affect timing ever so slightly.
+    }
+    set logical_classes {
+        CORE
+        BLOCK
+        CORE_TIEHIGH
+        CORE_TIELOW
+    }
+
     foreach lib $::libs {
         foreach master [$lib getMasters] {
-            if { "[$master getType]" != "CORE" || "[$master getType]" != "BLOCK" } {
-                lappend ::_cells_by_class(non_core) [$master getName]
+            if { [lsearch -exact $logical_classes [$master getType]] == -1 } {
+                lappend ::_cells_by_class(physical) [$master getName]
                 if { "[$master getType]" != "CORE_ANTENNACELL" } {
                     lappend ::_cells_by_class(non_timing) [$master getName]
                 }
@@ -340,9 +366,9 @@ proc get_timing_excluded_cells {args} {
     return $::_cells_by_class(non_timing)
 }
 
-proc get_non_core_cells {args} {
+proc get_physical_cells {args} {
     _populate_cells_by_class
-    return $::_cells_by_class(non_core)
+    return $::_cells_by_class(physical)
 }
 
 proc write_views {args} {
@@ -387,7 +413,7 @@ proc write_views {args} {
     if { [info exists ::env(SAVE_LOGICAL_PNL)] } {
         puts "Writing logic-only powered netlist to '$::env(SAVE_LOGICAL_PNL)'…"
         write_verilog -include_pwr_gnd \
-            -remove_cells "[get_non_core_cells]"\
+            -remove_cells "[get_physical_cells]"\
             $::env(SAVE_LOGICAL_PNL)
     }
 
