@@ -557,6 +557,11 @@ class Synthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.Synthesis"
@@ -576,6 +581,11 @@ class Resynthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.Resynthesis"
@@ -600,6 +610,11 @@ class VHDLSynthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.VHDLSynthesis"
