@@ -229,6 +229,7 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
 
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"
         new["LIB"] = lib_sta
+        new["TIMING_VIOLATION_CORNERS"] = ["*tt*"]
 
     # x4. Constraints (sky130/gf180mcu)
     if new["PDK"].startswith("sky130") or new["PDK"].startswith("gf180mcu"):
