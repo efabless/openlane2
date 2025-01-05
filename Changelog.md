@@ -26,6 +26,10 @@
 
 * Relaxed requirement on `httpx` to include `0.28.X`, which has no removals
   compared to `0.27.0`.
+  
+## Documentation
+
+* Clarified support for gzipped files in the Classic flow.
 
 # 2.3.1
 
