@@ -25,13 +25,24 @@ set max_layer $::env(RT_MAX_LAYER)
 if { [info exists ::env(DRT_MAX_LAYER)] } {
     set max_layer $::env(DRT_MAX_LAYER)
 }
-
+if { $::env(DRT_SAVE_SNAPSHOTS) } {
+    set_debug_level DRT snapshot 1
+}
+set drc_report_iter_step_arg ""
+if { $::env(DRT_SAVE_SNAPSHOTS) } {
+    set_debug_level DRT snapshot 1
+    set drc_report_iter_step_arg "-drc_report_iter_step 1"
+}
+if { [info exists ::env(DRT_SAVE_DRC_REPORT_ITERS)] } {
+    set drc_report_iter_step_arg "-drc_report_iter_step $::env(DRT_SAVE_DRC_REPORT_ITERS)"
+}
 log_cmd detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
     -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\
     -droute_end_iter $::env(DRT_OPT_ITERS)\
     -or_seed 42\
-    -verbose 1
+    -verbose 1\
+    {*}$drc_report_iter_step_arg
 
 write_views

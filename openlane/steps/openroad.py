@@ -294,6 +294,7 @@ class OpenROADStep(TclStep):
             command,
             env=env,
             check=check,
+            cwd=self.step_dir,
             **kwargs,
         )
 
@@ -1643,6 +1644,17 @@ class DetailedRouting(OpenROADStep):
             int,
             "Specifies the maximum number of optimization iterations during Detailed Routing in TritonRoute.",
             default=64,
+        ),
+        Variable(
+            "DRT_SAVE_SNAPSHOTS",
+            bool,
+            "This is an experimental variable. Saves an odb snapshot of the layout each routing iteration. This generates multiple odb files increasing disk usage.",
+            default=False,
+        ),
+        Variable(
+            "DRT_SAVE_DRC_REPORT_ITERS",
+            Optional[int],
+            "Report DRC on each specified iteration. Set to 1 when DRT_SAVE_DRC_REPORT_ITERS in enabled",
         ),
     ]
 

@@ -14,7 +14,7 @@
 ## Documentation
 -->
 
-# Dev
+# 3.0.0
 
 ## Steps
 
@@ -22,6 +22,11 @@
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+
+* `OpenROAD.DetailedRouting`
+  * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each detalied routing iteration.
+  * Added `DRT_SAVE_DRC_REPORT_ITERS`
+
   
 ## Tool Updates
 
