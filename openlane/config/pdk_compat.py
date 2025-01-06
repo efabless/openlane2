@@ -279,11 +279,11 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
             # set_layer_rc -via via4 -resistance 0.00580E-3
             new["VIAS_RC"] = {
                 "*": {
-                    "mcon": {"res": 9.249146},
-                    "via": {"res": 4.5},
-                    "via2": {"res": 3.368786},
-                    "via3": {"res": 0.376635},
-                    "via4": {"res": 0.00580},
+                    "mcon": {"res": 9.249146e-3},
+                    "via": {"res": 4.5e-3},
+                    "via2": {"res": 3.368786e-3},
+                    "via3": {"res": 0.376635e-3},
+                    "via4": {"res": 0.00580e-3},
                 }
             }
         elif new["PDK"].startswith("gf180mcu"):
