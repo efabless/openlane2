@@ -324,8 +324,8 @@ proc _populate_cells_by_class {} {
     set ::_cells_by_class(physical) [list]
     set ::_cells_by_class(non_timing) [list]
     set _comment_ {
-        We naïvely assume anything not in these four classes is not a physical
-        cell. This may not be comprehensive, but is good enough.
+        We naïvely assume anything not in these classes is not a cell with a
+        logical function. This may not be comprehensive, but is good enough.
 
         CORE just means a macro used in the core area (i.e. a standard cell.)
 
@@ -347,6 +347,12 @@ proc _populate_cells_by_class {} {
         BLOCK
         CORE_TIEHIGH
         CORE_TIELOW
+        PAD_INPUT
+        PAD_OUTPUT
+        PAD_INOUT
+        PAD_POWER
+        PAD_SPACER
+        PAD_AREAIO
     }
 
     foreach lib $::libs {
