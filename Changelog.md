@@ -17,6 +17,12 @@
 # 3.0.0
 
 ## Steps
+
+* `Odb.AddPDNObstructions`, `Odb.AddRoutingObstructions`
+
+  * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
+    instead of variable-length Tcl-style lists (AKA: strings).
+
 * `OpenROAD.*`
 
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
@@ -137,6 +143,12 @@
 
 ## API Breaks
 
+* `Odb.AddRoutingObstructions`, `Odb.AddPDNObstructions`
+
+  * Typing for representation of obstructions has been changed. Designs with a
+    meta version of 2 or higher must update their variables from strings to
+    tuples.
+
 * `openlane.steps`
 
   * `TclStep` now uses the IDs uppercased for `CURRENT_` and `SAVE_`.
@@ -153,12 +165,12 @@
     dataclass incorporating these fields, except `name`, which has been renamed
     to `full_name`. The enumeration's name has been added to `alts`, while
     `.name` is now an alias for `.id`.
-    
+
 * `openlane.config`
 
   * `WIRE_LENGTH_THRESHOLD`, `GPIO_PAD_*`, `FP_TRACKS_INFO`, `FP_TAPCELL_DIST`
     are no longer global variables.
-    
+
   * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
     renamed, see Misc. Enhancements/Bugfixes.
 
