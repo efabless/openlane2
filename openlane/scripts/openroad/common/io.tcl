@@ -343,16 +343,19 @@ proc _populate_cells_by_class {} {
         netlist as they do affect timing ever so slightly.
     }
     set logical_classes {
-        CORE
         BLOCK
+        BUMP
+        CORE
         CORE_TIEHIGH
         CORE_TIELOW
+        COVER
+        PAD
+        PAD_AREAIO
+        PAD_INOUT
         PAD_INPUT
         PAD_OUTPUT
-        PAD_INOUT
         PAD_POWER
         PAD_SPACER
-        PAD_AREAIO
     }
 
     foreach lib $::libs {
