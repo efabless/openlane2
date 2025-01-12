@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Efabless Corporation
+# Copyright 2022-2025 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -242,19 +242,14 @@ proc read_spefs {} {
 proc read_pnr_libs {args} {
     set i "0"
     set tc_key "_LIB_CORNER_$i"
+    set corner_names [list]
     while { [info exists ::env($tc_key)] } {
         set corner_name [lindex $::env($tc_key) 0]
         set corner_libs [lreplace $::env($tc_key) 0 0]
-
         set corner($corner_name) $corner_libs
-
         incr i
         set tc_key "_LIB_CORNER_$i"
-    }
-
-    if { $i == "0" } {
-        puts stderr "\[WARNING\] No resizer-specific timing information read."
-        return
+        lappend corner_names $corner_name
     }
 
     define_corners {*}[array name corner]

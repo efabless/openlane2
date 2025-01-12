@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2023-2025 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -193,19 +193,25 @@ class OpenROADStep(TclStep):
         Variable(
             "PNR_CORNERS",
             Optional[List[str]],
-            "A list of fully-qualified IPVT corners to use. Can be overriden by some steps",
+            "A list of fully-qualified IPVT corners to use during PnR. Can be overriden by some steps",
             pdk=True,
         ),
         Variable(
             "LAYERS_RC",
             Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
-            "Test",
+            "Used during PNR steps, Specific custom resistance and capacitance values for metal layers."
+            + " For each IPVT corner, a mapping for each metal layer is provided."
+            + " Each mapping describes custom resistance and capacitance values."
+            + " Usage of wildcards for specifying IPVT corners is allowed.",
             pdk=True,
         ),
         Variable(
             "VIAS_RC",
             Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
-            "Test",
+            "Used during PNR steps, Specific custom resistance and capacitance values for via layers."
+            + " For each IPVT corner, a mapping for each via layer is provided."
+            + " Each mapping describes custom resistance and capacitance values."
+            + " Usage of wildcards for specifying IPVT corners is allowed.",
             pdk=True,
         ),
         Variable(
@@ -284,7 +290,9 @@ class OpenROADStep(TclStep):
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
-        corners: List[str] = self.config["PNR_CORNERS"] or self.config["STA_CORNERS"]
+        corners: List[str] = self.config["PNR_CORNERS"] or [
+            self.config["DEFAULT_CORNER"]
+        ]
 
         if "corners" in kwargs:
             corners = kwargs.pop("corners")
@@ -304,6 +312,7 @@ class OpenROADStep(TclStep):
             lib_corners.append(corner)
             lib_set_set.add(lib_set)
             env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
+
             debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 

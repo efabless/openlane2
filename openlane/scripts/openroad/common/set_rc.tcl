@@ -14,7 +14,7 @@
 
 # Resistance/Capacitance Overrides
 # Via resistance
-#
+
 proc get_routing_layer_names {} {
     set layer_names [list]
     set layers [$::tech getLayers]
@@ -37,10 +37,9 @@ proc get_routing_layer_names {} {
     return $layer_names
 }
 
-
+# Set custom layer RC
 set i "0"
 set tc_key "_LAYER_RC_$i"
-
 while { [info exists ::env($tc_key)] } {
     # [$corner] + [layer] + [str(round(res, 8))] + [str(round(cap, 8))]
     set corner_name [lindex $::env($tc_key) 0]
@@ -57,10 +56,9 @@ while { [info exists ::env($tc_key)] } {
     set tc_key "_LAYER_RC_$i"
 }
 
-
+# Set custom via RC
 set i "0"
 set tc_key "_VIA_RC_$i"
-
 while { [info exists ::env($tc_key)] } {
     set corner_name [lindex $::env($tc_key) 0]
     set via_name [lindex $::env($tc_key) 1]
