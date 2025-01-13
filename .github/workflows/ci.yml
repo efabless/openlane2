@@ -383,6 +383,7 @@ jobs:
     name: Merge Metrics
     runs-on: ubuntu-22.04
     needs: test
+    if: ${{ always() }}
     steps:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4
