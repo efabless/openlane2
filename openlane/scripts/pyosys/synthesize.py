@@ -32,7 +32,6 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import os
-import sys
 import json
 import shutil
 
@@ -280,9 +279,8 @@ def synthesize(
         d.run_pass("plugin", "-i", "ghdl")
         d.run_pass("ghdl", *vhdl_files, "-e", config["DESIGN_NAME"])
     else:
-        print(
+        ys.log_error(
             "Script called inappropriately: config must include either VERILOG_FILES or VHDL_FILES.",
-            file=sys.stderr,
         )
         exit(1)
 

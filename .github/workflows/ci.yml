@@ -269,7 +269,7 @@ jobs:
             --pdk-root ./.volare-sky130\
             --smoke-test
       - name: Upload Docker Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ matrix.arch }}
           path: ${{ env.IMAGE_PATH }}
@@ -362,7 +362,7 @@ jobs:
           fi
       - name: Upload Run Folder
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.design.test_name }}-${{ matrix.design.pdk }}-${{ matrix.design.scl }}
           path: ${{ matrix.design.run_dir }}
@@ -375,14 +375,25 @@ jobs:
               --extract-metrics-to ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
       - name: Upload Metrics
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
+          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
+  merge_metrics:
+    name: Merge Metrics
+    runs-on: ubuntu-22.04
+    needs: test
+    if: ${{ always() }}
+    steps:
+      - name: Merge Artifacts
+        uses: actions/upload-artifact/merge@v4
         with:
           name: metrics
-          path: ${{ matrix.design.pdk }}-${{ matrix.design.scl }}-${{ matrix.design.test_name }}.metrics.json
+          pattern: "*.metrics.json"
   upload_metrics:
     name: Upload Metrics
     runs-on: ubuntu-22.04
-    needs: [test]
+    needs: [test, merge_metrics]
     if: ${{ always() }}
     steps:
       - name: Check out repo
@@ -395,7 +406,7 @@ jobs:
           python3 -m pip install -e .
           echo "BRANCH_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - name: Download Metrics
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: metrics
           path: current
@@ -447,12 +458,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_TOKEN }}
       - name: Download Image (Docker/amd64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docker-image-amd64
           path: /tmp/docker
       - name: Download Image (Docker/aarch64)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docker-image-aarch64
           path: /tmp/docker
