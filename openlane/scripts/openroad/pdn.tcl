@@ -41,9 +41,7 @@ foreach {net} "$::env(VDD_NETS) $::env(GND_NETS)" {
     # at all. i.e. PDN generation has completely failed.
     # This is a fallback file.
     set f [open $report_file "w"]
-    puts $f "violation type: no nodes"
-    puts $f "  srcs: "
-    puts $f "  - N/A"
+    puts $f ""
     close $f
 
     if { [catch {check_power_grid -net $net -error_file $report_file} err] } {
