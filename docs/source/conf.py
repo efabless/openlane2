@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Efabless Corporation
+# SPDX-FileCopyrightText: 2020-2025 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath("../../"))
 
 # -- Project information -----------------------------------------------------
 project = "OpenLane"
-copyright = "2020-2023 Efabless Corporation and contributors"
+copyright = "2020-2025 Efabless Corporation and contributors"
 author = "Efabless Corporation"
 repo = "https://github.com/efabless/openlane2"
 branch = "main"
