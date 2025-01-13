@@ -397,5 +397,23 @@ MPW
     of a wafer to be spread across multiple projects.
     
     {term}`OpenMPW` and {term}`chipIgnite` are examples of MPW projects.
+    
+dotlib
 
+    Also `.lib`.
+
+    A library format for macros including standard cells, modeling at an
+    abstract level the interface to and timing properties of a cell.
+    
+    Typically used for Synthesis and {term}`STA`.
+    
+Gzip
+
+    A free and open-source compression format. A great many number of tools
+    support Gzipped inputs transparently, i.e., any file beginning with the
+    bytes `1f 8b` is automatically decompressed without any special input
+    from the user.
+    
+    Gzipping is popular for text-heavy formats such as {term}`dotlib` or
+    {term}`SPEF` formats.
 ```

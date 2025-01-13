@@ -13,6 +13,7 @@
 # limitations under the License.
 import fnmatch
 import glob
+import gzip
 import os
 import pathlib
 import re
@@ -375,3 +376,27 @@ def process_list_file(from_file: AnyPath) -> List[str]:
 
 def _get_process_limit() -> int:
     return int(os.getenv("_OPENLANE_MAX_CORES", os.cpu_count() or 1))
+
+
+def gzopen(filename, mode="rt"):
+    """
+    This method (tries to?) emulate the gzopen from the Linux Standard Base,
+    specifically this part:
+
+    If path refers to an uncompressed file, and mode refers to a read mode,
+    gzopen() shall attempt to open the file and return a gzFile object suitable
+    for reading directly from the file without any decompression.
+
+    gzip.open does not have this behavior.
+    """
+    try:
+        g = gzip.open(filename, mode=mode)
+        # Incredibly, it won't actually try to figure out if it's a gzipped
+        # file until you try to read from it.
+        if "r" in mode:
+            g.read(1)
+            g.seek(0)
+        return g
+    except gzip.BadGzipFile:
+        g.close()
+        return open(filename, mode=mode)
