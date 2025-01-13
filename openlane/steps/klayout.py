@@ -131,7 +131,7 @@ class KLayoutStep(Step):
             for gds in self.toolbox.get_macro_views(self.config, DesignFormat.GDS):
                 gds_args.append("--with-gds-file")
                 gds_args.append(gds)
-            if extra_gds := self.config["EXTRA_GDS_FILES"]:
+            if extra_gds := self.config["EXTRA_GDS"]:
                 for gds in extra_gds:
                     gds_args.append("--with-gds-file")
                     gds_args.append(gds)

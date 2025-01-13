@@ -49,5 +49,5 @@ foreach {instance_name macro_name} $::env(_check_macro_instances) {
 }
 
 if { $error_count != 0 } {
-    exit -1
+    exit_unless_gui 1
 }

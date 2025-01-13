@@ -206,6 +206,12 @@ class PyosysStep(Step):
             "Which log level for Yosys. At WARNING or higher, the initialization splash is also disabled.",
             default="ALL",
         ),
+        Variable(
+            "SYNTH_CORNER",
+            Optional[str],
+            "A fully qualified IPVT corner to use during synthesis. If unspecified, the value for `DEFAULT_CORNER` from the PDK will be used.",
+            pdk=True,
+        ),
     ]
 
     @abstractmethod
@@ -240,7 +246,9 @@ class VerilogStep(PyosysStep):
         cmd = super().get_command(state_in)
 
         blackbox_models = []
-        scl_lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
+        scl_lib_list = self.toolbox.filter_views(
+            self.config, self.config["LIB"], self.config.get("SYNTH_CORNER")
+        )
         if self.power_defines and self.config["CELL_VERILOG_MODELS"] is not None:
             blackbox_models.extend(
                 [
@@ -564,6 +572,11 @@ class Synthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.Synthesis"
@@ -583,6 +596,11 @@ class Resynthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.Resynthesis"
@@ -607,6 +625,11 @@ class VHDLSynthesis(SynthesisCommon):
     * ``design__instance__count``
     * ``design__instance_unmapped__count``
     * ``design__instance__area``
+
+    Note that Yosys steps do not currently support gzipped standard cell dotlib
+    files. They are however supported for macros:
+
+    https://github.com/YosysHQ/yosys/issues/4830
     """
 
     id = "Yosys.VHDLSynthesis"
