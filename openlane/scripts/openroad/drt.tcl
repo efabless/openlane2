@@ -36,7 +36,7 @@ if { $::env(DRT_SAVE_SNAPSHOTS) } {
 if { [info exists ::env(DRT_SAVE_DRC_REPORT_ITERS)] } {
     set drc_report_iter_step_arg "-drc_report_iter_step $::env(DRT_SAVE_DRC_REPORT_ITERS)"
 }
-detailed_route\
+log_cmd detailed_route\
     -bottom_routing_layer $min_layer\
     -top_routing_layer $max_layer\
     -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\
