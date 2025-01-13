@@ -47,9 +47,9 @@
   git,
   gtest,
   # environments,
-  rev ? "c3c3a603d2915e7b7585f112708770654c6e4a6c",
-  rev-date ? "2024-12-30",
-  sha256 ? "sha256-JJMbStGIWA6Wd/EYPu+rTBcsFPd4npHZ1nHYUs7X1w4=",
+  rev ? "2fb3cdf40ebc3f578ae29a6cd7bd6939868af495",
+  rev-date ? "2025-01-12",
+  sha256 ? "sha256-B120jqfaWMVrfUom8BEu9RnyCpwVtt4wj7Qrs/ySBtI=",
   openroad,
   buildPythonEnvForInterpreter,
 }: let
@@ -58,7 +58,8 @@
     "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
     "-DTCL_HEADER=${tcl}/include/tcl.h"
     "-DUSE_SYSTEM_BOOST:BOOL=ON"
-    "-DCMAKE_CXX_FLAGS=-DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1 -I${eigen}/include/eigen3 ${lib.strings.optionalString debug "-g"}"
+    "-DCMAKE_CXX_FLAGS=-DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1 -I${eigen}/include/eigen3 ${lib.strings.optionalString debug "-g -O0"}"
+    "-DCMAKE_EXE_LINKER_FLAGS=-L${cudd}/lib -lcudd"
     "-DVERBOSE=1"
   ];
 in
@@ -99,8 +100,7 @@ in
 
       sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
-      sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-      sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
+      sed -i 's@# tclReadline@target_link_libraries(openroad readline ${cudd}/lib/libcudd.a)@' src/CMakeLists.txt
     '';
 
     buildInputs = [
