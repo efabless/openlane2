@@ -79,6 +79,30 @@
     to `full_name`. The enumeration's name has been added to `alts`, while
     `.name` is now an alias for `.id`.
 
+# 2.3.2
+
+## Steps
+
+* `Yosys.*`
+  * Fixed blackbox Verilog and lib models causing a crash if they are
+    gzipped and/or have the extension `.gz`.
+    
+## Tool Updates
+
+* Relaxed requirement on `httpx` to include `0.28.X`, which has no removals
+  compared to `0.27.0`.
+  
+## Documentation
+
+* Clarified support for gzipped files in the Classic flow.
+
+# 2.3.1
+
+## Tool Updates
+
+* KLayout now compiled with `-qt-binding`, which increases distribution size but
+  allows for more features.
+
 # 2.3.0
 
 ## Steps
