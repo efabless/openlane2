@@ -18,26 +18,92 @@
 
 ## Steps
 
-* `Yosys.*`
-  * Added `SYNTH_CORNER`
+* `Odb.AddPDNObstructions`, `Odb.AddRoutingObstructions`
+
+  * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
+    instead of variable-length Tcl-style lists (AKA: strings).
+
+* `OpenROAD.*`
+
+  * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
+  * New convenience methods to append flags to calls based on environment
+    variables
+  * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
+    coupled with `--only`, it runs a step in OpenROAD then doesn't quit so you
+    may inspect the result.
+    * This is not part of the OpenLane stable API and may be broken at any
+      moment.
 
 * `OpenROAD.CTS`
+
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
 
+* `OpenROAD.CutRows`
+
+  * Added `FP_PRUNE_THRESHOLD` to prune rows not meeting the threshold after
+    cutting.
+
 * `OpenROAD.DetailedRouting`
-  * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each detalied routing iteration.
+
+  * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each
+    detalied routing iteration.
   * Added `DRT_SAVE_DRC_REPORT_ITERS`
 
-  
+* `OpenROAD.GlobalPlacement`
+
+  * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+
+* `OpenROAD.RepairDesignPostGPL`
+
+  * Added optional variable `DESIGN_REPAIR_MAX_UTIL_PCT`
+
+* `OpenROAD.ResizerTimingPostCTS`
+
+  * Renamed `PL_RESIZER_GATE_CLONING` to `PL_RESIZER_SETUP_GATE_CLONING`
+
+  * Fixed `PL_RESIZER_SETUP_GATE_CLONING` incorrectly applied to hold fixing
+
+  * Added the following optional variables
+
+    * `PL_RESIZER_SETUP_BUFFERING`
+    * `PL_RESIZER_SETUP_BUFFER_REMOVAL`
+    * `PL_RESIZER_SETUP_REPAIR_TNS_PCT`
+    * `PL_RESIZER_SETUP_MAX_UTIL_PCT`
+    * `PL_RESIZER_HOLD_REPAIR_TNS_PCT`
+    * `PL_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* `OpenROAD.RepairDesignPostGRT`
+
+  * Renamed `GRT_RESIZER_GATE_CLONING` to `GRT_RESIZER_SETUP_GATE_CLONING`
+
+  * Fixed `GRT_RESIZER_SETUP_GATE_CLONING` incorrectly applied to hold fixing
+
+  * Added the following optional variables
+
+    * `GRT_RESIZER_SETUP_BUFFERING`
+    * `GRT_RESIZER_SETUP_BUFFER_REMOVAL`
+    * `GRT_RESIZER_SETUP_REPAIR_TNS_PCT`
+    * `GRT_RESIZER_SETUP_MAX_UTIL_PCT`
+    * `GRT_RESIZER_HOLD_REPAIR_TNS_PCT`
+    * `GRT_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* Created `OpenROAD.UnplaceAll`
+
+  * Removes the placement status of all instances.
+
+* `Yosys.*Synthesis`
+
+  * Added `SYNTH_CORNER`: a step-specific override for `DEFAULT_CORNER`.
+
 ## Tool Updates
 
 * Updated nix-eda
-   * Updated nixpkgs to nixos-24.11 (@ `3c53b4b`)
-   * Updated KLayout to `0.29.9`
-   * Updated Magic to `8.3.503`
-   * Updated Netgen to `1.5.287`
+  * Updated nixpkgs to nixos-24.11 (@ `3c53b4b`)
+  * Updated KLayout to `0.29.9`
+  * Updated Magic to `8.3.503`
+  * Updated Netgen to `1.5.287`
 * Updated ioplace-parser to`0.4.0`
 * Updated OpenROAD to `1d61007`
   * Updated OpenSTA to `aa598a2`
@@ -45,6 +111,7 @@
 ## Misc. Enhancements/Bugfixes
 
 * `openlane.state`
+
   * `DesignFormat`
     * Now a dataclass encapsulating the information about the DesignFormat
       directly.
@@ -60,7 +127,27 @@
     * States initialized with keys that have values that are `None` now remove
       said keys.
 
+* `openlane.config`
+
+  * Moved a number of global variables:
+    * `WIRE_LENGTH_THRESHOLD` moved from global variables to
+      `Checker.WireLength`
+    * `GPIO_PAD_*` removed- no step currently uses them
+    * `FP_TRACKS_INFO`, `FP_TAPCELL_DIST` moved to relevant steps
+    * `FILL_CELL` and `DECAP_CELL` renamed to `FILL_CELLS` and `DECAP_CELLS` as
+      they are both lists
+    * `EXTRA_GDS_FILES` and `FALLBACK_SDC_FILE` renamed to `EXTRA_GDS` and
+      `FALLBACK_SDC`: information can be obtained from their typing
+  * Changed some `decimal.Decimal` initializations to use integers or strings
+    instead of floats.
+
 ## API Breaks
+
+* `Odb.AddRoutingObstructions`, `Odb.AddPDNObstructions`
+
+  * Typing for representation of obstructions has been changed. Designs with a
+    meta version of 2 or higher must update their variables from strings to
+    tuples.
 
 * `openlane.steps`
 
@@ -78,6 +165,38 @@
     dataclass incorporating these fields, except `name`, which has been renamed
     to `full_name`. The enumeration's name has been added to `alts`, while
     `.name` is now an alias for `.id`.
+
+* `openlane.config`
+
+  * `WIRE_LENGTH_THRESHOLD`, `GPIO_PAD_*`, `FP_TRACKS_INFO`, `FP_TAPCELL_DIST`
+    are no longer global variables.
+
+  * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
+    renamed, see Misc. Enhancements/Bugfixes.
+
+# 2.3.2
+
+## Steps
+
+* `Yosys.*`
+  * Fixed blackbox Verilog and lib models causing a crash if they are gzipped
+    and/or have the extension `.gz`.
+
+## Tool Updates
+
+* Relaxed requirement on `httpx` to include `0.28.X`, which has no removals
+  compared to `0.27.0`.
+
+## Documentation
+
+* Clarified support for gzipped files in the Classic flow.
+
+# 2.3.1
+
+## Tool Updates
+
+* KLayout now compiled with `-qt-binding`, which increases distribution size but
+  allows for more features.
 
 # 2.3.0
 

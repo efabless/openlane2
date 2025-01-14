@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import sys
 from typing import Iterable, List, Union
 
@@ -20,7 +21,7 @@ except ImportError:
     try:
         from pyosys import libyosys as ys
     except ImportError:
-        print(
+        ys.log_error(
             "Could not find pyosys in 'PYTHONPATH'-- make sure Yosys is compiled with ENABLE_PYTHON set to 1.",
             file=sys.stderr,
         )
@@ -122,11 +123,16 @@ def _Design_add_blackbox_models(
     define_args = [f"-D{define}" for define in defines]
 
     for model in models:
-        if model.endswith(".v") or model.endswith(".sv") or model.endswith(".vh"):
+        model_path, ext = os.path.splitext(model)
+        if ext == ".gz":
+            # Yosys transparently handles gzip compression
+            model_path, ext = os.path.splitext(model_path)
+
+        if ext in [".v", ".sv", ".vh"]:
             self.run_pass(
                 "read_verilog", "-sv", "-lib", *include_args, *define_args, model
             )
-        elif model.endswith(".lib"):
+        elif ext in [".lib"]:
             self.run_pass(
                 "read_liberty",
                 "-lib",
@@ -136,8 +142,8 @@ def _Design_add_blackbox_models(
                 model,
             )
         else:
-            print(
-                f"[ERROR] Black-box model '{model}' has an unrecognized file extension.",
+            ys.log_error(
+                f"Black-box model '{model}' has an unrecognized file extension: '{ext}'.",
                 file=sys.stderr,
             )
             sys.stderr.flush()
