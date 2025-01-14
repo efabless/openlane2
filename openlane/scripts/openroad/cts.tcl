@@ -32,7 +32,7 @@ if { [info exists ::env(CTS_MAX_CAP)] } {
 if { [info exists ::env(CTS_MAX_SLEW)] } {
     lappend cts_characterization_args -max_slew [expr {$::env(CTS_MAX_SLEW) * 1e-9}]; # ns -> S
 }
-configure_cts_characterization {*}$cts_characterization_args
+log_cmd configure_cts_characterization {*}$cts_characterization_args
 
 puts "\[INFO\] Performing clock tree synthesis…"
 puts "\[INFO\] Looking for the following net(s): $::env(CLOCK_NET)"
@@ -65,8 +65,7 @@ if { [info exists ::env(CTS_BALANCE_LEVELS)] && $::env(CTS_BALANCE_LEVELS) } {
     lappend arg_list -balance_levels
 }
 
-puts "clock_tree_synthesis {*}$arg_list"
-clock_tree_synthesis {*}$arg_list
+log_cmd clock_tree_synthesis {*}$arg_list
 
 set_propagated_clock [all_clocks]
 

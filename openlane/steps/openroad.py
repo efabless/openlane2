@@ -160,7 +160,7 @@ class CheckSDCFiles(Step):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         default_sdc_file = [
-            var for var in option_variables if var.name == "FALLBACK_SDC_FILE"
+            var for var in option_variables if var.name == "FALLBACK_SDC"
         ][0]
         assert default_sdc_file is not None
 
@@ -269,7 +269,11 @@ class OpenROADStep(TclStep):
         lib_list = self.toolbox.filter_views(self.config, self.config["LIB"])
         lib_list += self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
 
-        env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC_FILE"]
+        env["_SDC_IN"] = self.config["PNR_SDC_FILE"] or self.config["FALLBACK_SDC"]
+        env["_PNR_LIBS"] = TclStep.value_to_tcl(lib_list)
+        env["_MACRO_LIBS"] = TclStep.value_to_tcl(
+            self.toolbox.get_macro_views(self.config, DesignFormat.LIB)
+        )
 
         excluded_cells: Set[str] = set(self.config["EXTRA_EXCLUDED_CELLS"] or [])
         excluded_cells.update(process_list_file(self.config["PNR_EXCLUDED_CELL_FILE"]))
@@ -402,7 +406,7 @@ class OpenROADStep(TclStep):
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
         return [
             "openroad",
-            "-exit",
+            ("-gui" if os.getenv("_OPENROAD_GUI", "0") == "1" else "-exit"),
             "-no_splash",
             "-metrics",
             metrics_path,
@@ -973,6 +977,13 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_TRACKS_INFO",
+            Path,
+            "A path to the a classic OpenROAD `.tracks` file. Used by the floorplanner to generate tracks.",
+            deprecated_names=["TRACKS_INFO_FILE"],
+            pdk=True,
+        ),
+        Variable(
             "FP_SIZING",
             Literal["absolute", "relative"],
             "Sizing mode for floorplanning",
@@ -1166,7 +1177,7 @@ class IOPlacement(OpenROADStep):
 @Step.factory.register()
 class TapEndcapInsertion(OpenROADStep):
     """
-    Places well TAP cells across a floorplan, as well as end-cap cells at the
+    Places welltap cells across a floorplan, as well as endcap cells at the
     edges of the floorplan.
     """
 
@@ -1177,7 +1188,7 @@ class TapEndcapInsertion(OpenROADStep):
         Variable(
             "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros while cutting rows.",
+            "Specify the horizontal halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
@@ -1185,15 +1196,38 @@ class TapEndcapInsertion(OpenROADStep):
         Variable(
             "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros while cutting rows.",
+            "Specify the vertical halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+        Variable(
+            "FP_TAPCELL_DIST",
+            Decimal,
+            "The distance between tap cell columns.",
+            units="µm",
+            pdk=True,
         ),
     ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
+
+
+@Step.factory.register()
+class UnplaceAll(OpenROADStep):
+    """
+    Sets placement status of *all* instances to NONE.
+
+    Useful in flows where a preliminary placement is needed as a pre-requisite
+    to something else but that placement must be discarded.
+    """
+
+    id = "OpenROAD.UnplaceAll"
+    name = "Unplace All"
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "openroad", "ungpl.tcl")
 
 
 def get_psm_error_count(rpt: io.TextIOWrapper) -> int:
@@ -1277,7 +1311,7 @@ class _GlobalPlacement(OpenROADStep):
                 "The desired placement density of cells. If not specified, the value will be equal to (`FP_CORE_UTIL` + 5 * `GPL_CELL_PADDING` + 10).",
                 units="%",
                 deprecated_names=[
-                    ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal(100.0))
+                    ("PL_TARGET_DENSITY", lambda d: Decimal(d) * Decimal("100"))
                 ],
             ),
             Variable(
@@ -1376,7 +1410,7 @@ class GlobalPlacement(_GlobalPlacement):
 @Step.factory.register()
 class GlobalPlacementSkipIO(_GlobalPlacement):
     """
-    Performs global placement without taking I/O into consideration.
+    Performs preliminary global placement as a basis for pin placement.
 
     This is useful for flows where the:
     * Cells are placed
@@ -1396,6 +1430,11 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
             deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
         ),
         Variable(
+            "FP_PIN_ORDER_CFG",
+            Optional[Path],
+            "Path to a custom pin configuration file.",
+        ),
+        Variable(
             "FP_DEF_TEMPLATE",
             Optional[Path],
             "Points to the DEF file to be used as a template.",
@@ -1406,37 +1445,16 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
         kwargs, env = self.extract_env(kwargs)
         if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
-                f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Skipping the first global placement iteration…"
+                f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Returning state unaltered…"
+            )
+            return {}, {}
+        if self.config["FP_PIN_ORDER_CFG"] is not None:
+            info(
+                f"I/O pins to be placed from {self.config['FP_PIN_ORDER_CFG']}. Returning state unaltered…"
             )
             return {}, {}
         env["__PL_SKIP_IO"] = "1"
         return super().run(state_in, env=env, **kwargs)
-
-
-@Step.factory.register()
-class BasicMacroPlacement(OpenROADStep):
-    id = "OpenROAD.BasicMacroPlacement"
-    name = "Basic Macro Placement"
-
-    config_vars = OpenROADStep.config_vars + [
-        Variable(
-            "PL_MACRO_HALO",
-            str,
-            "Macro placement halo. Format: `{Horizontal} {Vertical}`.",
-            default="0 0",
-            units="µm",
-        ),
-        Variable(
-            "PL_MACRO_CHANNEL",
-            str,
-            "Channel widths between macros. Format: `{Horizontal} {Vertical}`.",
-            default="0 0",
-            units="µm",
-        ),
-    ]
-
-    def get_script_path(self):
-        raise NotImplementedError()
 
 
 @Step.factory.register()
@@ -2006,7 +2024,7 @@ class CutRows(OpenROADStep):
         Variable(
             "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
-            "Specify the horizontal halo size around macros while cutting rows.",
+            "Specify the horizontal halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_HORIZONTAL_HALO"],
@@ -2014,10 +2032,17 @@ class CutRows(OpenROADStep):
         Variable(
             "FP_MACRO_VERTICAL_HALO",
             Decimal,
-            "Specify the vertical halo size around macros while cutting rows.",
+            "Specify the vertical halo size around macros.",
             default=10,
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
+        ),
+        Variable(
+            "FP_PRUNE_THRESHOLD",
+            Optional[Decimal],
+            'If specified, all rows smaller in width than this value will be removed. This helps avoid "islets" of cells that are hard to route and connect to PDNs.',
+            pdk=True,
+            units="µm",
         ),
     ]
 
@@ -2388,10 +2413,47 @@ class ResizerTimingPostCTS(ResizerStep):
             default=False,
         ),
         Variable(
-            "PL_RESIZER_GATE_CLONING",
+            "PL_RESIZER_SETUP_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
             default=True,
+            deprecated_names=["PL_RESIZER_GATE_CLONING"],
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_BUFFERING",
+            bool,
+            "Rebuffering and load splitting during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_BUFFER_REMOVAL",
+            bool,
+            "Buffer removal transform during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_SETUP_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during hold fixing.",
+            units="%",
+        ),
+        Variable(
+            "PL_RESIZER_HOLD_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during hold fixing.",
+            units="%",
         ),
         Variable(
             "PL_RESIZER_FIX_HOLD_FIRST",
@@ -2461,16 +2523,53 @@ class ResizerTimingPostGRT(ResizerStep):
             deprecated_names=["GLB_RESIZER_ALLOW_SETUP_VIOS"],
         ),
         Variable(
-            "GRT_RESIZER_GATE_CLONING",
+            "GRT_RESIZER_SETUP_GATE_CLONING",
             bool,
             "Enables gate cloning when attempting to fix setup violations",
             default=True,
+            deprecated_names=["GRT_RESIZER_GATE_CLONING"],
         ),
         Variable(
             "GRT_RESIZER_RUN_GRT",
             bool,
             "Gates running global routing after resizer steps. May be useful to disable for designs where global routing takes non-trivial time.",
             default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_BUFFERING",
+            bool,
+            "Rebuffering and load splitting during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_BUFFER_REMOVAL",
+            bool,
+            "Buffer removal transform during setup fixing.",
+            default=True,
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_SETUP_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during setup fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_REPAIR_TNS_PCT",
+            Optional[Decimal],
+            "Percentage of violating endpoints to repair during hold fixing.",
+            units="%",
+        ),
+        Variable(
+            "GRT_RESIZER_HOLD_MAX_UTIL_PCT",
+            Optional[Decimal],
+            "Defines the percentage of core area used during hold fixing.",
+            units="%",
         ),
         Variable(
             "GRT_RESIZER_FIX_HOLD_FIRST",
