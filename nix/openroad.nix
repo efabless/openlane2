@@ -1,4 +1,4 @@
-# Copyright 2023 Efabless Corporation
+# Copyright 2023-2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,23 +13,23 @@
 # limitations under the License.
 {
   lib,
-  clangStdenv,
+  llvmPackages_17,
   fetchFromGitHub,
   openroad-abc,
   libsForQt5,
   opensta,
-  boost183,
+  boost186,
   eigen,
   cudd,
   tcl,
   python3,
   readline,
   tclreadline,
-  spdlog-internal-fmt,
+  spdlog,
   libffi,
   llvmPackages,
   lemon-graph,
-  or-tools,
+  or-tools_9_11,
   glpk,
   zlib,
   clp,
@@ -40,18 +40,23 @@
   gnumake,
   flex,
   bison,
-  clang-tools_14,
   buildEnv,
   makeBinaryWrapper,
-  rev ? "edf00dff99f6c40d67a30c0e22a8191c5d2ed9d6",
-  sha256 ? "sha256-J649SIC/IHtiKiMvY8XrteyFkNM0WeQ6hfKIYdtE81g=",
+  cmake,
+  ninja,
+  git,
   # environments,
+  rev ? "87af90f72f3f9be1fdfa1d886f0dd8d8b8f34694",
+  rev-date ? "2024-12-08",
+  sha256 ? "sha256-GS8DLpAtC5gJfQeP+YOCImVXaAPQNzVbdDjdiB7Aovc=",
   openroad,
   buildPythonEnvForInterpreter,
 }: let
-  self = clangStdenv.mkDerivation (finalAttrs: {
-    name = "openroad";
-    inherit rev;
+  stdenv = llvmPackages_17.stdenv;
+in
+  stdenv.mkDerivation (finalAttrs: {
+    pname = "openroad";
+    version = rev-date;
 
     src = fetchFromGitHub {
       owner = "The-OpenROAD-Project";
@@ -60,8 +65,10 @@
       inherit sha256;
     };
 
+    patches = [./patches/openroad/patches.diff];
+
     cmakeFlagsAll = [
-      "-DTCL_LIBRARY=${tcl}/lib/libtcl${clangStdenv.hostPlatform.extensions.sharedLibrary}"
+      "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
       "-DTCL_HEADER=${tcl}/include/tcl.h"
       "-DUSE_SYSTEM_BOOST:BOOL=ON"
       "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
@@ -86,48 +93,50 @@
       sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-      sed -i 's@%include "../../src/Exception.i"@%include "../../Exception.i"@' src/dbSta/src/dbSta.i
       sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
     '';
 
     buildInputs = [
       openroad-abc
-      boost183
+      boost186
       eigen
       cudd
       tcl
       python3
       readline
       tclreadline
-      spdlog-internal-fmt
+      spdlog
       libffi
       libsForQt5.qtbase
       libsForQt5.qt5.qtcharts
       llvmPackages.openmp
 
       lemon-graph
-      or-tools
       opensta
       glpk
       zlib
       clp
       cbc
-      re2
+
+      or-tools_9_11
     ];
 
     nativeBuildInputs = [
       swig4
       pkg-config
-      python3.pkgs.cmake # TODO: Replace with top-level cmake, I'm just doing this to avoid a rebuild
+      cmake
       gnumake
       flex
       bison
+      ninja
       libsForQt5.wrapQtAppsHook
-      clang-tools_14
+      llvmPackages_17.clang-tools
     ];
 
     shellHook = ''
-      export DEVSHELL_CMAKE_FLAGS="${builtins.concatStringsSep " " finalAttrs.cmakeFlagsAll}"
+      alias ord-format-changed="${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format";
+      alias ord-cmake-debug="cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g" -G Ninja $cmakeFlags .."
+      alias ord-cmake-release="cmake -DCMAKE_BUILD_TYPE=Release -G Ninja $cmakeFlags .."
     '';
 
     passthru = {
@@ -148,6 +157,4 @@
       license = licenses.gpl3Plus;
       platforms = platforms.linux ++ platforms.darwin;
     };
-  });
-in
-  self
+  })

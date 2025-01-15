@@ -14,11 +14,11 @@
 {
   extra-packages ? [],
   extra-python-packages ? [],
+  extra-env ? [],
   openlane-plugins ? [],
-  include-openlane ? true
+  include-openlane ? true,
 }: ({
   lib,
-  openlane,
   git,
   zsh,
   delta,
@@ -29,12 +29,16 @@
   python3,
   devshell,
 }: let
+  openlane = python3.pkgs.openlane;
   openlane-env = (
     python3.withPackages (pp:
-      with pp;
-        if include-openlane then [openlane] else openlane.propagatedBuildInputs
-        ++ extra-python-packages
-        ++ openlane-plugins)
+      (
+        if include-openlane
+        then [openlane]
+        else openlane.propagatedBuildInputs
+      )
+      ++ extra-python-packages
+      ++ openlane-plugins)
   );
   openlane-env-sitepackages = "${openlane-env}/${openlane-env.sitePackages}";
   pluginIncludedTools = lib.lists.flatten (map (n: n.includedTools) openlane-plugins);
@@ -60,10 +64,10 @@ in
     devshell.packages = packages;
     env = [
       {
-        name = "PYTHONPATH";
+        name = "NIX_PYTHONPATH";
         value = "${openlane-env-sitepackages}";
       }
-    ];
+    ] ++ extra-env;
     devshell.interactive.PS1 = {
       text = ''PS1="${prompt}"'';
     };

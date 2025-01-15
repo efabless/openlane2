@@ -14,6 +14,466 @@
 ## Documentation
 -->
 
+# 3.0.0
+
+## Steps
+
+* `Checker.HoldViolations`
+
+  * Changed default value of `HOLD_VIOLATION_CORNERS` to `['*']`, which will
+    raise an error for hold violations on *any* corners.
+
+* `Odb.AddPDNObstructions`, `Odb.AddRoutingObstructions`
+
+  * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
+    instead of variable-length Tcl-style lists (AKA: strings).
+
+* `OpenROAD.*`
+
+  * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
+  * New convenience methods to append flags to calls based on environment
+    variables
+  * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
+    coupled with `--only`, it runs a step in OpenROAD then doesn't quit so you
+    may inspect the result.
+    * This is not part of the OpenLane stable API and may be broken at any
+      moment.
+
+* `OpenROAD.CTS`
+
+  * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
+  * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
+  * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+
+* `OpenROAD.CutRows`
+
+  * Added `FP_PRUNE_THRESHOLD` to prune rows not meeting the threshold after
+    cutting.
+
+* `OpenROAD.DetailedRouting`
+
+  * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each
+    detalied routing iteration.
+  * Added `DRT_SAVE_DRC_REPORT_ITERS`
+
+* `OpenROAD.GlobalPlacement`
+
+  * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+
+* `OpenROAD.RepairDesignPostGPL`
+
+  * Added optional variable `DESIGN_REPAIR_MAX_UTIL_PCT`
+
+* `OpenROAD.ResizerTimingPostCTS`
+
+  * Renamed `PL_RESIZER_GATE_CLONING` to `PL_RESIZER_SETUP_GATE_CLONING`
+
+  * Fixed `PL_RESIZER_SETUP_GATE_CLONING` incorrectly applied to hold fixing
+
+  * Added the following optional variables
+
+    * `PL_RESIZER_SETUP_BUFFERING`
+    * `PL_RESIZER_SETUP_BUFFER_REMOVAL`
+    * `PL_RESIZER_SETUP_REPAIR_TNS_PCT`
+    * `PL_RESIZER_SETUP_MAX_UTIL_PCT`
+    * `PL_RESIZER_HOLD_REPAIR_TNS_PCT`
+    * `PL_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* `OpenROAD.RepairDesignPostGRT`
+
+  * Renamed `GRT_RESIZER_GATE_CLONING` to `GRT_RESIZER_SETUP_GATE_CLONING`
+
+  * Fixed `GRT_RESIZER_SETUP_GATE_CLONING` incorrectly applied to hold fixing
+
+  * Added the following optional variables
+
+    * `GRT_RESIZER_SETUP_BUFFERING`
+    * `GRT_RESIZER_SETUP_BUFFER_REMOVAL`
+    * `GRT_RESIZER_SETUP_REPAIR_TNS_PCT`
+    * `GRT_RESIZER_SETUP_MAX_UTIL_PCT`
+    * `GRT_RESIZER_HOLD_REPAIR_TNS_PCT`
+    * `GRT_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* Created `OpenROAD.UnplaceAll`
+
+  * Removes the placement status of all instances.
+
+* `Yosys.*Synthesis`
+
+  * Added `SYNTH_CORNER`: a step-specific override for `DEFAULT_CORNER`.
+
+## Tool Updates
+
+* Updated nix-eda
+  * Updated nixpkgs to nixos-24.11 (@ `3c53b4b`)
+  * Updated KLayout to `0.29.9`
+  * Updated Magic to `8.3.503`
+  * Updated Netgen to `1.5.287`
+* Updated ioplace-parser to`0.4.0`
+* Updated OpenROAD to `1d61007`
+  * Updated OpenSTA to `aa598a2`
+
+## Testing
+
+* Step unit tests now load the PDK configs first before overriding them. This
+  has a minor performance penalty compared to the previous "raw" load, but
+  allows unit tests to be updated less frequently (especially to work with new
+  PDK variables.)
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.state`
+
+  * `DesignFormat`
+    * Now a dataclass encapsulating the information about the DesignFormat
+      directly.
+    * `.factory` is a factory for retrieval of DesignFormats by ID
+      * `DesignFormats` may be registered to the factory using `.register()`
+      * Registrations for previously included `DesignFormat`s now moved to
+        appropriate files.
+        * Renamed `POWERED_NETLIST_NO_PHYSICAL_CELLS` to
+          `LOGICAL_POWERED_NETLIST`
+        * Renamed `POWERED_NETLIST_SDF_FRIENDLY` to
+          `SDF_FRIENDLY_POWERED_NETLIST`
+  * `State`
+    * States initialized with keys that have values that are `None` now remove
+      said keys.
+
+* `openlane.config`
+
+  * Moved a number of global variables:
+    * `WIRE_LENGTH_THRESHOLD` moved from global variables to
+      `Checker.WireLength`
+    * `GPIO_PAD_*` removed- no step currently uses them
+    * `FP_TRACKS_INFO`, `FP_TAPCELL_DIST` moved to relevant steps
+    * `FILL_CELL` and `DECAP_CELL` renamed to `FILL_CELLS` and `DECAP_CELLS` as
+      they are both lists
+    * `EXTRA_GDS_FILES` and `FALLBACK_SDC_FILE` renamed to `EXTRA_GDS` and
+      `FALLBACK_SDC`: information can be obtained from their typing
+  * Changed some `decimal.Decimal` initializations to use integers or strings
+    instead of floats.
+
+## API Breaks
+
+* `Checker.HoldViolations`
+
+  * `HOLD_VIOLATION_CORNERS` now defaulting to all corners will require designs
+    that have hold violations at non-typical corners to set its value explicitly
+    to `["*tt*"]`.
+
+* `Odb.AddRoutingObstructions`, `Odb.AddPDNObstructions`
+
+  * Typing for representation of obstructions has been changed. Designs with a
+    meta version of 2 or higher must update their variables from strings to
+    tuples.
+
+* `openlane.steps`
+
+  * `TclStep` now uses the IDs uppercased for `CURRENT_` and `SAVE_`.
+
+* `openlane.state`
+
+  * `State` no longer includes all `DesignFormat`s as guaranteed keys and `.get`
+    must be used to avoide `KeyErrors`
+  * `DesignFormat` is no longer an enumeration and is not iterable. However, to
+    avoid massive codebase changes, you can still access `DesignFormat`s
+    registered to the factory using the dot notation (e.g.
+    `DesignFormat.NETLIST`), using either their `id` or any of their `alts`.
+  * Removed `DesignFormatObject`: the DesignFormat class itself is now a
+    dataclass incorporating these fields, except `name`, which has been renamed
+    to `full_name`. The enumeration's name has been added to `alts`, while
+    `.name` is now an alias for `.id`.
+
+* `openlane.config`
+
+  * `WIRE_LENGTH_THRESHOLD`, `GPIO_PAD_*`, `FP_TRACKS_INFO`, `FP_TAPCELL_DIST`
+    are no longer global variables.
+
+  * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
+    renamed, see Misc. Enhancements/Bugfixes.
+
+# 2.3.2
+
+## Steps
+
+* `Yosys.*`
+  * Fixed blackbox Verilog and lib models causing a crash if they are gzipped
+    and/or have the extension `.gz`.
+
+## Tool Updates
+
+* Relaxed requirement on `httpx` to include `0.28.X`, which has no removals
+  compared to `0.27.0`.
+
+## Documentation
+
+* Clarified support for gzipped files in the Classic flow.
+
+# 2.3.1
+
+## Tool Updates
+
+* KLayout now compiled with `-qt-binding`, which increases distribution size but
+  allows for more features.
+
+# 2.3.0
+
+## Steps
+
+* `OpenROAD.GlobalPlacement`
+
+  * Exposed `-routability_check_overflow` argument as new variable
+    `PL_ROUTABILITY_OVERFLOW_THRESHOLD`.
+
+* `Yosys.*Synthesis`
+
+  * Created new variable `SYNTH_HIERARCHY_MODE`, replacing `SYNTH_NO_FLAT`.
+    There are three options, `flatten`, `deferred_flatten` and `keep`. The first
+    two correspond to `SYNTH_NO_FLAT` being false and true respectively. The
+    third keeps the hierarchy in the final netlist.
+  * Created new variable `SYNTH_TIE_UNDEFINED` to customize whether undefined
+    and undriven values are tied low, high, or left as-is.
+  * Created new variable `SYNTH_WRITE_NOATTR` to allow attributes to be
+    propagated to the final netlist.
+
+* Created `Yosys.Resynthesis`
+
+  * Like `Yosys.Synthesis`, but uses the current input state netlist as an input
+    instead of RTL files
+
+## CLI
+
+* Added new option: `-e`/`--initial-state-element-override`: allows an element
+  in the initial state to be overridden straight from the commandline.
+
+# 2.2.9
+
+## Steps
+
+* `Yosys.JsonHeader`, `Yosys.Synthesis`
+
+  * Fixed `VERILOG_INCLUDE_DIRS` being a list of strings instead of a list of
+    `Path`s.
+
+# 2.2.8
+
+## Steps
+
+* `Checker.*Violations`
+
+  * Changed `TIMING_VIOLATION_CORNERS` to a PDK variable to avoid breaking PDKs
+    without `tt` in corner names.
+
+# 2.2.7
+
+## Steps
+
+* `OpenROAD.WriteViews`
+
+  * Fixed step not being registered to factory object.
+
+# 2.2.6
+
+## Steps
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Fixed `GRT_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
+
+* `OpenROAD.ResizerTimingPostCTS`
+
+  * Fixed `PL_RESIZER_GATE_CLONING` incorrectly applied to hold fixing instead
+    of setup fixing.
+
+# 2.2.5
+
+## Steps
+
+* `Yosys.JsonHeader`, `Verilator.Lint`, `Odb.WriteVerilogHeader`
+
+  * Fixed `VERILOG_POWER_DEFINE` not being optional which was an unintentional
+    break from OpenLane 1.
+
+    * Default value is still `USE_POWER_PINS`, but it can be explicitly unset.
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.config`: Fixed issue where preprocessor would ignore explicitly-set
+  null values in configuration files.
+
+# 2.2.4
+
+## Tool Updates
+
+* `yosys-sby`: Overlaid new hash for `yosys-0.46` tag because of a tag update
+  upstream.
+
+# 2.2.3
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed incorrect error message when subtituting a step with one that has a
+  nonexistent ID.
+
+# 2.2.2
+
+## Steps
+
+* `Odb.*`
+
+  * Fixed OpenROAD dropping user-set `PYTHONPATH` values.
+
+## Tool Updates
+
+* Use `NIX_PYTHONPATH` instead of `PYTHONPATH` in Docker and devshells to avoid
+  collisions with user-set `PYTHONPATH` variables.
+
+# 2.2.1
+
+This patch has no functional changes to OpenLane proper.
+
+## Tool Updates
+
+* `flake.createOpenLaneShell` now gets OpenLane from `python3.pkgs`.
+* Fixed issue with `flake.createOpenLaneShell` where plugins would not get
+  included due to an operator precedence issue.
+
+# 2.2.0
+
+## CLI
+
+* Exposed Flow.start(overwrite=) as `--overwrite`, which removes a run directory
+  before running the flow (if it exists)
+
+## Steps
+
+* Created `Odb.ManualGlobalPlacement`
+
+  * Can create a global placement for instances. Intended for
+    manually-instantiated buffers that require a certain regional placement or
+    similar.
+  * Uses new variable `MANUAL_GLOBAL_PLACEMENTS`, a mapping from instance names
+    to the `Instance` class.
+
+* Created `Odb.CellFrequencyTables`
+
+  * Creates a number of tables to show the cell frequencies by:
+    * Cells
+    * Buffer cells only
+    * Cell Function
+    * SCL
+
+* `OpenROAD.*`
+
+  * All steps that modify views now update design cell metrics using OpenROAD's
+    `report_design_area_metrics`
+
+* `OpenROAD.ResizerTimingPostGRT`
+
+  * Added `GRT_RESIZER_RUN_GRT` to control whether global routing is re-run
+    after this step, which is usually required but may be redundant in some
+    custom flows.
+
+* `OpenROAD.RepairDesignPostGRT`
+
+  * Added `GRT_DESIGN_REPAIR_RUN_GRT` to control whether global routing is
+    re-run after this step, which is usually required but may be redundant in
+    some custom flows.
+
+* `OpenROAD.STA*`
+
+  * New report `clock.rpt` created with information about each clock in a
+    specific domain
+
+* `OpenROAD.WriteViews`
+
+  * Added `OPENROAD_LEF_BLOAT_OCCUPIED_LAYERS` with a default value of `true`
+
+* `Yosys.*Synthesis`
+
+  * ABC scripts used now created dynamically and dumped as a `.abc` file into
+    the step directory.
+  * Implemented many of the
+    [suggestions by @ravenslofty](https://github.com/efabless/openlane2/issues/524)
+    from YosysHQ, some behind flags:
+    * `SYNTH_ABC_DFF`: Adds `-dff` to `abc` invocations (except the ones inside
+      `synth`)
+    * `SYNTH_ABC_BOOTH`: Activates the
+      [`booth`](https://yosyshq.readthedocs.io/projects/yosys/en/0.44/cmd/booth.html)
+      pass as part of `synth`
+    * `SYNTH_ABC_USE_MFS3`: Uses `mfs3` in all strategies before retime
+    * `SYNTH_ABC_AREA_USE_NF`: Attempts delay-based mapping with a really high
+      delay value instead of area-based mapping.
+
+* `Yosys.JsonHeader`, `Yosys.*Synthesis`
+
+  * **Internal**: * Steps are no longer `TclStep`s: rewritten in Python and now
+    use `libyosys`. While there are no functional changes, this enhances the
+    codebase's consistency and helps avoid tokenization-related security issues.
+
+## Flows
+
+* `Classic`
+  * Emplaced `Odb.ManualGlobalPlacement` immediately preceding
+    `OpenROAD.DetailedPlacement`.
+  * Emplaced `Odb.CellFrequencyTables` after `OpenROAD.FillInsertion`
+
+## Tool Updates
+
+* OpenROAD -> `bbe940134bddf836894bfd1fe02153f4a38f8ae5`
+
+  * OpenSTA -> `20925bb00965c1199c45aca0318c2baeb4042c5a`
+  * Removed "stable" version of OpenSTA
+
+* Updated nix-eda to `0814aa6`: more orthodox approach to managing dependencies
+  by overlaying them on top of nixpkgs, which fixes an occasional "repeated
+  allocation" issue and helps make override behavior more consistent.
+
+  * Yosys and first-party plugins -> `0.46`
+  * `klayout` -> `0.29.4`
+  * `magic` -> `8.3.489`
+  * `netgen` -> `1.5.278`
+  * OpenROAD now used with new `withPythonPackages` features to use Python
+    packages specifically for the OpenROAD environment
+
+* OpenLane itself no longer included in `devShells.*.dev`, `devShells.*.docs`
+
+  * These shells are intended to be actual dev shells, i.e. used to develop
+    OpenLane, and needing OpenLane to pass tests to run these shells makes no
+    sense.
+
+* Open PDKs -> `0fe599b` (Recommended for chipIgnite 2409/2411+ shuttles)
+
+## Misc. Enhancements/Bugfixes
+
+* `openlane.common.metrics`
+  * `aggregate_metrics()`: Added support for aggregation of N-modifier levels
+* `openlane.config.Config`
+  * YAML 1.2 configuration files now accepted using `.yaml` or `.yml`
+    extensions, with the same featureset as JSON files.
+  * The first configuration (file/dict) supplied no longer needs to be a
+    complete configuration so long as any required variables are supplied in
+    later configurations. Missing variables are only checked on the complete
+    configuration.
+  * Internally reworked how config files and command-line overrides are parsed.
+* Fixed bug with deprecated variable translations of
+  `{CLOCK,SIGNAL}_WIRE_RC_LAYERS`.
+
+## Documentation
+
+* Added info on YAML configuration files.
+* Documentation for `Instance` dataclass generalized to include instances of
+  cells and not macros.
+
+# 2.1.11
+
+## Steps
+
+* `OpenROAD.STA*PnR`
+
+  * Fixed `timing__*_r2r__ws__corner` metrics reporting the wrong value
+
 # 2.1.10
 
 ## Misc. Enhancements/Bugfixes

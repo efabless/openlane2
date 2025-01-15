@@ -180,7 +180,7 @@ class Expr(object):
                     eval_stack.pop()
                     eval_stack.pop()
 
-                    result = Decimal(0.0)
+                    result = Decimal("0")
                     if token.value == "**":
                         result = number1**number2
                     elif token.value == "*":
@@ -400,7 +400,7 @@ def process_dict_recursive(
         else:
             processed = value
 
-        if processed is not None:
+        if not key.startswith(PDK_PREFIX) and not key.startswith(SCL_PREFIX):
             ref[key] = processed
             symbols[current_key_path] = processed
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 {
   description = "open-source infrastructure for implementing chip design flows";
-  
+
   nixConfig = {
     extra-substituters = [
       "https://openlane.cachix.org"
@@ -33,7 +33,7 @@
   };
 
   inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
-  inputs.ioplace-parser.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
+  inputs.ioplace-parser.inputs.nix-eda.follows = "nix-eda";
   inputs.volare.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
@@ -58,6 +58,13 @@
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
           in {
+            or-tools_9_11 = callPackage ./nix/or-tools_9_11.nix {
+              inherit (pkgs'.darwin) DarwinTools;
+              stdenv =
+                if pkgs'.system == "x86_64-darwin"
+                then (pkgs'.overrideSDK pkgs'.stdenv "11.0")
+                else pkgs'.stdenv;
+            };
             colab-env = callPackage ./nix/colab-env.nix {};
             opensta = callPackage ./nix/opensta.nix {};
             openroad-abc = callPackage ./nix/openroad-abc.nix {};
@@ -109,8 +116,9 @@
 
     packages = nix-eda.forAllSystems (
       system: let
-        pkgs = (self.legacyPackages."${system}");
-        in {
+        pkgs = self.legacyPackages."${system}";
+      in
+        {
           inherit (pkgs) colab-env opensta openroad-abc openroad;
           inherit (pkgs.python3.pkgs) openlane;
           default = pkgs.python3.pkgs.openlane;
@@ -125,7 +133,7 @@
     devShells = nix-eda.forAllSystems (
       system: let
         pkgs = self.legacyPackages."${system}";
-        callPackage = lib.callPackageWith (pkgs // {inherit (self.legacyPackages."${system}".python3.pkgs) openlane;});
+        callPackage = lib.callPackageWith pkgs;
       in {
         # These devShells are rather unorthodox for Nix devShells in that they
         # include the package itself. For a proper devShell, try .#dev.

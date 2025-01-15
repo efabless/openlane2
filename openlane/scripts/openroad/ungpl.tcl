@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Efabless Corporation
+# Copyright 2024 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,10 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-set fill_list [list]
-foreach {pattern} $::env(DECAP_CELLS) {
-    set stripped [string map {' {}} $pattern]
-    lappend fill_list $stripped
+set ::insts [$::block getInsts]
+
+foreach inst $::insts {
+    $inst setPlacementStatus "NONE"
 }
-foreach {pattern} $::env(FILL_CELLS) {
-    set stripped [string map {' {}} $pattern]
-    lappend fill_list $stripped
-}
-puts $fill_list
-filler_placement $fill_list
 
 write_views
-

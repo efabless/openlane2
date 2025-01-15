@@ -73,9 +73,9 @@ class OdbpyStep(Step):
         views_updates: ViewsUpdate = {}
         command = self.get_command()
         for output in automatic_outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.extension}"
             file_path = os.path.join(self.step_dir, filename)
-            command.append(f"--output-{output.value.id}")
+            command.append(f"--output-{output.id}")
             command.append(file_path)
             views_updates[output] = Path(file_path)
 
@@ -83,7 +83,9 @@ class OdbpyStep(Step):
             str(state_in[DesignFormat.ODB]),
         ]
 
-        env["PYTHONPATH"] = os.path.join(get_script_dir(), "odbpy")
+        env["PYTHONPATH"] = (
+            f'{os.path.join(get_script_dir(), "odbpy")}:{env.get("PYTHONPATH")}'
+        )
 
         subprocess_result = self.run_subprocess(
             command,
@@ -121,7 +123,7 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+        if (design_lef := self.state_in.result().get(DesignFormat.LEF)) and (
             DesignFormat.LEF in self.inputs
         ):
             lefs.append("--design-lef")
@@ -307,7 +309,7 @@ class WriteVerilogHeader(OdbpyStep):
     config_vars = OdbpyStep.config_vars + [
         Variable(
             "VERILOG_POWER_DEFINE",
-            str,
+            Optional[str],
             "Specifies the name of the define used to guard power and ground connections in the output Verilog header.",
             deprecated_names=["SYNTH_USE_PG_PINS_DEFINES", "SYNTH_POWER_DEFINE"],
             default="USE_POWER_PINS",
@@ -322,14 +324,20 @@ class WriteVerilogHeader(OdbpyStep):
 
     def get_command(self) -> List[str]:
         state_in = self.state_in.result()
-        return super().get_command() + [
+        command = super().get_command() + [
             "--output-vh",
             os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh"),
             "--input-json",
             str(state_in[DesignFormat.JSON_HEADER]),
-            "--power-define",
-            self.config["VERILOG_POWER_DEFINE"],
         ]
+        if self.config.get("VERILOG_POWER_DEFINE") is not None:
+            command += ["--power-define", self.config["VERILOG_POWER_DEFINE"]]
+        else:
+            self.warn(
+                "VERILOG_POWER_DEFINE undefined. Verilog Header will not include power ports."
+            )
+
+        return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
@@ -494,9 +502,9 @@ class AddRoutingObstructions(OdbpyStep):
     config_vars = [
         Variable(
             "ROUTING_OBSTRUCTIONS",
-            Optional[List[str]],
+            Optional[List[Tuple[str, Decimal, Decimal, Decimal, Decimal]]],
             "Add routing obstructions to the design. If set to `None`, this step is skipped."
-            + " Format of each obstruction item is: layer llx lly urx ury.",
+            + " Format of each obstruction item is a tuple of: layer name, llx, lly, urx, ury.",
             units="µm",
             default=None,
             deprecated_names=["GRT_OBS"],
@@ -517,7 +525,7 @@ class AddRoutingObstructions(OdbpyStep):
         if obstructions := self.config[self.config_vars[0].name]:
             for obstruction in obstructions:
                 command.append("--obstructions")
-                command.append(obstruction)
+                command.append(" ".join([str(o) for o in obstruction]))
         return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -546,9 +554,9 @@ class AddPDNObstructions(AddRoutingObstructions):
     config_vars = [
         Variable(
             "PDN_OBSTRUCTIONS",
-            Optional[List[str]],
+            Optional[List[Tuple[str, Decimal, Decimal, Decimal, Decimal]]],
             "Add routing obstructions to the design before PDN stage. If set to `None`, this step is skipped."
-            + " Format of each obstruction item is: layer llx lly urx ury.",
+            + " Format of each obstruction item is a tuple of: layer name, llx, lly, urx, ury,.",
             units="µm",
             default=None,
         ),
