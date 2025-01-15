@@ -293,7 +293,7 @@ class StreamOut(MagicStep):
         Variable(
             "MAGIC_ADD_ISOSUB",
             bool,
-            "Add isosub(subcut) drawing over the design. Useful when the design is getting integarated in a design with multiple power domains",
+            "Add isosub(subcut) drawing over the design. Useful when the design is getting integrated in another design with multiple power domains",
             default=False,
         ),
         Variable(
@@ -590,6 +590,11 @@ class OpenGUI(MagicStep):
 
 @Step.factory.register()
 class AddIsosub(MagicStep):
+    """
+    Draws isosub(subcut) over the design. Might be useful when design is getting integrated
+    in another design with multiple power domains.
+    """
+
     id = "Magic.AddIsosub"
     name = "Add isosub(subcut) to the design"
 

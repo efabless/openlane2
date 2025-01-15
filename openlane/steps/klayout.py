@@ -197,14 +197,14 @@ class StreamOut(KLayoutStep):
         Variable(
             "ISOSUB_LAYER",
             Optional[Tuple[int, int]],
-            "Layer/datatype pair for subcut",
+            "Layer/datatype pair for subcut. Not recommended to change unless you know what you are doing.",
             pdk=True,
         ),
         Variable(
             "KLAYOUT_ADD_ISOSUB",
             bool,
             default=False,
-            description="Add isosub(subcut) drawing over the design. Useful when the design is getting integarated in a design with multiple power domains",
+            description="Add isosub(subcut) drawing over the design. Useful when the design is getting integarated in another design with multiple power domains.",
         ),
     ]
 
