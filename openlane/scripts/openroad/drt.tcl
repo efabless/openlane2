@@ -36,13 +36,38 @@ if { $::env(DRT_SAVE_SNAPSHOTS) } {
 if { [info exists ::env(DRT_SAVE_DRC_REPORT_ITERS)] } {
     set drc_report_iter_step_arg "-drc_report_iter_step $::env(DRT_SAVE_DRC_REPORT_ITERS)"
 }
-log_cmd detailed_route\
-    -bottom_routing_layer $min_layer\
-    -top_routing_layer $max_layer\
-    -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc\
-    -droute_end_iter $::env(DRT_OPT_ITERS)\
-    -or_seed 42\
-    -verbose 1\
-    {*}$drc_report_iter_step_arg
 
+set args [list]
+lappend args -bottom_routing_layer $min_layer
+lappend args -top_routing_layer $max_layer
+set output_drc "-output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc"
+if { $::env(DRT_ANTENNA_REPAIR) } {
+    set output_drc "-output_drc $::env(STEP_DIR)/0-$::env(DESIGN_NAME).drc"
+}
+lappend args -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc
+lappend args -droute_end_iter $::env(DRT_OPT_ITERS)
+lappend args -or_seed 42
+lappend args -verbose 1
+lappend args {*}$drc_report_iter_step_arg {*}$output_drc
+
+log_cmd detailed_route {*}$args
+
+if { $::env(DRT_ANTENNA_REPAIR) } {
+    write_views ;# in case of fail in the next steps
+    write_db $::env(STEP_DIR)/$::env(DESIGN_NAME)-before-antenna-repair.odb
+    #drt_iter3.odb
+    if { $::env(DRT_SAVE_SNAPSHOTS) } {
+        foreach snapshot [glob drt_iter*.odb] {
+            file rename -force $snapshot 0-$snapshot
+        }
+    }
+
+    set diode_split [split $::env(DIODE_CELL) "/"]
+    set has_antenna_vios [log_cmd repair_antennas "[lindex $diode_split 0]" -ratio_margin $::env(DRT_ANTENNA_MARGIN)]
+
+    set output_drc "-output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc"
+    if {$has_antenna_vios} {
+        log_cmd detailed_route {*}$args {*}$output_drc
+    }
+}
 write_views

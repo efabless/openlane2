@@ -87,7 +87,6 @@ class Classic(SequentialFlow):
         OpenROAD.ResizerTimingPostGRT,
         OpenROAD.STAMidPNR,
         OpenROAD.DetailedRouting,
-        OpenROAD.RepairAntennasPostDRT,
         Odb.RemoveRoutingObstructions,
         OpenROAD.CheckAntennas,
         Checker.TrDRC,
