@@ -439,7 +439,7 @@ jobs:
           git commit -m "Upload"
           git remote add origin "https://${{ vars.BOT_USERNAME }}:${{ secrets.GH_TOKEN }}@github.com/$REPO.git"
           git push -fu origin $BRANCH_NAME # Force for if we have to re-run the CI for some reason
-  publish:
+  publish-tag:
     runs-on: ubuntu-22.04
     needs: [build-linux-amd64, build-docker, build-py]
     name: Publish (If Applicable)
@@ -487,20 +487,6 @@ jobs:
             ghcr.io/${{ github.repository }}:$NEW_TAG-aarch64
 
           docker manifest push ghcr.io/${{ github.repository }}:$NEW_TAG
-      - name: Set Up Python
-        if: ${{ env.PUBLISH == '1' }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-      - name: Build Distribution
-        if: ${{ env.PUBLISH == '1' }}
-        run: |
-          make dist
-      - name: Publish
-        if: ${{ env.PUBLISH == '1' }}
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
       - name: Tag Commit
         if: ${{ env.PUBLISH == '1' }}
         uses: tvdias/github-tagger@v0.0.1

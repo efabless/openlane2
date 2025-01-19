@@ -1,0 +1,25 @@
+name: New tag to PyPI
+on:
+  push:
+    # Pattern matched against refs/tags
+    tags:
+      - "*"
+jobs:
+  publish-pypi:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Build Distribution
+        run: |
+          make dist
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
