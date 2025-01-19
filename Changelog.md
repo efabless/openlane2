@@ -30,6 +30,11 @@
 
 * `OpenROAD.*`
 
+  * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
+    for steps using `RSZ_CORNERS` and `CTS_CORNERS`
+  * Restored `LAYERS_RC`
+  * Added `VIAS_R`
+  * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
   * New convenience methods to append flags to calls based on environment
     variables
