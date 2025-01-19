@@ -214,9 +214,6 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
                 "max_ss_100C_1v60",
                 "max_ff_n40C_1v95",
             ]
-            new["PNR_CORNERS"] = [
-                "nom_tt_025C_1v80",
-            ]
             #            new["LAYERS_RC"] = {
             #                "*tt*": {
             #                    "li1": {"res": 7.176e-02, "cap": 1.499e-04},
@@ -272,9 +269,6 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
                 "max_tt_025C_5v00",
                 "max_ss_125C_4v50",
                 "max_ff_n40C_5v50",
-            ]
-            new["PNR_CORNERS"] = [
-                "nom_tt_025C_5v00",
             ]
 
         new["DEFAULT_CORNER"] = f"nom_{default_pvt}"

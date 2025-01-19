@@ -202,16 +202,18 @@ class OpenROADStep(TclStep):
             "Used during PNR steps, Specific custom resistance and capacitance values for metal layers."
             + " For each IPVT corner, a mapping for each metal layer is provided."
             + " Each mapping describes custom resistance and capacitance values."
-            + " Usage of wildcards for specifying IPVT corners is allowed.",
+            + " Usage of wildcards for specifying IPVT corners is allowed."
+            + " Units are resistance and capacitance per unit length.",
             pdk=True,
         ),
         Variable(
-            "VIAS_RC",
+            "VIAS_R",
             Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
-            "Used during PNR steps, Specific custom resistance and capacitance values for via layers."
+            "Used during PNR steps, Specific custom resistance values for via layers."
             + " For each IPVT corner, a mapping for each via layer is provided."
-            + " Each mapping describes custom resistance and capacitance values."
-            + " Usage of wildcards for specifying IPVT corners is allowed.",
+            + " Each mapping describes custom resistance values."
+            + " Usage of wildcards for specifying IPVT corners is allowed."
+            + " Via resistance is per cut/via, not area-based.",
             pdk=True,
         ),
         Variable(
@@ -340,10 +342,10 @@ class OpenROADStep(TclStep):
                         )
                         count += 1
 
-        vias_rc = self.config["VIAS_RC"]
-        if vias_rc is not None:
+        vias_r = self.config["VIAS_R"]
+        if vias_r is not None:
             count = 0
-            for corner_wildcard, metal_layers in vias_rc.items():
+            for corner_wildcard, metal_layers in vias_r.items():
                 for corner in Filter(corner_wildcard).filter(lib_corners):
                     for via, rc in metal_layers.items():
                         res = rc["res"]
