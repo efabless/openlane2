@@ -18,6 +18,11 @@
 
 ## Steps
 
+* `Checker.HoldViolations`
+
+  * Changed default value of `HOLD_VIOLATION_CORNERS` to `['*']`, which will
+    raise an error for hold violations on *any* corners.
+
 * `Odb.AddPDNObstructions`, `Odb.AddRoutingObstructions`
 
   * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
@@ -108,6 +113,13 @@
 * Updated OpenROAD to `1d61007`
   * Updated OpenSTA to `aa598a2`
 
+## Testing
+
+* Step unit tests now load the PDK configs first before overriding them. This
+  has a minor performance penalty compared to the previous "raw" load, but
+  allows unit tests to be updated less frequently (especially to work with new
+  PDK variables.)
+
 ## Misc. Enhancements/Bugfixes
 
 * `openlane.state`
@@ -142,6 +154,12 @@
     instead of floats.
 
 ## API Breaks
+
+* `Checker.HoldViolations`
+
+  * `HOLD_VIOLATION_CORNERS` now defaulting to all corners will require designs
+    that have hold violations at non-typical corners to set its value explicitly
+    to `["*tt*"]`.
 
 * `Odb.AddRoutingObstructions`, `Odb.AddPDNObstructions`
 
