@@ -305,7 +305,6 @@ class OpenROADStep(TclStep):
             debug(f"Corners Override {corners}")
 
         count = 0
-        lib_corners = []
         for corner in corners:
             _, libs, _, _ = self.toolbox.get_timing_files_categorized(
                 self.config, corner
@@ -322,15 +321,15 @@ class OpenROADStep(TclStep):
         if layers_rc is not None:
             count = 0
             for corner_wildcard, metal_layers in layers_rc.items():
-                for corner in Filter([corner_wildcard]).filter(lib_corners):
+                for corner in Filter([corner_wildcard]).filter(corners):
                     for layer, rc in metal_layers.items():
                         res = rc["res"]
                         cap = rc["cap"]
                         env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
                             [corner]
                             + [layer]
-                            + [str(round(res, 8))]
-                            + [str(round(cap, 8))]
+                            + [TclStep.value_to_tcl(res)]
+                            + [TclStep.value_to_tcl(cap)]
                         )
                         count += 1
 
@@ -338,7 +337,7 @@ class OpenROADStep(TclStep):
         if vias_r is not None:
             count = 0
             for corner_wildcard, metal_layers in vias_r.items():
-                for corner in Filter(corner_wildcard).filter(lib_corners):
+                for corner in Filter(corner_wildcard).filter(corners):
                     for via, rc in metal_layers.items():
                         res = rc["res"]
                         env[f"_VIA_R_{count}"] = TclStep.value_to_tcl(

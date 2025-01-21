@@ -46,8 +46,7 @@ while { [info exists ::env($tc_key)] } {
     set layer_name [lindex $::env($tc_key) 1]
     set res_value [lindex $::env($tc_key) 2]
     set cap_value [lindex $::env($tc_key) 3]
-    puts "\[INFO\] Setting $layer_name $corner_name to res $res_value and cap $cap_value"
-    set_layer_rc \
+    log_cmd set_layer_rc \
         -layer $layer_name\
         -capacitance $cap_value\
         -corner $corner_name\
@@ -63,8 +62,7 @@ while { [info exists ::env($tc_key)] } {
     set corner_name [lindex $::env($tc_key) 0]
     set via_name [lindex $::env($tc_key) 1]
     set res_value [lindex $::env($tc_key) 2]
-    puts "\[INFO\] Setting $via_name $corner_name to res $res_value"
-    set_layer_rc \
+    log_cmd set_layer_rc \
         -via $via_name\
         -resistance $res_value\
         -corner $corner_name
@@ -82,14 +80,14 @@ if { [info exist ::env(CLOCK_WIRE_RC_LAYERS)] } {
     set clock_wire_rc_layers $::env(CLOCK_WIRE_RC_LAYERS)
 }
 if { [llength $signal_wire_rc_layers] > 1 } {
-    set_wire_rc -signal -layers "$signal_wire_rc_layers"
+    log_cmd set_wire_rc -signal -layers "$signal_wire_rc_layers"
 } else {
-    set_wire_rc -signal -layer "$signal_wire_rc_layers"
+    log_cmd set_wire_rc -signal -layer "$signal_wire_rc_layers"
 }
 if { [llength $clock_wire_rc_layers] > 1 } {
-    set_wire_rc -clock -layers "$clock_wire_rc_layers"
+    log_cmd set_wire_rc -clock -layers "$clock_wire_rc_layers"
 } else {
-    set_wire_rc -clock -layer "$clock_wire_rc_layers"
+    log_cmd set_wire_rc -clock -layer "$clock_wire_rc_layers"
 }
 
 # keeping this until there is a clear resolution for https://github.com/The-OpenROAD-Project/OpenROAD/issues/6175
