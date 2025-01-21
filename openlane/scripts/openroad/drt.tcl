@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 proc run_drt_antenna_repair_step {i args} {
-        set directory "${i}-after-repair-antenna"
-        file mkdir ${i}-after-repair-antenna
+        set directory "${i}-antenna-repair"
+        file mkdir $directory
         set output_drc "-output_drc $::env(STEP_DIR)/$directory/$::env(DESIGN_NAME).drc"
         log_cmd detailed_route {*}$args {*}$output_drc
         if { $::env(DRT_SAVE_SNAPSHOTS) } {

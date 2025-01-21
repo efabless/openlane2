@@ -52,6 +52,8 @@
 
 * `OpenROAD.DetailedRouting`
 
+  * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each detalied routing iteration.
+  * Added `DRT_SAVE_DRC_REPORT_ITERS`
   * Added `DRT_ANTENNA_REPAIR` which enables antenna fixing after detailed routing 
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN`
   * Added `DRT_ANTENNA_REPAIR_ITERS`
