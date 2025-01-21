@@ -11,6 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+proc run_drt_antenna_repair_step {i args} {
+        set directory "${i}-after-repair-antenna"
+        file mkdir ${i}-after-repair-antenna
+        set output_drc "-output_drc $::env(STEP_DIR)/$directory/$::env(DESIGN_NAME).drc"
+        log_cmd detailed_route {*}$args {*}$output_drc
+        if { $::env(DRT_SAVE_SNAPSHOTS) } {
+            foreach snapshot [glob -nocomplain drt_iter*.odb] {
+                file rename -force $snapshot $directory/[file tail $snapshot]
+            }
+        }
+        foreach drc_file [glob -nocomplain $::env(STEP_DIR)/$directory/*.drc] {
+            file copy -force $drc_file $::env(STEP_DIR)/[file tail $drc_file]
+        }
+        write_db $::env(STEP_DIR)/$directory/$::env(DESIGN_NAME).odb
+}
+
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
@@ -42,7 +58,7 @@ lappend args -bottom_routing_layer $min_layer
 lappend args -top_routing_layer $max_layer
 set output_drc "-output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc"
 if { $::env(DRT_ANTENNA_REPAIR) } {
-    set output_drc "-output_drc $::env(STEP_DIR)/0-$::env(DESIGN_NAME).drc"
+    set output_drc "-output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc"
 }
 lappend args -output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc
 lappend args -droute_end_iter $::env(DRT_OPT_ITERS)
@@ -52,22 +68,20 @@ lappend args {*}$drc_report_iter_step_arg {*}$output_drc
 
 log_cmd detailed_route {*}$args
 
-if { $::env(DRT_ANTENNA_REPAIR) } {
-    write_views ;# in case of fail in the next steps
-    write_db $::env(STEP_DIR)/$::env(DESIGN_NAME)-before-antenna-repair.odb
-    #drt_iter3.odb
-    if { $::env(DRT_SAVE_SNAPSHOTS) } {
-        foreach snapshot [glob drt_iter*.odb] {
-            file rename -force $snapshot 0-$snapshot
-        }
-    }
 
+if { $::env(DRT_ANTENNA_REPAIR) } {
+    set i 0
+    set has_antenna_vios 1
     set diode_split [split $::env(DIODE_CELL) "/"]
     set has_antenna_vios [log_cmd repair_antennas "[lindex $diode_split 0]" -ratio_margin $::env(DRT_ANTENNA_MARGIN)]
-
-    set output_drc "-output_drc $::env(STEP_DIR)/$::env(DESIGN_NAME).drc"
     if {$has_antenna_vios} {
-        log_cmd detailed_route {*}$args {*}$output_drc
+        run_drt_antenna_repair_step $i {*}$args
+    }
+    incr i
+    while {[check_antennas] && $i <= $::env(DRT_ANTENNA_REPAIR_ITERS)} {
+        run_drt_antenna_repair_step $i {*}$args
+        incr i
     }
 }
+
 write_views

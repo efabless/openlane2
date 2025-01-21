@@ -1658,6 +1658,12 @@ class DetailedRouting(OpenROADStep):
             default=False,
         ),
         Variable(
+            "DRT_ANTENNA_REPAIR_ITERS",
+            int,
+            "The maximum number of iterations to run antenna repair.",
+            default=5,
+        ),
+        Variable(
             "DRT_ANTENNA_MARGIN",
             int,
             "The margin to over fix antenna violations.",
