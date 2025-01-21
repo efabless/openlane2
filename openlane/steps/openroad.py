@@ -304,21 +304,13 @@ class OpenROADStep(TclStep):
             corners = kwargs.pop("corners")
             debug(f"Corners Override {corners}")
 
-        lib_set_set = set()
         count = 0
         lib_corners = []
         for corner in corners:
             _, libs, _, _ = self.toolbox.get_timing_files_categorized(
                 self.config, corner
             )
-            lib_set = frozenset(libs)
-            if lib_set in lib_set_set:
-                debug(f"Liberty files for '{corner}' already accounted for- skipped")
-                continue
-            lib_corners.append(corner)
-            lib_set_set.add(lib_set)
             env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
-
             debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 
@@ -349,7 +341,7 @@ class OpenROADStep(TclStep):
                 for corner in Filter(corner_wildcard).filter(lib_corners):
                     for via, rc in metal_layers.items():
                         res = rc["res"]
-                        env[f"_VIA_RC_{count}"] = TclStep.value_to_tcl(
+                        env[f"_VIA_R_{count}"] = TclStep.value_to_tcl(
                             [corner] + [via] + [str(round(res, 8))]
                         )
                         count += 1

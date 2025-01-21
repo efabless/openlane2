@@ -58,7 +58,7 @@ while { [info exists ::env($tc_key)] } {
 
 # Set custom via RC
 set i "0"
-set tc_key "_VIA_RC_$i"
+set tc_key "_VIA_R_$i"
 while { [info exists ::env($tc_key)] } {
     set corner_name [lindex $::env($tc_key) 0]
     set via_name [lindex $::env($tc_key) 1]
@@ -69,7 +69,7 @@ while { [info exists ::env($tc_key)] } {
         -resistance $res_value\
         -corner $corner_name
     incr i
-    set tc_key "_VIA_RC_$i"
+    set tc_key "_VIA_R_$i"
 }
 
 set layer_names [get_routing_layer_names]
