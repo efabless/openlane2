@@ -618,5 +618,5 @@ proc append_if_not_flag {list_arg glob_variable_name flag} {
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 proc log_cmd {cmd args} {
     puts "+ $cmd [join $args " "]"
-    $cmd {*}$args
+    return [$cmd {*}$args]
 }
