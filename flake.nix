@@ -32,9 +32,9 @@
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
-  inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.ioplace-parser.inputs.nix-eda.follows = "nix-eda";
-  inputs.volare.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
+  inputs.volare.inputs.nix-eda.follows = "nix-eda";
+  inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
   outputs = {
