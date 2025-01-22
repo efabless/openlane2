@@ -21,7 +21,7 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
+from typing import Any, Dict, Sequence, Tuple, Type, Optional, List
 
 import click
 from cloup import (
@@ -77,7 +77,7 @@ def run(
             err("No config file(s) have been provided.")
             ctx.exit(1)
 
-        TargetFlow: Type[Flow] = Flow.factory.get("Classic")
+        TargetFlow: Optional[Type[Flow]] = Flow.factory.get("Classic")
 
         for config_file in config_files:
             if meta := Config.get_meta(config_file):
@@ -95,7 +95,7 @@ def run(
                     if meta.substituting_steps is not None and issubclass(
                         TargetFlow, SequentialFlow
                     ):
-                        TargetFlow = TargetFlow.Substitute(meta.substituting_steps)
+                        TargetFlow = TargetFlow.Substitute(meta.substituting_steps)  # type: ignore  # Type checker is being rowdy with this one
 
         if flow_name is not None:
             if found := Flow.factory.get(flow_name):
@@ -124,6 +124,10 @@ def run(
                 with_initial_state,
                 overrides=overrides,
             )
+
+        assert (
+            TargetFlow is not None
+        ), "TargetFlow is unexpectedly None. Please report this as a bug."
 
         kwargs: Dict[str, Any] = {
             "pdk_root": pdk_root,
