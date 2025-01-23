@@ -91,7 +91,7 @@ def run(
                             )
                             ctx.exit(1)
                     elif isinstance(meta.flow, list):
-                        TargetFlow = SequentialFlow.make(meta.flow)
+                        TargetFlow = SequentialFlow.Make(meta.flow)
                     if meta.substituting_steps is not None and issubclass(
                         TargetFlow, SequentialFlow
                     ):

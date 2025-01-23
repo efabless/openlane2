@@ -26,6 +26,7 @@ from typing import (
     Union,
 )
 
+from deprecated.sphinx import deprecated
 from rapidfuzz import process, fuzz, utils
 
 from .flow import Flow, FlowException, FlowError
@@ -145,7 +146,7 @@ class SequentialFlow(Flow):
                     )
 
     @classmethod
-    def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
+    def Make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
         Step_list = []
         for name in step_ids:
             step = Step.factory.get(name)
@@ -158,6 +159,15 @@ class SequentialFlow(Flow):
             Steps = Step_list
 
         return CustomSequentialFlow
+
+    @classmethod
+    @deprecated(
+        "use .Make",
+        version="3.0.0",
+        action="once",
+    )
+    def make(Self, step_ids: List[str]) -> Type[SequentialFlow]:
+        return Self.Make(step_ids)
 
     @classmethod
     def Substitute(Self, Substitutions: SubstitutionsObject) -> Type[SequentialFlow]:

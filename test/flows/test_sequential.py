@@ -82,7 +82,7 @@ def test_sequential_flow(MetricIncrementer: Type[Step]):
 def test_custom_seqflow(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
-    MyFlow = SequentialFlow.make(
+    MyFlow = SequentialFlow.Make(
         [
             "Test.MetricIncrementer",
             "Test.MetricIncrementer",
@@ -117,7 +117,7 @@ def test_custom_seqflow_bad_id(MetricIncrementer):
     from openlane.flows import SequentialFlow
 
     with pytest.raises(TypeError, match="No step found with id"):
-        SequentialFlow.make(
+        SequentialFlow.Make(
             [
                 "Test.MetricIncrementer",
                 "Test.MetricIncrementer",
@@ -147,7 +147,7 @@ def test_substitution(MetricIncrementer):
         id = "Test.FinalMetricIncrementer"
         counter_name = "final_counter"
 
-    MyFlow = SequentialFlow.make(
+    MyFlow = SequentialFlow.Make(
         [
             "Test.MetricIncrementer",
             "Test.MetricIncrementer",
@@ -224,7 +224,7 @@ def test_substitution(MetricIncrementer):
 def test_substitute_none(MetricIncrementer):
     from openlane.flows import SequentialFlow, FlowException
 
-    MyFlow = SequentialFlow.make(
+    MyFlow = SequentialFlow.Make(
         [
             "Test.MetricIncrementer",
             "Test.MetricIncrementer",
@@ -264,7 +264,7 @@ def test_substitute_none(MetricIncrementer):
 def test_bad_substitution(MetricIncrementer):
     from openlane.flows import SequentialFlow, FlowException
 
-    MyFlow = SequentialFlow.make(
+    MyFlow = SequentialFlow.Make(
         [
             "Test.MetricIncrementer",
             "Test.MetricIncrementer",

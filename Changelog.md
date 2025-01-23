@@ -56,6 +56,13 @@
     detalied routing iteration.
   * Added `DRT_SAVE_DRC_REPORT_ITERS`
 
+* `OpenROAD.Floorplan`
+
+  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's
+    x0 > x1 or y0 > y1, the computed core area would no longer fit in the die
+    area. Not that we recommend you ever do that, but technically OpenROAD
+    allows it.
+
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
