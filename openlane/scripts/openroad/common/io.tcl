@@ -153,7 +153,7 @@ proc read_timing_info {args} {
         return
     }
     set corner_name $::env(_CURRENT_CORNER_NAME)
-    define_corners $corner_name
+    log_cm define_corners $corner_name
 
     puts "Reading timing models for corner $corner_name…"
 
