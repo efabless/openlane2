@@ -62,14 +62,12 @@
 in
   devshell.mkShell {
     devshell.packages = packages;
-    env =
-      [
-        {
-          name = "NIX_PYTHONPATH";
-          value = "${openlane-env-sitepackages}";
-        }
-      ]
-      ++ extra-env;
+    env = [
+      {
+        name = "NIX_PYTHONPATH";
+        value = "${openlane-env-sitepackages}";
+      }
+    ] ++ extra-env;
     devshell.interactive.PS1 = {
       text = ''PS1="${prompt}"'';
     };

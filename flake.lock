@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1735644329,
-        "narHash": "sha256-tO3HrHriyLvipc4xr+Ewtdlo7wM1OjXNjlWRgmM7peY=",
+        "lastModified": 1728330715,
+        "narHash": "sha256-xRJ2nPOXb//u1jaBnDP56M7v5ldavjbtR6lfGqSvcKg=",
         "owner": "numtide",
         "repo": "devshell",
-        "rev": "f7795ede5b02664b57035b3b757876703e2c3eac",
+        "rev": "dd6b80932022cea34a019e2bb32f6fa9e494dfef",
         "type": "github"
       },
       "original": {
@@ -81,11 +81,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1737037357,
-        "narHash": "sha256-eiRHpmaA4S+avTHPbcCUMlra+ARjVoS5ve+TOY8+e+8=",
+        "lastModified": 1733412110,
+        "narHash": "sha256-nawHN6e/ngGQ+WEAEh3l01wLIa+Jfg75PugSfJvyo6I=",
         "owner": "efabless",
         "repo": "nix-eda",
-        "rev": "3d8f596ec8831538acdd61889d056378b5bea16b",
+        "rev": "3c53b4be2102d373bf0a300e700aaa839d52ebee",
         "type": "github"
       },
       "original": {
@@ -122,16 +122,17 @@
     },
     "volare": {
       "inputs": {
-        "nix-eda": [
-          "nix-eda"
+        "nixpkgs": [
+          "nix-eda",
+          "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1736428643,
-        "narHash": "sha256-qkTDlA9V246cqv1U2yRc0eJ0uYeWUt4VYFWEkQxPt6k=",
+        "lastModified": 1728904439,
+        "narHash": "sha256-e6QXMol9kbrJplYamSDfz+X/BDhgP66rHmjkeIZlaNI=",
         "owner": "efabless",
         "repo": "volare",
-        "rev": "9a8369dc2e1f1adb47c7f4247919cc381a36a4e5",
+        "rev": "7458169adc63dfac4ecfcb1c967972c6d8cd888f",
         "type": "github"
       },
       "original": {

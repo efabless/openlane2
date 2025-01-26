@@ -32,9 +32,9 @@
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
-  inputs.ioplace-parser.inputs.nix-eda.follows = "nix-eda";
-  inputs.volare.inputs.nix-eda.follows = "nix-eda";
   inputs.libparse.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
+  inputs.ioplace-parser.inputs.nix-eda.follows = "nix-eda";
+  inputs.volare.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
   inputs.devshell.inputs.nixpkgs.follows = "nix-eda/nixpkgs";
 
   outputs = {
@@ -53,8 +53,7 @@
     overlays = {
       default = lib.composeManyExtensions [
         (import ./nix/overlay.nix)
-        (nix-eda.flakesToOverlay [libparse volare])
-        ioplace-parser.overlays.default
+        (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
@@ -85,10 +84,6 @@
             sphinx-tippy = callPythonPackage ./nix/sphinx-tippy.nix {};
             sphinx-subfigure = callPythonPackage ./nix/sphinx-subfigure.nix {};
             yamlcore = callPythonPackage ./nix/yamlcore.nix {};
-            tclint = pypkgs.tclint.override {
-              version = "0.4.2";
-              sha256 = "sha256-q01HEnSVB8xr8Z8vaBJjmf2GioXGzcq5JHsRKwMVfU4=";
-            };
 
             # ---
             openlane = callPythonPackage ./default.nix {};
@@ -115,11 +110,7 @@
       system:
         import nix-eda.inputs.nixpkgs {
           inherit system;
-          overlays = [
-            devshell.overlays.default
-            nix-eda.overlays.default
-            self.overlays.default
-          ];
+          overlays = [devshell.overlays.default nix-eda.overlays.default self.overlays.default];
         }
     );
 

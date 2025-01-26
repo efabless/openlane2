@@ -60,13 +60,6 @@
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN` but for
     the aforementioned antenna repair iterations
 
-* `OpenROAD.Floorplan`
-
-  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's
-    x0 > x1 or y0 > y1, the computed core area would no longer fit in the die
-    area. Not that we recommend you ever do that, but technically OpenROAD
-    allows it.
-
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
@@ -117,15 +110,12 @@
 
 * Updated nix-eda
   * Updated nixpkgs to nixos-24.11 (@ `3c53b4b`)
-  * Updated KLayout to `0.29.10`
-  * Updated Magic to `8.3.515`
-  * Updated Netgen to `1.5.291`
-* Updated ioplace-parser to `0.4.0`
-* Updated OpenROAD to `655640a`
-  * Adds new DFT features
-* Updated OpenSTA to `aa598a2`
-* Updated Volare to `0.20.5`
-  * Includes support for ihp-sg13g2
+  * Updated KLayout to `0.29.9`
+  * Updated Magic to `8.3.503`
+  * Updated Netgen to `1.5.287`
+* Updated ioplace-parser to`0.4.0`
+* Updated OpenROAD to `1d61007`
+  * Updated OpenSTA to `aa598a2`
 
 ## Testing
 
