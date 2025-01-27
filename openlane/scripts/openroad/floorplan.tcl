@@ -56,17 +56,20 @@ if {$::env(FP_SIZING) == "absolute"} {
         exit -1
     }
     if { ! [info exists ::env(CORE_AREA)] } {
-        set die_ll_x [lindex $::env(DIE_AREA) 0]
-        set die_ll_y [lindex $::env(DIE_AREA) 1]
-        set die_ur_x [lindex $::env(DIE_AREA) 2]
-        set die_ur_y [lindex $::env(DIE_AREA) 3]
+        set die_x0 [lindex $::env(DIE_AREA) 0]
+        set die_y0 [lindex $::env(DIE_AREA) 1]
+        set die_x1 [lindex $::env(DIE_AREA) 2]
+        set die_y1 [lindex $::env(DIE_AREA) 3]
 
-        set core_ll_x [expr {$die_ll_x + $left_margin}]
-        set core_ll_y [expr {$die_ll_y + $bottom_margin}]
-        set core_ur_x [expr {$die_ur_x - $right_margin}]
-        set core_ur_y [expr {$die_ur_y - $top_margin}]
+        set x_dir [expr $die_x1 < $die_x0]
+        set y_dir [expr $die_y1 < $die_y0]
 
-        set ::env(CORE_AREA) [list $core_ll_x $core_ll_y $core_ur_x $core_ur_y]
+        set core_x0 [expr {$die_x0 + (-1 ** $x_dir) * $left_margin}]
+        set core_y0 [expr {$die_y0 + (-1 ** $y_dir) * $bottom_margin}]
+        set core_x1 [expr {$die_x1 - (-1 ** $x_dir) * $right_margin}]
+        set core_y1 [expr {$die_y1 - (-1 ** $y_dir) * $top_margin}]
+
+        set ::env(CORE_AREA) [list $core_x0 $core_y0 $core_x1 $core_y1]
     } else {
         if { [llength $::env(CORE_AREA)] != 4 } {
             puts stderr "Invalid core area string '$::env(CORE_AREA)'."
