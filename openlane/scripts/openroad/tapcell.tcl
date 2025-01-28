@@ -14,12 +14,13 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
-log_cmd tapcell\
-    -distance $::env(FP_TAPCELL_DIST)\
-    -tapcell_master "$::env(WELLTAP_CELL)"\
-    -endcap_master "$::env(ENDCAP_CELL)"\
-    -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
-    -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
-
+if {$::env(FP_TAPCELL_DIST) != 0} {
+    log_cmd tapcell\
+        -distance $::env(FP_TAPCELL_DIST)\
+        -tapcell_master "$::env(WELLTAP_CELL)"\
+        -endcap_master "$::env(ENDCAP_CELL)"\
+        -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)\
+        -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
+}
 
 write_views

@@ -1140,7 +1140,7 @@ class TapEndcapInsertion(OpenROADStep):
         Variable(
             "FP_TAPCELL_DIST",
             Decimal,
-            "The distance between tap cell columns.",
+            "The distance between tap cell columns. If set to 0, tap cell insertion is skipped.",
             units="µm",
             pdk=True,
         ),
