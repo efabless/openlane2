@@ -2130,9 +2130,7 @@ class WriteAbstractLEF(OpenROADStep):
 
     id = "OpenROAD.WriteAbstractLEF"
     name = "Write Abstract LEF"
-    outputs = [
-        DesignFormat.LEF
-    ]
+    outputs = [DesignFormat.LEF]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "write_abstract_lef.tcl")
@@ -2146,9 +2144,7 @@ class WriteCDL(OpenROADStep):
 
     id = "OpenROAD.WriteCDL"
     name = "Write CDL"
-    outputs = [
-        DesignFormat.CDL
-    ]
+    outputs = [DesignFormat.CDL]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "write_cdl.tcl")
