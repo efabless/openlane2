@@ -30,6 +30,11 @@
 
 * `OpenROAD.*`
 
+  * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
+    for steps using `RSZ_CORNERS` and `CTS_CORNERS`
+  * Restored `LAYERS_RC`
+  * Added `VIAS_R`
+  * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
   * New convenience methods to append flags to calls based on environment
     variables
@@ -38,6 +43,8 @@
     may inspect the result.
     * This is not part of the OpenLane stable API and may be broken at any
       moment.
+  * Can now define multiple corners that have the same set of libs for the variables:
+    `PNR_CORNERS`, `RSZ_CORNERS` and `CTS_CORNERS`
 
 * `OpenROAD.CTS`
 
@@ -158,6 +165,12 @@
     instead of floats.
 
 ## API Breaks
+
+* `OpenROADStep.*`
+
+  * `LAYERS_RC` now uses a new format. Refer to the documentation for a description
+    of the new format.
+  * `VIAS_RC` removed and replaced by `VIAS_R` with a format similar to `LAYERS_RC`
 
 * `Checker.HoldViolations`
 
