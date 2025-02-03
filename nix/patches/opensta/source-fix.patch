@@ -1,0 +1,43 @@
+diff --git a/sdc/Sdc.tcl b/sdc/Sdc.tcl
+index d2512ba8..36394148 100644
+--- a/sdc/Sdc.tcl
++++ b/sdc/Sdc.tcl
+@@ -40,9 +40,12 @@ proc_redirect read_sdc {
+   parse_key_args "read_sdc" args keys {} flags {-echo}
+ 
+   check_argc_eq1 "read_sdc" $args
+-  set echo [info exists flags(-echo)]
++  set echo_flag ""
++  if { [info exists flags(-echo)] } {
++    set echo_flag -echo
++  }
+   set filename [file nativename [lindex $args 0]]
+-  source_ $filename $echo 0
++  uplevel \#0 "source $echo_flag $filename"
+ }
+ 
+ ################################################################
+@@ -70,7 +73,13 @@ proc_redirect source {
+   set echo [info exists flags(-echo)]
+   set verbose [info exists flags(-verbose)]
+   set filename [file nativename [lindex $args 0]]
+-  source_ $filename $echo $verbose
++  set prev_filename [info script]
++  try {
++    info script $filename
++    source_ $filename $echo $verbose
++  } finally {
++    info script $prev_filename
++  }
+ }
+ 
+ proc source_ { filename echo verbose } {
+@@ -106,7 +115,7 @@ proc source_ { filename echo verbose } {
+       if { [string index $line end] != "\\" \
+ 	     && [info complete $cmd] } {
+ 	set error {}
+-	set error_code [catch {uplevel \#0 $cmd} result]
++	set error_code [catch {uplevel 2 $cmd} result]
+ 	# cmd consumed
+ 	set cmd ""
+ 	# Flush results printed outside tcl to stdout/stderr.
