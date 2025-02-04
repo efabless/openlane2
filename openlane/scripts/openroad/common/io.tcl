@@ -125,14 +125,14 @@ proc read_current_netlist {args} {
         flags {-powered}
 
     if { [info exists flags(-powered)] } {
-        puts "Reading top-level powered netlist at '$::env(CURRENT_POWERED_NETLIST)'…"
-        if {[catch {read_verilog $::env(CURRENT_POWERED_NETLIST)} errmsg]} {
+        puts "Reading top-level powered netlist at '$::env(CURRENT_PNL)'…"
+        if {[catch {read_verilog $::env(CURRENT_PNL)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
     } else {
-        puts "Reading top-level netlist at '$::env(CURRENT_NETLIST)'…"
-        if {[catch {read_verilog $::env(CURRENT_NETLIST)} errmsg]} {
+        puts "Reading top-level netlist at '$::env(CURRENT_NL)'…"
+        if {[catch {read_verilog $::env(CURRENT_NL)} errmsg]} {
             puts stderr $errmsg
             exit 1
         }
@@ -316,6 +316,70 @@ proc read_current_odb {args} {
     set_dont_use_cells
 }
 
+proc _populate_cells_by_class {} {
+    if { [info exists ::_cells_by_class(physical)] } {
+        return
+    }
+
+    set ::_cells_by_class(physical) [list]
+    set ::_cells_by_class(non_timing) [list]
+    set _comment_ {
+        We naïvely assume anything not in these classes is not a cell with a
+        logical function. This may not be comprehensive, but is good enough.
+
+        CORE just means a macro used in the core area (i.e. a standard cell.)
+
+        Thing is, it has a lot of subclasses for physical cells:
+
+        `FEEDTHRU`,`SPACER`,`ANTENNACELL`,`WELLTAP`
+
+        Only `TIEHIGH`, `TIELOW` are for logical cells. Thus, the inclusion
+        list allows them as well. `BLOCKS` are macros, which we cannot discern
+        whether they have a logical function or not, so we include them
+        regardless.
+
+        We do make one exception for `ANTENNACELL`s. These are not counted as
+        logical cells but they are not exempt from the so-called SDF-friendly
+        netlist as they do affect timing ever so slightly.
+    }
+    set logical_classes {
+        BLOCK
+        BUMP
+        CORE
+        CORE_TIEHIGH
+        CORE_TIELOW
+        COVER
+        PAD
+        PAD_AREAIO
+        PAD_INOUT
+        PAD_INPUT
+        PAD_OUTPUT
+        PAD_POWER
+        PAD_SPACER
+    }
+
+    foreach lib $::libs {
+        foreach master [$lib getMasters] {
+            if { [lsearch -exact $logical_classes [$master getType]] == -1 } {
+                lappend ::_cells_by_class(physical) [$master getName]
+                if { "[$master getType]" != "CORE_ANTENNACELL" } {
+                    lappend ::_cells_by_class(non_timing) [$master getName]
+                }
+            }
+        }
+    }
+}
+
+proc get_timing_excluded_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(non_timing)
+}
+
+proc get_physical_cells {args} {
+    _populate_cells_by_class
+    return $::_cells_by_class(physical)
+}
+
 proc write_views {args} {
     # This script will attempt to write views based on existing "SAVE_"
     # environment variables. If the SAVE_ variable exists, the script will
@@ -338,32 +402,28 @@ proc write_views {args} {
         write_db $::env(SAVE_ODB)
     }
 
-    if { [info exists ::env(SAVE_NETLIST)] } {
-        puts "Writing netlist to '$::env(SAVE_NETLIST)'…"
-        write_verilog $::env(SAVE_NETLIST)
+    if { [info exists ::env(SAVE_NL)] } {
+        puts "Writing netlist to '$::env(SAVE_NL)'…"
+        write_verilog $::env(SAVE_NL)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST)] } {
-        puts "Writing powered netlist to '$::env(SAVE_POWERED_NETLIST)'…"
-        write_verilog -include_pwr_gnd $::env(SAVE_POWERED_NETLIST)
+    if { [info exists ::env(SAVE_PNL)] } {
+        puts "Writing powered netlist to '$::env(SAVE_PNL)'…"
+        write_verilog -include_pwr_gnd $::env(SAVE_PNL)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)] } {
-        set exclude_cells "[join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofill powered netlist to '$::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)'…"
-        puts "Excluding $exclude_cells"
+    if { [info exists ::env(SAVE_SDF_PNL)] } {
+        puts "Writing timing powered netlist to '$::env(SAVE_SDF_PNL)'…"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
-            $::env(SAVE_POWERED_NETLIST_SDF_FRIENDLY)
+            -remove_cells "[get_timing_excluded_cells]"\
+            $::env(SAVE_SDF_PNL)
     }
 
-    if { [info exists ::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)] } {
-        set exclude_cells "[join [lindex [split $::env(DIODE_CELL) "/"] 0]] [join $::env(FILL_CELL)] [join $::env(DECAP_CELL)] [join $::env(WELLTAP_CELL)] [join $::env(ENDCAP_CELL)]"
-        puts "Writing nofilldiode powered netlist to '$::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)'…"
-        puts "Excluding $exclude_cells"
+    if { [info exists ::env(SAVE_LOGICAL_PNL)] } {
+        puts "Writing logic-only powered netlist to '$::env(SAVE_LOGICAL_PNL)'…"
         write_verilog -include_pwr_gnd \
-            -remove_cells "$exclude_cells"\
-            $::env(SAVE_POWERED_NETLIST_NO_PHYSICAL_CELLS)
+            -remove_cells "[get_physical_cells]"\
+            $::env(SAVE_LOGICAL_PNL)
     }
 
     if { [info exists ::env(SAVE_OPENROAD_LEF)] } {
@@ -473,4 +533,86 @@ if { [namespace exists utl] } {
     proc write_metric_str {metric value} {
         puts "%OL_METRIC $metric $value"
     }
+}
+
+proc exit_unless_gui {{status 0}} {
+    if { ![info exists ::env(_OPENROAD_GUI)] || !$::env(_OPENROAD_GUI) } {
+        exit $status
+    }
+}
+
+proc find_unfixed_macros {} {
+    set macros [list]
+
+    foreach inst [$::block getInsts] {
+        set inst_master [$inst getMaster]
+
+        # BLOCK means MACRO cells
+        if { ![string match [$inst_master getType] "BLOCK"] } {
+            continue
+        }
+
+        if { [$inst isFixed] } {
+            continue
+        }
+
+        lappend macros $inst
+    }
+    return $macros
+}
+
+proc append_if_exists_argument {list_arg glob_variable_name option} {
+    upvar $list_arg local_array
+    if [info exists ::env($glob_variable_name) ] {
+        lappend local_array $option $::env($glob_variable_name)
+    }
+}
+
+proc append_if_flag {list_arg glob_variable_name flag} {
+    upvar $list_arg local_array
+    if { [info exists ::env($glob_variable_name)] && $::env($glob_variable_name) } {
+        lappend local_array $flag
+    }
+}
+proc append_if_not_flag {list_arg glob_variable_name flag} {
+    upvar $list_arg local_array
+    if { [info exists ::env($glob_variable_name)] && !$::env($glob_variable_name) } {
+        lappend local_array $flag
+    }
+}
+
+# Code below adapted from OpenROAD Flow Scripts under the following license:
+#
+# BSD 3-Clause License
+#
+# Copyright (c) 2018-2023, The Regents of the University of California
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+proc log_cmd {cmd args} {
+    puts "+ $cmd [join $args " "]"
+    return [$cmd {*}$args]
 }

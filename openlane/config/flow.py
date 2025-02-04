@@ -54,41 +54,9 @@ pdk_variables = [
         pdk=True,
     ),
     Variable(
-        "WIRE_LENGTH_THRESHOLD",
-        Optional[Decimal],
-        "A value above which wire lengths generate warnings.",
-        units="µm",
-        pdk=True,
-    ),
-    Variable(
         "TECH_LEFS",
         Dict[str, Path],
         "Map of corner patterns to to technology LEF files. A corner not matched here will not be supported by OpenRCX in the default flow.",
-        pdk=True,
-    ),
-    Variable(
-        "GPIO_PADS_LEF",
-        Optional[List[Path]],
-        "Path(s) to GPIO pad LEF file(s).",
-        pdk=True,
-    ),
-    Variable(
-        "GPIO_PADS_LEF_CORE_SIDE",
-        Optional[List[Path]],
-        "Path(s) to GPIO pad LEF file(s) as used for routing (?).",
-        pdk=True,
-    ),
-    Variable(
-        "GPIO_PADS_VERILOG",
-        Optional[List[Path]],
-        "Path(s) to GPIO pad Verilog models.",
-        pdk=True,
-    ),
-    Variable(
-        "GPIO_PAD_CELLS",
-        Optional[List[str]],
-        "A list of pad cell name prefixes.",
-        deprecated_names=[("GPIO_PADS_PREFIX", _prefix_to_wildcard)],
         pdk=True,
     ),
     Variable(
@@ -137,20 +105,6 @@ pdk_variables = [
     ),
     # Floorplanning
     Variable(
-        "FP_TRACKS_INFO",
-        Path,
-        "A path to the a classic OpenROAD `.tracks` file. Used by the floorplanner to generate tracks.",
-        deprecated_names=["TRACKS_INFO_FILE"],
-        pdk=True,
-    ),
-    Variable(
-        "FP_TAPCELL_DIST",
-        Decimal,
-        "The distance between tap cell columns.",
-        units="µm",
-        pdk=True,
-    ),
-    Variable(
         "FP_IO_HLAYER",
         str,
         "The metal layer on which to place horizontal IO pins, i.e., the top and bottom of the die.",
@@ -190,16 +144,18 @@ scl_variables = [
         pdk=True,
     ),
     Variable(
-        "FILL_CELL",
+        "FILL_CELLS",
         List[str],
         "A list of cell names or wildcards of fill cells to be used in fill insertion.",
         pdk=True,
+        deprecated_names=["FILL_CELL"],
     ),
     Variable(
-        "DECAP_CELL",
+        "DECAP_CELLS",
         List[str],
         "A list of cell names or wildcards of decap cells to be used in fill insertion.",
         pdk=True,
+        deprecated_names=["DECAP_CELL"],
     ),
     Variable(
         "LIB",
@@ -358,7 +314,7 @@ scl_variables = [
     Variable(
         "ENDCAP_CELL",
         str,
-        "Defines so-called 'end-cap' cells- decap cells placed at either sides of a design.",
+        "Defines the so-called 'end-cap' cell- class of decap cells placed at either sides of a design.",
         pdk=True,
         deprecated_names=["FP_ENDCAP_CELL"],
     ),
@@ -474,16 +430,45 @@ option_variables = [
         "Specifies LIB files of pre-hardened macros used in the current design, used during timing analyses (and during parasitics-based STA as a fallback). These are loaded indiscriminately for all timing corners.",
     ),
     Variable(
-        "EXTRA_GDS_FILES",
+        "EXTRA_GDS",
         Optional[List[Path]],
         "Specifies GDS files of pre-hardened macros used in the current design, used during tape-out.",
+        deprecated_names=["EXTRA_GDS_FILES"],
     ),
     Variable(
-        "FALLBACK_SDC_FILE",
+        "FALLBACK_SDC",
         Path,
         "A fallback SDC file for when a step-specific SDC file is not defined.",
-        deprecated_names=["BASE_SDC_FILE", "SDC_FILE"],
+        deprecated_names=["FALLBACK_SDC_FILE", "BASE_SDC_FILE", "SDC_FILE"],
         default=Path(os.path.join(get_script_dir(), "base.sdc")),
+    ),
+]
+
+__for_whenever_we_implement_padring = [
+    Variable(
+        "GPIO_PADS_LEF",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad LEF file(s).",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_LEF_CORE_SIDE",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad LEF file(s) as used for routing (?).",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PADS_VERILOG",
+        Optional[List[Path]],
+        "Path(s) to GPIO pad Verilog models.",
+        pdk=True,
+    ),
+    Variable(
+        "GPIO_PAD_CELLS",
+        Optional[List[str]],
+        "A list of pad cell name prefixes.",
+        deprecated_names=[("GPIO_PADS_PREFIX", _prefix_to_wildcard)],
+        pdk=True,
     ),
 ]
 

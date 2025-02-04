@@ -73,9 +73,9 @@ class OdbpyStep(Step):
         views_updates: ViewsUpdate = {}
         command = self.get_command()
         for output in automatic_outputs:
-            filename = f"{self.config['DESIGN_NAME']}.{output.value.extension}"
+            filename = f"{self.config['DESIGN_NAME']}.{output.extension}"
             file_path = os.path.join(self.step_dir, filename)
-            command.append(f"--output-{output.value.id}")
+            command.append(f"--output-{output.id}")
             command.append(file_path)
             views_updates[output] = Path(file_path)
 
@@ -123,7 +123,7 @@ class OdbpyStep(Step):
             for lef in extra_lefs:
                 lefs.append("--input-lef")
                 lefs.append(lef)
-        if (design_lef := self.state_in.result()[DesignFormat.LEF]) and (
+        if (design_lef := self.state_in.result().get(DesignFormat.LEF)) and (
             DesignFormat.LEF in self.inputs
         ):
             lefs.append("--design-lef")
@@ -502,9 +502,9 @@ class AddRoutingObstructions(OdbpyStep):
     config_vars = [
         Variable(
             "ROUTING_OBSTRUCTIONS",
-            Optional[List[str]],
+            Optional[List[Tuple[str, Decimal, Decimal, Decimal, Decimal]]],
             "Add routing obstructions to the design. If set to `None`, this step is skipped."
-            + " Format of each obstruction item is: layer llx lly urx ury.",
+            + " Format of each obstruction item is a tuple of: layer name, llx, lly, urx, ury.",
             units="µm",
             default=None,
             deprecated_names=["GRT_OBS"],
@@ -525,7 +525,7 @@ class AddRoutingObstructions(OdbpyStep):
         if obstructions := self.config[self.config_vars[0].name]:
             for obstruction in obstructions:
                 command.append("--obstructions")
-                command.append(obstruction)
+                command.append(" ".join([str(o) for o in obstruction]))
         return command
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
@@ -554,9 +554,9 @@ class AddPDNObstructions(AddRoutingObstructions):
     config_vars = [
         Variable(
             "PDN_OBSTRUCTIONS",
-            Optional[List[str]],
+            Optional[List[Tuple[str, Decimal, Decimal, Decimal, Decimal]]],
             "Add routing obstructions to the design before PDN stage. If set to `None`, this step is skipped."
-            + " Format of each obstruction item is: layer llx lly urx ury.",
+            + " Format of each obstruction item is a tuple of: layer name, llx, lly, urx, ury,.",
             units="µm",
             default=None,
         ),

@@ -75,8 +75,11 @@ def attribute_from_file(file: str, attribute: str):
 def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture):
     from openlane.steps import Step
     from openlane.state import State
+    from openlane.config import Config
     from openlane.common import Toolbox, get_script_dir
     from openlane.steps.openroad_alerts import SupportsOpenROADAlerts
+    from decimal import Decimal
+    import json
 
     sys.path.insert(0, os.getcwd())
 
@@ -134,7 +137,19 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
         state_in = State()
 
     # 2. Load and Launch Step
-    target = Target.load(config, state_in, pdk_root)
+
+    if not isinstance(config, Config):
+        config_object, _ = Config.load(
+            config_in=json.loads(open(config).read(), parse_float=Decimal),
+            flow_config_vars=Target.get_all_config_variables(),
+            design_dir=".",
+            pdk_root=pdk_root,
+            _load_pdk_configs=True,
+        )
+    else:
+        config_object = config
+
+    target = Target.load(config_object, state_in, pdk_root)
 
     exception: Optional[Exception] = None
     try:

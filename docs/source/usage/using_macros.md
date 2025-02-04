@@ -56,7 +56,7 @@ views- the former of which is used in PnR and the latter is used for tape-out.
   * Used as a fallback during synthesis if neither Verilog headers nor regular
     netlists (`.gl.v`/`.nl.v`) exist. It is not recommended for this use as
     synthesis checks may fail.
-* Lib file (`.lib`): Optional
+* {term}`dotlib` file (`.lib`): Optional
   * May be used during STA (see [relevant section](#sta)).
   * Used as a last resort for synthesis if no Verilog header (`.vh`) or any
     netlists (`.nl.v`/`.gl.v`/`.pnl.v`) are available. It is not recommended for
@@ -83,13 +83,26 @@ thereof) and the values are a Python dataclass. You can find the API reference
 for the macros hashmap at {class}`openlane.common.Macro`, but a less mechanical
 explanation is as follows:
 
+```{tip}
+To save space in your repositories, {term}`Gzip`ped views may be supported
+depending on the flow. The Classic flow generally supports gzipping the
+following formats:
+
+* gds
+* lef
+* vh
+* lib
+* spef
+
+```
+
 * The keys contain the name of the Macro itself (not instances thereof.)
 * The values are:
   * A dictionary of instance names to instance objects
     * The instance objects in turn consist off:
       * `location`: A tuple of two numbers, in microns, indicating the location
         of the macro (optional)
-      * `orientation`: The orientation of the placed macro-- see page 250 of the
+      * `orientation`: The orientation of the placed macro-- see the
         {term}`LEFDEFREF` for a definition and visual.
   * `gds`: List of GDS files comprising the macro (usually only one)
   * `lef`: List of LEF files comprising the macro (usually only one)

@@ -48,7 +48,7 @@ from deprecated.sphinx import deprecated
 from openlane.common.types import Path
 
 from ..config import Config, Variable, universal_flow_config_variables, AnyConfigs
-from ..state import State, DesignFormat, DesignFormatObject
+from ..state import State, DesignFormat
 from ..steps import Step, StepNotFound
 from ..logging import (
     LevelFilter,
@@ -804,13 +804,10 @@ class Flow(ABC):
         }
 
         def visitor(key, value, top_key, _, __):
-            df = DesignFormat.by_id(top_key)
+            df = DesignFormat.factory.get(top_key)
             assert df is not None
             if df not in supported_formats:
                 return
-
-            dfo = df.value
-            assert isinstance(dfo, DesignFormatObject)
 
             subdirectory, extension = supported_formats[df]
 
@@ -837,7 +834,7 @@ class Flow(ABC):
                 return
 
             target_basename = os.path.basename(str(value))
-            target_basename = target_basename[: -len(dfo.extension)] + extension
+            target_basename = target_basename[: -len(df.extension)] + extension
             target_path = os.path.join(target_dir, target_basename)
             mkdirp(target_dir)
             shutil.copyfile(value, target_path, follow_symlinks=True)
