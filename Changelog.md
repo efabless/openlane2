@@ -63,6 +63,7 @@
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+  * Added variable `PL_KEEP_RESIZE_BELOW_OVERFLOW`
 
 * `OpenROAD.RepairDesignPostGPL`
 
