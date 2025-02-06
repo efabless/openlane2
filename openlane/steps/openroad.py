@@ -1288,6 +1288,12 @@ class _GlobalPlacement(OpenROADStep):
                 units="sites",
                 pdk=True,
             ),
+            Variable(
+                "PL_KEEP_RESIZE_BELOW_OVERFLOW",
+                Decimal,
+                "Only applicable when PL_TIME_DRIVEN is enabled. When the overflow is below the set value, timing-driven iterations will retain the resizer changes instead of reverting them.",
+                default=0,
+            ),
         ]
     )
 
