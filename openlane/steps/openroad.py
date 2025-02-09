@@ -197,13 +197,19 @@ class OpenROADStep(TclStep):
             pdk=True,
         ),
         Variable(
+            "SET_RC_VERBOSE",
+            bool,
+            "If set to true, set_rc commands are echoed. Quite noisy, but may be useful for debugging.",
+            default=False,
+        ),
+        Variable(
             "LAYERS_RC",
             Optional[Dict[str, Dict[str, Dict[str, Decimal]]]],
             "Used during PNR steps, Specific custom resistance and capacitance values for metal layers."
             + " For each IPVT corner, a mapping for each metal layer is provided."
             + " Each mapping describes custom resistance and capacitance values."
             + " Usage of wildcards for specifying IPVT corners is allowed."
-            + " Units are resistance and capacitance per unit length.",
+            + " Units are resistance and capacitance per unit length as defined in the first lib file.",
             pdk=True,
         ),
         Variable(
@@ -213,7 +219,7 @@ class OpenROADStep(TclStep):
             + " For each IPVT corner, a mapping for each via layer is provided."
             + " Each mapping describes custom resistance values."
             + " Usage of wildcards for specifying IPVT corners is allowed."
-            + " Via resistance is per cut/via, not area-based.",
+            + " Via resistance is per cut/via with units asdefined in the first lib file.",
             pdk=True,
         ),
         Variable(
@@ -326,10 +332,7 @@ class OpenROADStep(TclStep):
                         res = rc["res"]
                         cap = rc["cap"]
                         env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
-                            [corner]
-                            + [layer]
-                            + [TclStep.value_to_tcl(res)]
-                            + [TclStep.value_to_tcl(cap)]
+                            [corner, layer, res, cap]
                         )
                         count += 1
 
@@ -341,7 +344,7 @@ class OpenROADStep(TclStep):
                     for via, rc in metal_layers.items():
                         res = rc["res"]
                         env[f"_VIA_R_{count}"] = TclStep.value_to_tcl(
-                            [corner] + [via] + [str(round(res, 8))]
+                            [corner, via, res]
                         )
                         count += 1
 
@@ -1340,7 +1343,7 @@ class _GlobalPlacement(OpenROADStep):
             ),
             Variable(
                 "GPL_CELL_PADDING",
-                Decimal,
+                int,
                 "Cell padding value (in sites) for global placement. The number will be integer divided by 2 and placed on both sides.",
                 units="sites",
                 pdk=True,
@@ -2636,3 +2639,22 @@ class OpenGUI(Step):
             )
 
         return {}, {}
+
+
+@Step.factory.register()
+class DumpRCValues(OpenROADStep):
+    """
+    Creates three reports:
+
+    * Initial Database Layer RC Values (from Tech LEF)
+    * Modified Database Layer RC Values
+    * Modified Resizer Layer RC Values
+    """
+
+    id = "OpenROAD.DumpRCValues"
+    name = "Dump RC Values"
+
+    inputs = [DesignFormat.DEF]
+
+    def get_script_path(self) -> str:
+        return os.path.join(get_script_dir(), "openroad", "dump_rc.tcl")

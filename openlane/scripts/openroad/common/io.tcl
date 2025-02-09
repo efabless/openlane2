@@ -565,6 +565,38 @@ proc find_unfixed_macros {} {
     return $macros
 }
 
+proc get_layers {args} {
+    sta::parse_key_args "get_layers" args \
+        keys {-types -map}\
+        flags {-constrained}
+
+    if { ![info exists keys(-types)] } {
+        puts "\[ERROR\] Invalid usage of get_layers: -types is required."
+    }
+
+    set layers [$::tech getLayers]
+    set result [list]
+    set adding [expr ![info exists flags(-constrained)]]
+    foreach layer $layers {
+        set name [$layer getName]
+        if {"$::env(RT_MIN_LAYER)" == "$name"} {
+            set adding 1
+        }
+        if { [lsearch $keys(-types) [$layer getType]] != -1 && $adding} {
+            lappend result $layer
+        }
+
+        if {"$::env(RT_MAX_LAYER)" == "$name"} {
+            set adding [info exists flags(-constrained)]
+        }
+
+    }
+    if { [info exists keys(-map)] } {
+        set result [lmap layer $result "\$layer $keys(-map)"]
+    }
+    return $result
+}
+
 proc append_if_exists_argument {list_arg glob_variable_name option} {
     upvar $list_arg local_array
     if [info exists ::env($glob_variable_name) ] {

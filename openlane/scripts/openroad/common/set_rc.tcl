@@ -15,29 +15,16 @@
 # Resistance/Capacitance Overrides
 # Via resistance
 
-proc get_routing_layer_names {} {
-    set layer_names [list]
-    set layers [$::tech getLayers]
-    set adding 0
-    foreach layer $layers {
-        if { [$layer getRoutingLevel] >= 1 } {
-            set name [$layer getName]
-            if {"$::env(RT_MIN_LAYER)" == "$name"} {
-                set adding 1
-            }
-            if { $adding } {
-                lappend layer_names $name
-            }
-
-            if {"$::env(RT_MAX_LAYER)" == "$name"} {
-                set adding 0
-            }
-        }
+proc log_cmd_rc {cmd args} {
+    if { $::env(SET_RC_VERBOSE) } {
+        log_cmd $cmd {*}$args
+    } else {
+        $cmd {*}$args
     }
-    return $layer_names
 }
 
 proc set_layers_custom_rc {args} {
+    # Returns: All corners for which RC values were found
     set i "0"
     set tc_key "_LAYER_RC_$i"
     set custom_corner_rc [list]
@@ -47,15 +34,16 @@ proc set_layers_custom_rc {args} {
         set layer_name [lindex $::env($tc_key) 1]
         set res_value [lindex $::env($tc_key) 2]
         set cap_value [lindex $::env($tc_key) 3]
-        log_cmd set_layer_rc \
+        log_cmd_rc set_layer_rc \
             -layer $layer_name\
             -capacitance $cap_value\
             -corner $corner_name\
             -resistance $res_value
         incr i
         set tc_key "_LAYER_RC_$i"
-        if { [lsearch $custom_corner_rc $corner_name] == -1 } {
-            lappend custom_corner_rc $corner_name
+        set corner [sta::find_corner $corner_name]
+        if { [lsearch $custom_corner_rc $corner] == -1 } {
+            lappend custom_corner_rc $corner
         }
     }
     return $custom_corner_rc
@@ -69,69 +57,56 @@ proc set_via_custom_r {args} {
         set corner_name [lindex $::env($tc_key) 0]
         set via_name [lindex $::env($tc_key) 1]
         set res_value [lindex $::env($tc_key) 2]
-        log_cmd set_layer_rc \
+        log_cmd_rc set_layer_rc \
             -via $via_name\
             -resistance $res_value\
             -corner $corner_name
         incr i
         set tc_key "_VIA_R_$i"
-
-        if { [lsearch $custom_corner_r $corner_name] == -1 } {
-            lappend custom_corner_r $corner_name
+        set corner [sta::find_corner $corner_name]
+        if { [lsearch $custom_corner_r $corner] == -1 } {
+            lappend custom_corner_r $corner
         }
     }
     return $custom_corner_r
 }
 
-
-proc get_missing_corners {corners_with_custom_layer_rc} {
-    set corners [sta::corners]
-    set corners_without_custom_layer_rc [list]
-    foreach corner $corners {
-        if {[string first [$corner name] "$corners_with_custom_layer_rc"] == -1} {
-            lappend corners_without_custom_layer_rc [$corner name]
-        }
-    }
-    return $corners_without_custom_layer_rc
-}
-
 proc set_layers_default_rc {corners} {
-    set res_unit [sta::unit_scale resistance] 
-    set cap_unit [sta::unit_scale capacitance]
-    foreach layer [$::tech getLayers] {
-        if { [$layer getType] == "ROUTING" } {
-            set layer_name [$layer getName]
-            lassign [rsz::dblayer_wire_rc $layer] layer_wire_res_ohm_m layer_wire_cap_farad_m
-            set layer_wire_res_unit_microns [expr $layer_wire_res_ohm_m * 1e-6 / $res_unit]
-            set layer_wire_cap_unit_microns [expr $layer_wire_cap_farad_m * 1e-6 / $cap_unit]
-            foreach corner "$corners" {
-                log_cmd set_layer_rc \
-                    -layer $layer_name\
-                    -capacitance $layer_wire_cap_unit_microns\
-                    -corner $corner\
-                    -resistance $layer_wire_res_unit_microns
-            }
+    foreach layer [get_layers -type ROUTING] {
+        set layer_name [$layer getName]
+        lassign [rsz::dblayer_wire_rc $layer] layer_wire_res_ohm_m layer_wire_cap_farad_m
+        set layer_wire_res_per_unit_distance [expr $layer_wire_res_ohm_m * [sta::unit_scale distance] / [sta::unit_scale resistance]]
+        set layer_wire_cap_per_unit_distance [expr $layer_wire_cap_farad_m * [sta::unit_scale distance] / [sta::unit_scale capacitance]]
+        foreach corner "$corners" {
+            log_cmd_rc set_layer_rc \
+                -layer $layer_name\
+                -corner $corner\
+                -resistance $layer_wire_res_per_unit_distance\
+                -capacitance $layer_wire_cap_per_unit_distance
         }
     }
 }
 
 proc set_vias_default_r {corners} {
-    foreach layer [$::tech getLayers] {
-        if { [$layer getType] == "CUT" } {
-            set layer_name [$layer getName]
-            set res [$layer getResistance]
-            foreach corner $corners {
-                log_cmd set_layer_rc \
-                    -corner $corner\
-                    -resistance $res\
-                    -via $layer_name
-            }
+    foreach layer [get_layers -types "CUT"] {
+        set layer_name [$layer getName]
+        set res [expr [$layer getResistance] / [sta::unit_scale resistance]]
+        foreach corner $corners {
+            log_cmd_rc set_layer_rc \
+                -corner $corner\
+                -resistance $res\
+                -via $layer_name
         }
     }
 }
 
-proc set_wire_rc_wrapper {use_corners} {
-    set layer_names [get_routing_layer_names]
+proc set_wire_rc_wrapper {args} {
+    sta::parse_key_args "set_wire_rc_wrapper" args \
+        keys {}\
+        flags {-use_corners}
+
+    # We only want the layers that will actually be used for set_wire_rc's estimations.
+    set layer_names [get_layers -constrained -type ROUTING -map getName]
     set signal_wire_rc_layers $layer_names
     set clock_wire_rc_layers $layer_names
     if { [info exist ::env(SIGNAL_WIRE_RC_LAYERS)] } {
@@ -156,15 +131,26 @@ proc set_wire_rc_wrapper {use_corners} {
         lappend clock_args -layer "$clock_wire_rc_layers"
     }
 
-    if { $use_corners } {
+    if { [info exists flags(-use_corners)] } {
         foreach corner [sta::corners] {
-            log_cmd set_wire_rc {*}$clock_args -corner [$corner name]
-            log_cmd set_wire_rc {*}$signal_args -corner [$corner name]
+            log_cmd_rc set_wire_rc {*}$clock_args -corner [$corner name]
+            log_cmd_rc set_wire_rc {*}$signal_args -corner [$corner name]
         }
     } else {
-            log_cmd set_wire_rc {*}$clock_args
-            log_cmd set_wire_rc {*}$signal_args
+        log_cmd_rc set_wire_rc {*}$clock_args
+        log_cmd_rc set_wire_rc {*}$signal_args
     }
+}
+
+# TODO: Replace with actual Tcl sets once we have access to the standard library
+proc set_diff {setA setB} {
+    set setC [list]
+    foreach element $setA {
+        if {[lsearch $setB $element] == -1} {
+            lappend setC $element
+        }
+    }
+    return $setC
 }
 
 # Flow as follows
@@ -177,18 +163,32 @@ proc set_wire_rc_wrapper {use_corners} {
 
 set corners_with_custom_layer_rc [set_layers_custom_rc]
 set corners_with_custom_via_r [set_via_custom_r]
-set corners_without_custom_layer_rc [get_missing_corners $corners_with_custom_layer_rc]
-set corners_witout_custom_via_r [get_missing_corners $corners_with_custom_via_r]
+set corners_without_custom_layer_rc [set_diff [sta::corners] $corners_with_custom_layer_rc]
+set corners_without_custom_via_r [set_diff [sta::corners] $corners_with_custom_via_r]
 
+# If ANY CORNERS have custom RC values set, set the tech LEF values for the
+# remaining corners.
+#
+# If NO CORNERS have custom RC values set, do nothing. The set_wire_rc LATER
+# will automatically average the Tech LEF values.
+#
+# This is because, technically, while both behaviors SHOULD be identical, they
+# aren't because of roundoff errors emblematic of IEEE 754.
 if { [llength $corners_with_custom_layer_rc] } {
-    # to avoid setting the default values again for round off error and maintain old behavior
-    log_cmd set_layers_default_rc $corners_without_custom_layer_rc
+    log_cmd_rc set_layers_default_rc [lmap corner $corners_without_custom_layer_rc "\$corner name"]
 }
 if { [llength $corners_with_custom_via_r] } {
-    log_cmd set_vias_default_r $corners_witout_custom_via_r
+    log_cmd_rc set_vias_default_r $corners_without_custom_via_r
 }
+
+
+# If ANY corners are set, supply -corner with the set_wire_rc command.
+#
+# If NONE are set, just use set_wire_rc and let it handle all corners.
+# For some godforsaken reason, set_wire_rc actually alters its own calculations
+# slightly depending on if -corner is passed or not.
 if { [llength $corners_with_custom_layer_rc] } {
-    log_cmd set_wire_rc_wrapper 1
+    log_cmd_rc set_wire_rc_wrapper -use_corners
 } else {
-    log_cmd set_wire_rc_wrapper 0
+    log_cmd_rc set_wire_rc_wrapper
 }

@@ -686,7 +686,7 @@ class PortDiodePlacement(OdbpyStep):
         ),
         Variable(
             "GPL_CELL_PADDING",
-            Decimal,
+            int,
             "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
             units="sites",
             pdk=True,
@@ -789,7 +789,7 @@ class FuzzyDiodePlacement(OdbpyStep):
         ),
         Variable(
             "GPL_CELL_PADDING",
-            Decimal,
+            int,
             "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
             units="sites",
             pdk=True,
