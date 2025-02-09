@@ -59,6 +59,11 @@
           klayout = (pkgs.klayout.overrideAttrs(old: {
             configurePhase = builtins.replaceStrings ["-without-qtbinding"] ["-with-qtbinding"] old.configurePhase;
           }));
+          yosys = pkgs.yosys.overrideAttrs(old: {
+            patches = [
+              ./nix/patches/yosys/async_rules.patch
+            ];
+          });
         })
         (
           pkgs': pkgs: let
