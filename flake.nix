@@ -60,7 +60,7 @@
             configurePhase = builtins.replaceStrings ["-without-qtbinding"] ["-with-qtbinding"] old.configurePhase;
           }));
           yosys = pkgs.yosys.overrideAttrs(old: {
-            patches = [
+            patches = old.patches ++ [
               ./nix/patches/yosys/async_rules.patch
             ];
           });
