@@ -235,6 +235,16 @@
   * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
     renamed, see Misc. Enhancements/Bugfixes.
 
+# 2.3.3
+
+## Steps
+
+* `OpenROAD.Floorplan`
+
+  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's x0 >
+    x1 or y0 > y1, the computed core area would no longer fit in the die area.
+    Not that we recommend you ever do that, but technically OpenROAD allows it.
+
 # 2.3.2
 
 ## Steps
