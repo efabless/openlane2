@@ -30,14 +30,24 @@
 
 * `OpenROAD.*`
 
+  * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
+    for steps using `RSZ_CORNERS` and `CTS_CORNERS`.
+  * Added `LAYERS_RC`, `VIAS_R`: Unlike OpenLane 1.0.0 variables with similar
+    names, these are mappings from corners to layer/via RC values.
+    * `PNR_CORNERS`, `RSZ_CORNERS`, and `CTS_CORNERS` all now support multiple
+      corners to have the same set of liberty files (as RC values may differ.)
+  * Added `SET_RC_VERBOSE`, which (very noisily) logs set-RC-related commands to
+    logs.
+  * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
-  * New convenience methods to append flags to calls based on environment
-    variables
+  * Lib files are now *always* read BEFORE reading database files.
   * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
     coupled with `--only`, it runs a step in OpenROAD then doesn't quit so you
     may inspect the result.
     * This is not part of the OpenLane stable API and may be broken at any
       moment.
+  * **Internal**: New convenience methods to append flags to calls based on
+    environment variables
 
 * `OpenROAD.CTS`
 
@@ -60,9 +70,16 @@
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN` but for
     the aforementioned antenna repair iterations
 
+* Created `OpenROAD.DumpRCValues`
+
+  * Creates three reports to help verify that the RC values used for estimation
+    are set correctly.
+
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+
+  * Corrected `GPL_CELL_PADDING` to be an integer.
 
 * `OpenROAD.RepairDesignPostGPL`
 
@@ -105,6 +122,11 @@
 * `Yosys.*Synthesis`
 
   * Added `SYNTH_CORNER`: a step-specific override for `DEFAULT_CORNER`.
+
+## Flows
+
+* Classic
+  * Added `OpenROAD.DumpRCValues` immediately after floorplanning.
 
 ## Tool Updates
 
@@ -161,6 +183,11 @@
     * States initialized with keys that have values that are `None` now remove
       said keys.
 
+* `openlane.steps`
+
+  * TclStep
+    * All `Decimal` values are now passed to Tcl in exponent notation.
+
 * `openlane.config`
 
   * Moved a number of global variables:
@@ -177,6 +204,11 @@
 
 ## API Breaks
 
+* `*`
+
+  * `{GPL,DPL}_CELL_PADDING`, `PL_MAX_DISPLACEMENT_{X,Y}` now all integers to
+    match OpenROAD.
+
 * `Checker.HoldViolations`
 
   * `HOLD_VIOLATION_CORNERS` now defaulting to all corners will require designs
@@ -188,6 +220,13 @@
   * Typing for representation of obstructions has been changed. Designs with a
     meta version of 2 or higher must update their variables from strings to
     tuples.
+
+* `OpenROAD.*`
+
+  * `LAYERS_RC` now uses a new format. Refer to the documentation for a
+    description of the new format.
+  * `VIAS_RC` removed and replaced by `VIAS_R` with a format similar to
+    `LAYERS_RC`.
 
 * `openlane.flows`
 
@@ -223,6 +262,16 @@
 
   * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
     renamed, see Misc. Enhancements/Bugfixes.
+
+# 2.3.3
+
+## Steps
+
+* `OpenROAD.Floorplan`
+
+  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's x0 >
+    x1 or y0 > y1, the computed core area would no longer fit in the die area.
+    Not that we recommend you ever do that, but technically OpenROAD allows it.
 
 # 2.3.2
 

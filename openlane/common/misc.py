@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-import re
+import fnmatch
 import glob
 import gzip
-import typing
-import fnmatch
+import os
 import pathlib
+import re
+import typing
 import unicodedata
 from math import inf
 from typing import (
@@ -25,16 +25,16 @@ from typing import (
     Generator,
     Iterable,
     List,
-    TypeVar,
     Optional,
     SupportsFloat,
+    TypeVar,
     Union,
 )
 
 import httpx
 
-from .types import AnyPath, Path
 from ..__version__ import __version__
+from .types import AnyPath, Path
 
 T = TypeVar("T")
 
