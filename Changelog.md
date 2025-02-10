@@ -36,8 +36,8 @@
     names, these are mappings from corners to layer/via RC values.
     * `PNR_CORNERS`, `RSZ_CORNERS`, and `CTS_CORNERS` all now support multiple
       corners to have the same set of liberty files (as RC values may differ.)
-  * Added `SET_RC_VERBOSE`, which (very noisily) logs set-RC-related commands
-    to logs.
+  * Added `SET_RC_VERBOSE`, which (very noisily) logs set-RC-related commands to
+    logs.
   * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
   * Lib files are now *always* read BEFORE reading database files.
@@ -148,6 +148,24 @@
 
 ## Misc. Enhancements/Bugfixes
 
+* `openlane.flows`
+
+  * `SequentialFlow`
+    * Substitutions are now to be strictly consumed by the subclass initializer,
+      i.e., it can no longer be done on the object-level and only on the class
+      level. Additionally, it can provided as a list of tuples instead of a
+      dictionary so the same key may be reused multiple times.
+    * Step IDs are re-normalized after every substitution, so a substitution for
+      `OpenROAD.DetailedPlacement-1` for example would always refer to the
+      second `OpenROAD.DetailedPlacement` AFTER applying all previous
+      substitutions, instead of the second "original"
+      `OpenROAD.DetailedPlacement` in the flow.
+
+* `openlane.config`
+
+  * `meta.substituting_steps` now only apply to the sequential flow declared in
+    `meta.flow` and not all flows.
+
 * `openlane.state`
 
   * `DesignFormat`
@@ -210,6 +228,13 @@
   * `VIAS_RC` removed and replaced by `VIAS_R` with a format similar to
     `LAYERS_RC`.
 
+* `openlane.flows`
+
+  * Step IDs are re-normalized after every substitution, so a substitution for
+    `OpenROAD.DetailedPlacement-1` for example would always refer to the second
+    `OpenROAD.DetailedPlacement` AFTER applying all previous substitutions,
+    instead of the second "original" `OpenROAD.DetailedPlacement` in the flow.
+
 * `openlane.steps`
 
   * `TclStep` now uses the IDs uppercased for `CURRENT_` and `SAVE_`.
@@ -228,6 +253,9 @@
     `.name` is now an alias for `.id`.
 
 * `openlane.config`
+
+  * `meta.substituting_steps` now only apply to the sequential flow declared in
+    `meta.flow` and not all flows.
 
   * `WIRE_LENGTH_THRESHOLD`, `GPIO_PAD_*`, `FP_TRACKS_INFO`, `FP_TAPCELL_DIST`
     are no longer global variables.
