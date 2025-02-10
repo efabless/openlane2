@@ -18,6 +18,8 @@ remove_fillers
 log_cmd detailed_placement\
     -max_displacement [subst { $::env(PL_MAX_DISPLACEMENT_X) $::env(PL_MAX_DISPLACEMENT_Y) }]
 
+improve_placement -max_displacement "5 1"
+
 if { [info exists ::env(PL_OPTIMIZE_MIRRORING)] && $::env(PL_OPTIMIZE_MIRRORING) } {
     optimize_mirroring
 }
