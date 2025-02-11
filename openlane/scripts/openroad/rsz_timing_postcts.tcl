@@ -14,7 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
 
-load_rsz_corners
 read_current_odb
 
 set_propagated_clock [all_clocks]
