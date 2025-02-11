@@ -1,7 +1,6 @@
 - scl: sky130A/sky130_fd_sc_hd
   name: fastest_test_set
   designs:
-    - non_const_async_reset
     - inverter
     - wbqspiflash
     - APU
@@ -17,6 +16,8 @@
     - io_placer
     - test_sram_macro
     - manual_macro_placement_test
+    - name: non_const_async_reset
+      config_file: config.yaml
     - name: aes_user_project_wrapper
       test_name: aes_upw_new
       config_file: config.json
