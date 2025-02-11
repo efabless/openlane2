@@ -21,14 +21,9 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
+from typing import Any, Dict, Sequence, Tuple, Type, Optional, List
 
-from click import (
-    Parameter,
-    Context,
-    Path,
-    pass_context,
-)
+import click
 from cloup import (
     option,
     option_group,
@@ -40,7 +35,7 @@ from cloup.constraints import (
 
 
 from .__version__ import __version__
-from .state import State
+from .state import State, DesignFormat
 from .logging import (
     debug,
     err,
@@ -56,7 +51,7 @@ from .flows import Flow, SequentialFlow, FlowException, FlowError, cloup_flow_op
 
 
 def run(
-    ctx: Context,
+    ctx: click.Context,
     flow_name: Optional[str],
     pdk_root: Optional[str],
     pdk: str,
@@ -73,6 +68,7 @@ def run(
     config_override_strings: List[str],
     _force_run_dir: Optional[str],
     design_dir: Optional[str],
+    initial_state_element_override: Sequence[str],
     view_save_path: Optional[str] = None,
     ef_view_save_path: Optional[str] = None,
 ):
@@ -81,34 +77,57 @@ def run(
             err("No config file(s) have been provided.")
             ctx.exit(1)
 
-        flow_description: Optional[Union[str, List[str]]] = None
-        substitutions: Union[None, Dict[str, Union[str, None]]] = None
+        TargetFlow: Optional[Type[Flow]] = Flow.factory.get("Classic")
 
         for config_file in config_files:
             if meta := Config.get_meta(config_file):
                 if meta.flow is not None:
-                    flow_description = meta.flow
-                    if meta.substituting_steps is not None:
-                        substitutions = meta.substituting_steps
+                    if isinstance(meta.flow, str):
+                        if found := Flow.factory.get(meta.flow):
+                            TargetFlow = found
+                        else:
+                            err(
+                                f"Unknown flow '{meta.flow}' specified in configuration file's 'meta' object."
+                            )
+                            ctx.exit(1)
+                    elif isinstance(meta.flow, list):
+                        TargetFlow = SequentialFlow.Make(meta.flow)
+                    if meta.substituting_steps is not None and issubclass(
+                        TargetFlow, SequentialFlow
+                    ):
+                        TargetFlow = TargetFlow.Substitute(meta.substituting_steps)  # type: ignore  # Type checker is being rowdy with this one
 
         if flow_name is not None:
-            flow_description = flow_name
-
-        if flow_description is None:
-            flow_description = "Classic"
-
-        TargetFlow: Type[Flow]
-
-        if isinstance(flow_description, str):
-            if FlowClass := Flow.factory.get(flow_description):
-                TargetFlow = FlowClass
+            if found := Flow.factory.get(flow_name):
+                TargetFlow = found
             else:
-                err(
-                    f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
-                )
+                err(f"Unknown flow '{flow_name}' passed to initialization function.")
                 ctx.exit(1)
-        else:
-            TargetFlow = SequentialFlow.make(flow_description)
+
+        if len(initial_state_element_override):
+            if with_initial_state is None:
+                with_initial_state = State()
+            overrides = {}
+            for element in initial_state_element_override:
+                element_split = element.split("=", maxsplit=1)
+                if len(element_split) < 2:
+                    err(f"Invalid initial state element override: '{element}'.")
+                    ctx.exit(1)
+                df_id, path = element_split
+                design_format = DesignFormat.by_id(df_id)
+                if design_format is None:
+                    err(f"Invalid design format ID: '{df_id}'.")
+                    ctx.exit(1)
+                overrides[design_format] = common.Path(path)
+
+            with_initial_state = with_initial_state.__class__(
+                with_initial_state,
+                overrides=overrides,
+            )
+
+        assert (
+            TargetFlow is not None
+        ), "TargetFlow is unexpectedly None. Please report this as a bug."
 
         kwargs: Dict[str, Any] = {
             "pdk_root": pdk_root,
@@ -117,8 +136,6 @@ def run(
             "config_override_strings": config_override_strings,
             "design_dir": design_dir,
         }
-        if issubclass(TargetFlow, SequentialFlow):
-            kwargs["Substitute"] = substitutions
         flow = TargetFlow(config_files, **kwargs)
     except PassedDirectoryError as e:
         err(e)
@@ -170,7 +187,7 @@ def run(
         flow._save_snapshot_ef(evsp)
 
 
-def print_version(ctx: Context, param: Parameter, value: bool):
+def print_version(ctx: click.Context, param: click.Parameter, value: bool):
     if not value:
         return
 
@@ -198,8 +215,8 @@ def print_version(ctx: Context, param: Parameter, value: bool):
 
 
 def print_bare_version(
-    ctx: Context,
-    param: Parameter,
+    ctx: click.Context,
+    param: click.Parameter,
     value: bool,
 ):
     if not value:
@@ -209,7 +226,7 @@ def print_bare_version(
 
 
 def run_included_example(
-    ctx: Context,
+    ctx: click.Context,
     smoke_test: bool,
     example: Optional[str],
     **kwargs,
@@ -285,8 +302,8 @@ def run_included_example(
 
 
 def cli_in_container(
-    ctx: Context,
-    param: Parameter,
+    ctx: click.Context,
+    param: click.Parameter,
     value: bool,
 ):
     if not value:
@@ -331,14 +348,14 @@ o = partial(option, show_default=True)
     o(
         "--save-views-to",
         "view_save_path",
-        type=Path(file_okay=False, dir_okay=True),
+        type=click.Path(file_okay=False, dir_okay=True),
         default=None,
         help="A directory to copy the final views to, where each format is saved under a directory named after the corner ID (much like the 'final' directory after running a flow.)",
     ),
     o(
         "--ef-save-views-to",
         "ef_view_save_path",
-        type=Path(file_okay=False, dir_okay=True),
+        type=click.Path(file_okay=False, dir_okay=True),
         default=None,
         help="A directory to copy the final views to in the Efabless format, compatible with Caravel User Project.",
     ),
@@ -401,8 +418,9 @@ o = partial(option, show_default=True)
     _enable_debug_flags=True,
     sequential_flow_reproducible=True,
     enable_overwrite_flag=True,
+    enable_initial_state_element=True,
 )
-@pass_context
+@click.pass_context
 def cli(ctx, /, **kwargs):
     """
     Runs an OpenLane flow via the commandline using a design configuration

@@ -14,7 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
 
-load_rsz_corners
 read_current_odb
 
 # set rc values
@@ -33,7 +32,7 @@ if { [info exists ::env(CTS_MAX_CAP)] } {
 if { [info exists ::env(CTS_MAX_SLEW)] } {
     lappend cts_characterization_args -max_slew [expr {$::env(CTS_MAX_SLEW) * 1e-9}]; # ns -> S
 }
-configure_cts_characterization {*}$cts_characterization_args
+log_cmd configure_cts_characterization {*}$cts_characterization_args
 
 puts "\[INFO\] Performing clock tree synthesis…"
 puts "\[INFO\] Looking for the following net(s): $::env(CLOCK_NET)"
@@ -50,12 +49,23 @@ lappend arg_list -sink_clustering_enable
 if { $::env(CTS_DISTANCE_BETWEEN_BUFFERS) != 0 } {
     lappend arg_list -distance_between_buffers $::env(CTS_DISTANCE_BETWEEN_BUFFERS)
 }
-
 if { $::env(CTS_DISABLE_POST_PROCESSING) } {
     lappend arg_list -post_cts_disable
 }
+if { [info exists ::env(CTS_OBSTRUCTION_AWARE)] && $::env(CTS_OBSTRUCTION_AWARE) } {
+    lappend arg_list -obstruction_aware
+}
+if { [info exists ::env(CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT)] } {
+    lappend arg_list -sink_buffer_max_cap_derate [expr $::env(CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT) / 100.0]
+}
+if { [info exists ::env(CTS_DELAY_BUFFER_DERATE_PCT)] } {
+    lappend arg_list -delay_buffer_derate [expr $::env(CTS_DELAY_BUFFER_DERATE_PCT) / 100]
+}
+if { [info exists ::env(CTS_BALANCE_LEVELS)] && $::env(CTS_BALANCE_LEVELS) } {
+    lappend arg_list -balance_levels
+}
 
-clock_tree_synthesis {*}$arg_list
+log_cmd clock_tree_synthesis {*}$arg_list
 
 set_propagated_clock [all_clocks]
 

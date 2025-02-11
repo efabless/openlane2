@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openlane"
-version = "2.2.7"
+version = "3.0.0.dev13"
 description = "An infrastructure for implementing chip design flows"
 authors = ["Efabless Corporation and Contributors <donn@efabless.com>"]
 readme = "Readme.md"
@@ -21,14 +21,14 @@ lxml = ">=4.9.0"
 deprecated = ">=1.2.10,<2"
 libparse = ">=0.3.1,<1"
 psutil = ">=5.9.0"
-httpx = ">=0.22.0,<0.28"
+httpx = ">=0.22.0,<0.29"
 klayout = ">=0.29.0,<0.30.0"
 rapidfuzz = ">=3.9.0,<4"
-ioplace-parser = "0.3.0"
+ioplace-parser = "0.4.0"
 yamlcore = "^0.0.2"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 wheel = "*"
 black = ">=24.4.0,<25"
 
