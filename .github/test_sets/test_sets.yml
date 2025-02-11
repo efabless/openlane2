@@ -1,6 +1,7 @@
 - scl: sky130A/sky130_fd_sc_hd
   name: fastest_test_set
   designs:
+    - non_const_async_reset
     - inverter
     - wbqspiflash
     - APU
