@@ -1,4 +1,4 @@
-# Copyright 2022-2024 Efabless Corporation
+# Copyright 2022-2025 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -153,7 +153,7 @@ proc read_timing_info {args} {
         return
     }
     set corner_name $::env(_CURRENT_CORNER_NAME)
-    define_corners $corner_name
+    log_cm define_corners $corner_name
 
     puts "Reading timing models for corner $corner_name…"
 
@@ -240,31 +240,35 @@ proc read_spefs {} {
 }
 
 proc read_pnr_libs {args} {
-    # _PNR_LIBS contains all libs and extra libs but with known-bad cells
-    # excluded, so OpenROAD can use cells by functionality and come up
-    # with a valid design.
-
-    # If there are ANY libs already read- just leave
-    if { [get_libs -quiet *] != {} } {
-        return
+    set i "0"
+    set tc_key "_LIB_CORNER_$i"
+    set corner_names [list]
+    while { [info exists ::env($tc_key)] } {
+        set corner_name [lindex $::env($tc_key) 0]
+        set corner_libs [lreplace $::env($tc_key) 0 0]
+        set corner($corner_name) $corner_libs
+        incr i
+        set tc_key "_LIB_CORNER_$i"
+        lappend corner_names $corner_name
     }
 
-    define_corners $::env(DEFAULT_CORNER)
+    define_corners {*}[array name corner]
 
-    foreach lib $::env(_PNR_LIBS) {
-        puts "Reading library file at '$lib'…"
-        read_liberty $lib
-    }
-    if { [info exists ::env(_MACRO_LIBS) ] } {
-        foreach macro_lib $::env(_MACRO_LIBS) {
-            puts "Reading macro library file at '$macro_lib'…"
-            read_liberty $macro_lib
+    foreach corner_name [array name corner] {
+        puts "Reading timing models for corner $corner_name…"
+
+        set corner_models $corner($corner_name)
+        foreach model $corner_models {
+            puts "Reading timing library for the '$corner_name' corner at '$model'…"
+            read_liberty -corner $corner_name $model
         }
-    }
-    if { [info exists ::env(EXTRA_LIBS) ] } {
-        foreach extra_lib $::env(EXTRA_LIBS) {
-            puts "Reading extra library file at '$extra_lib'…"
-            read_liberty $extra_lib
+
+        if { [info exists ::env(EXTRA_LIBS) ] } {
+            puts "Reading explicitly-specified extra libs for $corner_name…"
+            foreach extra_lib $::env(EXTRA_LIBS) {
+                puts "Reading extra timing library for the '$corner_name' corner at '$extra_lib'…"
+                read_liberty -corner $corner_name $extra_lib
+            }
         }
     }
 }
@@ -302,6 +306,7 @@ proc read_current_odb {args} {
         keys {}\
         flags {}
 
+    read_pnr_libs
     puts "Reading OpenROAD database at '$::env(CURRENT_ODB)'…"
     if { [ catch {read_db $::env(CURRENT_ODB)} errmsg ]} {
         puts stderr $errmsg
@@ -311,7 +316,6 @@ proc read_current_odb {args} {
     set_global_vars
 
     # Read supporting views (if applicable)
-    read_pnr_libs
     read_current_sdc
     set_dont_use_cells
 }
@@ -559,6 +563,38 @@ proc find_unfixed_macros {} {
         lappend macros $inst
     }
     return $macros
+}
+
+proc get_layers {args} {
+    sta::parse_key_args "get_layers" args \
+        keys {-types -map}\
+        flags {-constrained}
+
+    if { ![info exists keys(-types)] } {
+        puts "\[ERROR\] Invalid usage of get_layers: -types is required."
+    }
+
+    set layers [$::tech getLayers]
+    set result [list]
+    set adding [expr ![info exists flags(-constrained)]]
+    foreach layer $layers {
+        set name [$layer getName]
+        if {"$::env(RT_MIN_LAYER)" == "$name"} {
+            set adding 1
+        }
+        if { [lsearch $keys(-types) [$layer getType]] != -1 && $adding} {
+            lappend result $layer
+        }
+
+        if {"$::env(RT_MAX_LAYER)" == "$name"} {
+            set adding [info exists flags(-constrained)]
+        }
+
+    }
+    if { [info exists keys(-map)] } {
+        set result [lmap layer $result "\$layer $keys(-map)"]
+    }
+    return $result
 }
 
 proc append_if_exists_argument {list_arg glob_variable_name option} {
