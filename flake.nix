@@ -24,7 +24,7 @@
   };
 
   inputs = {
-    nix-eda.url = github:efabless/nix-eda;
+    nix-eda.url = github:efabless/nix-eda/2.1.2;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;

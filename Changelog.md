@@ -14,6 +14,13 @@
 ## Documentation
 -->
 
+# 2.3.4
+
+## Tool Updates
+
+* `nix-eda` updated to 2.1.2
+  * Pulls in a Python overlay fix and a fix for `gdstk`.
+
 # 2.3.3
 
 ## Steps
