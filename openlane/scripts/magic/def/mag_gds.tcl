@@ -75,6 +75,10 @@ if { $::env(MAGIC_GDS_POLYGON_SUBCELLS) } {
 	gds polygon subcells true
 }
 
+if { $::env(MAGIC_ADD_ISOSUB) } {
+    paint isosub
+}
+
 gds write $::env(SAVE_MAG_GDS)
 puts "\[INFO\] GDS Write Complete"
 

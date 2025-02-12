@@ -291,6 +291,12 @@ class StreamOut(MagicStep):
             default=False,
         ),
         Variable(
+            "MAGIC_ADD_ISOSUB",
+            bool,
+            "Add isosub(subcut) drawing over the design. Useful when the design is getting integrated in another design with multiple power domains",
+            default=False,
+        ),
+        Variable(
             "MAGIC_DISABLE_CIF_INFO",
             bool,
             "A flag to disable writing Caltech Intermediate Format (CIF) hierarchy and subcell array information to the GDSII file.",
@@ -580,3 +586,20 @@ class OpenGUI(MagicStep):
             magic.send_signal(SIGKILL)
 
         return {}, {}
+
+
+@Step.factory.register()
+class AddIsosub(MagicStep):
+    """
+    Draws isosub(subcut) over the design. Might be useful when design is getting integrated
+    in another design with multiple power domains.
+    """
+
+    id = "Magic.AddIsosub"
+    name = "Add isosub(subcut) to the design"
+
+    outputs = [DesignFormat.GDS, DesignFormat.MAG_GDS]
+    config_vars = StreamOut.config_vars
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "magic", "add_subcut.tcl")
