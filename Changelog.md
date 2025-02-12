@@ -14,12 +14,20 @@
 ## Documentation
 -->
 
-# 2.3.4
+# 2.3.5
 
 ## Tool Updates
 
 * `nix-eda` updated to 2.1.2
   * Pulls in a Python overlay fix and a fix for `gdstk`.
+
+# 2.3.4
+
+## Tool Updates
+
+* Added patch to Yosys to resolve an early return issue that broke non-const
+  asynchronous resets. See https://github.com/YosysHQ/yosys/issues/4712 for more
+  info.
 
 # 2.3.3
 
@@ -27,24 +35,23 @@
 
 * `OpenROAD.Floorplan`
 
-  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's
-    x0 > x1 or y0 > y1, the computed core area would no longer fit in the die
-    area. Not that we recommend you ever do that, but technically OpenROAD
-    allows it.
+  * Fixed an issue in `FP_SIZING`: `absolute` mode where if the die area's x0 >
+    x1 or y0 > y1, the computed core area would no longer fit in the die area.
+    Not that we recommend you ever do that, but technically OpenROAD allows it.
 
 # 2.3.2
 
 ## Steps
 
 * `Yosys.*`
-  * Fixed blackbox Verilog and lib models causing a crash if they are
-    gzipped and/or have the extension `.gz`.
-    
+  * Fixed blackbox Verilog and lib models causing a crash if they are gzipped
+    and/or have the extension `.gz`.
+
 ## Tool Updates
 
 * Relaxed requirement on `httpx` to include `0.28.X`, which has no removals
   compared to `0.27.0`.
-  
+
 ## Documentation
 
 * Clarified support for gzipped files in the Classic flow.
