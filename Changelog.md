@@ -264,6 +264,11 @@
   * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
     renamed, see Misc. Enhancements/Bugfixes.
 
+* `openlane.common.drc`
+
+  * `BoundingBox` changed from `Tuple` to `dataclass` with additional optional
+    `info` property.
+
 # 2.3.3
 
 ## Steps
