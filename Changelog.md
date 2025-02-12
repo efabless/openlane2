@@ -69,6 +69,7 @@
     antenna fixing after detailed routing
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN` but for
     the aforementioned antenna repair iterations
+  * DRC reports are now converted to `xml` and readable by KLayout
 
 * Created `OpenROAD.DumpRCValues`
 
