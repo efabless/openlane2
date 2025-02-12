@@ -2195,7 +2195,7 @@ class CTS(OpenROADStep):
             Variable(
                 "CTS_CLK_BUFFERS",
                 List[str],
-                "Defines the list of clock buffers to be used in CTS.",
+                "Defines the list of clock buffer names or buffer name wildcards to be used in CTS.",
                 deprecated_names=["CTS_CLK_BUFFER_LIST"],
                 pdk=True,
             ),
