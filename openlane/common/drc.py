@@ -18,20 +18,23 @@ import shlex
 from enum import IntEnum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Tuple, Dict, Union
+from typing import List, Optional, Tuple, Dict
 
 
-BoundingBox = Tuple[Decimal, Decimal, Decimal, Decimal]  # microns
-BoundingBoxWithDescription = Tuple[Decimal, Decimal, Decimal, Decimal, str]  # microns
+@dataclass
+class BoundingBox:
+    llx: Decimal
+    lly: Decimal
+    urx: Decimal
+    ury: Decimal
+    info: Optional[str] = None
 
 
 @dataclass
 class Violation:
     rules: List[Tuple[str, str]]  # (layer, rule)
     description: str
-    bounding_boxes: List[Union[BoundingBox, BoundingBoxWithDescription]] = field(
-        default_factory=list
-    )
+    bounding_boxes: List[BoundingBox] = field(default_factory=list)
 
     @property
     def layer(self) -> str:
@@ -72,7 +75,7 @@ class DRC:
         re_violation = re.compile(r"violation type: (?P<type>.*)$")
         re_src = re.compile(r"srcs: (?P<src1>\S+)( (?P<src2>\S+))?")
         re_bbox = re.compile(
-            r"bbox = \( (?P<llx>\S+), (?P<lly>\S+) \) - \( (?P<urx>\S+), (?P<ury>\S+) \) on Layer (?P<layer>\S+)"
+            r"bbox = \((?P<llx>\S+), (?P<lly>\S+)\) - \((?P<urx>\S+), (?P<ury>\S+)\) on Layer (?P<layer>\S+)"
         )
         bbox_count = 0
         violations: Dict[str, Violation] = {}
@@ -100,7 +103,7 @@ class DRC:
                 ury = bbox_match.group("ury")
                 layer = bbox_match.group("layer")
                 bbox_count += 1
-                bounding_box = (
+                bounding_box = BoundingBox(
                     Decimal(llx),
                     Decimal(lly),
                     Decimal(urx),
@@ -190,7 +193,7 @@ class DRC:
                         f"invalid bounding box at line {i}: bounding box has {len(coord_list)}/4 elements"
                     )
 
-                bounding_box = (
+                bounding_box = BoundingBox(
                     coord_list[0],
                     coord_list[1],
                     coord_list[2],
@@ -220,7 +223,7 @@ class DRC:
                         "Invalid syntax: 'box' command has less than 4 arguments"
                     )
                 lx, ly, ux, uy = components[0:4]
-                last_bounding_box = (
+                last_bounding_box = BoundingBox(
                     Decimal(lx) * cif_scale,
                     Decimal(ly) * cif_scale,
                     Decimal(ux) * cif_scale,
@@ -305,9 +308,8 @@ class DRC:
                                 xf.write(cell, category, visited, multiplicity)
                                 with xf.element("values"):
                                     value = ET.Element("value")
-                                    value.text = f"polygon: ({bounding_box[0]},{bounding_box[1]};{bounding_box[2]},{bounding_box[1]};{bounding_box[2]},{bounding_box[3]};{bounding_box[0]},{bounding_box[3]})"
+                                    value.text = f"polygon: ({bounding_box.llx},{bounding_box.lly};{bounding_box.urx},{bounding_box.lly};{bounding_box.urx},{bounding_box.ury};{bounding_box.llx},{bounding_box.ury})"
                                     xf.write(value)
-                                    if len(bounding_box) == 5:
-                                        value = ET.Element("value")
-                                        value.text = f"text: '{bounding_box[4]}'"
-                                        xf.write(value)
+                                    value = ET.Element("value")
+                                    value.text = f"text: '{bounding_box.info}'"
+                                    xf.write(value)

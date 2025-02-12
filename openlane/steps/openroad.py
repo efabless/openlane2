@@ -19,6 +19,7 @@ import re
 import subprocess
 import tempfile
 import textwrap
+import pathlib
 from abc import abstractmethod
 from base64 import b64encode
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -1737,22 +1738,21 @@ class DetailedRouting(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        report_path = os.path.join(self.step_dir, "reports", "drc.rpt")
-        klayout_db_path = os.path.join(self.step_dir, "reports", "drc.xml")
-        mkdirp(os.path.join(self.step_dir, "reports"))
         env["DRT_THREADS"] = env.get("DRT_THREADS", str(_get_process_limit()))
-        env["_DRC_REPORT_PATH"] = report_path
         info(f"Running TritonRoute with {env['DRT_THREADS']} threads…")
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
-        drc, violation_count = DRCObject.from_openroad(
-            open(report_path, encoding="utf8"), self.config["DESIGN_NAME"]
-        )
 
-        drc.to_klayout_xml(open(klayout_db_path, "wb"))
-        if violation_count > 0:
-            self.warn(
-                f"DRC errors found after routing. View the report file at {report_path}.\nView KLayout xml file at {klayout_db_path}"
+        drc_paths = list(pathlib.Path(self.step_dir).rglob("*.drc*"))
+        for path in drc_paths:
+            drc, _ = DRCObject.from_openroad(
+                open(path, encoding="utf8"), self.config["DESIGN_NAME"]
             )
+
+            drc.to_klayout_xml(open(pathlib.Path(str(path) + ".xml"), "wb"))
+        #        if violation_count > 0:
+        #            self.warn(
+        #                f"DRC errors found after routing. View the report file at {report_path}.\nView KLayout xml file at {klayout_db_path}"
+        #            )
 
         return views_updates, metrics_updates
 
