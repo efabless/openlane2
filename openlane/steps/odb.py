@@ -718,6 +718,10 @@ class PortDiodePlacement(OdbpyStep):
             info("'DIODE_ON_PORTS' is set to 'none': skipping…")
             return {}, {}
 
+        if self.config["DIODE_CELL"] is None:
+            info("DIODE_CELL not set. Skipping…")
+            return {}, {}
+
         if self.config["GPL_CELL_PADDING"] == 0:
             self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
@@ -756,6 +760,9 @@ class DiodesOnPorts(CompositeStep):
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
             info("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            return {}, {}
+        if self.config["DIODE_CELL"] is None:
+            info("DIODE_CELL not set. Skipping…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -826,6 +833,10 @@ class FuzzyDiodePlacement(OdbpyStep):
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
 
+        if self.config["DIODE_CELL"] is None:
+            info("DIODE_CELL not set. Skipping…")
+            return {}, {}
+
         return super().run(state_in, **kwargs)
 
 
@@ -859,6 +870,12 @@ class HeuristicDiodeInsertion(CompositeStep):
         DetailedPlacement,
         GlobalRouting,
     ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["DIODE_CELL"] is None:
+            info("DIODE_CELL not set. Skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()

@@ -1182,6 +1182,13 @@ class TapEndcapInsertion(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_TAPCELL_DIST",
+            Optional[Decimal],
+            "The distance between tap cell columns. Must be specified if WELLTAP_CELL is specified.",
+            units="µm",
+            pdk=True,
+        ),
+        Variable(
             "FP_MACRO_HORIZONTAL_HALO",
             Decimal,
             "Specify the horizontal halo size around macros.",
@@ -1197,17 +1204,18 @@ class TapEndcapInsertion(OpenROADStep):
             units="µm",
             deprecated_names=["FP_TAP_VERTICAL_HALO"],
         ),
-        Variable(
-            "FP_TAPCELL_DIST",
-            Decimal,
-            "The distance between tap cell columns.",
-            units="µm",
-            pdk=True,
-        ),
     ]
 
     def get_script_path(self):
         return os.path.join(get_script_dir(), "openroad", "tapcell.tcl")
+
+    def run(self, state_in, **kwargs):
+        if (
+            self.config["WELLTAP_CELL"] is not None
+            and self.config["FP_TAPCELL_DIST"] is None
+        ):
+            raise StepException("FP_TAPCELL_DIST must be set if WELLTAP_CELL is set.")
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -1662,6 +1670,13 @@ class RepairAntennas(CompositeStep):
     name = "Antenna Repair"
 
     Steps = [_DiodeInsertion, CheckAntennas]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["DIODE_CELL"] is None:
+            info("DIODE_CELL not set. Skipping…")
+            return {}, {}
+
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()

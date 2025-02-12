@@ -15,12 +15,10 @@ source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 read_current_odb
 
 set arg_list [list]
-lappend arg_list -endcap_master $::env(ENDCAP_CELL)
 lappend arg_list -halo_width_x $::env(FP_MACRO_HORIZONTAL_HALO)
 lappend arg_list -halo_width_y $::env(FP_MACRO_VERTICAL_HALO)
-if { [info exists ::env(FP_PRUNE_THRESHOLD)] } {
-    lappend arg_list -row_min_width $::env(FP_PRUNE_THRESHOLD)
-}
+append_if_exists_argument arg_list FP_PRUNE_THRESHOLD -row_min_width
+append_if_exists_argument arg_list ENDCAP_CELL -endcap_master
 log_cmd cut_rows {*}$arg_list
 
 # # verify -row_min_width worked

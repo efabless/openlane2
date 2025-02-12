@@ -28,6 +28,11 @@
   * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
     instead of variable-length Tcl-style lists (AKA: strings).
 
+* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`, `Odb.FuzzyDiodePlacement`,
+  `Odb.HeuristicDiodeInsertion`
+
+  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
 * `OpenROAD.*`
 
   * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
@@ -65,8 +70,8 @@
   * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each
     detalied routing iteration.
   * Added `DRT_SAVE_DRC_REPORT_ITERS`
-  * Added `DRT_ANTENNA_REPAIR_ITERS`, which if greater than zero, enables
-    antenna fixing after detailed routing
+  * Added `DRT_ANTENNA_REPAIR_ITERS`, which, if greater than zero and
+    `DIODE_CELL` is set, enables antenna fixing after detailed routing
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN` but for
     the aforementioned antenna repair iterations
 
@@ -80,6 +85,10 @@
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
 
   * Corrected `GPL_CELL_PADDING` to be an integer.
+
+* `OpenROAD.RepairAntennas`
+
+  * Step no longer assumes `DIODE_CELL` exists and falls back to doing nothing.
 
 * `OpenROAD.RepairDesignPostGPL`
 
@@ -114,6 +123,11 @@
     * `GRT_RESIZER_SETUP_MAX_UTIL_PCT`
     * `GRT_RESIZER_HOLD_REPAIR_TNS_PCT`
     * `GRT_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* `OpenROAD.TapDecapInsertion`
+
+  * No longer assumes `WELLTAP_CELL` has a value and skips tap insertion if not.
+  * No longer assumes `DECAP_CELL` has a value and skips decap insertion if not.
 
 * Created `OpenROAD.UnplaceAll`
 
@@ -208,6 +222,7 @@
 
   * `{GPL,DPL}_CELL_PADDING`, `PL_MAX_DISPLACEMENT_{X,Y}` now all integers to
     match OpenROAD.
+  * `WELLTAP_CELL`, `DECAP_CELL` now optional.
 
 * `Checker.HoldViolations`
 
