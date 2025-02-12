@@ -164,8 +164,7 @@ class Lint(Step):
             extra_args.append("--Werror-LATCH")
 
         if include_dirs := self.config["VERILOG_INCLUDE_DIRS"]:
-            include_flags = ["-I" + str(dir) for dir in include_dirs]
-            extra_args.append(" ".join(include_flags))
+            extra_args.extend([f"-I{dir}" for dir in include_dirs])
 
         for define in defines:
             extra_args.append(f"+define+{define}")
