@@ -22,9 +22,9 @@
   eigen,
   cudd,
   tcl,
+  tclreadline,
   python3,
   readline,
-  tclreadline,
   spdlog,
   libffi,
   llvmPackages,
@@ -45,16 +45,27 @@
   cmake,
   ninja,
   git,
+  gtest,
   # environments,
-  rev ? "87af90f72f3f9be1fdfa1d886f0dd8d8b8f34694",
-  rev-date ? "2024-12-08",
-  sha256 ? "sha256-GS8DLpAtC5gJfQeP+YOCImVXaAPQNzVbdDjdiB7Aovc=",
+  rev ? "655640a795db2d2f6911f3cf447d410382c04c0a",
+  rev-date ? "2025-01-13",
+  sha256 ? "sha256-HRnF+taG3iUgOG4nYlXD2O0znF4zoZvxDpMMIkoNsL4=",
   openroad,
   buildPythonEnvForInterpreter,
 }: let
   stdenv = llvmPackages_17.stdenv;
+  cmakeFlagsCommon = debug: [
+    "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
+    "-DTCL_HEADER=${tcl}/include/tcl.h"
+    "-DUSE_SYSTEM_BOOST:BOOL=ON"
+    "-DCMAKE_CXX_FLAGS=-DBOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED=1 -I${eigen}/include/eigen3 ${lib.strings.optionalString debug "-g -O0"}"
+    "-DCMAKE_EXE_LINKER_FLAGS=-L${cudd}/lib -lcudd"
+    "-DVERBOSE=1"
+  ];
 in
   stdenv.mkDerivation (finalAttrs: {
+    __structuredAttrs = true; # better serialization; enables spaces in cmakeFlags
+
     pname = "openroad";
     version = rev-date;
 
@@ -65,23 +76,20 @@ in
       inherit sha256;
     };
 
-    patches = [./patches/openroad/patches.diff];
+    cmakeFlagsDevDebug = lib.strings.concatMapStrings (
+      x: " \"${x}\" "
+    ) (cmakeFlagsCommon true);
 
-    cmakeFlagsAll = [
-      "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"
-      "-DTCL_HEADER=${tcl}/include/tcl.h"
-      "-DUSE_SYSTEM_BOOST:BOOL=ON"
-      "-DCMAKE_CXX_FLAGS=-I${openroad-abc}/include"
-      "-DENABLE_TESTS:BOOL=OFF"
-      "-DVERBOSE=1"
-    ];
+    cmakeFlagsDevRelease = lib.strings.concatMapStrings (
+      x: " \"${x}\" "
+    ) (cmakeFlagsCommon false);
 
     cmakeFlags =
-      finalAttrs.cmakeFlagsAll
+      (cmakeFlagsCommon false)
       ++ [
         "-DUSE_SYSTEM_ABC:BOOL=ON"
         "-DUSE_SYSTEM_OPENSTA:BOOL=ON"
-        "-DCMAKE_CXX_FLAGS=-I${eigen}/include/eigen3"
+        "-DENABLE_TESTS:BOOL=OFF"
         "-DOPENSTA_HOME=${opensta}"
         "-DABC_LIBRARY=${openroad-abc}/lib/libabc.a"
       ];
@@ -92,8 +100,7 @@ in
 
       sed -i 's@#include "base/abc/abc.h"@#include <base/abc/abc.h>@' src/rmp/src/Restructure.cpp
       sed -i 's@#include "base/main/abcapis.h"@#include <base/main/abcapis.h>@' src/rmp/src/Restructure.cpp
-      sed -i 's@# tclReadline@target_link_libraries(openroad readline)@' src/CMakeLists.txt
-      sed -i 's@''${TCL_LIBRARY}@''${TCL_LIBRARY}\n${cudd}/lib/libcudd.a@' src/CMakeLists.txt
+      sed -i 's@# tclReadline@target_link_libraries(openroad readline ${cudd}/lib/libcudd.a)@' src/CMakeLists.txt
     '';
 
     buildInputs = [
@@ -110,6 +117,7 @@ in
       libsForQt5.qtbase
       libsForQt5.qt5.qtcharts
       llvmPackages.openmp
+      llvmPackages.libunwind
 
       lemon-graph
       opensta
@@ -117,6 +125,7 @@ in
       zlib
       clp
       cbc
+      gtest
 
       or-tools_9_11
     ];
@@ -131,12 +140,16 @@ in
       ninja
       libsForQt5.wrapQtAppsHook
       llvmPackages_17.clang-tools
+      python3.pkgs.tclint
     ];
 
     shellHook = ''
-      alias ord-format-changed="${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format";
-      alias ord-cmake-debug="cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-g" -G Ninja $cmakeFlags .."
-      alias ord-cmake-release="cmake -DCMAKE_BUILD_TYPE=Release -G Ninja $cmakeFlags .."
+      ord-format-changed() {
+        ${git}/bin/git diff --name-only | grep -E '\.(cpp|cc|c|h|hh)$' | xargs clang-format -i -style=file:.clang-format
+        ${git}/bin/git diff --name-only | grep -E '\.(tcl)$' | xargs tclfmt --in-place
+      }
+      alias ord-cmake-debug="cmake -DCMAKE_BUILD_TYPE=Debug $cmakeFlagsDevDebug -G Ninja"
+      alias ord-cmake-release="cmake -DCMAKE_BUILD_TYPE=Release $cmakeFlagsDevRelease -G Ninja"
     '';
 
     passthru = {

@@ -17,8 +17,8 @@
   fetchFromGitHub,
   zlib,
   abc-namespace-name ? "abc",
-  rev ? "ef5389d31526003c2ebd7e6d6d6fe3848a20f0a2",
-  sha256 ? "sha256-7W66b1Toa9uEAKoijPujqQXVjxf1Ku4w2eP2Vk0ri8c=",
+  rev ? "5c9448c085eb8bf1e433a22a954532e44206c6f9",
+  sha256 ? "sha256-5juDIbn77cqgqU2CQjIwYERemqs7XbqSJaT7VLtKWHc=",
 }:
 abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
   name = "openroad-abc";
@@ -38,6 +38,7 @@ abc-verifier.overrideAttrs (finalAttrs: previousAttrs: {
     "-DREADLINE_FOUND=FALSE"
     "-DUSE_SYSTEM_ZLIB:BOOL=ON"
     "-DABC_USE_NAMESPACE=${abc-namespace-name}"
+    "-DABC_SKIP_TESTS:BOOL=ON"
   ];
 
   buildInputs = [zlib];
