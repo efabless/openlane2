@@ -54,6 +54,7 @@
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+  * `CTS_CLK_BUFFERS` can now take wildcards.
 
 * `OpenROAD.CutRows`
 
