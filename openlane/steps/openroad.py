@@ -1350,6 +1350,11 @@ class _GlobalPlacement(OpenROADStep):
                 units="sites",
                 pdk=True,
             ),
+            Variable(
+                "PL_KEEP_RESIZE_BELOW_OVERFLOW",
+                Optional[Decimal],
+                "Only applicable when PL_TIME_DRIVEN is enabled. When the overflow is below the set value, timing-driven iterations will retain the resizer changes instead of reverting them. Allowed values are 0 to 1. If not set, a nonzero default value from OpenROAD will be used",
+            ),
         ]
     )
 
@@ -2211,7 +2216,7 @@ class CTS(OpenROADStep):
             Variable(
                 "CTS_CLK_BUFFERS",
                 List[str],
-                "Defines the list of clock buffers to be used in CTS.",
+                "Defines the list of clock buffer names or buffer name wildcards to be used in CTS.",
                 deprecated_names=["CTS_CLK_BUFFER_LIST"],
                 pdk=True,
             ),
