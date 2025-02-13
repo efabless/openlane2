@@ -973,6 +973,12 @@ class Floorplan(OpenROADStep):
 
     config_vars = OpenROADStep.config_vars + [
         Variable(
+            "FP_FLIP_SITES",
+            Optional[List[str]],
+            "Flip this site vertically. Useful in niche alignment scenarios where single-height cells have ground at the south side and double-height cells have power at the south side, causing a short. In that situation, flipping the sites for single-height cells resolves the issue.",
+            pdk=True,
+        ),
+        Variable(
             "FP_TRACKS_INFO",
             Path,
             "A path to the a classic OpenROAD `.tracks` file. Used by the floorplanner to generate tracks.",
@@ -1094,7 +1100,7 @@ class IOPlacement(OpenROADStep):
     """
     Places I/O pins on a floor-planned ODB file using OpenROAD's built-in placer.
 
-    If ``FP_PIN_ORDER_CFG`` is not ``None``, this step is skipped (for
+    If ``IO_PIN_ORDER_CFG`` is not ``None``, this step is skipped (for
     compatibility with OpenLane 1.)
     """
 
@@ -1106,50 +1112,30 @@ class IOPlacement(OpenROADStep):
         + io_layer_variables
         + [
             Variable(
-                "FP_PPL_MODE",
+                "IO_PIN_PLACEMENT_MODE",
                 Literal["matching", "random_equidistant", "annealing"],
                 "Decides the mode of the random IO placement option.",
                 default="matching",
-                deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
+                deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode), "FP_PPL_MODE"],
             ),
             Variable(
-                "FP_IO_MIN_DISTANCE",
+                "IO_PIN_MIN_DISTANCE",
                 Optional[Decimal],
                 "The minimum distance between two pins. If unspecified by a PDK, OpenROAD will use the length of two routing tracks.",
                 units="µm",
                 pdk=True,
+                deprecated_names=["FP_IO_MIN_DISTANCE"],
             ),
             Variable(
-                "FP_PIN_ORDER_CFG",
+                "IO_PIN_ORDER_CFG",
                 Optional[Path],
                 "Path to a custom pin configuration file.",
+                deprecated_names=["FP_PIN_ORDER_CFG"],
             ),
             Variable(
                 "FP_DEF_TEMPLATE",
                 Optional[Path],
                 "Points to the DEF file to be used as a template.",
-            ),
-            Variable(
-                "FP_IO_VLENGTH",
-                Optional[Decimal],
-                """
-                The length of the pins with a north or south orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
-                    * The pin width
-                    * The minimum value satisfying the minimum area constraint given the pin width
-                """,
-                units="µm",
-                pdk=True,
-            ),
-            Variable(
-                "FP_IO_HLENGTH",
-                Optional[Decimal],
-                """
-                The length of the pins with an east or west orientation. If unspecified by a PDK, OpenROAD will use whichever is higher of the following two values:
-                    * The pin width
-                    * The minimum value satisfying the minimum area constraint given the pin width
-                """,
-                units="µm",
-                pdk=True,
             ),
         ]
     )
@@ -1158,8 +1144,8 @@ class IOPlacement(OpenROADStep):
         return os.path.join(get_script_dir(), "openroad", "ioplacer.tcl")
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
-        if self.config["FP_PIN_ORDER_CFG"] is not None:
-            info(f"FP_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
+        if self.config["IO_PIN_ORDER_CFG"] is not None:
+            info(f"IO_PIN_ORDER_CFG is set. Skipping '{self.id}'…")
             return {}, {}
         if self.config["FP_DEF_TEMPLATE"] is not None:
             info(
@@ -1262,10 +1248,10 @@ class GeneratePDN(OpenROADStep):
         + pdn_variables
         + [
             Variable(
-                "FP_PDN_CFG",
+                "PDN_CFG",
                 Optional[Path],
                 "A custom PDN configuration file. If not provided, the default PDN config will be used.",
-                deprecated_names=["PDN_CFG"],
+                deprecated_names=["FP_PDN_CFG"],
             )
         ]
     )
@@ -1275,11 +1261,11 @@ class GeneratePDN(OpenROADStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
-        if self.config["FP_PDN_CFG"] is None:
-            env["FP_PDN_CFG"] = os.path.join(
+        if self.config["PDN_CFG"] is None:
+            env["PDN_CFG"] = os.path.join(
                 get_script_dir(), "openroad", "common", "pdn_cfg.tcl"
             )
-            info(f"'FP_PDN_CFG' not explicitly set, setting it to {env['FP_PDN_CFG']}…")
+            info(f"'PDN_CFG' not explicitly set, setting it to {env['PDN_CFG']}…")
         views_updates, metrics_updates = super().run(state_in, env=env, **kwargs)
 
         error_reports = glob(os.path.join(self.step_dir, "*-grid-errors.rpt"))
@@ -1424,16 +1410,17 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
 
     config_vars = _GlobalPlacement.config_vars + [
         Variable(
-            "FP_PPL_MODE",
+            "IO_PIN_PLACEMENT_MODE",
             Literal["matching", "random_equidistant", "annealing"],
             "Decides the mode of the random IO placement option.",
             default="matching",
-            deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode)],
+            deprecated_names=[("FP_IO_MODE", _migrate_ppl_mode), "FP_PPL_MODE"],
         ),
         Variable(
-            "FP_PIN_ORDER_CFG",
+            "IO_PIN_ORDER_CFG",
             Optional[Path],
             "Path to a custom pin configuration file.",
+            deprecated_names=["FP_PIN_ORDER_CFG"],
         ),
         Variable(
             "FP_DEF_TEMPLATE",
@@ -1449,9 +1436,9 @@ class GlobalPlacementSkipIO(_GlobalPlacement):
                 f"I/O pins were loaded from {self.config['FP_DEF_TEMPLATE']}. Returning state unaltered…"
             )
             return {}, {}
-        if self.config["FP_PIN_ORDER_CFG"] is not None:
+        if self.config["IO_PIN_ORDER_CFG"] is not None:
             info(
-                f"I/O pins to be placed from {self.config['FP_PIN_ORDER_CFG']}. Returning state unaltered…"
+                f"I/O pins to be placed from {self.config['IO_PIN_ORDER_CFG']}. Returning state unaltered…"
             )
             return {}, {}
         env["__PL_SKIP_IO"] = "1"
