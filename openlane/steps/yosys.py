@@ -297,7 +297,7 @@ class EQY(Step):
             )
         else:
             info(
-                f"PDK {self.config['PDK']} is not supported by the EQY step. Skipping…"
+                f"PDK {self.config['PDK']} is not supported by the EQY step. Skipping '{self.id}'…"
             )
             return {}, {}
 

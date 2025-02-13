@@ -1673,7 +1673,7 @@ class RepairAntennas(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_CELL"] is None:
-            info("DIODE_CELL not set. Skipping…")
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)

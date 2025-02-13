@@ -67,7 +67,7 @@ drt_run $i {*}$drt_args
 incr i
 
 if { ![info exists ::env(DIODE_CELL)] } {
-    puts "\[INFO\] Skipping post-DRT antenna repair: DIODE_CELL not set."
+    puts "\[INFO\] Skipping post-DRT antenna repair: 'DIODE_CELL' not set."
 } elseif { $::env(DRT_ANTENNA_REPAIR_ITERS) == 0 } {
     puts "\[INFO\] Skipping post-DRT antenna repair: DRT_ANTENNA_REPAIR_ITERS set to 0."
 } else {
