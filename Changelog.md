@@ -14,6 +14,14 @@
 ## Documentation
 -->
 
+# 2.3.6
+
+## Steps
+
+* `Verilator.Lint`
+  * Fixed missing `VERILOG_INCLUDE_DIRS` variable, which would cause designs
+    that synthesize correctly to otherwise fail linting.
+
 # 2.3.5
 
 ## Tool Updates
