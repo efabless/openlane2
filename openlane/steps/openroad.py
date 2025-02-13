@@ -1734,7 +1734,7 @@ class DetailedRouting(OpenROADStep):
         Variable(
             "DRT_SAVE_DRC_REPORT_ITERS",
             Optional[int],
-            "Report DRC on each specified iteration. Set to 1 when DRT_SAVE_DRC_REPORT_ITERS in enabled",
+            "Write a DRC report every N iterations. If DRT_SAVE_SNAPSHOTS is enabled, there is an implicit default value of 1.",
         ),
     ]
 

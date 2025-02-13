@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Efabless Corporation
+# Copyright 2020-2025 Efabless Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,16 +18,19 @@ import shlex
 from enum import IntEnum
 from decimal import Decimal, InvalidOperation
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Iterable
 
 
 @dataclass
-class BoundingBox:
+class BoundingBox(Iterable[Decimal]):
     llx: Decimal
     lly: Decimal
     urx: Decimal
     ury: Decimal
     info: Optional[str] = None
+
+    def __iter__(self):
+        return iter([self.llx, self.lly, self.urx, self.ury])
 
 
 @dataclass
@@ -83,20 +86,28 @@ class DRC:
         vio_type = src1 = src2 = lly = llx = urx = ury = ""
         for line in report:
             line = line.strip()
+            if line.strip() == "":
+                continue
             if state == State.vio_type:
                 vio_match = re_violation.match(line)
-                assert vio_match is not None, "Error while parsing drc report file"
+                assert (
+                    vio_match is not None
+                ), f"Error while parsing drc report file: Could not match violation line '{line}'"
                 vio_type = vio_match.group("type")
                 state = State.src
             elif state == State.src:
                 src_match = re_src.match(line)
-                assert src_match is not None, "Error while parsing drc report file"
+                assert (
+                    src_match is not None
+                ), f"Error while parsing drc report file: Could not match source line '{line}'"
                 src1 = src_match.group("src1")
                 src2 = src_match.group("src2")
                 state = State.bbox
             elif state == State.bbox:
                 bbox_match = re_bbox.match(line)
-                assert bbox_match is not None, "Error while parsing drc report file"
+                assert (
+                    bbox_match is not None
+                ), f"Error while parsing drc report file: Could not match bbox line '{line}'"
                 llx = bbox_match.group("llx")
                 lly = bbox_match.group("lly")
                 urx = bbox_match.group("urx")
