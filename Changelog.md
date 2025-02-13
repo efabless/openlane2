@@ -83,6 +83,7 @@
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+  * Added optional variable `PL_KEEP_RESIZE_BELOW_OVERFLOW`
 
   * Corrected `GPL_CELL_PADDING` to be an integer.
 
