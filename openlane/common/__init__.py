@@ -55,7 +55,7 @@ from .types import (
     ScopedFile,
 )
 from .toolbox import Toolbox
-from .drc import DRC, Violation
+from .drc import DRC, Violation, BoundingBox
 from . import cli
 from .tpe import get_tpe, set_tpe
 from .ring_buffer import RingBuffer
