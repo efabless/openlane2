@@ -97,6 +97,8 @@ if { [info exists ::env(FP_OBSTRUCTIONS)] } {
     }
 }
 
+append_if_exists_argument arg_list FP_FLIP_SITES -flip_sites
+
 log_cmd initialize_floorplan {*}$arg_list
 
 insert_tiecells $::env(SYNTH_TIELO_CELL) -prefix "TIE_ZERO_"
