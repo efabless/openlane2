@@ -24,11 +24,11 @@
   };
 
   inputs = {
-    nix-eda.url = "github:efabless/nix-eda/2.1.2";
-    libparse.url = "github:efabless/libparse-python";
-    ioplace-parser.url = "github:efabless/ioplace_parser";
-    volare.url = "github:efabless/volare";
-    devshell.url = "github:numtide/devshell";
+    nix-eda.url = github:efabless/nix-eda/2.1.2;
+    libparse.url = github:efabless/libparse-python;
+    ioplace-parser.url = github:efabless/ioplace_parser;
+    volare.url = github:efabless/volare;
+    devshell.url = github:numtide/devshell;
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
   };
 
