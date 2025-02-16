@@ -66,17 +66,23 @@ drt_run $i {*}$drt_args
 
 incr i
 
-set diode_cell [lindex [split $::env(DIODE_CELL) "/"] 0]
+if { ![info exists ::env(DIODE_CELL)] } {
+    puts "\[INFO\] Skipping post-DRT antenna repair: 'DIODE_CELL' not set."
+} elseif { $::env(DRT_ANTENNA_REPAIR_ITERS) == 0 } {
+    puts "\[INFO\] Skipping post-DRT antenna repair: DRT_ANTENNA_REPAIR_ITERS set to 0."
+} else {
+    set diode_cell [lindex [split $::env(DIODE_CELL) "/"] 0]
 
-while {$i <= $::env(DRT_ANTENNA_REPAIR_ITERS) && [log_cmd check_antennas]} {
-    puts "\[INFO\] Running antenna repair iteration $i…"
-    set diodes_inserted [log_cmd repair_antennas $diode_cell -ratio_margin $::env(DRT_ANTENNA_MARGIN)]
-    if {$diodes_inserted} {
-        drt_run $i {*}$drt_args
-    } else {
-        puts "\[INFO\] No diodes inserted. Ending antenna repair iterations."
-        break
+    while {$i <= $::env(DRT_ANTENNA_REPAIR_ITERS) && [log_cmd check_antennas]} {
+        puts "\[INFO\] Running antenna repair iteration $i…"
+        set diodes_inserted [log_cmd repair_antennas $diode_cell -ratio_margin $::env(DRT_ANTENNA_MARGIN)]
+        if {$diodes_inserted} {
+            drt_run $i {*}$drt_args
+        } else {
+            puts "\[INFO\] No diodes inserted. Ending antenna repair iterations."
+            break
+        }
+        incr i
     }
-    incr i
 }
 write_views

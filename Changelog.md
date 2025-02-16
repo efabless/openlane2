@@ -32,6 +32,11 @@
 
   * All variables prefixed `FP_IO_` have been renamed, now prefixed `IO_PIN_`.
 
+* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`, `Odb.FuzzyDiodePlacement`,
+  `Odb.HeuristicDiodeInsertion`
+
+  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
 * `OpenROAD.*`
 
   * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
@@ -58,6 +63,7 @@
   * Added flags `CTS_OBSTRUCTION_AWARE` and `CTS_BALANCE_LEVELS`
   * Added `CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT`
   * Added `CTS_DELAY_BUFFER_DERATE_PCT`
+  * `CTS_CLK_BUFFERS` can now take wildcards.
 
 * `OpenROAD.CutRows`
 
@@ -69,10 +75,11 @@
   * Added `DRT_SAVE_SNAPSHOTS` which enables saving snapshots of the layout each
     detalied routing iteration.
   * Added `DRT_SAVE_DRC_REPORT_ITERS`
-  * Added `DRT_ANTENNA_REPAIR_ITERS`, which if greater than zero, enables
-    antenna fixing after detailed routing
+  * Added `DRT_ANTENNA_REPAIR_ITERS`, which, if greater than zero and
+    `DIODE_CELL` is set, enables antenna fixing after detailed routing
   * Added `DRT_ANTENNA_MARGIN` which is similar to `GRT_ANTENNA_MARGIN` but for
     the aforementioned antenna repair iterations
+  * DRC reports are now converted to `xml` and readable by KLayout
 
 * Created `OpenROAD.DumpRCValues`
 
@@ -100,6 +107,10 @@
   * Added optional variable `PL_KEEP_RESIZE_BELOW_OVERFLOW`
 
   * Corrected `GPL_CELL_PADDING` to be an integer.
+
+* `OpenROAD.RepairAntennas`
+
+  * Step no longer assumes `DIODE_CELL` exists and falls back to doing nothing.
 
 * `OpenROAD.RepairDesignPostGPL`
 
@@ -134,6 +145,11 @@
     * `GRT_RESIZER_SETUP_MAX_UTIL_PCT`
     * `GRT_RESIZER_HOLD_REPAIR_TNS_PCT`
     * `GRT_RESIZER_HOLD_MAX_UTIL_PCT`
+
+* `OpenROAD.TapDecapInsertion`
+
+  * No longer assumes `WELLTAP_CELL` has a value and skips tap insertion if not.
+  * No longer assumes `DECAP_CELL` has a value and skips decap insertion if not.
 
 * Created `OpenROAD.UnplaceAll`
 
@@ -228,6 +244,7 @@
 
   * `{GPL,DPL}_CELL_PADDING`, `PL_MAX_DISPLACEMENT_{X,Y}` now all integers to
     match OpenROAD.
+  * `WELLTAP_CELL`, `DECAP_CELL` now optional.
 
 * `Checker.HoldViolations`
 
@@ -282,6 +299,11 @@
 
   * `FILL_CELL`, `DECAP_CELL`, `EXTRA_GDS_FILES`, `FALLBACK_SDC_FILE` were all
     renamed, see Misc. Enhancements/Bugfixes.
+
+* `openlane.common.drc`
+
+  * `BoundingBox` changed from `Tuple` to `dataclass` with additional optional
+    `info` property.
 
 # 2.3.3
 
