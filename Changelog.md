@@ -28,10 +28,13 @@
   * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
     instead of variable-length Tcl-style lists (AKA: strings).
 
-* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`, `Odb.FuzzyDiodePlacement`,
-  `Odb.HeuristicDiodeInsertion`
-
+* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`
   * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
+*  `Odb.FuzzyDiodePlacement`, `Odb.HeuristicDiodeInsertion`
+  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+  * `HEURISTIC_ANTENNA_THRESHOLD` has been made optional, steps do nothing if
+    it is unset.
 
 * `OpenROAD.*`
 
