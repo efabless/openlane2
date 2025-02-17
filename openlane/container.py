@@ -173,7 +173,7 @@ def run_in_container(
         raise FileNotFoundError("No compatible container engine found.")
 
     if osinfo.container_info.engine.lower() == "docker":
-        if semver.compare(osinfo.container_info.version, "27.3.1") < 0:
+        if semver.compare(osinfo.container_info.version, "25.0.5") < 0:
             warn(
                 f"Your Docker engine version ({osinfo.container_info.version}) is out of date. You may encounter unexpected issues."
             )
