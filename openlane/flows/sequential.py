@@ -39,6 +39,8 @@ from ..steps import (
     DeferredStepError,
 )
 
+Substitution = Union[str, Type[Step], None]
+
 
 class SequentialFlow(Flow):
     """
@@ -119,6 +121,20 @@ class SequentialFlow(Flow):
             Steps = Step_list
 
         return CustomSequentialFlow
+
+    @classmethod
+    def Substitute(
+        Self, Substitutions: Dict[str, Substitution]
+    ) -> Type[SequentialFlow]:
+        """
+        Convenience method to quickly subclass a sequential flow and add
+        Substitutions to it.
+
+        The new flow shall be named ``{previous_flow_name}'``.
+
+        :param Substitutions: The substitutions to use for the new subclass.
+        """
+        return type(Self.__name__ + "'", (Self,), {"Substitutions": Substitutions})
 
     def __init__(
         self,
