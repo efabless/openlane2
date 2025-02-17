@@ -408,7 +408,9 @@ class Config(GenericImmutableDict[str, Any]):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
-        PDK_ROOT = Self.__resolve_pdk_root(Path(PDK_ROOT))
+        PDK_ROOT = Self.__resolve_pdk_root(
+            Path(PDK_ROOT) if PDK_ROOT is not None else None
+        )
 
         raw, _, _ = Self.__get_pdk_config(
             PDK,
@@ -493,7 +495,7 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
-        pdk_root = Path(pdk_root)
+        pdk_root = Path(pdk_root) if pdk_root is not None else pdk_root
         if isinstance(config_in, Mapping):
             config_in = [config_in]
         elif is_string(config_in) or isinstance(config_in, os.PathLike):

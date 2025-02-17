@@ -41,22 +41,6 @@ class Path(pathlib.Path):
     A Path type for OpenLane configuration variables.
     """
 
-    def __init__(self, *args, dummy: bool = False):
-        self._dummy = dummy
-        super().__init__(*args)
-
-    def is_dummy(self) -> bool:
-        """
-        Whether this is a dummy path. Dummy paths report that they exist, but
-        they actually don't. This is useful for writing tests.
-        """
-        return self._dummy
-
-    def exists(self, *, follow_symlinks=True):
-        if self._dummy:
-            return True
-        return super().exists(follow_symlinks=follow_symlinks)
-
     def validate(self, message_on_err: str = ""):
         """
         Raises an error if the path does not exist and it is not a dummy path.
@@ -89,7 +73,7 @@ class ScopedFile(Path):
     Creates a temporary file that remains valid while this variable is in scope,
     and is deleted upon deconstruction.
 
-    The object itself is a string pointing to that file path.
+    The object itself is a pathlib.Path pointing to that file path.
 
     :param contents: The contents of the temporary file to create.
     """
