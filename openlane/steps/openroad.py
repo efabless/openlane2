@@ -977,7 +977,7 @@ class Floorplan(OpenROADStep):
         Variable(
             "FP_FLIP_SITES",
             Optional[List[str]],
-            "Flip this site vertically. Useful in niche alignment scenarios where single-height cells have ground at the south side and double-height cells have power at the south side, causing a short. In that situation, flipping the sites for single-height cells resolves the issue.",
+            "Flip these sites vertically. Useful in niche alignment scenarios where single-height cells have ground at the south side and double-height cells have power at the south side, causing a short. In that situation, flipping the sites for single-height cells resolves the issue.",
             pdk=True,
         ),
         Variable(

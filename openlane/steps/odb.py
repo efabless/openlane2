@@ -768,7 +768,7 @@ class FuzzyDiodePlacement(OdbpyStep):
     config_vars = [
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
-            Decimal,
+            Optional[Decimal],
             "A Manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
             pdk=True,
@@ -791,20 +791,14 @@ class FuzzyDiodePlacement(OdbpyStep):
     def get_command(self) -> List[str]:
         cell, pin = self.config["DIODE_CELL"].split("/")
 
-        threshold_opts = []
-        if threshold := self.config["HEURISTIC_ANTENNA_THRESHOLD"]:
-            threshold_opts = ["--threshold", threshold]
-
-        return (
-            super().get_command()
-            + [
-                "--diode-cell",
-                cell,
-                "--diode-pin",
-                pin,
-            ]
-            + threshold_opts
-        )
+        return super().get_command() + [
+            "--diode-cell",
+            cell,
+            "--diode-pin",
+            pin,
+            "--threshold",
+            str(self.config["HEURISTIC_ANTENNA_THRESHOLD"]),
+        ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
@@ -814,6 +808,10 @@ class FuzzyDiodePlacement(OdbpyStep):
 
         if self.config["DIODE_CELL"] is None:
             info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
+            return {}, {}
+
+        if self.config["HEURISTIC_ANTENNA_THRESHOLD"] is None:
+            info(f"'HEURISTIC_ANTENNA_THRESHOLD' not set. Skipping '{self.id}'…")
             return {}, {}
 
         return super().run(state_in, **kwargs)
@@ -854,6 +852,10 @@ class HeuristicDiodeInsertion(CompositeStep):
         if self.config["DIODE_CELL"] is None:
             info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
             return {}, {}
+        if self.config["HEURISTIC_ANTENNA_THRESHOLD"] is None:
+            info(f"'HEURISTIC_ANTENNA_THRESHOLD' not set. Skipping '{self.id}'…")
+            return {}, {}
+
         return super().run(state_in, **kwargs)
 
 

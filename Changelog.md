@@ -32,10 +32,13 @@
 
   * All variables prefixed `FP_IO_` have been renamed, now prefixed `IO_PIN_`.
 
-* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`, `Odb.FuzzyDiodePlacement`,
-  `Odb.HeuristicDiodeInsertion`
-
+* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`
   * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
+*  `Odb.FuzzyDiodePlacement`, `Odb.HeuristicDiodeInsertion`
+  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+  * `HEURISTIC_ANTENNA_THRESHOLD` has been made optional, steps do nothing if
+    it is unset.
 
 * `OpenROAD.*`
 
