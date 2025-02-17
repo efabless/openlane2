@@ -48,6 +48,7 @@ from ..common import (
     TclUtils,
     AnyPath,
     is_string,
+    Path,
 )
 
 AnyConfig = Union[AnyPath, Mapping[str, Any]]
@@ -342,7 +343,7 @@ class Config(GenericImmutableDict[str, Any]):
         """
         default_meta_version = 2
 
-        if is_string(config_in):
+        if is_string(config_in) or isinstance(config_in, os.PathLike):
             config_in = str(config_in)
             validated_type = _validate_config_file(config_in)
             if validated_type == "tcl":
@@ -375,7 +376,7 @@ class Config(GenericImmutableDict[str, Any]):
         DESIGN_NAME: str,
         PDK: str,
         STD_CELL_LIBRARY: Optional[str] = None,
-        PDK_ROOT: Optional[str] = None,
+        PDK_ROOT: Optional[AnyPath] = None,
         **kwargs,
     ) -> "Config":
         """
@@ -403,7 +404,7 @@ class Config(GenericImmutableDict[str, Any]):
             Useful examples are CLOCK_PORT, CLOCK_PERIOD, et cetera, which while
             not bound to a specific :class:`Step`, affects most Steps' behavior.
         """
-        PDK_ROOT = Self.__resolve_pdk_root(PDK_ROOT)
+        PDK_ROOT = Self.__resolve_pdk_root(Path(PDK_ROOT))
 
         raw, _, _ = Self.__get_pdk_config(
             PDK,
@@ -445,8 +446,8 @@ class Config(GenericImmutableDict[str, Any]):
         flow_config_vars: Sequence[Variable],
         *,
         config_override_strings: Optional[Sequence[str]] = None,
+        pdk_root: Optional[AnyPath] = None,
         pdk: Optional[str] = None,
-        pdk_root: Optional[str] = None,
         scl: Optional[str] = None,
         design_dir: Optional[str] = None,
         _load_pdk_configs: bool = True,
@@ -488,9 +489,10 @@ class Config(GenericImmutableDict[str, Any]):
 
         :returns: A tuple containing a Config object and the design directory.
         """
+        pdk_root = Path(pdk_root)
         if isinstance(config_in, Mapping):
             config_in = [config_in]
-        elif is_string(config_in):
+        elif is_string(config_in) or isinstance(config_in, os.PathLike):
             config_in = [str(config_in)]
 
         assert not isinstance(config_in, str)
@@ -628,7 +630,7 @@ class Config(GenericImmutableDict[str, Any]):
         flow_config_vars: Sequence[Variable],
         *,
         meta: Meta,
-        pdk_root: Optional[str] = None,
+        pdk_root: Optional[Path] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
         full_pdk_warnings: bool = False,
@@ -727,7 +729,7 @@ class Config(GenericImmutableDict[str, Any]):
         config: AnyPath,
         design_dir: str,
         *,
-        pdk_root: Optional[str] = None,
+        pdk_root: Optional[Path] = None,
         pdk: Optional[str] = None,
         scl: Optional[str] = None,
     ) -> Mapping[str, Any]:
@@ -780,28 +782,28 @@ class Config(GenericImmutableDict[str, Any]):
     @classmethod
     def __resolve_pdk_root(
         Self,
-        pdk_root: Optional[str],
-    ) -> str:
+        pdk_root: Optional[Path],
+    ) -> Path:
         if pdk_root is None:
             try:
                 import volare
 
-                pdk_root = volare.get_volare_home(pdk_root)
+                pdk_root = Path(volare.get_volare_home(pdk_root))
             except ImportError:
                 raise ValueError(
                     "The pdk_root argument is required as Volare is not installed."
                 )
 
-        return os.path.abspath(pdk_root)
+        return pdk_root.absolute()
 
     @staticmethod
     @lru_cache(1, True)
     def __get_pdk_raw(
-        pdk_root: str, pdk: str, scl: Optional[str]
+        pdk_root: Path, pdk: str, scl: Optional[str]
     ) -> Tuple[GenericImmutableDict[str, Any], str, str]:
         pdk_config: GenericDict[str, Any] = GenericDict(
             {
-                SpecialKeys.pdk_root: pdk_root,
+                SpecialKeys.pdk_root: str(pdk_root),
                 SpecialKeys.pdk: pdk,
             }
         )
@@ -848,7 +850,7 @@ class Config(GenericImmutableDict[str, Any]):
     def __get_pdk_config(
         pdk: str,
         scl: Optional[str],
-        pdk_root: str,
+        pdk_root: Optional[Path],
         flow_pdk_vars: Optional[List[Variable]] = None,
         full_pdk_warnings: Optional[bool] = False,
     ) -> Tuple[GenericDict[str, Any], str, str]:

@@ -44,7 +44,7 @@ from .types import Path
 from .metrics import aggregate_metrics
 from .generic_dict import GenericImmutableDict, is_string
 from ..state import DesignFormat
-from ..common import Filter
+from ..common import Filter, AnyPath
 from ..logging import debug, warn, err
 
 
@@ -56,10 +56,10 @@ class Toolbox(object):
     between steps.
     """
 
-    def __init__(self, tmp_dir: str) -> None:
+    def __init__(self, tmp_dir: AnyPath) -> None:
         # Only create before use, otherwise users will end up with
         # "openlane_run/tmp" created in their PWD because of the global toolbox
-        self.tmp_dir = tmp_dir
+        self.tmp_dir = Path(tmp_dir)
 
         self.remove_cells_from_lib = lru_cache(16, True)(self.remove_cells_from_lib)  # type: ignore
         self.create_blackbox_model = lru_cache(16, True)(self.create_blackbox_model)  # type: ignore
@@ -100,7 +100,7 @@ class Toolbox(object):
 
         for key in Filter(views_by_corner).get_matching_wildcards(timing_corner):
             value = views_by_corner[key]
-            if is_string(value):
+            if is_string(value) or isinstance(value, os.PathLike):
                 result += [value]  # type: ignore
             else:
                 result += list(value)  # type: ignore
@@ -180,7 +180,7 @@ class Toolbox(object):
             elif views is not None:
                 result += [Path(views)]
 
-        return [element for element in result if str(element) != Path._dummy_path]
+        return result
 
     def get_macro_views_by_priority(
         self,

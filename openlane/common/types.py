@@ -13,11 +13,12 @@
 # limitations under the License.
 import os
 import sys
+import pathlib
 import tempfile
 from math import isfinite
 from decimal import Decimal
 from collections import UserString
-from typing import Any, Union, ClassVar, Tuple, Optional
+from typing import Any, Union, Tuple, Optional
 
 
 def is_string(obj: Any) -> bool:
@@ -35,35 +36,32 @@ def is_real_number(obj: Any) -> bool:
     return is_number(obj) and isfinite(obj)
 
 
-class Path(UserString, os.PathLike):
+class Path(pathlib.Path):
     """
     A Path type for OpenLane configuration variables.
-
-    Basically just a string.
     """
 
-    # This path will pass the validate() call, but will
-    # fail to open. It should be used for deprecated variable
-    # translation only.
-    _dummy_path: ClassVar[str] = "__openlane_dummy_path"
+    def __init__(self, *args, dummy: bool = False):
+        self._dummy = dummy
+        super().__init__(*args)
 
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__qualname__}('{self}')"
-
-    def exists(self) -> bool:
+    def is_dummy(self) -> bool:
         """
-        A convenience method calling :meth:`os.path.exists`
+        Whether this is a dummy path. Dummy paths report that they exist, but
+        they actually don't. This is useful for writing tests.
         """
-        return os.path.exists(self)
+        return self._dummy
+
+    def exists(self, *, follow_symlinks=True):
+        if self._dummy:
+            return True
+        return super().exists(follow_symlinks=follow_symlinks)
 
     def validate(self, message_on_err: str = ""):
         """
-        Raises an error if the path does not exist.
+        Raises an error if the path does not exist and it is not a dummy path.
         """
-        if not self.exists() and not self == Path._dummy_path:
+        if not self.exists():
             raise ValueError(f"{message_on_err}: '{self}' does not exist")
 
     def startswith(
@@ -72,9 +70,7 @@ class Path(UserString, os.PathLike):
         start: Optional[int] = 0,
         end: Optional[int] = sys.maxsize,
     ) -> bool:
-        if isinstance(prefix, UserString) or isinstance(prefix, os.PathLike):
-            prefix = str(prefix)
-        return super().startswith(prefix, start, end)
+        raise AttributeError("Path.startswith has been removed.")
 
     def rel_if_child(
         self,
@@ -82,12 +78,7 @@ class Path(UserString, os.PathLike):
         *,
         relative_prefix: str = "",
     ) -> "Path":
-        my_abspath = os.path.abspath(self)
-        start_abspath = os.path.abspath(start)
-        if my_abspath.startswith(start_abspath):
-            return Path(relative_prefix + os.path.relpath(self, start_abspath))
-        else:
-            return Path(my_abspath)
+        raise AttributeError("Path.rel_if_child has been removed.")
 
 
 AnyPath = Union[str, os.PathLike]

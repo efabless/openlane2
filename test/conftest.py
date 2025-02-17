@@ -154,7 +154,7 @@ MOCK_PDK_VARS = [
 MOCK_FLOW_VARS = [
     Variable(
         "PDK_ROOT",
-        str,
+        Path,
         description="x",
     ),
     Variable(

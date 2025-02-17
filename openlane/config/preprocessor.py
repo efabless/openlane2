@@ -20,7 +20,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any, Dict, List, Mapping, Sequence, Tuple, Union, Optional
 
-from ..common import is_string
+from ..common import is_string, Path
 
 Keys = SimpleNamespace(
     pdk_root="PDK_ROOT",
@@ -250,7 +250,7 @@ def process_string(
         if target is None:
             return None
 
-        if not is_string(target):
+        if not is_string(target) and not isinstance(target, Path):
             if type(target) in [int, float, Decimal]:
                 raise TypeError(
                     f"Referenced variable {reference_variable} is a number and not a string: use expr::{match[0]} if you want to reference this number."
