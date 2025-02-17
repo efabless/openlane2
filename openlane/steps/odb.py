@@ -11,36 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import os
 import re
-import json
 import shutil
-from math import inf
+from abc import abstractmethod
 from decimal import Decimal
 from functools import reduce
-from abc import abstractmethod
+from math import inf
 from typing import Dict, List, Literal, Optional, Tuple
 
-
+from ..common import Path, get_script_dir
+from ..config import Instance, Macro, Variable
+from ..logging import info, verbose
+from ..state import DesignFormat, State
 from .common_variables import io_layer_variables
-from .openroad_alerts import (
-    OpenROADAlert,
-    OpenROADOutputProcessor,
-)
 from .openroad import DetailedPlacement, GlobalRouting
-from .tclstep import TclStep
+from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
 from .step import (
-    ViewsUpdate,
+    CompositeStep,
+    DefaultOutputProcessor,
     MetricsUpdate,
     Step,
     StepException,
-    CompositeStep,
-    DefaultOutputProcessor,
+    ViewsUpdate,
 )
-from ..logging import info, verbose
-from ..config import Variable, Macro, Instance
-from ..state import State, DesignFormat
-from ..common import Path, get_script_dir
+from .tclstep import TclStep
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -182,7 +178,7 @@ class CheckMacroAntennaProperties(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if not self.get_cells():
-            info("No cells provided, skipping…")
+            info(f"No cells provided, skipping '{self.id}'…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -246,7 +242,7 @@ class ApplyDEFTemplate(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
-            info("No DEF template provided, skipping…")
+            info(f"No DEF template provided, skipping '{self.id}'…")
             return {}, {}
 
         views_updates, metrics_updates = super().run(state_in, **kwargs)
@@ -661,7 +657,7 @@ class CustomIOPlacement(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is None:
-            info("No custom floorplan file configured, skipping…")
+            info(f"No custom floorplan file configured, skipping '{self.id}'…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -690,7 +686,7 @@ class PortDiodePlacement(OdbpyStep):
         ),
         Variable(
             "GPL_CELL_PADDING",
-            Decimal,
+            int,
             "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
             units="sites",
             pdk=True,
@@ -719,7 +715,11 @@ class PortDiodePlacement(OdbpyStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info(f"'DIODE_ON_PORTS' is set to 'none': skipping '{self.id}'…")
+            return {}, {}
+
+        if self.config["DIODE_CELL"] is None:
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
             return {}, {}
 
         if self.config["GPL_CELL_PADDING"] == 0:
@@ -759,7 +759,10 @@ class DiodesOnPorts(CompositeStep):
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["DIODE_ON_PORTS"] == "none":
-            info("'DIODE_ON_PORTS' is set to 'none': skipping…")
+            info(f"'DIODE_ON_PORTS' is set to 'none': skipping '{self.id}'…")
+            return {}, {}
+        if self.config["DIODE_CELL"] is None:
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
             return {}, {}
         return super().run(state_in, **kwargs)
 
@@ -786,14 +789,14 @@ class FuzzyDiodePlacement(OdbpyStep):
     config_vars = [
         Variable(
             "HEURISTIC_ANTENNA_THRESHOLD",
-            Decimal,
+            Optional[Decimal],
             "A Manhattan distance above which a diode is recommended to be inserted by the heuristic inserter. If not specified, the heuristic algorithm.",
             units="µm",
             pdk=True,
         ),
         Variable(
             "GPL_CELL_PADDING",
-            Decimal,
+            int,
             "Cell padding value (in sites) for global placement. Used by this step only to emit a warning if it's 0.",
             units="sites",
             pdk=True,
@@ -809,26 +812,28 @@ class FuzzyDiodePlacement(OdbpyStep):
     def get_command(self) -> List[str]:
         cell, pin = self.config["DIODE_CELL"].split("/")
 
-        threshold_opts = []
-        if threshold := self.config["HEURISTIC_ANTENNA_THRESHOLD"]:
-            threshold_opts = ["--threshold", threshold]
-
-        return (
-            super().get_command()
-            + [
-                "--diode-cell",
-                cell,
-                "--diode-pin",
-                pin,
-            ]
-            + threshold_opts
-        )
+        return super().get_command() + [
+            "--diode-cell",
+            cell,
+            "--diode-pin",
+            pin,
+            "--threshold",
+            str(self.config["HEURISTIC_ANTENNA_THRESHOLD"]),
+        ]
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["GPL_CELL_PADDING"] == 0:
             self.warn(
                 "'GPL_CELL_PADDING' is set to 0. This step may cause overlap failures."
             )
+
+        if self.config["DIODE_CELL"] is None:
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
+            return {}, {}
+
+        if self.config["HEURISTIC_ANTENNA_THRESHOLD"] is None:
+            info(f"'HEURISTIC_ANTENNA_THRESHOLD' not set. Skipping '{self.id}'…")
+            return {}, {}
 
         return super().run(state_in, **kwargs)
 
@@ -863,6 +868,16 @@ class HeuristicDiodeInsertion(CompositeStep):
         DetailedPlacement,
         GlobalRouting,
     ]
+
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        if self.config["DIODE_CELL"] is None:
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
+            return {}, {}
+        if self.config["HEURISTIC_ANTENNA_THRESHOLD"] is None:
+            info(f"'HEURISTIC_ANTENNA_THRESHOLD' not set. Skipping '{self.id}'…")
+            return {}, {}
+
+        return super().run(state_in, **kwargs)
 
 
 @Step.factory.register()
@@ -950,6 +965,6 @@ class ManualGlobalPlacement(OdbpyStep):
 
     def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["MANUAL_GLOBAL_PLACEMENTS"] is None:
-            info("'MANUAL_GLOBAL_PLACEMENTS' not set, skipping…")
+            info(f"'MANUAL_GLOBAL_PLACEMENTS' not set, skipping '{self.id}'…")
             return {}, {}
         return super().run(state_in, **kwargs)

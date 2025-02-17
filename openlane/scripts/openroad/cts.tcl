@@ -14,7 +14,6 @@
 source $::env(SCRIPTS_DIR)/openroad/common/io.tcl
 source $::env(SCRIPTS_DIR)/openroad/common/resizer.tcl
 
-load_rsz_corners
 read_current_odb
 
 # set rc values
@@ -39,9 +38,30 @@ puts "\[INFO\] Performing clock tree synthesis…"
 puts "\[INFO\] Looking for the following net(s): $::env(CLOCK_NET)"
 puts "\[INFO\] Running Clock Tree Synthesis…"
 
-set arg_list [list]
+proc get_buflist {} {
+    set result [list]
+    foreach selector $::env(CTS_CLK_BUFFERS) {
+        # if we can find an exact match, avoid expensive search operation
+        set exact_match [$::db findMaster $selector]
+        if { "$exact_match" == "NULL" } {
+            # time to dig for matches…
+            foreach lib $::libs {
+                foreach master [$lib getMasters] {
+                    set name [$master getName]
+                    if { [string match $selector $name] } {
+                        lappend result $name
+                    }
+                }
+            }
+        } else {
+            lappend result [$exact_match getName]
+        }
+    }
+    return $result
+}
 
-lappend arg_list -buf_list $::env(CTS_CLK_BUFFERS)
+set arg_list [list]
+lappend arg_list -buf_list [get_buflist]
 lappend arg_list -root_buf $::env(CTS_ROOT_BUFFER)
 lappend arg_list -sink_clustering_size $::env(CTS_SINK_CLUSTERING_SIZE)
 lappend arg_list -sink_clustering_max_diameter $::env(CTS_SINK_CLUSTERING_MAX_DIAMETER)

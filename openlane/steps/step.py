@@ -1318,9 +1318,12 @@ class Step(ABC):
             link_start = f"[link=file://{os.path.abspath(log_path)}]"
             link_end = "[/link]"
 
-        verbose(
-            f"Logging subprocess to [repr.filename]{link_start}'{os.path.relpath(log_path)}'{link_end}[/repr.filename]…"
-        )
+        msg = f"Logging subprocess to [repr.filename]{link_start}'{os.path.relpath(log_path)}'{link_end}[/repr.filename]…"
+        if logging.options.get_condensed_mode():
+            info(msg)
+        else:
+            verbose(msg)
+
         process = _popen_callable(
             cmd_str,
             encoding="utf8",

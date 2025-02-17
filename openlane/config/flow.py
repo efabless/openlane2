@@ -304,20 +304,6 @@ scl_variables = [
         "Defines a buffer port to be used by yosys during synthesis: in the format `{cell}/{input_port}/{output_port}`",
         pdk=True,
     ),
-    Variable(
-        "WELLTAP_CELL",
-        str,
-        "Defines the cell used for tap insertion.",
-        pdk=True,
-        deprecated_names=["FP_WELLTAP_CELL"],
-    ),
-    Variable(
-        "ENDCAP_CELL",
-        str,
-        "Defines the so-called 'end-cap' cell- class of decap cells placed at either sides of a design.",
-        pdk=True,
-        deprecated_names=["FP_ENDCAP_CELL"],
-    ),
     # Placement
     Variable(
         "PLACE_SITE",
@@ -335,8 +321,22 @@ scl_variables = [
     Variable(
         "DIODE_CELL",
         Optional[str],
-        "Defines a diode cell used to fix antenna violations, in the format {name}/{port}.",
+        "Defines a diode cell used to fix antenna violations, in the format {name}/{port}. If not defined, steps should not attempt to repair the antenna effect by inserting diode cells.",
         pdk=True,
+    ),
+    Variable(
+        "WELLTAP_CELL",
+        Optional[str],
+        "Defines the cell used for tap insertion. If not defined, steps should not attempt to insert welltap cells.",
+        pdk=True,
+        deprecated_names=["FP_WELLTAP_CELL"],
+    ),
+    Variable(
+        "ENDCAP_CELL",
+        Optional[str],
+        "Defines the so-called 'end-cap' cell- class of decap cells placed at either sides of a design, if available.",
+        pdk=True,
+        deprecated_names=["FP_ENDCAP_CELL"],
     ),
 ]
 option_variables = [
