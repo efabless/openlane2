@@ -14,6 +14,13 @@
 ## Documentation
 -->
 
+# 2.3.8
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed substitutions in `config.json` being applied to all flows. It now only
+  applies to the flow in meta.flow (which falls back to `Classic` if it's null.)
+  
 # 2.3.7
 
 ## Tool Updates
