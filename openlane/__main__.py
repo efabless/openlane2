@@ -98,6 +98,10 @@ def run(
                 if meta.substituting_steps is not None and issubclass(
                     TargetFlow, SequentialFlow
                 ):
+                    if meta.flow is None:
+                        warn(
+                            'config_file currently has substituting_steps set with no flow, where it will fall back to Classic. Starting OpenLane 3.0.0, this will be an error. Please update your configuration to explicitly set "flow" to "Classic".'
+                        )
                     TargetFlow = TargetFlow.Substitute(meta.substituting_steps)  # type: ignore  # Type checker is being rowdy with this one
 
         if flow_name is not None:
