@@ -14,6 +14,18 @@
 ## Documentation
 -->
 
+# 2.3.7
+
+## Tool Updates
+
+* Updated Docker requirement to tested version: 27.3.1
+  * Added warning when Docker version is out of date.
+
+## Documentation
+
+* Updated documentation to reflect tested Docker version.
+* Updated documentation to stop using a branch of the DetSys Nix Installer.
+
 # 2.3.6
 
 ## Steps

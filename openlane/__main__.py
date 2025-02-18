@@ -330,10 +330,11 @@ def cli_in_container(
             other_mounts=docker_mounts,
             tty=docker_tty,
         )
-    except ValueError as e:
-        print(e)
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        err(e)
+        ctx.exit(1)
+
+    ctx.exit(0)
 
 
 o = partial(option, show_default=True)
