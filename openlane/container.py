@@ -16,12 +16,14 @@
 import os
 import re
 import uuid
-import httpx
 import shlex
 import pathlib
 import tempfile
 import subprocess
 from typing import List, NoReturn, Sequence, Optional, Union, Tuple
+
+import httpx
+import semver
 
 from .common import mkdirp
 from .logging import err, info, warn
@@ -169,6 +171,16 @@ def run_in_container(
 
     if osinfo.container_info is None:
         raise FileNotFoundError("No compatible container engine found.")
+
+    if osinfo.container_info.engine.lower() == "docker":
+        if semver.compare(osinfo.container_info.version, "25.0.5") < 0:
+            warn(
+                f"Your Docker engine version ({osinfo.container_info.version}) is out of date. You may encounter unexpected issues."
+            )
+    else:
+        warn(
+            f"Unsupported container engine '{osinfo.container_info.engine}'. You may encounter unexpected issues."
+        )
 
     if not ensure_image(image):
         raise ValueError(f"Failed to use image '{image}'.")
