@@ -28,10 +28,13 @@
   * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
     instead of variable-length Tcl-style lists (AKA: strings).
 
-* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`, `Odb.FuzzyDiodePlacement`,
-  `Odb.HeuristicDiodeInsertion`
-
+* `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`
   * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
+*  `Odb.FuzzyDiodePlacement`, `Odb.HeuristicDiodeInsertion`
+  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+  * `HEURISTIC_ANTENNA_THRESHOLD` has been made optional, steps do nothing if
+    it is unset.
 
 * `OpenROAD.*`
 
@@ -81,6 +84,14 @@
 
   * Creates three reports to help verify that the RC values used for estimation
     are set correctly.
+
+* `OpenROAD.Floorplan`
+
+  * Added `FP_FLIP_SITES`: allows sites in floorplans to be flipped. Useful in
+    niche alignment scenarios where single-height cells have ground at the south
+    side and double-height cells have power at the south side, causing a short.
+    In that situation, flipping the sites for single-height cells resolves the
+    issue.
 
 * `OpenROAD.GlobalPlacement`
 
