@@ -25,4 +25,9 @@ new: old: {
         stdenv = old.gccStdenv;
       }
     else (old.jshon);
+  
+  magic = old.magic.override {
+    version = "8.3.520";
+    sha256 = "sha256-RrrZHl05dQwvBGrBKxvONZSVEufIdQTJd67isauum6g=";
+  };
 }
