@@ -69,7 +69,7 @@ def cli(reader):
         net = target_iterm.getNet()
         if net is None:
             print(
-                f"[ERROR] Pin '{target_info["target"]}' has no nets connected.",
+                f"[ERROR] Pin '{target_info['target']}' has no nets connected.",
                 file=sys.stderr,
             )
             exit(-1)
