@@ -131,16 +131,7 @@ class OdbReader(object):
         dpl.reportLegalizationStats()
         dpl.optimizeMirroring()
 
-    def _grt(self):
-        """
-        The ``._grt()`` method is EXPERIMENTAL and SHOULD NOT BE USED YET.
-
-        Use a composite step with ``OpenROAD.GlobalRouting``.
-        """
-        if self.config is None:
-            raise RuntimeError("Attempted to call grt without config file")
-
-        grt = self.design.getGlobalRouter()
+    def _grt_setup(self, grt):
         routing_layers = [l for l in self.layers.values() if l.getRoutingLevel() >= 1]
         for layer, adj in zip(routing_layers, self.config["GRT_LAYER_ADJUSTMENTS"]):
             grt.addLayerAdjustment(
@@ -170,14 +161,25 @@ class OdbReader(object):
                 raise RuntimeError(f"Unknown layer name '{max_clk_name}'")
             max_clk_idx = self.layers[max_clk_name].getRoutingLevel()
 
-        grt.setMinRoutingLayer(min_layer_idx)
-        grt.setMaxRoutingLayer(max_layer_idx)
         grt.setMinLayerForClock(min_clk_idx)
         grt.setMaxLayerForClock(max_clk_idx)
         grt.setMacroExtension(self.config["GRT_MACRO_EXTENSION"])
         grt.setOverflowIterations(self.config["GRT_OVERFLOW_ITERS"])
         grt.setAllowCongestion(self.config["GRT_ALLOW_CONGESTION"])
         grt.setVerbose(True)
+        grt.initFastRoute(min_layer_idx, max_layer_idx)
+
+    def _grt(self):
+        """
+        The ``._grt()`` method is EXPERIMENTAL and SHOULD NOT BE USED YET.
+
+        Use a composite step with ``OpenROAD.GlobalRouting``.
+        """
+        if self.config is None:
+            raise RuntimeError("Attempted to call grt without config file")
+
+        grt = self.design.getGlobalRouter()
+        self._grt_setup(grt)
         grt.globalRoute(
             True
         )  # The first variable updates guides- not sure why the default is False
