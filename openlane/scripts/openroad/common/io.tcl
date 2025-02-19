@@ -252,9 +252,9 @@ proc read_pnr_libs {args} {
         lappend corner_names $corner_name
     }
 
-    define_corners {*}[array name corner]
+    log_cmd define_corners {*}[array name corner]
 
-    foreach corner_name [array name corner] {
+    foreach corner_name $corner_names {
         puts "Reading timing models for corner $corner_name…"
 
         set corner_models $corner($corner_name)
