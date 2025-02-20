@@ -309,7 +309,7 @@ def synthesize(
     if config["SYNTH_ELABORATE_ONLY"]:
         openlane_proc(d, report_dir)
         if config["SYNTH_ELABORATE_FLATTEN"]:
-            d.run_pass("flatten")
+            d.run_pass("flatten", "-noscopeinfo")
         d.run_pass("setattr", "-set", "keep", "1")
         d.run_pass("splitnets")
         d.run_pass("opt_clean", "-purge")
