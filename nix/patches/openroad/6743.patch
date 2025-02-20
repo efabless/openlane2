@@ -1,0 +1,85 @@
+From 930691a34126c13633f7dc053ab4a39aa0a8b92e Mon Sep 17 00:00:00 2001
+From: Mohamed Gaber <donn@efabless.com>
+Date: Thu, 20 Feb 2025 15:53:39 +0200
+Subject: [PATCH] gui: fall back to type name hashing when not using libstdc++
+
+There is currently an issue where clicking on any sta::Instance on macOS causes a crash. This is owing to an oddball RTTI issue that I've spent some time debugging but was ultimately unable to resolve.
+
+My hypothesis as to why this issue does not surface on GNU/Linux is because of the specific type_info implementation in the GNU C++ standard library, libstdc++. This email chain from the libc message list may be insightful: https://lists.llvm.org/pipermail/llvm-dev/2014-June/073465.html
+
+As a workaround, I've elected to use a compiler macro and only use type_index hashes if __GLIBCXX__ is unset, otherwise, the mangled ABI names are used as the key for descriptors instead. With this fix, clicking on instances works on macOS. This, unfortunately, will incur a performance penalty, but for what it's worth it is quite literally unnoticeable (and certainly beats a crash.)
+
+Signed-off-by: Mohamed Gaber <donn@efabless.com>
+---
+ src/gui/include/gui/gui.h |  5 +++++
+ src/gui/src/gui.cpp       | 17 ++++++++++++++++-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/src/gui/include/gui/gui.h b/src/gui/include/gui/gui.h
+index a182172d5f2..b02d00498f9 100644
+--- a/src/gui/include/gui/gui.h
++++ b/src/gui/include/gui/gui.h
+@@ -804,8 +804,13 @@ class Gui
+   odb::dbDatabase* db_;
+ 
+   // Maps types to descriptors
++#ifdef __GLIBCXX__
+   std::unordered_map<std::type_index, std::unique_ptr<const Descriptor>>
+       descriptors_;
++#else
++  std::unordered_map<std::string, std::unique_ptr<const Descriptor>>
++      descriptors_;
++#endif
+   // Heatmaps
+   std::set<HeatMapDataSource*> heat_maps_;
+ 
+diff --git a/src/gui/src/gui.cpp b/src/gui/src/gui.cpp
+index 4762022dd84..437d17a9da7 100644
+--- a/src/gui/src/gui.cpp
++++ b/src/gui/src/gui.cpp
+@@ -286,8 +286,11 @@ Selected Gui::makeSelected(const std::any& object)
+   if (!object.has_value()) {
+     return Selected();
+   }
+-
++#ifdef __GLIBCXX__
+   auto it = descriptors_.find(object.type());
++#else
++  auto it = descriptors_.find(object.type().name());
++#endif
+   if (it != descriptors_.end()) {
+     return it->second->makeSelected(object);
+   }
+@@ -1167,12 +1170,20 @@ void Gui::fit()
+ void Gui::registerDescriptor(const std::type_info& type,
+                              const Descriptor* descriptor)
+ {
++#ifdef __GLIBCXX__
+   descriptors_[type] = std::unique_ptr<const Descriptor>(descriptor);
++#else
++  descriptors_[type.name()] = std::unique_ptr<const Descriptor>(descriptor);
++#endif
+ }
+ 
+ const Descriptor* Gui::getDescriptor(const std::type_info& type) const
+ {
++#ifdef __GLIBCXX__
+   auto find_descriptor = descriptors_.find(type);
++#else
++  auto find_descriptor = descriptors_.find(type.name());
++#endif
+   if (find_descriptor == descriptors_.end()) {
+     logger_->error(
+         utl::GUI, 53, "Unable to find descriptor for: {}", type.name());
+@@ -1183,7 +1194,11 @@ const Descriptor* Gui::getDescriptor(const std::type_info& type) const
+ 
+ void Gui::unregisterDescriptor(const std::type_info& type)
+ {
++#ifdef __GLIBCXX__
+   descriptors_.erase(type);
++#else
++  descriptors_.erase(type.name());
++#endif
+ }
+ 
+ const Selected& Gui::getInspectorSelection()
