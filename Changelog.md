@@ -14,6 +14,14 @@
 ## Documentation
 -->
 
+# 2.3.9
+
+## Tool Updates
+
+* Backported https://github.com/The-OpenROAD-Project/OpenROAD/pull/6743 to
+  OpenROAD to fix GUI crashes on C++ standard libraries that are not libstdc++
+  (aka: macOS.)
+
 # 2.3.8
 
 ## Misc. Enhancements/Bugfixes
