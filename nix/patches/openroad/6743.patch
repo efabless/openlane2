@@ -1,85 +1,82 @@
-From 930691a34126c13633f7dc053ab4a39aa0a8b92e Mon Sep 17 00:00:00 2001
-From: Mohamed Gaber <donn@efabless.com>
-Date: Thu, 20 Feb 2025 15:53:39 +0200
-Subject: [PATCH] gui: fall back to type name hashing when not using libstdc++
-
-There is currently an issue where clicking on any sta::Instance on macOS causes a crash. This is owing to an oddball RTTI issue that I've spent some time debugging but was ultimately unable to resolve.
-
-My hypothesis as to why this issue does not surface on GNU/Linux is because of the specific type_info implementation in the GNU C++ standard library, libstdc++. This email chain from the libc message list may be insightful: https://lists.llvm.org/pipermail/llvm-dev/2014-June/073465.html
-
-As a workaround, I've elected to use a compiler macro and only use type_index hashes if __GLIBCXX__ is unset, otherwise, the mangled ABI names are used as the key for descriptors instead. With this fix, clicking on instances works on macOS. This, unfortunately, will incur a performance penalty, but for what it's worth it is quite literally unnoticeable (and certainly beats a crash.)
-
-Signed-off-by: Mohamed Gaber <donn@efabless.com>
----
- src/gui/include/gui/gui.h |  5 +++++
- src/gui/src/gui.cpp       | 17 ++++++++++++++++-
- 2 files changed, 21 insertions(+), 1 deletion(-)
-
+diff --git a/.gitignore b/.gitignore
+index b33f18f8ef8..8c881b0c8a5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -24,6 +24,8 @@ venv/
+ include/ord/Version.hh
+ 
+ build
++build_linux
++build_mac
+ test/results
+ flow
+ 
 diff --git a/src/gui/include/gui/gui.h b/src/gui/include/gui/gui.h
-index a182172d5f2..b02d00498f9 100644
+index a182172d5f2..fa64aaf2832 100644
 --- a/src/gui/include/gui/gui.h
 +++ b/src/gui/include/gui/gui.h
-@@ -804,8 +804,13 @@ class Gui
+@@ -803,8 +803,32 @@ class Gui
+   utl::Logger* logger_;
    odb::dbDatabase* db_;
  
++  // There are RTTI implementation differences between libstdc++ and libc++,
++  // where the latter seems to generate multiple typeids for classes including
++  // but not limited to sta::Instance* in different compile units. We have been
++  // unable to remedy this.
++  //
++  // These classes are a workaround such that unless __GLIBCXX__ is set, hashing
++  // and comparing are done on the type's name instead, which adds a negligible
++  // performance penalty but has the distinct advantage of not crashing when an
++  // Instance is clicked in the GUI.
++  //
++  // In the event the RTTI issue is ever resolved, the following two structs may
++  // be removed.
++  struct TypeInfoHasher
++  {
++    std::size_t operator()(const std::type_index& x) const;
++  };
++  struct TypeInfoComparator
++  {
++    bool operator()(const std::type_index& a, const std::type_index& b) const;
++  };
++
    // Maps types to descriptors
-+#ifdef __GLIBCXX__
-   std::unordered_map<std::type_index, std::unique_ptr<const Descriptor>>
+-  std::unordered_map<std::type_index, std::unique_ptr<const Descriptor>>
++  std::unordered_map<std::type_index,
++                     std::unique_ptr<const Descriptor>,
++                     TypeInfoHasher,
++                     TypeInfoComparator>
        descriptors_;
-+#else
-+  std::unordered_map<std::string, std::unique_ptr<const Descriptor>>
-+      descriptors_;
-+#endif
    // Heatmaps
    std::set<HeatMapDataSource*> heat_maps_;
- 
 diff --git a/src/gui/src/gui.cpp b/src/gui/src/gui.cpp
-index 4762022dd84..437d17a9da7 100644
+index 4762022dd84..49a2f493086 100644
 --- a/src/gui/src/gui.cpp
 +++ b/src/gui/src/gui.cpp
-@@ -286,8 +286,11 @@ Selected Gui::makeSelected(const std::any& object)
-   if (!object.has_value()) {
-     return Selected();
-   }
--
-+#ifdef __GLIBCXX__
-   auto it = descriptors_.find(object.type());
-+#else
-+  auto it = descriptors_.find(object.type().name());
-+#endif
-   if (it != descriptors_.end()) {
-     return it->second->makeSelected(object);
-   }
-@@ -1167,12 +1170,20 @@ void Gui::fit()
- void Gui::registerDescriptor(const std::type_info& type,
-                              const Descriptor* descriptor)
- {
-+#ifdef __GLIBCXX__
-   descriptors_[type] = std::unique_ptr<const Descriptor>(descriptor);
-+#else
-+  descriptors_[type.name()] = std::unique_ptr<const Descriptor>(descriptor);
-+#endif
+@@ -1336,6 +1336,26 @@ void Gui::updateTimingReport()
+   main_window->getTimingWidget()->populatePaths();
  }
  
- const Descriptor* Gui::getDescriptor(const std::type_info& type) const
- {
++// See class header for documentation.
++std::size_t Gui::TypeInfoHasher::operator()(const std::type_index& x) const
++{
 +#ifdef __GLIBCXX__
-   auto find_descriptor = descriptors_.find(type);
++  return std::hash<std::type_index>{}(x);
 +#else
-+  auto find_descriptor = descriptors_.find(type.name());
++  return std::hash<std::string_view>{}(std::string_view(x.name()));
 +#endif
-   if (find_descriptor == descriptors_.end()) {
-     logger_->error(
-         utl::GUI, 53, "Unable to find descriptor for: {}", type.name());
-@@ -1183,7 +1194,11 @@ const Descriptor* Gui::getDescriptor(const std::type_info& type) const
- 
- void Gui::unregisterDescriptor(const std::type_info& type)
- {
++}
++// See class header for documentation.
++bool Gui::TypeInfoComparator::operator()(const std::type_index& a,
++                                         const std::type_index& b) const
++{
 +#ifdef __GLIBCXX__
-   descriptors_.erase(type);
++  return a == b;
 +#else
-+  descriptors_.erase(type.name());
++  return strcmp(a.name(), b.name()) == 0;
 +#endif
- }
- 
- const Selected& Gui::getInspectorSelection()
++}
++
+ class SafeApplication : public QApplication
+ {
+  public:
