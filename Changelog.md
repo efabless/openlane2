@@ -14,6 +14,14 @@
 ## Documentation
 -->
 
+# 2.3.10
+
+## Steps
+
+* `Yosys.Synthesis`
+  * `SYNTH_ELABORATE_FLATTEN` now passes the `-noscopeinfo` flag so scopeinfo
+    cells are no longer emitted from Synthesis.
+
 # 2.3.9
 
 ## Tool Updates
