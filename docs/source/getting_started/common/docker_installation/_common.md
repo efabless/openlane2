@@ -58,7 +58,7 @@ Successful outputs will look like this:
 
 ```
 $ docker --version
-Docker version 20.10.16, build aa7e414fdc
+Docker version 27.3.1, build ce12230
 $ python3 --version
 Python 3.10.5
 $ python3 -m pip --version

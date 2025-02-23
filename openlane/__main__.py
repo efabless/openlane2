@@ -81,20 +81,24 @@ def run(
 
         for config_file in config_files:
             if meta := Config.get_meta(config_file):
-                if meta.flow is not None:
-                    if isinstance(meta.flow, str):
-                        if found := Flow.factory.get(meta.flow):
-                            TargetFlow = found
-                        else:
-                            err(
-                                f"Unknown flow '{meta.flow}' specified in configuration file's 'meta' object."
-                            )
-                            ctx.exit(1)
-                    elif isinstance(meta.flow, list):
-                        TargetFlow = SequentialFlow.Make(meta.flow)
-                    if meta.substituting_steps is not None and issubclass(
-                        TargetFlow, SequentialFlow
-                    ):
+                if isinstance(meta.flow, str):
+                    if found := Flow.factory.get(meta.flow):
+                        TargetFlow = found
+                    else:
+                        err(
+                            f"Unknown flow '{meta.flow}' specified in configuration file's 'meta' object."
+                        )
+                        ctx.exit(1)
+                elif isinstance(meta.flow, list):
+                    TargetFlow = SequentialFlow.make(meta.flow)
+                if meta.substituting_steps is not None:
+                    if meta.flow is None:
+                        err("config_file has substituting_steps set with no flow.")
+                        ctx.exit(1)
+                    assert (
+                        TargetFlow is not None
+                    ), "run() failed to properly deduce TargetFlow -- please file an issue"
+                    if issubclass(TargetFlow, SequentialFlow):
                         TargetFlow = TargetFlow.Substitute(meta.substituting_steps)  # type: ignore  # Type checker is being rowdy with this one
 
         if flow_name is not None:
@@ -330,10 +334,11 @@ def cli_in_container(
             other_mounts=docker_mounts,
             tty=docker_tty,
         )
-    except ValueError as e:
-        print(e)
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        err(e)
+        ctx.exit(1)
+
+    ctx.exit(0)
 
 
 o = partial(option, show_default=True)
