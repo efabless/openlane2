@@ -42,6 +42,10 @@
     `DEFAULT_CORNER` for PnR steps except for steps using `RSZ_CORNERS` and 
     `CTS_CORNERS`.
   * Added `ALLOW_DUPLICATE_CORNERS` to avoid redundant corners definitions.
+    Previously, IPVT corners that defined the same liberty files where optimized
+    such that no two IPVT corners with the same liberty files are read. This is
+    now gated behind `ALLOW_DUPLICATE_CORNERS` with the addition of using 
+    per corner `LAYERS_RC` and `VIAS_R` to compare two corners for uniqness.
   * Added `LAYERS_RC`, `VIAS_R`: Unlike OpenLane 1.0.0 variables with similar
     names, these are mappings from corners to layer/via RC values.
     * `PNR_CORNERS`, `RSZ_CORNERS`, and `CTS_CORNERS` all now support multiple
