@@ -64,8 +64,11 @@ in
       inherit rev;
       inherit sha256;
     };
-
-    patches = [./patches/openroad/patches.diff];
+    
+    patches = [
+      ./patches/openroad/6743.patch
+      ./patches/openroad/tclFix.diff
+    ];
 
     cmakeFlagsAll = [
       "-DTCL_LIBRARY=${tcl}/lib/libtcl${stdenv.hostPlatform.extensions.sharedLibrary}"

@@ -297,6 +297,64 @@
   * `BoundingBox` changed from `Tuple` to `dataclass` with additional optional
     `info` property.
 
+# 2.3.10
+
+## Steps
+
+* `Yosys.Synthesis`
+  * `SYNTH_ELABORATE_FLATTEN` now passes the `-noscopeinfo` flag so scopeinfo
+    cells are no longer emitted from Synthesis.
+
+# 2.3.9
+
+## Tool Updates
+
+* Backported https://github.com/The-OpenROAD-Project/OpenROAD/pull/6743 to
+  OpenROAD to fix GUI crashes on C++ standard libraries that are not libstdc++
+  (aka: macOS.)
+
+# 2.3.8
+
+## Misc. Enhancements/Bugfixes
+
+* Fixed substitutions in `config.json` being applied to all flows. It now only
+  applies to the flow in meta.flow (which falls back to `Classic` if it's null.)
+  
+# 2.3.7
+
+## Tool Updates
+
+* Updated Docker requirement to tested version: 27.3.1
+  * Added warning when Docker version is out of date.
+
+## Documentation
+
+* Updated documentation to reflect tested Docker version.
+* Updated documentation to stop using a branch of the DetSys Nix Installer.
+
+# 2.3.6
+
+## Steps
+
+* `Verilator.Lint`
+  * Fixed missing `VERILOG_INCLUDE_DIRS` variable, which would cause designs
+    that synthesize correctly to otherwise fail linting.
+
+# 2.3.5
+
+## Tool Updates
+
+* `nix-eda` updated to 2.1.2
+  * Pulls in a Python overlay fix and a fix for `gdstk`.
+
+# 2.3.4
+
+## Tool Updates
+
+* Added patch to Yosys to resolve an early return issue that broke non-const
+  asynchronous resets. See https://github.com/YosysHQ/yosys/issues/4712 for more
+  info.
+
 # 2.3.3
 
 ## Steps

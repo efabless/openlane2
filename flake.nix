@@ -24,7 +24,7 @@
   };
 
   inputs = {
-    nix-eda.url = github:efabless/nix-eda;
+    nix-eda.url = github:efabless/nix-eda/2.1.2;
     libparse.url = github:efabless/libparse-python;
     ioplace-parser.url = github:efabless/ioplace_parser;
     volare.url = github:efabless/volare;
@@ -54,6 +54,13 @@
       default = lib.composeManyExtensions [
         (import ./nix/overlay.nix)
         (nix-eda.flakesToOverlay [libparse ioplace-parser volare])
+        (pkgs': pkgs: {
+          yosys = pkgs.yosys.overrideAttrs(old: {
+            patches = old.patches ++ [
+              ./nix/patches/yosys/async_rules.patch
+            ];
+          });
+        })
         (
           pkgs': pkgs: let
             callPackage = lib.callPackageWith pkgs';
