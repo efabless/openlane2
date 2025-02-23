@@ -17,6 +17,7 @@
     - test_sram_macro
     - manual_macro_placement_test
     - name: regs_analog_ctrl_APB
+      config_file: config.yaml
     - name: non_const_async_reset
       config_file: config.yaml
     - name: aes_user_project_wrapper
