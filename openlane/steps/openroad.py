@@ -255,10 +255,10 @@ class OpenROADStep(TclStep):
             "Points to the DEF file to be used as a template.",
         ),
         Variable(
-            "CORNERS_ALLOW_DUPLICATE",
+            "ALLOW_DUPLICATE_CORNERS",
             bool,
             "Allow duplicate IPVT corners definition for all *_CORNERS (except STA_CORNERS) variables. Duplicate corners have the same set of lib files and same set of values for LAYERS_RC and VIAS_R."
-            + " When off, the set of defined corners are reduced to to a unique set having different set of lib files, LAYERS_RC and VIAS_R values",
+            + " When false, corners are reduced to to a unique set of where each corner defines a unique mixture of lib files, LAYERS_RC and VIAS_R values",
             default=True,
         ),
     ]
@@ -371,7 +371,7 @@ class OpenROADStep(TclStep):
                     ipvt_corners[corner].vias_r = metal_layers
 
         filtered_ipvt_corners_names_sorted = corners
-        if not self.config["CORNERS_ALLOW_DUPLICATE"]:
+        if not self.config["ALLOW_DUPLICATE_CORNERS"]:
             filtered_ipvt_corners = {
                 k: v
                 for k, v in ipvt_corners.items()

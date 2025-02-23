@@ -38,15 +38,16 @@
 
 * `OpenROAD.*`
 
-  * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
-    for steps using `RSZ_CORNERS` and `CTS_CORNERS`.
+  * Added `PNR_CORNERS` which defaults to `STA_CORNERS`. An override for 
+    `DEFAULT_CORNER` for PnR steps except for steps using `RSZ_CORNERS` and 
+    `CTS_CORNERS`.
+  * Added `ALLOW_DUPLICATE_CORNERS` to avoid redundant corners definitions.
   * Added `LAYERS_RC`, `VIAS_R`: Unlike OpenLane 1.0.0 variables with similar
     names, these are mappings from corners to layer/via RC values.
     * `PNR_CORNERS`, `RSZ_CORNERS`, and `CTS_CORNERS` all now support multiple
       corners to have the same set of liberty files (as RC values may differ.)
   * Added `SET_RC_VERBOSE`, which (very noisily) logs set-RC-related commands to
     logs.
-  * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
   * Lib files are now *always* read BEFORE reading database files.
   * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
