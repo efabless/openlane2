@@ -20,6 +20,9 @@ import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 
+from openlane.common import Path
+
+
 @pytest.fixture
 def mock_macros_config():
     from openlane.config import Macro, Instance
@@ -405,13 +408,12 @@ def model_blackboxing():
 @pytest.mark.parametrize(
     ("corner", "expected"),
     [
-        (None, ["file1.spef", "typical.whatever"]),
-        ("nom_ss_n40C_1v80", ["file1.spef", "ss.a", "🥶"]),
+        (None, [Path("file1.spef"), Path("typical.whatever")]),
+        ("nom_ss_n40C_1v80", [Path("file1.spef"), Path("ss.a"), Path("🥶")]),
         ("min_ff_025C_5v00", []),
     ],
 )
 def test_filter_views(corner, expected, mock_macros_config):
-    from openlane.common import Path
     from openlane.common import Toolbox
 
     toolbox = Toolbox(".")

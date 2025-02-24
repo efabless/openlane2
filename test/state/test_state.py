@@ -17,6 +17,8 @@ from typing import Dict
 import pytest
 from pyfakefs.fake_filesystem_unittest import Patcher
 
+from openlane.common import Path
+
 
 @pytest.fixture
 def _mock_fs():
@@ -191,7 +193,7 @@ def test_save():
         "metric": "a",
         "metric1": 1,
         "metric2": True,
-        "metric3": Path("path"),
+        "metric3": "path",
     }
     state = State(test_dict, metrics=test_metrics)
 
@@ -224,7 +226,6 @@ def test_save():
 
 @pytest.mark.usefixtures("_mock_fs")
 def test_loads():
-    import json
     from openlane.state import State
 
     test_file = "test.nl.v"
@@ -232,9 +233,9 @@ def test_loads():
     with open(test_file, "w") as f:
         f.write(test_file_contents)
 
-    test_dict = {"nl": test_file}
+    test_dict = {"nl": Path(test_file)}
     test_metrics = {"metric": "a", "metric1": 1, "metric2": True, "metric3": "path"}
     state = State(test_dict, metrics=test_metrics)
 
-    new_state = State.loads(json.dumps(state.to_raw_dict()))
+    new_state = State.loads(state.dumps())
     assert new_state.to_raw_dict() == state.to_raw_dict()

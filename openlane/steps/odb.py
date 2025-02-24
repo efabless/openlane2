@@ -928,7 +928,7 @@ class CellFrequencyTables(OdbpyStep):
         command.append("--buffer-list")
         command.append(self.get_buffer_list_file())
         command.append("--out-dir")
-        command.append(self.step_dir)
+        command.append(str(self.step_dir))
         return command
 
 

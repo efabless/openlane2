@@ -17,6 +17,9 @@ from decimal import Decimal
 from dataclasses import dataclass
 from pyfakefs.fake_filesystem_unittest import Patcher
 from typing import Dict, List, Literal, Optional, Tuple, Type, Union
+import unittest.mock
+
+from openlane.common import Path
 
 
 @pytest.fixture
@@ -47,54 +50,56 @@ def test_macro_from_state():
     from openlane.config import Macro
     from openlane.state import State
 
-    state_in = State(
-        {
-            "nl": Path._dummy_path,
-            "pnl": Path._dummy_path,
-            "def": Path._dummy_path,
-            "odb": Path._dummy_path,
-            "sdf": {
-                "corner_1": Path._dummy_path,
-                "corner_2": Path._dummy_path,
+    with unittest.mock.patch("openlane.common.Path.exists") as mock_method:
+        mock_method.return_value = True
+        state_in = State(
+            {
+                "nl": Path(""),
+                "pnl": Path(""),
+                "def": Path(""),
+                "odb": Path(""),
+                "sdf": {
+                    "corner_1": Path(""),
+                    "corner_2": Path(""),
+                },
+                "spef": {
+                    "corner_*": Path(""),
+                },
+                "lib": {
+                    "corner_1": Path(""),
+                    "corner_2": Path(""),
+                },
+                "gds": Path(""),
             },
-            "spef": {
-                "corner_*": Path._dummy_path,
-            },
-            "lib": {
-                "corner_1": Path._dummy_path,
-                "corner_2": Path._dummy_path,
-            },
-            "gds": Path._dummy_path,
-        },
-        metrics={},
-    )
+            metrics={},
+        )
 
-    with pytest.raises(
-        ValueError,
-        match="Macro cannot be made out of input state: View lef is missing",
-    ):
-        Macro.from_state(state_in)
+        with pytest.raises(
+            ValueError,
+            match="Macro cannot be made out of input state: View lef is missing",
+        ):
+            Macro.from_state(state_in)
 
-    state_fixed = State(state_in, overrides={"lef": Path._dummy_path})
-    macro = Macro.from_state(state_fixed)
-    assert macro == Macro(
-        gds=[Path("__openlane_dummy_path")],
-        lef=[Path("__openlane_dummy_path")],
-        instances={},
-        nl=[Path("__openlane_dummy_path")],
-        pnl=[Path("__openlane_dummy_path")],
-        spef={"corner_*": [Path("__openlane_dummy_path")]},
-        lib={
-            "corner_1": [Path("__openlane_dummy_path")],
-            "corner_2": [Path("__openlane_dummy_path")],
-        },
-        spice=[],
-        sdf={
-            "corner_1": [Path("__openlane_dummy_path")],
-            "corner_2": [Path("__openlane_dummy_path")],
-        },
-        json_h=None,
-    ), "Macro was not derived from State correctly"
+        state_fixed = State(state_in, overrides={"lef": Path("")})
+        macro = Macro.from_state(state_fixed)
+        assert macro == Macro(
+            gds=[Path("")],
+            lef=[Path("")],
+            instances={},
+            nl=[Path("")],
+            pnl=[Path("")],
+            spef={"corner_*": [Path("")]},
+            lib={
+                "corner_1": [Path("")],
+                "corner_2": [Path("")],
+            },
+            spice=[],
+            sdf={
+                "corner_1": [Path("")],
+                "corner_2": [Path("")],
+            },
+            json_h=None,
+        ), "Macro was not derived from State correctly"
 
 
 def test_is_optional():
@@ -187,8 +192,8 @@ def test_compile(variable):
     )
     assert used_name == "EXAMPLE", "valid input returned incorrect used name"
     assert paths == [
-        "/cwd/a",
-        "/cwd/b",
+        Path("/cwd/a"),
+        Path("/cwd/b"),
     ], "valid input resolved paths incorrectly"
     assert len(warning_list) == 0, "valid input generated warning"
 
@@ -245,8 +250,8 @@ def test_compile_deprecated(variable):
         used_name == "OLD_EXAMPLE"
     ), "deprecated valid input returned incorrect used name"
     assert paths == [
-        "/cwd/a",
-        "/cwd/b",
+        Path("/cwd/a"),
+        Path("/cwd/b"),
     ], "deprecated valid input returned paths resolved incorrectly"
     assert len(warning_list) == 1, "use of deprecated names did not produce a warning"
 
@@ -403,7 +408,7 @@ def test_compile_permissive(variable_set: list, test_enum: Type):
         final[variable.name] = value
 
     assert final == {
-        "EXAMPLE": ["/cwd/a", "/cwd/b"],
+        "EXAMPLE": [Path("/cwd/a"), Path("/cwd/b")],
         "LIST_VAR": [4, 5, 6],
         "TUPLE_2_VAR": (1, 2),
         "TUPLE_3_VAR": (1, 2, 3),

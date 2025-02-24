@@ -13,11 +13,12 @@
 # limitations under the License.
 import os
 import sys
+import pathlib
 import tempfile
 from math import isfinite
 from decimal import Decimal
 from collections import UserString
-from typing import Any, Union, ClassVar, Tuple, Optional
+from typing import Any, Union, Tuple, Optional
 
 
 def is_string(obj: Any) -> bool:
@@ -35,35 +36,16 @@ def is_real_number(obj: Any) -> bool:
     return is_number(obj) and isfinite(obj)
 
 
-class Path(UserString, os.PathLike):
+class Path(pathlib.Path):
     """
     A Path type for OpenLane configuration variables.
-
-    Basically just a string.
     """
-
-    # This path will pass the validate() call, but will
-    # fail to open. It should be used for deprecated variable
-    # translation only.
-    _dummy_path: ClassVar[str] = "__openlane_dummy_path"
-
-    def __fspath__(self) -> str:
-        return str(self)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__qualname__}('{self}')"
-
-    def exists(self) -> bool:
-        """
-        A convenience method calling :meth:`os.path.exists`
-        """
-        return os.path.exists(self)
 
     def validate(self, message_on_err: str = ""):
         """
-        Raises an error if the path does not exist.
+        Raises an error if the path does not exist and it is not a dummy path.
         """
-        if not self.exists() and not self == Path._dummy_path:
+        if not self.exists():
             raise ValueError(f"{message_on_err}: '{self}' does not exist")
 
     def startswith(
@@ -72,9 +54,7 @@ class Path(UserString, os.PathLike):
         start: Optional[int] = 0,
         end: Optional[int] = sys.maxsize,
     ) -> bool:
-        if isinstance(prefix, UserString) or isinstance(prefix, os.PathLike):
-            prefix = str(prefix)
-        return super().startswith(prefix, start, end)
+        raise AttributeError("Path.startswith has been removed.")
 
     def rel_if_child(
         self,
@@ -82,12 +62,7 @@ class Path(UserString, os.PathLike):
         *,
         relative_prefix: str = "",
     ) -> "Path":
-        my_abspath = os.path.abspath(self)
-        start_abspath = os.path.abspath(start)
-        if my_abspath.startswith(start_abspath):
-            return Path(relative_prefix + os.path.relpath(self, start_abspath))
-        else:
-            return Path(my_abspath)
+        raise AttributeError("Path.rel_if_child has been removed.")
 
 
 AnyPath = Union[str, os.PathLike]
@@ -98,7 +73,7 @@ class ScopedFile(Path):
     Creates a temporary file that remains valid while this variable is in scope,
     and is deleted upon deconstruction.
 
-    The object itself is a string pointing to that file path.
+    The object itself is a pathlib.Path pointing to that file path.
 
     :param contents: The contents of the temporary file to create.
     """

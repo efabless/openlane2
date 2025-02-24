@@ -185,9 +185,11 @@ class Macro:
     @classmethod
     def from_state(Self, state: State) -> "Macro":
         kwargs = {}
+
         for macro_field in fields(Self):
-            views = state.get(macro_field.name)
-            if views is None:
+            view = state.get(macro_field.name)
+            design_format = DesignFormat.factory.get(macro_field.name)
+            if view is None:
                 if macro_field.default_factory is not MISSING:
                     kwargs[macro_field.name] = macro_field.default_factory()
                 elif macro_field.default is not MISSING:
@@ -198,10 +200,26 @@ class Macro:
                     )
                 continue
             var_name = f"{Self.__name__}.{macro_field.name}"
+            views: Union[Dict[str, List[Path]], List[Path]]
+            if design_format.multiple:
+                assert isinstance(
+                    view, dict
+                ), "expected multiple views, but did not find a dict"
+                views = {}
+                for key, value in view.items():
+                    assert isinstance(
+                        value, Path
+                    ), f"value for {macro_field.name}.{key} was not a singular path"
+                    views[key] = [value]
+            else:
+                assert isinstance(
+                    view, Path
+                ), "expected single view, but did not find a Path"
+                views = [view]
             _, final = Variable(var_name, macro_field.type, "").compile(
                 GenericDict({var_name: views}),
                 warning_list_ref=[],
-                permissive_typing=True,
+                permissive_typing=False,
             )
             kwargs[macro_field.name] = final
 

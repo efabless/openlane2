@@ -248,7 +248,9 @@ def test_step_start(mock_config):
         state_in=state_in,
     )
     state_out = step.start(toolbox=Toolbox(tmp_dir="/cwd"), step_dir="/cwd")
-    assert state_out[DesignFormat.NETLIST] == test_file_out, "Wrong step state_out"
+    assert state_out[DesignFormat.NETLIST] == Path(
+        test_file_out
+    ), "Wrong step state_out"
     assert state_out.metrics == {
         **new_metric,
         **metrics_in,

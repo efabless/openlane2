@@ -38,12 +38,12 @@ def test_dict_config():
 
     assert_cfg = Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "whatever",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -91,12 +91,12 @@ def test_json_config():
 
     assert cfg == Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "whatever",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -144,12 +144,12 @@ def test_yaml_config():
 
     assert cfg == Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "whatever",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -201,12 +201,12 @@ def test_tcl_config():
 
     assert cfg == Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "whatever",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -262,12 +262,12 @@ def test_multiconf():
 
     assert cfg == Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "spm",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("10"),
             "GRT_REPAIR_ANTENNAS": False,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -324,12 +324,12 @@ def test_mixed_configs():
 
     assert cfg == Config(
         {
-            "DESIGN_DIR": "/cwd",
+            "DESIGN_DIR": Path("/cwd"),
             "DESIGN_NAME": "whatever",
-            "PDK_ROOT": "/pdk",
+            "PDK_ROOT": Path("/pdk"),
             "PDK": "dummy",
             "STD_CELL_LIBRARY": "dummy_scl",
-            "VERILOG_FILES": ["/cwd/src/a.v", "/cwd/src/b.v"],
+            "VERILOG_FILES": [Path("/cwd/src/a.v"), Path("/cwd/src/b.v")],
             "EXAMPLE_PDK_VAR": Decimal("30"),
             "GRT_REPAIR_ANTENNAS": True,
             "RUN_HEURISTIC_DIODE_INSERTION": False,
@@ -457,8 +457,8 @@ def test_automatic_conversion():
     )
 
     assert cfg["VERILOG_FILES"] == [
-        "/cwd/src/a.v",
-        "/cwd/src/b.v",
+        Path("/cwd/src/a.v"),
+        Path("/cwd/src/b.v"),
     ], "automatic conversion of tcl-style list failed for json file"
 
     with open("/cwd/config.json", "w") as f:

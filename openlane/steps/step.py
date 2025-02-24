@@ -55,6 +55,7 @@ from ..config import (
 )
 from ..state import DesignFormat, State, InvalidState, StateElement
 from ..common import (
+    AnyPath,
     GenericDict,
     GenericImmutableDict,
     GenericDictEncoder,
@@ -779,8 +780,8 @@ class Step(ABC):
     @classmethod
     def load(
         Self,
-        config: Union[str, os.PathLike, Config],
-        state_in: Union[str, State],
+        config: Union[AnyPath, Config],
+        state_in: Union[AnyPath, State],
         pdk_root: Optional[str] = None,
     ) -> Step:
         """
@@ -827,13 +828,14 @@ class Step(ABC):
     @classmethod
     def load_finished(
         Self,
-        step_dir: str,
+        step_dir: AnyPath,
         pdk_root: Optional[str] = None,
         search_steps: Optional[List[Type[Step]]] = None,
     ) -> "Step":
-        config_path = os.path.join(step_dir, "config.json")
-        state_in_path = os.path.join(step_dir, "state_in.json")
-        state_out_path = os.path.join(step_dir, "state_out.json")
+        step_dir_p = Path(step_dir)
+        config_path = step_dir_p / "config.json"
+        state_in_path = step_dir_p / "state_in.json"
+        state_out_path = step_dir_p / "state_out.json"
         for file in config_path, state_in_path, state_out_path:
             if not os.path.isfile(file):
                 raise FileNotFoundError(file)
@@ -853,7 +855,7 @@ class Step(ABC):
                 step_object = Matched.load(config_path, state_in_path, pdk_root)
             else:
                 raise e from None
-        step_object.step_dir = step_dir
+        step_object.step_dir = step_dir_p
         step_object.state_out = State.loads(open(state_out_path).read())
         return step_object
 
@@ -875,7 +877,7 @@ class Step(ABC):
 
     def create_reproducible(
         self,
-        target_dir: str,
+        target_dir: AnyPath,
         include_pdk: bool = True,
         flatten: bool = False,
     ):
@@ -900,6 +902,8 @@ class Step(ABC):
             file structure, except for the PDK which will maintain its internal
             folder structure (as it is sensitive to it.)
         """
+        target_dir = Path(target_dir)
+
         # 0. Create Directories
         try:
             shutil.rmtree(target_dir, ignore_errors=False)
@@ -907,7 +911,7 @@ class Step(ABC):
             pass
         mkdirp(target_dir)
 
-        files_path = target_dir if flatten else os.path.join(target_dir, "files")
+        files_path = Path(target_dir if flatten else os.path.join(target_dir, "files"))
         pdk_root_flat_dirname = "pdk"
         pdk_flat_dirname = os.path.join(pdk_root_flat_dirname, self.config["PDK"], "")
         pdk_flat_path = os.path.join(target_dir, pdk_flat_dirname)
@@ -922,17 +926,18 @@ class Step(ABC):
                 return x
 
             if not include_pdk and x.startswith(pdk_path):
-                return x.replace(pdk_path, "pdk_dir::")
+                return f"pdk_dir::{x.relative_to(pdk_path)}"
 
-            target_relpath = os.path.join(".", "files", x[1:])
-            target_abspath = os.path.join(files_path, x[1:])
+            target_relpath = Path(".") / "files" / x.relative_to("/")
+            target_abspath = files_path / "files" / x.relative_to("/")
 
             if flatten:
                 if include_pdk and x.startswith(pdk_path):
-                    target_relpath = os.path.join(
-                        ".", x.replace(pdk_path, pdk_flat_dirname)
+
+                    target_relpath = (
+                        Path(".") / pdk_flat_dirname / x.relative_to(pdk_path)
                     )
-                    target_abspath = os.path.join(target_dir, target_relpath)
+                    target_abspath = target_dir / target_relpath
                 else:
                     counter = 0
                     filename = os.path.basename(x)
@@ -944,12 +949,12 @@ class Step(ABC):
                         else:
                             return f"{counter}-{filename}"
 
-                    target_relpath = ""
-                    target_abspath = "/"
+                    target_relpath = Path("")
+                    target_abspath = Path("/")
                     while os.path.exists(target_abspath):
                         current = filename_with_counter()
-                        target_relpath = os.path.join(".", current)
-                        target_abspath = os.path.join(files_path, current)
+                        target_relpath = Path(".") / current
+                        target_abspath = files_path / current
                         counter += 1
 
             mkdirp(os.path.dirname(target_abspath))
@@ -1057,7 +1062,7 @@ class Step(ABC):
     def start(
         self,
         toolbox: Optional[Toolbox] = None,
-        step_dir: Optional[str] = None,
+        step_dir: Optional[AnyPath] = None,
         _no_rule: bool = False,
         **kwargs,
     ) -> State:
@@ -1082,16 +1087,14 @@ class Step(ABC):
 
         if step_dir is None:
             if Config.current_interactive is not None:
-                self.step_dir = os.path.join(
-                    os.getcwd(),
-                    "openlane_run",
-                    f"{Step.counter}-{slugify(self.id)}",
+                self.step_dir = (
+                    Path.cwd() / "openlane_run" / f"{Step.counter}-{slugify(self.id)}"
                 )
                 Step.counter += 1
             else:
                 raise TypeError("Missing required argument 'step_dir'")
         else:
-            self.step_dir = step_dir
+            self.step_dir = Path(step_dir)
 
         if toolbox is None:
             if Config.current_interactive is not None:

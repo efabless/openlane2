@@ -20,6 +20,7 @@ import importlib
 from typing import Callable, Optional
 
 import pytest
+import unittest
 from _pytest.fixtures import SubRequest
 
 
@@ -82,90 +83,94 @@ def test_step_folder(test: str, pdk_root: str, caplog: pytest.LogCaptureFixture)
     import json
 
     sys.path.insert(0, os.getcwd())
+    with unittest.mock.patch("openlane.common.Path.exists") as mock_method:
+        mock_method.return_value = True
 
-    # ---
+        # ---
 
-    # 0. Prepare Test Files and Handlers
-    step, _ = test.split(os.path.sep, maxsplit=1)
-    test_path = os.path.join(pytest.step_test_dir, test)
-    shutil.copytree(test_path, ".", dirs_exist_ok=True)
+        # 0. Prepare Test Files and Handlers
+        step, _ = test.split(os.path.sep, maxsplit=1)
+        test_path = os.path.join(pytest.step_test_dir, test)
+        shutil.copytree(test_path, ".", dirs_exist_ok=True)
 
-    for file in os.listdir("."):
-        if file.endswith(".ref"):
-            referenced_file_path = open(file, encoding="utf8").read()
-            final_path = os.path.join(".", file[:-4])
-            referenced_file = os.path.join(pytest.step_common_dir, referenced_file_path)
-            shutil.copy(referenced_file, final_path)
+        for file in os.listdir("."):
+            if file.endswith(".ref"):
+                referenced_file_path = open(file, encoding="utf8").read()
+                final_path = os.path.join(".", file[:-4])
+                referenced_file = os.path.join(
+                    pytest.step_common_dir, referenced_file_path
+                )
+                shutil.copy(referenced_file, final_path)
 
-    process_input: Callable = attribute_from_file(
-        os.path.join(os.getcwd(), "process_input.py"), "process_input"
-    ) or (lambda state_in, config: (state_in, config))
-    handler: Callable = attribute_from_file(
-        os.path.join(os.getcwd(), "handler.py"), "handle"
-    ) or (lambda: None)
+        process_input: Callable = attribute_from_file(
+            os.path.join(os.getcwd(), "process_input.py"), "process_input"
+        ) or (lambda state_in, config: (state_in, config))
+        handler: Callable = attribute_from_file(
+            os.path.join(os.getcwd(), "handler.py"), "handle"
+        ) or (lambda: None)
 
-    base_sdc = os.path.join(get_script_dir(), "base.sdc")
-    shutil.copy(base_sdc, ".")
+        base_sdc = os.path.join(get_script_dir(), "base.sdc")
+        shutil.copy(base_sdc, ".")
 
-    # 1. Preprocess State and Config (if needed)
-    state_in = os.path.join(".", "state_in.json")
-    config = os.path.join(".", "config.json")
+        # 1. Preprocess State and Config (if needed)
+        state_in = os.path.join(".", "state_in.json")
+        config = os.path.join(".", "config.json")
 
-    Target = Step.factory.get(step)
+        Target = Step.factory.get(step)
 
-    openroad_alerts = []
-    if isinstance(Target, SupportsOpenROADAlerts):
+        openroad_alerts = []
+        if isinstance(Target, SupportsOpenROADAlerts):
 
-        def on_alert(self, alert):
-            nonlocal openroad_alerts
-            openroad_alerts.append(alert)
-            return alert
+            def on_alert(self, alert):
+                nonlocal openroad_alerts
+                openroad_alerts.append(alert)
+                return alert
 
-        Target.on_alert = on_alert
+            Target.on_alert = on_alert
 
-    state_in, config = try_call(
-        process_input,
-        state_in=state_in,
-        config=config,
-        step_cls=Target,
-        pdk_root=pdk_root,
-        test=test,
-    )
-
-    ## Create empty State if state_in.json is missing
-    if state_in is None or (type(state_in) == str and not os.path.isfile(state_in)):
-        state_in = State()
-
-    # 2. Load and Launch Step
-
-    if not isinstance(config, Config):
-        config_object, _ = Config.load(
-            config_in=json.loads(open(config).read(), parse_float=Decimal),
-            flow_config_vars=Target.get_all_config_variables(),
-            design_dir=".",
+        state_in, config = try_call(
+            process_input,
+            state_in=state_in,
+            config=config,
+            step_cls=Target,
             pdk_root=pdk_root,
-            _load_pdk_configs=True,
+            test=test,
         )
-    else:
-        config_object = config
 
-    target = Target.load(config_object, state_in, pdk_root)
+        ## Create empty State if state_in.json is missing
+        if state_in is None or (type(state_in) == str and not os.path.isfile(state_in)):
+            state_in = State()
 
-    exception: Optional[Exception] = None
-    try:
-        target.start(
-            toolbox=Toolbox("."),
-            step_dir=".",
+        # 2. Load and Launch Step
+
+        if not isinstance(config, Config):
+            config_object, _ = Config.load(
+                config_in=json.loads(open(config).read(), parse_float=Decimal),
+                flow_config_vars=Target.get_all_config_variables(),
+                design_dir=".",
+                pdk_root=pdk_root,
+                _load_pdk_configs=True,
+            )
+        else:
+            config_object = config
+
+        target = Target.load(config_object, state_in, pdk_root)
+
+        exception: Optional[Exception] = None
+        try:
+            target.start(
+                toolbox=Toolbox("."),
+                step_dir=".",
+            )
+        except Exception as e:
+            exception = e
+
+        # 3. Call handler
+        try_call(
+            handler,
+            exception=exception,
+            step=target,
+            test=test,
+            caplog=caplog,
+            openroad_alerts=openroad_alerts,
         )
-    except Exception as e:
-        exception = e
-
-    # 3. Call handler
-    try_call(
-        handler,
-        exception=exception,
-        step=target,
-        test=test,
-        caplog=caplog,
-        openroad_alerts=openroad_alerts,
-    )
