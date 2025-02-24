@@ -61,7 +61,7 @@ def cli(reader):
         target_iterm = target.findITerm(target_pin)
         if target_iterm is None:
             print(
-                f"[ERROR] Pin '{target_pin}' on instance '{target_name}' not found.",
+                f"[ERROR] Pin '{target_pin}' not found for instance '{target_name}'.",
                 file=sys.stderr,
             )
             exit(-1)
@@ -97,16 +97,10 @@ def cli(reader):
 
         if target_info["placement"] is not None:
             x, y = target_info["placement"]
-            x = reader.block.micronsToDbu(x)
-            y = reader.block.micronsToDbu(y)
+            x = reader.block.micronsToDbu(float(x))
+            y = reader.block.micronsToDbu(float(y))
         else:
             x, y = target.getLocation()
-            if x is None or y is None:  # Check if getLocation returns None
-                print(
-                    f"[ERROR] Could not get location for instance '{target_name}'.",
-                    file=sys.stderr,
-                )
-                exit(-1)
 
         eco_diode.setOrient("R0")
         eco_diode.setLocation(x, y)
@@ -127,7 +121,6 @@ def cli(reader):
     dpl.detailedPlacement(max_disp_x, max_disp_y)
 
     grt_inc.updateRoutes(True)
-    grt.saveGuides()
 
     for inst, previous_status in insts_to_temporarily_lock_then_unlock_later:
         inst.setPlacementStatus(previous_status)

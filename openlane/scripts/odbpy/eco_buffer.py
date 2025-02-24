@@ -43,13 +43,13 @@ def cli(reader):
 
         target = reader.block.findInst(name_escaped)
         if target is None:
-            print(f"[ERROR] Instance '{target_name}' does not exist.", file=sys.stderr)
+            print(f"[ERROR] Instance '{target_name}' not found.", file=sys.stderr)
             exit(-1)
 
         master = reader.db.findMaster(buffer_master)
         if master is None:
             print(
-                f"[ERROR] Buffer type '{buffer_master}' does not exist.",
+                f"[ERROR] Buffer type '{buffer_master}' not found.",
                 file=sys.stderr,
             )
             exit(-1)
@@ -57,7 +57,7 @@ def cli(reader):
         target_iterm = target.findITerm(target_pin)
         if target_iterm is None:
             print(
-                f"[ERROR] Pin '{target_pin}' does not exist on instance {target_name}.",
+                f"[ERROR] Pin '{target_pin}' not found for instance '{target_name}'.",
                 file=sys.stderr,
             )
             exit(-1)
@@ -131,9 +131,9 @@ def cli(reader):
         target_iterm.connect(eco_net)
 
         if target_info.get("placement") is not None:
-            eco_loc = target_info["placement"]
-            eco_x = reader.block.micronsToDbu(eco_loc[0])  # convert to database units
-            eco_y = reader.block.micronsToDbu(eco_loc[1])  # convert to database units
+            eco_x, eco_y = target_info["placement"]
+            eco_x = reader.block.micronsToDbu(float(eco_x))
+            eco_y = reader.block.micronsToDbu(float(eco_y))
             eco_loc = (eco_x, eco_y)
         else:
             driver_loc = target.getLocation()
@@ -173,7 +173,6 @@ def cli(reader):
     dpl.detailedPlacement(max_disp_x, max_disp_y)
 
     grt_inc.updateRoutes(True)
-    grt.saveGuides()
 
     for inst, previous_status in insts_to_temporarily_lock_then_unlock_later:
         inst.setPlacementStatus(previous_status)

@@ -22,7 +22,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List, Literal, Optional, Tuple
 
-from ..common import Path, get_script_dir
+from ..common import Path, get_script_dir, aggregate_metrics
 from ..config import Instance, Macro, Variable
 from ..logging import info, verbose
 from ..state import DesignFormat, State
@@ -35,6 +35,7 @@ from .step import (
     DefaultOutputProcessor,
     MetricsUpdate,
     Step,
+    StepError,
     StepException,
     ViewsUpdate,
 )
@@ -49,6 +50,8 @@ class OdbpyStep(Step):
 
     output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
 
+    alerts: Optional[List[OpenROADAlert]] = None
+
     def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
         if alert.code in [
             "ORD-0039",  # .openroad ignored with -python
@@ -62,6 +65,8 @@ class OdbpyStep(Step):
         return alert
 
     def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        self.alerts = None
+
         kwargs, env = self.extract_env(kwargs)
 
         automatic_outputs = set(self.outputs).intersection(
@@ -84,15 +89,35 @@ class OdbpyStep(Step):
         env["PYTHONPATH"] = (
             f'{os.path.join(get_script_dir(), "odbpy")}:{env.get("PYTHONPATH")}'
         )
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
 
         subprocess_result = self.run_subprocess(
             command,
             env=env,
+            check=check,
             **kwargs,
         )
+        generated_metrics = subprocess_result["generated_metrics"]
 
+        # 1. Parse warnings and errors
+        self.alerts = subprocess_result.get("openroad_alerts") or []
+        if subprocess_result["returncode"] != 0:
+            error_strings = [
+                str(alert) for alert in self.alerts if alert.cls == "error"
+            ]
+            if len(error_strings):
+                error_string = "\n".join(error_strings)
+                raise StepError(
+                    f"{self.id} failed with the following errors:\n{error_string}"
+                )
+            else:
+                raise StepException(
+                    f"{self.id} failed unexpectedly. Please check the logs and file an issue."
+                )
+        # 2. Metrics
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -100,9 +125,11 @@ class OdbpyStep(Step):
                     or_metrics_out[key] = inf
                 elif value == "-Infinity":
                     or_metrics_out[key] = -inf
-            metrics_updates.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        return views_updates, metrics_updates
+        metric_updates_with_aggregates = aggregate_metrics(generated_metrics)
+
+        return views_updates, metric_updates_with_aggregates
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")

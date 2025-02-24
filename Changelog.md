@@ -23,10 +23,26 @@
   * Changed default value of `HOLD_VIOLATION_CORNERS` to `['*']`, which will
     raise an error for hold violations on *any* corners.
 
+* `Odb.*`
+
+  * Unified error handling with that of OpenROAD steps, i.e., dependent on the
+    `[ERROR (code)]` alerts.
+  * Metrics emitted from Odb steps are now also aggregated.
+  * **API**: instance variable `.alerts` now holds emitted alerts until the next
+    `start()`, similar to `.state_out`.
+  
+* Created `Odb.InsertECOBuffer`, `Odb.InsertECODiode`
+  
+  * New ECO steps using the variables `INSERT_ECO_BUFFERS` and
+    `INSERT_ECO_DIODES` respectively to allow creation of buffers and diodes
+    after (and only after global routing,) with an option to run it after
+    detailed routing so long as detailed routing is run again afterwards.
+
 * `Odb.AddPDNObstructions`, `Odb.AddRoutingObstructions`
 
   * `PDN_OBSTRUCTIONS` and `ROUTING_OBSTRUCTIONS` are now lists of tuples
     instead of variable-length Tcl-style lists (AKA: strings).
+  * **Internal**: Unified exit codes.
 
 * `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`
   * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
@@ -49,6 +65,8 @@
   * Always read libs before reading odb.
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
   * Lib files are now *always* read BEFORE reading database files.
+  * **API**: instance variable `.alerts` now holds emitted alerts until the next
+    `start()`, similar to `.state_out`.
   * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
     coupled with `--only`, it runs a step in OpenROAD then doesn't quit so you
     may inspect the result.
