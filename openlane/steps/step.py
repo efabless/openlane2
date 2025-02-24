@@ -678,14 +678,14 @@ class Step(ABC):
                 ({Self.id.lower()}-configuration-variables)=
                 #### Configuration Variables
 
-                | Variable Name | Type | Description | Default | Units |
-                | - | - | - | - | - |
+                | Variable Name | Type | Description | Default | Units | Deprecated Names |
+                | - | - | - | - | - | - |
                 """
             )
-            for var in Self.config_vars:
+            for var in set(Self.config_vars):
                 units = var.units or ""
                 pdk_superscript = "<sup>PDK</sup>" if var.pdk else ""
-                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.id)}}}{pdk_superscript} | {var.type_repr_md(for_document=True)} | {var.desc_repr_md()} | `{var.default}` | {units} |\n"
+                result += f"| `{var.name}`{{#{var._get_docs_identifier(Self.id)}}}{pdk_superscript} | {var.type_repr_md(for_document=True)} | {var.desc_repr_md()} | `{var.default}` | {units} | {'<br>'.join(var.get_deprecated_names_md())} |\n"
             result += "\n"
 
         result = (

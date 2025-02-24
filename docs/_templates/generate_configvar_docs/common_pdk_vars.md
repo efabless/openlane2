@@ -20,10 +20,10 @@ ${"##"} PDK-Level
 These are variables that affect the entire PDK.
 
 
-| Variable Name | Type | Description | Units |
-| - | - | - | - |
+| Variable Name | Type | Description | Units | Deprecated Names |
+| - | - | - | - | - |
 %for var in pdk_variables:
-| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)} | ${var.desc_repr_md()} | ${var.units or ""} |
+| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)} | ${var.desc_repr_md()} | ${var.units or ""} | ${var.get_deprecated_names_md()|join("<br>")} |
 %endfor
 
 (univ_flow_cvars_scl)=
@@ -31,8 +31,8 @@ ${"##"} SCL-Level
 
 These are variables that affect a specific standard-cell library.
 
-| Variable Name | Type | Description | Units |
-| - | - | - | - |
+| Variable Name | Type | Description | Units | Deprecated Names |
+| - | - | - | - | - |
 %for var in scl_variables:
-| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)}  | ${var.desc_repr_md()} | ${var.units or ""} |
+| `${var.name}`{#${var._get_docs_identifier()}} | ${var.type_repr_md(for_document=True)}  | ${var.desc_repr_md()} | ${var.units or ""} | ${var.get_deprecated_names_md()|join("<br>")} |
 %endfor
