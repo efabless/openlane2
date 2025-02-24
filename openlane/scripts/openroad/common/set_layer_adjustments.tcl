@@ -23,9 +23,9 @@ foreach layer $layers {
     }
 }
 
-set i 0
-foreach adjustment $array {
-    set layer_name [lindex $layer_names $i]
-    set_global_routing_layer_adjustment $layer_name $adjustment
-    incr i
-}
+#set i 0
+#foreach adjustment $array {
+#    set layer_name [lindex $layer_names $i]
+#    set_global_routing_layer_adjustment $layer_name $adjustment
+#    incr i
+#}
