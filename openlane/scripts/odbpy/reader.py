@@ -132,6 +132,8 @@ class OdbReader(object):
         dpl.optimizeMirroring()
 
     def _grt_setup(self, grt):
+        grt.setAdjustment(float(self.config["GRT_ADJUSTMENT"]))
+
         routing_layers = [l for l in self.layers.values() if l.getRoutingLevel() >= 1]
         for layer, adj in zip(routing_layers, self.config["GRT_LAYER_ADJUSTMENTS"]):
             grt.addLayerAdjustment(

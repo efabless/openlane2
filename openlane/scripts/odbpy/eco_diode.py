@@ -61,7 +61,14 @@ def cli(reader):
         target_iterm = target.findITerm(target_pin)
         if target_iterm is None:
             print(
-                f"[ERROR] Pin '{target_pin}' not found for instance '{target_name}'.",
+                f"[ERROR] Pin '{target_pin}' not found for instance {target_name}.",
+                file=sys.stderr,
+            )
+            exit(-1)
+
+        if target_iterm.getIoType() not in ["INPUT", "INOUT"]:
+            print(
+                f"[ERROR] Pin {target_info["target"]} is an OUTPUT pin.",
                 file=sys.stderr,
             )
             exit(-1)
@@ -69,7 +76,7 @@ def cli(reader):
         net = target_iterm.getNet()
         if net is None:
             print(
-                f"[ERROR] Pin '{target_info['target']}' has no nets connected.",
+                f"[ERROR] Pin {target_info['target']} has no nets connected.",
                 file=sys.stderr,
             )
             exit(-1)

@@ -31,24 +31,3 @@ pdk::gf180mcu*:
   FP_CORE_UTIL: 40
   MAX_FANOUT_CONSTRAINT: 4
   PL_TARGET_DENSITY: 0.5
-
-INSERT_ECO_BUFFERS:
-  - target: _102_/A1
-    buffer: sky130_fd_sc_hd__clkbuf_2
-    placement: [74, 81.3]
-  - target: _102_/A2
-    buffer: sky130_fd_sc_hd__clkbuf_2
-    placement: [81, 81.3]
-
-INSERT_ECO_DIODES:
-  - target: _102_/A1
-    placement: [74, 81.3]
-  - target: _102_/A2
-    placement: [81, 81.3]
-
-meta:
-  flow: Classic
-  substituting_steps:
-    +OpenROAD.DetailedRouting: Odb.InsertECODiodes
-    +Odb.InsertECODiodes: Odb.InsertECOBuffers
-    +Odb.InsertECOBuffers: OpenROAD.DetailedRouting

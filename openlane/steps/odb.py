@@ -1002,12 +1002,15 @@ class ManualGlobalPlacement(OdbpyStep):
 @dataclass
 class ECOBuffer:
     """
-    :param target: The sink to insert an ECO buffer before, in the format
-        instance_name/pin_name.
+    :param target: The driver to insert an ECO buffer after or sink to insert an
+        ECO buffer before, in the format instance_name/pin_name.
     :param buffer: The kind of buffer cell to use.
     :param placement: The coarse placement for this buffer (to be legalized.)
-        If unset, the location of the sink cell and the driver cell will be
-        averaged.
+        If unset, depending on whether the target is a driver or a sink:
+
+        - Driver: The placement will be the average of the driver and all sinks.
+
+        - Sink: The placement will be the average of the sink and all drivers.
     """
 
     target: str
@@ -1018,15 +1021,19 @@ class ECOBuffer:
 @Step.factory.register()
 class InsertECOBuffers(OdbpyStep):
     """
-    Experimental step to insert ECO buffers unto sinks after global or detailed
-    routing. The placement is legalized and global routing is incrementally
-    re-run for affected nets. Useful for manually fixing some hold violations.
+    Experimental step to insert ECO buffers on either drivers or sinks after
+    global or detailed routing. The placement is legalized and global routing is
+    incrementally re-run for affected nets. Useful for manually fixing some hold
+    violations.
 
     If run after detailed routing, detailed routing must be re-run as affected
     nets that are altered are removed and require re-routing.
+
+    INOUT and FEEDTHRU ports are not supported.
     """
 
     id = "Odb.InsertECOBuffers"
+    name = "Insert ECO Buffers"
 
     config_vars = (
         dpl_variables
@@ -1051,11 +1058,11 @@ class InsertECOBuffers(OdbpyStep):
 @dataclass
 class ECODiode:
     """
-    :param target: The sink to insert an ECO buffer before, in the format
+    :param target: The sink whose net gets a diode connected, in the format
         instance_name/pin_name.
-    :param placement: The coarse placement for this buffer (to be legalized.)
-        If unset, the location of the sink cell and the driver cell will be
-        averaged.
+    :param placement: The coarse placement for this diode (to be legalized.)
+        If unset, the diode is placed at the same location as the target
+        instance, with legalization later moving it to a valid location.
     """
 
     target: str
@@ -1065,16 +1072,17 @@ class ECODiode:
 @Step.factory.register()
 class InsertECODiodes(OdbpyStep):
     """
-    Experimental step to insert ECO diodes unto sinks after global or detailed
-    routing. The placement is legalized and global routing is incrementally
-    re-run for affected nets. Useful for manually fixing some antenna
-    violations.
+    Experimental step to create and attach ECO diodes to the nets of sinks after
+    global or detailed routing. The placement is legalized and global routing is
+    incrementally re-run for affected nets. Useful for manually fixing some
+    antenna violations.
 
     If run after detailed routing, detailed routing must be re-run as affected
     nets that are altered are removed and require re-routing.
     """
 
     id = "Odb.InsertECODiodes"
+    name = "Insert ECO Diodes"
 
     config_vars = (
         grt_variables

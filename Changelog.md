@@ -315,6 +315,10 @@
   * `BoundingBox` changed from `Tuple` to `dataclass` with additional optional
     `info` property.
 
+## Documentation
+
+* Variable types now link to dataclasses' API reference as appropriate.
+
 # 2.3.10
 
 ## Steps

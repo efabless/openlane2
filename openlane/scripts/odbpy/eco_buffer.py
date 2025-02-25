@@ -17,6 +17,13 @@ from reader import click_odb, click, odb
 import grt as GRT
 
 
+def average_location(instances):
+    locations = [instance.getLocation() for instance in instances]
+    x_sum = sum(loc[0] for loc in locations)
+    y_sum = sum(loc[1] for loc in locations)
+    return (x_sum // len(locations), y_sum // len(locations))
+
+
 @click.command()
 @click_odb
 def cli(reader):
@@ -41,17 +48,17 @@ def cli(reader):
         name_escaped = reader.escape_verilog_name(target_name)
         buffer_master = target_info["buffer"]
 
-        target = reader.block.findInst(name_escaped)
-        if target is None:
-            print(f"[ERROR] Instance '{target_name}' not found.", file=sys.stderr)
-            exit(-1)
-
         master = reader.db.findMaster(buffer_master)
         if master is None:
             print(
                 f"[ERROR] Buffer type '{buffer_master}' not found.",
                 file=sys.stderr,
             )
+            exit(-1)
+
+        target = reader.block.findInst(name_escaped)
+        if target is None:
+            print(f"[ERROR] Instance '{target_name}' not found.", file=sys.stderr)
             exit(-1)
 
         target_iterm = target.findITerm(target_pin)
@@ -70,24 +77,6 @@ def cli(reader):
             )
             exit(-1)
 
-        target_iterm.disconnect()
-
-        net_iterms = net.getITerms()
-        driver_iterms = [iterm for iterm in net_iterms if iterm.getIoType() == "OUTPUT"]
-        if len(driver_iterms) != 1:  # More descriptive error
-            print(
-                f"[ERROR] Expected 1 driver, found {len(driver_iterms)} for net connected to {target_name}/{target_pin}",
-                file=sys.stderr,
-            )
-            exit(-1)
-        driver = driver_iterms[0].getInst()
-        if driver is None:  # check if the driver instance exists
-            print(
-                f"[ERROR] Driver instance not found for net connected to {target_name}/{target_pin}",
-                file=sys.stderr,
-            )
-            exit(-1)
-
         new_buf_name = f"eco_buffer_{i}"
         new_net_name = f"eco_buffer_{i}_net"
         while (
@@ -98,8 +87,9 @@ def cli(reader):
             new_buf_name = f"eco_buffer_{i}"
             new_net_name = f"eco_buffer_{i}_net"
 
+        # Prepare buffer cell, net
         eco_buffer = odb.dbInst.create(reader.block, master, new_buf_name)
-
+        eco_net = odb.dbNet.create(reader.block, new_net_name)
         buffer_iterms = eco_buffer.getITerms()
         buffer_a = None
         for iterm in buffer_iterms:
@@ -108,7 +98,8 @@ def cli(reader):
                 break  # Exit loop once input is found
         if buffer_a is None:
             print(
-                f"[ERROR] Buffer {buffer_master} has no input signals.", file=sys.stderr
+                f"[ERROR] Buffer {buffer_master} has no input signals.",
+                file=sys.stderr,
             )
             exit(-1)
 
@@ -124,11 +115,36 @@ def cli(reader):
             )
             exit(-1)
 
-        eco_net = odb.dbNet.create(reader.block, new_net_name)
+        location_instances = [target]
+        net_iterms = net.getITerms()
+        if target_iterm.getIoType() == "INPUT":
+            driver_iterms = [
+                iterm for iterm in net_iterms if iterm.getIoType() in ["OUTPUT"]
+            ]
+            drivers = [iterm.getInst() for iterm in driver_iterms]
+            location_instances.extend(drivers)
 
-        buffer_a.connect(net)
-        buffer_x.connect(eco_net)
-        target_iterm.connect(eco_net)
+            target_iterm.disconnect()
+            buffer_a.connect(net)
+            buffer_x.connect(eco_net)
+            target_iterm.connect(eco_net)
+        elif target_iterm.getIoType() == "OUTPUT":
+            sink_iterms = [
+                iterm for iterm in net_iterms if iterm.getIoType() in ["INPUT", "INOUT"]
+            ]
+            sinks = [iterm.getInst() for iterm in sink_iterms]
+            location_instances.extend(sinks)
+
+            target_iterm.disconnect()
+            target_iterm.connect(eco_net)
+            buffer_a.connect(eco_net)
+            buffer_x.connect(net)
+        else:
+            print(
+                f"[ERROR] {target_name}/{target_pin} is neither an INPUT or an OUTPUT and is unsupported by this script. To buffer an INOUT port, buffer its drivers instead.",
+                file=sys.stderr,
+            )
+            exit(-1)
 
         if target_info.get("placement") is not None:
             eco_x, eco_y = target_info["placement"]
@@ -136,24 +152,7 @@ def cli(reader):
             eco_y = reader.block.micronsToDbu(float(eco_y))
             eco_loc = (eco_x, eco_y)
         else:
-            driver_loc = target.getLocation()
-            if driver_loc is None:
-                print(
-                    f"[ERROR] Location not found for driver instance connected to {target_name}/{target_pin}",
-                    file=sys.stderr,
-                )
-                exit(-1)
-
-            dr_x, dr_y = driver_loc
-            target_loc = driver.getLocation()
-            if target_loc is None:
-                print(
-                    f"[ERROR] Location not found for target instance {target_name}",
-                    file=sys.stderr,
-                )
-                exit(-1)
-            tg_x, tg_y = target_loc
-            eco_loc = ((dr_x + tg_x) // 2, (dr_y + tg_y) // 2)
+            eco_loc = average_location(location_instances)
 
         eco_buffer.setOrient("R0")
         eco_buffer.setLocation(*eco_loc)
