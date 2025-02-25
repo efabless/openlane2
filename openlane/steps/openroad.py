@@ -195,7 +195,7 @@ class OpenROADStep(TclStep):
         Variable(
             "PNR_CORNERS",
             Optional[List[str]],
-            "A list of fully-qualified IPVT corners to use during PnR. Can be overriden by some steps",
+            "A list of fully-qualified IPVT corners to use during PnR. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
             pdk=True,
         ),
         Variable(
@@ -255,11 +255,10 @@ class OpenROADStep(TclStep):
             "Points to the DEF file to be used as a template.",
         ),
         Variable(
-            "ALLOW_DUPLICATE_CORNERS",
+            "DEDUPLICATE_CORNERS",
             bool,
-            "Allow duplicate IPVT corners definition for all *_CORNERS (except STA_CORNERS) variables. Duplicate corners have the same set of lib files and same set of values for LAYERS_RC and VIAS_R."
-            + " When false, corners are reduced to to a unique set of where each corner defines a unique mixture of lib files, LAYERS_RC and VIAS_R values",
-            default=True,
+            "Cull duplicate IPVT corners during PNR, i.e. corners that share the same set of lib files and values for LAYERS_RC and VIAS_R as another corner are not considered outside of STA.",
+            default=False,
         ),
     ]
 
@@ -371,7 +370,7 @@ class OpenROADStep(TclStep):
                     ipvt_corners[corner].vias_r = metal_layers
 
         filtered_ipvt_corners_names_sorted = corners
-        if not self.config["ALLOW_DUPLICATE_CORNERS"]:
+        if not self.config["DEDUPLICATE_CORNERS"]:
             filtered_ipvt_corners = {
                 k: v
                 for k, v in ipvt_corners.items()
@@ -2285,7 +2284,7 @@ class CTS(OpenROADStep):
             Variable(
                 "CTS_CORNERS",
                 Optional[List[str]],
-                "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+                "Clock tree synthesis step-specific override for PNR_CORNERS.",
             ),
             Variable(
                 "CTS_ROOT_BUFFER",
