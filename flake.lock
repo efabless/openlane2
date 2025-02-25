@@ -90,6 +90,7 @@
       },
       "original": {
         "owner": "efabless",
+        "ref": "2.1.2",
         "repo": "nix-eda",
         "type": "github"
       }
