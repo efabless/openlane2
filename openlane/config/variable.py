@@ -248,7 +248,9 @@ def repr_type(t: Type[Any], for_document: bool = False) -> str:  # pragma: no co
         type_string = str(some)
 
     if is_dataclass(t):
-        type_string = f"{{class}}`{some.__qualname__} <{some.__module__ + "." + some.__qualname__}>`"
+        type_string = (
+            f"{{class}}`{some.__qualname__} <{some.__module__}.{some.__qualname__}>`"
+        )
 
     separator = "｜<br />" if for_document else "｜"
 

@@ -68,7 +68,7 @@ def cli(reader):
 
         if target_iterm.getIoType() not in ["INPUT", "INOUT"]:
             print(
-                f"[ERROR] Pin {target_info["target"]} is an OUTPUT pin.",
+                f"[ERROR] Pin {target_info['target']} is an OUTPUT pin.",
                 file=sys.stderr,
             )
             exit(-1)
