@@ -29,31 +29,48 @@
     instead of variable-length Tcl-style lists (AKA: strings).
 
 * `Odb.DiodesOnPorts`, `Odb.PortDiodePlacement`
+
   * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
 
-*  `Odb.FuzzyDiodePlacement`, `Odb.HeuristicDiodeInsertion`
-  * Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
-  * `HEURISTIC_ANTENNA_THRESHOLD` has been made optional, steps do nothing if
-    it is unset.
+* `Odb.FuzzyDiodePlacement`, `Odb.HeuristicDiodeInsertion`
+
+* Steps no longer assume `DIODE_CELL` exists and fall back to doing nothing.
+
+* `HEURISTIC_ANTENNA_THRESHOLD` has been made optional, steps do nothing if it
+  is unset.
 
 * `OpenROAD.*`
 
-  * Added `PNR_CORNERS`. An override for `DEFAULT_CORNER` for PnR steps except
-    for steps using `RSZ_CORNERS` and `CTS_CORNERS`.
+  * Added `PNR_CORNERS` which defaults to `STA_CORNERS`. An override for
+    `DEFAULT_CORNER` for PnR steps except those with more specific overrides
+    e.g. `RSZ_CORNERS`, `CTS_CORNERS`.
+
   * Added `LAYERS_RC`, `VIAS_R`: Unlike OpenLane 1.0.0 variables with similar
     names, these are mappings from corners to layer/via RC values.
-    * `PNR_CORNERS`, `RSZ_CORNERS`, and `CTS_CORNERS` all now support multiple
-      corners to have the same set of liberty files (as RC values may differ.)
+
+  * Previously, for resizer steps, corners that end up with the same set of lib
+    files and RC values would be culled to reduce runtime. Now, for all steps,
+    this behavior is gated by `DEDUPLICATE_CORNERS`, which is `False` by
+    default. **This may increase flow runtimes**. In general, it is safe to turn
+    this on, however it may be surprising behavior.
+
+    * Just like previously, however, STA steps are unaffected and will always
+      run across all corners.
+
   * Added `SET_RC_VERBOSE`, which (very noisily) logs set-RC-related commands to
     logs.
-  * Always read libs before reading odb.
+
   * Added `log_cmd` from OpenROAD-flow-scripts -- neat idea for consistency
+
   * Lib files are now *always* read BEFORE reading database files.
+
   * **Internal**: Steps now sensitive to `_OPENROAD_GUI` environment variable --
     coupled with `--only`, it runs a step in OpenROAD then doesn't quit so you
     may inspect the result.
+
     * This is not part of the OpenLane stable API and may be broken at any
       moment.
+
   * **Internal**: New convenience methods to append flags to calls based on
     environment variables
 
@@ -96,6 +113,7 @@
 * `OpenROAD.GlobalPlacement`
 
   * Added optional variable `PL_ROUTABILITY_MAX_DENSITY_PCT`
+
   * Added optional variable `PL_KEEP_RESIZE_BELOW_OVERFLOW`
 
   * Corrected `GPL_CELL_PADDING` to be an integer.
