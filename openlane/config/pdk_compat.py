@@ -329,4 +329,9 @@ def migrate_old_config(config: Mapping[str, Any]) -> Dict[str, Any]:
     elif new["PDK"].startswith("gf180mcu"):
         new["HEURISTIC_ANTENNA_THRESHOLD"] = 130
 
+    if new["PDK"].startswith("sky130"):
+        new["ISOSUB_LAYER"] = (81, 53)
+    if new["PDK"].startswith("gf180mcu"):
+        new["ISOSUB_LAYER"] = (23, 5)
+
     return new

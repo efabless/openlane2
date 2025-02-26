@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional, List, Sequence, Tuple, Union
 from .step import ViewsUpdate, MetricsUpdate, Step, StepError, StepException
 
 from ..config import Variable
-from ..logging import info
+from ..logging import info, warn
 from ..state import DesignFormat, State
 from ..common import Path, get_script_dir, mkdirp, _get_process_limit
 
@@ -193,6 +193,21 @@ class StreamOut(KLayoutStep):
     id = "KLayout.StreamOut"
     name = "GDSII Stream Out (KLayout)"
 
+    config_vars = KLayoutStep.config_vars + [
+        Variable(
+            "ISOSUB_LAYER",
+            Optional[Tuple[int, int]],
+            "Layer/datatype pair for subcut. Not recommended to change unless you know what you are doing.",
+            pdk=True,
+        ),
+        Variable(
+            "KLAYOUT_ADD_ISOSUB",
+            bool,
+            default=False,
+            description="Add isosub(subcut) drawing over the design. Useful when the design is getting integarated in another design with multiple power domains.",
+        ),
+    ]
+
     inputs = [DesignFormat.DEF]
     outputs = [DesignFormat.GDS, DesignFormat.KLAYOUT_GDS]
 
@@ -205,6 +220,14 @@ class StreamOut(KLayoutStep):
         )
         kwargs, env = self.extract_env(kwargs)
 
+        isosub_layer_arg = []
+        if self.config.get("KLAYOUT_ADD_ISOSUB"):
+            if isosub_layer := self.config.get("ISOSUB_LAYER"):
+                isosub_layer_arg = ["--isosub", f"{isosub_layer[0]};{isosub_layer[1]}"]
+            else:
+                warn(
+                    "KLAYOUT_ADD_ISOSUB enabled but no ISOSUB_LAYER defined for the PDK. Not going to add isosub to the design"
+                )
         self.run_pya_script(
             [
                 sys.executable,
@@ -219,7 +242,8 @@ class StreamOut(KLayoutStep):
                 "--top",
                 self.config["DESIGN_NAME"],
             ]
-            + self.get_cli_args(include_lefs=True, include_gds=True),
+            + self.get_cli_args(include_lefs=True, include_gds=True)
+            + isosub_layer_arg,
             env=env,
         )
 
