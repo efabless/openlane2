@@ -197,7 +197,7 @@ class OpenROADStep(TclStep):
         Variable(
             "PNR_CORNERS",
             Optional[List[str]],
-            "A list of fully-qualified IPVT corners to use during PnR. Can be overriden by some steps",
+            "A list of fully-qualified IPVT corners to use during PnR. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
             pdk=True,
         ),
         Variable(
@@ -256,6 +256,12 @@ class OpenROADStep(TclStep):
             Optional[Path],
             "Points to the DEF file to be used as a template.",
         ),
+        Variable(
+            "DEDUPLICATE_CORNERS",
+            bool,
+            "Cull duplicate IPVT corners during PNR, i.e. corners that share the same set of lib files and values for LAYERS_RC and VIAS_R as another corner are not considered outside of STA.",
+            default=False,
+        ),
     ]
 
     @abstractmethod
@@ -311,17 +317,43 @@ class OpenROADStep(TclStep):
             self.config["DEFAULT_CORNER"]
         ]
 
+        @dataclass
+        class IPVTCorner:
+            name: str
+            libs: List[Path]
+            layers_rc: Optional[Dict[str, Dict[str, Decimal]]]
+            vias_r: Optional[Dict[str, Dict[str, Decimal]]]
+
+            def __eq__(self, other):
+                if not isinstance(other, IPVTCorner):
+                    return False
+                return (
+                    self.libs == other.libs
+                    and self.layers_rc == other.layers_rc
+                    and self.vias_r == other.vias_r
+                )
+
+            def __hash__(self):
+                return hash(
+                    (
+                        frozenset([str(lib) for lib in self.libs]),
+                        TclStep.value_to_tcl(self.layers_rc),
+                        TclStep.value_to_tcl(self.vias_r),
+                    )
+                )
+
         if "corners" in kwargs:
             corners = kwargs.pop("corners")
             debug(f"Corners Override {corners}")
 
         count = 0
+        ipvt_corners = {}
         for corner in corners:
             _, libs, _, _ = self.toolbox.get_timing_files_categorized(
                 self.config, corner
             )
-            env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl([corner] + libs)
-            debug(f"Liberty files for '{corner}' added: {libs}")
+            ipvt_corners[corner] = IPVTCorner(corner, libs, None, None)
+            # debug(f"Liberty files for '{corner}' added: {libs}")
             count += 1
 
         check = False
@@ -330,28 +362,54 @@ class OpenROADStep(TclStep):
 
         layers_rc = self.config["LAYERS_RC"]
         if layers_rc is not None:
-            count = 0
             for corner_wildcard, metal_layers in layers_rc.items():
                 for corner in Filter([corner_wildcard]).filter(corners):
-                    for layer, rc in metal_layers.items():
-                        res = rc["res"]
-                        cap = rc["cap"]
-                        env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
-                            [corner, layer, res, cap]
-                        )
-                        count += 1
+                    ipvt_corners[corner].layers_rc = metal_layers
 
         vias_r = self.config["VIAS_R"]
         if vias_r is not None:
-            count = 0
             for corner_wildcard, metal_layers in vias_r.items():
                 for corner in Filter(corner_wildcard).filter(corners):
-                    for via, rc in metal_layers.items():
-                        res = rc["res"]
-                        env[f"_VIA_R_{count}"] = TclStep.value_to_tcl(
-                            [corner, via, res]
-                        )
-                        count += 1
+                    ipvt_corners[corner].vias_r = metal_layers
+
+        filtered_ipvt_corners_names_sorted = corners
+        if self.config["DEDUPLICATE_CORNERS"]:
+            filtered_ipvt_corners = {
+                k: v
+                for k, v in ipvt_corners.items()
+                if k in [corner.name for corner in set(ipvt_corners.values())]
+            }
+            filtered_ipvt_corners_names_sorted = [
+                x for _, x in sorted(zip(corners, filtered_ipvt_corners.keys()))
+            ]
+        count = 0
+        for corner_name in filtered_ipvt_corners_names_sorted:
+            vias_r = ipvt_corners[corner_name].vias_r
+            if vias_r is not None:
+                for via, rc in vias_r.items():
+                    res = rc["res"]
+                    env[f"_VIA_R_{count}"] = TclStep.value_to_tcl(
+                        [corner_name, via, res]
+                    )
+                    count += 1
+        count = 0
+        for corner_name in filtered_ipvt_corners_names_sorted:
+            layers_rc = ipvt_corners[corner_name].layers_rc
+            if layers_rc is not None:
+                for layer, rc in layers_rc.items():
+                    res = rc["res"]
+                    cap = rc["cap"]
+                    env[f"_LAYER_RC_{count}"] = TclStep.value_to_tcl(
+                        [corner_name, layer, res, cap]
+                    )
+                    count += 1
+
+        count = 0
+        for corner_name in filtered_ipvt_corners_names_sorted:
+            env[f"_LIB_CORNER_{count}"] = TclStep.value_to_tcl(
+                [corner_name] + ipvt_corners[corner_name].libs
+            )
+            count += 1
 
         command = self.get_command()
 
@@ -2231,7 +2289,7 @@ class CTS(OpenROADStep):
             Variable(
                 "CTS_CORNERS",
                 Optional[List[str]],
-                "A list of fully-qualified IPVT corners to use during clock tree synthesis. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+                "Clock tree synthesis step-specific override for PNR_CORNERS.",
             ),
             Variable(
                 "CTS_ROOT_BUFFER",

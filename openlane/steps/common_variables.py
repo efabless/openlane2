@@ -335,6 +335,6 @@ rsz_variables = dpl_variables + [
     Variable(
         "RSZ_CORNERS",
         Optional[List[str]],
-        "A list of fully-qualified IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+        "Resizer step-specific override for PNR_CORNERS.",
     ),
 ]
