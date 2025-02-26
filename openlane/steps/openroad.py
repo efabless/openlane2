@@ -191,6 +191,8 @@ class OpenROADStep(TclStep):
 
     output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
 
+    alerts: Optional[List[OpenROADAlert]] = None
+
     config_vars = [
         Variable(
             "PNR_CORNERS",
@@ -307,6 +309,7 @@ class OpenROADStep(TclStep):
         2. After the `super()` call: Processes the `or_metrics_out.json` file and
         updates the State's `metrics` property with any new metrics in that object.
         """
+        self.alerts = None
         kwargs, env = self.extract_env(kwargs)
         env = self.prepare_env(env, state_in)
 
@@ -431,9 +434,11 @@ class OpenROADStep(TclStep):
             views_updates[output] = path
 
         # 1. Parse warnings and errors
-        alerts = subprocess_result["openroad_alerts"]
+        self.alerts = subprocess_result.get("openroad_alerts") or []
         if subprocess_result["returncode"] != 0:
-            error_strings = [str(alert) for alert in alerts if alert.cls == "error"]
+            error_strings = [
+                str(alert) for alert in self.alerts if alert.cls == "error"
+            ]
             if len(error_strings):
                 error_string = "\n".join(error_strings)
                 raise StepError(

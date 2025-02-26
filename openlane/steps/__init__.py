@@ -48,7 +48,7 @@ from . import openroad as OpenROAD
 from .openroad import OpenROADStep
 
 from . import odb as Odb
-from .odb import OdbpyStep
+from .odb import OdbpyStep, ECOBuffer, ECODiode
 
 from . import magic as Magic
 from .magic import MagicStep
