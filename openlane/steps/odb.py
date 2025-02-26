@@ -19,28 +19,27 @@ from math import inf
 from decimal import Decimal
 from functools import reduce
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import Dict, List, Literal, Optional, Tuple
 
+from ..common import Path, get_script_dir, aggregate_metrics
+from ..config import Instance, Macro, Variable
+from ..logging import info, verbose
+from ..state import DesignFormat, State
 
-from .common_variables import io_layer_variables
-from .openroad_alerts import (
-    OpenROADAlert,
-    OpenROADOutputProcessor,
-)
 from .openroad import DetailedPlacement, GlobalRouting
-from .tclstep import TclStep
+from .openroad_alerts import OpenROADAlert, OpenROADOutputProcessor
+from .common_variables import io_layer_variables, dpl_variables, grt_variables
 from .step import (
-    ViewsUpdate,
-    MetricsUpdate,
-    Step,
-    StepException,
     CompositeStep,
     DefaultOutputProcessor,
+    MetricsUpdate,
+    Step,
+    StepError,
+    StepException,
+    ViewsUpdate,
 )
-from ..logging import info, verbose
-from ..config import Variable, Macro, Instance
-from ..state import State, DesignFormat
-from ..common import Path, get_script_dir
+from .tclstep import TclStep
 
 inf_rx = re.compile(r"\b(-?)inf\b")
 
@@ -50,6 +49,8 @@ class OdbpyStep(Step):
     outputs = [DesignFormat.ODB, DesignFormat.DEF]
 
     output_processors = [OpenROADOutputProcessor, DefaultOutputProcessor]
+
+    alerts: Optional[List[OpenROADAlert]] = None
 
     def on_alert(self, alert: OpenROADAlert) -> OpenROADAlert:
         if alert.code in [
@@ -63,7 +64,9 @@ class OdbpyStep(Step):
             self.warn(str(alert), extra={"key": alert.code})
         return alert
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+        self.alerts = None
+
         kwargs, env = self.extract_env(kwargs)
 
         automatic_outputs = set(self.outputs).intersection(
@@ -86,15 +89,35 @@ class OdbpyStep(Step):
         env["PYTHONPATH"] = (
             f'{os.path.join(get_script_dir(), "odbpy")}:{env.get("PYTHONPATH")}'
         )
+        check = False
+        if "check" in kwargs:
+            check = kwargs.pop("check")
 
         subprocess_result = self.run_subprocess(
             command,
             env=env,
+            check=check,
             **kwargs,
         )
+        generated_metrics = subprocess_result["generated_metrics"]
 
+        # 1. Parse warnings and errors
+        self.alerts = subprocess_result.get("openroad_alerts") or []
+        if subprocess_result["returncode"] != 0:
+            error_strings = [
+                str(alert) for alert in self.alerts if alert.cls == "error"
+            ]
+            if len(error_strings):
+                error_string = "\n".join(error_strings)
+                raise StepError(
+                    f"{self.id} failed with the following errors:\n{error_string}"
+                )
+            else:
+                raise StepException(
+                    f"{self.id} failed unexpectedly. Please check the logs and file an issue."
+                )
+        # 2. Metrics
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
-        metrics_updates: MetricsUpdate = subprocess_result["generated_metrics"]
         if os.path.exists(metrics_path):
             or_metrics_out = json.loads(open(metrics_path).read(), parse_float=Decimal)
             for key, value in or_metrics_out.items():
@@ -102,9 +125,11 @@ class OdbpyStep(Step):
                     or_metrics_out[key] = inf
                 elif value == "-Infinity":
                     or_metrics_out[key] = -inf
-            metrics_updates.update(or_metrics_out)
+            generated_metrics.update(or_metrics_out)
 
-        return views_updates, metrics_updates
+        metric_updates_with_aggregates = aggregate_metrics(generated_metrics)
+
+        return views_updates, metric_updates_with_aggregates
 
     def get_command(self) -> List[str]:
         metrics_path = os.path.join(self.step_dir, "or_metrics_out.json")
@@ -180,7 +205,7 @@ class CheckMacroAntennaProperties(OdbpyStep):
             args += ["--cell-name", name]
         return super().get_command() + args
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if not self.get_cells():
             info("No cells provided, skipping…")
             return {}, {}
@@ -244,7 +269,7 @@ class ApplyDEFTemplate(OdbpyStep):
             args.append("--copy-def-power")
         return super().get_command() + args
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_DEF_TEMPLATE"] is None:
             info("No DEF template provided, skipping…")
             return {}, {}
@@ -339,7 +364,7 @@ class WriteVerilogHeader(OdbpyStep):
 
         return command
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         views_updates, metrics_updates = super().run(state_in, **kwargs)
         views_updates[DesignFormat.VERILOG_HEADER] = Path(
             os.path.join(self.step_dir, f"{self.config['DESIGN_NAME']}.vh")
@@ -528,7 +553,7 @@ class AddRoutingObstructions(OdbpyStep):
                 command.append(obstruction)
         return command
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config[self.get_obstruction_variable().name] is None:
             info(
                 f"'{self.get_obstruction_variable().name}' is not defined. Skipping '{self.id}'…"
@@ -659,7 +684,7 @@ class CustomIOPlacement(OdbpyStep):
             + length_args
         )
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["FP_PIN_ORDER_CFG"] is None:
             info("No custom floorplan file configured, skipping…")
             return {}, {}
@@ -895,7 +920,7 @@ class CellFrequencyTables(OdbpyStep):
     def get_buffer_list_script(self):
         return os.path.join(get_script_dir(), "openroad", "buffer_list.tcl")
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         kwargs, env = self.extract_env(kwargs)
 
         env_copy = env.copy()
@@ -948,8 +973,119 @@ class ManualGlobalPlacement(OdbpyStep):
         assert self.config_path is not None, "get_command called before start()"
         return super().get_command() + ["--step-config", self.config_path]
 
-    def run(self, state_in, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
+    def run(self, state_in: State, **kwargs) -> Tuple[ViewsUpdate, MetricsUpdate]:
         if self.config["MANUAL_GLOBAL_PLACEMENTS"] is None:
             info("'MANUAL_GLOBAL_PLACEMENTS' not set, skipping…")
+            return {}, {}
+        return super().run(state_in, **kwargs)
+
+
+@dataclass
+class ECOBuffer:
+    """
+    :param target: The driver to insert an ECO buffer after or sink to insert an
+        ECO buffer before, in the format instance_name/pin_name.
+    :param buffer: The kind of buffer cell to use.
+    :param placement: The coarse placement for this buffer (to be legalized.)
+        If unset, depending on whether the target is a driver or a sink:
+
+        - Driver: The placement will be the average of the driver and all sinks.
+
+        - Sink: The placement will be the average of the sink and all drivers.
+    """
+
+    target: str
+    buffer: str
+    placement: Optional[Tuple[Decimal, Decimal]] = None
+
+
+@Step.factory.register()
+class InsertECOBuffers(OdbpyStep):
+    """
+    Experimental step to insert ECO buffers on either drivers or sinks after
+    global or detailed routing. The placement is legalized and global routing is
+    incrementally re-run for affected nets. Useful for manually fixing some hold
+    violations.
+
+    If run after detailed routing, detailed routing must be re-run as affected
+    nets that are altered are removed and require re-routing.
+
+    INOUT and FEEDTHRU ports are not supported.
+    """
+
+    id = "Odb.InsertECOBuffers"
+    name = "Insert ECO Buffers"
+
+    config_vars = (
+        dpl_variables
+        + grt_variables
+        + [
+            Variable(
+                "INSERT_ECO_BUFFERS",
+                Optional[List[ECOBuffer]],
+                "List of buffers to insert",
+            )
+        ]
+    )
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "eco_buffer.py")
+
+    def get_command(self) -> List[str]:
+        assert self.config_path is not None, "get_command called before start()"
+        return super().get_command() + ["--step-config", self.config_path]
+
+
+@dataclass
+class ECODiode:
+    """
+    :param target: The sink whose net gets a diode connected, in the format
+        instance_name/pin_name.
+    :param placement: The coarse placement for this diode (to be legalized.)
+        If unset, the diode is placed at the same location as the target
+        instance, with legalization later moving it to a valid location.
+    """
+
+    target: str
+    placement: Optional[Tuple[Decimal, Decimal]] = None
+
+
+@Step.factory.register()
+class InsertECODiodes(OdbpyStep):
+    """
+    Experimental step to create and attach ECO diodes to the nets of sinks after
+    global or detailed routing. The placement is legalized and global routing is
+    incrementally re-run for affected nets. Useful for manually fixing some
+    antenna violations.
+
+    If run after detailed routing, detailed routing must be re-run as affected
+    nets that are altered are removed and require re-routing.
+    """
+
+    id = "Odb.InsertECODiodes"
+    name = "Insert ECO Diodes"
+
+    config_vars = (
+        grt_variables
+        + dpl_variables
+        + [
+            Variable(
+                "INSERT_ECO_DIODES",
+                Optional[List[ECODiode]],
+                "List of sinks to insert diodes for.",
+            )
+        ]
+    )
+
+    def get_script_path(self):
+        return os.path.join(get_script_dir(), "odbpy", "eco_diode.py")
+
+    def get_command(self) -> List[str]:
+        assert self.config_path is not None, "get_command called before start()"
+        return super().get_command() + ["--step-config", self.config_path]
+
+    def run(self, state_in: State, **kwargs):
+        if self.config["DIODE_CELL"] is None:
+            info(f"'DIODE_CELL' not set. Skipping '{self.id}'…")
             return {}, {}
         return super().run(state_in, **kwargs)
