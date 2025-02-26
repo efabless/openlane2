@@ -34,6 +34,7 @@
   yosysFull,
   # Python
   buildPythonPackage,
+  poetry-core,
   click,
   cloup,
   pyyaml,
@@ -50,7 +51,7 @@
   pyfakefs,
   rapidfuzz,
   ioplace-parser,
-  poetry-core,
+  semver,
 }: let
   yosys-env = (yosys.withPythonPackages.override {target = yosysFull;}) (ps:
     with ps; [
@@ -107,6 +108,7 @@
         klayout.pymod
         rapidfuzz
         ioplace-parser
+        semver
       ]
       ++ self.includedTools;
 

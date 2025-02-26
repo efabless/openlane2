@@ -43,6 +43,11 @@ class Lint(Step):
             "The paths of the design's Verilog files.",
         ),
         Variable(
+            "VERILOG_INCLUDE_DIRS",
+            Optional[List[Path]],
+            "Specifies the Verilog `include` directories.",
+        ),
+        Variable(
             "VERILOG_POWER_DEFINE",
             Optional[str],
             "Specifies the name of the define used to guard power and ground connections in the input RTL.",
@@ -157,6 +162,9 @@ class Lint(Step):
 
         if self.config["LINTER_ERROR_ON_LATCH"]:
             extra_args.append("--Werror-LATCH")
+
+        if include_dirs := self.config["VERILOG_INCLUDE_DIRS"]:
+            extra_args.extend([f"-I{dir}" for dir in include_dirs])
 
         for define in defines:
             extra_args.append(f"+define+{define}")

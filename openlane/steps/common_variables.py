@@ -261,21 +261,21 @@ dpl_variables = [
     ),
     Variable(
         "PL_MAX_DISPLACEMENT_X",
-        Decimal,
+        int,
         "Specifies how far an instance can be moved along the X-axis when finding a site where it can be placed during detailed placement.",
         default=500,
         units="µm",
     ),
     Variable(
         "PL_MAX_DISPLACEMENT_Y",
-        Decimal,
+        int,
         "Specifies how far an instance can be moved along the Y-axis when finding a site where it can be placed during detailed placement.",
         default=100,
         units="µm",
     ),
     Variable(
         "DPL_CELL_PADDING",
-        Decimal,
+        int,
         "Cell padding value (in sites) for detailed placement. The number will be integer divided by 2 and placed on both sides. Should be <= global placement.",
         units="sites",
         pdk=True,
@@ -335,6 +335,6 @@ rsz_variables = dpl_variables + [
     Variable(
         "RSZ_CORNERS",
         Optional[List[str]],
-        "A list of fully-qualified IPVT corners to use during resizer optimizations. If unspecified, the value for `STA_CORNERS` from the PDK will be used.",
+        "Resizer step-specific override for PNR_CORNERS.",
     ),
 ]

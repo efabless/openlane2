@@ -88,7 +88,9 @@ class TclStep(Step):
             return value.name
         elif isinstance(value, bool):
             return "1" if value else "0"
-        elif isinstance(value, Decimal) or isinstance(value, int):
+        elif isinstance(value, Decimal):
+            return str(value)  # f"{value:e}"
+        elif isinstance(value, int):
             return str(value)
         else:
             return str(value)

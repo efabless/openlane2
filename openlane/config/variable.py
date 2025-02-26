@@ -238,7 +238,7 @@ def some_of(t: Type[Any]) -> Type[Any]:
     return new_union  # type: ignore
 
 
-def repr_type(t: Type[Any]) -> str:  # pragma: no cover
+def repr_type(t: Type[Any], for_document: bool = False) -> str:  # pragma: no cover
     optional = is_optional(t)
     some = some_of(t)
 
@@ -247,18 +247,25 @@ def repr_type(t: Type[Any]) -> str:  # pragma: no cover
     else:
         type_string = str(some)
 
+    if is_dataclass(t):
+        type_string = (
+            f"{{class}}`{some.__qualname__} <{some.__module__}.{some.__qualname__}>`"
+        )
+
+    separator = "｜<br />" if for_document else "｜"
+
     if inspect.isclass(some) and issubclass(some, Enum):
-        type_string = "｜".join([str(e.name) for e in some])
+        type_string = separator.join([str(e.name) for e in some])
         type_string = f"`{type_string}`"
     else:
         origin, args = get_origin(some), get_args(some)
         if origin is not None:
             if origin == Union:
                 arg_strings = [repr_type(arg) for arg in args]
-                type_string = "｜".join(arg_strings)
+                type_string = separator.join(arg_strings)
                 type_string = f"({type_string})"
             elif origin == Literal:
-                return "｜".join([repr(arg) for arg in args])
+                return separator.join([repr(arg) for arg in args])
             else:
                 arg_strings = [repr_type(arg) for arg in args]
                 type_string = f"{type_string}[{', '.join(arg_strings)}]"
@@ -377,9 +384,7 @@ class Variable:
             for easier wrapping by web browsers/PDF renderers/what have you
         :returns: A pretty Markdown string representation of the Variable's type.
         """
-        if for_document:
-            return repr_type(self.type).replace("｜", "｜<br />")
-        return repr_type(self.type)
+        return repr_type(self.type, for_document=for_document)
 
     def desc_repr_md(self) -> str:  # pragma: no cover
         """

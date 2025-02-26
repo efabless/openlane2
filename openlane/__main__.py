@@ -21,7 +21,7 @@ import traceback
 import subprocess
 from textwrap import dedent
 from functools import partial
-from typing import Any, Dict, Sequence, Tuple, Type, Optional, List, Union
+from typing import Any, Dict, Sequence, Tuple, Type, Optional, List
 
 import click
 from cloup import (
@@ -77,21 +77,36 @@ def run(
             err("No config file(s) have been provided.")
             ctx.exit(1)
 
-        flow_description: Optional[Union[str, List[str]]] = None
-        substitutions: Union[None, Dict[str, Union[str, None]]] = None
+        TargetFlow: Optional[Type[Flow]] = Flow.factory.get("Classic")
 
         for config_file in config_files:
             if meta := Config.get_meta(config_file):
-                if meta.flow is not None:
-                    flow_description = meta.flow
-                    if meta.substituting_steps is not None:
-                        substitutions = meta.substituting_steps
+                if isinstance(meta.flow, str):
+                    if found := Flow.factory.get(meta.flow):
+                        TargetFlow = found
+                    else:
+                        err(
+                            f"Unknown flow '{meta.flow}' specified in configuration file's 'meta' object."
+                        )
+                        ctx.exit(1)
+                elif isinstance(meta.flow, list):
+                    TargetFlow = SequentialFlow.make(meta.flow)
+                if meta.substituting_steps is not None:
+                    if meta.flow is None:
+                        err("config_file has substituting_steps set with no flow.")
+                        ctx.exit(1)
+                    assert (
+                        TargetFlow is not None
+                    ), "run() failed to properly deduce TargetFlow -- please file an issue"
+                    if issubclass(TargetFlow, SequentialFlow):
+                        TargetFlow = TargetFlow.Substitute(meta.substituting_steps)  # type: ignore  # Type checker is being rowdy with this one
 
         if flow_name is not None:
-            flow_description = flow_name
-
-        if flow_description is None:
-            flow_description = "Classic"
+            if found := Flow.factory.get(flow_name):
+                TargetFlow = found
+            else:
+                err(f"Unknown flow '{flow_name}' passed to initialization function.")
+                ctx.exit(1)
 
         if len(initial_state_element_override):
             if with_initial_state is None:
@@ -114,18 +129,9 @@ def run(
                 overrides=overrides,
             )
 
-        TargetFlow: Type[Flow]
-
-        if isinstance(flow_description, str):
-            if FlowClass := Flow.factory.get(flow_description):
-                TargetFlow = FlowClass
-            else:
-                err(
-                    f"Unknown flow '{flow_description}' specified in configuration file's 'meta' object."
-                )
-                ctx.exit(1)
-        else:
-            TargetFlow = SequentialFlow.make(flow_description)
+        assert (
+            TargetFlow is not None
+        ), "TargetFlow is unexpectedly None. Please report this as a bug."
 
         kwargs: Dict[str, Any] = {
             "pdk_root": pdk_root,
@@ -134,8 +140,6 @@ def run(
             "config_override_strings": config_override_strings,
             "design_dir": design_dir,
         }
-        if issubclass(TargetFlow, SequentialFlow):
-            kwargs["Substitute"] = substitutions
         flow = TargetFlow(config_files, **kwargs)
     except PassedDirectoryError as e:
         err(e)
@@ -330,10 +334,11 @@ def cli_in_container(
             other_mounts=docker_mounts,
             tty=docker_tty,
         )
-    except ValueError as e:
-        print(e)
-    except Exception:
-        traceback.print_exc()
+    except Exception as e:
+        err(e)
+        ctx.exit(1)
+
+    ctx.exit(0)
 
 
 o = partial(option, show_default=True)

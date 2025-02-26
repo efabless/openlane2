@@ -21,7 +21,6 @@ from decimal import Decimal
 
 from reader import click_odb, click
 from typing import Tuple, List
-from exception_codes import METAL_LAYER_ERROR, FORMAT_ERROR, NOT_FOUND_ERROR
 
 
 @click.group()
@@ -481,7 +480,7 @@ def parse_obstructions(obstructions) -> List[Tuple[str, List[int]]]:
                 f"[ERROR] Incorrectly formatted input {obs}.\n Format: layer llx lly urx ury, ...",
                 file=sys.stderr,
             )
-            sys.exit(FORMAT_ERROR)
+            sys.exit(1)
         else:
             layer = m.group("layer")
             bbox = [Decimal(x) for x in m.group("bbox").split()]
@@ -505,8 +504,8 @@ def add_obstructions(reader, input_lefs, obstructions):
         layer = obs[0]
         odb_layer = reader.tech.findLayer(layer)
         if odb_layer is None:
-            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
-            sys.exit(METAL_LAYER_ERROR)
+            print(f"[ERROR] Layer '{layer}' not found.", file=sys.stderr)
+            sys.exit(1)
         bbox = obs[1]
         dbu = reader.tech.getDbUnitsPerMicron()
         bbox = [int(x * dbu) for x in bbox]
@@ -550,8 +549,8 @@ def remove_obstructions(reader, input_lefs, obstructions):
         bbox = [int(x * dbu) for x in bbox]  # To dbus
         found = False
         if reader.tech.findLayer(layer) is None:
-            print(f"[ERROR] layer {layer} doesn't exist.", file=sys.stderr)
-            sys.exit(METAL_LAYER_ERROR)
+            print(f"[ERROR] Layer '{layer}' not found.", file=sys.stderr)
+            sys.exit(1)
         for odb_obstruction in existing_obstructions:
             odb_layer, odb_bbox, odb_obj = odb_obstruction
             if (odb_layer, odb_bbox) == (layer, bbox):
@@ -565,7 +564,7 @@ def remove_obstructions(reader, input_lefs, obstructions):
                 f"[ERROR] Obstruction on {layer} at {bbox} (DBU) not found.",
                 file=sys.stderr,
             )
-            sys.exit(NOT_FOUND_ERROR)
+            sys.exit(1)
 
 
 cli.add_command(remove_obstructions)

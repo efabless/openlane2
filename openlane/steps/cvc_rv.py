@@ -165,5 +165,5 @@ class ERC(Step):
             )
             return {}, {}
         except CVCNoSupport as e:
-            self.warn(f"Could not run CVC: {e}. Skipping…")
+            self.warn(f"Could not run CVC: {e}. Skipping '{self.id}'…")
             return {}, {}
