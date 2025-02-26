@@ -370,7 +370,7 @@ class OpenROADStep(TclStep):
                     ipvt_corners[corner].vias_r = metal_layers
 
         filtered_ipvt_corners_names_sorted = corners
-        if not self.config["DEDUPLICATE_CORNERS"]:
+        if self.config["DEDUPLICATE_CORNERS"]:
             filtered_ipvt_corners = {
                 k: v
                 for k, v in ipvt_corners.items()
